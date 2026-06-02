@@ -1,5 +1,13 @@
 # Konstrukt Messenger Android — Implementation Plan
 
+> **Last actualized:** 2026-06-02. Brought into sync with current iOS
+> architecture (`construct-veil` happy-eyeballs, VEIL rename, CFE binary
+> session persistence, OTPK threshold = 20). The `veil-front` obfuscation
+> protocol (see `construct-docs/raw/02_Core_Crypto/protocols/OBFUSCATION_IMPLEMENTATION_PLAN_veil-front.md`)
+> lands on Android automatically via construct-core rebuild + flag flip
+> once it's ready upstream — no Android-specific work needed beyond M7
+> of that plan.
+
 ## Phase 0: Project Setup (DONE)
 - ✅ Gradle 9.3.1 + Kotlin 2.0
 - ✅ Compose with Kotlin Compiler plugin
@@ -51,13 +59,20 @@ class CryptoManager(private val core: ClassicCryptoCore) {
     // initSession(contactBundle)
     // encryptMessage(contactId, plaintext)
     // decryptMessage(contactId, ciphertext)
-    // exportSessionJson(contactId)
-    // importSessionJson(contactId, json)
+    // exportSessionBytes(contactId): ByteArray   // CFE binary — never JSON
+    // importSessionBytes(contactId, bytes)       // CFE binary — never JSON
     // generateMnemonic(wordCount)
     // deriveRecoveryKeypair(mnemonic)
     // solvePoW(challenge, difficulty)
 }
 ```
+
+> **Binary pipeline (mandatory):** session persistence uses **CFE** (16-byte
+> header + MessagePack payload via `rmp_serde`), not JSON. The Rust FFI is
+> `export_session_bytes_for` / `import_session_bytes_for`. No
+> `base64EncodedString`-style stringification in application code; bytes cross
+> the UniFFI boundary as `ByteArray`. Same rule iOS follows — see
+> `construct-messenger/AGENTS.md` §"Binary Data Pipeline".
 
 ---
 
@@ -151,10 +166,13 @@ Services to implement:
 1. core.generateKeyBundle() -> PublicKeyBundle
 2. Solve PoW challenge -> RPC: GetPoWChallenge -> solve -> RegisterDevice
 3. RegisterDevice(bundle, pow_solution) -> device_id, auth_token
-4. Upload initial OTPK batch -> RPC: UploadOneTimePrekeys (min 10)
+4. Upload initial OTPK batch -> RPC: UploadOneTimePrekeys (min 20, matches iOS)
 5. Store auth_token in Keystore
 6. Optionally: setup recovery phrase -> SetRecoveryKey
 ```
+
+> OTPK threshold was bumped from 10 → 20 to match iOS production setting.
+> Below 20 the server flags the device for replenishment.
 
 **Files to create:**
 - `domain/usecase/RegisterUseCase.kt`
@@ -234,35 +252,64 @@ Recovery (new device):
 
 ## Phase 5: Networking
 
-### 5.1 ICE Relay
+### 5.1 VEIL Transport
 **Status:** Pending
 **Priority:** MEDIUM
 **Depends on:** 2.3
 
-**Endpoints:**
-```
-Primary: ice.ams.konstruct.cc:443 (TLS)
-Moscow: ice.msk.konstruct.cc:9443 (no TLS)
-```
+> **Renamed 2026-05-29:** what used to be called "ICE" in earlier drafts is
+> now **VEIL** (`construct-veil`) — the obfuscation proxy layer (obfs4,
+> WebTunnel, future veil-front). The WebRTC industry term "ICE" is a
+> different concept and is kept only for the WebRTC NAT-traversal flow in
+> §6. Do NOT mix the two — see `construct-messenger/AGENTS.md` §"VEIL vs
+> WebRTC ICE".
+
+**Primary gRPC backend:** `ams.konstruct.cc:443` (direct TLS, used when the
+network is uncensored).
+
+**VEIL relay bridges:** addresses are not hard-coded. They come from a
+signed `.well-known/veil-bridges` manifest fetched at app start with a
+hardcoded SPKI pin as last-resort fallback. The current obfs4/WebTunnel
+endpoints (e.g. `api.divany-kresla.uk:443`) are deliberately rotated and
+must not be baked into client code.
+
+**Connection strategy — do NOT implement a Kotlin-side fallback loop.**
+
+iOS routes everything through `construct-veil`'s **happy-eyeballs
+coordinator** (Rust side, behind `veil_start` FFI). Android does the same:
 
 ```kotlin
-object ICEEndpoints {
-    val primary = ICEEndpoint(host = "ice.ams.konstruct.cc", port = 443, tls = true)
-    val mskRelay = ICEEndpoint(host = "ice.msk.konstruct.cc", port = 9443, tls = false)
+// VeilProxy.kt — thin Kotlin wrapper around the Rust FFI
+class VeilProxy(private val core: ClassicCryptoCore) {
+    // 1. fetchManifest() -> bridge descriptors + ticket bundles
+    // 2. core.veilStart(bundles)  ← Rust races methods in parallel
+    //                                (obfs4 / WebTunnel / future veil-front)
+    // 3. Returns a local TCP port; gRPC client connects to it as h2c
 }
 ```
 
-**Connection strategy:**
-```
-1. Try primary (timeout: 5s)
-2. If fail -> try mskRelay (timeout: 5s)
-3. If both fail -> exponential backoff (2s, 4s, 8s, max 60s)
-4. On reconnect: prefer last successful
-5. Probe latency every 5 min, switch if diff > 100ms
-```
+Everything below is upstream of the Kotlin surface and lives in
+`construct-veil`:
+- Parallel racing across MethodIds (`obfs4`, `WebTunnel`, future `VeilFront`)
+- Per-network `PersistentScores` for method preference
+- Silent fallback on failure
+- Backoff and latency-aware switching
+
+**Don't reinvent this in Kotlin** — the iOS direct-fallback pattern was
+deleted (`[[project-construct-veil-ios-adoption]]`) for exactly that reason:
+two parallel routing implementations diverged. Android consumes the same
+Rust coordinator via UniFFI.
 
 **Files to create:**
-- `data/api/ICEConnectionManager.kt`
+- `data/api/VeilProxy.kt` (thin Kotlin wrapper, not a routing implementation)
+- `data/api/TransportRouter.kt` (FSM mirror of Rust router state for UI/observability)
+
+**Future addition — `veil-front`.** A new MethodId (honest HTTPS front +
+session-bound auth) is being implemented in `construct-veil` per
+`OBFUSCATION_IMPLEMENTATION_PLAN_veil-front.md`. When it lands upstream,
+Android picks it up automatically: rebuild `libconstruct_core.so`,
+regenerate Kotlin UniFFI bindings, flip a manifest flag. No new Kotlin
+routing code.
 
 ### 5.2 Message Stream
 **Status:** Pending
@@ -290,24 +337,60 @@ On disconnect: reconnect -> drain pending
 **Priority:** MEDIUM
 **Depends on:** 5.1
 
-**TURN servers:**
+> **Note on terminology:** this section uses **WebRTC ICE** (Interactive
+> Connectivity Establishment — the industry-standard P2P NAT-traversal
+> mechanism). It is **unrelated** to VEIL (§5.1) despite the name overlap
+> in some legacy docs. TURN servers below are obtained via Construct's
+> Signaling service `getTurnCredentials` RPC, not hard-coded.
+
+**TURN servers (current production):**
 ```
-turns:ice.ams.konstruct.cc:5349
-turns:ice.msk.konstruct.cc:5349
+turn:turn.ams.konstruct.cc:3478?transport=udp
+turn:turn.ams.konstruct.cc:3478?transport=tcp
+turns:turn.ams.konstruct.cc:5349?transport=tcp
+turn:turn.msk.konstruct.cc:3478?transport=udp     (currently blocked by RKN, kept for failover)
+turn:turn.msk.konstruct.cc:3478?transport=tcp
+turns:turn.msk.konstruct.cc:5349?transport=tcp
 ```
+
+Credentials are short-lived (HMAC-SHA1 over a username derived from
+`<timestamp>:<userId>`, secret shared with coturn via TURN-REST). The
+server returns them via `SignalingService.GetTurnCredentials(callId)`;
+clients do not store the static secret.
 
 **Signaling flow:**
 ```
-1. Send CALL_OFFER via MessageStream (encrypted)
-2. Start PeerConnection with ICE candidates
+1. Send CALL_OFFER via MessageStream (encrypted via construct-core E2EE)
+2. Start PeerConnection with WebRTC ICE candidates (host / srflx / relay)
 3. Remote sends CALL_ANSWER
-4. ICE exchange -> P2P/relay
-5. MediaChannel open
+4. WebRTC ICE exchange -> P2P or TURN-relayed
+5. MediaChannel open (Opus audio; video planned, see CallsFeature.isVideoEnabled on iOS)
 ```
+
+**System-call UI: `ConnectionService` + `TelecomManager`** — the Android
+equivalent of CallKit. Use it for:
+- Lock-screen incoming call UI (system-owned)
+- "Recent calls" entry in the system Phone app
+- Audio focus + AVAudioSession-equivalent route management
+- Bluetooth headset / car audio handover
+
+**iOS lessons that apply here directly:**
+- Set up the audio session **before** the system activates it (on iOS we
+  put `useManualAudio = true` at app launch — Android has analogous
+  ordering via `ConnectionService.onShowIncomingCallUi` /
+  `onCreateIncomingConnection`).
+- Stop any local ringback tone the moment `peerConnectionState ==
+  .connected` fires — otherwise it shares the audio output with WebRTC
+  and produces silence. See `[[project-calls-audio-fixed]]` for the iOS
+  postmortem.
+- Use the system route picker (Android `MediaRouter` /
+  `AudioDeviceCallback`), not a binary speaker toggle.
 
 **Files to create:**
 - `domain/usecase/CallUseCase.kt`
 - `data/api/WebRtcManager.kt`
+- `data/api/ConstructConnectionService.kt` (extends `android.telecom.ConnectionService`)
+- `data/api/AudioRoutePicker.kt` (Android equivalent of iOS `AudioRoutePickerButton`)
 
 ---
 
@@ -319,11 +402,21 @@ turns:ice.msk.konstruct.cc:5349
 **Depends on:** 2.3
 
 ```
-1. Get FCM token
+1. Get FCM token (must be a high-priority data message — NOT a notification message,
+   notification messages don't wake the app reliably)
 2. RPC: RegisterPushToken(token, platform=ANDROID)
 3. On new message: FCM data message -> wake up -> stream -> decrypt
 4. Use WorkManager for reliability
+5. For incoming calls: trigger ConnectionService.onShowIncomingCallUi
+   (NOT a notification — the system call UI is owned by Telecom framework, §6.1)
 ```
+
+> **Cross-platform note:** Android does not have a true VoIP-push primitive
+> equivalent to iOS PushKit + CallKit. The closest is FCM high-priority data
+> message + `ConnectionService.onShowIncomingCallUi`. Battery / Doze
+> constraints make this less reliable than iOS PushKit; expect to add
+> WorkManager-driven catch-up paths and `setForegroundService` during active
+> calls. Treat this as a known platform parity gap, not a regression.
 
 **Files to create:**
 - `data/local/FcmService.kt`
