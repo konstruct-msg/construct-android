@@ -12,7 +12,9 @@ import androidx.navigation.compose.rememberNavController
 import com.maxeliseyev.konstructmessenger.ui.navigation.KonstructNavHost
 import com.maxeliseyev.konstructmessenger.ui.theme.CTColor
 import com.maxeliseyev.konstructmessenger.ui.theme.KonstructMessengerTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

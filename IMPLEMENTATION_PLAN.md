@@ -8,11 +8,24 @@
 > once it's ready upstream — no Android-specific work needed beyond M7
 > of that plan.
 
+> ## ⚠️ Current reality vs this plan
+> This document describes the **target** architecture. As of now only a UI
+> skeleton exists: Compose theme/tokens, navigation (Splash → Onboarding →
+> Main), and placeholder screens. Phases 1–7 (crypto wrapper, gRPC, sessions,
+> recovery, VEIL, calls, push) are **not started**. Skeleton packages
+> (`crypto/`, `data/`, `domain/`, `di/`, `viewmodel/`, `service/`) exist with
+> `README` stubs marking where code goes. Real package is
+> **`com.maxeliseyev.konstructmessenger`** (the `com.construct.messenger`
+> paths in `construct-docs/raw/ANDROID_ONBOARDING.md` are illustrative).
+> New devs: start from `GOOD_FIRST_ISSUES.md`.
+
 ## Phase 0: Project Setup (DONE)
 - ✅ Gradle 9.3.1 + Kotlin 2.0
 - ✅ Compose with Kotlin Compiler plugin
-- ✅ Hilt for DI
-- ✅ Directory structure
+- ✅ Hilt for DI (`KonstructApp` `@HiltAndroidApp` + `MainActivity` `@AndroidEntryPoint`)
+- ✅ Directory structure (skeleton packages with README stubs)
+- ✅ Design tokens aligned to iOS canon (Color, Dimens/CTLayout, Shadows)
+- ✅ i18n scaffold (`values/`, `values-ru/`); UI uses `stringResource`
 
 ## Phase 1: Crypto Core Integration
 
@@ -500,7 +513,7 @@ app/src/main/java/com/maxeliseyev/konstructmessenger/
 │   │   ├── KeyService.kt
 │   │   ├── MessagingService.kt
 │   │   ├── MessageStreamService.kt
-│   │   ├── ICEConnectionManager.kt
+│   │   ├── VeilProxy.kt          (thin wrapper over Rust VEIL coordinator; see §5.1)
 │   │   └── proto/ (generated)
 │   ├── local/
 │   │   ├── KeystoreManager.kt

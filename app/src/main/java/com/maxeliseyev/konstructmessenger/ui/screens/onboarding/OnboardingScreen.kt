@@ -19,8 +19,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.maxeliseyev.konstructmessenger.R
 import com.maxeliseyev.konstructmessenger.ui.theme.CTColor
 import com.maxeliseyev.konstructmessenger.ui.theme.CTSymbol
 import com.maxeliseyev.konstructmessenger.ui.theme.ctBold
@@ -44,14 +46,14 @@ fun OnboardingScreen(
         ) {
             Column {
                 Text(
-                    text = "KONSTRUCT",
+                    text = stringResource(R.string.brand_name),
                     style = ctBold(18),
                     color = CTColor.text,
                     letterSpacing = 6.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Initialize Identity",
+                    text = stringResource(R.string.onboarding_subtitle),
                     style = ctBold(14),
                     color = CTColor.textDim,
                     letterSpacing = 2.sp
@@ -67,7 +69,8 @@ fun OnboardingScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (state == "generating") CTSymbol.loading else "[INIT]",
+                    text = if (state == "generating") CTSymbol.loading
+                           else stringResource(R.string.onboarding_init_action),
                     style = ctBold(14),
                     color = CTColor.accent,
                     letterSpacing = 2.sp
@@ -78,14 +81,14 @@ fun OnboardingScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Security Notice",
+                    text = stringResource(R.string.onboarding_security_title),
                     style = ctBold(10),
                     color = CTColor.textDim,
                     letterSpacing = 2.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Your encryption keys are generated locally. The server never sees your private keys.",
+                    text = stringResource(R.string.onboarding_security_body),
                     style = ctRegular(12),
                     color = CTColor.textDim,
                     letterSpacing = 1.sp

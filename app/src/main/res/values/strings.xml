@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">Konstruct Messenger</string>
+
+    <!-- Brand wordmark — not translated -->
+    <string name="brand_name" translatable="false">KONSTRUCT</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_subtitle">Initialize Identity</string>
+    <string name="onboarding_init_action">[INIT]</string>
+    <string name="onboarding_security_title">Security Notice</string>
+    <string name="onboarding_security_body">Your encryption keys are generated locally. The server never sees your private keys.</string>
+
+    <!-- Main (streams list) -->
+    <string name="nav_streams">Stream</string>
+    <string name="main_empty_title">No active streams</string>
+    <string name="main_empty_subtitle">Search for identity to start messaging</string>
+    <string name="main_start_stream">Start Stream</string>
 </resources>

@@ -39,6 +39,9 @@ android {
 }
 
 dependencies {
+    // JNA — required by UniFFI-generated Kotlin bindings (crypto/uniffi/...).
+    // The @aar variant bundles the native libjnidispatch.so for Android ABIs.
+    implementation 'net.java.dev.jna:jna:5.14.0@aar'
     implementation 'androidx.core:core-ktx:1.10.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1'
@@ -66,3 +69,5 @@ dependencies {
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
 }
+// Native libs configuration
+android.sourceSets.main.jniLibs.srcDirs = ['src/main/jniLibs']
