@@ -17,8 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
@@ -63,7 +61,7 @@ fun CTNavBar(
             .fillMaxWidth()
             .height(CTLayout.navBarHeight)
             .background(CTColor.bg)
-            .bottomHairline()
+            .ctBorderBottom()
             .padding(horizontal = CTLayout.edgePad),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -118,17 +116,6 @@ fun CTNavBar(
             )
         }
     }
-}
-
-/** 0.5dp separator line on the bottom edge — iOS `ctBorderBottom()`. */
-private fun Modifier.bottomHairline(): Modifier = drawBehind {
-    val stroke = 0.5.dp.toPx()
-    drawLine(
-        color = CTColor.noise,
-        start = Offset(0f, size.height - stroke / 2f),
-        end = Offset(size.width, size.height - stroke / 2f),
-        strokeWidth = stroke,
-    )
 }
 
 @Preview(backgroundColor = 0xFF090909, showBackground = true)
