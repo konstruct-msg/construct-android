@@ -93,7 +93,7 @@ fun CTSettingsRow(
 @Composable
 private fun SettingsSectionPreview() {
     Column(
-        verticalArrangement = Arrangement.spacedBy(0.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.padding(vertical = 8.dp),
     ) {
         CTSettingsSectionHeader(title = "Identity")
