@@ -6,14 +6,14 @@ Android-клиент privacy-first E2EE-мессенджера Construct. Kotlin
 
 ---
 
-## Источник правды (канон)
+## Источник правды
 
 При любых расхождениях между кодом, документами и реальностью **каноном считается
-iOS-приложение** `construct-messenger`. Документы могли устареть; iOS-исходники — нет.
+iOS-приложение** `construct-ios`. Документы могли устареть; iOS-исходники — нет.
 
 | Что | Где смотреть на iOS |
 |---|---|
-| Дизайн-система, токены, компоненты | `construct-messenger/ConstructMessenger/Utilities/ConstructTheme.swift` |
+| Дизайн-система, токены, компоненты | `construct-ios/ConstructMessenger/Utilities/ConstructTheme.swift` |
 | Аватары | `.../Views/Components/MainAvatarView.swift` |
 | Экраны | `.../Views/` |
 | ViewModels / бизнес-логика | `.../ViewModels/` |
@@ -25,7 +25,6 @@ iOS-приложение** `construct-messenger`. Документы могли 
 токенов и поведение периодически сверяй с iOS-исходником.
 
 > Пакет приложения — **`com.construct.messenger`** (namespace + applicationId),
-> совпадает с путём из `ANDROID_ONBOARDING.md`.
 
 ---
 
@@ -82,12 +81,14 @@ iOS-приложение** `construct-messenger`. Документы могли 
 **Сгенерированный биндинг-файл не редактируется руками** — всё через обёртку
 `CryptoManager` (см. конвенции ниже).
 
-gRPC-клиент из `.proto`:
-репозиторий тут: https://github.com/konstruct-msg/construct-protos.git
+> Сейчас ядро автоматически собирается на CI/CD в GitHub Actions тут: https://github.com/konstruct-msg/construct-core
+
+Чтобы сгененрировать gRPC-клиент из `.proto` используй скрипт:
 
 ```bash
 ./generate_grpc_kotlin.sh
 ```
+Protobuf-репозиторий тут: https://github.com/konstruct-msg/construct-protos.git
 
 ---
 
@@ -113,23 +114,22 @@ construct-android/
 ```
 
 > `IMPLEMENTATION_PLAN.md` описывает **целевую** архитектуру (крипто, gRPC, VEIL,
-> WebRTC, FCM). Фактически реализован только UI-скелет — см.
-> [`GOOD_FIRST_ISSUES.md`](GOOD_FIRST_ISSUES.md).
+> WebRTC, FCM). Фактически реализован только UI-скелет, точнее отдельные элементы интерфейса.
 
 ---
 
 ## Текущее состояние
 
-Реализовано: тема (Compose), навигация (Splash → Onboarding → Main), экраны-заглушки.
+Реализовано: тема, отдельные элементы интерфейса.
 **Не реализовано:** криптоядро-обёртка, gRPC, регистрация/сессии, хранилище (Room),
 большинство компонентов и экранов из дизайн-системы, локализация.
 
 Есть известные расхождения (Hilt без Application-класса, дрейф цветов, хардкод строк) —
-они оформлены как первые задачи в [`GOOD_FIRST_ISSUES.md`](GOOD_FIRST_ISSUES.md).
+они оформлены как первые задачи.
 
 ---
 
-## Конвенции
+## Конвенции (желательно)
 
 - **Compose-only**, без XML-лейаутов.
 - **Все видимые строки** — через `stringResource` / `strings.xml`. Хардкода в UI нет.
