@@ -1,0 +1,15 @@
+<!--
+  Konstruct wordmark (the "wave" glyph). Single monochrome path.
+  Source: Konstruct-Logo.pdf (vector) → SVG → VectorDrawable.
+  fillColor is white so it can be tinted at the call site
+  (e.g. Icon(painterResource(R.drawable.ic_konstruct_logo), tint = CTColor.text)).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M720.160156,228.65625 C659.816406,228.65625 606.902344,295.660156 577.777344,396.007812 C567.011719,433.09375 514.726562,435.382812 500.546875,399.445312 L433.304688,228.65625 C402.789062,150.210938 356.230469,100 303.941406,100 C211.835938,100 137.238281,255.675781 137.238281,447.667969 C137.238281,639.667969 211.835938,795.414062 303.863281,795.414062 C330.355469,795.414062 355.457031,782.363281 377.6875,759.320312 L379.703125,757.339844 C447.484375,692.933594 558.410156,717.808594 594.046875,803.734375 C624.570312,877.378906 669.730469,924 720.078125,924 C812.109375,924 886.707031,768.324219 886.707031,576.253906 C886.707031,384.179688 812.109375,228.503906 720.078125,228.503906 Z" />
+</vector>
