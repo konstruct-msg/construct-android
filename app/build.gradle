@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace 'com.maxeliseyev.konstructmessenger'
+    namespace 'com.construct.messenger'
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.maxeliseyev.konstructmessenger"
+        applicationId "com.construct.messenger"
         minSdk 26
         targetSdk 35
         versionCode 1

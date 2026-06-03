@@ -38,7 +38,7 @@ APP_DIR="$PROJECT_ROOT/app"
 PROTOS_DIR="${PROTOS_DIR:-$HOME/Code/construct-protos}"
 [ -d "$PROTOS_DIR" ] || PROTOS_DIR="$PROJECT_ROOT/../construct-protos"
 
-OUTPUT_DIR="$APP_DIR/src/main/java/com/maxeliseyev/konstructmessenger/data/api/proto"
+OUTPUT_DIR="$APP_DIR/src/main/java/com/construct/messenger/data/api/proto"
 GRPC_KOTLIN_VERSION="${GRPC_KOTLIN_VERSION:-1.4.1}"
 
 DO_CLEAN=false

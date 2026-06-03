@@ -30,7 +30,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
 APP_DIR="$PROJECT_ROOT/app"
 JNI_LIBS="$APP_DIR/src/main/jniLibs"
-CRYPTO_BINDINGS="$APP_DIR/src/main/java/com/maxeliseyev/konstructmessenger/crypto"
+CRYPTO_BINDINGS="$APP_DIR/src/main/java/com/construct/messenger/crypto"
 
 # construct-core может быть рядом или в ~/Code
 CORE_PATH="$HOME/Code/construct-core"
