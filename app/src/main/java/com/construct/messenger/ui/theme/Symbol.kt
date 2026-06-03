@@ -29,4 +29,8 @@ object CTSymbol {
     const val settings = "[cfg]"
     const val profile = "[usr]"
     const val search = "[?]"
+
+    // Separators (CTSep) — ASCII dashed/double lines.
+    fun thin(count: Int = 25) = "- ".repeat(count)
+    fun thick(count: Int = 25) = "= ".repeat(count)
 }
