@@ -72,7 +72,7 @@ private fun CTButtonPreview() {
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
         modifier = Modifier.padding(16.dp),
     ) {
-        CTButton(label = "CREATE IDENTITY [→]", onClick = {})
+        CTButton(label = "CREATE IDENTITY", onClick = {})
         CTButton(label = "DELETE", onClick = {}, isDestructive = true)
         CTButton(label = "DISABLED", onClick = {}, enabled = false)
     }
