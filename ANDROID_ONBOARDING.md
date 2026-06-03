@@ -510,20 +510,31 @@ fun CTAvatar(
 
 **iOS Reference** (`MainAvatarView.swift`):
 - **Круглая форма**, не квадратная! (была гексагональной, теперь Circle)
-- Цвет — детерминированный по userId: `Color.hexagonAccent(for: id)`
-- Initials: 1-2 буквы, `CTFont.bold(size * 0.28)`
+- Цвет — детерминированный по userId: `hexagonAccent(userId)`
+- Initials: 1-2 буквы, FontFamily.Monospace, FontWeight.Medium, `size * 0.33` (iOS: medium, не bold)
 - Активный: accent `opacity(1.0)`, + glow outer ring
 - Индикатор online: зелёная точка `size * 0.22`
 
 ```kotlin
-// Детерминированный цвет из userId
-fun hexagonAccent(userId: String): Color {
-    var hash = 5381L
-    for (c in userId) {
-        hash = (hash shl 5) + hash + c.code
+// Детерминированный цвет из userId.
+// ВАЖНО: точно как iOS Color.hexagonAccent(for:):
+//  - djb2-хеш как UNSIGNED 32-bit (UInt) с переполнением — НЕ Long;
+//  - по Unicode code points (codePointAt), как Swift unicodeScalars — не по Char;
+//  - HSV/HSB (Color.hsv), НЕ HSL — это разные цветовые модели.
+// Иначе цвета аватаров разойдутся с iOS.
+fun hexagonAccent(userId: String): Color =
+    Color.hsv(hexagonHue(userId).toFloat(), 0.60f, 0.55f)
+
+/** Hue в градусах [0,360) — кросс-платформенное значение (iOS считает тот же hash % 360). */
+fun hexagonHue(userId: String): Int {
+    var hash = 5381u
+    var i = 0
+    while (i < userId.length) {
+        val cp = userId.codePointAt(i)
+        hash = (hash shl 5) + hash + cp.toUInt()
+        i += Character.charCount(cp)
     }
-    val hue = (hash % 360).toFloat() / 360f
-    return Color.hsl(hue, 0.60f, 0.55f)
+    return (hash % 360u).toInt()
 }
 ```
 
@@ -818,7 +829,7 @@ object DisplayNameGenerator {
         "leopard", "cheetah", "lynx", "cougar", "hyena", "jackal", "dingo",
         "wolverine", "otter", "seal", "orca", "dolphin", "whale", "shark",
         "ferret", "mongoose", "badger", "deer", "moose", "elk", "bison",
-        "hare", "rabbit", "squirrel", "beaver", "hedgehog", "bat", "boar",
+        "hare", "rabbit", "squirrel", "beaver", "hedgehog", "bat", "boar", "ox",
         "ram", "stag", "marten", "meerkat",
         "eagle", "hawk", "owl", "raven", "falcon", "swan", "dove", "crane",
         "heron", "sparrow", "robin", "finch", "wren", "phoenix", "crow",
@@ -845,17 +856,22 @@ object DisplayNameGenerator {
 
     /**
      * Генерирует детерминированное имя на основе userId.
-     * Формат: "Adjective Animal" (~80%) или "Adjective ItNoun" (~20%).
+     * Формат: "adjective animal" (~80%) или "adjective itNoun" (~20%) — БЕЗ капитализации,
+     * в нижнем регистре (как на iOS). Не добавляй replaceFirstChar/uppercase —
+     * иначе имена разойдутся с iOS.
      */
     fun generate(userId: String): String {
         val hash = MessageDigest.getInstance("SHA-256").digest(userId.toByteArray())
 
+        // NB: value is treated as UNSIGNED 32-bit (matches iOS UInt32 math).
+        // Do NOT mask with 0x7FFFFFFF — that diverges from iOS and yields
+        // different names for ids whose 4-byte slice has the high bit set.
         fun getIndex(bytes: ByteArray, start: Int, modulo: Int): Int {
-            val value = ((bytes[start].toInt() and 0xFF) shl 24) or
-                        ((bytes[start + 1].toInt() and 0xFF) shl 16) or
-                        ((bytes[start + 2].toInt() and 0xFF) shl 8) or
-                        (bytes[start + 3].toInt() and 0xFF)
-            return (value and 0x7FFFFFFF) % modulo
+            var value = 0u
+            for (i in 0 until 4) {
+                value = value or (bytes[start + i].toUByte().toUInt() shl (24 - i * 8))
+            }
+            return (value % modulo.toUInt()).toInt()
         }
 
         val adjIndex = getIndex(hash, 0, adjectives.size)
@@ -870,7 +886,6 @@ object DisplayNameGenerator {
         }
 
         return "${adjectives[adjIndex]} $noun"
-            .replaceFirstChar { it.uppercase() }
     }
 
     fun generateShortId(userId: String): String {
