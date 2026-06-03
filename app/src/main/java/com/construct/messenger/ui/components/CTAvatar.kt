@@ -84,7 +84,6 @@ fun CTAvatar(
     image: ImageBitmap? = null,
     size: Dp = 44.dp,
     isActive: Boolean = false,
-    isOnline: Boolean = false,
     strokeWidth: Dp = 1.5.dp,
 ) {
     val accent = hexagonAccent(userId)
@@ -138,17 +137,6 @@ fun CTAvatar(
                 }
             }
         }
-
-        if (isOnline) {
-            Box(
-                modifier = Modifier
-                    .offset(x = 2.dp, y = 2.dp)
-                    .size(size * 0.22f)
-                    .clip(CircleShape)
-                    .background(Color(0xFF34C759))
-                    .border(1.5.dp, CTColor.bg, CircleShape),
-            )
-        }
     }
 }
 
@@ -159,9 +147,9 @@ private fun CTAvatarPreview() {
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.padding(16.dp),
     ) {
-        CTAvatar(userId = "alice-123", displayName = "Alice", size = 52.dp, isActive = true, isOnline = true)
+        CTAvatar(userId = "alice-123", displayName = "Alice", size = 52.dp, isActive = true)
         CTAvatar(userId = "bob-456", displayName = "Bob Smith", size = 52.dp)
-        CTAvatar(userId = "carol-789", displayName = "Carol", size = 52.dp, isOnline = true)
+        CTAvatar(userId = "carol-789", displayName = "Carol", size = 52.dp)
         CTAvatar(userId = "dave-000", displayName = "", size = 52.dp)
     }
 }
