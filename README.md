@@ -24,8 +24,8 @@ iOS-приложение** `construct-messenger`. Документы могли 
 `[ANDROID_ONBOARDING.md]`. Используй его как карту, но значения
 токенов и поведение периодически сверяй с iOS-исходником.
 
-> ⚠️ Доки используют тестовый пакет `com.construct.messenger`. **Реальный пакет —
-> `com.maxeliseyev.konstructmessenger`.** надо будет потом это всё свести к одному.
+> Пакет приложения — **`com.construct.messenger`** (namespace + applicationId),
+> совпадает с путём из `ANDROID_ONBOARDING.md`.
 
 ---
 
@@ -96,7 +96,7 @@ gRPC-клиент из `.proto`:
 ```
 construct-android/
 ├── app/src/main/
-│   ├── java/com/maxeliseyev/konstructmessenger/
+│   ├── java/com/construct/messenger/
 │   │   ├── MainActivity.kt
 │   │   ├── ui/
 │   │   │   ├── theme/        — дизайн-токены (Color, Type, Symbol, Theme)

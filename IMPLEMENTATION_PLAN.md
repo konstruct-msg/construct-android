@@ -14,9 +14,9 @@
 > Main), and placeholder screens. Phases 1–7 (crypto wrapper, gRPC, sessions,
 > recovery, VEIL, calls, push) are **not started**. Skeleton packages
 > (`crypto/`, `data/`, `domain/`, `di/`, `viewmodel/`, `service/`) exist with
-> `README` stubs marking where code goes. Real package is
-> **`com.maxeliseyev.konstructmessenger`** (the `com.construct.messenger`
-> paths in `construct-docs/raw/ANDROID_ONBOARDING.md` are illustrative).
+> `README` stubs marking where code goes. App package is
+> **`com.construct.messenger`** (namespace + applicationId), matching the
+> paths in `construct-docs/raw/ANDROID_ONBOARDING.md`.
 > New devs: start from `GOOD_FIRST_ISSUES.md`.
 
 ## Phase 0: Project Setup (DONE)
@@ -500,7 +500,7 @@ res/values-ru/strings.xml (Russian)
 ## File Structure Summary
 
 ```
-app/src/main/java/com/maxeliseyev/konstructmessenger/
+app/src/main/java/com/construct/messenger/
 ├── MainActivity.kt
 ├── KonstructApp.kt (Application class)
 ├── crypto/
