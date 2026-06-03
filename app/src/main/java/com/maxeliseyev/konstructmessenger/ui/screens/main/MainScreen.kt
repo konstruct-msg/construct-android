@@ -17,8 +17,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.maxeliseyev.konstructmessenger.R
 import com.maxeliseyev.konstructmessenger.ui.theme.CTColor
 import com.maxeliseyev.konstructmessenger.ui.theme.CTSymbol
 import com.maxeliseyev.konstructmessenger.ui.theme.ctBold
@@ -37,7 +39,7 @@ fun MainScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             CTNavBar(
-                title = "STREAM",
+                title = stringResource(R.string.nav_streams),
                 showSearch = true,
                 onSearch = {},
                 onSettings = {}
@@ -49,13 +51,13 @@ fun MainScreen(
                     .padding(horizontal = 20.dp)
             ) {
                 Text(
-                    text = "No active streams",
+                    text = stringResource(R.string.main_empty_title),
                     style = ctRegular(14),
                     color = CTColor.textDim
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Search for identity to start messaging",
+                    text = stringResource(R.string.main_empty_subtitle),
                     style = ctRegular(12),
                     color = CTColor.textDim,
                     letterSpacing = 1.sp
@@ -81,7 +83,7 @@ fun MainScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Start Stream",
+                        text = stringResource(R.string.main_start_stream),
                         style = ctRegular(14),
                         color = CTColor.text
                     )

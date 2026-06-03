@@ -8,7 +8,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.maxeliseyev.konstructmessenger.R
 import com.maxeliseyev.konstructmessenger.ui.theme.CTColor
 import com.maxeliseyev.konstructmessenger.ui.theme.ctBold
 import kotlinx.coroutines.delay
@@ -36,7 +38,7 @@ fun SplashScreen(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "KONSTRUCT",
+            text = stringResource(R.string.brand_name),
             style = ctBold(24),
             color = CTColor.text,
             letterSpacing = 8.sp

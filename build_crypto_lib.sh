@@ -145,11 +145,23 @@ build_target() {
   fi
 
   # Сборка.
-  # CC/CXX нужны ring и aws-lc-sys; AR — для статической линковки.
-  # RUSTFLAGS=-C link-arg=-pie обязателен для Android shared libs.
-  CC="$cc" CXX="$cxx" AR="$NDK_TOOLCHAIN/llvm-ar" \
+  # ВАЖНО: использовать только target-specific CC_<target>=, а не generic CC=.
+  # Generic CC заставит host build scripts (libsqlite3-sys etc.) собирать
+  # под host-target тем же android-clang — он не знает SDK хоста и падает на
+  # "stdio.h not found". Имена env vars: dashes в target triple → underscores.
+  # cc-rs читает оба варианта; берём underscore-вариант как канонический.
+  local target_u="${target//-/_}"
+  local cc_var="CC_${target_u}"
+  local cxx_var="CXX_${target_u}"
+  local ar_var="AR_${target_u}"
+  local rc
+  set +e
+  env "$cc_var=$cc" "$cxx_var=$cxx" "$ar_var=$NDK_TOOLCHAIN/llvm-ar" \
     cargo build --lib --target "$target" --features "$FEATURES" $CARGO_FLAGS 2>&1 \
-    | grep -E "^error|^warning\[|Compiling|Finished" || true
+    | grep -E "^error|^warning\[|Compiling|Finished"
+  rc=${PIPESTATUS[0]}
+  set -e
+  [ "$rc" -eq 0 ] || fail "cargo build failed for $target (rc=$rc) — re-run без grep-фильтра чтоб увидеть полный лог"
 
   ok "Собрано: $target"
 }
@@ -178,6 +190,7 @@ merge_ice() {
     cp "$core_lib" "$final_lib"
     info "Скопировано: $arch → libconstruct_core.so"
   else
+    mkdir -p "$JNI_LIBS/$arch"
     cp "$core_lib" "$JNI_LIBS/$arch/libconstruct_core.so"
     warn "ICE не найден для $target — используем без ICE"
   fi

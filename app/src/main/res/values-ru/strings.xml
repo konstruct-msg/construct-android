@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Konstruct Messenger</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_subtitle">Инициализация личности</string>
+    <string name="onboarding_init_action">[INIT]</string>
+    <string name="onboarding_security_title">Безопасность</string>
+    <string name="onboarding_security_body">Ключи шифрования генерируются локально. Сервер никогда не видит ваши приватные ключи.</string>
+
+    <!-- Main (streams list) -->
+    <string name="nav_streams">Поток</string>
+    <string name="main_empty_title">Нет активных потоков</string>
+    <string name="main_empty_subtitle">Найдите личность, чтобы начать переписку</string>
+    <string name="main_start_stream">Начать поток</string>
+</resources>
