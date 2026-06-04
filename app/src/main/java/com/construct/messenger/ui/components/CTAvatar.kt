@@ -74,7 +74,7 @@ private fun initialsOf(displayName: String): String {
  * - Color from [hexagonAccent] of [userId]. [image] if provided, else initials of
  *   [displayName] on a 12%-accent tint.
  * - Accent stroke ring (opacity 1.0 when [isActive], else 0.45). When active, an extra
- *   wider faint glow ring. Green presence dot at bottom-trailing when [isOnline].
+ *   wider faint glow ring.
  */
 @Composable
 fun CTAvatar(
