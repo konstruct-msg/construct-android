@@ -13,29 +13,41 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTSymbol
 import com.construct.messenger.ui.theme.ctBold
 import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.viewmodel.OnboardingEvent
+import com.construct.messenger.viewmodel.OnboardingViewModel
 
 @Composable
 fun OnboardingScreen(
-    onInitialized: () -> Unit
+    onInitialized: () -> Unit,
+    viewModel: OnboardingViewModel = hiltViewModel()
 ) {
-    var state by remember { mutableStateOf("initial") }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                OnboardingEvent.NavigateToMain -> onInitialized()
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
+            .padding(top = 20.dp)
             .fillMaxSize()
             .background(CTColor.bg)
             .padding(20.dp)
@@ -63,13 +75,15 @@ fun OnboardingScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { state = "generating" }
+                    .clickable(enabled = !uiState.isInitializing) {
+                        viewModel.initializeIdentity()
+                    }
                     .background(CTColor.bgMsg)
                     .padding(24.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (state == "generating") CTSymbol.loading
+                    text = if (uiState.isInitializing) CTSymbol.loading
                            else stringResource(R.string.onboarding_init_action),
                     style = ctBold(14),
                     color = CTColor.accent,

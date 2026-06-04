@@ -16,29 +16,37 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTSymbol
 import com.construct.messenger.ui.theme.ctBold
 import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.viewmodel.MainViewModel
 
 @Composable
 fun MainScreen(
-    onNavigateToChat: (String) -> Unit
+    onNavigateToChat: (String) -> Unit,
+    viewModel: MainViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val canStartStream = uiState.suggestedContactId.isNotBlank()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(CTColor.bg)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize().padding(top = 24.dp)
         ) {
             CTNavBar(
                 title = stringResource(R.string.nav_streams),
@@ -72,7 +80,9 @@ fun MainScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onNavigateToChat("test_contact") }
+                    .clickable(enabled = canStartStream) {
+                        onNavigateToChat(uiState.suggestedContactId)
+                    }
                     .background(CTColor.bgMsg)
                     .padding(16.dp)
             ) {
