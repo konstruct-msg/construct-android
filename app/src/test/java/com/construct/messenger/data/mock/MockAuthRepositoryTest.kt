@@ -12,7 +12,7 @@ class MockAuthRepositoryTest {
 
         assertFalse(repository.authState.value.isInitialized)
 
-        repository.initializeIdentity()
+        repository.initializeIdentity(username = null)
 
         assertTrue(repository.authState.value.isInitialized)
     }

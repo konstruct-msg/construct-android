@@ -43,6 +43,13 @@ android {
     buildFeatures {
         compose true
     }
+    testOptions {
+        unitTests {
+            // android.util.Log (and other Android stubs) throw "not mocked" by default
+            // in JVM unit tests — return defaults instead, no Robolectric needed.
+            returnDefaultValues = true
+        }
+    }
 }
 
 dependencies {

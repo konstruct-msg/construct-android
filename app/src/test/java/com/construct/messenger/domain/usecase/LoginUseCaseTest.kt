@@ -46,9 +46,12 @@ class LoginUseCaseTest {
         whenever(authStub.authenticateDevice(any(), any()))
             .thenReturn(AuthenticateDeviceResponse.newBuilder().setTokens(tokens).build())
 
-        val result = loginUseCase("device-1")
+        val savedKeys = byteArrayOf(9, 9, 9)
+        val result = loginUseCase("device-1", savedKeys)
 
         assertEquals(tokens, result)
+
+        verify(cryptoManager).loadOrCreate(savedKeys)
 
         val signedMessageCaptor = argumentCaptor<String>()
         verify(cryptoManager).signWithDeviceKey(signedMessageCaptor.capture())
@@ -61,6 +64,7 @@ class LoginUseCaseTest {
         assertEquals(ByteString.copyFrom(signature), request.signature)
         assertEquals("device-1${request.timestamp}", signedMessageCaptor.firstValue)
 
+        verify(cryptoManager).setLocalUserId("user-1")
         verify(keystoreManager).saveTokens(tokens, "device-1")
     }
 }

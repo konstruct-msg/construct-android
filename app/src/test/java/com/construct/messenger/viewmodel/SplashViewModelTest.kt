@@ -28,7 +28,7 @@ class SplashViewModelTest {
     @Test
     fun initializedUserRoutesToMain() = runTest {
         val repository = MockAuthRepository()
-        repository.initializeIdentity()
+        repository.initializeIdentity(username = null)
         val viewModel = SplashViewModel(repository)
 
         viewModel.decideNextRoute()

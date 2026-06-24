@@ -7,6 +7,22 @@
     <string name="onboarding_security_title">Безопасность</string>
     <string name="onboarding_security_body">Ключи шифрования генерируются локально. Сервер никогда не видит ваши приватные ключи.</string>
 
+    <!-- Registration stages (RegistrationStep) -->
+    <string name="reg_establishing_trust">Установление доверия</string>
+    <string name="reg_joining_network">Подключение к сети</string>
+    <string name="reg_phase_entropy">Сбор энтропии…</string>
+    <string name="reg_phase_nonce">Поиск подходящего nonce…</string>
+    <string name="reg_phase_solution">Решение найдено</string>
+    <string name="reg_welcome">Добро пожаловать</string>
+    <string name="reg_label_username">Имя пользователя</string>
+    <string name="reg_label_mode">Режим</string>
+    <string name="reg_mode_anonymous">Анонимный</string>
+    <string name="reg_label_device_id">ID устройства</string>
+    <string name="reg_continue">Продолжить</string>
+    <string name="reg_error_title">Регистрация не удалась</string>
+    <string name="reg_try_again">Повторить</string>
+    <string name="reg_cancel">Отмена</string>
+
     <!-- Main (streams list) -->
     <string name="nav_streams">Поток</string>
     <string name="main_empty_title">Нет активных потоков</string>
