@@ -1,0 +1,213 @@
+syntax = "proto3";
+
+package shared.proto.services.v1;
+
+import "services/auth_service.proto"; // PushProvider, PushEnvironment
+import "signaling/webrtc.proto";     // CallType
+
+// NotificationService - manages push notifications and privacy-preserving blind notifications.
+service NotificationService {
+  // SendBlindNotification - send a generalized, privacy-preserving notification
+  // to inform the recipient about new activity without revealing its content.
+  rpc SendBlindNotification(SendBlindNotificationRequest) returns (SendBlindNotificationResponse);
+
+  // RegisterDeviceToken - register a device push token (APNs/FCM)
+  rpc RegisterDeviceToken(RegisterDeviceTokenRequest) returns (RegisterDeviceTokenResponse);
+
+  // UnregisterDeviceToken - remove a device push token on logout
+  rpc UnregisterDeviceToken(UnregisterDeviceTokenRequest) returns (UnregisterDeviceTokenResponse);
+
+  // UpdateNotificationPreferences - update notification settings for a device
+  rpc UpdateNotificationPreferences(UpdateNotificationPreferencesRequest) returns (UpdateNotificationPreferencesResponse);
+
+  // RegisterVoipToken - register APNs VoIP token (PKPushRegistry)
+  // Used for incoming calls via CallKit when the app is backgrounded or killed.
+  rpc RegisterVoipToken(RegisterVoipTokenRequest) returns (RegisterVoipTokenResponse);
+
+  // UnregisterVoipToken - remove VoIP token on logout
+  rpc UnregisterVoipToken(UnregisterVoipTokenRequest) returns (UnregisterVoipTokenResponse);
+
+  // SendVoipIncomingCall - internal RPC: deliver an APNs VoIP push for an incoming call.
+  // Called by signaling-service when the callee is offline.
+  rpc SendVoipIncomingCall(SendVoipIncomingCallRequest) returns (SendVoipIncomingCallResponse);
+}
+
+// ============================================================================
+// SendBlindNotification Messages
+// ============================================================================
+
+// Request to send a blind (privacy-preserving) notification
+message SendBlindNotificationRequest {
+  // Recipient user ID.
+  string user_id = 1;
+
+  // Optional: new badge count for the app icon.
+  // Indicates the number of unread events without revealing content.
+  optional int32 badge_count = 2;
+
+  // Optional: activity type hint (e.g., "new_message", "new_call").
+  // Client may use this to display a generic label such as "New message" or
+  // "Incoming call" without exposing any details.
+  optional string activity_type = 3;
+
+  // Optional: opaque conversation UUID for deep-linking to a specific chat.
+  // Does not reveal content or participants.
+  optional string conversation_id = 4;
+}
+
+// Response after enqueueing the notification
+message SendBlindNotificationResponse {
+  // true if the notification was successfully enqueued.
+  bool success = 1;
+}
+
+// ============================================================================
+// Device Token Registration Messages
+// ============================================================================
+
+// Request to register a device push token
+message RegisterDeviceTokenRequest {
+  // Device token (APNs for iOS, FCM for Android)
+  string device_token = 1;
+
+  // Optional: human-readable device name (displayed in settings)
+  optional string device_name = 2;
+
+  // Notification filter
+  NotificationFilter notification_filter = 3;
+
+  // Stable device ID from Keychain — used as upsert key.
+  // Allows token rotation without creating a duplicate entry.
+  string device_id = 4;
+
+  // Push notification provider
+  PushProvider provider = 5;
+
+  // APNs environment (sandbox for debug builds, production for release)
+  PushEnvironment environment = 6;
+}
+
+// Response to device token registration
+message RegisterDeviceTokenResponse {
+  // true if the token was successfully registered
+  bool success = 1;
+
+  // Assigned token ID (for subsequent management)
+  optional string token_id = 2;
+}
+
+// ============================================================================
+// Device Token Unregistration Messages
+// ============================================================================
+
+// Request to remove a device push token
+message UnregisterDeviceTokenRequest {
+  // Device token to remove
+  string device_token = 1;
+}
+
+// Response to device token removal
+message UnregisterDeviceTokenResponse {
+  // true if the token was successfully removed
+  bool success = 1;
+}
+
+// ============================================================================
+// Notification Preferences Messages
+// ============================================================================
+
+// Request to update notification preferences
+message UpdateNotificationPreferencesRequest {
+  // Device token whose preferences are being updated
+  string device_token = 1;
+
+  // Notification filter
+  NotificationFilter notification_filter = 2;
+
+  // Whether notifications are enabled for this device
+  bool enabled = 3;
+}
+
+// Response to preference update
+message UpdateNotificationPreferencesResponse {
+  // true if preferences were successfully updated
+  bool success = 1;
+}
+
+// ============================================================================
+// Common Enums and Types
+// ============================================================================
+
+// NotificationFilter - controls which events trigger a visible notification
+enum NotificationFilter {
+  // Unspecified (defaults to silent)
+  NOTIFICATION_FILTER_UNSPECIFIED = 0;
+
+  // Silent notifications only (no text, badge only)
+  NOTIFICATION_FILTER_SILENT = 1;
+
+  // All notifications visible
+  NOTIFICATION_FILTER_VISIBLE_ALL = 2;
+
+  // Direct messages only
+  NOTIFICATION_FILTER_VISIBLE_DM = 3;
+
+  // Mentions (@mention) only
+  NOTIFICATION_FILTER_VISIBLE_MENTIONS = 4;
+
+  // Messages from contacts only
+  NOTIFICATION_FILTER_VISIBLE_CONTACTS = 5;
+}
+
+// ============================================================================
+// VoIP Token Registration Messages
+// ============================================================================
+
+message RegisterVoipTokenRequest {
+  // APNs VoIP token (from PKPushRegistry)
+  string voip_token = 1;
+
+  // Stable device ID for upsert (Keychain UUID)
+  string device_id = 2;
+
+  // Platform string: "ios" | "macos"
+  string platform = 3;
+
+  // APNs environment for this token
+  PushEnvironment environment = 4;
+}
+
+message RegisterVoipTokenResponse {
+  bool success = 1;
+}
+
+message UnregisterVoipTokenRequest {
+  // Stable device ID (Keychain UUID)
+  string device_id = 1;
+}
+
+message UnregisterVoipTokenResponse {
+  bool success = 1;
+}
+
+// ============================================================================
+// VoIP Incoming Call Push (internal)
+// ============================================================================
+
+message SendVoipIncomingCallRequest {
+  // Target user (callee)
+  string user_id = 1;
+
+  // Call metadata (CallKit)
+  string call_id = 2;
+  string caller_id = 3;
+  string caller_name = 4;
+  shared.proto.signaling.v1.CallType call_type = 5;
+  // Unix ms
+  int64 offered_at = 6;
+}
+
+message SendVoipIncomingCallResponse {
+  bool success = 1;
+  int32 sent_count = 2;
+}

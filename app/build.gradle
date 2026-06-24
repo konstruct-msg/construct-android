@@ -4,7 +4,14 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.compose'
     id 'com.google.dagger.hilt.android'
     id 'com.google.devtools.ksp'
+    id 'com.google.protobuf'
 }
+
+// Pinned versions for the protobuf/gRPC codegen toolchain. Keep protoc and the
+// grpc-* runtime aligned (grpc-java 1.65.x is built against protobuf 3.25.x).
+ext.protobufVersion = '3.25.5'
+ext.grpcVersion = '1.65.1'
+ext.grpcKotlinVersion = '1.4.1'
 
 android {
     namespace 'com.construct.messenger'
@@ -63,6 +70,15 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0'
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0'
+
+    // gRPC + protobuf (lite runtime — generated from src/main/proto, see protobuf {} block).
+    implementation "io.grpc:grpc-okhttp:${grpcVersion}"
+    implementation "io.grpc:grpc-protobuf-lite:${grpcVersion}"
+    implementation "io.grpc:grpc-stub:${grpcVersion}"
+    implementation "io.grpc:grpc-kotlin-stub:${grpcKotlinVersion}"
+    implementation "com.google.protobuf:protobuf-kotlin-lite:${protobufVersion}"
+    // javax.annotation.Generated, referenced by grpc-java generated stubs.
+    compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
     implementation 'io.coil-kt:coil-compose:2.6.0'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
@@ -74,3 +90,33 @@ dependencies {
 }
 // Native libs configuration
 android.sourceSets.main.jniLibs.srcDirs = ['src/main/jniLibs']
+
+// ── Protobuf / gRPC codegen ───────────────────────────────────────────────
+// Sources live in src/main/proto (vendored from ~/Code/construct-protos).
+// Generates Java-lite messages, Kotlin DSL, grpc-java stubs and grpc-kotlin
+// coroutine stubs into build/generated/source/proto (not checked in).
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${protobufVersion}"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+        }
+        grpckt {
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:${grpcKotlinVersion}:jdk8@jar"
+        }
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java { option 'lite' }
+                kotlin { option 'lite' }
+            }
+            task.plugins {
+                grpc { option 'lite' }
+                grpckt { option 'lite' }
+            }
+        }
+    }
+}
