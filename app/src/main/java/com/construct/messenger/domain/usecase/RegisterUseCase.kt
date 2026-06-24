@@ -2,6 +2,7 @@ package com.construct.messenger.domain.usecase
 
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
+import com.construct.messenger.data.local.KeystoreManager
 import com.google.protobuf.ByteString
 import shared.proto.services.v1.AuthServiceOuterClass.AuthTokensResponse
 import shared.proto.services.v1.AuthServiceOuterClass.DevicePublicKeys
@@ -25,6 +26,7 @@ import javax.inject.Inject
 class RegisterUseCase @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val grpcClient: GrpcClient,
+    private val keystoreManager: KeystoreManager,
 ) {
     suspend operator fun invoke(username: String?, deviceId: String): AuthTokensResponse {
         val bundle = cryptoManager.loadOrCreate()
@@ -56,6 +58,7 @@ class RegisterUseCase @Inject constructor(
 
         val response = grpcClient.auth.registerDevice(requestBuilder.build())
         cryptoManager.setLocalUserId(response.tokens.userId)
+        keystoreManager.saveTokens(response.tokens, deviceId)
         return response.tokens
     }
 

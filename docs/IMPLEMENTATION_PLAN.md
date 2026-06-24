@@ -1,6 +1,6 @@
 # Konstrukt Messenger Android — Implementation Plan
 
-> **Last actualized:** 2026-06-02. Brought into sync with current iOS
+> **Last actualized:** 2026-06-24. Brought into sync with current iOS
 > architecture (`construct-veil` happy-eyeballs, VEIL rename, CFE binary
 > session persistence, OTPK threshold = 20). The `veil-front` obfuscation
 > protocol (see `construct-docs/raw/02_Core_Crypto/protocols/OBFUSCATION_IMPLEMENTATION_PLAN_veil-front.md`)
@@ -9,14 +9,15 @@
 > of that plan.
 
 > ## ⚠️ Current reality vs this plan
-> This document describes the **target** architecture. As of now only a UI
-> skeleton exists: Compose theme/tokens, navigation (Splash → Onboarding →
-> Main), and placeholder screens. Phases 1–7 (crypto wrapper, gRPC, sessions,
-> recovery, VEIL, calls, push) are **not started**. Skeleton packages
-> (`crypto/`, `data/`, `domain/`, `di/`, `viewmodel/`, `service/`) exist with
-> `README` stubs marking where code goes. App package is
-> **`com.construct.messenger`** (namespace + applicationId), matching the
-> paths in `construct-docs/raw/ANDROID_ONBOARDING.md`.
+> This document describes the **target** architecture. Phases 1.1–3.2 and
+> 2.2/2.3 now have a working skeleton (native libs, UniFFI bindings, gRPC
+> stubs generated at build time, `CryptoManager`, `GrpcClient`,
+> `SessionManager`, `KeystoreManager`, `RegisterUseCase`/`LoginUseCase`) —
+> see the per-phase status below. Session healing (3.3), recovery (4), VEIL
+> transport (5.1), message stream (5.2), calls (6), push (7), and most UI
+> screens (8) are **not started**. App package is **`com.construct.messenger`**
+> (namespace + applicationId), matching the paths in
+> `construct-docs/raw/ANDROID_ONBOARDING.md`.
 > New devs: start from `GOOD_FIRST_ISSUES.md`.
 
 ## Phase 0: Project Setup (DONE)
@@ -30,188 +31,182 @@
 ## Phase 1: Crypto Core Integration
 
 ### 1.1 Rust Core Build & Integration
-**Status:** Pending
+**Status:** ✅ Done
 **Priority:** HIGH
 **Depends on:** construct-core repo
 
-```
-Steps:
-1. Build Rust library for Android targets
-   cargo build --release --target aarch64-linux-android
-   cargo build --release --target armv7-linux-androideabi
-   cargo build --release --target x86_64-linux-android
+Built via `build_crypto_lib.sh --all` (cargo + NDK cross-compile for
+`aarch64-linux-android`, `armv7-linux-androideabi`, `x86_64-linux-android`,
+`--features android,post-quantum`), then `uniffi-bindgen generate --language
+kotlin`. Re-run the script and regenerate bindings whenever `construct-core`
+changes (e.g. the ML-KEM/ML-DSA-65 switch picked up 2026-06-24).
 
-2. Generate UniFFI bindings
-   uniffi-bindgen generate \
-     --library target/aarch64-linux-android/release/libconstruct_core.so \
-     --language kotlin \
-     --out-dir bindings/kotlin
-
-3. Copy .so files to app/src/main/jniLibs/
-   arm64-v8a/, armeabi-v7a/, x86_64/
-
-4. Add to build.gradle:
-   sourceSets {
-       main { jniLibs.srcDirs = ['src/main/jniLibs'] }
-   }
-```
-
-**Files to create:**
-- `app/src/main/jniLibs/` (native libs)
-- `app/src/main/java/.../crypto/ClassicCryptoCore.kt` (UniFFI bindings)
+**Files:**
+- `app/src/main/jniLibs/{arm64-v8a,armeabi-v7a,x86_64}/libconstruct_core.so`
+- `app/src/main/java/.../crypto/uniffi/construct_core/construct_core.kt`
+  (UniFFI bindings, package `uniffi.construct_core` — DO NOT EDIT, regenerate)
 
 ### 1.2 Crypto API Wrapper
-**Status:** Pending
+**Status:** ✅ Done (core wiring; PQ contribution mixing not yet exposed)
 **Priority:** HIGH
 **Depends on:** 1.1
 
-```kotlin
-// CryptoManager.kt - singleton wrapper
-class CryptoManager(private val core: ClassicCryptoCore) {
-    // generateKeyBundle() -> PublicKeyBundle
-    // initSession(contactBundle)
-    // encryptMessage(contactId, plaintext)
-    // decryptMessage(contactId, ciphertext)
-    // exportSessionBytes(contactId): ByteArray   // CFE binary — never JSON
-    // importSessionBytes(contactId, bytes)       // CFE binary — never JSON
-    // generateMnemonic(wordCount)
-    // deriveRecoveryKeypair(mnemonic)
-    // solvePoW(challenge, difficulty)
-}
-```
+`CryptoManager.kt` wraps `uniffi.construct_core.ClassicCryptoCore`:
+`loadOrCreate()`, `setLocalUserId`, `exportPrivateKeys`, `generateOneTimePrekeys`,
+`initSession`/`initReceivingSession`, `encryptMessage`/`decryptMessage`,
+`exportSessionBytes`/`importSessionBytes` (CFE binary), `removeSession`,
+`getAllSessionContactIds`, `generateMnemonic`, `deriveRecoveryKeypair`,
+`computePow`, `signWithDeviceKey` (Ed25519 sign, repurposes the
+`signRecoveryChallenge` FFI export — there is no dedicated bare-sign function
+yet; swap this if/when `construct-core` adds one).
 
 > **Binary pipeline (mandatory):** session persistence uses **CFE** (16-byte
 > header + MessagePack payload via `rmp_serde`), not JSON. The Rust FFI is
-> `export_session_bytes_for` / `import_session_bytes_for`. No
+> `export_session` / `import_session` (`ClassicCryptoCoreInterface`). No
 > `base64EncodedString`-style stringification in application code; bytes cross
-> the UniFFI boundary as `ByteArray`. Same rule iOS follows — see
-> `construct-messenger/AGENTS.md` §"Binary Data Pipeline".
+> the UniFFI boundary as `ByteArray`/`List<UByte>`. Same rule iOS follows —
+> see `construct-messenger/AGENTS.md` §"Binary Data Pipeline". `SessionManager`
+> follows this too: `exportSessions()`/`importSessions()` are
+> `Map<String, ByteArray>`, not `Map<String, String>` as an earlier draft of
+> this doc showed.
 
 ---
 
 ## Phase 2: Core Infrastructure
 
 ### 2.1 Hilt App Module
-**Status:** Pending
+**Status:** Not needed as drafted — superseded
 **Priority:** HIGH
 
-```kotlin
-@Module
-@InstallIn(SingletonComponent::class)
-object AppModule {
-    @Provides
-    @Singleton
-    fun provideCryptoManager(...): CryptoManager
-
-    @Provides
-    @Singleton
-    fun provideGrpcClient(...): GrpcClient
-
-    @Provides
-    @Singleton
-    fun provideSessionManager(...): SessionManager
-
-    @Provides
-    @Singleton
-    fun provideKeystoreManager(...): KeystoreManager
-}
-```
+No `AppModule.kt` with `@Provides` factories was needed: `CryptoManager`,
+`GrpcClient`, `SessionManager`, and `KeystoreManager` all use
+`@Singleton @Inject constructor()` directly, which Hilt resolves into
+`SingletonComponent` without an explicit module. An `AppModule` would only
+become necessary for binding an interface to an implementation (`@Binds`) or
+providing a type Hilt can't construct itself (e.g. a `KeyStore` instance) —
+revisit if that need shows up.
 
 ### 2.2 Android Keystore
-**Status:** Pending
+**Status:** ✅ Done (tokens only — see deviations)
 **Priority:** HIGH
 
-| Key | Storage | Accessibility |
-|-----|---------|---------------|
-| Auth token | EncryptedSharedPrefs | AFTER_FIRST_UNLOCK |
-| Device identity key | Android Keystore | USER_AUTHENTICATED |
-| Session JSON (per contact) | EncryptedSharedPrefs | AFTER_FIRST_UNLOCK |
-| Recovery public key | EncryptedSharedPrefs | AFTER_FIRST_UNLOCK |
+`KeystoreManager.kt` persists auth tokens in Android Keystore-backed
+`EncryptedSharedPreferences` (`androidx.security:security-crypto`,
+`AES256_SIV` key / `AES256_GCM` value scheme):
+`saveTokens(AuthTokensResponse, deviceId)`, `getAccessToken()`,
+`getRefreshToken()`, `getUserId()`, `getDeviceId()`, `clearTokens()`. Wired
+into `RegisterUseCase`/`LoginUseCase`, which call `saveTokens()` right after
+a successful gRPC response.
 
-```kotlin
-// KeystoreManager.kt
-class KeystoreManager(
-    private val keyStore: KeyStore,
-    private val encryptedPrefs: DataStore<Preferences>
-) {
-    // saveAuthToken(token)
-    // getAuthToken(): String?
-    // saveSessionJson(contactId, json)
-    // getSessionJson(contactId): String?
-    // generateIdentityKey(): KeyPair  // hardware-backed
-    // hasIdentityKey(): Boolean
-}
-```
+**Deviations from the original table below** (kept for history):
+
+| Key | Original plan | Actual |
+|-----|---------|---------------|
+| Auth token | EncryptedSharedPrefs | ✅ as planned |
+| Device identity key | Android Keystore-generated | ❌ not applicable — identity/signing keys live inside `construct-core` (Rust), persisted via `CryptoManager.exportPrivateKeys()`/CFE bytes, not Android-Keystore-generated keypairs |
+| Session JSON (per contact) | EncryptedSharedPrefs | ❌ not here — session bytes are CFE binary via `CryptoManager`/`SessionManager`, never JSON, and not yet wired to persistent storage (in-memory only today) |
+| Recovery public key | EncryptedSharedPrefs | ❌ not implemented yet (Phase 4) |
+
+`expiresAt` is intentionally not persisted, matching iOS `KeychainManager` —
+token expiry is runtime session state, not Keystore data.
 
 ### 2.3 gRPC Client
-**Status:** Pending
+**Status:** ✅ Done (codegen + client; not every RPC has a Kotlin caller yet)
 **Priority:** HIGH
 **Depends on:** protobuf definitions
 
-```
-Services to implement:
-- AuthService: RegisterDevice, Login, RefreshToken, Logout
-- DeviceService: GetDevices, RevokeDevice
-- KeyService: UploadKeyBundle, FetchKeyBundle, UploadOneTimePrekeys
-- MessagingService: SendMessage, MessageStream, GetPendingMessages
-- UserService: GetProfile, UpdateProfile, SearchUsers
-- NotificationService: RegisterPushToken, UnregisterPushToken
-- SentinelService: GetCallCredentials
-```
+Stubs are generated at **build time** by the `com.google.protobuf` Gradle
+plugin (not a checked-in `data/api/proto/` dir, and not the
+`generate_grpc_kotlin.sh` script from an earlier draft — that script was
+deleted, it never actually worked end-to-end). See
+`data/api/README.md` for the full pipeline and a documented gotcha
+(grpc-kotlin nests `XxxCoroutineStub` inside `object XxxGrpcKt`, not
+top-level — easy to get an "Unresolved reference").
 
-**Files to create:**
-- `data/api/proto/` (generated protobuf)
+`GrpcClient.kt` owns one `ManagedChannel` (OkHttp, direct TLS to
+`ams.konstruct.cc:443` — the production gRPC backend, see §5.1; hardcoded
+constant for now, not build-config/DataStore-driven, and there is no
+VEIL-routed fallback for censored networks yet) and exposes lazy coroutine
+stubs: `auth`, `key`, `messaging`, `user`, `notification`, `sentinel`.
+`DeviceService`, `ChannelService`, `MLSService`, `VeilService`,
+`SignalingService`, etc. are generated too but have no `GrpcClient` accessor
+yet — add one when a use case needs it.
+
+Calls actually wired up so far: `AuthService.GetPowChallenge`,
+`AuthService.RegisterDevice`, `AuthService.AuthenticateDevice` (3.1),
+`KeyService.GetPreKeyBundle` (3.2, via `SessionManager`).
+
+**Files:**
+- `app/src/main/proto/` (vendored `.proto` sources from `construct-protos`)
 - `data/api/GrpcClient.kt`
-- `data/api/AuthService.kt`
-- `data/api/KeyService.kt`
-- `data/api/MessagingService.kt`
+- ~~`data/api/AuthService.kt`, `KeyService.kt`, `MessagingService.kt`~~ — not
+  created as separate files; callers use `grpcClient.auth`/`.key`/etc.
+  directly today. Revisit if a service grows enough RPCs to warrant its own
+  wrapper.
 
 ---
 
 ## Phase 3: Authentication & Session
 
 ### 3.1 Registration Flow
-**Status:** Pending
+**Status:** ✅ Done (steps 1–3; OTPK upload and recovery setup are separate, still pending)
 **Priority:** HIGH
 **Depends on:** 1.2, 2.3
 
-```
-1. core.generateKeyBundle() -> PublicKeyBundle
-2. Solve PoW challenge -> RPC: GetPoWChallenge -> solve -> RegisterDevice
-3. RegisterDevice(bundle, pow_solution) -> device_id, auth_token
-4. Upload initial OTPK batch -> RPC: UploadOneTimePrekeys (min 20, matches iOS)
-5. Store auth_token in Keystore
-6. Optionally: setup recovery phrase -> SetRecoveryKey
-```
+`RegisterUseCase`:
+1. `CryptoManager.loadOrCreate()` -> fresh identity/SPK bundle
+   (`RegistrationBundleFields`).
+2. `grpcClient.auth.getPowChallenge` -> `CryptoManager.computePow`.
+3. Build `DevicePublicKeys` + `PowSolution` from the bundle, call
+   `registerDevice`, then `setLocalUserId` + `KeystoreManager.saveTokens`.
 
-> OTPK threshold was bumped from 10 → 20 to match iOS production setting.
-> Below 20 the server flags the device for replenishment.
+`LoginUseCase` (device re-auth, no registration): signs
+`"{deviceId}{timestamp}"` with `CryptoManager.signWithDeviceKey`, calls
+`authenticateDevice`, persists tokens the same way.
 
-**Files to create:**
+`DevicePublicKeys.crypto_suite` is the literal string `"Curve25519+Ed25519"`
+— a free-form display string independent of the `CryptoSuite` proto enum
+used elsewhere, matching iOS `AuthServiceClient.registerDevice` exactly.
+
+**Not yet done:**
+- Step 4, upload initial OTPK batch (`KeyService.UploadPreKeys`, min 20 to
+  match iOS) — needs `CryptoManager.generateOneTimePrekeys()` wired to a new
+  use case.
+- Step 6, recovery phrase setup (`SetRecoveryKey`) — Phase 4.
+
+**Files:**
 - `domain/usecase/RegisterUseCase.kt`
 - `domain/usecase/LoginUseCase.kt`
 
 ### 3.2 Session Lifecycle
-**Status:** Pending
+**Status:** ✅ Done (INITIATOR path + crypto delegation; RESPONDER path is a thin pass-through, not exercised by a real inbound-message flow yet since 5.2 isn't built)
 **Priority:** HIGH
 
 **States:** NONE -> INITIALIZING -> ACTIVE -> HEALING -> NONE
 
+`SessionManager.kt`:
 ```kotlin
-// SessionManager.kt
-class SessionManager(
+class SessionManager @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val grpcClient: GrpcClient,
-    private val keystoreManager: KeystoreManager
 ) {
-    // initSession(contactId) - INITIATOR path
-    // initReceivingSession(senderBundle, firstMessage) - RESPONDER
-    // encryptMessage(contactId, plaintext)
-    // decryptMessage(contactId, ciphertext)
-    // exportSessions(): Map<String, String>
-    // importSessions(sessions)
+    suspend fun initSession(contactId: String): String          // INITIATOR — fetches PreKeyBundle via KeyService, maps to BinaryKeyBundle
+    fun initReceivingSession(contactId, senderBundle, firstMessage)  // RESPONDER
+    fun encryptMessage(contactId, plaintext)
+    fun decryptMessage(sessionId, ephemeralPublicKey, messageNumber, content)
+    fun exportSessions(): Map<String, ByteArray>                 // CFE binary, not String/JSON
+    fun importSessions(sessions: Map<String, ByteArray>)
 }
 ```
+
+Deviates from the original sketch in two ways: no `KeystoreManager`
+dependency (session bytes aren't persisted yet — `exportSessions()` exists
+but nothing calls it on a lifecycle event), and `exportSessions()`/
+`importSessions()` use `ByteArray`, not `String`, per the CFE-binary rule
+(§1.2).
+
+**Files:**
+- `service/SessionManager.kt`
 
 ### 3.3 Session Healing
 **Status:** Pending
@@ -232,6 +227,73 @@ class SessionManager(
 
 **Files to create:**
 - `domain/usecase/HealSessionUseCase.kt`
+
+### 3.4 Session-Control Message Format
+**Status:** Pending
+**Priority:** HIGH
+**Depends on:** 3.2, 3.3, 5.2 (message stream)
+
+> Full spec: `ANDROID_ONBOARDING.md` §"Session-Control Message Format (typed
+> binary — DO THIS, not magic strings)". Summarized here because every
+> handler that touches incoming/outgoing messages (3.3 healing, 5.2 stream,
+> chat UI) must dispatch on this **before** the chunk reassembler / text
+> pipeline — getting it wrong means handshake noise renders as chat bubbles.
+
+The session handshake signals (`PING`, `READY`, `RESET_INIT`) are protocol
+control, not chat content. iOS historically encoded them as plaintext magic
+strings (`"__session_ready_<UUID>__"`) baked into the message body, which
+leaked into the transcript and broke on format skew (see
+`decisions/binary-control-message-format.md`). The fix moves the
+discriminator into the Envelope **`content_type`** field — outside the
+renderable text pipeline, so it can never become a chat bubble — and is not
+part of the Double-Ratchet AEAD associated data, so setting it never affects
+decryption.
+
+| Signal | `content_type` | Direction | Payload |
+|--------|---------------:|-----------|---------|
+| Session ping | `25` `CONTENT_TYPE_SESSION_PING` | INITIATOR → peer (tie-break nudge) | `SessionControl{op=PING}` |
+| Session ready | `26` `CONTENT_TYPE_SESSION_READY` | RESPONDER → INITIATOR (phase 2) | `SessionControl{op=READY}` |
+| Session reset-init | `24` `CONTENT_TYPE_SESSION_RESET_INIT` | tie-break winner (atomic re-init) | real X3DH first-ratchet carrier (msgNum=0) — **not** a pure signal |
+| End session | `21` `CONTENT_TYPE_SESSION_RESET` | either | 16-byte sentinel (unencrypted) |
+
+`SessionControl` (already vendored in `app/src/main/proto/messaging/e2ee.proto`,
+`ContentType` enum in `app/src/main/proto/core/envelope.proto` — proto plumbing
+for this is done, the Kotlin consumer/producer side is not):
+
+```protobuf
+message SessionControl {
+  uint32 version = 1;   // unknown versions are ignored (forward-compat)
+  SessionOp op = 2;     // PING / READY / RESET_INIT / END — mirrors content_type
+  bytes nonce = 3;       // random per-signal; dedup + tie-break watchdog correlation
+}
+enum SessionOp { SESSION_OP_UNSPECIFIED=0; PING=1; READY=2; RESET_INIT=3; END=4; }
+```
+
+No checksum needed — integrity is already guaranteed by the Double Ratchet
+AEAD tag.
+
+**Consumer rule (byte-sniff, accept both):** dispatch on `content_type`
+first; fall back to the legacy plaintext prefix only to interop with old iOS
+peers still in the field. A non-null result means "handle as control, return
+before persisting — never create a `Message` row." `RESET_INIT` (24) is
+special: the X3DH init already consumed the payload, so the inner content is
+just a sentinel.
+
+**Producer rule (dual-send during transition):** set the typed
+`content_type` **and** keep the legacy magic-string payload so old iOS peers
+that only understand the string still interop. Once the legacy fallback is
+retired fleet-wide on both platforms, switch the payload to a serialized
+`SessionControl` (carrying `nonce`) and stop sending the string.
+
+> **Server dependency:** the server must recognize `content_type` 25/26 or it
+> re-emits them as `E2EE_SIGNAL` (1) and the typed path goes inert — fail-open,
+> not a dropped message, so dual-send still works via the string either way.
+> Server proto landed 2026-06-23 (`construct-server/shared/proto/core/envelope.proto`).
+
+**Files to create:**
+- Dispatch logic in whatever owns the decrypt → render pipeline once 5.2
+  (Message Stream) exists — there is no message-receive path on Android yet
+  to attach this to.
 
 ---
 
@@ -499,44 +561,38 @@ res/values-ru/strings.xml (Russian)
 
 ## File Structure Summary
 
+Legend: ✅ exists today · ⬜ planned, not created yet
+
 ```
 app/src/main/java/com/construct/messenger/
-├── MainActivity.kt
-├── KonstructApp.kt (Application class)
+├── MainActivity.kt                                     ✅
+├── KonstructApp.kt (Application class)                 ✅
 ├── crypto/
-│   ├── CryptoManager.kt
-│   └── ClassicCryptoCore.kt (UniFFI, DO NOT EDIT)
+│   ├── CryptoManager.kt                                ✅
+│   └── uniffi/construct_core/construct_core.kt          ✅ (UniFFI, DO NOT EDIT)
 ├── data/
 │   ├── api/
-│   │   ├── GrpcClient.kt
-│   │   ├── AuthService.kt
-│   │   ├── KeyService.kt
-│   │   ├── MessagingService.kt
-│   │   ├── MessageStreamService.kt
-│   │   ├── VeilProxy.kt          (thin wrapper over Rust VEIL coordinator; see §5.1)
-│   │   └── proto/ (generated)
+│   │   ├── GrpcClient.kt                               ✅
+│   │   ├── README.md                                   ✅ (codegen pipeline + grpc-kotlin gotcha)
+│   │   ├── AuthService.kt / KeyService.kt / ...         ⬜ not created — see §2.3
+│   │   ├── MessageStreamService.kt                     ⬜
+│   │   └── VeilProxy.kt   (thin wrapper over Rust VEIL coordinator; see §5.1) ⬜
 │   ├── local/
-│   │   ├── KeystoreManager.kt
-│   │   └── FcmService.kt
-│   └── repository/
-│       ├── AuthRepository.kt
-│       ├── SessionRepository.kt
-│       └── UserRepository.kt
-├── di/
-│   └── AppModule.kt
+│   │   ├── KeystoreManager.kt                          ✅ (tokens only — see §2.2)
+│   │   └── FcmService.kt                               ⬜
+│   └── repository/                                     ⬜ (no repository layer yet; use cases call CryptoManager/GrpcClient/SessionManager directly)
+├── di/                                                  ⬜ (no AppModule needed so far — see §2.1)
 ├── domain/
-│   ├── model/
-│   │   ├── User.kt
-│   │   ├── Conversation.kt
-│   │   ├── Message.kt
-│   │   └── Keys.kt
+│   ├── model/                                           ⬜
 │   └── usecase/
-│       ├── RegisterUseCase.kt
-│       ├── LoginUseCase.kt
-│       ├── SendMessageUseCase.kt
-│       ├── HealSessionUseCase.kt
-│       ├── SetupRecoveryUseCase.kt
-│       └── CallUseCase.kt
+│       ├── RegisterUseCase.kt                          ✅
+│       ├── LoginUseCase.kt                             ✅
+│       ├── SendMessageUseCase.kt                       ⬜
+│       ├── HealSessionUseCase.kt                       ⬜
+│       ├── SetupRecoveryUseCase.kt                     ⬜
+│       └── CallUseCase.kt                              ⬜
+├── service/
+│   └── SessionManager.kt                               ✅
 ├── ui/
 │   ├── navigation/
 │   │   ├── Screen.kt
@@ -552,6 +608,7 @@ app/src/main/java/com/construct/messenger/
 │   │   ├── CTTextField.kt
 │   │   ├── CTButton.kt
 │   │   ├── CTListItem.kt
+│   │   ├── CTAvatar.kt    (identicon avatars, ported from iOS 2026-06)
 │   │   └── ...
 │   └── theme/
 │       ├── Color.kt
@@ -559,19 +616,19 @@ app/src/main/java/com/construct/messenger/
 │       ├── Theme.kt
 │       └── Symbol.kt
 └── workers/
-    └── MessageSyncWorker.kt
+    └── MessageSyncWorker.kt                            ⬜
 ```
 
 ---
 
 ## Implementation Order
 
-1. **Phase 1:** Crypto Core integration (UniFFI wrapper)
-2. **Phase 2:** DI, Keystore, gRPC base
-3. **Phase 3:** Registration, Login, Session management
-4. **Phase 4:** Recovery
-5. **Phase 5:** Message stream, ICE relay
-6. **Phase 6:** WebRTC calls
-7. **Phase 7:** FCM push
-8. **Phase 8:** UI screens
-9. **Phase 9:** Localization, final polish
+1. **Phase 1:** Crypto Core integration (UniFFI wrapper) — ✅ done
+2. **Phase 2:** DI, Keystore, gRPC base — ✅ done (2.1 turned out unnecessary as drafted; 2.2 scoped to tokens)
+3. **Phase 3:** Registration, Login, Session management — ✅ 3.1/3.2 done; 3.3 (healing) and 3.4 (session-control message format) pending
+4. **Phase 4:** Recovery — pending
+5. **Phase 5:** Message stream, VEIL transport — pending
+6. **Phase 6:** WebRTC calls — pending
+7. **Phase 7:** FCM push — pending
+8. **Phase 8:** UI screens — pending (8.2 components in progress, e.g. `CTAvatar` identicons)
+9. **Phase 9:** Localization, final polish — pending
