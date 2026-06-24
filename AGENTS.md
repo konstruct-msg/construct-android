@@ -65,44 +65,95 @@ Copy resulting `.so` files to `app/src/main/jniLibs/<abi>/`.
 - gRPC channel lives in a singleton service (not recreated per-screen)
 
 ---
+
+## Design System (read before touching any UI)
+
+The iOS app is the **design canon**. Android mirrors it — every CT* component carries a
+`**Canon:** iOS ConstructTheme.swift → …` reference. Full token tables, the SF Symbol →
+Material Icon map, and the `CTStatus`/`CTStatusBadge` pattern live in
+`docs/ANDROID_ONBOARDING.md` §3 (kept in sync with `~/Code/construct-docs/client/ANDROID_ONBOARDING.md`).
+Read §3 before changing any UI.
+
+### Design philosophy: CT + Material fusion
+
+Terminal/cyberpunk CT aesthetic fused with Android/Material conventions so users intuitively
+understand how to interact. **Keep**: JetBrains Mono (mono `FontFamily`), `#090909` background,
+CT palette, information density, *decorative* terminal chrome (`-`/`=` separators, `>` prefix, `✷`,
+hex avatars). **Never** sacrifice usability or clash with Material guidelines.
+
+> **Terminal glyphs are decorative-only — not functional (revised 2026-06-22).** Testers and
+> users did not embrace the `[…]` bracket pastiche on functional controls. **State and
+> affordance must read instantly**, so `[ok] [err] [on] [off] [✓] [ ] [!] [~] [?]` and similar
+> are replaced by **Material icons + semantic colour** (`CTStatus` / `CTStatusBadge`) or native
+> controls (`Switch`, selection `Icons.Default.Check`). ASCII may remain only as unobtrusive
+> *chrome* (separators, the `>` prefix on system messages / section headers, decorative `✷`).
+> This mirrors the iOS doctrine in `construct-messenger/AGENTS.md`.
+
+### Rules
+
+- **Material Icons** (`androidx.compose.material.icons`, `ImageVector`) for **all interactive
+  controls** — back/close, action buttons, tab bar, send, attach, mic, search. (Direct analogue
+  of iOS SF Symbols.)
+- **`CTSymbol.*` / ASCII** for **decorative chrome only** — `> SECTION` headers, `-`/`=`
+  separators, the `>` system-message prefix. Never ASCII for state/controls.
+- **Status**: `CTStatusBadge(status:)` with the `CTStatus` enum (`ok error warning on off busy
+  unknown`) — never a `"[ok]"` / `"[err]"` text token. (Compose impl in `ANDROID_ONBOARDING.md`
+  §3.3; not yet in code — add when the first status row appears.)
+- **Selection** → `Icons.Default.Check` in `accent`; **on/off** → Material3 `Switch`.
+- Tokens: `CTColor.*`, `ctRegular(size)` / `ctBold(size)` (JetBrains Mono), `CornerRadius.*`,
+  `Spacing.*`, `CTLayout.*`. No inline magic numbers.
+
+### Current state & migration
+
+`CTTabBar` and `CTSettingsRow` **already** use Material icons (ahead of iOS). But `CTSymbol.kt`
+still lists dead action/status glyphs — prune them to decorative-only when next touched
+(only `CTNavBar`/`CTSep`/`MainScreen`/`OnboardingScreen` consume `CTSymbol`). Bottom nav: iOS
+moved to native `TabView`; prefer Material3 `NavigationBar` (icon-only) over the hand-rolled
+`CTTabBar` when refactoring. Pending glyph phases match iOS: `[→]` → `ChevronRight`,
+`[ BUTTON ]` → `CTButton`, ASCII row icons → Material icons, contact-request action glyphs.
+
 ---
+
+## Documentation
+
+All project documentation: `~/Code/construct-docs` (Obsidian vault).
+**Authoritative map + writing rules: `~/Code/construct-docs/AGENTS.md`** — read it before
+contributing docs. The vault is a flat domain-folder structure (`architecture/`, `backend/`,
+`client/`, `cryptocore/`, `security/`, `deployment/`, `sessions/`, `decisions/`, `_archive/`, …).
+There is no `raw/` or `wiki/` anymore. The Android design doc lives at
+`~/Code/construct-docs/client/ANDROID_ONBOARDING.md` (kept in sync with this repo's
+`docs/ANDROID_ONBOARDING.md`).
 
 ## Shared Construct Docs Workflow
 
-These instructions apply to GitHub Copilot, Codex, OpenCode, and similar coding agents.
+The vault's own `~/Code/construct-docs/AGENTS.md` is **authoritative**. Summary below is the
+operational subset for coding agents.
 
-### Division of labour — read this first
+> **There is no pipeline anymore.** The old `raw/` → olw → `wiki/` synthesis workflow is gone.
+> Agents patch docs **directly** and write session/decision notes by hand. No olw, no
+> `wiki/.drafts/`. `raw/` and `wiki/` no longer exist — the corpus is the flat domain folders above.
 
-| Role | Tool | Responsibility |
-|------|------|----------------|
-| **Coding agent** (you) | Copilot / Codex | Write code + drop raw session notes into `wiki/sessions/` and `wiki/decisions/`. That is all. |
-| **Wiki pipeline** | `obsidian-llm-wiki-local` (olw) | Reads `raw/`, synthesizes concepts, creates/updates wiki articles, generates cross-links. |
-| **Developer** | Human + Obsidian | Reviews wiki draft articles, approves/rejects. Curates `raw/`. |
+### Where durable reasoning goes
 
-**Your job is code.** olw handles article synthesis. Write plain-markdown session notes; let the pipeline do the rest.
+Any reasoning that informed a code change must survive beyond the chat session. After any session
+involving architectural changes, design decisions, API/data-format changes, bug root-cause
+analysis, or non-obvious implementation choices:
 
-### Shared knowledge base
+1. **Always** write a session note at `~/Code/construct-docs/sessions/YYYY-MM-DD-<topic>.md`.
+2. **Always** fill in `## Why` — reasoning, alternatives considered, why rejected. Most important section.
+3. If the decision will constrain future work, also create/update `~/Code/construct-docs/decisions/<slug>.md`.
+4. Patch the affected spec in its domain folder in the **same** session — keep specs current.
+5. Before creating a new note, search for an existing one and extend it rather than duplicating.
 
-- Vault: `/Users/maximeliseyev/Code/construct-docs`
-- `raw/` — source corpus. Do **not** rewrite or reorganize.
-- `wiki/` — canonical curated knowledge base. **Read** from here before architectural work.
-- `wiki/.drafts/` — **reserved for olw**. Never write here manually.
-- `wiki/sessions/` — where coding agents write session notes.
-- `wiki/decisions/` — where coding agents write long-lived decision records.
+### Session note format
 
-### Where to save durable reasoning
-
-After any session involving architectural changes, design decisions, API changes, or non-obvious implementation choices:
-
-1. **Always** create or update `wiki/sessions/YYYY-MM-DD-<topic>.md`.
-2. **Always** fill in `# Why` — reasoning, alternatives considered, why rejected. Most important section.
-3. If the decision constrains future work, also create `wiki/decisions/<topic>.md`.
-4. Session notes: plain markdown, **no YAML frontmatter, no `[[wikilinks]]`** — olw adds those.
-
-Required note sections: `# Context`, `# What Changed`, `# Why`, `# Intended Outcome`, `# Decisions`, `# Open Questions`
+Plain markdown, no YAML frontmatter. `[[wikilinks]]` to other sessions/decisions/specs are welcome
+(Obsidian graph). Sections: `## Context`, `## What Changed`, `## Why`, `## Decisions`,
+`## Open Questions`. Decision records (`decisions/<slug>.md`) use `## Context`, `## Decision`,
+`## Rationale`, `## Consequences`, plus **Status** (accepted | superseded | deferred) and **Date**.
 
 ### Operational logging
 
-Append a one-line entry to `wiki/log.md` after writing a note.
+Append a one-line entry to `~/Code/construct-docs/log.md` after creating/updating a note.
 Format: `[YYYY-MM-DD HH:MM] note | <topic>`
 
