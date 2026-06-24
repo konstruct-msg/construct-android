@@ -188,18 +188,3 @@ private fun OnboardingScreenPreview() {
         )
     }
 }
-
-@Preview(backgroundColor = 0xFF090909, showBackground = true, widthDp = 390, heightDp = 844)
-@Composable
-private fun OnboardingScreenInitializingPreview() {
-    KonstructMessengerTheme(darkTheme = true) {
-        OnboardingContent(
-            uiState = OnboardingUiState(isInitializing = true),
-            publicAlias = "",
-            onPublicAliasChange = {},
-            onInitialize = {},
-            onRestore = {},
-            onLinkDevice = {},
-        )
-    }
-}
