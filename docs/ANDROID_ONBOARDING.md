@@ -71,8 +71,10 @@ Construct Messenger — privacy-first E2EE-мессенджер с термин�
 **Ключевые концепции:**
 - **Тёмная тема** как основная (`#090909` фон), светлая — как альтернатива
 - Все строки — через `NSLocalizedString` (нет хардкода)
-- **SF Symbols** для интерактивных контролов (кнопки назад, закрыть, отправить)
-- **ASCII-символы** (`[→]`, `[×]`, `>`, `✷`) для декоративных / структурных элементов
+- **Material Icons** (`ImageVector`) для интерактивных контролов (назад, закрыть, отправить,
+  таб-бар) — прямой аналог iOS SF Symbols
+- **ASCII / `CTSymbol.*`** — только декоративный хром (`>` префикс, `-`/`=` разделители, `✷`).
+  Глифы состояния `[ok] [err] [✓] …` **не используются** — см. §3.3
 - **JetBrains Mono** — моноширинный шрифт для всего интерфейса
 - **Hexagon-аватары** (круглая форма с гексагональным акцентом цвета)
 
@@ -154,43 +156,98 @@ object CTFont {
 
 ### 3.3 Символы / иконки
 
-**Правило**: SF Symbols → интерактивные контролы. ASCII-символы → декоративные элементы.
+> **Терминальные глифы — только декорация, не функциональные элементы (ревизия 2026-06-22).**
+> Тестировщики и пользователи не приняли скобочную стилистику `[…]` на функциональных
+> контролах. **Состояние и аффорданс должны читаться мгновенно**, поэтому
+> `[ok] [err] [on] [off] [✓] [ ] [!] [~] [?]` и подобные заменяются на **Material-иконку +
+> семантический цвет** (`CTStatus` / `CTStatusBadge`) либо на нативный контрол
+> (`Switch`; галочка `Icons.Default.Check` для выбора). ASCII остаётся только как
+> ненавязчивый *хром*: разделители, префикс `>` у системных сообщений и заголовков
+> секций, декоративная `✷`.
+>
+> Это зеркалит обновлённую доктрину iOS (`construct-messenger/AGENTS.md`, раздел *Design
+> System*). iOS-приложение — канон дизайна; Android повторяет за ним.
+
+**Правило**:
+- **Material Icons** (`androidx.compose.material.icons`, `ImageVector`) — для **всех
+  интерактивных контролов**: назад/закрыть, кнопки действий, таб-бар, отправка, вложение,
+  микрофон, поиск. Прямой аналог iOS SF Symbols.
+- **`CTSymbol.*` / ASCII** — только **декоративный хром**: заголовки секций (`> TITLE`),
+  разделители `-`/`=`, префикс `>` у системных сообщений.
+- **Никогда** ASCII для **состояния или контролов**: статус → `CTStatusBadge`; выбор →
+  `Icons.Default.Check`; вкл/выкл → `Switch`.
+- Граница решения: *передаёт состояние или это тап-действие?* → Material-иконка / нативный
+  контрол. *Чисто декоративный терминальный хром?* → ASCII.
 
 ```kotlin
-// CTSymbol.kt
+// CTSymbol.kt — ТОЛЬКО декоративный хром
 object CTSymbol {
-    val star8   = "✷"
-
-    // Navigation
-    val back    = "[←]"
-    val forward = "[→]"
-
-    // Actions
-    val add     = "[+]"
-    val close   = "[×]"
-    val send    = "[→]"
-    val media   = "[◎]"
-    val edit    = "[edit]"
-    val retry   = "[↺]"
-    val upload  = "[↑]"
-
-    // Status
-    val ok        = "[✓]"
-    val delivered = "[✓✓]"
-    val error     = "[!]"
-    val online    = "[[ONLINE]]"
-
-    // Tab bar
-    val tabChats    = "[msg]"
-    val tabSynaps   = "[syn]"
-    val tabCalls    = "[tel]"
-    val tabSettings = "[cfg]"
-
-    // Separators
+    const val star8 = "✷"
+    // Разделители (CTSep)
     fun thin(count: Int = 25)  = "- ".repeat(count)
     fun thick(count: Int = 25) = "= ".repeat(count)
 }
+// УДАЛЕНО из доктрины:
+//   back/forward/add/close/send/media/edit/retry/upload → Material Icons (интерактив)
+//   ok/delivered/error/online                           → CTStatus / CTStatusBadge
+//   tabChats/tabSynaps/tabCalls/tabSettings             → таб-бар рисует Material-иконки
 ```
+
+#### Статусы — `CTStatus` / `CTStatusBadge`
+
+Канон: iOS `ConstructTheme.swift` → `enum CTStatus` + `struct CTStatusBadge`. Никогда не
+рендерить статус текстовым токеном `"[ok]"` / `"[err]"`. Compose-зеркало:
+
+```kotlin
+enum class CTStatus {
+    OK, ERROR, WARNING, ON, OFF, BUSY, UNKNOWN;
+
+    val icon: ImageVector get() = when (this) {
+        OK, ON  -> Icons.Filled.CheckCircle
+        ERROR   -> Icons.Filled.Error
+        WARNING -> Icons.Filled.Warning
+        OFF     -> Icons.Outlined.Circle
+        BUSY    -> Icons.Filled.Sync
+        UNKNOWN -> Icons.AutoMirrored.Filled.HelpOutline
+    }
+    val color: Color get() = when (this) {
+        OK                 -> CTColor.accent
+        ON                 -> CTColor.accentDim
+        ERROR              -> CTColor.danger
+        WARNING            -> Color(0xFFFF9500)        // orange
+        OFF, BUSY, UNKNOWN -> CTColor.textDim
+    }
+}
+
+@Composable
+fun CTStatusBadge(status: CTStatus, size: Dp = 14.dp) {
+    Icon(
+        imageVector = status.icon,
+        contentDescription = null,
+        tint = status.color,
+        modifier = Modifier.size(size),
+    )
+}
+```
+
+`CTSettingsRow` получает опциональный слот `status: CTStatus? = null` (как iOS
+`CTSettingsRow(status:)`) и рендерит `CTStatusBadge` вместо текстового значения. Выбор в
+списках — `Icons.Default.Check` в `accent`; переключатели — Material3 `Switch`.
+
+> **Текущее состояние Android-кода**: `CTTabBar` и `CTSettingsRow` **уже** используют
+> Material-иконки (опережая iOS). Но `CTSymbol.kt` всё ещё содержит мёртвые глифы
+> действий/статуса — их следует выпилить при следующем касании файла (`CTNavBar`/`CTSep`/
+> `MainScreen`/`OnboardingScreen` — единственные потребители). `CTStatus`/`CTStatusBadge`
+> ещё не существует в коде — добавить при первой строке со статусом, не текстовый токен.
+
+#### Фазы миграции (как на iOS — не регрессировать ранние фазы)
+
+- **Фаза 1 (на iOS готово)**: статус-значения + галочки выбора → `CTStatusBadge` / `Check`.
+- **Ожидает**: `[→]` аффорданс строки → `chevron` (`Icons.Default.ChevronRight`);
+  `[ BUTTON ]` подписи → настоящие `CTButton`; ASCII row-иконки → Material Icons; глифы
+  действий в запросах контактов; позже — пересмотр `> SECTION` заголовков.
+- **Таб-бар**: iOS перешёл с кастомного бара на нативный `TabView`. Android-аналог канона —
+  Material3 `NavigationBar` (icon-only); предпочитать его кастомному `CTTabBar` при рефакторинге.
 
 **SF Symbols аналоги для Android (Material Icons / Custom):**
 
@@ -261,7 +318,7 @@ object CTLayout {
     val edgePad      = 12.dp    // горизонтальный padding
     val navVPad      = 11.dp    // вертикальный padding nav bar
     val navBarHeight = 44.dp    // фикс. высота nav bar
-    val navIconSize  = 20.dp    // SF Symbol размер для кнопок в nav bar
+    val navIconSize  = 20.dp    // размер Material-иконки для кнопок в nav bar
 }
 ```
 
