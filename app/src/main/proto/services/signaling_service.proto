@@ -1,0 +1,208 @@
+syntax = "proto3";
+
+package shared.proto.signaling.v1;
+
+import "signaling/webrtc.proto";
+
+// ─────────────────────────────────────────────────
+// SignalingService — WebRTC call signaling relay
+//
+// Architecture: server is relay-only.
+// It does NOT participate in media, only forwards
+// signals between peers and manages active call state.
+//
+// PRIVACY INVARIANT (do not violate):
+// The server MUST NOT persist (caller_id, callee_id, timestamp)
+// tuples in any durable store. Doing so creates a social graph
+// that undermines the privacy model of the entire system.
+// Active sessions live in Redis with a short TTL and are wiped
+// on call end. No DB writes, no audit logs.
+// Call history is stored encrypted on-device only and synced
+// between a user's own devices via the E2EE SenderSync channel.
+//
+// See: 07_WebRTC_Calls_Server_Spec.md §0-A
+//
+// Port: 50060
+// ─────────────────────────────────────────────────
+service SignalingService {
+  // Main bidirectional stream for signals.
+  // Client keeps it open for the duration of a call.
+  // Server forwards incoming signals from other participants.
+  rpc Signal(stream SignalRequest) returns (stream SignalResponse);
+
+  // TURN credentials for the current user.
+  // Lifetime: 86400 seconds. Client requests
+  // immediately before initiating a call.
+  rpc GetTurnCredentials(GetTurnCredentialsRequest) returns (GetTurnCredentialsResponse);
+
+  // InitiateCall — register a call attempt with the server.
+  //
+  // Called by the CALLER before sending the SDP offer via MessagingService.
+  // The server:
+  //   1. Checks mutual contacts, blocks, rate limits, and busy state.
+  //   2. Creates the call entry in Redis (TTL 90 s).
+  //   3. Delivers IncomingCallNotification via Signal stream if callee is online.
+  //   4. Sends a VoIP push (without SDP) if callee is offline.
+  //
+  // The SDP offer MUST be sent separately via MessagingService (Double Ratchet)
+  // so the server cannot read or tamper with the DTLS fingerprint.
+  rpc InitiateCall(InitiateCallRequest) returns (InitiateCallResponse);
+}
+
+// ─────────── Signal stream ───────────
+
+message SignalRequest {
+  oneof request {
+    // Send a routed WebRTC signal (explicit routing envelope).
+    //
+    // Design note:
+    // - Server derives sender (user_id/device_id) from auth metadata.
+    // - Client MUST NOT rely on server trusting any `*_user_id` fields inside WebRTC payload.
+    // - Routing lives outside the WebRTC payload so the same payload types can be reused
+    //   for 1:1, multi-device, and (future) group calls without redefining webrtc.proto.
+    RoutedWebRtcSignal routed_signal = 1;
+    // Keepalive ping (every 25 sec)
+    SignalPing ping = 2;
+  }
+}
+
+message RoutedWebRtcSignal {
+  // Raw WebRTC signaling payload (SDP/ICE/hangup/etc).
+  WebRTCSignal signal = 1;
+
+  // Where to deliver this signal.
+  //
+  // Required for initial Offer (the server otherwise cannot find the callee(s)).
+  // Optional for subsequent signals when server can route via call registry.
+  SignalRoute route = 2;
+
+  // Caller metadata for UI (optional; mainly used for Offer).
+  //
+  // Server treats this as best-effort UI data and does not validate it.
+  // The authoritative identity is always `caller_id` / `user_id`.
+  string caller_name = 3;
+
+  // Optional avatar thumbnail (≤ 4 KB JPEG recommended).
+  bytes caller_avatar = 4;
+}
+
+message SignalRoute {
+  oneof target {
+    // Send to a specific user (one or many devices).
+    UserTarget user = 1;
+
+    // Send to a specific device (multi-device precision routing).
+    DeviceTarget device = 2;
+
+    // Send to a group of users (future group call fanout).
+    GroupTarget group = 3;
+  }
+}
+
+message UserTarget {
+  string user_id = 1;
+
+  // If true: deliver to all currently connected devices for that user.
+  // If false: server may deliver to an arbitrary active device.
+  bool all_devices = 2;
+}
+
+message DeviceTarget {
+  string user_id = 1;
+  string device_id = 2;
+}
+
+message GroupTarget {
+  repeated string user_ids = 1;
+
+  // If true: deliver to all currently connected devices for each user.
+  bool all_devices = 2;
+}
+
+message SignalResponse {
+  oneof response {
+    // Incoming signal from another participant
+    WebRTCSignal signal = 1;
+    // Incoming call notification (trigger for VoIP push / CallKit)
+    IncomingCallNotification incoming_call = 2;
+    // Error (call rejected by server, rate limited, etc.)
+    SignalError error = 3;
+    // Pong response to ping
+    SignalPong pong = 4;
+  }
+}
+
+message SignalPing {
+  int64 timestamp = 1;
+}
+
+message SignalPong {
+  int64 timestamp = 1;
+  int64 server_timestamp = 2;
+}
+
+message IncomingCallNotification {
+  string call_id = 1;
+  string caller_id = 2;
+  string caller_name = 3;
+  bytes caller_avatar = 4; // optional, ≤4 KB JPEG
+  CallType call_type = 5;
+  int64 offered_at = 6; // Unix ms
+}
+
+message SignalError {
+  SignalErrorCode code = 1;
+  string message = 2;
+}
+
+enum SignalErrorCode {
+  SIGNAL_ERROR_CODE_UNSPECIFIED = 0;
+  SIGNAL_ERROR_CODE_CALLEE_OFFLINE = 1;
+  SIGNAL_ERROR_CODE_CALLEE_BUSY = 2;
+  SIGNAL_ERROR_CODE_RATE_LIMITED = 3;
+  SIGNAL_ERROR_CODE_UNAUTHORIZED = 4;
+  SIGNAL_ERROR_CODE_CALL_EXPIRED = 5;
+}
+
+// ─────────── TURN Credentials ───────────
+
+message GetTurnCredentialsRequest {
+  string call_id = 1; // optional, for logging
+}
+
+message GetTurnCredentialsResponse {
+  TurnCredentials credentials = 1;
+}
+
+// ─────────── InitiateCall ───────────
+
+// Request to initiate a call. Sent by CALLER before sending SDP via MessagingService.
+message InitiateCallRequest {
+  // UUID generated by the caller. The same call_id is embedded in the
+  // E2EE call_offer message sent via MessagingService so callee can correlate.
+  string call_id = 1;
+
+  // Target user (callee).
+  string callee_user_id = 2;
+
+  // Call type: audio or video.
+  shared.proto.signaling.v1.CallType call_type = 3;
+
+  // Caller's display name — forwarded to callee for CallKit UI.
+  // Server does NOT validate; caller identity is taken from x-user-id header.
+  string caller_name = 4;
+
+  // Optional caller avatar thumbnail (≤ 4 KB JPEG).
+  bytes caller_avatar = 5;
+}
+
+// Response from the server after registering the call attempt.
+message InitiateCallResponse {
+  // true if callee currently has an active Signal stream connection.
+  // false → SDP offer will arrive via E2EE message after VoIP push wakes the callee.
+  bool callee_online = 1;
+
+  // true if callee's client supports WebRTC calls (capability detection, best-effort).
+  // Currently always true; reserved for future capability negotiation.
+  bool callee_has_webrtc = 2;
+}

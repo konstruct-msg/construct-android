@@ -1,0 +1,326 @@
+syntax = "proto3";
+
+package shared.proto.messaging.v1;
+
+// E2EE Messages - Signal Protocol implementation
+// Based on libsignal-protocol specification
+// Supports X3DH key agreement and Double Ratchet algorithm
+
+// SignalMessage - Double Ratchet message (after session established)
+message SignalMessage {
+  // Protocol version (currently 3)
+  uint32 version = 1;
+
+  // Sender's ratchet public key (X25519, 32 bytes)
+  // Used for DH ratchet step
+  bytes ratchet_key = 2;
+
+  // Message counter (increments per message in chain)
+  uint32 counter = 3;
+
+  // Previous chain length (for out-of-order message handling)
+  uint32 previous_counter = 4;
+
+  // Encrypted message body (AEAD ciphertext)
+  // ChaCha20-Poly1305 or AES-256-GCM
+  bytes ciphertext = 5;
+
+  // MAC (message authentication code)
+  // HMAC-SHA256 of (version || ratchet_key || counter || ciphertext)
+  bytes mac = 6;
+
+  // Reserved for future Signal Protocol extensions
+  reserved 7 to 15;
+}
+
+// PreKeySignalMessage - Initial message (X3DH handshake)
+// Sent when no session exists between sender and recipient
+message PreKeySignalMessage {
+  // Protocol version (currently 3)
+  uint32 version = 1;
+
+  // Registration ID (sender's device registration)
+  uint32 registration_id = 2;
+
+  // Pre-key ID (which one-time pre-key was used)
+  // Optional: may be null if signed pre-key only
+  optional uint32 pre_key_id = 3;
+
+  // Signed pre-key ID (which signed pre-key was used)
+  uint32 signed_pre_key_id = 4;
+
+  // Base key (sender's ephemeral public key, X25519)
+  bytes base_key = 5;
+
+  // Identity key (sender's long-term public key)
+  bytes identity_key = 6;
+
+  // Embedded Signal message (first message in new session)
+  SignalMessage message = 7;
+
+  // ---- Post-Quantum (ML-KEM-1024) fields — Phase 1 ----
+  // Present only when sender used PQXDH (hybrid X25519 + ML-KEM-1024).
+  // Old clients that don't understand these fields will ignore them.
+
+  // KEM ciphertext (ML-KEM-1024 Encaps output, exactly 1568 bytes)
+  optional bytes kem_ciphertext = 8;
+
+  // Kyber signed pre-key ID used (matches PreKeyBundle.kyber_pre_key_id)
+  optional uint32 kyber_pre_key_id = 9;
+
+  // KEM ciphertext from Kyber one-time pre-key (1568 bytes, if OTPK was used)
+  optional bytes kyber_one_time_kem_ciphertext = 10;
+
+  // Kyber one-time pre-key ID used
+  optional uint32 kyber_one_time_pre_key_id = 11;
+
+  // reserved 12 to 15 for future PQ extensions
+  reserved 12 to 15;
+}
+
+// SenderKeyMessage - Group message (Sender Key protocol)
+// Used for efficient group messaging before MLS adoption
+// Note: Will be deprecated in favor of MLS
+message SenderKeyMessage {
+  // Protocol version (currently 3)
+  uint32 version = 1;
+
+  // Distribution ID (identifies sender key distribution)
+  bytes distribution_id = 2;
+
+  // Chain ID (ratchet chain identifier)
+  uint32 chain_id = 3;
+
+  // Iteration (message counter within chain)
+  uint32 iteration = 4;
+
+  // Encrypted message body
+  bytes ciphertext = 5;
+
+  // MAC (HMAC-SHA256)
+  bytes mac = 6;
+
+  // Reserved for future extensions
+  reserved 7 to 15;
+}
+
+// SenderKeyDistributionMessage - Distribute sender key to group
+// Sent when new member joins or sender key rotates
+message SenderKeyDistributionMessage {
+  // Distribution ID (unique per sender per group)
+  bytes distribution_id = 1;
+
+  // Chain ID (starts at 0, increments on rotation)
+  uint32 chain_id = 2;
+
+  // Iteration (starts at 0, increments per message)
+  uint32 iteration = 3;
+
+  // Chain key (seed for message key derivation)
+  bytes chain_key = 4;
+
+  // Signing key (Ed25519 public key for signature verification)
+  bytes signing_key = 5;
+
+  // Reserved for future extensions
+  reserved 6 to 15;
+}
+
+// SessionResetMessage - Reset E2EE session
+// Sent when session corruption detected or security incident
+message SessionResetMessage {
+  // Reason for reset
+  SessionResetReason reason = 1;
+
+  // Timestamp of reset request
+  int64 reset_timestamp = 2;
+
+  // Optional: new pre-key bundle (if initiating new session immediately)
+  optional bytes new_pre_key_bundle = 3;
+
+  // Reserved for future extensions
+  reserved 4 to 10;
+}
+
+// SessionResetReason - Why session was reset
+enum SessionResetReason {
+  // Unspecified reason (must be 0)
+  SESSION_RESET_REASON_UNSPECIFIED = 0;
+
+  // Session corruption detected (MAC verification failed)
+  SESSION_RESET_REASON_CORRUPTION = 1;
+
+  // Security incident (keys compromised)
+  SESSION_RESET_REASON_SECURITY = 2;
+
+  // User-initiated reset (manual action)
+  SESSION_RESET_REASON_USER = 3;
+
+  // Device changed (new device, old session invalid)
+  SESSION_RESET_REASON_DEVICE_CHANGED = 4;
+
+  // Reserved for future reasons
+  reserved 5 to 15;
+}
+
+// IdentityKeyChangeNotification - Alert when contact's identity key changes
+// Security feature: prevents MITM attacks
+message IdentityKeyChangeNotification {
+  // User whose identity key changed
+  string user_id = 1;
+
+  // Device whose identity key changed
+  string device_id = 2;
+
+  // Old identity key (for comparison)
+  bytes old_identity_key = 3;
+
+  // New identity key (requires user verification)
+  bytes new_identity_key = 4;
+
+  // Change timestamp
+  int64 changed_at = 5;
+
+  // Reason for change (if known)
+  optional string change_reason = 6;
+
+  // Reserved for future features
+  reserved 7 to 10;
+}
+
+// SafetyNumberChangeEvent - Safety number verification change
+// Displayed to users for manual verification
+message SafetyNumberChangeEvent {
+  // Conversation ID affected
+  string conversation_id = 1;
+
+  // User ID whose safety number changed
+  string user_id = 2;
+
+  // Old safety number (60-digit fingerprint)
+  string old_safety_number = 3;
+
+  // New safety number (60-digit fingerprint)
+  string new_safety_number = 4;
+
+  // Change timestamp
+  int64 changed_at = 5;
+
+  // Reserved for future features
+  reserved 6 to 10;
+}
+
+// DecryptionErrorMessage - Failed to decrypt message
+// Sent back to sender to request re-send or session reset
+message DecryptionErrorMessage {
+  // Failed message ID
+  string message_id = 1;
+
+  // Error type
+  DecryptionErrorType error_type = 2;
+
+  // Error description (for debugging)
+  string error_message = 3;
+
+  // Timestamp when error occurred
+  int64 error_timestamp = 4;
+
+  // Ratchet state snapshot (for debugging)
+  optional RatchetState ratchet_state = 5;
+
+  // Reserved for future features
+  reserved 6 to 10;
+}
+
+// DecryptionErrorType - Type of decryption failure
+enum DecryptionErrorType {
+  // Unspecified error (must be 0)
+  DECRYPTION_ERROR_TYPE_UNSPECIFIED = 0;
+
+  // MAC verification failed (message tampered)
+  DECRYPTION_ERROR_TYPE_MAC_FAILED = 1;
+
+  // Message too old (exceeded max skip count)
+  DECRYPTION_ERROR_TYPE_TOO_OLD = 2;
+
+  // Duplicate message (counter reused)
+  DECRYPTION_ERROR_TYPE_DUPLICATE = 3;
+
+  // No session found (need PreKeySignalMessage)
+  DECRYPTION_ERROR_TYPE_NO_SESSION = 4;
+
+  // Invalid message format
+  DECRYPTION_ERROR_TYPE_INVALID_FORMAT = 5;
+
+  // Reserved for future errors
+  reserved 6 to 15;
+}
+
+// RatchetState - Snapshot of Double Ratchet state (for debugging)
+message RatchetState {
+  // Sending chain counter
+  uint32 send_counter = 1;
+
+  // Receiving chain counter
+  uint32 recv_counter = 2;
+
+  // Previous sending chain counter
+  uint32 prev_send_counter = 3;
+
+  // Root key present? (boolean, don't expose actual key)
+  bool has_root_key = 4;
+
+  // Chain key present? (boolean, don't expose actual key)
+  bool has_chain_key = 5;
+
+  // Reserved for future state fields
+  reserved 6 to 10;
+}
+
+// SessionControl - typed payload for session-handshake control signals.
+//
+// Replaces the legacy plaintext magic strings ("__session_ping_<UUID>__",
+// "__session_ready_<UUID>__", "__session_reset_init_<UUID>__"). Carried in the
+// encrypted_payload of an Envelope whose content_type identifies the op
+// (CONTENT_TYPE_SESSION_PING/READY/RESET_INIT). Moving the discriminator into the
+// typed content_type field means a control frame can never enter the renderable
+// text pipeline and never leaks as a chat bubble. Integrity is already provided by
+// the Double Ratchet AEAD, so this carries no checksum — the byte budget is spent
+// on version + op for forward-compat ("unknown (op,version) => ignore safely").
+// See decisions/binary-control-message-format.md.
+message SessionControl {
+  // Schema version. Unknown versions are ignored by the receiver.
+  uint32 version = 1;
+
+  // Operation. Mirrors the Envelope content_type for self-description; a receiver
+  // dispatches on content_type and may cross-check op.
+  SessionOp op = 2;
+
+  // Random per-signal nonce (replaces the legacy random UUID): used for
+  // dedup and tie-break watchdog correlation. Opaque bytes.
+  bytes nonce = 3;
+
+  // Reserved for op-specific fields (added without breaking older readers).
+  reserved 4 to 15;
+}
+
+// SessionOp - which session-handshake signal this is.
+enum SessionOp {
+  // Unspecified (must be 0) — receiver ignores.
+  SESSION_OP_UNSPECIFIED = 0;
+
+  // Tie-break nudge that triggers the peer's receiving-session init.
+  SESSION_OP_PING = 1;
+
+  // Phase-2 confirmation that the RESPONDER session is established.
+  SESSION_OP_READY = 2;
+
+  // Atomic END_SESSION + new X3DH init carrier (msgNum=0 under the new session).
+  SESSION_OP_RESET_INIT = 3;
+
+  // Plain END_SESSION teardown request.
+  SESSION_OP_END = 4;
+
+  // Reserved for future ops.
+  reserved 5 to 15;
+}

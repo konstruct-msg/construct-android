@@ -1,0 +1,593 @@
+syntax = "proto3";
+
+package shared.proto.services.v1;
+
+import "core/crypto.proto";
+import "core/identity.proto";
+
+// ============================================================================
+// KeyService - E2EE Key Management
+// ============================================================================
+//
+// Manages cryptographic keys for end-to-end encryption:
+// - Pre-key bundles (X3DH key agreement)
+// - One-time pre-keys (forward secrecy)
+// - Signed pre-keys (rotation)
+//
+// Privacy: Server stores public keys only, never private keys.
+// All keys are device-specific (multi-device support).
+//
+// ============================================================================
+
+service KeyService {
+  // =========================================================================
+  // Pre-Key Bundle Operations
+  // =========================================================================
+
+  // GetPreKeyBundle - Fetch pre-key bundle to establish E2EE session
+  // Called when: Starting new conversation, recipient has no session
+  // Returns: Identity key + signed pre-key + one-time pre-key (if available)
+  rpc GetPreKeyBundle(GetPreKeyBundleRequest) returns (GetPreKeyBundleResponse);
+
+  // GetPreKeyBundles - Fetch bundles for multiple devices (batch)
+  // Called when: Multi-device recipient, need session with each device
+  rpc GetPreKeyBundles(GetPreKeyBundlesRequest) returns (GetPreKeyBundlesResponse);
+
+  // =========================================================================
+  // Pre-Key Upload Operations
+  // =========================================================================
+
+  // UploadPreKeys - Upload new one-time pre-keys
+  // Called when: Pre-key count is low, after registration, key refresh
+  // Recommended: Keep 100+ one-time pre-keys on server
+  rpc UploadPreKeys(UploadPreKeysRequest) returns (UploadPreKeysResponse);
+
+  // GetPreKeyCount - Check how many one-time pre-keys remain
+  // Called when: App startup, periodic check
+  // Client should upload more if count < 20
+  rpc GetPreKeyCount(GetPreKeyCountRequest) returns (GetPreKeyCountResponse);
+
+  // =========================================================================
+  // Signed Pre-Key Operations
+  // =========================================================================
+
+  // RotateSignedPreKey - Replace signed pre-key
+  // Called when: Monthly rotation, security incident, device compromise suspected
+  // Old signed pre-key kept for 48h to allow in-flight messages
+  rpc RotateSignedPreKey(RotateSignedPreKeyRequest) returns (RotateSignedPreKeyResponse);
+
+  // GetSignedPreKeyAge - Check when signed pre-key was last rotated
+  // Called when: App startup, decide if rotation needed
+  rpc GetSignedPreKeyAge(GetSignedPreKeyAgeRequest) returns (GetSignedPreKeyAgeResponse);
+
+  // =========================================================================
+  // Identity Key Operations
+  // =========================================================================
+
+  // GetIdentityKey - Fetch user's identity public key
+  // Called when: Verify safety number, check key change
+  rpc GetIdentityKey(GetIdentityKeyRequest) returns (GetIdentityKeyResponse);
+
+  // VerifySafetyNumber - Verify safety number matches
+  // Called when: User manually verifies contact (QR code scan)
+  rpc VerifySafetyNumber(VerifySafetyNumberRequest) returns (VerifySafetyNumberResponse);
+
+  // =========================================================================
+  // Key Transparency (Future)
+  // =========================================================================
+
+  // Reserved for key transparency / auditing features
+  // rpc GetKeyHistory - audit log of key changes
+  // rpc ReportKeyMismatch - report potential MITM
+}
+
+// ============================================================================
+// GetPreKeyBundle Messages
+// ============================================================================
+
+message GetPreKeyBundleRequest {
+  // Target user ID
+  string user_id = 1;
+
+  // Target device ID (optional - if omitted, returns for primary device)
+  optional string device_id = 2;
+
+  // Preferred crypto suite (optional)
+  optional shared.proto.core.v1.CryptoSuite preferred_suite = 3;
+
+  // Reserved for future options
+  reserved 4 to 10;
+}
+
+message GetPreKeyBundleResponse {
+  // Pre-key bundle
+  PreKeyBundle bundle = 1;
+
+  // Bundle device ID
+  string device_id = 2;
+
+  // Was one-time pre-key included?
+  // If false, only signed pre-key available (less forward secrecy)
+  bool has_one_time_key = 3;
+
+  // Ed25519 public key for verifying device signatures
+  bytes verifying_key = 11;
+
+  // Key Transparency inclusion proof for the device's identity key.
+  // Absent in dev/test environments where the KT log is not populated.
+  // Clients SHOULD verify this when non-empty (see KeyTransparencyVerifier).
+  optional KtInclusionProof kt_proof = 20;
+
+  // Key Transparency inclusion proof for the device's HYBRID identity key (leaf kind 1).
+  // Present only when the device has a hybrid key and the KT log is populated. Relative to
+  // the same Merkle tree / signed tree head as kt_proof. Leaf = SHA-256(0x02 || device_id ||
+  // hybrid_identity_key). Clients SHOULD verify this when the hybrid key is present.
+  optional KtInclusionProof hybrid_kt_proof = 21;
+
+  // Reserved for future fields
+  reserved 4 to 10;
+}
+
+// ============================================================================
+// Key Transparency (Certificate Transparency-style Merkle log)
+// ============================================================================
+
+// RFC 6962-style inclusion proof for a device's identity key in the KT log.
+// The proof allows a client to verify that the identity key it received is
+// permanently recorded in the server's append-only Merkle log.
+message KtInclusionProof {
+  // 0-based position of this device's leaf in the Merkle log
+  uint64 leaf_index = 1;
+
+  // Total number of leaves in the tree at the time of proof generation
+  uint64 tree_size = 2;
+
+  // Merkle root hash (32 bytes, SHA-256)
+  bytes root_hash = 3;
+
+  // Sibling hashes on the path from this leaf to the root (leaf-to-root order).
+  // Each element is 32 bytes (SHA-256).
+  repeated bytes proof_hashes = 4;
+
+  // Ed25519 signature over: "ConstructKT-v1" || tree_size (8 BE) || root_hash (32)
+  // Signed with the server's bundle signing key (same key as bundle_signature).
+  bytes tree_head_signature = 5;
+}
+
+// Pre-key bundle for X3DH key agreement
+message PreKeyBundle {
+  // Registration ID (for Signal protocol compatibility)
+  uint32 registration_id = 1;
+
+  // Identity key (long-term, Ed25519 -> X25519 or native X25519)
+  bytes identity_key = 2;
+
+  // Signed pre-key (rotated monthly)
+  bytes signed_pre_key = 3;
+
+  // Signed pre-key ID
+  uint32 signed_pre_key_id = 4;
+
+  // Signed pre-key signature (Ed25519 signature over signed_pre_key)
+  bytes signed_pre_key_signature = 5;
+
+  // One-time pre-key (single use, may be null if exhausted)
+  optional bytes one_time_pre_key = 6;
+
+  // One-time pre-key ID (if provided)
+  optional uint32 one_time_pre_key_id = 7;
+
+  // Crypto suite used
+  shared.proto.core.v1.CryptoSuite crypto_suite = 8;
+
+  // Key generation timestamp (for staleness detection)
+  int64 generated_at = 9;
+
+  // ---- Post-Quantum (ML-KEM-1024) fields — Phase 1 ----
+  // All optional: absent when server has no Kyber keys for this device.
+  // Client MUST NOT require these fields until Phase 2 (client PQC rollout).
+
+  // Kyber signed pre-key public key (ML-KEM-1024, exactly 1184 bytes)
+  optional bytes kyber_pre_key = 10;
+
+  // Kyber signed pre-key ID
+  optional uint32 kyber_pre_key_id = 11;
+
+  // Ed25519 signature over kyber_pre_key (64 bytes)
+  optional bytes kyber_pre_key_signature = 12;
+
+  // Kyber one-time pre-key (ML-KEM-1024, exactly 1184 bytes; single use)
+  optional bytes kyber_one_time_pre_key = 13;
+
+  // Kyber one-time pre-key ID
+  optional uint32 kyber_one_time_pre_key_id = 14;
+
+  // Unix timestamp (seconds) when the current signed_pre_key was uploaded to the server.
+  // Zero means legacy device (no server-recorded timestamp); client falls back to generated_at.
+  int64 spk_uploaded_at = 15;
+
+  // Monotonically increasing counter for classic SPK rotations on this device.
+  // Client caches this per-contact and rejects bundles where epoch has not increased (replay).
+  uint32 spk_rotation_epoch = 16;
+
+  // Unix timestamp (seconds) when the current Kyber SPK was uploaded. Absent when device
+  // has no Kyber keys.
+  optional int64 kyber_spk_uploaded_at = 17;
+
+  // Monotonically increasing counter for Kyber SPK rotations.
+  optional uint32 kyber_spk_rotation_epoch = 18;
+
+  // Ed25519 signature over the canonical bundle bytes, signed by the server's bundle signing key.
+  // Empty when bundle signing is not configured on the server (dev/test environments).
+  // Clients SHOULD verify this when non-empty using the public key from /.well-known/construct-server.
+  bytes bundle_signature = 19;
+
+  // ---- Hybrid PQ identity signatures (Ed25519 + ML-DSA-65, FIPS 204) ----
+  // All optional: absent for Ed25519-only devices and old clients. Clients MUST NOT
+  // hard-fail a peer that lacks these fields (capability-gated verify only).
+  // Migration is phased & no-flag-day; Ed25519 stays as the classical half indefinitely.
+
+  // Hybrid identity public key, 1984 bytes = [ed25519_pk(32)] [mldsa65_pk(1952)].
+  // The Ed25519 half is INDEPENDENT (a freshly generated key, NOT the device's
+  // existing Ed25519 identity). The binding to the device identity is the
+  // cross-signature in field 21 — there is no [0..32]==identity_key invariant.
+  optional bytes hybrid_identity_key = 20;
+
+  // Ed25519 cross-signature (64 bytes) over ("KonstruktHybridId-v1" || hybrid_identity_key),
+  // produced by the device's Ed25519 identity key and verifiable with verifying_key (field 11).
+  // Binds the new hybrid key to the existing Ed25519 identity (TOFU continuity).
+  optional bytes hybrid_identity_signature = 21;
+
+  // Hybrid signature (3373 bytes = [ed25519_sig(64)] [mldsa65_sig(3309)]) over the SPK
+  // sign-message: "KonstruktX3DH-v1" || [0x00, suite_id] || signed_pre_key — same bytes as
+  // signed_pre_key_signature, but signed/verified with the hybrid key. (scope B)
+  optional bytes signed_pre_key_hybrid_signature = 22;
+
+  // Hybrid signature (3373 bytes) over the Kyber-SPK sign-message
+  // "KonstruktX3DH-v1" || [0x00, suite_id] || kyber_pre_key. (scope B)
+  optional bytes kyber_pre_key_hybrid_signature = 23;
+}
+
+// ============================================================================
+// GetPreKeyBundles (Batch) Messages
+// ============================================================================
+
+message GetPreKeyBundlesRequest {
+  // Target user ID
+  string user_id = 1;
+
+  // Specific device IDs (optional - if omitted, returns for all devices)
+  repeated string device_ids = 2;
+
+  // Preferred crypto suite
+  optional shared.proto.core.v1.CryptoSuite preferred_suite = 3;
+}
+
+message GetPreKeyBundlesResponse {
+  // Bundles per device
+  repeated DevicePreKeyBundle bundles = 1;
+
+  // Devices that had no pre-keys available
+  repeated string unavailable_devices = 2;
+}
+
+message DevicePreKeyBundle {
+  // Device ID
+  string device_id = 1;
+
+  // Pre-key bundle
+  PreKeyBundle bundle = 2;
+
+  // Device platform (for UI hints)
+  shared.proto.core.v1.DevicePlatform platform = 3;
+
+  // Key Transparency inclusion proof (absent in dev/test environments).
+  optional KtInclusionProof kt_proof = 4;
+
+  // Ed25519 public key for verifying this device's signatures (same value as the
+  // single-fetch GetPreKeyBundleResponse.verifying_key). Required client-side to verify
+  // the hybrid identity cross-signature in PreKeyBundle field 21.
+  bytes verifying_key = 5;
+
+  // Key Transparency inclusion proof for this device's hybrid identity key (leaf kind 1).
+  optional KtInclusionProof hybrid_kt_proof = 6;
+}
+
+// ============================================================================
+// UploadPreKeys Messages
+// ============================================================================
+
+message UploadPreKeysRequest {
+  // Device ID uploading keys for
+  string device_id = 1;
+
+  // One-time pre-keys to upload
+  repeated OneTimePreKey pre_keys = 2;
+
+  // Optional: also update signed pre-key
+  optional SignedPreKeyUpload signed_pre_key = 3;
+
+  // If true, atomically delete all existing one-time pre-keys for this device
+  // before inserting the new batch. Use after key corruption, re-registration,
+  // or forced key refresh when the stale pool must be purged entirely.
+  // Default: false (additive upload — normal Signal replenishment behaviour).
+  // NOTE: field 4 is reserved (was used in a prior version); this field is 11.
+  bool replace_existing = 11;
+
+  // ---- Post-Quantum (ML-KEM-1024) fields — Phase 1 ----
+
+  // Kyber one-time pre-keys batch (ML-KEM-1024)
+  repeated KyberOneTimePreKey kyber_pre_keys = 12;
+
+  // Optional: also update Kyber signed pre-key
+  optional KyberSignedPreKeyUpload kyber_signed_pre_key = 13;
+
+  // ---- Hybrid PQ identity bundle (Ed25519 + ML-DSA-65) — all optional ----
+  // A self-contained bundle published in one call, decoupled from key rotation:
+  // the hybrid identity key + its Ed25519 cross-signature + hybrid signatures over the
+  // device's CURRENT signed pre-keys. The server verifies each against the currently
+  // stored prekey and never triggers a rotation. Published lazily on first launch of a
+  // hybrid-capable client and re-published after each SPK rotation.
+
+  // Hybrid identity public key, 1984 bytes. Independent Ed25519 half, bound to the
+  // device identity by the cross-signature below (no [0..32] key-reuse invariant).
+  optional bytes hybrid_identity_key = 14;
+
+  // Ed25519 cross-signature (64 bytes) over ("KonstruktHybridId-v1" || hybrid_identity_key),
+  // verifiable with the device's verifying_key.
+  optional bytes hybrid_identity_signature = 15;
+
+  // Hybrid signature (3373 bytes) over the CURRENT signed_pre_key X3DH sign-message
+  // ("KonstruktX3DH-v1" || [0x00, 0x01] || signed_pre_key_public). (scope B)
+  optional bytes signed_pre_key_hybrid_signature = 16;
+
+  // Hybrid signature (3373 bytes) over the CURRENT Kyber SPK X3DH sign-message
+  // ("KonstruktX3DH-v1" || [0x00, 0x10] || kyber_signed_pre_key_public). (scope B)
+  optional bytes kyber_signed_pre_key_hybrid_signature = 17;
+
+  // Reserved for future options
+  reserved 4 to 10;
+}
+
+message OneTimePreKey {
+  // Key ID (client-generated, unique per device)
+  uint32 key_id = 1;
+
+  // Public key (X25519, 32 bytes)
+  bytes public_key = 2;
+}
+
+message SignedPreKeyUpload {
+  // Key ID
+  uint32 key_id = 1;
+
+  // Public key (X25519, 32 bytes)
+  bytes public_key = 2;
+
+  // Signature over public_key using identity key
+  bytes signature = 3;
+
+  // NOTE: hybrid signatures over the SPK are uploaded via the top-level
+  // signed_pre_key_hybrid_signature field on UploadPreKeysRequest (decoupled from rotation).
+  reserved 4;
+}
+
+// ---- Post-Quantum (ML-KEM-1024) key upload types ----
+
+// Single Kyber one-time pre-key upload
+message KyberOneTimePreKey {
+  // Key ID (client-generated, unique per device)
+  uint32 key_id = 1;
+
+  // ML-KEM-1024 public key (exactly 1184 bytes)
+  bytes public_key = 2;
+
+  // Ed25519 signature over public_key (64 bytes)
+  bytes signature = 3;
+}
+
+// Kyber signed pre-key upload (persistent, rotated like X25519 SPK)
+message KyberSignedPreKeyUpload {
+  // Key ID
+  uint32 key_id = 1;
+
+  // ML-KEM-1024 public key (exactly 1184 bytes)
+  bytes public_key = 2;
+
+  // Ed25519 signature over public_key (64 bytes)
+  bytes signature = 3;
+
+  // NOTE: hybrid signatures over the Kyber SPK are uploaded via the top-level
+  // kyber_signed_pre_key_hybrid_signature field on UploadPreKeysRequest.
+  reserved 4;
+}
+
+message UploadPreKeysResponse {
+  // Success
+  bool success = 1;
+
+  // Number of classic (X25519) one-time pre-keys now on server
+  uint32 pre_key_count = 2;
+
+  // Server timestamp
+  int64 uploaded_at = 3;
+
+  // Number of Kyber one-time pre-keys now on server (0 if none uploaded)
+  uint32 kyber_pre_key_count = 4;
+}
+
+// ============================================================================
+// GetPreKeyCount Messages
+// ============================================================================
+
+message GetPreKeyCountRequest {
+  // Device ID to check
+  string device_id = 1;
+}
+
+message GetPreKeyCountResponse {
+  // Number of one-time pre-keys remaining
+  uint32 count = 1;
+
+  // Recommended minimum (client should upload if below)
+  uint32 recommended_minimum = 2;
+
+  // Last upload timestamp
+  int64 last_upload_at = 3;
+}
+
+// ============================================================================
+// RotateSignedPreKey Messages
+// ============================================================================
+
+message RotateSignedPreKeyRequest {
+  // Device ID
+  string device_id = 1;
+
+  // New signed pre-key
+  SignedPreKeyUpload new_signed_pre_key = 2;
+
+  // Reason for rotation (for audit log)
+  SignedPreKeyRotationReason reason = 3;
+
+  // Optional: also rotate the Kyber signed pre-key atomically.
+  // When present, the server MUST update both keys in a single transaction
+  // so they cannot desynchronize. If absent, only the classic SPK is rotated.
+  optional KyberSignedPreKeyUpload new_kyber_signed_pre_key = 4;
+
+  // Hybrid (ML-DSA) signature over new_signed_pre_key.public_key (suite 0x01). When present,
+  // the server stores it ATOMICALLY with the rotated SPK — eliminating the window where a
+  // device has a hybrid identity key but its freshly-rotated SPK has no hybrid signature
+  // (which makes initiators hard-reject the bundle until a separate publish lands). Older
+  // clients omit this and publish it separately via
+  // UploadPreKeysRequest.signed_pre_key_hybrid_signature.
+  optional bytes signed_pre_key_hybrid_signature = 5;
+
+  // Hybrid (ML-DSA) signature over new_kyber_signed_pre_key.public_key (suite 0x10). Stored
+  // atomically with the rotated Kyber SPK when both are present.
+  optional bytes kyber_signed_pre_key_hybrid_signature = 6;
+}
+
+enum SignedPreKeyRotationReason {
+  // Unspecified (must be 0)
+  SIGNED_PRE_KEY_ROTATION_REASON_UNSPECIFIED = 0;
+
+  // Scheduled rotation (monthly)
+  SIGNED_PRE_KEY_ROTATION_REASON_SCHEDULED = 1;
+
+  // Security incident suspected
+  SIGNED_PRE_KEY_ROTATION_REASON_SECURITY = 2;
+
+  // User-initiated
+  SIGNED_PRE_KEY_ROTATION_REASON_USER = 3;
+
+  // Device reinstall/restore
+  SIGNED_PRE_KEY_ROTATION_REASON_REINSTALL = 4;
+
+  // Reserved for future reasons
+  reserved 5 to 10;
+}
+
+message RotateSignedPreKeyResponse {
+  // Success
+  bool success = 1;
+
+  // New signed pre-key ID (echo back)
+  uint32 new_key_id = 2;
+
+  // Old key will be kept until (for in-flight messages)
+  int64 old_key_valid_until = 3;
+
+  // Rotation timestamp
+  int64 rotated_at = 4;
+
+  // Echo of the new Kyber signed pre-key ID (when new_kyber_signed_pre_key was provided)
+  optional uint32 new_kyber_key_id = 5;
+
+  // New SPK rotation epoch after this rotation (incremented atomically by server).
+  uint32 new_spk_rotation_epoch = 6;
+
+  // New Kyber SPK rotation epoch (when new_kyber_signed_pre_key was provided).
+  optional uint32 new_kyber_spk_rotation_epoch = 7;
+}
+
+// ============================================================================
+// GetSignedPreKeyAge Messages
+// ============================================================================
+
+message GetSignedPreKeyAgeRequest {
+  // Device ID
+  string device_id = 1;
+}
+
+message GetSignedPreKeyAgeResponse {
+  // Current signed pre-key ID
+  uint32 key_id = 1;
+
+  // When it was uploaded
+  int64 uploaded_at = 2;
+
+  // Age in seconds
+  int64 age_seconds = 3;
+
+  // Should rotate? (age > 30 days)
+  bool should_rotate = 4;
+
+  // Recommended rotation interval (seconds)
+  int64 rotation_interval = 5;
+}
+
+// ============================================================================
+// GetIdentityKey Messages
+// ============================================================================
+
+message GetIdentityKeyRequest {
+  // User ID
+  string user_id = 1;
+
+  // Device ID (optional - if omitted, returns primary device's key)
+  optional string device_id = 2;
+}
+
+message GetIdentityKeyResponse {
+  // Identity public key
+  bytes identity_key = 1;
+
+  // Key fingerprint (for display, e.g., "AB12 CD34 ...")
+  string fingerprint = 2;
+
+  // When this key was first seen
+  int64 first_seen_at = 3;
+
+  // Has this key changed since last check?
+  bool key_changed = 4;
+
+  // Previous key fingerprint (if changed)
+  optional string previous_fingerprint = 5;
+}
+
+// ============================================================================
+// VerifySafetyNumber Messages
+// ============================================================================
+
+message VerifySafetyNumberRequest {
+  // Our user ID
+  string our_user_id = 1;
+
+  // Their user ID
+  string their_user_id = 2;
+
+  // Expected safety number (60 digits)
+  string expected_safety_number = 3;
+}
+
+message VerifySafetyNumberResponse {
+  // Does it match?
+  bool matches = 1;
+
+  // Actual safety number (for display if mismatch)
+  string actual_safety_number = 2;
+
+  // Verification timestamp
+  int64 verified_at = 3;
+}

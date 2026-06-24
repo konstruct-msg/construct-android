@@ -732,9 +732,23 @@ external fun uniffi_construct_core_checksum_func_generate_mnemonic(
 ): Short
 external fun uniffi_construct_core_checksum_func_heartbeat_interval_ms(
 ): Short
+external fun uniffi_construct_core_checksum_func_hybrid_public_key_from_private(
+): Short
+external fun uniffi_construct_core_checksum_func_hybrid_sign(
+): Short
+external fun uniffi_construct_core_checksum_func_hybrid_signature_keygen(
+): Short
+external fun uniffi_construct_core_checksum_func_hybrid_verify(
+): Short
 external fun uniffi_construct_core_checksum_func_is_dummy_message(
 ): Short
 external fun uniffi_construct_core_checksum_func_jittered_interval_ms(
+): Short
+external fun uniffi_construct_core_checksum_func_mldsa65_keygen(
+): Short
+external fun uniffi_construct_core_checksum_func_mldsa65_sign(
+): Short
+external fun uniffi_construct_core_checksum_func_mldsa65_verify(
 ): Short
 external fun uniffi_construct_core_checksum_func_mlkem768_decapsulate(
 ): Short
@@ -1224,10 +1238,24 @@ external fun uniffi_construct_core_fn_func_generate_mnemonic(`wordCount`: Byte,u
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_heartbeat_interval_ms(`baseIntervalSec`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_construct_core_fn_func_hybrid_public_key_from_private(`privateKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_hybrid_sign(`privateKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_hybrid_signature_keygen(uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_hybrid_verify(`publicKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,`signature`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_func_is_dummy_message(`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_func_jittered_interval_ms(`baseMs`: Long,`jitterMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_construct_core_fn_func_mldsa65_keygen(uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_mldsa65_sign(`secretKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_mldsa65_verify(`publicKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,`signature`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_func_mlkem768_decapsulate(`secretKey`: RustBuffer.ByValue,`ciphertext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_mlkem768_encapsulate(`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1434,10 +1462,31 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_heartbeat_interval_ms() != 51594.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_hybrid_public_key_from_private() != 18985.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_hybrid_sign() != 61982.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_hybrid_signature_keygen() != 46423.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_hybrid_verify() != 56378.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_is_dummy_message() != 41979.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_jittered_interval_ms() != 6840.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_mldsa65_keygen() != 58411.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_mldsa65_sign() != 44353.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_mldsa65_verify() != 57408.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_mlkem768_decapsulate() != 25978.toShort()) {
@@ -5960,6 +6009,54 @@ public object FfiConverterTypeHealingAttemptResult: FfiConverterRustBuffer<Heali
 
 
 
+/**
+ * Hybrid signature keypair (Ed25519 + ML-DSA-65).
+ * Used for post-quantum identity key bundles.
+ */
+data class HybridSignatureKeyPair (
+    /**
+     * Hybrid private key: 2016 bytes
+     * [ed25519_seed (32)] [mldsa65_seed (32)] [mldsa65_pk (1952)]
+     */
+    var `privateKey`: List<kotlin.UByte>
+    , 
+    /**
+     * Hybrid public key: 1984 bytes
+     * [ed25519_pk (32)] [mldsa65_pk (1952)]
+     */
+    var `publicKey`: List<kotlin.UByte>
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHybridSignatureKeyPair: FfiConverterRustBuffer<HybridSignatureKeyPair> {
+    override fun read(buf: ByteBuffer): HybridSignatureKeyPair {
+        return HybridSignatureKeyPair(
+            FfiConverterSequenceUByte.read(buf),
+            FfiConverterSequenceUByte.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: HybridSignatureKeyPair) = (
+            FfiConverterSequenceUByte.allocationSize(value.`privateKey`) +
+            FfiConverterSequenceUByte.allocationSize(value.`publicKey`)
+    )
+
+    override fun write(value: HybridSignatureKeyPair, buf: ByteBuffer) {
+            FfiConverterSequenceUByte.write(value.`privateKey`, buf)
+            FfiConverterSequenceUByte.write(value.`publicKey`, buf)
+    }
+}
+
+
+
 data class InviteSignature (
     var `signature`: List<kotlin.UByte>
     
@@ -5986,6 +6083,51 @@ public object FfiConverterTypeInviteSignature: FfiConverterRustBuffer<InviteSign
 
     override fun write(value: InviteSignature, buf: ByteBuffer) {
             FfiConverterSequenceUByte.write(value.`signature`, buf)
+    }
+}
+
+
+
+/**
+ * Generated ML-DSA-65 keypair for post-quantum identity signatures.
+ */
+data class MldsaKeyPair (
+    /**
+     * Secret key: 32-byte signing seed (RustCrypto ml-dsa; expanded key re-derived on sign)
+     */
+    var `secretKey`: List<kotlin.UByte>
+    , 
+    /**
+     * Public key: 1952 bytes
+     */
+    var `publicKey`: List<kotlin.UByte>
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeMLDSAKeyPair: FfiConverterRustBuffer<MldsaKeyPair> {
+    override fun read(buf: ByteBuffer): MldsaKeyPair {
+        return MldsaKeyPair(
+            FfiConverterSequenceUByte.read(buf),
+            FfiConverterSequenceUByte.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: MldsaKeyPair) = (
+            FfiConverterSequenceUByte.allocationSize(value.`secretKey`) +
+            FfiConverterSequenceUByte.allocationSize(value.`publicKey`)
+    )
+
+    override fun write(value: MldsaKeyPair, buf: ByteBuffer) {
+            FfiConverterSequenceUByte.write(value.`secretKey`, buf)
+            FfiConverterSequenceUByte.write(value.`publicKey`, buf)
     }
 }
 
@@ -8951,6 +9093,64 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     )
     }
     
+
+        /**
+         * Derive the hybrid public key from a hybrid private key.
+         */
+    @Throws(CryptoException::class) fun `hybridPublicKeyFromPrivate`(`privateKey`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_hybrid_public_key_from_private(
+    
+        FfiConverterSequenceUByte.lower(`privateKey`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Sign a message with a hybrid private key (Ed25519 + ML-DSA-65).
+         * Returns a hybrid signature: [ed25519_sig (64)] [mldsa65_sig (3309)] = 3373 bytes.
+         */
+    @Throws(CryptoException::class) fun `hybridSign`(`privateKey`: List<kotlin.UByte>, `message`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_hybrid_sign(
+    
+        FfiConverterSequenceUByte.lower(`privateKey`),FfiConverterSequenceUByte.lower(`message`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Generate a hybrid signature keypair (Ed25519 + ML-DSA-65).
+         * Both signatures must verify for the hybrid signature to be valid.
+         */
+    @Throws(CryptoException::class) fun `hybridSignatureKeygen`(): HybridSignatureKeyPair {
+            return FfiConverterTypeHybridSignatureKeyPair.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_hybrid_signature_keygen(
+    
+        _status)
+}
+    )
+    }
+    
+
+        /**
+         * Verify a hybrid signature. Both Ed25519 and ML-DSA-65 signatures must be valid.
+         */
+    @Throws(CryptoException::class) fun `hybridVerify`(`publicKey`: List<kotlin.UByte>, `message`: List<kotlin.UByte>, `signature`: List<kotlin.UByte>): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_hybrid_verify(
+    
+        FfiConverterSequenceUByte.lower(`publicKey`),FfiConverterSequenceUByte.lower(`message`),FfiConverterSequenceUByte.lower(`signature`),_status)
+}
+    )
+    }
+    
  fun `isDummyMessage`(`data`: List<kotlin.UByte>): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     uniffiRustCall() { _status ->
@@ -8967,6 +9167,48 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     UniffiLib.uniffi_construct_core_fn_func_jittered_interval_ms(
     
         FfiConverterULong.lower(`baseMs`),FfiConverterULong.lower(`jitterMs`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Generate an ML-DSA-65 keypair (post-quantum signature scheme, NIST FIPS 204).
+         */
+    @Throws(CryptoException::class) fun `mldsa65Keygen`(): MldsaKeyPair {
+            return FfiConverterTypeMLDSAKeyPair.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_mldsa65_keygen(
+    
+        _status)
+}
+    )
+    }
+    
+
+        /**
+         * Sign a message with an ML-DSA-65 secret key. Returns a detached signature (3309 bytes).
+         */
+    @Throws(CryptoException::class) fun `mldsa65Sign`(`secretKey`: List<kotlin.UByte>, `message`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_mldsa65_sign(
+    
+        FfiConverterSequenceUByte.lower(`secretKey`),FfiConverterSequenceUByte.lower(`message`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Verify an ML-DSA-65 detached signature. Returns true if valid.
+         */
+    @Throws(CryptoException::class) fun `mldsa65Verify`(`publicKey`: List<kotlin.UByte>, `message`: List<kotlin.UByte>, `signature`: List<kotlin.UByte>): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_mldsa65_verify(
+    
+        FfiConverterSequenceUByte.lower(`publicKey`),FfiConverterSequenceUByte.lower(`message`),FfiConverterSequenceUByte.lower(`signature`),_status)
 }
     )
     }

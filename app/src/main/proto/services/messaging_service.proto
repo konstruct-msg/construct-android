@@ -1,0 +1,510 @@
+syntax = "proto3";
+
+package shared.proto.services.v1;
+
+import "core/envelope.proto";
+import "signaling/p2p.proto";
+import "signaling/presence.proto";
+
+// MessagingService - Core messaging gRPC service
+// Handles sending, receiving, and querying messages
+service MessagingService {
+  // === Bidirectional Streaming (Primary API) ===
+
+  // MessageStream - Bidirectional message stream
+  // Client sends messages, server pushes incoming messages
+  // Long-lived connection for real-time messaging
+  rpc MessageStream(stream MessageStreamRequest) returns (stream MessageStreamResponse);
+
+  // === Unary RPCs ===
+
+  // SendMessage - Send single message (alternative to stream)
+  // Use for one-off messages, prefer MessageStream for active sessions
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+
+  // EditMessage - Edit existing message (FUTURE - append-only revisions)
+  // Not implemented yet - reserved for future append-only edit chain
+  rpc EditMessage(EditMessageRequest) returns (EditMessageResponse);
+
+  // =========================================================================
+  // Reactions (Future Implementation)
+  // =========================================================================
+
+  // AddReaction - Add emoji reaction to message
+  // Encrypted: reaction is E2EE, server only sees message_id
+  rpc AddReaction(AddReactionRequest) returns (AddReactionResponse);
+
+  // RemoveReaction - Remove reaction from message
+  rpc RemoveReaction(RemoveReactionRequest) returns (RemoveReactionResponse);
+
+  // GetPendingMessages - Fetch pending messages (unary, for background fetch)
+  // Use this for iOS BackgroundFetchManager / silent push wake-up.
+  // For real-time delivery use MessageStream (bidirectional streaming).
+  rpc GetPendingMessages(GetPendingMessagesRequest) returns (GetPendingMessagesResponse);
+
+  // Trigger a KEY_SYNC to a recipient: server delivers a CONTENT_TYPE_KEY_SYNC = 22
+  // envelope so the recipient performs a full X3DH re-init with the caller.
+  // Use when a broken ratchet is detected and END_SESSION is too disruptive.
+  rpc RequestKeySync(RequestKeySyncRequest) returns (RequestKeySyncResponse);
+}
+
+// MessageStreamRequest - Client -> Server in bidirectional stream
+message MessageStreamRequest {
+  // Request type (determines which field is populated)
+  oneof request {
+    // Send message
+    shared.proto.core.v1.Envelope send = 1;
+
+    // Send receipt
+    shared.proto.signaling.v1.DeliveryReceipt receipt = 2;
+
+    // Typing indicator
+    shared.proto.signaling.v1.TypingIndicator typing = 3;
+
+    // Subscribe to conversations (request push for these)
+    SubscribeRequest subscribe = 4;
+
+    // Unsubscribe from conversations
+    UnsubscribeRequest unsubscribe = 5;
+
+    // Heartbeat/keepalive
+    Heartbeat heartbeat = 6;
+
+    // P2P handoff acknowledgment: client reports outcome of P2P establishment attempt.
+    // Sent after receiving P2PHandoffRequest from server.
+    // See: signaling/p2p.proto
+    shared.proto.signaling.v1.P2PHandoffAck p2p_handoff_ack = 7;
+
+    // P2P disconnect: client notifies server it is dropping direct P2P connection.
+    // Server resumes relaying messages for this pair after receiving this.
+    shared.proto.signaling.v1.P2PDisconnect p2p_disconnect = 8;
+  }
+
+  // Request ID (for correlation)
+  string request_id = 10;
+
+  // Client-assigned attempt ID for tracing this specific send attempt.
+  // Use a new UUID per attempt (including retries after errors).
+  // Echoed in the MessageStreamResponse for "attempt → decision" correlation.
+  optional string attempt_id = 21;
+
+  // Reserved for future request types
+  reserved 9 to 9, 11 to 20;
+}
+
+// MessageStreamResponse - Server -> Client in bidirectional stream
+message MessageStreamResponse {
+  // Response type (determines which field is populated)
+  oneof response {
+    // Incoming message
+    shared.proto.core.v1.Envelope message = 1;
+
+    // Incoming receipt
+    shared.proto.signaling.v1.DeliveryReceipt receipt = 2;
+
+    // Typing indicator from other user
+    shared.proto.signaling.v1.TypingIndicator typing = 3;
+
+    // Message sent acknowledgment
+    MessageAck ack = 4;
+
+    // Message send failed
+    MessageError error = 5;
+
+    // Presence update (user online/offline)
+    shared.proto.signaling.v1.PresenceUpdate presence = 6;
+
+    // Heartbeat response
+    HeartbeatAck heartbeat_ack = 7;
+
+    // P2P handoff: server instructs client to establish direct connection with peer.
+    // Only sent when both peers have DEVICE_CAPABILITIES_P2P_MESSAGING capability.
+    // See: signaling/p2p.proto
+    shared.proto.signaling.v1.P2PHandoffRequest p2p_handoff = 8;
+  }
+
+  // Response ID (correlates to request_id)
+  optional string response_id = 10;
+
+  // Opaque server-assigned stream position cursor.
+  // Clients SHOULD persist the latest value and pass it as SubscribeRequest.since_cursor
+  // on the next reconnect to avoid re-reading already-delivered messages.
+  optional string stream_cursor = 11;
+
+  // Rate-limit PoW challenge for the stream send path.
+  // Populated when the oneof error has error_code = RATE_LIMIT.
+  // Replaces the legacy JSON-encoded challenge in error_message.
+  optional RateLimitChallenge rate_limit_challenge = 21;
+
+  // Echoed from MessageStreamRequest.attempt_id for "attempt → decision" tracing.
+  optional string attempt_id = 22;
+
+  // Reserved for future response types
+  reserved 9 to 9, 12 to 20;
+}
+
+// SubscribeRequest - Subscribe to conversation updates
+message SubscribeRequest {
+  // Conversation IDs to subscribe to
+  repeated string conversation_ids = 1;
+
+  // Subscribe to presence updates for these users?
+  bool include_presence = 2;
+
+  // Resume cursor: last Redis stream ID received by the client on a previous
+  // connection.  When present, the server will deliver only messages AFTER this
+  // position, avoiding re-delivery of already-seen messages on reconnect.
+  // Clients should persist the last stream_cursor value from MessageStreamResponse
+  // and send it here when re-opening the stream after a disconnect.
+  optional string since_cursor = 3;
+}
+
+// UnsubscribeRequest - Unsubscribe from conversation updates
+message UnsubscribeRequest {
+  // Conversation IDs to unsubscribe from
+  repeated string conversation_ids = 1;
+}
+
+// Heartbeat - Keepalive ping
+message Heartbeat {
+  // Timestamp
+  int64 timestamp = 1;
+}
+
+// HeartbeatAck - Keepalive pong
+message HeartbeatAck {
+  // Echo timestamp
+  int64 timestamp = 1;
+
+  // Server timestamp
+  int64 server_timestamp = 2;
+}
+
+// MessageAck - Message successfully sent
+message MessageAck {
+  // Original message ID
+  string message_id = 1;
+
+  // Server-assigned message number
+  uint64 message_number = 2;
+
+  // Server timestamp
+  int64 server_timestamp = 3;
+
+  // Delivered to how many recipients/devices?
+  uint32 delivery_count = 4;
+}
+
+// MessageError - Message send failed
+message MessageError {
+  // Original message ID
+  string message_id = 1;
+
+  // Error code
+  ErrorCode error_code = 2;
+
+  // Error message (human-readable)
+  string error_message = 3;
+
+  // Retry allowed?
+  bool retryable = 4;
+
+  // How long the client should wait before retrying (milliseconds).
+  // 0 or absent = retry immediately (e.g. after solving a PoW challenge).
+  // Only meaningful when retryable = true.
+  optional int64 retry_after_ms = 5;
+}
+
+// ErrorCode - Message error codes
+enum ErrorCode {
+  // Unspecified error (must be 0)
+  ERROR_CODE_UNSPECIFIED = 0;
+
+  // Recipient not found
+  ERROR_CODE_RECIPIENT_NOT_FOUND = 1;
+
+  // Recipient blocked sender
+  ERROR_CODE_BLOCKED = 2;
+
+  // Rate limit exceeded
+  ERROR_CODE_RATE_LIMIT = 3;
+
+  // Message too large
+  ERROR_CODE_TOO_LARGE = 4;
+
+  // Invalid encryption (E2EE failed)
+  ERROR_CODE_ENCRYPTION_FAILED = 5;
+
+  // Recipient offline (no push token)
+  ERROR_CODE_OFFLINE = 6;
+
+  // Internal server error — not caused by the client, safe to retry.
+  ERROR_CODE_INTERNAL = 21;
+
+  // Reserved for future errors
+  reserved 7 to 20;
+}
+
+// SendMessageRequest - Send single message (unary RPC)
+message SendMessageRequest {
+  // Message envelope
+  shared.proto.core.v1.Envelope message = 1;
+
+  // Idempotency key (prevent duplicate sends)
+  optional string idempotency_key = 2;
+
+  // Client-assigned attempt ID echoed in the response.
+  // Use a new UUID per send attempt (including retries) to correlate
+  // "attempt → server decision → retry policy" in client and server logs.
+  optional string attempt_id = 11;
+
+  // Reserved for future features
+  reserved 3 to 10;
+}
+
+// RateLimitChallenge - Proof-of-Work challenge issued on soft rate-limit breach.
+// Client must solve this challenge before retrying the send.
+// difficulty: 4 = x1.5 limit, 6 = x3 limit, 8 = x5+ limit
+message RateLimitChallenge {
+  // Random hex string the client must hash against
+  string challenge = 1;
+
+  // Argon2 difficulty level
+  uint32 difficulty = 2;
+
+  // Unix millis — challenge expires in 60 seconds
+  int64 expires_at = 3;
+}
+
+// SendMessageResponse - Send message response
+message SendMessageResponse {
+  // Message ID (echo back)
+  string message_id = 1;
+
+  // Server-assigned message number
+  uint64 message_number = 2;
+
+  // Server timestamp
+  int64 server_timestamp = 3;
+
+  // Success
+  bool success = 4;
+
+  // Error (if failed)
+  optional MessageError error = 5;
+
+  // PoW challenge issued when rate limit is soft-exceeded.
+  // Client must solve this challenge before retrying.
+  optional RateLimitChallenge rate_limit_challenge = 6;
+
+  // Echoed from SendMessageRequest.attempt_id for client-side tracing.
+  optional string attempt_id = 7;
+}
+
+// EditMessageRequest - Edit message
+message EditMessageRequest {
+  // Message ID to edit
+  string message_id = 1;
+
+  // Conversation ID
+  string conversation_id = 2;
+
+  // New content (encrypted)
+  bytes new_encrypted_content = 3;
+
+  // Reserved for future features
+  reserved 4 to 10;
+
+  // Recipient user ID — required for server-side routing.
+  // The server cannot infer this from the original message (no message DB).
+  string recipient_user_id = 11;
+}
+
+// EditMessageResponse - Edit confirmation
+message EditMessageResponse {
+  // Success
+  bool success = 1;
+
+  // Edited timestamp
+  int64 edited_at = 2;
+
+  // Edit count
+  uint32 edit_count = 3;
+}
+
+// ============================================================================
+// Reaction Messages
+// ============================================================================
+
+// AddReactionRequest - Add reaction to message
+message AddReactionRequest {
+  // Message ID to react to
+  string message_id = 1;
+
+  // Conversation ID (for routing)
+  string conversation_id = 2;
+
+  // Encrypted reaction (E2EE blob)
+  // Contains: emoji, timestamp, sender info
+  // Encrypted with conversation key
+  bytes encrypted_reaction = 3;
+
+  // Reaction ID (client-generated UUID for deduplication)
+  string reaction_id = 4;
+
+  // Reserved for future options
+  reserved 5 to 10;
+}
+
+// AddReactionResponse - Reaction added confirmation
+message AddReactionResponse {
+  // Success
+  bool success = 1;
+
+  // Server timestamp
+  int64 reacted_at = 2;
+
+  // Reaction ID (echo back)
+  string reaction_id = 3;
+
+  // Error if failed
+  optional MessageError error = 4;
+}
+
+// RemoveReactionRequest - Remove reaction from message
+message RemoveReactionRequest {
+  // Message ID
+  string message_id = 1;
+
+  // Conversation ID
+  string conversation_id = 2;
+
+  // Reaction ID to remove
+  string reaction_id = 3;
+
+  // Reserved for future options
+  reserved 4 to 10;
+}
+
+// RemoveReactionResponse - Reaction removed confirmation
+message RemoveReactionResponse {
+  // Success
+  bool success = 1;
+
+  // Removal timestamp
+  int64 removed_at = 2;
+}
+
+// ReactionEvent - Reaction notification (via MessageStream)
+// Sent to other participants when someone reacts
+message ReactionEvent {
+  // Reaction added or removed?
+  ReactionEventType event_type = 1;
+
+  // Message ID that was reacted to
+  string message_id = 2;
+
+  // Conversation ID
+  string conversation_id = 3;
+
+  // Encrypted reaction (for ADD events)
+  optional bytes encrypted_reaction = 4;
+
+  // Reaction ID
+  string reaction_id = 5;
+
+  // Event timestamp
+  int64 timestamp = 6;
+
+  // Sender device ID (for multi-device sync)
+  string sender_device_id = 7;
+}
+
+// ReactionEventType - Type of reaction event
+enum ReactionEventType {
+  // Unspecified (must be 0)
+  REACTION_EVENT_TYPE_UNSPECIFIED = 0;
+
+  // Reaction added
+  REACTION_EVENT_TYPE_ADDED = 1;
+
+  // Reaction removed
+  REACTION_EVENT_TYPE_REMOVED = 2;
+}
+
+// ============================================================================
+// GetPendingMessages Messages (unary fetch for background/silent push)
+// ============================================================================
+
+// Request to fetch pending messages (unary)
+message GetPendingMessagesRequest {
+  // Last seen stream cursor (opaque, returned in previous response)
+  // Omit on first request to get all pending messages
+  optional string since_cursor = 1;
+
+  // Maximum number of messages to return (default: 50, max: 100)
+  optional int32 limit = 2;
+}
+
+// Pending message entry
+// PendingMessage - an undelivered message waiting for pickup by the recipient device.
+//
+// E2EE design note: encrypted_payload is opaque bytes that the server never reads.
+// All Signal Protocol parameters (ephemeral key, message number, ratchet state)
+// are encoded inside encrypted_payload by the sender and decoded only by the recipient.
+message PendingMessage {
+  // Message ID (UUID)
+  string message_id = 1;
+
+  // Sender user ID — needed for UI "who sent this" before decryption
+  string sender_id = 2;
+
+  // Opaque ciphertext. Contains inner envelope:
+  //   crypto_params_length (2 bytes BE) || crypto_params || ciphertext
+  // where crypto_params is client-defined binary encoding of ephemeral key,
+  // message_number, previous_chain_length, suite_id etc.
+  // Server never reads this field.
+  bytes encrypted_payload = 7;
+
+  // Server-assigned receive timestamp (Unix seconds). Client ignores sender's timestamp.
+  int64 timestamp = 8;
+
+  // Content type — required for control messages (SESSION_RESET = 21, KEY_SYNC = 22).
+  // Clients MUST check this before attempting to decrypt encrypted_payload.
+  // For regular E2EE messages this will be CONTENT_TYPE_E2EE_SIGNAL (= 11).
+  shared.proto.core.v1.ContentType content_type = 9;
+
+  // ConstructSEALED (sealed sender): raw SealedInner proto bytes.
+  // Populated only when the message was sent with stealth mode enabled.
+  // When non-empty, sender_id is empty and encrypted_payload is empty.
+  // The recipient must decrypt this field to recover sender identity and payload.
+  bytes sealed_inner_data = 10;
+
+  // Reserved for removed plaintext crypto fields — do not reuse
+  reserved 3, 4, 5, 6;
+}
+
+// Response with pending messages
+message GetPendingMessagesResponse {
+  // Messages sorted by message_number ascending
+  repeated PendingMessage messages = 1;
+
+  // Cursor for next request (pass as since_cursor)
+  string next_cursor = 2;
+
+  // Whether more messages are available
+  bool has_more = 3;
+}
+
+// ── KEY_SYNC ──────────────────────────────────────────────────────────────────
+
+// Request KEY_SYNC to trigger a full X3DH re-init on the recipient's side
+// without the disruptive visible END_SESSION flow.
+message RequestKeySyncRequest {
+  // User ID of the recipient who should perform the X3DH re-init
+  string recipient_user_id = 1;
+}
+
+message RequestKeySyncResponse {
+  // Always empty; delivery is fire-and-forget (offline queue if needed)
+}
