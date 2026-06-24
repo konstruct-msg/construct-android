@@ -3,6 +3,8 @@ package com.construct.messenger.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -68,8 +70,8 @@ fun CTButton(
 @Preview(backgroundColor = 0xFF090909, showBackground = true, widthDp = 320)
 @Composable
 private fun CTButtonPreview() {
-    androidx.compose.foundation.layout.Column(
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.padding(16.dp),
     ) {
         CTButton(label = "CREATE IDENTITY", onClick = {})
