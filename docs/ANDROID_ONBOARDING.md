@@ -1,6 +1,6 @@
-# Construct Messenger — Android (Kotlin) Onboarding
+# Construct Messenger — Android Implementation Guide
 
-> **Цель**: предоставить Android-разработчику полное понимание архитектуры, дизайн-системы, UI-компонентов и бизнес-логики iOS-приложения Construct Messenger для последующей реализации на Kotlin / Jetpack Compose.
+> **Цель**: предоставить Android-разработчику полное понимание архитектуры, дизайн-системы, UI-компонентов, бизнес-логики и крипто-протокола для реализации на Kotlin / Jetpack Compose.
 
 ---
 
@@ -55,6 +55,12 @@
    - 8.2 [DisplayName Resolution](#82-displayname-resolution)
    - 8.3 [Core Data — модель данных](#83-core-data--модель-данных)
 9. [Структура проекта (Android Reference)](#9-структура-проекта-android-reference)
+10. [Crypto Core — Rust FFI](#10-crypto-core--rust-ffi)
+11. [Session Lifecycle Controller](#11-session-lifecycle-controller)
+12. [Session Initialization](#12-session-initialization)
+    - 12.1 [INITIATOR Flow](#121-initiator-flow)
+    - 12.2 [RESPONDER Flow](#122-responder-flow)
+    - 12.3 [Tie-Break (Simultaneous Init)](#123-tie-break-simultaneous-init)
 
 ---
 
@@ -990,9 +996,24 @@ data class Message(
     val deliveryStatus: DeliveryStatus, // sending, sent, delivered, read, failed
     val replyToId: String? = null,
     val mediaType: MediaType? = null, // image, video, audio, file, voice
-    val mediaUrl: String? = null
+    val mediaUrl: String? = null,
+    val contentType: Int = 0          // 0 = regular; control types are never persisted as visible rows
 )
+```
 
+> **Control-message render guard (mirror of iOS Fix #3).** A session-control signal
+> (`ping`/`ready`/`reset_init`) must never appear in the transcript. Defense in depth — do
+> ALL of these, because a single missed check leaks a bubble:
+> 1. **Consumer**: dispatch on `content_type` before persisting and `return` (see
+>    [Session-Control Message Format](#session-control-message-format-typed-binary--do-this-not-magic-strings)) — control rows are never created.
+> 2. **At persist**: if a row is created anyway, stamp `contentType` from the decrypted
+>    text (`startsWith("__session_…")` / `"session_ready_"`) so the chat query can exclude
+>    it (`WHERE contentType = 0`).
+> 3. **At display**: the chat query filters `contentType = 0` **and** a Kotlin-side guard
+>    drops any row whose decrypted text matches a control prefix — iOS learned the hard way
+>    that an at-rest-encrypted row has a null plaintext column, so a SQL `text LIKE` filter
+>    silently fails; the authoritative filter runs on the decrypted display text.
+```kotlin
 // User (Contact)
 @Entity
 data class User(
@@ -1103,3 +1124,739 @@ app/src/main/java/com/construct/messenger/
 > **Примечание**: iOS использует `@Observable` для ViewModels, Core Data для персистентности, gRPC-Swift для сети. На Android аналогами будут: Jetpack Compose State/ViewModel, Room, gRPC-Kotlin/OkHttp.
 
 > **Все решения, дизайн-токены и архитектурные паттерны следует согласовывать с iOS-версией** — приложение должно выглядеть и работать одинаково на обеих платформах (за исключением platform-specific элементов управления).
+
+---
+
+# 10. Crypto Core — Rust FFI
+
+**Источник**: `CryptoManager.swift`, `CryptoSessionInitializationService.swift`, `MessageCryptoService.swift`
+**Rust FFI**: `construct_core.swift` (UniFFI) → `construct_core.kt` (same UniFFI bindings)
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              CryptoManager (Kotlin)                      │
+│  ┌──────────────┐  ┌─────────────────────────────────┐  │
+│  │ coreLock     │  │ OrchestratorCore (Rust via FFI) │  │
+│  │ (Mutex)      │  │ ┌─────────────────────────────┐ │  │
+│  └──────┬───────┘  │ │ X3DH · Double Ratchet       │ │  │
+│         │          │ │ Kyber-768 · PQXDH            │ │  │
+│  ┌──────▼───────┐  │ │ Session heal · Archive       │ │  │
+│  │ KeyManager   │  │ │ Orchestrator state           │ │  │
+│  │ (Encrypted   │  │ └─────────────────────────────┘ │  │
+│  │  Keystore)   │  └─────────────────────────────────┘  │
+│  └──────────────┘                                        │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## CryptoManager
+
+```kotlin
+@Singleton
+class CryptoManager @Inject constructor(
+    private val keychainManager: KeychainManager,
+    private val sessionInitService: CryptoSessionInitializationService,
+    private val messageCrypto: MessageCryptoService,
+    private val pqcKeyManager: PQCKeyManager
+) {
+    private val coreLock = Mutex()
+
+    private var orchestratorCore: OrchestratorCore? = null
+    private var _cachedUserId: ServerUserId? = null
+
+    val isInitialized: Boolean
+        get() = orchestratorCore != null
+
+    // ── Initialization ───────────────────────────────────────────
+
+    fun setLocalUserId(userId: ServerUserId) {
+        _cachedUserId = userId
+        val cryptoId = cryptoLocalUserId
+        if (orchestratorCore != null) {
+            orchestratorCore!!.setLocalUserId(cryptoId)
+            migrateSessionsIfNeeded(orchestratorCore!!)
+            return
+        }
+        val keysData = keychainManager.loadPrivateKeysData()
+            ?: run {
+                Log.e(TAG, "setLocalUserId: no keys available")
+                return
+            }
+        viewModelScope.launch {
+            coreLock.withLock {
+                val newCore = createOrchestratorCoreFromKeys(keysData, cryptoId)
+                importOtpks(newCore)
+                pqcKeyManager.loadCfeSnapshot(newCore)
+                loadOrchestratorStateCfe(newCore)
+                migrateSessionsIfNeeded(newCore)
+                orchestratorCore = newCore
+            }
+        }
+    }
+
+    // ── Event Handling (Core Decision API) ───────────────────────
+
+    suspend fun handleOrchestratorEvent(
+        event: CfeIncomingEvent,
+        tag: String? = null
+    ): List<CfeAction> = coreLock.withLock {
+        val core = orchestratorCore
+            ?: throw CryptoManagerError.CoreNotInitialized
+        val actions = core.handleEvent(event)
+        logOrchestratorEvent(event, actions, tag)
+        actions
+    }
+
+    // ── Session Queries ─────────────────────────────────────────
+
+    fun hasSession(userId: ServerUserId): Boolean =
+        orchestratorCore?.hasSession(userId) == true
+
+    fun getSessionHealth(userId: ServerUserId): SessionHealthReport? =
+        orchestratorCore?.getSessionHealth(userId)
+
+    fun getAllSessionUserIds(): List<ServerUserId> =
+        orchestratorCore?.getAllSessionContactIds().orEmpty()
+
+    // ── Session Init (INITIATOR) ────────────────────────────────
+
+    suspend fun initializeSession(
+        userId: ServerUserId,
+        recipientBundle: KeyBundle,
+        oneTimePreKeyPublic: ByteArray? = null,
+        oneTimePreKeyId: UInt? = null,
+        kyberPreKeyPublic: ByteArray? = null,
+        kyberOneTimePreKeyPublic: ByteArray? = null,
+        kyberOneTimePreKeyId: UInt? = null,
+        spkUploadedAt: ULong = 0UL,
+        spkRotationEpoch: UInt = 0U,
+        kyberSpkUploadedAt: ULong = 0UL,
+        kyberSpkRotationEpoch: UInt = 0U
+    ) = coreLock.withLock {
+        sessionInitService.initializeSession(/* ... */)
+    }
+
+    // ── Session Init (RESPONDER) ────────────────────────────────
+
+    suspend fun initReceivingSession(
+        userId: ServerUserId,
+        recipientBundle: KeyBundle,
+        firstMessage: ChatMessage,
+        spkUploadedAt: ULong = 0UL,
+        spkRotationEpoch: UInt = 0U,
+        kyberSpkUploadedAt: ULong = 0UL,
+        kyberSpkRotationEpoch: UInt = 0U
+    ): ByteArray = coreLock.withLock {
+        sessionInitService.initReceivingSession(/* ... */)
+    }
+
+    // ── Encrypt / Decrypt ───────────────────────────────────────
+
+    suspend fun encryptMessage(
+        plaintext: String,
+        userId: ServerUserId
+    ): EncryptedMessageComponents = coreLock.withLock {
+        messageCrypto.encryptMessage(/* ... */)
+    }
+
+    suspend fun decryptMessage(
+        message: ChatMessage,
+        contactIdOverride: ServerUserId? = null
+    ): MessageDecryptResult = coreLock.withLock {
+        messageCrypto.decryptMessage(/* ... */)
+    }
+
+    // ── Background Decrypt ──────────────────────────────────────
+
+    suspend fun decryptMessageForBackground(message: ChatMessage): MessageDecryptResult = coreLock.withLock {
+        if (PersistentACKStore.isProcessedInMemory(message.id)) {
+            throw CryptoManagerError.DuplicateMessage
+        }
+        val core = orchestratorCore ?: throw CryptoManagerError.CoreNotInitialized
+        if (!core.hasSession(message.from)) {
+            throw CryptoManagerError.SessionNotFound
+        }
+        val contentForDecrypt = MessagePadding.unpadCiphertext(message.content)
+        val result = core.decryptMessage(
+            contactId = message.from,
+            ephemeralPublicKey = message.ephemeralPublicKey,
+            messageNumber = message.messageNumber,
+            content = contentForDecrypt
+        )
+        saveSessionToKeychain(message.from)
+        MessageDecryptResult(result.plaintext, result.storageKey)
+    }
+
+    // ── Orchestrator State ──────────────────────────────────────
+
+    fun saveOrchestratorStateCfe() {
+        viewModelScope.launch {
+            coreLock.withLock {
+                val core = orchestratorCore ?: return@launch
+                val blob = core.exportOrchestratorState()
+                keychainManager.saveData(blob, ORCHESTRATOR_STATE_KEY)
+            }
+        }
+    }
+
+    fun loadOrchestratorStateCfe(core: OrchestratorCore) {
+        val data = keychainManager.loadData(ORCHESTRATOR_STATE_KEY) ?: return
+        core.importOrchestratorState(data)
+    }
+
+    fun clearOrchestratorStateCfe() {
+        keychainManager.deleteData(ORCHESTRATOR_STATE_KEY)
+    }
+
+    // ── Session Persistence ─────────────────────────────────────
+
+    private fun saveSessionToKeychain(userId: ServerUserId) {
+        val sessionData = orchestratorCore?.exportSession(userId) ?: return
+        keychainManager.saveSessionData(sessionData, userId)
+        saveOrchestratorStateCfe()
+    }
+
+    // ── Key Management ──────────────────────────────────────────
+
+    fun rotateSignedPrekey(): RotatedSpkBundle {
+        val core = orchestratorCore ?: throw CryptoManagerError.CoreNotInitialized
+        return core.rotateSignedPrekey()
+    }
+
+    fun generateOneTimePrekeys(count: UInt): List<OtpkPair> {
+        val core = orchestratorCore ?: throw CryptoManagerError.CoreNotInitialized
+        return core.generateOneTimePrekeys(count)
+    }
+
+    fun oneTimePrekeyCount(): UInt =
+        orchestratorCore?.oneTimePrekeyCount() ?: 0U
+
+    fun deleteAllCryptoKeys() {
+        orchestratorCore = null
+        keychainManager.deletePrivateKeys()
+        keychainManager.deleteAllKeys()
+    }
+}
+```
+
+## Key Differences from iOS
+
+| Aspect | iOS | Android |
+|--------|-----|---------|
+| Lock | `NSRecursiveLock()` | `Mutex()` from kotlinx-coroutines |
+| Thread | `@MainActor` | `suspend fun` + `Dispatchers.IO` |
+| Secure Storage | Keychain | EncryptedSharedPreferences + Keystore |
+| Core Init | Sync in `setLocalUserId` | `viewModelScope.launch` for async init |
+| Error Handling | `throw` + `try?` | `Result<T, E>` + sealed errors |
+
+## iOS Anti-patterns Fixed
+
+1. No `try?` swallowing — all errors propagate
+2. Mutex instead of NSLock — proper async-compatible locking
+3. No direct Core access — all through `coreLock.withLock`
+4. No `UserDefaults` for crypto state — only EncryptedSharedPreferences
+5. Exhaustive error types — sealed class for all `CryptoManagerError` variants
+
+---
+
+# 11. Session Lifecycle Controller
+
+**Источник**: `SessionLifecycleController.swift`, `SessionCoordinator.swift`
+**Принцип**: Единственный entry point для всех session lifecycle операций
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   UI Layer                               │
+│  ChatScreen · Settings · UserProfile                     │
+│         │                    │                            │
+│         ▼                    ▼                            │
+│  ViewModel               ViewModel                        │
+│         │                    │                            │
+│         └────────┬───────────┘                            │
+│                  ▼                                        │
+│  ┌───────────────────────────────────────────────────┐   │
+│  │          SessionController (DI-injected)          │   │
+│  │  • routeIncomingMessage(message)                  │   │
+│  │  • prewarmSessions(contactIds)                    │   │
+│  │  • sendEndSession(userId, reason)                 │   │
+│  │  • sendEndSessionToAllContacts(reason)            │   │
+│  │  • handleKeySyncRequest(userId)                   │   │
+│  │  • hasActiveSession(userId): Boolean              │   │
+│  │  • onEphemeralSubscriptionNeeded: Callback         │   │
+│  │  • onE2EDeliveryReceiptDecrypted: Callback         │   │
+│  └─────────────────────┬─────────────────────────────┘   │
+│                        │                                  │
+│                        ▼                                  │
+│  ┌───────────────────────────────────────────────────┐   │
+│  │          SessionCoordinator (internal)            │   │
+│  │  • MessageRouter                                  │   │
+│  │  • PublicKeyBundleHandler                         │   │
+│  │  • SessionInitializationService                   │   │
+│  │  • Tie-break watchdogs                            │   │
+│  │  • Responder fallback                             │   │
+│  │  • Cooldown management                            │   │
+│  └─────────────────────┬─────────────────────────────┘   │
+│                        │                                  │
+│                        ▼                                  │
+│  ┌───────────────────────────────────────────────────┐   │
+│  │          CryptoManager                            │   │
+│  │          SessionActionExecutor                    │   │
+│  │          MessageStreamManager                     │   │
+│  └───────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## SessionController Interface
+
+```kotlin
+@Singleton
+class SessionController @Inject constructor(
+    private val sessionCoordinator: SessionCoordinator,
+    private val cryptoManager: CryptoManager
+) {
+    fun configure(streamManager: MessageStreamManager) {
+        sessionCoordinator.configure(streamManager)
+    }
+
+    fun setContext(database: RoomDatabase) {
+        sessionCoordinator.setDatabase(database)
+    }
+
+    var onEphemeralSubscriptionNeeded: ((ServerUserId) -> Unit)? = null
+    var onE2EDeliveryReceiptDecrypted: ((List<String>) -> Unit)? = null
+
+    fun routeIncomingMessage(message: ChatMessage, database: RoomDatabase) {
+        sessionCoordinator.routeIncomingMessage(message, database)
+    }
+
+    fun prewarmSessions(
+        contactIds: List<ServerUserId>,
+        skipEndSessionNotification: Boolean = false
+    ) {
+        sessionCoordinator.prewarmSessions(contactIds, skipEndSessionNotification)
+    }
+
+    suspend fun sendEndSession(userId: ServerUserId, reason: String = "manual_reset") {
+        sessionCoordinator.sendEndSession(userId, reason)
+    }
+
+    suspend fun sendEndSessionToAllContacts(reason: String = "logout") {
+        sessionCoordinator.sendEndSessionToAllContacts(reason)
+    }
+
+    fun handleKeySyncRequest(userId: ServerUserId) {
+        sessionCoordinator.handleKeySyncRequest(userId)
+    }
+
+    fun hasActiveSession(userId: ServerUserId): Boolean =
+        cryptoManager.hasSession(userId)
+}
+```
+
+## What NOT to do (iOS lessons)
+
+**Don't create ad-hoc SessionCoordinator instances** — DI-injected `SessionController`.
+**Don't call CryptoManager.hasSession from Views** — expose through ViewModel StateFlow.
+**Don't pass sessionCoordinator through DI chain** — inject once at the right level.
+
+## Internal Components
+
+### SessionCoordinator (internal)
+
+Owns all session state: `sessionStates`, `endSessionSentAt`, `resendAttemptedAt`, `tieBreakWatchdogs`, `responderFallbackTasks`, `messageRouter`, `publicKeyBundleHandler`, `sessionInitService`.
+
+### SessionActionExecutor
+
+Executes `CfeAction` results from Rust. Stateless actions executed immediately; state-bound actions (`.messageDecrypted`, `.sessionHealNeeded`, `.sendEndSession`, `.fetchPublicKeyBundle`) are handled by caller.
+
+### MessageRouter
+
+Routes incoming messages: ACK/dedup via `PersistentACKStore`, pending queue for messages before session init, delegate callbacks for session events.
+
+## Concurrency Model
+
+| Component | Threading |
+|-----------|-----------|
+| SessionController | `@MainScope` (ViewModel scope) |
+| SessionCoordinator | `Dispatchers.Main` |
+| SessionActionExecutor | `Dispatchers.Main` (called from router) |
+| MessageRouter | `Dispatchers.Main` (called from stream) |
+| CryptoManager | `Mutex` for core access, `Dispatchers.IO` for crypto ops |
+
+**Rule**: All session state mutations on `Dispatchers.Main`. Crypto operations on `Dispatchers.IO` with `Mutex` protection.
+
+---
+
+# 12. Session Initialization
+
+**Источник**: `SessionInitializationService.swift`, `CryptoSessionInitializationService.swift`, `PublicKeyBundleHandler.swift`, `SessionCoordinator.swift`
+**Протокол**: X3DH → Double Ratchet → PQXDH (Kyber-768)
+
+---
+
+## Protocol Overview
+
+```
+Alice (INITIATOR)                          Bob (RESPONDER)
+     │                                          │
+     │  1. Fetch Bob's pre-key bundle (gRPC)    │
+     │─────────────────────────────────────────>│
+     │  2. X3DH key agreement (Rust)            │
+     │  3. Create sending chain                 │
+     │  4. Send msgNum=0 (encrypted ping)       │
+     │─────────────────────────────────────────>│
+     │                           5. msgNum=0 received
+     │                           6. Fetch Alice's bundle (gRPC)
+     │                           7. X3DH + initReceivingSession
+     │                           8. Decrypt msgNum=0
+     │                           9. PQXDH decapsulation (if Kyber)
+     │  10. Send session_ready (encrypted)      │
+     │<─────────────────────────────────────────│
+     │  11. session_ready received              │
+     │  12. Both sides ready → send messages    │
+```
+
+## Session-Control Message Format (typed binary — DO THIS, not magic strings)
+
+> ⚠️ **Android: implement the typed format from day one.** The handshake signals
+> (`ping`, `ready`, `reset_init`) are **protocol control, not chat content** — they must
+> never render as a bubble. iOS historically encoded them as plaintext magic strings
+> (`"__session_ready_<UUID>__"`), which leaked into the transcript and broke on format
+> skew. That approach is being retired (see
+> `decisions/binary-control-message-format.md`). The correct encoding puts the
+> discriminator in the Envelope **`content_type`** field; the discriminator is therefore
+> outside the renderable text pipeline and can never become a chat bubble.
+
+### Wire encoding
+
+The control signal rides a normal Double-Ratchet-encrypted message whose Envelope
+`content_type` identifies the op. The `content_type` is **not** part of the AEAD
+associated data (AD = `AD_VERSION ‖ local_user_id ‖ contact_id ‖ session_id ‖ dh_pub ‖
+msg_num`), so setting it never affects decryption.
+
+| Signal | `content_type` | Direction | Payload |
+|--------|---------------:|-----------|---------|
+| Session ping     | `25` `CONTENT_TYPE_SESSION_PING`        | INITIATOR → peer (tie-break nudge) | `SessionControl{op=PING}` |
+| Session ready    | `26` `CONTENT_TYPE_SESSION_READY`       | RESPONDER → INITIATOR (phase 2)    | `SessionControl{op=READY}` |
+| Session reset-init | `24` `CONTENT_TYPE_SESSION_RESET_INIT` | tie-break winner (atomic re-init)  | real X3DH first-ratchet carrier (msgNum=0) — **NOT** a pure signal |
+| End session      | `21` `CONTENT_TYPE_SESSION_RESET`       | either                              | 16-byte sentinel (unencrypted) |
+
+`SessionControl` (in `messaging/e2ee.proto`):
+
+```protobuf
+message SessionControl {
+  uint32 version = 1;   // unknown versions are ignored (forward-compat)
+  SessionOp op = 2;     // PING / READY / RESET_INIT / END — mirrors content_type
+  bytes nonce = 3;      // random per-signal; dedup + tie-break watchdog correlation
+}
+enum SessionOp { SESSION_OP_UNSPECIFIED=0; PING=1; READY=2; RESET_INIT=3; END=4; }
+```
+
+No checksum: integrity is already guaranteed by the Double Ratchet AEAD tag. The byte
+budget is spent on `version` + `op` for forward-compat.
+
+### Consumer rule (byte-sniff — accept BOTH)
+
+Dispatch on `content_type` **before** the chunk reassembler / text pipeline. Fall back to
+the legacy plaintext prefix only to interop with older iOS peers still in the field:
+
+```kotlin
+fun sessionOp(contentType: Int, decryptedPlaintext: String?): SessionOp? =
+    when (contentType) {
+        25 -> SessionOp.PING
+        26 -> SessionOp.READY
+        24 -> SessionOp.RESET_INIT
+        21 -> SessionOp.END
+        else -> decryptedPlaintext?.let {            // legacy fallback (old iOS)
+            when {
+                it.startsWith("__session_ping")  -> SessionOp.PING
+                it.startsWith("__session_ready") || it.startsWith("session_ready_") -> SessionOp.READY
+                it.startsWith("__session_reset_init") || it.startsWith("session_reset_init_") -> SessionOp.RESET_INIT
+                else -> null
+            }
+        }
+    }
+// A non-null result → handle as control, return BEFORE persisting. Never create a Message row.
+// RESET_INIT (24) is special: the X3DH init already consumed the payload; the inner is a sentinel.
+// Also keep a render-time guard (see §8.3): never show a row whose decrypted text matches these prefixes.
+```
+
+### Producer rule (dual-send during transition)
+
+Set the typed `content_type` **and** keep the legacy magic string as the payload so that
+old iOS peers (which only understand the string) still interop. Once the legacy
+fallback is removed fleet-wide on both platforms, swap the payload to a serialized
+`SessionControl` (carrying `nonce`) and stop sending the string.
+
+> **Rollout / server dependency**: the server must know `content_type` 25/26 or it
+> re-emits them as `E2EE_SIGNAL` (1) and the typed path goes inert (it does **not** drop
+> the message — it is fail-open, so dual-send still works via the string). The server proto
+> was updated 2026-06-23 (`construct-server/shared/proto/core/envelope.proto`); deploy it
+> before flipping producers to typed-only.
+
+## Key Bundle Structure
+
+```kotlin
+data class PublicKeyBundle(
+    val userId: ServerUserId,
+    val identityPublic: ByteArray,
+    val signedPrekeyPublic: ByteArray,
+    val signature: ByteArray,               // Ed25519 signature of SPK
+    val verifyingKey: ByteArray,
+    val suiteId: UInt,                      // 1 = X3DH, 2 = PQXDH
+    val oneTimePreKeyPublic: ByteArray?,
+    val oneTimePreKeyId: UInt?,
+    val kyberPreKeyPublic: ByteArray?,
+    val kyberOneTimePreKeyPublic: ByteArray?,
+    val kyberOneTimePreKeyId: UInt?,
+    val spkUploadedAt: ULong,
+    val spkRotationEpoch: UInt,
+    val kyberSpkUploadedAt: ULong,
+    val kyberSpkRotationEpoch: UInt
+)
+```
+
+## INITIATOR Flow
+
+### Step 1: Fetch Pre-Key Bundle
+
+```kotlin
+suspend fun fetchPublicKeyWithRetry(
+    userId: ServerUserId,
+    deviceId: String? = null,
+    maxAttempts: Int = 3,
+    initialDelay: Duration = 1.seconds
+): PublicKeyBundle {
+    var lastError: Throwable? = null
+    var delay = initialDelay
+    for (attempt in 1..maxAttempts) {
+        try {
+            return keyServiceClient.getPreKeyBundle(userId, deviceId)
+        } catch (e: Throwable) {
+            lastError = e
+            if (attempt < maxAttempts) { delay(delay); delay *= 2 }
+        }
+    }
+    throw lastError ?: NetworkException("Failed to fetch pre-key bundle")
+}
+```
+
+### Step 2: Validate Bundle
+
+```kotlin
+fun validateBundle(bundle: PublicKeyBundle) {
+    val knownEpoch = keyStore.loadSpkEpoch(bundle.userId)
+    if (bundle.spkRotationEpoch < knownEpoch) {
+        throw SessionError.StaleSpkBundle(bundle.spkRotationEpoch, knownEpoch)
+    }
+    keyStore.saveSpkEpoch(bundle.spkRotationEpoch, bundle.userId)
+    if (bundle.suiteId == 2U && bundle.kyberSpkRotationEpoch == 0U) {
+        throw SessionError.KyberEpochRequired
+    }
+}
+```
+
+### Step 3: Initialize Session (Rust)
+
+Call `CryptoManager.initializeSession()` ([§10](#10-crypto-core--rust-ffi)).
+
+### Step 4: Send Session Ping (msgNum=0)
+
+Dual-send: `content_type = ContentType.SESSION_PING` (= 25) **+** legacy string payload
+(see [Session-Control Message Format](#session-control-message-format-typed-binary--do-this-not-magic-strings)).
+
+```kotlin
+suspend fun sendSessionPing(userId: ServerUserId) {
+    val pingContent = "__session_ping_${UUID.randomUUID()}__"   // legacy payload (interop w/ old iOS)
+    val payload = outboundSessionService.encryptSessionControl(
+        plaintext = pingContent,
+        messageId = UUID.randomUUID().toString(),
+        recipientId = userId
+    )
+    messagingServiceClient.sendMessage(
+        messageId = pingId, recipientId = userId,
+        senderId = currentUserId,
+        conversationId = ConversationId.direct(currentUserId, userId),
+        encryptedPayload = payload, timestamp = currentTimeMillis(),
+        contentType = ContentType.SESSION_PING
+    )
+}
+```
+
+## RESPONDER Flow
+
+Triggered by `MessageRouter.routeIncomingMessage` when `messageNumber == 0` and no session exists:
+
+```kotlin
+if (!cryptoManager.hasSession(otherUserId)) {
+    pendingQueue.enqueue(message, otherUserId)
+    fetchPublicKeyBundleAndInit(otherUserId, message)
+    return
+}
+```
+
+Call `CryptoManager.initReceivingSession()` ([§10](#10-crypto-core--rust-ffi)). Rust returns decrypted plaintext.
+
+### PQXDH Decapsulation
+
+```kotlin
+if (firstMessage.kemCiphertext.isNotEmpty()) {
+    val kyberOtpkId = firstMessage.kyberOtpkId
+    if (kyberOtpkId > 0) {
+        val otpkSecret = pqcKeyManager.getKyberOtpkSecret(kyberOtpkId)
+        pqcKeyManager.decapsulateAndStrengthen(
+            kemCiphertext = firstMessage.kemCiphertext,
+            contactId = userId,
+            secretKeyOverride = otpkSecret
+        )
+        pqcKeyManager.deleteKyberOtpk(kyberOtpkId)
+    } else {
+        pqcKeyManager.decapsulateAndStrengthen(
+            kemCiphertext = firstMessage.kemCiphertext,
+            contactId = userId
+        )
+    }
+}
+```
+
+### Send Session Ready
+
+Dual-send: typed `content_type` **+** legacy string payload (see
+[Session-Control Message Format](#session-control-message-format-typed-binary--do-this-not-magic-strings)).
+The `content_type = ContentType.SESSION_READY` is **mandatory** — omitting it is exactly the
+bug that let `session_ready` render as a chat bubble on the peer.
+
+```kotlin
+suspend fun sendSessionReady(userId: ServerUserId) {
+    val readyContent = "__session_ready_${UUID.randomUUID()}__"   // legacy payload (interop w/ old iOS)
+    val payload = outboundSessionService.encryptSessionControl(
+        plaintext = readyContent, messageId = UUID.randomUUID().toString(),
+        recipientId = userId
+    )
+    messagingServiceClient.sendMessage(
+        /* ... */,
+        contentType = ContentType.SESSION_READY   // = 26, typed dispatch on the peer
+    )
+    // S3 (post legacy-removal): payload = SessionControl{op=READY, nonce=…}.serialize(), no string.
+}
+```
+
+When INITIATOR receives `session_ready`: cancels tie-break watchdog, marks session active, confirms in `SessionConfirmationTracker`, drains pending queue.
+
+## Tie-Break (Simultaneous Init)
+
+```kotlin
+if (DeviceIdOrdering.isNaturalInitiator(myId, peerId)) {
+    // I WIN → INITIATOR role
+    sendSessionResetInit(peerId)
+    startTieBreakWatchdog(peerId)
+} else {
+    // I LOSE → RESPONDER role
+    startResponderFallback(peerId)
+}
+```
+
+### SESSION_RESET_INIT (atomic)
+
+Already typed (`content_type = ContentType.SESSION_RESET_INIT` = 24). Unlike ping/ready this
+carries a **real** X3DH first-ratchet payload (msgNum=0), so the consumer must NOT discard the
+payload — only the post-init sentinel inner is dropped. See
+[Session-Control Message Format](#session-control-message-format-typed-binary--do-this-not-magic-strings).
+
+```kotlin
+suspend fun sendSessionResetInit(userId: ServerUserId) {
+    val sriContent = "__session_reset_init_${UUID.randomUUID()}__"
+    val payload = outboundSessionService.encryptSessionControl(
+        plaintext = sriContent, messageId = UUID.randomUUID().toString(),
+        recipientId = userId
+    )
+    messagingServiceClient.sendMessage(/* ... */, contentType = ContentType.SESSION_RESET_INIT)
+}
+```
+
+### Watchdog Timers
+
+- **Tie-Break Watchdog** (30s): if no confirmation, re-prewarm + re-send SESSION_RESET_INIT
+- **Responder Fallback** (60s): if no init from peer, take INITIATOR role
+
+### Session Confirmation
+
+```kotlin
+class SessionConfirmationTracker {
+    private val pendingSessions = mutableSetOf<ServerUserId>()
+    fun markPending(userId: ServerUserId) { pendingSessions.add(userId) }
+    fun markConfirmed(userId: ServerUserId) { pendingSessions.remove(userId) }
+    fun isPending(userId: ServerUserId): Boolean = pendingSessions.contains(userId)
+}
+```
+
+While session is pending, outgoing messages are buffered to prevent ratchet desync.
+
+## Stale SPK Handling
+
+```kotlin
+suspend fun initializeSessionProactively(
+    userId: ServerUserId, onSuccess: () -> Unit, onFailure: (Throwable) -> Unit
+) {
+    val staleSPKMaxRetries = 2
+    val staleSPKRetryDelay = 60.seconds
+    val staleSPKFastFailDays = 10.25
+    for (attempt in 0..staleSPKMaxRetries) {
+        if (attempt > 0) delay(staleSPKRetryDelay)
+        try {
+            val bundle = fetchPublicKeyWithRetry(userId)
+            initializeSession(userId, bundle, deleteExisting = true)
+            onSuccess(); return
+        } catch (e: SessionError.PeerSpkStale) {
+            if (attempt < staleSPKMaxRetries && e.ageDays < staleSPKFastFailDays) continue
+            break
+        } catch (e: Throwable) { break }
+    }
+    onFailure(lastError ?: NetworkException("Connection failed"))
+}
+```
+
+## Error Types
+
+```kotlin
+sealed class SessionError : Exception() {
+    data class StaleSpkBundle(val receivedEpoch: UInt, val knownEpoch: UInt) : SessionError()
+    data class PeerSpkStale(val ageDays: Double) : SessionError()
+    object KyberEpochRequired : SessionError()
+    data class PqOtpkMissing(val keyId: UInt) : SessionError()
+    object CoreNotInitialized : SessionError()
+    object SessionNotFound : SessionError()
+}
+```
+
+## iOS Anti-patterns Fixed
+
+| iOS Problem | Android Fix |
+|---|---|
+| `initializeSessionProactively` uses callbacks | `suspend fun` with proper error propagation |
+| SPK stale retry mixed with network retry | Separate `SessionError.PeerSpkStale` |
+| Tie-break watchdog uses `Task` without cancellation | `CoroutineScope` with `Job` cancellation |
+| Session ping/ready sent as raw strings | Structured `ContentType` enum |
+| `SessionConfirmationTracker` is singleton | DI-injected, scoped to SessionController |
+
+## Key Differences from iOS
+
+| Aspect | iOS | Android |
+|--------|-----|---------|
+| Async model | `async/await` + `Task` | Coroutines (`suspend fun`) |
+| Callbacks | `onSuccess: @escaping () -> Void` | `suspend fun` returns result |
+| Error handling | `throw` + `try?` swallowing | Sealed class errors |
+| Timer/timeout | `Task.sleep` + manual cancel | `withTimeoutOrNull` |
+| State management | `@MainActor` dictionaries | `Mutex` + `StateFlow` |
+| DI | Singletons everywhere | Hilt injection |

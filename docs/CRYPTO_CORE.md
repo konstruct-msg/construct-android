@@ -318,9 +318,3 @@ class CryptoManager @Inject constructor(
 5. **Exhaustive error types** — sealed class for all `CryptoManagerError` variants
 
 ---
-
-## Next
-
-- [`11-session-lifecycle.md`](11-session-lifecycle.md) — SessionController design
-- [`12-session-initialization.md`](12-session-initialization.md) — INITIATOR/RESPONDER flow
-- [`14-key-management.md`](14-key-management.md) — KeyManager, OTPK, SPK rotation
