@@ -24,7 +24,6 @@ class GrpcClient @Inject constructor() {
 
     private val channel: ManagedChannel = OkHttpChannelBuilder
         .forAddress(HOST, PORT)
-        .apply { if (USE_PLAINTEXT) usePlaintext() }
         .build()
 
     val auth: AuthServiceCoroutineStub by lazy { AuthServiceCoroutineStub(channel) }
@@ -39,10 +38,11 @@ class GrpcClient @Inject constructor() {
     }
 
     private companion object {
-        // TODO: replace with a build-config/DataStore-driven endpoint once the dev
-        // gateway address is finalized. 10.0.2.2 is the emulator's host-loopback alias.
-        const val HOST = "10.0.2.2"
-        const val PORT = 50051
-        const val USE_PLAINTEXT = true
+        // Production gRPC backend (direct TLS — OkHttpChannelBuilder defaults to TLS,
+        // no usePlaintext() call). Matches docs/IMPLEMENTATION_PLAN.md §5.1. VEIL-routed
+        // fallback for censored networks is not wired up yet (Phase 5.1) — this is the
+        // direct path only.
+        const val HOST = "ams.konstruct.cc"
+        const val PORT = 443
     }
 }
