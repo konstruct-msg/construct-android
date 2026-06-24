@@ -14,6 +14,22 @@
     <string name="onboarding_security_title">Security Notice</string>
     <string name="onboarding_security_body">Your encryption keys are generated locally. The server never sees your private keys.</string>
 
+    <!-- Registration stages (RegistrationStep) -->
+    <string name="reg_establishing_trust">Establishing trust</string>
+    <string name="reg_joining_network">Joining the network</string>
+    <string name="reg_phase_entropy">Gathering entropy…</string>
+    <string name="reg_phase_nonce">Searching for a valid nonce…</string>
+    <string name="reg_phase_solution">Solution found</string>
+    <string name="reg_welcome">Welcome</string>
+    <string name="reg_label_username">Username</string>
+    <string name="reg_label_mode">Mode</string>
+    <string name="reg_mode_anonymous">Anonymous</string>
+    <string name="reg_label_device_id">Device ID</string>
+    <string name="reg_continue">Continue</string>
+    <string name="reg_error_title">Registration failed</string>
+    <string name="reg_try_again">Try again</string>
+    <string name="reg_cancel">Cancel</string>
+
     <!-- Main (streams list) -->
     <string name="nav_streams">Stream</string>
     <string name="main_empty_title">No active streams</string>

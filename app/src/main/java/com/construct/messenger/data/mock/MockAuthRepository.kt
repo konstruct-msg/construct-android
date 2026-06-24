@@ -2,6 +2,7 @@ package com.construct.messenger.data.mock
 
 import com.construct.messenger.data.model.AuthState
 import com.construct.messenger.data.repository.AuthRepository
+import com.construct.messenger.domain.usecase.RegistrationStep
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,8 +16,10 @@ class MockAuthRepository @Inject constructor() : AuthRepository {
 
     override val authState: StateFlow<AuthState> = mutableAuthState.asStateFlow()
 
-    override suspend fun initializeIdentity() {
+    override suspend fun initializeIdentity(username: String?, onStep: (RegistrationStep) -> Unit) {
+        onStep(RegistrationStep.GeneratingKeys)
         delay(250)
+        onStep(RegistrationStep.Complete)
         mutableAuthState.value = AuthState(isInitialized = true)
     }
 }

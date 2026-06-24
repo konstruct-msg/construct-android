@@ -1,23 +1,41 @@
 package com.construct.messenger.domain.usecase
 
+import android.util.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager
 import com.google.protobuf.ByteString
+import kotlinx.coroutines.CancellationException
 import shared.proto.services.v1.AuthServiceOuterClass.AuthTokensResponse
 import shared.proto.services.v1.AuthServiceOuterClass.DevicePublicKeys
 import shared.proto.services.v1.AuthServiceOuterClass.GetPowChallengeRequest
 import shared.proto.services.v1.AuthServiceOuterClass.RegisterDeviceRequest
 import shared.proto.services.v1.AuthServiceOuterClass.PowSolution as PowSolutionProto
+import shared.proto.services.v1.KeyServiceOuterClass.OneTimePreKey
+import shared.proto.services.v1.KeyServiceOuterClass.UploadPreKeysRequest
 import javax.inject.Inject
+
+/** [AuthTokensResponse] plus the [deviceId] used to obtain it — the device id is derived
+ * from the freshly generated identity key, not chosen by the caller, so [RegisterUseCase]
+ * is the only place that knows it until it's returned here. */
+data class RegistrationResult(val tokens: AuthTokensResponse, val deviceId: String)
 
 /**
  * Device registration flow.
  *
- * **Canon:** `docs/IMPLEMENTATION_PLAN.md` → Phase 3.1 "Registration Flow".
- * 1. [CryptoManager.loadOrCreate] generates a fresh identity/SPK bundle.
+ * **Canon:** `docs/IMPLEMENTATION_PLAN.md` → Phase 3.1 "Registration Flow"; stage names
+ * mirror iOS `RegistrationFlowView.RegistrationStep`.
+ * 1. [CryptoManager.loadOrCreate] generates a fresh identity/SPK bundle; `deviceId` is
+ *    derived from the identity public key ([CryptoManager.deriveDeviceId]), matching iOS
+ *    `CryptoManager.generateRegistrationBundle()` — never an arbitrary caller-supplied id.
  * 2. Solve the server's PoW challenge (anti-spam).
  * 3. `RegisterDevice` with the bundle + PoW solution -> auth tokens.
+ * 4. Upload an initial batch of one-time pre-keys (`KeyService.UploadPreKeys`) so other
+ *    devices can X3DH a session with this one. Runs *after* [RegistrationStep.Complete] is
+ *    reported — matching iOS `RegistrationFlowView`, where the UI already shows the
+ *    "complete" screen while this upload finishes in the background — and failure here is
+ *    non-fatal: registration has already succeeded, the device just won't be reachable
+ *    until the next replenishment.
  *
  * Crypto suite label is the literal `"Curve25519+Ed25519"` string, matching iOS
  * `AuthServiceClient.registerDevice` — `DevicePublicKeys.crypto_suite` is a free-form
@@ -28,11 +46,21 @@ class RegisterUseCase @Inject constructor(
     private val grpcClient: GrpcClient,
     private val keystoreManager: KeystoreManager,
 ) {
-    suspend operator fun invoke(username: String?, deviceId: String): AuthTokensResponse {
+    suspend operator fun invoke(
+        username: String?,
+        onStep: (RegistrationStep) -> Unit = {},
+    ): RegistrationResult {
+        onStep(RegistrationStep.GeneratingKeys)
         val bundle = cryptoManager.loadOrCreate()
+        val deviceId = cryptoManager.deriveDeviceId(bundle)
 
+        onStep(RegistrationStep.FetchingChallenge)
         val challenge = grpcClient.auth.getPowChallenge(GetPowChallengeRequest.getDefaultInstance())
-        val solution = cryptoManager.computePow(challenge.challenge, challenge.difficulty)
+
+        onStep(RegistrationStep.ComputingPow(0f))
+        val solution = cryptoManager.computePow(challenge.challenge, challenge.difficulty) { progress ->
+            onStep(RegistrationStep.ComputingPow(progress))
+        }
 
         val publicKeys = DevicePublicKeys.newBuilder()
             .setVerifyingKey(bundle.verifyingKey.toByteString())
@@ -56,14 +84,47 @@ class RegisterUseCase @Inject constructor(
             requestBuilder.username = username
         }
 
+        onStep(RegistrationStep.SubmittingRegistration)
         val response = grpcClient.auth.registerDevice(requestBuilder.build())
         cryptoManager.setLocalUserId(response.tokens.userId)
         keystoreManager.saveTokens(response.tokens, deviceId)
-        return response.tokens
+        keystoreManager.savePrivateKeys(cryptoManager.exportPrivateKeys())
+
+        onStep(RegistrationStep.Complete)
+        uploadInitialOneTimePrekeys(deviceId)
+
+        return RegistrationResult(response.tokens, deviceId)
+    }
+
+    /** Non-fatal: matches iOS `OtpkReplenishmentService.generateAndUpload` — a failed
+     * upload is logged and swallowed, not surfaced as a registration error. */
+    private suspend fun uploadInitialOneTimePrekeys(deviceId: String) {
+        try {
+            val otpks = cryptoManager.generateOneTimePrekeys(INITIAL_OTPK_COUNT)
+            val request = UploadPreKeysRequest.newBuilder()
+                .setDeviceId(deviceId)
+                .addAllPreKeys(
+                    otpks.map { otpk ->
+                        OneTimePreKey.newBuilder()
+                            .setKeyId(otpk.keyId.toInt())
+                            .setPublicKey(otpk.publicKey.toByteString())
+                            .build()
+                    },
+                )
+                .setReplaceExisting(true)
+                .build()
+            grpcClient.key.uploadPreKeys(request)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            Log.w(TAG, "Initial OTPK upload failed (non-fatal)", error)
+        }
     }
 
     private companion object {
+        const val TAG = "RegisterUseCase"
         const val CLASSIC_CRYPTO_SUITE_LABEL = "Curve25519+Ed25519"
+        const val INITIAL_OTPK_COUNT = 100
     }
 }
 

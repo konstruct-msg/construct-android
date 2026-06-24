@@ -2,6 +2,7 @@ package com.construct.messenger.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Base64
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -58,7 +59,8 @@ class KeystoreManager @Inject constructor(
         prefs.edit().putString(KEY_REFRESH_TOKEN, token).apply()
     }
 
-    /** Clears tokens on logout. Device id is kept — it identifies hardware, not a session. */
+    /** Clears tokens on logout. Device id and private keys are kept — they identify the
+     * device's identity, not a session. */
     fun clearTokens() {
         prefs.edit()
             .remove(KEY_ACCESS_TOKEN)
@@ -67,11 +69,29 @@ class KeystoreManager @Inject constructor(
             .apply()
     }
 
+    /**
+     * Persists [CryptoManager.exportPrivateKeys][com.construct.messenger.crypto.CryptoManager.exportPrivateKeys]
+     * output (CFE binary) so [LoginUseCase][com.construct.messenger.domain.usecase.LoginUseCase]
+     * can restore the same identity on a later app launch via `CryptoManager.loadOrCreate(bytes)`.
+     *
+     * Base64 here is **not** the JSON/stringification anti-pattern the CFE binary rule
+     * forbids — `SharedPreferences` (even encrypted) only has a `String` value type, so this
+     * is purely a storage-transport envelope. The bytes themselves are never parsed/re-encoded;
+     * they round-trip through `loadOrCreate()` exactly as `exportPrivateKeys()` produced them.
+     */
+    fun savePrivateKeys(bytes: ByteArray) {
+        prefs.edit().putString(KEY_PRIVATE_KEYS, Base64.encodeToString(bytes, Base64.NO_WRAP)).apply()
+    }
+
+    fun getPrivateKeys(): ByteArray? =
+        prefs.getString(KEY_PRIVATE_KEYS, null)?.let { Base64.decode(it, Base64.NO_WRAP) }
+
     private companion object {
         const val PREFS_FILE_NAME = "construct_auth_prefs"
         const val KEY_ACCESS_TOKEN = "access_token"
         const val KEY_REFRESH_TOKEN = "refresh_token"
         const val KEY_USER_ID = "user_id"
         const val KEY_DEVICE_ID = "device_id"
+        const val KEY_PRIVATE_KEYS = "private_keys_cfe"
     }
 }

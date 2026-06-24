@@ -18,6 +18,10 @@ import shared.proto.services.v1.AuthServiceOuterClass.AuthTokensResponse
 import shared.proto.services.v1.AuthServiceOuterClass.GetPowChallengeResponse
 import shared.proto.services.v1.AuthServiceOuterClass.RegisterDeviceRequest
 import shared.proto.services.v1.AuthServiceOuterClass.RegisterDeviceResponse
+import shared.proto.services.v1.KeyServiceGrpcKt.KeyServiceCoroutineStub
+import shared.proto.services.v1.KeyServiceOuterClass.UploadPreKeysRequest
+import shared.proto.services.v1.KeyServiceOuterClass.UploadPreKeysResponse
+import uniffi.construct_core.OtpkPair
 import uniffi.construct_core.PowSolution
 import uniffi.construct_core.RegistrationBundleFields
 
@@ -27,12 +31,17 @@ class RegisterUseCaseTest {
     private val grpcClient: GrpcClient = mock()
     private val keystoreManager: KeystoreManager = mock()
     private val authStub: AuthServiceCoroutineStub = mock()
+    private val keyStub: KeyServiceCoroutineStub = mock()
 
     private lateinit var registerUseCase: RegisterUseCase
 
     @Before
     fun setUp() {
         whenever(grpcClient.auth).thenReturn(authStub)
+        whenever(grpcClient.key).thenReturn(keyStub)
+        whenever(cryptoManager.generateOneTimePrekeys(any())).thenReturn(
+            listOf(OtpkPair(keyId = 1u, publicKey = listOf(1u, 2u))),
+        )
         registerUseCase = RegisterUseCase(cryptoManager, grpcClient, keystoreManager)
     }
 
@@ -46,6 +55,7 @@ class RegisterUseCaseTest {
             suiteId = 10u,
         )
         whenever(cryptoManager.loadOrCreate()).thenReturn(bundle)
+        whenever(cryptoManager.deriveDeviceId(bundle)).thenReturn("device-1")
 
         val challengeResponse = GetPowChallengeResponse.newBuilder()
             .setChallenge("chal-1")
@@ -54,7 +64,7 @@ class RegisterUseCaseTest {
             .build()
         whenever(authStub.getPowChallenge(any(), any())).thenReturn(challengeResponse)
 
-        whenever(cryptoManager.computePow(eq("chal-1"), eq(12)))
+        whenever(cryptoManager.computePow(eq("chal-1"), eq(12), any()))
             .thenReturn(PowSolution(nonce = 99uL, hash = "hash-1"))
 
         val tokens = AuthTokensResponse.newBuilder()
@@ -64,10 +74,24 @@ class RegisterUseCaseTest {
             .build()
         whenever(authStub.registerDevice(any(), any()))
             .thenReturn(RegisterDeviceResponse.newBuilder().setTokens(tokens).build())
+        whenever(keyStub.uploadPreKeys(any(), any()))
+            .thenReturn(UploadPreKeysResponse.newBuilder().setSuccess(true).build())
 
-        val result = registerUseCase("alice", "device-1")
+        val steps = mutableListOf<RegistrationStep>()
+        val result = registerUseCase("alice") { steps += it }
 
-        assertEquals(tokens, result)
+        assertEquals(tokens, result.tokens)
+        assertEquals("device-1", result.deviceId)
+        assertEquals(
+            listOf(
+                RegistrationStep.GeneratingKeys,
+                RegistrationStep.FetchingChallenge,
+                RegistrationStep.ComputingPow(0f),
+                RegistrationStep.SubmittingRegistration,
+                RegistrationStep.Complete,
+            ),
+            steps,
+        )
 
         val requestCaptor = argumentCaptor<RegisterDeviceRequest>()
         verify(authStub).registerDevice(requestCaptor.capture(), any())
@@ -86,6 +110,39 @@ class RegisterUseCaseTest {
 
         verify(cryptoManager).setLocalUserId("user-1")
         verify(keystoreManager).saveTokens(tokens, "device-1")
+
+        val uploadCaptor = argumentCaptor<UploadPreKeysRequest>()
+        verify(keyStub).uploadPreKeys(uploadCaptor.capture(), any())
+        assertEquals("device-1", uploadCaptor.firstValue.deviceId)
+        assertEquals(1, uploadCaptor.firstValue.preKeysCount)
+        assertEquals(true, uploadCaptor.firstValue.replaceExisting)
+    }
+
+    @Test
+    fun invoke_otpkUploadFailure_doesNotFailRegistration() = runTest {
+        val bundle = RegistrationBundleFields(
+            identityPublic = listOf(1u),
+            signedPrekeyPublic = listOf(2u),
+            signature = listOf(3u),
+            verifyingKey = listOf(4u),
+            suiteId = 10u,
+        )
+        whenever(cryptoManager.loadOrCreate()).thenReturn(bundle)
+        whenever(cryptoManager.deriveDeviceId(bundle)).thenReturn("device-3")
+        whenever(authStub.getPowChallenge(any(), any())).thenReturn(
+            GetPowChallengeResponse.newBuilder().setChallenge("c").setDifficulty(1).build(),
+        )
+        whenever(cryptoManager.computePow(any(), any(), any())).thenReturn(PowSolution(1uL, "h"))
+        whenever(authStub.registerDevice(any(), any())).thenReturn(
+            RegisterDeviceResponse.newBuilder()
+                .setTokens(AuthTokensResponse.newBuilder().setUserId("u").build())
+                .build(),
+        )
+        whenever(keyStub.uploadPreKeys(any(), any())).thenThrow(RuntimeException("network down"))
+
+        val result = registerUseCase("alice")
+
+        assertEquals("device-3", result.deviceId)
     }
 
     @Test
@@ -98,17 +155,20 @@ class RegisterUseCaseTest {
             suiteId = 10u,
         )
         whenever(cryptoManager.loadOrCreate()).thenReturn(bundle)
+        whenever(cryptoManager.deriveDeviceId(bundle)).thenReturn("device-2")
         whenever(authStub.getPowChallenge(any(), any())).thenReturn(
             GetPowChallengeResponse.newBuilder().setChallenge("c").setDifficulty(1).build(),
         )
-        whenever(cryptoManager.computePow(any(), any())).thenReturn(PowSolution(1uL, "h"))
+        whenever(cryptoManager.computePow(any(), any(), any())).thenReturn(PowSolution(1uL, "h"))
         whenever(authStub.registerDevice(any(), any())).thenReturn(
             RegisterDeviceResponse.newBuilder()
                 .setTokens(AuthTokensResponse.newBuilder().setUserId("u").build())
                 .build(),
         )
+        whenever(keyStub.uploadPreKeys(any(), any()))
+            .thenReturn(UploadPreKeysResponse.newBuilder().setSuccess(true).build())
 
-        registerUseCase(null, "device-2")
+        registerUseCase(null)
 
         val requestCaptor = argumentCaptor<RegisterDeviceRequest>()
         verify(authStub).registerDevice(requestCaptor.capture(), any())

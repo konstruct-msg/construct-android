@@ -10,9 +10,12 @@ import uniffi.construct_core.PowSolution
 import uniffi.construct_core.RecoveryKeypair
 import uniffi.construct_core.RegistrationBundleFields
 import uniffi.construct_core.SessionInitResult
+import uniffi.construct_core.PowProgressCallback
 import uniffi.construct_core.computePow
+import uniffi.construct_core.computePowWithProgress
 import uniffi.construct_core.createCryptoCore
 import uniffi.construct_core.createCryptoCoreFromKeys
+import uniffi.construct_core.deriveDeviceId
 import uniffi.construct_core.deriveRecoveryKeypair
 import uniffi.construct_core.generateMnemonic
 import uniffi.construct_core.mnemonicToSeed
@@ -94,6 +97,21 @@ class CryptoManager @Inject constructor() {
 
     fun computePow(challenge: String, difficulty: Int): PowSolution =
         computePow(challenge, difficulty.toUInt())
+
+    /** As [computePow], but reports estimated progress (0f..1f) while the nonce search runs. */
+    fun computePow(challenge: String, difficulty: Int, onProgress: (Float) -> Unit): PowSolution =
+        computePowWithProgress(
+            challenge,
+            difficulty.toUInt(),
+            object : PowProgressCallback {
+                override fun onProgress(currentNonce: ULong, attempts: ULong, estimatedProgress: Float) {
+                    onProgress(estimatedProgress)
+                }
+            },
+        )
+
+    /** Deterministic device id derived from this identity's public key — matches iOS `deriveDeviceId`. */
+    fun deriveDeviceId(bundle: RegistrationBundleFields): String = deriveDeviceId(bundle.identityPublic)
 
     /**
      * Ed25519-signs [message] with this device's signing key. Used for the device

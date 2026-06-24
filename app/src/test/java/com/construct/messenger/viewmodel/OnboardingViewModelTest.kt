@@ -3,6 +3,7 @@ package com.construct.messenger.viewmodel
 import com.construct.messenger.data.model.AuthState
 import com.construct.messenger.data.mock.MockAuthRepository
 import com.construct.messenger.data.repository.AuthRepository
+import com.construct.messenger.domain.usecase.RegistrationStep
 import com.construct.messenger.test.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -16,6 +17,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -25,15 +27,18 @@ class OnboardingViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun initializeIdentityEmitsNavigateToMain() = runTest {
+    fun initializeIdentityReachesCompleteStep_andContinueEmitsNavigateToMain() = runTest {
         val viewModel = OnboardingViewModel(MockAuthRepository())
         val event = async { viewModel.events.first() }
 
-        viewModel.initializeIdentity()
+        viewModel.initializeIdentity("alice")
         advanceUntilIdle()
 
-        assertEquals(OnboardingEvent.NavigateToMain, event.await())
         assertFalse(viewModel.uiState.value.isInitializing)
+        assertTrue(viewModel.uiState.value.step is RegistrationStep.Complete)
+
+        viewModel.continueToMain()
+        assertEquals(OnboardingEvent.NavigateToMain, event.await())
     }
 
     @Test
@@ -42,7 +47,7 @@ class OnboardingViewModelTest {
         val viewModel = OnboardingViewModel(ThrowingAuthRepository(errorMessage))
         val event = async { withTimeoutOrNull(100) { viewModel.events.first() } }
 
-        viewModel.initializeIdentity()
+        viewModel.initializeIdentity("alice")
         advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.isInitializing)
@@ -54,15 +59,13 @@ class OnboardingViewModelTest {
     fun initializeIdentityIgnoresRapidDuplicateCalls() = runTest {
         val repository = DelayedCountingAuthRepository()
         val viewModel = OnboardingViewModel(repository)
-        val firstEvent = async { viewModel.events.first() }
 
-        viewModel.initializeIdentity()
-        viewModel.initializeIdentity()
+        viewModel.initializeIdentity("alice")
+        viewModel.initializeIdentity("alice")
         advanceUntilIdle()
 
         assertEquals(1, repository.initializeCalls)
-        assertEquals(OnboardingEvent.NavigateToMain, firstEvent.await())
-        assertNull(withTimeoutOrNull(100) { viewModel.events.first() })
+        assertTrue(viewModel.uiState.value.step is RegistrationStep.Complete)
     }
 
     private class ThrowingAuthRepository(
@@ -72,7 +75,7 @@ class OnboardingViewModelTest {
 
         override val authState: StateFlow<AuthState> = mutableAuthState
 
-        override suspend fun initializeIdentity() {
+        override suspend fun initializeIdentity(username: String?, onStep: (RegistrationStep) -> Unit) {
             throw IllegalStateException(errorMessage)
         }
     }
@@ -84,10 +87,11 @@ class OnboardingViewModelTest {
 
         override val authState: StateFlow<AuthState> = mutableAuthState
 
-        override suspend fun initializeIdentity() {
+        override suspend fun initializeIdentity(username: String?, onStep: (RegistrationStep) -> Unit) {
             initializeCalls += 1
+            onStep(RegistrationStep.GeneratingKeys)
             delay(250)
-            mutableAuthState.value = AuthState(isInitialized = true)
+            mutableAuthState.value = AuthState(isInitialized = true, username = username)
         }
     }
 }
