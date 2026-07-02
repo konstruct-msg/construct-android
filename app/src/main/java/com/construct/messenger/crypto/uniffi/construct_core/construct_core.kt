@@ -782,6 +782,8 @@ external fun uniffi_construct_core_checksum_func_sr_reconstruct_vault_key(
 ): Short
 external fun uniffi_construct_core_checksum_func_sr_seal_recovery_bundle(
 ): Short
+external fun uniffi_construct_core_checksum_func_supports_pq_ratchet(
+): Short
 external fun uniffi_construct_core_checksum_func_test_platform_bridge_roundtrip(
 ): Short
 external fun uniffi_construct_core_checksum_func_validate_mnemonic(
@@ -848,11 +850,17 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_ack_mark_pro
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_apply_pq_contribution(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_build_hybrid_identity_bind_message(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_build_x3dh_sign_message(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_decrypt_message(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_decrypt_offline_batch(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_encrypt_message(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_ensure_hybrid_signature_key(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_export_kyber_session_state(
 ): Short
@@ -884,6 +892,10 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_has_session(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_healing_can_heal(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_hybrid_signature_public_key(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_import_hybrid_signature_private_key(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_import_kyber_session_state(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_import_one_time_prekeys(
@@ -895,6 +907,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_import_sessi
 external fun uniffi_construct_core_checksum_method_orchestratorcore_init_receiving_session(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_init_session(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_init_session_allowing_stale(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_one_time_prekey_count(
 ): Short
@@ -909,6 +923,10 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_rotate_signe
 external fun uniffi_construct_core_checksum_method_orchestratorcore_set_local_user_id(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_sign_bundle_data(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_sign_hybrid(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_sign_hybrid_prekey(
 ): Short
 external fun uniffi_construct_core_checksum_method_rustackstore_cache_len(
 ): Short
@@ -1070,11 +1088,17 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_ack_mark_processed
 ): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_apply_pq_contribution(`ptr`: Long,`contactId`: RustBuffer.ByValue,`kemSharedSecret`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_method_orchestratorcore_build_hybrid_identity_bind_message(`ptr`: Long,`hybridPublicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_build_x3dh_sign_message(`ptr`: Long,`suiteId`: Byte,`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_decrypt_message(`ptr`: Long,`contactId`: RustBuffer.ByValue,`ephemeralPublicKey`: RustBuffer.ByValue,`messageNumber`: Int,`content`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_decrypt_offline_batch(`ptr`: Long,`messages`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_encrypt_message(`ptr`: Long,`contactId`: RustBuffer.ByValue,`plaintext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_ensure_hybrid_signature_key(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_export_kyber_session_state(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1106,6 +1130,10 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_has_session(`ptr`:
 ): Byte
 external fun uniffi_construct_core_fn_method_orchestratorcore_healing_can_heal(`ptr`: Long,`msgNumber`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_method_orchestratorcore_hybrid_signature_public_key(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_import_hybrid_signature_private_key(`ptr`: Long,`privBytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_import_kyber_session_state(`ptr`: Long,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_import_one_time_prekeys(`ptr`: Long,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1117,6 +1145,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_import_session(`pt
 external fun uniffi_construct_core_fn_method_orchestratorcore_init_receiving_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,`firstMessage`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_init_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_init_session_allowing_stale(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_one_time_prekey_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
@@ -1131,6 +1161,10 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_rotate_signed_prek
 external fun uniffi_construct_core_fn_method_orchestratorcore_set_local_user_id(`ptr`: Long,`userId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_sign_bundle_data(`ptr`: Long,`bundleDataJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_sign_hybrid(`ptr`: Long,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_sign_hybrid_prekey(`ptr`: Long,`suiteId`: Byte,`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_clone_rustackstore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
@@ -1288,6 +1322,8 @@ external fun uniffi_construct_core_fn_func_sr_reconstruct_vault_key(`mnemonics`:
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sr_seal_recovery_bundle(`vaultKey`: RustBuffer.ByValue,`bundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_supports_pq_ratchet(uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_func_test_platform_bridge_roundtrip(`bridge`: Long,`key`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_func_validate_mnemonic(`mnemonic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1537,6 +1573,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_sr_seal_recovery_bundle() != 62781.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_supports_pq_ratchet() != 5109.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_test_platform_bridge_roundtrip() != 58358.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1636,6 +1675,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_apply_pq_contribution() != 43446.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_build_hybrid_identity_bind_message() != 61991.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_build_x3dh_sign_message() != 50237.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_decrypt_message() != 56464.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1643,6 +1688,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_encrypt_message() != 55888.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_ensure_hybrid_signature_key() != 6511.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_kyber_session_state() != 39459.toShort()) {
@@ -1690,6 +1738,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_healing_can_heal() != 20996.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_hybrid_signature_public_key() != 51840.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_hybrid_signature_private_key() != 32195.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_kyber_session_state() != 41061.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1706,6 +1760,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_init_session() != 15049.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_init_session_allowing_stale() != 35577.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_one_time_prekey_count() != 21478.toShort()) {
@@ -1727,6 +1784,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_sign_bundle_data() != 20046.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_sign_hybrid() != 37336.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_sign_hybrid_prekey() != 15369.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_rustackstore_cache_len() != 41894.toShort()) {
@@ -3313,6 +3376,10 @@ public interface OrchestratorCoreInterface {
     
     fun `applyPqContribution`(`contactId`: kotlin.String, `kemSharedSecret`: List<kotlin.UByte>)
     
+    fun `buildHybridIdentityBindMessage`(`hybridPublicKey`: List<kotlin.UByte>): List<kotlin.UByte>
+    
+    fun `buildX3dhSignMessage`(`suiteId`: kotlin.UByte, `publicKey`: List<kotlin.UByte>): List<kotlin.UByte>
+    
     fun `decryptMessage`(`contactId`: kotlin.String, `ephemeralPublicKey`: List<kotlin.UByte>, `messageNumber`: kotlin.UInt, `content`: List<kotlin.UByte>): DecryptedMessageResult
     
     /**
@@ -3322,6 +3389,8 @@ public interface OrchestratorCoreInterface {
     fun `decryptOfflineBatch`(`messages`: List<OfflineBatchMessage>): List<OfflineBatchResult>
     
     fun `encryptMessage`(`contactId`: kotlin.String, `plaintext`: kotlin.ByteArray): EncryptedMessageComponents
+    
+    fun `ensureHybridSignatureKey`(): List<kotlin.UByte>
     
     /**
      * Export the PQContributionManager state as a CFE binary blob.
@@ -3381,6 +3450,10 @@ public interface OrchestratorCoreInterface {
      */
     fun `healingCanHeal`(`msgNumber`: kotlin.UInt): kotlin.Boolean
     
+    fun `hybridSignaturePublicKey`(): List<kotlin.UByte>?
+    
+    fun `importHybridSignaturePrivateKey`(`privBytes`: List<kotlin.UByte>)
+    
     /**
      * Restore the PQContributionManager state from a CFE blob.
      */
@@ -3400,6 +3473,8 @@ public interface OrchestratorCoreInterface {
     
     fun `initSession`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String
     
+    fun `initSessionAllowingStale`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String
+    
     fun `oneTimePrekeyCount`(): kotlin.UInt
     
     fun `prekeysAvailableCount`(): kotlin.UInt
@@ -3416,6 +3491,10 @@ public interface OrchestratorCoreInterface {
     fun `setLocalUserId`(`userId`: kotlin.String)
     
     fun `signBundleData`(`bundleDataJson`: List<kotlin.UByte>): List<kotlin.UByte>
+    
+    fun `signHybrid`(`message`: List<kotlin.UByte>): List<kotlin.UByte>
+    
+    fun `signHybridPrekey`(`suiteId`: kotlin.UByte, `publicKey`: List<kotlin.UByte>): List<kotlin.UByte>
     
     companion object
 }
@@ -3570,6 +3649,32 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
     
 
+    override fun `buildHybridIdentityBindMessage`(`hybridPublicKey`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_build_hybrid_identity_bind_message(
+        it,
+        FfiConverterSequenceUByte.lower(`hybridPublicKey`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `buildX3dhSignMessage`(`suiteId`: kotlin.UByte, `publicKey`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_build_x3dh_sign_message(
+        it,
+        FfiConverterUByte.lower(`suiteId`),FfiConverterSequenceUByte.lower(`publicKey`),_status)
+}
+    }
+    )
+    }
+    
+
     
     @Throws(CryptoException::class)override fun `decryptMessage`(`contactId`: kotlin.String, `ephemeralPublicKey`: List<kotlin.UByte>, `messageNumber`: kotlin.UInt, `content`: List<kotlin.UByte>): DecryptedMessageResult {
             return FfiConverterTypeDecryptedMessageResult.lift(
@@ -3609,6 +3714,20 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_encrypt_message(
         it,
         FfiConverterString.lower(`contactId`),FfiConverterByteArray.lower(`plaintext`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(CryptoException::class)override fun `ensureHybridSignatureKey`(): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_ensure_hybrid_signature_key(
+        it,
+        _status)
 }
     }
     )
@@ -3848,6 +3967,32 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     
 
+    override fun `hybridSignaturePublicKey`(): List<kotlin.UByte>? {
+            return FfiConverterOptionalSequenceUByte.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_hybrid_signature_public_key(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(CryptoException::class)override fun `importHybridSignaturePrivateKey`(`privBytes`: List<kotlin.UByte>)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_import_hybrid_signature_private_key(
+        it,
+        FfiConverterSequenceUByte.lower(`privBytes`),_status)
+}
+    }
+    
+    
+
     
     /**
      * Restore the PQContributionManager state from a CFE blob.
@@ -3928,6 +4073,20 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_init_session(
+        it,
+        FfiConverterString.lower(`contactId`),FfiConverterTypeBinaryKeyBundle.lower(`recipientBundle`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(CryptoException::class)override fun `initSessionAllowingStale`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String {
+            return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_init_session_allowing_stale(
         it,
         FfiConverterString.lower(`contactId`),FfiConverterTypeBinaryKeyBundle.lower(`recipientBundle`),_status)
 }
@@ -4024,6 +4183,34 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_sign_bundle_data(
         it,
         FfiConverterSequenceUByte.lower(`bundleDataJson`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(CryptoException::class)override fun `signHybrid`(`message`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_sign_hybrid(
+        it,
+        FfiConverterSequenceUByte.lower(`message`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(CryptoException::class)override fun `signHybridPrekey`(`suiteId`: kotlin.UByte, `publicKey`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_sign_hybrid_prekey(
+        it,
+        FfiConverterUByte.lower(`suiteId`),FfiConverterSequenceUByte.lower(`publicKey`),_status)
 }
     }
     )
@@ -5619,6 +5806,8 @@ data class BinaryKeyBundle (
     var `kyberOneTimePrekeyPublic`: List<kotlin.UByte>?
     , 
     var `kyberOneTimePrekeyId`: kotlin.UInt?
+    , 
+    var `supportsPqRatchet`: kotlin.Boolean
     
 ){
     
@@ -5647,6 +5836,7 @@ public object FfiConverterTypeBinaryKeyBundle: FfiConverterRustBuffer<BinaryKeyB
             FfiConverterOptionalSequenceUByte.read(buf),
             FfiConverterOptionalSequenceUByte.read(buf),
             FfiConverterOptionalUInt.read(buf),
+            FfiConverterBoolean.read(buf),
         )
     }
 
@@ -5664,7 +5854,8 @@ public object FfiConverterTypeBinaryKeyBundle: FfiConverterRustBuffer<BinaryKeyB
             FfiConverterUInt.allocationSize(value.`kyberSpkRotationEpoch`) +
             FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberPreKeyPublic`) +
             FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberOneTimePrekeyPublic`) +
-            FfiConverterOptionalUInt.allocationSize(value.`kyberOneTimePrekeyId`)
+            FfiConverterOptionalUInt.allocationSize(value.`kyberOneTimePrekeyId`) +
+            FfiConverterBoolean.allocationSize(value.`supportsPqRatchet`)
     )
 
     override fun write(value: BinaryKeyBundle, buf: ByteBuffer) {
@@ -5682,6 +5873,7 @@ public object FfiConverterTypeBinaryKeyBundle: FfiConverterRustBuffer<BinaryKeyB
             FfiConverterOptionalSequenceUByte.write(value.`kyberPreKeyPublic`, buf)
             FfiConverterOptionalSequenceUByte.write(value.`kyberOneTimePrekeyPublic`, buf)
             FfiConverterOptionalUInt.write(value.`kyberOneTimePrekeyId`, buf)
+            FfiConverterBoolean.write(value.`supportsPqRatchet`, buf)
     }
 }
 
@@ -9428,6 +9620,16 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     UniffiLib.uniffi_construct_core_fn_func_sr_seal_recovery_bundle(
     
         FfiConverterSequenceUByte.lower(`vaultKey`),FfiConverterTypeSrRecoveryBundle.lower(`bundle`),_status)
+}
+    )
+    }
+    
+ fun `supportsPqRatchet`(): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_supports_pq_ratchet(
+    
+        _status)
 }
     )
     }
