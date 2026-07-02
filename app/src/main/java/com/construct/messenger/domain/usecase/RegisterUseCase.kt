@@ -112,6 +112,10 @@ class RegisterUseCase @Inject constructor(
                     },
                 )
                 .setReplaceExisting(true)
+                // Capability declaration for SuiteID::PQ_RATCHET (suite 3) — the server
+                // persists this and advertises it in our PreKeyBundle so initiators can
+                // negotiate the sparse continuous PQ ratchet (mirrors iOS uploadPreKeys).
+                .setSupportsPqRatchet(cryptoManager.supportsPqRatchet())
                 .build()
             grpcClient.key.uploadPreKeys(request)
         } catch (error: CancellationException) {

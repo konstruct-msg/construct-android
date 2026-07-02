@@ -117,6 +117,7 @@ class CryptoManagerInstrumentedTest {
             kyberPreKeyPublic = null,
             kyberOneTimePrekeyPublic = null,
             kyberOneTimePrekeyId = null,
+            supportsPqRatchet = false,
         )
 
         val aliceSessionId = alice.initSession("bob", bobBinaryBundle)
@@ -137,6 +138,7 @@ class CryptoManagerInstrumentedTest {
             kyberPreKeyPublic = null,
             kyberOneTimePrekeyPublic = null,
             kyberOneTimePrekeyId = null,
+            supportsPqRatchet = false,
         )
         val firstMessageForBob = BinaryFirstMessage(
             ephemeralPublicKey = firstMessage.ephemeralPublicKey,
