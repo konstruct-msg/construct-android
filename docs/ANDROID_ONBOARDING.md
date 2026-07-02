@@ -61,6 +61,7 @@
     - 12.1 [INITIATOR Flow](#121-initiator-flow)
     - 12.2 [RESPONDER Flow](#122-responder-flow)
     - 12.3 [Tie-Break (Simultaneous Init)](#123-tie-break-simultaneous-init)
+13. [Auth Tokens — PASETO v4.public](#13-auth-tokens--paseto-v4public)
 
 ---
 
@@ -1161,8 +1162,11 @@ app/src/main/java/com/construct/messenger/
 │       ├── UserService.kt
 │       └── ...
 
-├── security/                       // Crypto, Keychain
-│   ├── KeyStoreManager.kt         // KeychainManager
+├── security/                       // Crypto, Keychain, auth tokens
+│   ├── KeyStoreManager.kt         // KeychainManager (secure storage for keys + tokens)
+│   ├── TokenUtils.kt              // PASETO v4.public claims extraction (see §13)
+│   ├── AuthSessionManager.kt      // Session token state (see §13)
+│   ├── TokenRefreshCoordinator.kt // Single-flight refresh actor (see §13)
 │   └── DisplayNameGenerator.kt    // iOS DisplayNameGenerator -> Kotlin
 
 ├── util/                           // Utilities/
@@ -1917,3 +1921,204 @@ sealed class SessionError : Exception() {
 | Timer/timeout | `Task.sleep` + manual cancel | `withTimeoutOrNull` |
 | State management | `@MainActor` dictionaries | `Mutex` + `StateFlow` |
 | DI | Singletons everywhere | Hilt injection |
+
+---
+
+# 13. Auth Tokens — PASETO v4.public
+
+> **Android реализует PASETO v4.public нативно — БЕЗ поддержки JWT.**
+> Полная спецификация формата токенов, gRPC metadata, refresh-флоу и force-refresh
+> migration-стратегии — в [`docs/TOKEN_AUTH.md`](TOKEN_AUTH.md). Ниже — краткая сводка.
+
+> ⚠️ ** НЕ добавляйте JWT-парсер.** iOS несёт dual-format parser переходно, пока сервер
+> не завершит миграцию. Android — greenfield, получает PASETO с первого дня. Любой
+> токен, не начинающийся с `v4.public.`, должен трактоваться как ошибка → device re-auth.
+
+---
+
+## 13.1 Формат токена
+
+```
+v4.public.<payload>[.<footer>]
+```
+
+| Сегмент | Кодировка | Содержимое |
+|---|---|---|
+| `v4.public.` | literal | Header pre-auth |
+| `<payload>`  | base64url (без padding) | `nonce(32 байта) \|\| message(JSON claims) \|\| signature(64 байта Ed25519)` |
+| `.<footer>`  | base64url, опционально | Свободные метаданные (для auth-токенов не используется) |
+
+Подпись Ed25519 вычисляется сервером над `"paseto.v4.public." || nonce || message`.
+Клиент подпись **не верифицирует** — это делает сервер. Клиент только извлекает claims
+для last-resort восстановления `userId` (см. §13.4).
+
+### Claims
+
+| Claim | Тип | Обязателен | Назначение |
+|---|---|---|---|
+| `sub` | string (UUID 36) | да | User ID (server UUID) |
+| `jti` | string (UUID) | да | Token ID — для blocklist/revocation |
+| `exp` | int64 (unix sec) | да | Expiration |
+| `iat` | int64 (unix sec) | да | Issued at |
+| `iss` | string | да | Issuer (`construct-server`) |
+| `device_id` | string | нет | Device identifier (32-char hex) |
+
+---
+
+## 13.2 Хранение и доставка
+
+### Хранение
+
+Токены хранятся как **opaque-строки** — клиент НЕ парсит их на hot path. Платформенный
+secure store:
+
+- **Android**: `EncryptedSharedPreferences` или Keystore-backed. Никогда `SharedPreferences`
+  (plaintext).
+- **iOS**: Keychain (`AfterFirstUnlockThisDeviceOnly`).
+
+`expires_at` (protobuf `AuthTokensResponse.expires_at`, int64 Unix sec) сохраняется
+**вместе** с токенами и drive-ит расписание refresh. Не парсите `exp` из токена для
+расчёта expiry — используйте protobuf-поле.
+
+### gRPC metadata (каждый authenticated RPC)
+
+```kotlin
+Authorization: Bearer <access_token>
+x-user-id:     <userId>        // из cached session state, НЕ re-parse per call
+x-device-id:   <deviceId>      // из Keystore
+```
+
+**Unauthenticated RPCs** (НЕ несут auth headers): `GetPowChallenge`, `RegisterDevice`,
+`AuthenticateDevice`, `RefreshToken`, `CheckUsernameAvailability`.
+
+---
+
+## 13.3 Refresh-флоу
+
+- Refresh планируется на `expires_at - 5 минут`.
+- **Single-flight `TokenRefreshCoordinator`** сериализует concurrent refresh-запросы,
+  чтобы несколько UI-компонентов, hit-нувших `.unauthenticated` одновременно, не
+  соревновались на одном refresh-токене (одна сторона получила бы "already used").
+- На permanent failure (`revoked` / `already used` / `.unauthenticated` у refresh):
+  wipe сохранённых токенов → **device re-auth** (PoW challenge + device signature).
+  Messenger не имеет login/logout — identity восстанавливается из Ed25519
+  signing-key устройства в Keystore.
+
+### TTL (server-side)
+
+- access token: **24 часа** (`ACCESS_TOKEN_TTL_HOURS`)
+- refresh token: **90 дней** (`REFRESH_TOKEN_TTL_DAYS`)
+
+---
+
+## 13.4 Last-resort userId recovery
+
+Если `userId` потерян из cached session state (Keystore-entry lost, install без full
+device reset), клиент может восстановить его из `sub` claim токена. Это **единственная**
+операция клиент-side parsing на hot path.
+
+```kotlin
+object TokenUtils {
+    fun extractUserId(token: String): String? {
+        if (!token.startsWith("v4.public.")) return null
+        val payloadB64 = token.removePrefix("v4.public.").substringBefore('.')  // footer optional
+        val payload = base64UrlDecode(payloadB64) ?: return null
+        // nonce(32) + message(variable) + signature(64)
+        if (payload.size <= 32 + 64) return null
+        val message = payload.copyOfRange(32, payload.size - 64)
+        val claims = runCatching { JSONObject(String(message, Charsets.UTF_8)) }.getOrNull() ?: return null
+        return claims.optString("sub").takeIf { it.isNotEmpty() }
+    }
+
+    private fun base64UrlDecode(input: String): ByteArray? {
+        val padded = input.replace('-', '+').replace('_', '/')
+            .let { it + "=".repeat((4 - it.length % 4) % 4) }
+        return runCatching { Base64.decode(padded, Base64.NO_WRAP) }.getOrNull()
+    }
+}
+```
+
+> Client-side signature verification не требуется — см. threat model в `TOKEN_AUTH.md` §3.4.
+
+---
+
+## 13.5 Format guard при load session
+
+На app launch, после загрузки кэшированного токена, проверьте формат. Принимайте
+только `v4.public.*`:
+
+```kotlin
+fun loadSessionToken() {
+    accessToken = keyStore.loadAccessToken()
+    refreshToken = keyStore.loadRefreshToken()
+    userId = keyStore.loadUserId()
+
+    if (accessToken != null && !accessToken!!.startsWith("v4.public.")) {
+        Log.e(TAG, "Unexpected token format in cache — clearing session")
+        clearSession()
+        isSessionInvalidated = true
+        return
+    }
+    syncAuthCache()
+}
+```
+
+---
+
+## 13.6 Force-refresh migration (JWT → PASETO)
+
+Сервер мигрирует с RS256 JWT на PASETO v4.public. Messenger **не имеет** login/logout,
+и принудительная инвалидация сессии может привести к потере аккаунта пользователем.
+Поэтому миграция идёт через **force-refresh с заменой токена**, не через hard cutover:
+
+1. **Сервер выдаёт PASETO** (после cutover). Новые login/device-init получают PASETO.
+2. **Существующие JWT-сессии продолжают работать** — `verify_token` принимает оба
+   формата в переходном окне.
+3. **Force-refresh**: при очередном истечении access-токена клиент вызовет
+   `RefreshToken` со старым JWT refresh-токеном. Сервер принимает его (dual verify),
+   потребляет JWT refresh `jti`, возвращает **PASETO**-пару. Сессия теперь на PASETO.
+4. **Окно ротации**: до `refresh_token_ttl_days` (90 дней) для естественного перехода.
+   После — stale JWT refresh истёк, оставшиеся клиенты re-auth via device signature (PoW).
+5. **Legacy JWT код удаляется** с серверра и iOS-клиента после завершения окна ротации
+   и нулевого объёма JWT verify в течение недели.
+
+**Android (этот репо) — greenfield, JWT не реализует.** Если Android-клиент получит
+токен не `v4.public.*`, трактуйте как ошибку → device re-auth. Сервер не выдаёт JWT
+новым клиентам после cutover.
+
+---
+
+## 13.7 Imports / proto
+
+`AuthTokensResponse` определён в `shared/proto/services/auth_service.proto`:
+
+```protobuf
+message AuthTokensResponse {
+    string access_token  = 2;
+    string refresh_token = 3;
+    int64  expires_at    = 4;   // unix sec — drive refresh schedule from THIS
+}
+message RefreshTokenRequest  { string refresh_token = 1; }
+```
+
+**Важно**: `expires_at` — авторитетный expiry. Не парсите `exp` claim токена для расчёта
+expiry на клиенте — используйте protobuf-поле напрямую. Это делает клиентов robust к
+server-side TTL changes.
+
+---
+
+## 13.8 Реализация (checklist)
+
+- [ ] `TokenUtils.kt` — `extractUserId`, формат-детектор — см. §13.4
+- [ ] `KeyStoreManager.kt` — secure storage для access/refresh tokens + userId + deviceId
+- [ ] `AuthInterceptor.kt` — gRPC metadata injection (Bearer + x-user-id + x-device-id)
+- [ ] `TokenRefreshCoordinator.kt` — single-flight refresh actor
+- [ ] `AuthSessionManager.kt` — observable session state, `saveTokens`/`clearSession`
+- [ ] `AuthService.kt` — gRPC client wrapper для RegisterDevice / AuthenticateDevice /
+      RefreshToken
+- [ ] Device re-auth fallback на permanent refresh failure
+- [ ] Unit tests: `TokenUtilsTest` (extract sub; reject non-PASETO; malformed/too-short
+      payload; bad JSON; token with footer), `AuthSessionManagerTest` (format guard),
+      `TokenRefreshCoordinatorTest` (single-flight, permanent-invalid classification)
+
+> Полный технический документ: [`docs/TOKEN_AUTH.md`](TOKEN_AUTH.md).
