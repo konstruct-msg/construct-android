@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Generated UniFFI bindings guard java.lang.ref.Cleaner behind a runtime
+         Class.forName check (falling back to the JNA cleaner below API 33), but
+         lint cannot see through the reflection guard and flags NewApi. -->
+    <issue id="NewApi">
+        <ignore path="**/crypto/uniffi/**" />
+    </issue>
+</lint>
