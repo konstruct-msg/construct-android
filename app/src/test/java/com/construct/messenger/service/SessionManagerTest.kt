@@ -5,7 +5,9 @@ import com.construct.messenger.data.api.GrpcClient
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.argumentCaptor
@@ -21,7 +23,7 @@ import uniffi.construct_core.BinaryKeyBundle
 /**
  * Covers [SessionManager.initSession]'s private `PreKeyBundle.toBinaryKeyBundle()` mapper
  * indirectly (through the public entry point) since it's the riskiest hand-written part of
- * the gRPC integration: 13 fields, several optional, no compiler help if a field is dropped.
+ * the gRPC integration: 14 fields, several optional, no compiler help if a field is dropped.
  */
 class SessionManagerTest {
 
@@ -77,6 +79,7 @@ class SessionManagerTest {
         assertNull(mapped.kyberOneTimePrekeyId)
         assertEquals(0UL, mapped.kyberSpkUploadedAt)
         assertEquals(0u, mapped.kyberSpkRotationEpoch)
+        assertFalse(mapped.supportsPqRatchet)
     }
 
     @Test
@@ -95,6 +98,7 @@ class SessionManagerTest {
             .setKyberOneTimePreKeyId(7)
             .setKyberSpkUploadedAt(2_000L)
             .setKyberSpkRotationEpoch(4)
+            .setSupportsPqRatchet(true)
             .build()
         val response = GetPreKeyBundleResponse.newBuilder()
             .setBundle(bundle)
@@ -116,5 +120,6 @@ class SessionManagerTest {
         assertEquals(7u, mapped.kyberOneTimePrekeyId)
         assertEquals(2_000UL, mapped.kyberSpkUploadedAt)
         assertEquals(4u, mapped.kyberSpkRotationEpoch)
+        assertTrue(mapped.supportsPqRatchet)
     }
 }

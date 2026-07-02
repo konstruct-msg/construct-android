@@ -57,6 +57,9 @@ class CryptoManager @Inject constructor() {
     fun generateOneTimePrekeys(count: Int): List<OtpkPair> =
         requireCore().generateOneTimePrekeys(count.toUInt())
 
+    /** Whether this build supports SuiteID::PQ_RATCHET (suite 3) — declared on prekey upload. */
+    fun supportsPqRatchet(): Boolean = uniffi.construct_core.supportsPqRatchet()
+
     fun initSession(contactId: String, recipientBundle: BinaryKeyBundle): String =
         requireCore().initSession(contactId, recipientBundle)
 
