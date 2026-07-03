@@ -90,7 +90,7 @@ class TokenRefreshCoordinator @Inject constructor(
             // Return cached result if fresh enough — this is what gives us
             // single-flight behaviour: after the first caller completes, subsequent
             // callers see the cached value rather than starting a new RPC.
-            val now = currentTimeMillis()
+            val now = System.currentTimeMillis()
             val cached = cachedResult
             if (cached != null && now - lastRefreshTimeMs < CACHE_TTL_MS) {
                 return@withLock cached
@@ -177,5 +177,4 @@ class TokenRefreshCoordinator @Inject constructor(
     }
 }
 
-/** Visible for testing — allows injecting a fake clock into [TokenRefreshCoordinator]. */
-internal fun currentTimeMillis(): Long = System.currentTimeMillis()
+
