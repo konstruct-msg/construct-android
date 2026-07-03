@@ -44,13 +44,15 @@ stealth/                     # sealed sender (см. §5)           [КАРКАС
 
 Рекомендуемая последовательность (каждый шаг тестируем сам по себе):
 
-1. **Приём.** `MessageStreamService.start(scope)` после логина →
-   collect `events` в новом `MessageRouter`-слое (его ещё нет; зеркалить iOS
-   `MessageRouter`): `StreamEvent.Message` → если `envelope.hasSealedSender()`
-   → `StealthSenderService.resolveSender(sealedInner)` → иначе
-   `envelope.sender` → `SessionManager.decryptMessage` → репозиторий → UI.
-   Подписки: `updateSubscriptions(listOf("direct:<idA>:<idB>", …))` — id
-   отсортированы, как на iOS.
+1. **Приём.** `MessageStreamService.start(scope)` + `MessageRouter.start(scope)`
+   после логина → collect `MessageRouter.routed`. Роутер уже делает dedup,
+   sealed-resolve и разбивку control/message. Следующий слой —
+   **MessageProcessor поверх CFE** (`OrchestratorCore.handleEvent`), НЕ
+   компонентный `decryptMessage`: это зафиксированное архитектурное решение,
+   `construct-docs/decisions/android-receive-path-cfe-not-component.md` —
+   прочитать до реализации. Подписки:
+   `updateSubscriptions(listOf("direct:<idA>:<idB>", …))` — id отсортированы,
+   как на iOS.
 2. **Отправка.** ViewModel → SendMessageUseCase (нет; создать) →
    `SessionManager.encryptMessage` → ветвление из KDoc `MessagingService`
    (identified / legacy-sealed / Phase-2-sealed) → статусы в UI из `SendResult`.
@@ -115,9 +117,10 @@ E2e-проверка iOS↔Android закроет пункт §5 decision-док
 ## 7. Definition of done для этого слоя
 
 - [x] MessageRouter (dedup / sealed-resolve / классификация; 2026-07-03)
-- [ ] Процессор поверх роутера: дешифровка + session healing → репозитории
-      (правильная основа — `OrchestratorCore.handleEvent`, не компонентный
-      `decryptMessage`; см. §3.1)
+- [ ] MessageProcessor поверх роутера: дешифровка + session healing →
+      репозитории. **Основа зафиксирована** — CFE `handleEvent`, не компонентный
+      `decryptMessage`: `construct-docs/decisions/android-receive-path-cfe-not-component.md`
+      (там же — 7 обязанностей Kotlin, стоивших iOS багов)
 - [ ] SendMessageUseCase с retry/backoff (§3.2)
 - [ ] Stealth в send/receive путях + e2e iOS↔Android
 - [ ] Расширение StreamEvent (ack/error/presence) под нужды UI
