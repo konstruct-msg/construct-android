@@ -20,6 +20,8 @@ data/auth/
 ├── TokenRefreshCoordinator.kt                                  [РАБОТАЕТ]
 service/
 ├── SessionManager.kt        # DR-сессии поверх CryptoManager   [РАБОТАЕТ]
+├── MessageRouter.kt         # стрим → домен-события: dedup,    [КАРКАС]
+│                            # sealed-résolve, control/message
 crypto/
 ├── CryptoManager.kt         # обёртка UniFFI ClassicCryptoCore [РАБОТАЕТ]
 stealth/                     # sealed sender (см. §5)           [КАРКАС]
@@ -112,7 +114,10 @@ E2e-проверка iOS↔Android закроет пункт §5 decision-док
 
 ## 7. Definition of done для этого слоя
 
-- [ ] MessageRouter + подключение приёма к репозиториям (§3.1)
+- [x] MessageRouter (dedup / sealed-resolve / классификация; 2026-07-03)
+- [ ] Процессор поверх роутера: дешифровка + session healing → репозитории
+      (правильная основа — `OrchestratorCore.handleEvent`, не компонентный
+      `decryptMessage`; см. §3.1)
 - [ ] SendMessageUseCase с retry/backoff (§3.2)
 - [ ] Stealth в send/receive путях + e2e iOS↔Android
 - [ ] Расширение StreamEvent (ack/error/presence) под нужды UI

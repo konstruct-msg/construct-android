@@ -44,8 +44,13 @@ class StealthSenderService @Inject constructor(
         context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
     private val random = SecureRandom()
 
-    /** Resolved sender identity + the real content type carried inside SealedInner. */
-    data class ResolvedSender(val senderId: String, val contentType: ContentType)
+    /** Resolved sender identity + the real content type and E2EE payload carried
+     * inside SealedInner (the outer envelope's payload is empty for sealed sends). */
+    data class ResolvedSender(
+        val senderId: String,
+        val contentType: ContentType,
+        val encryptedPayload: ByteArray,
+    )
 
     // ── Sender certificate (from identity-service, 24h TTL) ────────────────
 
@@ -169,7 +174,7 @@ class StealthSenderService @Inject constructor(
                 return null
             }
 
-            ResolvedSender(cert.senderUserId, inner.contentType)
+            ResolvedSender(cert.senderUserId, inner.contentType, inner.encryptedPayload.toByteArray())
         } catch (e: Exception) {
             Log.e(TAG, "unseal failed", e)
             null
