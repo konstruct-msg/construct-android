@@ -762,11 +762,19 @@ external fun uniffi_construct_core_checksum_func_pp_blind_token(
 ): Short
 external fun uniffi_construct_core_checksum_func_pp_finalize_token(
 ): Short
+external fun uniffi_construct_core_checksum_func_pp_seal_token_bytes(
+): Short
 external fun uniffi_construct_core_checksum_func_pp_verify_client(
 ): Short
 external fun uniffi_construct_core_checksum_func_random_send_delay_ms(
 ): Short
 external fun uniffi_construct_core_checksum_func_recommended_send_delay_ms(
+): Short
+external fun uniffi_construct_core_checksum_func_sealed_seal_sender_cert(
+): Short
+external fun uniffi_construct_core_checksum_func_sealed_unseal_sender_cert(
+): Short
+external fun uniffi_construct_core_checksum_func_sealed_verify_sender_cert(
 ): Short
 external fun uniffi_construct_core_checksum_func_sign_invite_data(
 ): Short
@@ -1302,12 +1310,20 @@ external fun uniffi_construct_core_fn_func_pp_blind_token(`nonce`: RustBuffer.By
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_pp_finalize_token(`evaluatedBytes`: RustBuffer.ByValue,`blindFactorBytes`: RustBuffer.ByValue,`nonce`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_pp_seal_token_bytes(`token`: RustBuffer.ByValue,`serverEncryptionKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_pp_verify_client(`evaluatedBytes`: RustBuffer.ByValue,`nonce`: RustBuffer.ByValue,`serverPubkeyBytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_func_random_send_delay_ms(`maxDelayMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_func_recommended_send_delay_ms(`isHighPriority`: Byte,`batteryLevel`: Float,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_construct_core_fn_func_sealed_seal_sender_cert(`certBytes`: RustBuffer.ByValue,`recipientIdentityKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_sealed_unseal_sender_cert(`sealedBox`: RustBuffer.ByValue,`ourIdentityPriv`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_sealed_verify_sender_cert(`userId`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,`identityKey`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,`issuedAt`: Long,`expiresAt`: Long,`signature`: RustBuffer.ByValue,`serverVerifyingKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_func_sign_invite_data(`data`: RustBuffer.ByValue,`identitySecretKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sign_recovery_challenge(`privateKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1543,6 +1559,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_pp_finalize_token() != 38839.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_pp_seal_token_bytes() != 51612.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_pp_verify_client() != 14654.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1550,6 +1569,15 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_recommended_send_delay_ms() != 24315.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_sealed_seal_sender_cert() != 11670.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_sealed_unseal_sender_cert() != 57873.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_sealed_verify_sender_cert() != 7421.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_sign_invite_data() != 47259.toShort()) {
@@ -9497,6 +9525,23 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     
 
         /**
+         * Seal a finalized 32-byte token to the server's X25519 token-encryption
+         * key (token_encryption_key from /.well-known/construct-server) so relay
+         * operators cannot read spent tokens. Returns
+         * ephemeral_pub(32) || nonce(12) || ciphertext || tag(16).
+         */
+    @Throws(CryptoException::class) fun `ppSealTokenBytes`(`token`: List<kotlin.UByte>, `serverEncryptionKey`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_pp_seal_token_bytes(
+    
+        FfiConverterSequenceUByte.lower(`token`),FfiConverterSequenceUByte.lower(`serverEncryptionKey`),_status)
+}
+    )
+    }
+    
+
+        /**
          * Verify the evaluated point is a valid Ristretto255 curve point.
          * server_pubkey_bytes is reserved for future DLEQ batch proof verification.
          * Returns false if evaluated_bytes cannot be decompressed.
@@ -9526,6 +9571,56 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     UniffiLib.uniffi_construct_core_fn_func_recommended_send_delay_ms(
     
         FfiConverterBoolean.lower(`isHighPriority`),FfiConverterFloat.lower(`batteryLevel`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Seal serialized SenderCertificate bytes to the recipient's X25519
+         * identity public key (32 bytes). Returns the sealed box:
+         * ephemeral_pub(32) || nonce(12) || ciphertext || tag(16).
+         * Bit-compatible with the iOS CryptoKit implementation.
+         */
+    @Throws(CryptoException::class) fun `sealedSealSenderCert`(`certBytes`: List<kotlin.UByte>, `recipientIdentityKey`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_sealed_seal_sender_cert(
+    
+        FfiConverterSequenceUByte.lower(`certBytes`),FfiConverterSequenceUByte.lower(`recipientIdentityKey`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Open a sealed sender box with our X25519 identity private key
+         * (32 bytes). Returns the serialized SenderCertificate bytes — the caller
+         * parses the proto and then calls sealed_verify_sender_cert.
+         */
+    @Throws(CryptoException::class) fun `sealedUnsealSenderCert`(`sealedBox`: List<kotlin.UByte>, `ourIdentityPriv`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_sealed_unseal_sender_cert(
+    
+        FfiConverterSequenceUByte.lower(`sealedBox`),FfiConverterSequenceUByte.lower(`ourIdentityPriv`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Verify the server Ed25519 signature over a SenderCertificate's fields
+         * (variant-0 payload: user_id || domain || identity_key || device_id ||
+         * BE64(issued_at) || BE64(expires_at) — no separators).
+         * server_verifying_key is the 32-byte bundle verification key from
+         * /.well-known/construct-server. Returns false on any malformed input.
+         */ fun `sealedVerifySenderCert`(`userId`: kotlin.String, `domain`: kotlin.String, `identityKey`: List<kotlin.UByte>, `deviceId`: kotlin.String, `issuedAt`: kotlin.Long, `expiresAt`: kotlin.Long, `signature`: List<kotlin.UByte>, `serverVerifyingKey`: List<kotlin.UByte>): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_sealed_verify_sender_cert(
+    
+        FfiConverterString.lower(`userId`),FfiConverterString.lower(`domain`),FfiConverterSequenceUByte.lower(`identityKey`),FfiConverterString.lower(`deviceId`),FfiConverterLong.lower(`issuedAt`),FfiConverterLong.lower(`expiresAt`),FfiConverterSequenceUByte.lower(`signature`),FfiConverterSequenceUByte.lower(`serverVerifyingKey`),_status)
 }
     )
     }

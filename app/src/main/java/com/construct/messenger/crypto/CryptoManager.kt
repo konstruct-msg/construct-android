@@ -60,6 +60,11 @@ class CryptoManager @Inject constructor() {
     /** Whether this build supports SuiteID::PQ_RATCHET (suite 3) — declared on prekey upload. */
     fun supportsPqRatchet(): Boolean = uniffi.construct_core.supportsPqRatchet()
 
+    /** X25519 identity **secret** key bytes — needed by
+     * [com.construct.messenger.stealth.StealthSenderService] to unseal inbound
+     * sender certificates. Never persist or log. */
+    fun identityKeyBytes(): ByteArray = requireCore().getIdentityKeyBytes()
+
     fun initSession(contactId: String, recipientBundle: BinaryKeyBundle): String =
         requireCore().initSession(contactId, recipientBundle)
 
