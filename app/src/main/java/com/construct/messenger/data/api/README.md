@@ -1,9 +1,12 @@
 # data/api/
 
-gRPC services + transport.
+gRPC services + transport. **Полная карта слоя и порядок подключения UI —
+`docs/GRPC_LAYER.md`.**
 
-- `GrpcClient.kt`, `AuthService.kt`, `KeyService.kt`, `MessagingService.kt`, `MessageStreamService.kt`
-- `VeilProxy.kt` — thin wrapper over the Rust VEIL happy-eyeballs coordinator (NOT a Kotlin fallback loop).
+- `GrpcClient.kt` — два канала (auth / sealed) + все coroutine-стабы.
+- `MessagingService.kt` — унарные send / sendSealed / getPendingMessages.
+- `MessageStreamService.kt` — bidi-стрим приёма (subscribe, heartbeat, cursor, reconnect).
+- Planned: `VeilProxy.kt` — thin wrapper over the Rust VEIL happy-eyeballs coordinator (NOT a Kotlin fallback loop).
 
 ## Generated stubs
 
