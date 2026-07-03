@@ -1,18 +1,14 @@
 package com.construct.messenger.domain.usecase
 
-import android.util.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager
 import com.google.protobuf.ByteString
-import kotlinx.coroutines.CancellationException
 import shared.proto.services.v1.AuthServiceOuterClass.AuthTokensResponse
 import shared.proto.services.v1.AuthServiceOuterClass.DevicePublicKeys
 import shared.proto.services.v1.AuthServiceOuterClass.GetPowChallengeRequest
 import shared.proto.services.v1.AuthServiceOuterClass.RegisterDeviceRequest
 import shared.proto.services.v1.AuthServiceOuterClass.PowSolution as PowSolutionProto
-import shared.proto.services.v1.KeyServiceOuterClass.OneTimePreKey
-import shared.proto.services.v1.KeyServiceOuterClass.UploadPreKeysRequest
 import javax.inject.Inject
 
 /** [AuthTokensResponse] plus the [deviceId] used to obtain it — the device id is derived
@@ -45,6 +41,7 @@ class RegisterUseCase @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val grpcClient: GrpcClient,
     private val keystoreManager: KeystoreManager,
+    private val uploadPreKeysUseCase: UploadPreKeysUseCase,
 ) {
     suspend operator fun invoke(
         username: String?,
@@ -96,37 +93,13 @@ class RegisterUseCase @Inject constructor(
         return RegistrationResult(response.tokens, deviceId)
     }
 
-    /** Non-fatal: matches iOS `OtpkReplenishmentService.generateAndUpload` — a failed
-     * upload is logged and swallowed, not surfaced as a registration error. */
+    /** Non-fatal: delegates to [UploadPreKeysUseCase] — a failed upload is logged and
+     * swallowed, not surfaced as a registration error. */
     private suspend fun uploadInitialOneTimePrekeys(deviceId: String) {
-        try {
-            val otpks = cryptoManager.generateOneTimePrekeys(INITIAL_OTPK_COUNT)
-            val request = UploadPreKeysRequest.newBuilder()
-                .setDeviceId(deviceId)
-                .addAllPreKeys(
-                    otpks.map { otpk ->
-                        OneTimePreKey.newBuilder()
-                            .setKeyId(otpk.keyId.toInt())
-                            .setPublicKey(otpk.publicKey.toByteString())
-                            .build()
-                    },
-                )
-                .setReplaceExisting(true)
-                // Capability declaration for SuiteID::PQ_RATCHET (suite 3) — the server
-                // persists this and advertises it in our PreKeyBundle so initiators can
-                // negotiate the sparse continuous PQ ratchet (mirrors iOS uploadPreKeys).
-                .setSupportsPqRatchet(cryptoManager.supportsPqRatchet())
-                .build()
-            grpcClient.key.uploadPreKeys(request)
-        } catch (error: CancellationException) {
-            throw error
-        } catch (error: Exception) {
-            Log.w(TAG, "Initial OTPK upload failed (non-fatal)", error)
-        }
+        uploadPreKeysUseCase(deviceId, count = INITIAL_OTPK_COUNT, replaceExisting = true)
     }
 
     private companion object {
-        const val TAG = "RegisterUseCase"
         const val CLASSIC_CRYPTO_SUITE_LABEL = "Curve25519+Ed25519"
         const val INITIAL_OTPK_COUNT = 100
     }

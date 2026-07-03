@@ -19,8 +19,7 @@ import shared.proto.services.v1.AuthServiceOuterClass.GetPowChallengeResponse
 import shared.proto.services.v1.AuthServiceOuterClass.RegisterDeviceRequest
 import shared.proto.services.v1.AuthServiceOuterClass.RegisterDeviceResponse
 import shared.proto.services.v1.KeyServiceGrpcKt.KeyServiceCoroutineStub
-import shared.proto.services.v1.KeyServiceOuterClass.UploadPreKeysRequest
-import shared.proto.services.v1.KeyServiceOuterClass.UploadPreKeysResponse
+
 import uniffi.construct_core.OtpkPair
 import uniffi.construct_core.PowSolution
 import uniffi.construct_core.RegistrationBundleFields
@@ -33,6 +32,7 @@ class RegisterUseCaseTest {
     private val authStub: AuthServiceCoroutineStub = mock()
     private val keyStub: KeyServiceCoroutineStub = mock()
 
+    private val uploadPreKeysUseCase: UploadPreKeysUseCase = mock()
     private lateinit var registerUseCase: RegisterUseCase
 
     @Before
@@ -42,7 +42,7 @@ class RegisterUseCaseTest {
         whenever(cryptoManager.generateOneTimePrekeys(any())).thenReturn(
             listOf(OtpkPair(keyId = 1u, publicKey = listOf(1u, 2u))),
         )
-        registerUseCase = RegisterUseCase(cryptoManager, grpcClient, keystoreManager)
+        registerUseCase = RegisterUseCase(cryptoManager, grpcClient, keystoreManager, uploadPreKeysUseCase)
     }
 
     @Test
@@ -74,8 +74,7 @@ class RegisterUseCaseTest {
             .build()
         whenever(authStub.registerDevice(any(), any()))
             .thenReturn(RegisterDeviceResponse.newBuilder().setTokens(tokens).build())
-        whenever(keyStub.uploadPreKeys(any(), any()))
-            .thenReturn(UploadPreKeysResponse.newBuilder().setSuccess(true).build())
+
 
         val steps = mutableListOf<RegistrationStep>()
         val result = registerUseCase("alice") { steps += it }
@@ -111,11 +110,11 @@ class RegisterUseCaseTest {
         verify(cryptoManager).setLocalUserId("user-1")
         verify(keystoreManager).saveTokens(tokens, "device-1")
 
-        val uploadCaptor = argumentCaptor<UploadPreKeysRequest>()
-        verify(keyStub).uploadPreKeys(uploadCaptor.capture(), any())
-        assertEquals("device-1", uploadCaptor.firstValue.deviceId)
-        assertEquals(1, uploadCaptor.firstValue.preKeysCount)
-        assertEquals(true, uploadCaptor.firstValue.replaceExisting)
+        verify(uploadPreKeysUseCase).invoke(
+            eq("device-1"),
+            eq(100),
+            eq(true),
+        )
     }
 
     @Test
@@ -138,7 +137,8 @@ class RegisterUseCaseTest {
                 .setTokens(AuthTokensResponse.newBuilder().setUserId("u").build())
                 .build(),
         )
-        whenever(keyStub.uploadPreKeys(any(), any())).thenThrow(RuntimeException("network down"))
+        whenever(uploadPreKeysUseCase.invoke(any(), any(), any()))
+            .thenReturn(UploadPreKeysResult.Failed(RuntimeException("network down")))
 
         val result = registerUseCase("alice")
 
@@ -165,8 +165,8 @@ class RegisterUseCaseTest {
                 .setTokens(AuthTokensResponse.newBuilder().setUserId("u").build())
                 .build(),
         )
-        whenever(keyStub.uploadPreKeys(any(), any()))
-            .thenReturn(UploadPreKeysResponse.newBuilder().setSuccess(true).build())
+        whenever(uploadPreKeysUseCase.invoke(any(), any(), any()))
+            .thenReturn(UploadPreKeysResult.Uploaded(1))
 
         registerUseCase(null)
 
@@ -175,3 +175,4 @@ class RegisterUseCaseTest {
         assertEquals("", requestCaptor.firstValue.username)
     }
 }
+

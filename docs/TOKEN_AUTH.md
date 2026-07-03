@@ -251,7 +251,10 @@ device re-auth. The server will not issue JWT to new clients post-cutover.
 
 - [ ] `TokenUtils.kt` (extractUserId, format guard) — see §3.4
 - [ ] `KeyStoreManager.kt` — secure storage for access/refresh tokens + userId + deviceId
-- [ ] `AuthInterceptor.kt` — gRPC metadata injection (Bearer + x-user-id + x-device-id)
+- [x] `AuthInterceptor.kt` — gRPC metadata injection (Bearer + x-user-id + x-device-id)
+  - 6 unauthenticated methods (per §3.2 + Stealth v2 `SendSealedMessage`)
+  - `@Singleton`, injected via Hilt into `GrpcClient` channel
+  - Missing values silently skipped (no crash on null token/userId/deviceId)
 - [ ] `TokenRefreshCoordinator.kt` — single-flight refresh actor
 - [ ] `AuthSessionManager.kt` — observable session state, `saveTokens`/`clearSession`
 - [ ] `AuthService.kt` — gRPC client wrapper for RegisterDevice / AuthenticateDevice /
