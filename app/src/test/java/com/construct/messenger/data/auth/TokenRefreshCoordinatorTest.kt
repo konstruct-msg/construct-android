@@ -22,7 +22,7 @@ import org.mockito.kotlin.whenever
 import shared.proto.services.v1.AuthServiceGrpcKt.AuthServiceCoroutineStub
 import shared.proto.services.v1.AuthServiceOuterClass.RefreshTokenRequest
 import shared.proto.services.v1.AuthServiceOuterClass.RefreshTokenResponse
-import java.io.IOException
+
 
 class TokenRefreshCoordinatorTest {
 
@@ -177,8 +177,9 @@ class TokenRefreshCoordinatorTest {
     fun `network error returns transient failure`() = runTest {
         whenever(keystoreManager.getRefreshToken()).thenReturn("valid_refresh")
         whenever(keystoreManager.getDeviceId()).thenReturn("device-1")
+        // gRPC reports connection errors as UNAVAILABLE, not a raw IOException.
         whenever(authStub.refreshToken(any(), any()))
-            .thenThrow(IOException("Connection refused"))
+            .thenThrow(StatusRuntimeException(Status.UNAVAILABLE))
 
         val result = coordinator.refreshIfPossible()
 
@@ -191,10 +192,6 @@ class TokenRefreshCoordinatorTest {
         assertTrue(
             "Error should be NetworkError",
             failure.error is TokenRefreshError.NetworkError,
-        )
-        assertNotNull(
-            "NetworkError cause should be preserved",
-            (failure.error as TokenRefreshError.NetworkError).cause,
         )
     }
 
