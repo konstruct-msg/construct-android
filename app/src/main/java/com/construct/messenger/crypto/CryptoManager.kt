@@ -1,10 +1,14 @@
 package com.construct.messenger.crypto
 
+import com.construct.messenger.service.OrchestratorGateway
 import uniffi.construct_core.BinaryFirstMessage
 import uniffi.construct_core.BinaryKeyBundle
+import uniffi.construct_core.CfeAction
+import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.ClassicCryptoCore
 import uniffi.construct_core.DecryptedMessageResult
 import uniffi.construct_core.EncryptedMessageComponents
+import uniffi.construct_core.OrchestratorCore
 import uniffi.construct_core.OtpkPair
 import uniffi.construct_core.PowSolution
 import uniffi.construct_core.RecoveryKeypair
@@ -15,6 +19,7 @@ import uniffi.construct_core.computePow
 import uniffi.construct_core.computePowWithProgress
 import uniffi.construct_core.createCryptoCore
 import uniffi.construct_core.createCryptoCoreFromKeys
+import uniffi.construct_core.createOrchestratorCoreFromKeys
 import uniffi.construct_core.deriveDeviceId
 import uniffi.construct_core.deriveRecoveryKeypair
 import uniffi.construct_core.generateMnemonic
@@ -24,38 +29,92 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * App-level wrapper over the UniFFI [ClassicCryptoCore] binding.
+ * App-level wrapper over the UniFFI cores. Implements [OrchestratorGateway] so
+ * [com.construct.messenger.service.MessageProcessor] can drive CFE events.
  *
- * **Binary pipeline (mandatory):** [exportSessionBytes]/[importSessionBytes] cross the
- * UniFFI boundary as raw bytes (CFE — 16-byte header + MessagePack), never JSON/base64
- * strings. See `construct-messenger/AGENTS.md` §"Binary Data Pipeline".
+ * ## Two-phase core (mirrors iOS `CryptoManager`, `API_CRYPTO_GUIDE.md` §2.3)
+ *
+ *  - **Bootstrap** ([ClassicCryptoCore]) — created by [loadOrCreate] before login.
+ *    Used for registration only: key generation, prekey bundle, OTPK generation.
+ *    It has NO `handleEvent` — CFE requires the orchestrator.
+ *  - **Orchestrator** ([OrchestratorCore]) — built by [setLocalUserId] once the
+ *    server user id is known. Becomes THE working core: all session/message ops
+ *    route here, and it owns the CFE engine. The bootstrap core is closed and
+ *    dropped at that point; its in-session OTPKs are carried over.
+ *
+ * **Threading:** every native core call is serialized under [coreLock] — the
+ * UniFFI cores are not safe for concurrent access (decision doc §"single-thread
+ * core access").
+ *
+ * **Binary pipeline (mandatory):** session/key bytes cross the FFI as raw bytes
+ * (CFE — 16-byte header + MessagePack), never JSON/base64. See AGENTS.md.
  */
 @Singleton
-class CryptoManager @Inject constructor() {
+class CryptoManager @Inject constructor() : OrchestratorGateway {
+
+    private val coreLock = Any()
 
     @Volatile
-    private var core: ClassicCryptoCore? = null
+    private var bootstrapCore: ClassicCryptoCore? = null
 
-    private fun requireCore(): ClassicCryptoCore =
-        core ?: error("CryptoManager not initialized — call loadOrCreate() first")
+    @Volatile
+    private var orchestrator: OrchestratorCore? = null
+
+    /** True once [setLocalUserId] has built the orchestrator — the receive path
+     * (CFE `handleEvent`) is only available after this. */
+    val isMessagingReady: Boolean
+        get() = orchestrator != null
+
+    private fun requireBootstrap(): ClassicCryptoCore =
+        bootstrapCore ?: error("CryptoManager not initialized — call loadOrCreate() first")
 
     /** Creates a fresh core (new identity) or restores one from exported private keys. */
-    fun loadOrCreate(savedPrivateKeys: ByteArray? = null): RegistrationBundleFields {
+    fun loadOrCreate(savedPrivateKeys: ByteArray? = null): RegistrationBundleFields = synchronized(coreLock) {
         val instance = if (savedPrivateKeys != null) {
             createCryptoCoreFromKeys(savedPrivateKeys.toUByteList())
         } else {
             createCryptoCore()
         }
-        core = instance
-        return instance.getRegistrationBundleFields()
+        bootstrapCore = instance
+        instance.getRegistrationBundleFields()
     }
 
-    fun setLocalUserId(userId: String) = requireCore().setLocalUserId(userId)
+    /**
+     * Promote to the orchestrator once the server-assigned [userId] (a 36-char
+     * UUID — NOT the device hash; wrong id = permanent AEAD failure) is known.
+     * Idempotent: updates the id on an existing orchestrator.
+     */
+    fun setLocalUserId(userId: String) = synchronized(coreLock) {
+        orchestrator?.let {
+            it.setLocalUserId(userId)
+            return@synchronized
+        }
+        val boot = requireBootstrap()
+        val orch = createOrchestratorCoreFromKeys(boot.exportPrivateKeys(), userId)
+        // Carry OTPKs generated this session (registration) into the orchestrator;
+        // no-op when the bootstrap core generated none (returning-user login).
+        runCatching { orch.importOneTimePrekeys(boot.exportOneTimePrekeys()) }
+        orchestrator = orch
+        bootstrapCore = null
+        boot.close()
+    }
 
-    fun exportPrivateKeys(): ByteArray = requireCore().exportPrivateKeys().toByteArray()
+    // ── OrchestratorGateway (CFE receive path) ──────────────────────────────
 
-    fun generateOneTimePrekeys(count: Int): List<OtpkPair> =
-        requireCore().generateOneTimePrekeys(count.toUInt())
+    override fun handleEvent(event: CfeIncomingEvent): List<CfeAction> = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first")).handleEvent(event)
+    }
+
+    // ── Registration / identity ─────────────────────────────────────────────
+
+    fun exportPrivateKeys(): ByteArray = synchronized(coreLock) {
+        (orchestrator?.exportPrivateKeys() ?: requireBootstrap().exportPrivateKeys()).toByteArray()
+    }
+
+    fun generateOneTimePrekeys(count: Int): List<OtpkPair> = synchronized(coreLock) {
+        orchestrator?.generateOneTimePrekeys(count.toUInt())
+            ?: requireBootstrap().generateOneTimePrekeys(count.toUInt())
+    }
 
     /** Whether this build supports SuiteID::PQ_RATCHET (suite 3) — declared on prekey upload. */
     fun supportsPqRatchet(): Boolean = uniffi.construct_core.supportsPqRatchet()
@@ -63,40 +122,63 @@ class CryptoManager @Inject constructor() {
     /** X25519 identity **secret** key bytes — needed by
      * [com.construct.messenger.stealth.StealthSenderService] to unseal inbound
      * sender certificates. Never persist or log. */
-    fun identityKeyBytes(): ByteArray = requireCore().getIdentityKeyBytes()
+    fun identityKeyBytes(): ByteArray = synchronized(coreLock) {
+        orchestrator?.getIdentityKeyBytes() ?: requireBootstrap().getIdentityKeyBytes()
+    }
 
-    fun initSession(contactId: String, recipientBundle: BinaryKeyBundle): String =
-        requireCore().initSession(contactId, recipientBundle)
+    // ── Sessions / messages (orchestrator once logged in) ───────────────────
+
+    fun initSession(contactId: String, recipientBundle: BinaryKeyBundle): String = synchronized(coreLock) {
+        orchestrator?.initSession(contactId, recipientBundle)
+            ?: requireBootstrap().initSession(contactId, recipientBundle)
+    }
 
     fun initReceivingSession(
         contactId: String,
         recipientBundle: BinaryKeyBundle,
         firstMessage: BinaryFirstMessage,
-    ): SessionInitResult = requireCore().initReceivingSession(contactId, recipientBundle, firstMessage)
+    ): SessionInitResult = synchronized(coreLock) {
+        orchestrator?.initReceivingSession(contactId, recipientBundle, firstMessage)
+            ?: requireBootstrap().initReceivingSession(contactId, recipientBundle, firstMessage)
+    }
 
-    fun encryptMessage(contactId: String, plaintext: String): EncryptedMessageComponents =
-        requireCore().encryptMessage(contactId, plaintext)
+    fun encryptMessage(contactId: String, plaintext: String): EncryptedMessageComponents = synchronized(coreLock) {
+        // OrchestratorCore takes UTF-8 bytes (binary pipeline); the legacy
+        // ClassicCryptoCore takes the String directly.
+        orchestrator?.encryptMessage(contactId, plaintext.toByteArray(Charsets.UTF_8))
+            ?: requireBootstrap().encryptMessage(contactId, plaintext)
+    }
 
     fun decryptMessage(
         sessionId: String,
         ephemeralPublicKey: ByteArray,
         messageNumber: UInt,
         content: ByteArray,
-    ): DecryptedMessageResult = requireCore().decryptMessage(
-        sessionId,
-        ephemeralPublicKey.toUByteList(),
-        messageNumber,
-        content.toUByteList(),
-    )
+    ): DecryptedMessageResult = synchronized(coreLock) {
+        val ep = ephemeralPublicKey.toUByteList()
+        val ct = content.toUByteList()
+        orchestrator?.decryptMessage(sessionId, ep, messageNumber, ct)
+            ?: requireBootstrap().decryptMessage(sessionId, ep, messageNumber, ct)
+    }
 
-    fun exportSessionBytes(contactId: String): ByteArray = requireCore().exportSession(contactId).toByteArray()
+    fun exportSessionBytes(contactId: String): ByteArray = synchronized(coreLock) {
+        (orchestrator?.exportSession(contactId) ?: requireBootstrap().exportSession(contactId)).toByteArray()
+    }
 
-    fun importSessionBytes(contactId: String, bytes: ByteArray): String =
-        requireCore().importSession(contactId, bytes.toUByteList())
+    fun importSessionBytes(contactId: String, bytes: ByteArray): String = synchronized(coreLock) {
+        orchestrator?.importSession(contactId, bytes.toUByteList())
+            ?: requireBootstrap().importSession(contactId, bytes.toUByteList())
+    }
 
-    fun removeSession(contactId: String): Boolean = requireCore().removeSession(contactId)
+    fun removeSession(contactId: String): Boolean = synchronized(coreLock) {
+        orchestrator?.removeSession(contactId) ?: requireBootstrap().removeSession(contactId)
+    }
 
-    fun getAllSessionContactIds(): List<String> = requireCore().getAllSessionContactIds()
+    fun getAllSessionContactIds(): List<String> = synchronized(coreLock) {
+        orchestrator?.getAllSessionContactIds() ?: requireBootstrap().getAllSessionContactIds()
+    }
+
+    // ── Stateless helpers (free functions / no core state) ──────────────────
 
     fun generateMnemonic(wordCount: Int): String = generateMnemonic(wordCount.toUByte())
 
@@ -127,12 +209,16 @@ class CryptoManager @Inject constructor() {
      * a bare Ed25519 sign, so this repurposes [signRecoveryChallenge], which is the same
      * primitive (sign(privateKey, message)) under a recovery-specific name.
      */
-    fun signWithDeviceKey(message: String): ByteArray =
-        signRecoveryChallenge(requireCore().getSigningKeyBytes().toUByteList(), message).toByteArray()
+    fun signWithDeviceKey(message: String): ByteArray = synchronized(coreLock) {
+        val signingKey = orchestrator?.getSigningKeyBytes() ?: requireBootstrap().getSigningKeyBytes()
+        signRecoveryChallenge(signingKey.toUByteList(), message).toByteArray()
+    }
 
-    fun close() {
-        core?.close()
-        core = null
+    fun close() = synchronized(coreLock) {
+        orchestrator?.close()
+        orchestrator = null
+        bootstrapCore?.close()
+        bootstrapCore = null
     }
 }
 
