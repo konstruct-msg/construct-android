@@ -25,8 +25,11 @@ service/
 ├── MessageProcessor.kt      # CFE handleEvent → decrypt/persist [ГОТОВ+тесты]
 │                            # /ack; OrchestratorGateway+Effects
 crypto/
-├── CryptoManager.kt         # обёртка UniFFI ClassicCryptoCore [РАБОТАЕТ]
+├── CryptoManager.kt         # двухфазное ядро (Classic→Orchestr) [РАБОТАЕТ]
+│                            # + OrchestratorGateway (handleEvent)
 ├── WirePayloadCodec.kt      # 52-байт LE заголовок + KEM + box  [ГОТОВ+тесты]
+di/
+├── CryptoModule.kt          # bind OrchestratorGateway→CryptoMgr [ГОТОВ]
 stealth/                     # sealed sender (см. §5)           [КАРКАС]
 ├── StealthPolicy.kt  ServerKeysProvider.kt  TokenWalletService.kt
 ├── BlindTokenService.kt  StealthSenderService.kt
@@ -51,16 +54,16 @@ stealth/                     # sealed sender (см. §5)           [КАРКАС
    после логина → collect `MessageRouter.routed` → на `RoutedEvent.Incoming`
    вызвать `MessageProcessor.process(msg)`. Роутер (dedup/sealed-resolve/
    классификация) и процессор (CFE `handleEvent` → decrypt/persist/ack) готовы и
-   покрыты юнит-тестами. **Осталось замкнуть две зависимости процессора:**
-   - `OrchestratorGateway.handleEvent` — реализовать в `CryptoManager`, добавив
-     двухфазную инициализацию `OrchestratorCore` (сейчас там только
-     `ClassicCryptoCore`; см. `API_CRYPTO_GUIDE.md` §2.3 —
-     `createOrchestratorCoreFromKeys(keys, serverUserId)` после `setLocalUserId`,
-     с single-thread `coreLock`). Помнить: `local_user_id` = серверный UUID.
+   покрыты юнит-тестами. `OrchestratorGateway` уже реализован —
+   `CryptoManager` держит двухфазное ядро (`ClassicCryptoCore` →
+   `OrchestratorCore` в `setLocalUserId`, single-thread `coreLock`) и забинжен
+   через `di/CryptoModule`; оба флоу логина уже зовут `setLocalUserId`.
+   **Осталась ОДНА зависимость процессора:**
    - `ProcessorEffects` — реализовать в репозитории/session-слое (persist из
      `messageJson`, отправка receipt, notify, heal/END_SESSION/keyBundle,
      `isAckedInDb` из БД). Семантику действий брать из iOS
-     `SessionActionExecutor` + свитча `MessageRouter.swift`.
+     `SessionActionExecutor` + свитча `MessageRouter.swift`. После этого
+     `MessageProcessor` можно инжектить и подключать к `MessageRouter.routed`.
    Решение по основе: `construct-docs/decisions/android-receive-path-cfe-not-component.md`.
    Подписки: `updateSubscriptions(listOf("direct:<idA>:<idB>", …))` — id
    отсортированы, как на iOS.
@@ -131,8 +134,10 @@ E2e-проверка iOS↔Android закроет пункт §5 decision-док
 - [x] WirePayloadCodec (52-байт LE заголовок; 2026-07-04)
 - [x] MessageProcessor — CFE routing FSM + action executor, юнит-тесты на фейках
       (2026-07-04). Основа: `construct-docs/decisions/android-receive-path-cfe-not-component.md`
-- [ ] Замкнуть зависимости процессора: `OrchestratorGateway` в CryptoManager
-      (двухфазный `OrchestratorCore`, §3.1) + `ProcessorEffects` в репозитории
+- [x] OrchestratorGateway — двухфазный OrchestratorCore в CryptoManager +
+      CryptoModule bind (2026-07-04)
+- [ ] ProcessorEffects в репозитории/session-слое → инжект MessageProcessor,
+      подключение к MessageRouter.routed (§3.1)
 - [ ] SendMessageUseCase с retry/backoff (§3.2)
 - [ ] Stealth в send/receive путях + e2e iOS↔Android
 - [ ] Расширение StreamEvent (ack/error/presence) под нужды UI
