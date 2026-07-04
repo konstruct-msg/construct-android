@@ -20,10 +20,13 @@ data/auth/
 ├── TokenRefreshCoordinator.kt                                  [РАБОТАЕТ]
 service/
 ├── SessionManager.kt        # DR-сессии поверх CryptoManager   [РАБОТАЕТ]
-├── MessageRouter.kt         # стрим → домен-события: dedup,    [КАРКАС]
+├── MessageRouter.kt         # стрим → домен-события: dedup,    [ГОТОВ+тесты]
 │                            # sealed-résolve, control/message
+├── MessageProcessor.kt      # CFE handleEvent → decrypt/persist [ГОТОВ+тесты]
+│                            # /ack; OrchestratorGateway+Effects
 crypto/
 ├── CryptoManager.kt         # обёртка UniFFI ClassicCryptoCore [РАБОТАЕТ]
+├── WirePayloadCodec.kt      # 52-байт LE заголовок + KEM + box  [ГОТОВ+тесты]
 stealth/                     # sealed sender (см. §5)           [КАРКАС]
 ├── StealthPolicy.kt  ServerKeysProvider.kt  TokenWalletService.kt
 ├── BlindTokenService.kt  StealthSenderService.kt
@@ -45,14 +48,22 @@ stealth/                     # sealed sender (см. §5)           [КАРКАС
 Рекомендуемая последовательность (каждый шаг тестируем сам по себе):
 
 1. **Приём.** `MessageStreamService.start(scope)` + `MessageRouter.start(scope)`
-   после логина → collect `MessageRouter.routed`. Роутер уже делает dedup,
-   sealed-resolve и разбивку control/message. Следующий слой —
-   **MessageProcessor поверх CFE** (`OrchestratorCore.handleEvent`), НЕ
-   компонентный `decryptMessage`: это зафиксированное архитектурное решение,
-   `construct-docs/decisions/android-receive-path-cfe-not-component.md` —
-   прочитать до реализации. Подписки:
-   `updateSubscriptions(listOf("direct:<idA>:<idB>", …))` — id отсортированы,
-   как на iOS.
+   после логина → collect `MessageRouter.routed` → на `RoutedEvent.Incoming`
+   вызвать `MessageProcessor.process(msg)`. Роутер (dedup/sealed-resolve/
+   классификация) и процессор (CFE `handleEvent` → decrypt/persist/ack) готовы и
+   покрыты юнит-тестами. **Осталось замкнуть две зависимости процессора:**
+   - `OrchestratorGateway.handleEvent` — реализовать в `CryptoManager`, добавив
+     двухфазную инициализацию `OrchestratorCore` (сейчас там только
+     `ClassicCryptoCore`; см. `API_CRYPTO_GUIDE.md` §2.3 —
+     `createOrchestratorCoreFromKeys(keys, serverUserId)` после `setLocalUserId`,
+     с single-thread `coreLock`). Помнить: `local_user_id` = серверный UUID.
+   - `ProcessorEffects` — реализовать в репозитории/session-слое (persist из
+     `messageJson`, отправка receipt, notify, heal/END_SESSION/keyBundle,
+     `isAckedInDb` из БД). Семантику действий брать из iOS
+     `SessionActionExecutor` + свитча `MessageRouter.swift`.
+   Решение по основе: `construct-docs/decisions/android-receive-path-cfe-not-component.md`.
+   Подписки: `updateSubscriptions(listOf("direct:<idA>:<idB>", …))` — id
+   отсортированы, как на iOS.
 2. **Отправка.** ViewModel → SendMessageUseCase (нет; создать) →
    `SessionManager.encryptMessage` → ветвление из KDoc `MessagingService`
    (identified / legacy-sealed / Phase-2-sealed) → статусы в UI из `SendResult`.
@@ -117,10 +128,11 @@ E2e-проверка iOS↔Android закроет пункт §5 decision-док
 ## 7. Definition of done для этого слоя
 
 - [x] MessageRouter (dedup / sealed-resolve / классификация; 2026-07-03)
-- [ ] MessageProcessor поверх роутера: дешифровка + session healing →
-      репозитории. **Основа зафиксирована** — CFE `handleEvent`, не компонентный
-      `decryptMessage`: `construct-docs/decisions/android-receive-path-cfe-not-component.md`
-      (там же — 7 обязанностей Kotlin, стоивших iOS багов)
+- [x] WirePayloadCodec (52-байт LE заголовок; 2026-07-04)
+- [x] MessageProcessor — CFE routing FSM + action executor, юнит-тесты на фейках
+      (2026-07-04). Основа: `construct-docs/decisions/android-receive-path-cfe-not-component.md`
+- [ ] Замкнуть зависимости процессора: `OrchestratorGateway` в CryptoManager
+      (двухфазный `OrchestratorCore`, §3.1) + `ProcessorEffects` в репозитории
 - [ ] SendMessageUseCase с retry/backoff (§3.2)
 - [ ] Stealth в send/receive путях + e2e iOS↔Android
 - [ ] Расширение StreamEvent (ack/error/presence) под нужды UI
