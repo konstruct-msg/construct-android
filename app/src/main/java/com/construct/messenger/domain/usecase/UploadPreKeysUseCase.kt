@@ -1,9 +1,12 @@
 package com.construct.messenger.domain.usecase
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
 import com.google.protobuf.ByteString
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyCountRequest
 import shared.proto.services.v1.KeyServiceOuterClass.OneTimePreKey
@@ -32,9 +35,12 @@ sealed interface UploadPreKeysResult {
  */
 @Singleton
 class UploadPreKeysUseCase @Inject constructor(
+    @ApplicationContext context: Context,
     private val cryptoManager: CryptoManager,
     private val grpcClient: GrpcClient,
 ) {
+    private val prefs: SharedPreferences =
+        context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
     /**
      * Upload [count] freshly-generated one-time pre-keys unconditionally.
      *
@@ -66,6 +72,10 @@ class UploadPreKeysUseCase @Inject constructor(
                 .setSupportsPqRatchet(supportsPqRatchet)
                 .build()
             grpcClient.key.uploadPreKeys(request)
+            // Remember what capability the server now holds — replenishIfNeeded
+            // compares against this to force a re-upload when a build flips
+            // supportsPqRatchet() while the server OTPK count is healthy.
+            prefs.edit().putBoolean(KEY_ADVERTISED_PQ_RATCHET, supportsPqRatchet).apply()
             UploadPreKeysResult.Uploaded(count)
         } catch (error: CancellationException) {
             throw error
@@ -92,9 +102,22 @@ class UploadPreKeysUseCase @Inject constructor(
             val countResponse = grpcClient.key.getPreKeyCount(
                 GetPreKeyCountRequest.newBuilder().setDeviceId(deviceId).build(),
             )
-            if (countResponse.count >= minThreshold) {
+            // Capability re-advertisement: supports_pq_ratchet reaches the server
+            // ONLY inside uploadPreKeys. When a build flips the capability (suite-3
+            // rollout), a device with a healthy server count would otherwise never
+            // re-upload — peers keep fetching the stale flag and negotiate classic.
+            val advertised = cryptoManager.supportsPqRatchet()
+            val lastAdvertised = if (prefs.contains(KEY_ADVERTISED_PQ_RATCHET)) {
+                prefs.getBoolean(KEY_ADVERTISED_PQ_RATCHET, false)
+            } else {
+                null
+            }
+            if (countResponse.count >= minThreshold && lastAdvertised == advertised) {
                 UploadPreKeysResult.Skipped
             } else {
+                if (lastAdvertised != advertised) {
+                    Log.i(TAG, "supportsPqRatchet changed ($lastAdvertised → $advertised) — forcing upload to re-advertise")
+                }
                 invoke(deviceId, batchSize, replaceExisting = false)
             }
         } catch (error: CancellationException) {
@@ -111,6 +134,9 @@ class UploadPreKeysUseCase @Inject constructor(
         const val DEFAULT_BATCH_SIZE = 100
         /** Server's recommended minimum OTPK count (from `GetPreKeyCountResponse`). */
         const val RECOMMENDED_MINIMUM = 20
+        const val PREFS_FILE_NAME = "prekey_upload_state"
+        /** Last supports_pq_ratchet value successfully uploaded (absent = never/unknown). */
+        const val KEY_ADVERTISED_PQ_RATCHET = "advertised_pq_ratchet"
     }
 }
 
