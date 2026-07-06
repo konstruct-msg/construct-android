@@ -802,6 +802,10 @@ external fun uniffi_construct_core_checksum_func_verify_pow(
 ): Short
 external fun uniffi_construct_core_checksum_func_verify_recovery_signature(
 ): Short
+external fun uniffi_construct_core_checksum_func_wire_payload_pack(
+): Short
+external fun uniffi_construct_core_checksum_func_wire_payload_unpack(
+): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_apply_pq_contribution(
 ): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_decrypt_message(
@@ -1032,7 +1036,7 @@ external fun uniffi_construct_core_fn_free_classiccryptocore(`handle`: Long,unif
 ): Unit
 external fun uniffi_construct_core_fn_method_classiccryptocore_apply_pq_contribution(`ptr`: Long,`contactId`: RustBuffer.ByValue,`kemSharedSecret`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_construct_core_fn_method_classiccryptocore_decrypt_message(`ptr`: Long,`sessionId`: RustBuffer.ByValue,`ephemeralPublicKey`: RustBuffer.ByValue,`messageNumber`: Int,`content`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_method_classiccryptocore_decrypt_message(`ptr`: Long,`sessionId`: RustBuffer.ByValue,`ephemeralPublicKey`: RustBuffer.ByValue,`messageNumber`: Int,`content`: RustBuffer.ByValue,`suiteId`: Short,`pqMessageEpoch`: Int,`pqRatchetField`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_classiccryptocore_encrypt_message(`ptr`: Long,`sessionId`: RustBuffer.ByValue,`plaintext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1100,7 +1104,7 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_build_hybrid_ident
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_build_x3dh_sign_message(`ptr`: Long,`suiteId`: Byte,`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_method_orchestratorcore_decrypt_message(`ptr`: Long,`contactId`: RustBuffer.ByValue,`ephemeralPublicKey`: RustBuffer.ByValue,`messageNumber`: Int,`content`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_method_orchestratorcore_decrypt_message(`ptr`: Long,`contactId`: RustBuffer.ByValue,`ephemeralPublicKey`: RustBuffer.ByValue,`messageNumber`: Int,`content`: RustBuffer.ByValue,`suiteId`: Short,`pqMessageEpoch`: Int,`pqRatchetField`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_decrypt_offline_batch(`ptr`: Long,`messages`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1350,6 +1354,10 @@ external fun uniffi_construct_core_fn_func_verify_pow(`challenge`: RustBuffer.By
 ): Byte
 external fun uniffi_construct_core_fn_func_verify_recovery_signature(`publicKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,`signature`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_func_wire_payload_pack(`payload`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_wire_payload_unpack(`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun ffi_construct_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun ffi_construct_core_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1619,10 +1627,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_verify_recovery_signature() != 1269.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_wire_payload_pack() != 2511.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_wire_payload_unpack() != 35590.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_apply_pq_contribution() != 13706.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_decrypt_message() != 16045.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_decrypt_message() != 12341.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_encrypt_message() != 45977.toShort()) {
@@ -1709,7 +1723,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_build_x3dh_sign_message() != 50237.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_decrypt_message() != 56464.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_decrypt_message() != 9863.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_decrypt_offline_batch() != 51852.toShort()) {
@@ -2458,7 +2472,7 @@ public interface ClassicCryptoCoreInterface {
      */
     fun `applyPqContribution`(`contactId`: kotlin.String, `kemSharedSecret`: List<kotlin.UByte>)
     
-    fun `decryptMessage`(`sessionId`: kotlin.String, `ephemeralPublicKey`: List<kotlin.UByte>, `messageNumber`: kotlin.UInt, `content`: List<kotlin.UByte>): DecryptedMessageResult
+    fun `decryptMessage`(`sessionId`: kotlin.String, `ephemeralPublicKey`: List<kotlin.UByte>, `messageNumber`: kotlin.UInt, `content`: List<kotlin.UByte>, `suiteId`: kotlin.UShort, `pqMessageEpoch`: kotlin.UInt, `pqRatchetField`: List<kotlin.UByte>): DecryptedMessageResult
     
     fun `encryptMessage`(`sessionId`: kotlin.String, `plaintext`: kotlin.String): EncryptedMessageComponents
     
@@ -2637,13 +2651,13 @@ open class ClassicCryptoCore: Disposable, AutoCloseable, ClassicCryptoCoreInterf
     
 
     
-    @Throws(CryptoException::class)override fun `decryptMessage`(`sessionId`: kotlin.String, `ephemeralPublicKey`: List<kotlin.UByte>, `messageNumber`: kotlin.UInt, `content`: List<kotlin.UByte>): DecryptedMessageResult {
+    @Throws(CryptoException::class)override fun `decryptMessage`(`sessionId`: kotlin.String, `ephemeralPublicKey`: List<kotlin.UByte>, `messageNumber`: kotlin.UInt, `content`: List<kotlin.UByte>, `suiteId`: kotlin.UShort, `pqMessageEpoch`: kotlin.UInt, `pqRatchetField`: List<kotlin.UByte>): DecryptedMessageResult {
             return FfiConverterTypeDecryptedMessageResult.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_classiccryptocore_decrypt_message(
         it,
-        FfiConverterString.lower(`sessionId`),FfiConverterSequenceUByte.lower(`ephemeralPublicKey`),FfiConverterUInt.lower(`messageNumber`),FfiConverterSequenceUByte.lower(`content`),_status)
+        FfiConverterString.lower(`sessionId`),FfiConverterSequenceUByte.lower(`ephemeralPublicKey`),FfiConverterUInt.lower(`messageNumber`),FfiConverterSequenceUByte.lower(`content`),FfiConverterUShort.lower(`suiteId`),FfiConverterUInt.lower(`pqMessageEpoch`),FfiConverterSequenceUByte.lower(`pqRatchetField`),_status)
 }
     }
     )
@@ -3408,7 +3422,7 @@ public interface OrchestratorCoreInterface {
     
     fun `buildX3dhSignMessage`(`suiteId`: kotlin.UByte, `publicKey`: List<kotlin.UByte>): List<kotlin.UByte>
     
-    fun `decryptMessage`(`contactId`: kotlin.String, `ephemeralPublicKey`: List<kotlin.UByte>, `messageNumber`: kotlin.UInt, `content`: List<kotlin.UByte>): DecryptedMessageResult
+    fun `decryptMessage`(`contactId`: kotlin.String, `ephemeralPublicKey`: List<kotlin.UByte>, `messageNumber`: kotlin.UInt, `content`: List<kotlin.UByte>, `suiteId`: kotlin.UShort, `pqMessageEpoch`: kotlin.UInt, `pqRatchetField`: List<kotlin.UByte>): DecryptedMessageResult
     
     /**
      * Batch offline decrypt — single mutex acquisition for the whole batch.
@@ -3704,13 +3718,13 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
-    @Throws(CryptoException::class)override fun `decryptMessage`(`contactId`: kotlin.String, `ephemeralPublicKey`: List<kotlin.UByte>, `messageNumber`: kotlin.UInt, `content`: List<kotlin.UByte>): DecryptedMessageResult {
+    @Throws(CryptoException::class)override fun `decryptMessage`(`contactId`: kotlin.String, `ephemeralPublicKey`: List<kotlin.UByte>, `messageNumber`: kotlin.UInt, `content`: List<kotlin.UByte>, `suiteId`: kotlin.UShort, `pqMessageEpoch`: kotlin.UInt, `pqRatchetField`: List<kotlin.UByte>): DecryptedMessageResult {
             return FfiConverterTypeDecryptedMessageResult.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_decrypt_message(
         it,
-        FfiConverterString.lower(`contactId`),FfiConverterSequenceUByte.lower(`ephemeralPublicKey`),FfiConverterUInt.lower(`messageNumber`),FfiConverterSequenceUByte.lower(`content`),_status)
+        FfiConverterString.lower(`contactId`),FfiConverterSequenceUByte.lower(`ephemeralPublicKey`),FfiConverterUInt.lower(`messageNumber`),FfiConverterSequenceUByte.lower(`content`),FfiConverterUShort.lower(`suiteId`),FfiConverterUInt.lower(`pqMessageEpoch`),FfiConverterSequenceUByte.lower(`pqRatchetField`),_status)
 }
     }
     )
@@ -5764,6 +5778,12 @@ data class BinaryFirstMessage (
     var `content`: List<kotlin.UByte>
     , 
     var `oneTimePrekeyId`: kotlin.UInt
+    , 
+    var `suiteId`: kotlin.UShort
+    , 
+    var `pqMessageEpoch`: kotlin.UInt
+    , 
+    var `pqRatchetField`: List<kotlin.UByte>
     
 ){
     
@@ -5782,6 +5802,9 @@ public object FfiConverterTypeBinaryFirstMessage: FfiConverterRustBuffer<BinaryF
             FfiConverterUInt.read(buf),
             FfiConverterSequenceUByte.read(buf),
             FfiConverterUInt.read(buf),
+            FfiConverterUShort.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterSequenceUByte.read(buf),
         )
     }
 
@@ -5789,7 +5812,10 @@ public object FfiConverterTypeBinaryFirstMessage: FfiConverterRustBuffer<BinaryF
             FfiConverterSequenceUByte.allocationSize(value.`ephemeralPublicKey`) +
             FfiConverterUInt.allocationSize(value.`messageNumber`) +
             FfiConverterSequenceUByte.allocationSize(value.`content`) +
-            FfiConverterUInt.allocationSize(value.`oneTimePrekeyId`)
+            FfiConverterUInt.allocationSize(value.`oneTimePrekeyId`) +
+            FfiConverterUShort.allocationSize(value.`suiteId`) +
+            FfiConverterUInt.allocationSize(value.`pqMessageEpoch`) +
+            FfiConverterSequenceUByte.allocationSize(value.`pqRatchetField`)
     )
 
     override fun write(value: BinaryFirstMessage, buf: ByteBuffer) {
@@ -5797,6 +5823,9 @@ public object FfiConverterTypeBinaryFirstMessage: FfiConverterRustBuffer<BinaryF
             FfiConverterUInt.write(value.`messageNumber`, buf)
             FfiConverterSequenceUByte.write(value.`content`, buf)
             FfiConverterUInt.write(value.`oneTimePrekeyId`, buf)
+            FfiConverterUShort.write(value.`suiteId`, buf)
+            FfiConverterUInt.write(value.`pqMessageEpoch`, buf)
+            FfiConverterSequenceUByte.write(value.`pqRatchetField`, buf)
     }
 }
 
@@ -6014,6 +6043,12 @@ data class EncryptedMessageComponents (
     var `oneTimePrekeyId`: kotlin.UInt
     , 
     var `storageKey`: List<kotlin.UByte>
+    , 
+    var `suiteId`: kotlin.UShort
+    , 
+    var `pqMessageEpoch`: kotlin.UInt
+    , 
+    var `pqRatchetField`: List<kotlin.UByte>
     
 ){
     
@@ -6033,6 +6068,9 @@ public object FfiConverterTypeEncryptedMessageComponents: FfiConverterRustBuffer
             FfiConverterSequenceUByte.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterSequenceUByte.read(buf),
+            FfiConverterUShort.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterSequenceUByte.read(buf),
         )
     }
 
@@ -6041,7 +6079,10 @@ public object FfiConverterTypeEncryptedMessageComponents: FfiConverterRustBuffer
             FfiConverterUInt.allocationSize(value.`messageNumber`) +
             FfiConverterSequenceUByte.allocationSize(value.`content`) +
             FfiConverterUInt.allocationSize(value.`oneTimePrekeyId`) +
-            FfiConverterSequenceUByte.allocationSize(value.`storageKey`)
+            FfiConverterSequenceUByte.allocationSize(value.`storageKey`) +
+            FfiConverterUShort.allocationSize(value.`suiteId`) +
+            FfiConverterUInt.allocationSize(value.`pqMessageEpoch`) +
+            FfiConverterSequenceUByte.allocationSize(value.`pqRatchetField`)
     )
 
     override fun write(value: EncryptedMessageComponents, buf: ByteBuffer) {
@@ -6050,6 +6091,9 @@ public object FfiConverterTypeEncryptedMessageComponents: FfiConverterRustBuffer
             FfiConverterSequenceUByte.write(value.`content`, buf)
             FfiConverterUInt.write(value.`oneTimePrekeyId`, buf)
             FfiConverterSequenceUByte.write(value.`storageKey`, buf)
+            FfiConverterUShort.write(value.`suiteId`, buf)
+            FfiConverterUInt.write(value.`pqMessageEpoch`, buf)
+            FfiConverterSequenceUByte.write(value.`pqRatchetField`, buf)
     }
 }
 
@@ -6488,6 +6532,12 @@ data class OfflineBatchMessage (
     var `messageNumber`: kotlin.UInt
     , 
     var `content`: List<kotlin.UByte>
+    , 
+    var `suiteId`: kotlin.UShort
+    , 
+    var `pqMessageEpoch`: kotlin.UInt
+    , 
+    var `pqRatchetField`: List<kotlin.UByte>
     
 ){
     
@@ -6507,6 +6557,9 @@ public object FfiConverterTypeOfflineBatchMessage: FfiConverterRustBuffer<Offlin
             FfiConverterSequenceUByte.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterSequenceUByte.read(buf),
+            FfiConverterUShort.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterSequenceUByte.read(buf),
         )
     }
 
@@ -6515,7 +6568,10 @@ public object FfiConverterTypeOfflineBatchMessage: FfiConverterRustBuffer<Offlin
             FfiConverterString.allocationSize(value.`contactId`) +
             FfiConverterSequenceUByte.allocationSize(value.`ephemeralPublicKey`) +
             FfiConverterUInt.allocationSize(value.`messageNumber`) +
-            FfiConverterSequenceUByte.allocationSize(value.`content`)
+            FfiConverterSequenceUByte.allocationSize(value.`content`) +
+            FfiConverterUShort.allocationSize(value.`suiteId`) +
+            FfiConverterUInt.allocationSize(value.`pqMessageEpoch`) +
+            FfiConverterSequenceUByte.allocationSize(value.`pqRatchetField`)
     )
 
     override fun write(value: OfflineBatchMessage, buf: ByteBuffer) {
@@ -6524,6 +6580,9 @@ public object FfiConverterTypeOfflineBatchMessage: FfiConverterRustBuffer<Offlin
             FfiConverterSequenceUByte.write(value.`ephemeralPublicKey`, buf)
             FfiConverterUInt.write(value.`messageNumber`, buf)
             FfiConverterSequenceUByte.write(value.`content`, buf)
+            FfiConverterUShort.write(value.`suiteId`, buf)
+            FfiConverterUInt.write(value.`pqMessageEpoch`, buf)
+            FfiConverterSequenceUByte.write(value.`pqRatchetField`, buf)
     }
 }
 
@@ -7126,6 +7185,82 @@ public object FfiConverterTypeTimingConfig: FfiConverterRustBuffer<TimingConfig>
             FfiConverterULong.write(value.`maxSendDelayMs`, buf)
             FfiConverterBoolean.write(value.`enabled`, buf)
             FfiConverterBoolean.write(value.`batteryAware`, buf)
+    }
+}
+
+
+
+data class WirePayload (
+    var `dhPublicKey`: List<kotlin.UByte>
+    , 
+    var `messageNumber`: kotlin.UInt
+    , 
+    var `oneTimePrekeyId`: kotlin.UInt
+    , 
+    var `kyberOtpkId`: kotlin.UInt
+    , 
+    var `previousChainLength`: kotlin.UInt
+    , 
+    var `suiteId`: kotlin.UShort
+    , 
+    var `kemCiphertext`: List<kotlin.UByte>?
+    , 
+    var `sealedBox`: List<kotlin.UByte>
+    , 
+    var `pqMessageEpoch`: kotlin.UInt
+    , 
+    var `pqRatchetField`: List<kotlin.UByte>
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeWirePayload: FfiConverterRustBuffer<WirePayload> {
+    override fun read(buf: ByteBuffer): WirePayload {
+        return WirePayload(
+            FfiConverterSequenceUByte.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUShort.read(buf),
+            FfiConverterOptionalSequenceUByte.read(buf),
+            FfiConverterSequenceUByte.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterSequenceUByte.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: WirePayload) = (
+            FfiConverterSequenceUByte.allocationSize(value.`dhPublicKey`) +
+            FfiConverterUInt.allocationSize(value.`messageNumber`) +
+            FfiConverterUInt.allocationSize(value.`oneTimePrekeyId`) +
+            FfiConverterUInt.allocationSize(value.`kyberOtpkId`) +
+            FfiConverterUInt.allocationSize(value.`previousChainLength`) +
+            FfiConverterUShort.allocationSize(value.`suiteId`) +
+            FfiConverterOptionalSequenceUByte.allocationSize(value.`kemCiphertext`) +
+            FfiConverterSequenceUByte.allocationSize(value.`sealedBox`) +
+            FfiConverterUInt.allocationSize(value.`pqMessageEpoch`) +
+            FfiConverterSequenceUByte.allocationSize(value.`pqRatchetField`)
+    )
+
+    override fun write(value: WirePayload, buf: ByteBuffer) {
+            FfiConverterSequenceUByte.write(value.`dhPublicKey`, buf)
+            FfiConverterUInt.write(value.`messageNumber`, buf)
+            FfiConverterUInt.write(value.`oneTimePrekeyId`, buf)
+            FfiConverterUInt.write(value.`kyberOtpkId`, buf)
+            FfiConverterUInt.write(value.`previousChainLength`, buf)
+            FfiConverterUShort.write(value.`suiteId`, buf)
+            FfiConverterOptionalSequenceUByte.write(value.`kemCiphertext`, buf)
+            FfiConverterSequenceUByte.write(value.`sealedBox`, buf)
+            FfiConverterUInt.write(value.`pqMessageEpoch`, buf)
+            FfiConverterSequenceUByte.write(value.`pqRatchetField`, buf)
     }
 }
 
@@ -9782,6 +9917,28 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     UniffiLib.uniffi_construct_core_fn_func_verify_recovery_signature(
     
         FfiConverterSequenceUByte.lower(`publicKey`),FfiConverterString.lower(`message`),FfiConverterSequenceUByte.lower(`signature`),_status)
+}
+    )
+    }
+    
+
+    @Throws(CryptoException::class) fun `wirePayloadPack`(`payload`: WirePayload): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_wire_payload_pack(
+    
+        FfiConverterTypeWirePayload.lower(`payload`),_status)
+}
+    )
+    }
+    
+
+    @Throws(CryptoException::class) fun `wirePayloadUnpack`(`data`: List<kotlin.UByte>): WirePayload {
+            return FfiConverterTypeWirePayload.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_wire_payload_unpack(
+    
+        FfiConverterSequenceUByte.lower(`data`),_status)
 }
     )
     }

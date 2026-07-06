@@ -27,7 +27,8 @@ service/
 crypto/
 ├── CryptoManager.kt         # двухфазное ядро (Classic→Orchestr) [РАБОТАЕТ]
 │                            # + OrchestratorGateway (handleEvent)
-├── WirePayloadCodec.kt      # 52-байт LE заголовок + KEM + box  [ГОТОВ+тесты]
+│                            # wire-формат парсит ТОЛЬКО Rust core
+│                            # (wire_payload.rs; дублей на Kotlin нет)
 di/
 ├── CryptoModule.kt          # bind OrchestratorGateway→CryptoMgr [ГОТОВ]
 stealth/                     # sealed sender (см. §5)           [КАРКАС]
@@ -131,7 +132,9 @@ E2e-проверка iOS↔Android закроет пункт §5 decision-док
 ## 7. Definition of done для этого слоя
 
 - [x] MessageRouter (dedup / sealed-resolve / классификация; 2026-07-03)
-- [x] WirePayloadCodec (52-байт LE заголовок; 2026-07-04)
+- [x] ~~WirePayloadCodec~~ — удалён (2026-07-06): wire-формат парсит только Rust
+      core (`wire_payload::unpack` внутри `handleEvent`; поля msgNum/kemCt/otpkId
+      события — legacy, Android передаёт нули)
 - [x] MessageProcessor — CFE routing FSM + action executor, юнит-тесты на фейках
       (2026-07-04). Основа: `construct-docs/decisions/android-receive-path-cfe-not-component.md`
 - [x] OrchestratorGateway — двухфазный OrchestratorCore в CryptoManager +

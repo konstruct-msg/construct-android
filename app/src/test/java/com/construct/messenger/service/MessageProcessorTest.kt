@@ -1,6 +1,5 @@
 package com.construct.messenger.service
 
-import com.construct.messenger.crypto.WirePayloadCodec
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -45,12 +44,9 @@ class MessageProcessorTest {
         messageId = id,
         senderId = sender,
         contentType = ContentType.CONTENT_TYPE_E2EE_SIGNAL,
-        encryptedPayload = WirePayloadCodec.encode(
-            messageNumber = 0u,
-            ephemeralPublicKey = ByteArray(32),
-            oneTimePrekeyId = 0u,
-            content = byteArrayOf(1, 2, 3),
-        ),
+        // Opaque to this layer: the Rust core owns wire parsing, the processor
+        // forwards the blob untouched — any bytes work against the fake gateway.
+        encryptedPayload = byteArrayOf(1, 2, 3),
         timestampMs = 1_000L,
         viaSealedSender = false,
     )
@@ -173,11 +169,19 @@ class MessageProcessorTest {
     }
 
     @Test
-    fun `process drops on malformed wire payload`() = runBlocking {
+    fun `process acks malformed payload reported by the core as NotifyError`() = runBlocking {
+        // Wire parsing lives in Rust: a malformed blob comes back as NotifyError,
+        // which carries no routing decision — the processor ACKs it as delivered
+        // so the cursor advances and the message is never re-fetched.
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects)
-        val bad = incoming().copy(encryptedPayload = ByteArray(4))
+        val gateway = FakeGateway(
+            mutableListOf(listOf(CfeAction.NotifyError("MALFORMED_WIRE_PAYLOAD", "too short"))),
+        )
+        val processor = MessageProcessor(gateway, effects)
 
-        assertEquals(ProcessingOutcome.Dropped, processor.process(bad))
+        val outcome = processor.process(incoming().copy(encryptedPayload = ByteArray(4)))
+
+        assertEquals(ProcessingOutcome.Acked, outcome)
+        assertTrue(effects.calls.contains("receipt:m1:delivered"))
     }
 }
