@@ -49,8 +49,14 @@ class SessionManager @Inject constructor(
         ephemeralPublicKey: ByteArray,
         messageNumber: UInt,
         content: ByteArray,
+        suiteId: UShort,
+        pqMessageEpoch: UInt,
+        pqRatchetField: ByteArray,
     ): DecryptedMessageResult =
-        cryptoManager.decryptMessage(sessionId, ephemeralPublicKey, messageNumber, content)
+        cryptoManager.decryptMessage(
+            sessionId, ephemeralPublicKey, messageNumber, content,
+            suiteId, pqMessageEpoch, pqRatchetField,
+        )
 
     /** Exports every known session as CFE binary, keyed by contact id — never JSON/base64. */
     fun exportSessions(): Map<String, ByteArray> =

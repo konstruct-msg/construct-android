@@ -145,6 +145,9 @@ class CryptoManagerInstrumentedTest {
             messageNumber = firstMessage.messageNumber,
             content = firstMessage.content,
             oneTimePrekeyId = firstMessage.oneTimePrekeyId,
+            suiteId = firstMessage.suiteId,
+            pqMessageEpoch = firstMessage.pqMessageEpoch,
+            pqRatchetField = firstMessage.pqRatchetField,
         )
 
         val initResult = bob.initReceivingSession("alice", aliceBinaryBundle, firstMessageForBob)
@@ -157,6 +160,9 @@ class CryptoManagerInstrumentedTest {
             reply.ephemeralPublicKey.toByteArray(),
             reply.messageNumber,
             reply.content.toByteArray(),
+            reply.suiteId,
+            reply.pqMessageEpoch,
+            reply.pqRatchetField.toByteArray(),
         )
         assertEquals("hi from bob", decryptedReply.plaintext.toUtf8String())
 

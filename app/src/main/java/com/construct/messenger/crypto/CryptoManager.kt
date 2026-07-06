@@ -149,16 +149,24 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
             ?: requireBootstrap().encryptMessage(contactId, plaintext)
     }
 
+    /** All suite-3 fields are REQUIRED (no defaults): pass them straight from the
+     * wire (`wirePayloadUnpack`) — silently defaulting to classic is how the
+     * suite-3 AEAD outage slipped through on iOS. Classic messages carry
+     * suiteId=1, pqMessageEpoch=0, empty pqRatchetField. */
     fun decryptMessage(
         sessionId: String,
         ephemeralPublicKey: ByteArray,
         messageNumber: UInt,
         content: ByteArray,
+        suiteId: UShort,
+        pqMessageEpoch: UInt,
+        pqRatchetField: ByteArray,
     ): DecryptedMessageResult = synchronized(coreLock) {
         val ep = ephemeralPublicKey.toUByteList()
         val ct = content.toUByteList()
-        orchestrator?.decryptMessage(sessionId, ep, messageNumber, ct)
-            ?: requireBootstrap().decryptMessage(sessionId, ep, messageNumber, ct)
+        val pq = pqRatchetField.toUByteList()
+        orchestrator?.decryptMessage(sessionId, ep, messageNumber, ct, suiteId, pqMessageEpoch, pq)
+            ?: requireBootstrap().decryptMessage(sessionId, ep, messageNumber, ct, suiteId, pqMessageEpoch, pq)
     }
 
     fun exportSessionBytes(contactId: String): ByteArray = synchronized(coreLock) {

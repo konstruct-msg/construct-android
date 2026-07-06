@@ -1,7 +1,6 @@
 package com.construct.messenger.service
 
 import android.util.Log
-import com.construct.messenger.crypto.WirePayloadCodec
 import javax.inject.Inject
 import javax.inject.Singleton
 import uniffi.construct_core.CfeAction
@@ -18,9 +17,10 @@ import uniffi.construct_core.CfeIncomingEvent
  * Faithful port of the routing switch in iOS `MessageRouter.swift`
  * (`processWithRustOrchestrator` / `executeRustActions`):
  *
- *  1. Build `CfeIncomingEvent.MessageReceived` from the wire payload — `data` is
- *     the full blob; `msgNum`/`kemCt`/`otpkId` come from the header
- *     ([WirePayloadCodec]).
+ *  1. Build `CfeIncomingEvent.MessageReceived` with the full wire blob — the
+ *     Rust core parses the header itself (canonical `wire_payload::unpack`),
+ *     so Kotlin carries no wire-format knowledge; `msgNum`/`kemCt`/`otpkId`
+ *     are legacy event fields and stay zeroed.
  *  2. `handleEvent(event)`. On throw → END_SESSION recovery + mark processed
  *     (so background fetch never re-processes an undecryptable message forever —
  *     the iOS ghost-contact bug).
@@ -40,20 +40,15 @@ class MessageProcessor @Inject constructor(
     private val effects: ProcessorEffects,
 ) {
     suspend fun process(incoming: MessageRouter.IncomingMessage): ProcessingOutcome {
-        val decoded = try {
-            WirePayloadCodec.decode(incoming.encryptedPayload)
-        } catch (e: Exception) {
-            Log.e(TAG, "wire decode failed for ${incoming.messageId.take(8)}… — dropped", e)
-            return ProcessingOutcome.Dropped
-        }
-
         val event = CfeIncomingEvent.MessageReceived(
             messageId = incoming.messageId,
             from = incoming.senderId,
             data = incoming.encryptedPayload,
-            msgNum = decoded.messageNumber,
-            kemCt = decoded.kemCiphertext ?: ByteArray(0),
-            otpkId = decoded.kyberOtpkId,
+            // The core derives msgNum/kemCt from `data` via the canonical parser;
+            // malformed payloads come back as a NotifyError action → ACKed below.
+            msgNum = 0u,
+            kemCt = ByteArray(0),
+            otpkId = 0u,
             isControl = false,
             contentType = incoming.contentType.number.toUByte(),
         )
@@ -169,9 +164,6 @@ enum class ProcessingOutcome {
 
     /** Queued for heal / re-establish — hold the cursor until it drains. */
     Deferred,
-
-    /** Malformed/undecodable before the engine — drop, advance cursor. */
-    Dropped,
 }
 
 /** Single-threaded access to `OrchestratorCore.handleEvent`. Implemented by
