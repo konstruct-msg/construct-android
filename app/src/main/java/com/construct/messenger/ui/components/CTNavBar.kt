@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -33,13 +34,13 @@ import com.construct.messenger.ui.theme.ctRegular
  * **Canon:** iOS `ConstructTheme.swift` → `struct CTNavBar`.
  * - Title is `.uppercase()` + `ctBold(14)` + `letterSpacing(4)`.
  * - Leading: optional back (chevron) / close (when [isModal]).
- * - Trailing: an icon ([trailingIcon]) and/or an ASCII symbol ([trailingSymbol]);
- *   an optional secondary icon ([trailingSecondaryIcon]) renders to its left
- *   (typically a muted cancel next to a primary confirm).
+ * - Trailing: an icon ([trailingIcon]); an optional secondary icon
+ *   ([trailingSecondaryIcon]) renders to its left (typically a muted cancel next
+ *   to a primary confirm).
  * - Fixed height 44dp, horizontal padding 12dp, 0.5dp bottom border in `noise`.
  *
- * SF Symbols → interactive controls map to Material icons; the trailing ASCII
- * symbol (`CTSymbol.*`) is for decorative/structural actions.
+ * SF Symbols → interactive controls map to Material icons. ASCII glyphs are
+ * never used for functional controls (see `CTSymbol` for decorative chrome only).
  */
 @Composable
 fun CTNavBar(
@@ -48,7 +49,6 @@ fun CTNavBar(
     showBack: Boolean = false,
     isModal: Boolean = false,
     trailingIcon: ImageVector? = null,
-    trailingSymbol: String? = null,
     trailingColor: Color = CTColor.accent,
     trailingSecondaryIcon: ImageVector? = null,
     trailingSecondaryColor: Color = CTColor.textDim,
@@ -99,20 +99,14 @@ fun CTNavBar(
             Spacer(Modifier.width(10.dp))
         }
 
-        when {
-            trailingIcon != null -> Icon(
-                imageVector = trailingIcon,
+        trailingIcon?.let { icon ->
+            Icon(
+                imageVector = icon,
                 contentDescription = null,
                 tint = trailingColor,
                 modifier = Modifier
                     .size(18.dp)
                     .clickable(onClick = onTrailingAction),
-            )
-            trailingSymbol != null -> Text(
-                text = trailingSymbol,
-                style = ctRegular(13),
-                color = trailingColor,
-                modifier = Modifier.clickable(onClick = onTrailingAction),
             )
         }
     }
@@ -124,7 +118,7 @@ private fun CTNavBarBackPreview() {
     CTNavBar(
         title = "Settings",
         showBack = true,
-        trailingSymbol = "[+]",
+        trailingIcon = Icons.Default.Add,
     )
 }
 
