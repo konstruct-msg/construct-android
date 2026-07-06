@@ -26,25 +26,27 @@ import com.construct.messenger.ui.theme.ctBold
 import com.construct.messenger.ui.theme.ctRegular
 
 /**
- * One row of a settings section: `[icon] label … value`.
+ * One row of a settings section: `[icon] label … value | status`.
  *
  * **Canon:** iOS `ConstructTheme.swift` → `struct CTSettingsRow`.
  * - Optional leading [icon] in a 28dp centered column.
  * - `ctRegular(13)` label; value is `ctBold(13)` + `accent` when [isAction].
  * - [isDestructive] paints label, icon and value in `danger`.
+ * - Optional [status] renders a [CTStatusBadge] instead of the textual value.
  * - Padding: horizontal 12, vertical 9. Presentational — wrap with a clickable
  *   [modifier] for tappable rows.
  */
 @Composable
 fun CTSettingsRow(
     label: String,
-    value: String,
+    value: String = "",
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     labelColor: Color = CTColor.text,
     valueColor: Color = CTColor.text,
     isAction: Boolean = false,
     isDestructive: Boolean = false,
+    status: CTStatus? = null,
 ) {
     val primaryColor = if (isDestructive) CTColor.danger else labelColor
     val resolvedValueColor = when {
@@ -80,12 +82,16 @@ fun CTSettingsRow(
             modifier = Modifier.weight(1f),
         )
         Spacer(Modifier.width(8.dp))
-        Text(
-            text = value,
-            style = if (isAction) ctBold(13) else ctRegular(13),
-            color = resolvedValueColor,
-            textAlign = TextAlign.End,
-        )
+        if (status != null) {
+            CTStatusBadge(status = status)
+        } else {
+            Text(
+                text = value,
+                style = if (isAction) ctBold(13) else ctRegular(13),
+                color = resolvedValueColor,
+                textAlign = TextAlign.End,
+            )
+        }
     }
 }
 
@@ -102,7 +108,9 @@ private fun SettingsSectionPreview() {
             CTSep()
             CTSettingsRow(label = "Security", value = "PIN", icon = Icons.Default.Lock, isAction = true)
             CTSep()
-            CTSettingsRow(label = "Sign out", value = "", isDestructive = true)
+            CTSettingsRow(label = "Network", status = CTStatus.OK)
+            CTSep()
+            CTSettingsRow(label = "Sign out", isDestructive = true)
         }
     }
 }
