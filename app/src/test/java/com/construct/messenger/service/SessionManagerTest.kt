@@ -68,7 +68,9 @@ class SessionManagerTest {
         assertEquals(listOf<UByte>(4u, 5u, 6u), mapped.signedPrekeyPublic)
         assertEquals(listOf<UByte>(7u, 8u), mapped.signature)
         assertEquals(listOf<UByte>(9u, 9u), mapped.verifyingKey)
-        assertEquals(10.toUShort(), mapped.suiteId)
+        // Proto CRYPTO_SUITE_CLASSIC_X25519_CHACHA20 (=10) maps to the CORE SuiteID 1
+        // (CLASSIC) — the raw proto value would be rejected by SuiteID::new.
+        assertEquals(1.toUShort(), mapped.suiteId)
         assertEquals(1_700_000_000UL, mapped.spkUploadedAt)
         assertEquals(3u, mapped.spkRotationEpoch)
 
@@ -121,5 +123,8 @@ class SessionManagerTest {
         assertEquals(2_000UL, mapped.kyberSpkUploadedAt)
         assertEquals(4u, mapped.kyberSpkRotationEpoch)
         assertTrue(mapped.supportsPqRatchet)
+        // Proto CRYPTO_SUITE_HYBRID_KYBER768_X25519 (=2) → core SuiteID 2 (PQ_HYBRID).
+        // NEVER 3: PQ_RATCHET is negotiated per-session, not declared by a bundle.
+        assertEquals(2.toUShort(), mapped.suiteId)
     }
 }
