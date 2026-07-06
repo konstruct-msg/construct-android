@@ -159,8 +159,16 @@ enum SessionResetReason {
   // Device changed (new device, old session invalid)
   SESSION_RESET_REASON_DEVICE_CHANGED = 4;
 
+  // The sender, acting as RESPONDER, could not reproduce the 4-DH one-time-prekey that the
+  // peer's last X3DH used (OTPK id not found / no longer backed by a private key). Carried
+  // on a SessionControl END signal (see content.proto) to ask the initiator to re-init
+  // WITHOUT a one-time prekey (3-DH), which is always reproducible from identity + signed
+  // prekey; retrying 4-DH would loop as every re-fetched OTPK hits the same unbackable
+  // state. See otpk-session-init-deadlock.
+  SESSION_RESET_REASON_OTPK_UNREPRODUCIBLE = 5;
+
   // Reserved for future reasons
-  reserved 5 to 15;
+  reserved 6 to 15;
 }
 
 // IdentityKeyChangeNotification - Alert when contact's identity key changes
@@ -275,52 +283,4 @@ message RatchetState {
 
   // Reserved for future state fields
   reserved 6 to 10;
-}
-
-// SessionControl - typed payload for session-handshake control signals.
-//
-// Replaces the legacy plaintext magic strings ("__session_ping_<UUID>__",
-// "__session_ready_<UUID>__", "__session_reset_init_<UUID>__"). Carried in the
-// encrypted_payload of an Envelope whose content_type identifies the op
-// (CONTENT_TYPE_SESSION_PING/READY/RESET_INIT). Moving the discriminator into the
-// typed content_type field means a control frame can never enter the renderable
-// text pipeline and never leaks as a chat bubble. Integrity is already provided by
-// the Double Ratchet AEAD, so this carries no checksum — the byte budget is spent
-// on version + op for forward-compat ("unknown (op,version) => ignore safely").
-// See decisions/binary-control-message-format.md.
-message SessionControl {
-  // Schema version. Unknown versions are ignored by the receiver.
-  uint32 version = 1;
-
-  // Operation. Mirrors the Envelope content_type for self-description; a receiver
-  // dispatches on content_type and may cross-check op.
-  SessionOp op = 2;
-
-  // Random per-signal nonce (replaces the legacy random UUID): used for
-  // dedup and tie-break watchdog correlation. Opaque bytes.
-  bytes nonce = 3;
-
-  // Reserved for op-specific fields (added without breaking older readers).
-  reserved 4 to 15;
-}
-
-// SessionOp - which session-handshake signal this is.
-enum SessionOp {
-  // Unspecified (must be 0) — receiver ignores.
-  SESSION_OP_UNSPECIFIED = 0;
-
-  // Tie-break nudge that triggers the peer's receiving-session init.
-  SESSION_OP_PING = 1;
-
-  // Phase-2 confirmation that the RESPONDER session is established.
-  SESSION_OP_READY = 2;
-
-  // Atomic END_SESSION + new X3DH init carrier (msgNum=0 under the new session).
-  SESSION_OP_RESET_INIT = 3;
-
-  // Plain END_SESSION teardown request.
-  SESSION_OP_END = 4;
-
-  // Reserved for future ops.
-  reserved 5 to 15;
 }

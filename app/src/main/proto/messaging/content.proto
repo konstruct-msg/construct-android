@@ -2,6 +2,10 @@ syntax = "proto3";
 
 package shared.proto.messaging.v1;
 
+// SessionResetReason (used by SessionControl.reason for the OTPK-unreproducible 3-DH
+// recovery hint) is defined alongside SessionResetMessage in e2ee.proto.
+import "messaging/e2ee.proto";
+
 // MessageContent - Decrypted message content
 // This is the plaintext content after E2EE decryption
 // Never transmitted in plaintext over network
@@ -437,4 +441,34 @@ message PreviewMetadata {
 
   // Reserved for future metadata
   reserved 6 to 10;
+}
+
+// SessionOp - typed session-handshake control opcode. Replaces the legacy
+// "__session_ping_<UUID>__" / "__session_ready_<UUID>__" / "__session_reset_init_<UUID>__"
+// plaintext magic strings so a handshake signal can never render as a chat bubble.
+// Carried as the E2EE payload of an Envelope whose content_type is
+// CONTENT_TYPE_SESSION_PING (25) / SESSION_READY (26) / SESSION_RESET_INIT (24) /
+// SESSION_RESET (21). The server forwards these opaquely (identical to E2EE_SIGNAL).
+enum SessionOp {
+  SESSION_OP_UNSPECIFIED = 0;
+  SESSION_OP_PING = 1;
+  SESSION_OP_READY = 2;
+  SESSION_OP_RESET_INIT = 3;
+  SESSION_OP_END = 4;
+}
+
+// SessionControl - typed payload for a session-handshake control signal.
+message SessionControl {
+  // Which handshake signal this is.
+  SessionOp op = 1;
+
+  // Correlation nonce (replaces the per-signal UUID embedded in the legacy magic
+  // string); lets the receiver dedup retransmitted control signals.
+  string nonce = 2;
+
+  // Optional recovery hint on an END / RESET_INIT signal so the receiver can pick the
+  // right re-initialisation strategy. Reuses the SessionResetReason enum from e2ee.proto;
+  // notably SESSION_RESET_REASON_OTPK_UNREPRODUCIBLE asks the initiator to re-init WITHOUT
+  // a one-time prekey (3-DH). Added 2026-07; older peers that predate this field ignore it.
+  SessionResetReason reason = 3;
 }

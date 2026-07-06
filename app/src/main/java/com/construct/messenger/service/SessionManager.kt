@@ -2,6 +2,7 @@ package com.construct.messenger.service
 
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
+import shared.proto.core.v1.Crypto.CryptoSuite
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundleRequest
 import shared.proto.services.v1.KeyServiceOuterClass.PreKeyBundle
 import uniffi.construct_core.BinaryFirstMessage
@@ -67,12 +68,29 @@ class SessionManager @Inject constructor(
     }
 }
 
+/// Proto `CryptoSuite` enum → the core's SuiteID (`suite_id.rs`): 1 = CLASSIC
+/// (X25519+ChaCha20), 2 = PQ_HYBRID (X25519+ML-KEM-768, ML-DSA-65). Mirrors iOS
+/// `KeyServiceClient.parseSuiteId` — see construct-docs decision
+/// `crypto-suite-extensibility.md`. The raw proto value is NOT the core id
+/// (proto classic = 10 → core would reject it as InvalidSuiteId), and suite 3
+/// (PQ_RATCHET) is never produced from a bundle: it is negotiated per-session
+/// from `supports_pq_ratchet`.
+private fun PreKeyBundle.coreSuiteId(): UShort = when (cryptoSuite) {
+    CryptoSuite.CRYPTO_SUITE_CLASSIC_X25519_CHACHA20 -> 1u
+    // The core has no AES-256 provider — classic, not the ML-KEM hybrid (2).
+    CryptoSuite.CRYPTO_SUITE_CLASSIC_X25519_AES256 -> 1u
+    CryptoSuite.CRYPTO_SUITE_HYBRID_KYBER768_X25519,
+    CryptoSuite.CRYPTO_SUITE_HYBRID_KYBER1024_X25519,
+    -> 2u
+    else -> 1u
+}
+
 private fun PreKeyBundle.toBinaryKeyBundle(verifyingKey: ByteArray): BinaryKeyBundle = BinaryKeyBundle(
     identityPublic = identityKey.toByteArray().toUByteList(),
     signedPrekeyPublic = signedPreKey.toByteArray().toUByteList(),
     signature = signedPreKeySignature.toByteArray().toUByteList(),
     verifyingKey = verifyingKey.toUByteList(),
-    suiteId = cryptoSuiteValue.toUShort(),
+    suiteId = coreSuiteId(),
     oneTimePrekeyPublic = if (hasOneTimePreKey()) oneTimePreKey.toByteArray().toUByteList() else null,
     oneTimePrekeyId = if (hasOneTimePreKeyId()) oneTimePreKeyId.toUInt() else null,
     spkUploadedAt = spkUploadedAt.toULong(),
