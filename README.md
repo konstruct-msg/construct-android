@@ -2,7 +2,7 @@
 
 Android-клиент privacy-first E2EE-мессенджера Construct. Kotlin + Jetpack Compose + Hilt.
 Криптоядро — общий `construct-core` (Rust), подключается напрямую через UniFFI/JNI
-(тот же путь, что и на iOS — **не** через `construct-engine`).
+(тот же путь, что и на iOS).
 
 ---
 

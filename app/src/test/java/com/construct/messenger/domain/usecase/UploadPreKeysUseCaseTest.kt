@@ -1,5 +1,7 @@
 package com.construct.messenger.domain.usecase
 
+import android.content.Context
+import android.content.SharedPreferences
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
 import kotlinx.coroutines.test.runTest
@@ -28,13 +30,19 @@ class UploadPreKeysUseCaseTest {
     private val cryptoManager: CryptoManager = mock()
     private val grpcClient: GrpcClient = mock()
     private val keyStub: KeyServiceCoroutineStub = mock()
+    private val context: Context = mock()
+    private val prefs: SharedPreferences = mock()
+    private val prefsEditor: SharedPreferences.Editor = mock()
 
     private lateinit var useCase: UploadPreKeysUseCase
 
     @Before
     fun setUp() {
         whenever(grpcClient.key).thenReturn(keyStub)
-        useCase = UploadPreKeysUseCase(cryptoManager, grpcClient)
+        whenever(context.getSharedPreferences(any(), any())).thenReturn(prefs)
+        whenever(prefs.edit()).thenReturn(prefsEditor)
+        whenever(prefsEditor.putBoolean(any(), any())).thenReturn(prefsEditor)
+        useCase = UploadPreKeysUseCase(context, cryptoManager, grpcClient)
     }
 
     // ── invoke (direct upload) ─────────────────────────────────────────────
@@ -113,11 +121,39 @@ class UploadPreKeysUseCaseTest {
         whenever(keyStub.getPreKeyCount(any(), any())).thenReturn(
             GetPreKeyCountResponse.newBuilder().setCount(50).build(),
         )
+        // Advertised capability matches what the server already holds.
+        whenever(cryptoManager.supportsPqRatchet()).thenReturn(false)
+        whenever(prefs.contains(any())).thenReturn(true)
+        whenever(prefs.getBoolean(any(), any())).thenReturn(false)
 
         val result = useCase.replenishIfNeeded("device-1", minThreshold = 20)
 
         assertEquals(UploadPreKeysResult.Skipped, result)
         verify(keyStub, never()).uploadPreKeys(any(), any())
+    }
+
+    @Test
+    fun replenishIfNeeded_uploads_whenCapabilityChanged_despiteSufficientCount() = runTest {
+        whenever(keyStub.getPreKeyCount(any(), any())).thenReturn(
+            GetPreKeyCountResponse.newBuilder().setCount(50).build(),
+        )
+        // Server holds supports_pq_ratchet=false, this build now supports it.
+        whenever(prefs.contains(any())).thenReturn(true)
+        whenever(prefs.getBoolean(any(), any())).thenReturn(false)
+        whenever(cryptoManager.supportsPqRatchet()).thenReturn(true)
+        whenever(cryptoManager.generateOneTimePrekeys(any())).thenReturn(
+            listOf(OtpkPair(keyId = 1u, publicKey = listOf(1u))),
+        )
+        whenever(keyStub.uploadPreKeys(any(), any())).thenReturn(
+            UploadPreKeysResponse.newBuilder().setSuccess(true).build(),
+        )
+
+        val result = useCase.replenishIfNeeded("device-1", minThreshold = 20)
+
+        assertTrue(result is UploadPreKeysResult.Uploaded)
+        val captor = argumentCaptor<UploadPreKeysRequest>()
+        verify(keyStub).uploadPreKeys(captor.capture(), any())
+        assertTrue(captor.firstValue.supportsPqRatchet)
     }
 
     @Test
