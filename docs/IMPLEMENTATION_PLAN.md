@@ -1,6 +1,6 @@
 # Konstrukt Messenger Android — Implementation Plan
 
-> **Last actualized:** 2026-06-24. Brought into sync with current iOS
+> **Last actualized:** 2026-07-07. UI Phase 8 refreshed to reflect mock-UI progress.
 > architecture (`construct-veil` happy-eyeballs, VEIL rename, CFE binary
 > session persistence, OTPK threshold = 20). The `veil-front` obfuscation
 > protocol (see `construct-docs/raw/02_Core_Crypto/protocols/OBFUSCATION_IMPLEMENTATION_PLAN_veil-front.md`)
@@ -502,37 +502,60 @@ equivalent of CallKit. Use it for:
 ## Phase 8: UI Components
 
 ### 8.1 Navigation & Screens
-**Status:** Pending
+**Status:** In Progress (mock-UI skeleton)
 **Priority:** HIGH
-**Depends on:** Phase 1-7
+**Depends on:** Phase 1-7 for real data; mock data works today
 
 ```kotlin
 // Navigation
 Splash -> Onboarding -> Main (conversation list) -> Chat -> Settings
                     -> Recovery (if recovering)
-
-// Screens to implement:
-- SplashScreen (check keystore)
-- OnboardingScreen (registration)
-- MainScreen (conversation list)
-- ChatScreen (messages + input)
-- SettingsScreen (profile, devices, recovery)
-- SearchScreen (find users)
-- CallScreen (WebRTC)
 ```
 
+**Screens implemented (mock data / skeleton):**
+- `SplashScreen` — launch placeholder.
+- `OnboardingScreen` — username input, create identity, restore/link actions.
+- `MainTabView` — root tab container (Chats / Synaps / Calls / Settings) using Material3 `NavigationBar`.
+- `ChatsListScreen` — conversation list with `CTSearchBar` and `ChatRow`.
+- `ChatScreen` — chat nav bar + empty message area skeleton.
+- `SynapsScreen` — contacts tab placeholder.
+- `CallsScreen` — calls tab placeholder.
+- `SettingsScreen` — settings root skeleton with nav bar.
+
+**Still to implement:**
+- Message transcript (`MessageBubble`, `MessageInputView`, scroll-to-bottom, search overlay).
+- Settings subscreens: Account, Appearance, Network, Security.
+- Search / find-users screen.
+- Call screen (WebRTC).
+- Recovery flow screens.
+
 ### 8.2 Compose Components
-**Status:** Completed (basic)
+**Status:** In Progress
 **Priority:** HIGH
 
-Components to enhance:
-- CTTextField
-- CTButton
-- CTListItem
-- CTConversationRow
-- CTMessageBubble
-- CTNavBar
-- CTLoader
+**Implemented components (aligned with iOS canon):**
+- `CTNavBar` — nav bar with title, back, trailing action.
+- `CTTabBar` — custom tab bar (legacy; prefer Material3 `NavigationBar`).
+- `CTButton` — primary/destructive/disabled button.
+- `CTTextField` — input field.
+- `CTSearchBar` — search input with clear.
+- `CTSectionGroup` / `CTSettingsSectionHeader` / `CTSettingsRow` — settings sections.
+- `CTSep` — ASCII separator line.
+- `CTSystemMessage` — terminal-style system message (`> text`).
+- `CTStatusBadge` — Material-icon status indicator.
+- `CTAvatar` — circular avatar with deterministic accent + identicon.
+- `CTLogoView` — app logo (vector asset).
+- `ConstructNavRow` — navigation row with icon + chevron.
+- `ChatRow` — conversation list row.
+
+**Still to implement / enhance:**
+- `MessageBubble` (incoming / outgoing).
+- `MessageInputView` (text input + send/attach).
+- `ConstructActionRow` / `ConstructButtonRow`.
+- `CTModeSelector` (segmented control).
+- `ConnectionStatusIndicator`.
+- `CTNoise` / ASCII background texture.
+- `CTLoader` / progress indicators.
 
 ---
 
@@ -601,15 +624,27 @@ app/src/main/java/com/construct/messenger/
 │   │   ├── splash/
 │   │   ├── onboarding/
 │   │   ├── main/
-│   │   ├── chat/
-│   │   ├── settings/
-│   │   └── call/
-│   ├── components/
-│   │   ├── CTTextField.kt
+│   │   ├── chats/         ✅ ChatsListScreen.kt, ChatRow.kt
+│   │   ├── chat/          ✅ ChatScreen.kt
+│   │   ├── synaps/        ✅ SynapsScreen.kt
+│   │   ├── calls/         ✅ CallsScreen.kt
+│   │   └── settings/      ✅ SettingsScreen.kt
+│   ├── components/        ✅ (see §8.2)
+│   │   ├── CTNavBar.kt
 │   │   ├── CTButton.kt
-│   │   ├── CTListItem.kt
+│   │   ├── CTTextField.kt
+│   │   ├── CTSearchBar.kt
+│   │   ├── CTSectionGroup.kt
+│   │   ├── CTSettingsSectionHeader.kt
+│   │   ├── CTSettingsRow.kt
+│   │   ├── CTSep.kt
+│   │   ├── CTSystemMessage.kt
+│   │   ├── CTStatusBadge.kt
 │   │   ├── CTAvatar.kt    (identicon avatars, ported from iOS 2026-06)
-│   │   └── ...
+│   │   ├── CTLogoView.kt
+│   │   ├── ConstructNavRow.kt
+│   │   ├── ChatRow.kt
+│   │   └── CTTabBar.kt    (legacy; prefer Material3 NavigationBar)
 │   └── theme/
 │       ├── Color.kt
 │       ├── Type.kt
@@ -630,5 +665,5 @@ app/src/main/java/com/construct/messenger/
 5. **Phase 5:** Message stream, VEIL transport — pending
 6. **Phase 6:** WebRTC calls — pending
 7. **Phase 7:** FCM push — pending
-8. **Phase 8:** UI screens — pending (8.2 components in progress, e.g. `CTAvatar` identicons)
+8. **Phase 8:** UI screens and components — in progress (mock navigation + most core components done; message bubbles, input, settings subscreens pending)
 9. **Phase 9:** Localization, final polish — pending
