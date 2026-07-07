@@ -38,4 +38,16 @@
 
     <!-- Settings -->
     <string name="settings_title">Настройки</string>
+
+    <!-- Tabs -->
+    <string name="nav_chats">Чаты</string>
+    <string name="nav_synaps">Синапсы</string>
+    <string name="nav_calls">Звонки</string>
+    <string name="nav_settings">Настройки</string>
+
+    <!-- Synaps -->
+    <string name="synaps_empty_title">Пока нет контактов</string>
+
+    <!-- Calls -->
+    <string name="calls_empty_title">Пока нет звонков</string>
 </resources>
