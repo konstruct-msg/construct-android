@@ -32,4 +32,10 @@
     <string name="main_empty_title">Нет активных потоков</string>
     <string name="main_empty_subtitle">Найдите личность, чтобы начать переписку</string>
     <string name="main_start_stream">Начать поток</string>
+
+    <!-- Search -->
+    <string name="search_prompt">Поиск</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Настройки</string>
 </resources>

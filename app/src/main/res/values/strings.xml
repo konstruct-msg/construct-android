@@ -35,4 +35,10 @@
     <string name="main_empty_title">No active streams</string>
     <string name="main_empty_subtitle">Search for identity to start messaging</string>
     <string name="main_start_stream">Start Stream</string>
+
+    <!-- Search -->
+    <string name="search_prompt">Search</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
 </resources>
