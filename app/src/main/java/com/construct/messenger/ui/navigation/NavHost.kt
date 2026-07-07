@@ -63,11 +63,14 @@ fun KonstructNavHost(
             ChatScreen(
                 contactId = requireNotNull(backStackEntry.arguments?.getString("contactId")) {
                     "Missing contactId route argument"
-                }
+                },
+                onNavigateBack = { navController.popBackStack() }
             )
         }
         composable(Screen.Settings.route) {
-            SettingsScreen()
+            SettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }
