@@ -41,4 +41,16 @@
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
+
+    <!-- Tabs -->
+    <string name="nav_chats">Chats</string>
+    <string name="nav_synaps">Synaps</string>
+    <string name="nav_calls">Calls</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Synaps -->
+    <string name="synaps_empty_title">No contacts yet</string>
+
+    <!-- Calls -->
+    <string name="calls_empty_title">No calls yet</string>
 </resources>

@@ -7,7 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.construct.messenger.ui.screens.chat.ChatScreen
-import com.construct.messenger.ui.screens.main.MainScreen
+import com.construct.messenger.ui.screens.main.MainTabView
 import com.construct.messenger.ui.screens.onboarding.OnboardingScreen
 import com.construct.messenger.ui.screens.settings.SettingsScreen
 import com.construct.messenger.ui.screens.splash.SplashScreen
@@ -48,7 +48,7 @@ fun KonstructNavHost(
             )
         }
         composable(Screen.Main.route) {
-            MainScreen(
+            MainTabView(
                 onNavigateToChat = { contactId ->
                     navController.navigate(Screen.Chat.createRoute(contactId)) {
                         launchSingleTop = true
