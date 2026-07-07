@@ -99,33 +99,94 @@ construct-android/
 ├── app/src/main/
 │   ├── java/com/construct/messenger/
 │   │   ├── MainActivity.kt
+│   │   ├── KonstructApp.kt
 │   │   ├── ui/
-│   │   │   ├── theme/        — дизайн-токены (Color, Type, Symbol, Theme)
+│   │   │   ├── components/   — reusable UI-компоненты (см. список ниже)
 │   │   │   ├── navigation/   — NavHost, Screen
-│   │   │   └── screens/      — splash, onboarding, main (пока заглушки)
-│   │   ├── (далее по плану: crypto/, data/, domain/, di/, viewmodel/, service/)
+│   │   │   ├── screens/      — splash, onboarding, main, chats, chat, synaps, calls, settings
+│   │   │   └── theme/        — дизайн-токены (Color, Type, Symbol, Theme, Layout)
+│   │   ├── data/
+│   │   │   ├── model/        — ChatSummary, Message, AuthState
+│   │   │   └── mock/         — MockChatsRepository, MockAuthRepository
+│   │   ├── viewmodel/        — MainViewModel, OnboardingViewModel, SplashViewModel
+│   │   └── crypto/           — CryptoManager (обёртка над UniFFI; заглушка/скелет)
 │   ├── jniLibs/<abi>/        — libconstruct_core.so
-│   └── res/values/           — strings.xml, colors.xml, themes.xml
+│   └── res/values/           — strings.xml (en, ru), themes.xml
 ├── build_crypto_lib.sh       — сборка Rust-ядра + UniFFI bindings
 ├── generate_grpc_kotlin.sh   — генерация gRPC из .proto
 ├── AGENTS.md                 — контекст для AI-агентов
 ├── IMPLEMENTATION_PLAN.md    — план на 9 фаз (цель, не текущее состояние)
-└── GOOD_FIRST_ISSUES.md      — с чего начать новому разработчику
+├── GOOD_FIRST_ISSUES.md      — с чего начать новому разработчику
+└── docs/
+    └── ANDROID_ONBOARDING.md — подробный перенос iOS → Android
 ```
 
 > `IMPLEMENTATION_PLAN.md` описывает **целевую** архитектуру (крипто, gRPC, VEIL,
-> WebRTC, FCM). Фактически реализован только UI-скелет, точнее отдельные элементы интерфейса.
+> WebRTC, FCM). Сейчас активно наращивается **mock-UI**: навигация, дизайн-система и
+> экраны работают на тестовых данных без реального бэкенда.
 
 ---
 
 ## Текущее состояние
 
-Реализовано: тема, отдельные элементы интерфейса.
-**Не реализовано:** криптоядро-обёртка, gRPC, регистрация/сессии, хранилище (Room),
-большинство компонентов и экранов из дизайн-системы, локализация, короче всё.
+### Реализовано (UI / mock-уровень)
 
-Есть известные расхождения (Hilt без Application-класса, дрейф цветов, хардкод строк) —
-они оформлены как первые задачи.
+**Дизайн-система:**
+- Токены: `CTColor`, `CTFont`, `CTSymbol`, `CTLayout`, `Spacing`, `CornerRadius`.
+- Тема Jetpack Compose (dark/light).
+
+**Reusable UI-компоненты:**
+- `CTNavBar` — навигационная панель с заголовком и trailing action.
+- `CTTabBar` — кастомный таб-бар (устаревающий, предпочтителен Material3 `NavigationBar`).
+- `CTButton` — основная кнопка.
+- `CTTextField` — поле ввода.
+- `CTSearchBar` — строка поиска.
+- `CTSectionGroup` / `CTSettingsSectionHeader` / `CTSettingsRow` — секции настроек.
+- `CTSep` — ASCII-разделитель.
+- `CTSystemMessage` — системное сообщение (`> text`).
+- `CTStatusBadge` — Material-иконка статуса (ok/error/warning/on/off/busy/unknown).
+- `CTAvatar` — круглый аватар с детерминированным accent-цветом и identicon.
+- `CTLogoView` — логотип приложения (vector asset `ic_logo`).
+- `ConstructNavRow` — строка навигации с иконкой и chevron.
+- `ChatRow` — строка списка чатов.
+
+**Экраны (Compose + ViewModel):**
+- `SplashScreen` — заглушка запуска.
+- `OnboardingScreen` — онбординг с username-полем.
+- `MainTabView` — корневой таб-контейнер (Chats / Synaps / Calls / Settings) на Material3 `NavigationBar`.
+- `ChatsListScreen` — список чатов с `CTSearchBar` и `ChatRow`.
+- `ChatScreen` — скелет экрана чата.
+- `SynapsScreen` — заглушка контактов.
+- `CallsScreen` — заглушка звонков.
+- `SettingsScreen` — скелет настроек.
+
+**Данные / ViewModels:**
+- `ChatSummary`, `Message`, `AuthState`.
+- `MockChatsRepository` с тестовыми чатами.
+- `MainViewModel`, `OnboardingViewModel`, `SplashViewModel`.
+
+**Локализация:**
+- `strings.xml` для `en` и `ru` (ключевые экраны).
+
+### Не реализовано
+
+- Реальная регистрация / сессии / PoW.
+- Полноценная обёртка `CryptoManager` и интеграция с `construct-core`.
+- gRPC-сервисы и сетевая подсистема.
+- Room-хранилище (сейчас только mock-репозитории).
+- Большинство экранов настроек (Account, Appearance, Network, Security).
+- `MessageBubble`, `MessageInputView`, отправка сообщений.
+- Push-уведомления (FCM), WebRTC/звонки, VEIL.
+- Полная локализация (`ja` и оставшиеся ключи).
+
+### Известные расхождения
+
+- Hilt подключён, но `Application`-класс пока минимален.
+- Некоторые компоненты ещё не перенесены из iOS (`ConstructActionRow`,
+  `ConstructButtonRow`, `CTModeSelector`, `ConnectionStatusIndicator`).
+- До появления реального бэкенда все экраны работают на mock-данных.
+
+Последние изменения и задачи — в `GOOD_FIRST_ISSUES.md` и в истории коммитов.
 
 ---
 
