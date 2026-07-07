@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
@@ -60,51 +62,69 @@ fun ChatsListScreen(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         )
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.main_empty_title),
-                style = ctRegular(14),
-                color = CTColor.textDim
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.main_empty_subtitle),
-                style = ctRegular(12),
-                color = CTColor.textDim,
-                letterSpacing = 1.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = canStartStream) {
-                    onNavigateToChat(uiState.suggestedContactId)
-                }
-                .background(CTColor.bgMsg)
-                .padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
+        if (uiState.chats.isEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    tint = CTColor.accent,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = stringResource(R.string.main_start_stream),
+                    text = stringResource(R.string.main_empty_title),
                     style = ctRegular(14),
-                    color = CTColor.text
+                    color = CTColor.textDim
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.main_empty_subtitle),
+                    style = ctRegular(12),
+                    color = CTColor.textDim,
+                    letterSpacing = 1.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = canStartStream) {
+                        onNavigateToChat(uiState.suggestedContactId)
+                    }
+                    .background(CTColor.bgMsg)
+                    .padding(16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        tint = CTColor.accent,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.main_start_stream),
+                        style = ctRegular(14),
+                        color = CTColor.text
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+            ) {
+                items(
+                    items = uiState.chats,
+                    key = { it.contactId }
+                ) { chat ->
+                    ChatRow(
+                        chat = chat,
+                        onClick = { onNavigateToChat(chat.contactId) }
+                    )
+                }
             }
         }
     }
