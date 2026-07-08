@@ -27,6 +27,8 @@ object CTColor {
     val textLight = Color(0xFF111111)
     val textDim = Color(0xFF818181)     // dark 0x818181 / light 0x333333
     val textDimLight = Color(0xFF333333)
+    val outMsgText = Color(0xFFFFFFFF)  // dark #FFFFFF / light #111111
+    val outMsgTextLight = Color(0xFF111111)
 
     // Structure (separators, ASCII noise)
     val noise = Color(0xFF1E1E1E)       // dark 0x1E1E1E / light 0xC8C8C8
