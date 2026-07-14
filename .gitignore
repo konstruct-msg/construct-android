@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+/graphify-out
+.cursor
+.kotlin/
