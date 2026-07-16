@@ -13,10 +13,10 @@ class MainViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun exposesEmptyMockStreamList() = runTest {
+    fun exposesMockStreamList() = runTest {
         val viewModel = MainViewModel(MockChatsRepository())
 
-        assertTrue(viewModel.uiState.value.chats.isEmpty())
+        assertTrue(viewModel.uiState.value.chats.isNotEmpty())
         assertEquals("test_contact", viewModel.uiState.value.suggestedContactId)
     }
 }
