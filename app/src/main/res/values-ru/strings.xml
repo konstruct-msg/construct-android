@@ -38,6 +38,21 @@
 
     <!-- Settings -->
     <string name="settings_title">Настройки</string>
+    <string name="settings_section_profile">Профиль</string>
+    <string name="settings_section_share">Поделиться</string>
+    <string name="settings_section_settings">Настройки</string>
+    <string name="settings_section_about">О приложении</string>
+    <string name="settings_section_developer">Разработка</string>
+    <string name="settings_row_share_invite">Ссылка-приглашение</string>
+    <string name="settings_row_appearance">Оформление</string>
+    <string name="settings_row_network">Сеть</string>
+    <string name="settings_row_security">Безопасность</string>
+    <string name="settings_row_version">Версия</string>
+    <string name="settings_row_licenses">Лицензии</string>
+    <string name="settings_row_diagnostics">Диагностика</string>
+    <string name="settings_recovery_banner">Социальное восстановление не настроено. Нажмите, чтобы настроить.</string>
+    <string name="settings_discoverable_on">Обнаруживаемый</string>
+    <string name="settings_username_format">@%1$s</string>
 
     <!-- Tabs -->
     <string name="nav_chats">Чаты</string>
