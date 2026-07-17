@@ -201,3 +201,9 @@ construct-android/
 - Локальное хранилище сообщений — Room.
 - gRPC-канал — синглтон в сервисе, не пересоздаётся на каждый экран.
 - Дизайн-токены и поведение **сверяются с iOS** — приложения должны выглядеть одинаково.
+
+## Trademark
+
+**Konstruct™** / **Конструкт™** and the logo are trademarks of Maxim Eliseyev. The open-source
+license on this code does **not** grant trademark rights — see [TRADEMARK.md](TRADEMARK.md).
+Forks that distribute a modified version must rebrand.

@@ -1653,18 +1653,58 @@ fun sessionOp(contentType: Int, decryptedPlaintext: String?): SessionOp? =
 // Also keep a render-time guard (see §8.3): never show a row whose decrypted text matches these prefixes.
 ```
 
-### Producer rule (dual-send during transition)
+### Producer rule (S3 binary payload — current state as of 2026-07-17)
 
-Set the typed `content_type` **and** keep the legacy magic string as the payload so that
-old iOS peers (which only understand the string) still interop. Once the legacy
-fallback is removed fleet-wide on both platforms, swap the payload to a serialized
-`SessionControl` (carrying `nonce`) and stop sending the string.
+**iOS flipped S3 ON 2026-07-17** (`FeatureFlags.binarySessionControlPayload` default `true`):
+producers now send a serialized `SessionControl{op, nonce}` as the encrypted payload and the
+legacy magic string is dropped from the wire. Android should do the same **from day one** —
+there is no reason for a new platform to ever produce magic strings:
+
+- Producer: typed `content_type` (24/25/26) + payload = `SessionControl{op, nonce}.serialize()`.
+- Consumer: dispatch on `content_type` first, **keep the legacy string parser as a fallback
+  forever** (see Consumer rule above) — older iOS builds in the field may still produce strings.
+- Escape hatch (mirrors iOS): if an ancient pre-typed peer resurfaces, iOS can be toggled back
+  to string-producing dual-send per-device; Android does not need this toggle unless the same
+  situation arises.
 
 > **Rollout / server dependency**: the server must know `content_type` 25/26 or it
 > re-emits them as `E2EE_SIGNAL` (1) and the typed path goes inert (it does **not** drop
-> the message — it is fail-open, so dual-send still works via the string). The server proto
-> was updated 2026-06-23 (`construct-server/shared/proto/core/envelope.proto`); deploy it
-> before flipping producers to typed-only.
+> the message — it is fail-open). The server proto was updated 2026-06-23
+> (`construct-server/shared/proto/core/envelope.proto`) and is deployed fleet-wide.
+
+### Control-plane storm hardening (END_SESSION / SESSION_RESET_INIT) — MANDATORY
+
+iOS shipped these protections 2026-07-16/17 after a production desync storm (one OTPK
+mismatch → 7+ END_SESSIONs re-delivered from the offline queue → parallel INITIATOR
+re-inits destroyed a freshly established healthy session → permanent one-way messaging).
+Full root cause: `sessions/2026-07-16-end-session-storm-fix.md`. Android MUST implement
+the same invariants — they are protocol behaviour, not iOS implementation detail:
+
+1. **Inbound control coalesce (receive side).** After handling one END_SESSION or
+   SESSION_RESET_INIT for a peer, further control messages of the same class from that peer
+   within a **45 s** cooldown window are ACK'd only (mark processed + delivery receipt) and
+   NOT acted upon. An SRI also counts as END_SESSION for the coalesce window (it already
+   reset the peer). The server offline queue re-delivers control batches on every reconnect;
+   acting on each copy re-archives keys and re-tears sessions.
+2. **Debounced re-init + fresh-session guard.** On END_SESSION, delay the INITIATOR re-init
+   (~1.5 s debounce, one pending task per peer). When the debounce fires, **skip the re-init
+   entirely if a session with that peer now exists** — it was established after the
+   END_SESSION arrived and must not be destroyed. (Safe because the router wipes the old
+   session *before* delegating: any live session is post-END by construction.)
+3. **Cancel pending re-init on progress.** An incoming ping / session_ready / SRI, or a
+   successful RESPONDER init for that peer, cancels the pending END_SESSION re-init.
+4. **Single in-flight INITIATOR re-init per peer.** Coalesce concurrent re-init requests;
+   never run two X3DH inits for the same peer in parallel.
+5. **Outbound END_SESSION rate limit.** Per-peer cooldown on *sending* END_SESSION
+   (prewarm "session missing", init-failure paths). Re-delivered copies of the same failed
+   init must not each emit a fresh END_SESSION.
+6. **Stale END_SESSION filter.** Persist `establishedAt` per peer (survives restart, e.g.
+   Keychain/EncryptedSharedPreferences); on restore, hydrate it for CFE-restored sessions
+   *before* processing any queued control message. An END_SESSION whose timestamp pre-dates
+   the current session's `establishedAt` is stale — ACK and drop.
+7. **Never replay control carriers as "orphaned init".** END_SESSION / SRI / sender-sync
+   messages must be excluded from any msgNum=0 reprocessing queue — replaying them loops
+   session teardown on every reconnect.
 
 ## Key Bundle Structure
 
@@ -1922,6 +1962,22 @@ sealed class SessionError : Exception() {
 | State management | `@MainActor` dictionaries | `Mutex` + `StateFlow` |
 | DI | Singletons everywhere | Hilt injection |
 
+## Push (FCM) Registration
+
+Server-side facts Android must know (fixed 2026-07-17, `construct-server` commit `938f395`):
+
+- **Token length cap is 512 chars.** FCM registration tokens routinely run 140–200+ chars;
+  the old 128-char cap silently rejected them with `Validation error: Device token format is
+  invalid`. If registration fails with that error, check length last — the cap is now 512.
+- **Register with `push_environment`** appropriate for the build; the server routes per-token.
+- **Token invalidation semantics**: the server deletes a stored token ONLY on FCM/APNs
+  verdicts that condemn the *token* (APNs `400 BadDeviceToken` / `410 Unregistered`;
+  FCM equivalent unregistered errors). Provider-auth failures (403-class) never delete
+  tokens. Client-side rule mirrored from iOS: re-register the current FCM token on every
+  app launch — it self-heals any server-side deletion within one launch.
+- Push payload for calls: `construct_call` is a **nested** object (iOS bug 2026-06-16 —
+  reading `call_id` flat broke incoming-call wake). Parse nested.
+
 ---
 
 # 13. Auth Tokens — PASETO v4.public
@@ -2079,7 +2135,7 @@ fun loadSessionToken() {
    потребляет JWT refresh `jti`, возвращает **PASETO**-пару. Сессия теперь на PASETO.
 4. **Окно ротации**: до `refresh_token_ttl_days` (90 дней) для естественного перехода.
    После — stale JWT refresh истёк, оставшиеся клиенты re-auth via device signature (PoW).
-5. **Legacy JWT код удаляется** с серверра и iOS-клиента после завершения окна ротации
+5. **Legacy JWT код удаляется** с сервера и iOS-клиента после завершения окна ротации
    и нулевого объёма JWT verify в течение недели.
 
 **Android (этот репо) — greenfield, JWT не реализует.** Если Android-клиент получит
