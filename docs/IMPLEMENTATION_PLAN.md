@@ -104,7 +104,7 @@ a successful gRPC response.
 |-----|---------|---------------|
 | Auth token | EncryptedSharedPrefs | ✅ as planned |
 | Device identity key | Android Keystore-generated | ❌ not applicable — identity/signing keys live inside `construct-core` (Rust), persisted via `CryptoManager.exportPrivateKeys()`/CFE bytes, not Android-Keystore-generated keypairs |
-| Session JSON (per contact) | EncryptedSharedPrefs | ❌ not here — session bytes are CFE binary via `CryptoManager`/`SessionManager`, never JSON, and not yet wired to persistent storage (in-memory only today) |
+| Session JSON (per contact) | EncryptedSharedPrefs | ❌ not here — session bytes are CFE binary via `CryptoManager`/`SessionManager`, never JSON; persisted in Room `session_state` via `SessionStateStore` (2026-07-17), incl. `session_meta.establishedAt` for the stale-END_SESSION filter |
 | Recovery public key | EncryptedSharedPrefs | ❌ not implemented yet (Phase 4) |
 
 `expiresAt` is intentionally not persisted, matching iOS `KeychainManager` —

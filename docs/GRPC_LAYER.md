@@ -18,6 +18,15 @@ data/api/
 data/auth/
 ├── AuthInterceptor.kt       # Bearer + x-user-id/x-device-id   [РАБОТАЕТ]
 ├── TokenRefreshCoordinator.kt                                  [РАБОТАЕТ]
+├── AuthSessionManager.kt    # format guard §13.5 + 401→refresh→ [ГОТОВ+тесты]
+│                            # retry (single), permanent→re-auth
+data/local/
+├── KeystoreManager.kt       # токены + private keys (CFE)      [РАБОТАЕТ]
+├── AckStore.kt              # durable dedup (Room + in-memory   [ГОТОВ+тесты]
+│                            # mirror, hydrate() до стрима!)
+├── SessionStateStore.kt     # CFE session blobs + establishedAt [ГОТОВ+тесты]
+├── db/                      # Room: chats/messages/users/       [ГОТОВ]
+│                            # acked_messages/session_state/session_meta
 service/
 ├── SessionManager.kt        # DR-сессии поверх CryptoManager   [РАБОТАЕТ]
 ├── MessageRouter.kt         # стрим → домен-события: dedup,    [ГОТОВ+тесты]
@@ -31,6 +40,7 @@ crypto/
 │                            # (wire_payload.rs; дублей на Kotlin нет)
 di/
 ├── CryptoModule.kt          # bind OrchestratorGateway→CryptoMgr [ГОТОВ]
+├── DatabaseModule.kt        # Room DB + DAOs + AckStore         [ГОТОВ]
 stealth/                     # sealed sender (см. §5)           [КАРКАС]
 ├── StealthPolicy.kt  ServerKeysProvider.kt  TokenWalletService.kt
 ├── BlindTokenService.kt  StealthSenderService.kt
