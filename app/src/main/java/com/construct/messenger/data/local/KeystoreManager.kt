@@ -59,6 +59,11 @@ class KeystoreManager @Inject constructor(
         prefs.edit().putString(KEY_REFRESH_TOKEN, token).apply()
     }
 
+    /** Persists a recovered user id (last-resort `sub` extraction, `docs/TOKEN_AUTH.md` §3.4). */
+    fun saveUserId(userId: String) {
+        prefs.edit().putString(KEY_USER_ID, userId).apply()
+    }
+
     /** Clears tokens on logout. Device id and private keys are kept — they identify the
      * device's identity, not a session. */
     fun clearTokens() {
