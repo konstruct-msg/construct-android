@@ -1,6 +1,7 @@
 package com.construct.messenger.viewmodel
 
 import com.construct.messenger.data.mock.MockAuthRepository
+import com.construct.messenger.data.mock.MockOrientationStore
 import com.construct.messenger.test.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -17,7 +18,7 @@ class SplashViewModelTest {
     @Test
     fun unauthenticatedUserRoutesToOnboarding() = runTest {
         val repository = MockAuthRepository()
-        val viewModel = SplashViewModel(repository)
+        val viewModel = SplashViewModel(repository, MockOrientationStore())
 
         viewModel.decideNextRoute()
         advanceUntilIdle()
@@ -26,10 +27,22 @@ class SplashViewModelTest {
     }
 
     @Test
-    fun initializedUserRoutesToMain() = runTest {
+    fun initializedButNotOrientedRoutesToOrientation() = runTest {
         val repository = MockAuthRepository()
         repository.initializeIdentity(username = null)
-        val viewModel = SplashViewModel(repository)
+        val viewModel = SplashViewModel(repository, MockOrientationStore(initiallyCompleted = false))
+
+        viewModel.decideNextRoute()
+        advanceUntilIdle()
+
+        assertEquals(SplashRoute.Orientation, viewModel.uiState.value.route)
+    }
+
+    @Test
+    fun initializedAndOrientedUserRoutesToMain() = runTest {
+        val repository = MockAuthRepository()
+        repository.initializeIdentity(username = null)
+        val viewModel = SplashViewModel(repository, MockOrientationStore(initiallyCompleted = true))
 
         viewModel.decideNextRoute()
         advanceUntilIdle()

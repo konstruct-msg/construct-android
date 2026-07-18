@@ -30,6 +30,34 @@
     <string name="reg_try_again">Try again</string>
     <string name="reg_cancel">Cancel</string>
 
+    <!-- Orientation (post-registration product guide) — canon: iOS orientation_* -->
+    <string name="orientation_section_label">&gt; orientation</string>
+    <string name="orientation_skip">Skip</string>
+    <string name="orientation_next">Continue</string>
+    <string name="orientation_enter">Enter Konstruct</string>
+    <string name="orientation_or">or</string>
+    <string name="orientation_settings_replay">How Konstruct works</string>
+    <string name="orientation_page1_title">Identity</string>
+    <string name="orientation_page1_body">No phone number, no email, no real name. Your identity is created from scratch on this phone and refers to nothing outside itself. Who you are here is what you make.</string>
+    <string name="orientation_page1_caption">A public @alias is optional. Your keys never leave this phone.</string>
+    <string name="orientation_page1_visual_label">on this device</string>
+    <string name="orientation_page2_title">People</string>
+    <string name="orientation_page2_body">There is no global directory, and nobody can find you without your knowledge. To start talking, one of you invites the other: show a QR code, share a link, or find an @alias and send a request.</string>
+    <string name="orientation_page2_caption">Nobody can message you without your consent.</string>
+    <string name="orientation_page2_path_qr_title">QR / link</string>
+    <string name="orientation_page2_path_qr_sub">Show or scan. Valid for 5 minutes.</string>
+    <string name="orientation_page2_path_search_title">Search</string>
+    <string name="orientation_page2_path_search_sub">Find an @alias → send a request.</string>
+    <string name="orientation_page3_title">Three places</string>
+    <string name="orientation_page3_body">Chats is where you talk. Synaps is your web of people and incoming requests. Settings holds your QR code, recovery and devices.</string>
+    <string name="orientation_page3_caption">Start in Synaps — show a QR or find someone.</string>
+    <string name="orientation_map_streams">Chats</string>
+    <string name="orientation_map_streams_sub">One-to-one conversations</string>
+    <string name="orientation_map_synaps">Synaps</string>
+    <string name="orientation_map_synaps_sub">People, search, requests</string>
+    <string name="orientation_map_settings">Settings</string>
+    <string name="orientation_map_settings_sub">QR, recovery, devices</string>
+
     <!-- Main (streams list) -->
     <string name="nav_streams">Chats</string>
     <string name="main_empty_title">No conversations yet</string>
