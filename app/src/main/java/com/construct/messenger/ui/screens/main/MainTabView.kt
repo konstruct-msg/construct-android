@@ -37,8 +37,9 @@ import com.construct.messenger.ui.theme.CTColor
 @Composable
 fun MainTabView(
     onNavigateToChat: (String) -> Unit,
+    startTab: Int = 0,
 ) {
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(startTab) }
 
     val tabs = listOf(
         TabItem.Chats,

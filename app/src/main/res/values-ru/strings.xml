@@ -27,6 +27,34 @@
     <string name="reg_try_again">Повторить</string>
     <string name="reg_cancel">Отмена</string>
 
+    <!-- Orientation (post-registration product guide) — canon: iOS orientation_* -->
+    <string name="orientation_section_label">&gt; orientation</string>
+    <string name="orientation_skip">Пропустить</string>
+    <string name="orientation_next">Продолжить</string>
+    <string name="orientation_enter">Войти в Конструкт</string>
+    <string name="orientation_or">или</string>
+    <string name="orientation_settings_replay">Как устроен Конструкт</string>
+    <string name="orientation_page1_title">Идентичность</string>
+    <string name="orientation_page1_body">Без телефона, почты и настоящего имени. Идентичность создаётся с нуля на этом телефоне и не отсылает ни к чему вне себя. Кто вы здесь — решаете вы.</string>
+    <string name="orientation_page1_caption">Публичный @псевдоним необязателен. Ключи не покидают телефон.</string>
+    <string name="orientation_page1_visual_label">на этом устройстве</string>
+    <string name="orientation_page2_title">Люди</string>
+    <string name="orientation_page2_body">Общего каталога нет, и вас нельзя найти без вашего ведома. Чтобы начать общение, один приглашает другого: покажите QR-код, отправьте ссылку или найдите @псевдоним и отправьте запрос.</string>
+    <string name="orientation_page2_caption">Никто не напишет вам без вашего согласия.</string>
+    <string name="orientation_page2_path_qr_title">QR / ссылка</string>
+    <string name="orientation_page2_path_qr_sub">Показать или сканировать. Действует 5 минут.</string>
+    <string name="orientation_page2_path_search_title">Поиск</string>
+    <string name="orientation_page2_path_search_sub">Найти @псевдоним → отправить запрос.</string>
+    <string name="orientation_page3_title">Три места</string>
+    <string name="orientation_page3_body">Чаты — переписка. Synaps — ваши люди и входящие запросы. Настройки — ваш QR-код, восстановление и устройства.</string>
+    <string name="orientation_page3_caption">Начните с Synaps — покажите QR или найдите человека.</string>
+    <string name="orientation_map_streams">Чаты</string>
+    <string name="orientation_map_streams_sub">Личная переписка</string>
+    <string name="orientation_map_synaps">Synaps</string>
+    <string name="orientation_map_synaps_sub">Люди, поиск, запросы</string>
+    <string name="orientation_map_settings">Настройки</string>
+    <string name="orientation_map_settings_sub">QR, восстановление, устройства</string>
+
     <!-- Main (streams list) -->
     <string name="nav_streams">Чаты</string>
     <string name="main_empty_title">Пока нет чатов</string>
