@@ -120,7 +120,7 @@ All project documentation: `~/Code/construct-docs` (Obsidian vault).
 **Authoritative map + writing rules: `~/Code/construct-docs/AGENTS.md`** — read it before
 contributing docs. The vault is a flat domain-folder structure (`architecture/`, `backend/`,
 `client/`, `cryptocore/`, `security/`, `deployment/`, `sessions/`, `decisions/`, `_archive/`, …).
-There is no `raw/` or `wiki/` anymore. The Android design doc lives at
+The Android design doc lives at
 `~/Code/construct-docs/client/ANDROID_ONBOARDING.md` (kept in sync with this repo's
 `docs/ANDROID_ONBOARDING.md`).
 
@@ -128,10 +128,6 @@ There is no `raw/` or `wiki/` anymore. The Android design doc lives at
 
 The vault's own `~/Code/construct-docs/AGENTS.md` is **authoritative**. Summary below is the
 operational subset for coding agents.
-
-> **There is no pipeline anymore.** The old `raw/` → olw → `wiki/` synthesis workflow is gone.
-> Agents patch docs **directly** and write session/decision notes by hand. No olw, no
-> `wiki/.drafts/`. `raw/` and `wiki/` no longer exist — the corpus is the flat domain folders above.
 
 ### Where durable reasoning goes
 
