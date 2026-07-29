@@ -36,9 +36,13 @@ message Envelope {
     GroupMessageId group_message_id = 21; // MOVED TO FIELD 21 (2-byte)
   }
 
-  // Server timestamp (rounded to 5-second buckets for privacy)
-  // Prevents server from learning precise message timing
-  // For precise timestamps, see encrypted_metadata
+  // Server timestamp (rounded to 5-second buckets for privacy).
+  // Prevents server from learning precise message timing.
+  //
+  // SECURITY: this is transport metadata only. It is server-visible and
+  // server-mutable; clients MUST NOT use it as the authoritative sent-time of
+  // the message. The sender-generated timestamp lives inside the encrypted
+  // payload and wins when present.
   int64 timestamp = 7;
 
   // TTL (time-to-live) in seconds
@@ -59,8 +63,14 @@ message Envelope {
 
   // === Routing & Metadata (fields 11-15) ===
 
-  // Conversation ID (1-to-1 or group)
-  // Format: "direct:{user1}:{user2}" or "group:{group_id}"
+  // DEPRECATED: conversation_id is server-visible metadata and is not populated
+  // by the messaging service. It exists on the wire only for backward
+  // compatibility with old clients.
+  //
+  // SECURITY: clients MUST NOT use this field for E2E semantics (identity,
+  // reply/edit routing, or sender/recipient recovery). Any reference a device
+  // makes to a peer's data must use a sender-generated id inside the encrypted
+  // payload.
   string conversation_id = 11;
 
   // Server-assigned metadata (added by server, read-only for clients)
@@ -86,8 +96,11 @@ message Envelope {
   // Field 17 is reserved to prevent accidental reuse.
   reserved 17;
 
-  // Edit of message ID (for message editing)
-  optional string edits_message_id = 18;
+  // DEPRECATED: edits_message_id was server-visible metadata and leaked which
+  // message was edited. Edit references are now carried inside the encrypted
+  // payload as MessageContent.edit. Field 18 is reserved to prevent reuse.
+  reserved 18;
+  reserved "edits_message_id";
 
   // Reactions (emoji reactions to this message)
   repeated Reaction reactions = 19;
@@ -194,12 +207,14 @@ enum ContentType {
   // SESSION_PING — tie-break handshake nudge (INITIATOR → peer) that triggers the
   // RESPONDER's receiving-session init. Payload is a SessionControl (op=PING).
   // Replaces the legacy "__session_ping_<UUID>__" plaintext magic string so the
-  // signal can never render as a chat bubble. Server forwards opaquely.
+  // signal can never render as a chat bubble. Server forwards opaquely (treat
+  // identically to E2EE_SIGNAL — opaque bytes, no inspection, payload preserved).
   CONTENT_TYPE_SESSION_PING = 25;
 
   // SESSION_READY — phase 2 of the two-phase handshake (RESPONDER → INITIATOR),
   // sent after a successful initReceivingSession to confirm both sides match.
   // Payload is a SessionControl (op=READY). Replaces "__session_ready_<UUID>__".
+  // Server forwards opaquely (treat identically to E2EE_SIGNAL).
   CONTENT_TYPE_SESSION_READY = 26;
 
   // Reserved for future types
@@ -269,8 +284,12 @@ message EncryptedMetadataContent {
 }
 
 // ClientMetadata - Optional client-provided metadata
+//
+// SECURITY: every field here is visible to the server. These values are useful
+// for tracing and debugging but must never drive E2E semantics.
 message ClientMetadata {
-  // Client-generated timestamp (may differ from server_timestamp)
+  // Client-generated timestamp (may differ from server_timestamp).
+  // For tracing only; authoritative sent-time lives inside encrypted_payload.
   int64 client_timestamp = 1;
 
   // Client version (for debugging)
@@ -427,6 +446,10 @@ message SenderCertificate {
 
   // Ed25519 signature by sender's home server
   // Signs: sender_user_id || sender_domain || sender_identity_key || sender_device_id || issued_at || expires_at
+  // Direct byte concatenation, no separators; issued_at/expires_at are raw big-endian
+  // 8-byte integers (not ASCII). This is the only accepted format — pinned in
+  // stealth-sealed-sender-v2 Phase 3 (identity-service::build_sender_cert_sign_payload,
+  // iOS StealthSenderService.buildCertPayload).
   bytes server_signature = 7;
 
   // Reserved for future cert fields (e.g., PQ signature, capabilities)
