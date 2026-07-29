@@ -151,6 +151,11 @@ message DevicePublicKeys {
   // Hybrid signature over the SPK sign-message (3373 bytes); proves the SPK under the
   // hybrid key in addition to signed_prekey_signature. (scope B)
   optional bytes signed_prekey_hybrid_signature = 8;
+
+  // Supports SuiteID::PQ_RATCHET (3) for sparse continuous post-quantum ratchet.
+  // When true, other peers may open new sessions with suite 3 (self-sustaining PQ
+  // material, no further OTPK consumption after the first message).
+  bool supports_pq_ratchet = 9;
 }
 
 message PowSolution {
@@ -164,6 +169,15 @@ message RegisterDeviceRequest {
   string device_id = 2;
   DevicePublicKeys public_keys = 3;
   PowSolution pow_solution = 4;
+
+  // Identity public key for global user identity (Epic E).
+  // Used to derive route_id = SHA-256(identity_key_type || identity_public_key)
+  // for DHT-based routing. Optional for backward compatibility.
+  optional bytes identity_public_key = 5;
+
+  // Key algorithm type: 1=Ed25519 (32 bytes), 2=ML-DSA-65 (1952 bytes),
+  // 3=Hybrid Ed25519+ML-DSA (1984 bytes). Defaults to 1 (Ed25519).
+  optional uint32 identity_key_type = 6;
 }
 
 message AuthenticateDeviceRequest {
@@ -615,6 +629,15 @@ message GetSenderCertificateResponse {
   // Certificate expiry (Unix seconds, typically now + 24h)
   // Client should re-fetch before this time
   int64 expires_at = 2;
+
+  // Server's static X25519 token-encryption public key (32 raw bytes), the same
+  // key advertised as base64 `token_encryption_key` in /.well-known/construct-server.
+  // Delivered here over the authenticated gRPC channel so clients that cannot reach
+  // the HTTP well-known (self-signed native/VEIL listener, ATS, DPI) still obtain the
+  // key needed to seal Privacy Pass token_bytes — without it the client would send an
+  // unsealable token and every sealed send fails redemption (decrypt_failed) under
+  // enforce. Empty when the server has no token-encryption key configured.
+  bytes token_encryption_key = 3;
 }
 
 // ============================================================================
@@ -658,23 +681,30 @@ message JoinRequestPayload {
   // New device identifier (derived from identity key)
   string pending_device_id = 1;
 
-  // X25519 identity key (base64)
-  string identity_public_b64 = 2;
-
-  // Ed25519 verifying key (base64)
-  string verifying_key_b64 = 3;
-
-  // Signed prekey public (base64)
-  string signed_prekey_public_b64 = 4;
-
-  // Ed25519 signature of (prologue || spk_pub), 64 bytes (base64)
-  string signed_prekey_signature_b64 = 5;
+  // DEPRECATED (fields 2-5): base64-in-string carriage of binary key material.
+  // Kept for clients built before the bytes fields below existed; the server
+  // prefers the bytes fields and falls back to these. Remove once no released
+  // client populates them, then mark the numbers `reserved`.
+  string identity_public_b64 = 2 [deprecated = true];
+  string verifying_key_b64 = 3 [deprecated = true];
+  string signed_prekey_public_b64 = 4 [deprecated = true];
+  string signed_prekey_signature_b64 = 5 [deprecated = true];
 
   // Human-readable device name (e.g., "MacBook Pro")
   string device_name = 6;
 
   // Platform identifier (e.g., "macos", "linux", "windows")
   string platform = 7;
+
+  // Binary key material. Preferred over the deprecated base64 strings above.
+  // X25519 identity key, 32 bytes
+  bytes identity_public = 8;
+  // Ed25519 verifying key, 32 bytes
+  bytes verifying_key = 9;
+  // Signed prekey public, 32 bytes
+  bytes signed_prekey_public = 10;
+  // Ed25519 signature of (prologue || spk_pub), 64 bytes
+  bytes signed_prekey_signature = 11;
 }
 
 // JoinRequestAck - Server acknowledges the join request was stored
@@ -733,6 +763,14 @@ message IssueTokensResponse {
   // Client unblinds: N = r_inv * Z = k * T, then derives token via HKDF.
   repeated bytes evaluated_points = 1;
   // 32-byte compressed Ristretto255 public key: K = k * G.
-  // Client uses this to verify the evaluation (DLEQ proof in future version).
+  // Clients pin this from well-known (token_issuer_public) and verify dleq_proof against it.
   bytes server_pubkey = 2;
+  // Batched Chaum-Pedersen DLEQ proof (Phase C verifiable VOPRF): 64 bytes,
+  // challenge(32) ‖ response(32). Proves every evaluated_point[i] = k * blinded_points[i]
+  // under the same committed k (K = k*G) — rejects a malicious per-user key_u. Empty only if
+  // the issuer key is unset. Transcript spec: construct-docs/cryptocore/privacy-pass-dleq-v1.md.
+  bytes dleq_proof = 3;
+  // Version of the committed issuer key (matches token_issuer_key_version in well-known), so key
+  // rotation is not a flag-day: the client pins K per version.
+  uint32 issuer_key_version = 4;
 }
