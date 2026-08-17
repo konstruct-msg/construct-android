@@ -114,6 +114,22 @@ moved to native `TabView`; prefer Material3 `NavigationBar` (icon-only) over the
 
 ---
 
+## Wire format — read before touching the send path
+
+**`docs/WIRE_FORMAT_RULES.md`** — what Android may and may not put on the envelope, and why.
+Not optional reading before `SendMessageUseCase`, stealth, or anything multi-device.
+
+iOS reached those rules through five defects that each lived for months and were found by reading
+device logs rather than code: SENDER_SYNC routed on a field the server blanks by design (so no copy
+ever arrived, since the feature shipped), the same unsealed envelope carrying `direct:me:partner`
+in the clear, two device-id fields nobody reads, a heartbeat announcing itself on the outer
+envelope, and a magic string with no reader that spent four months rendering as a visible bubble.
+Every one of them was a field written by the client, read by no one, and paid for in metadata.
+
+The one-line version: **an unsealed envelope must not carry anything beyond the sender/recipient
+pair already on it**, and before adding any field, answer in writing who reads it and what it tells
+the server about who talks to whom.
+
 ## Documentation
 
 All project documentation: `~/Code/construct-docs` (Obsidian vault).
