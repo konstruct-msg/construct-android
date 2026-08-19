@@ -10,6 +10,7 @@ import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.model.DeliveryStatus
+import com.construct.messenger.domain.usecase.RotateSignedPreKeyUseCase
 import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.domain.usecase.UploadPreKeysUseCase
 import com.construct.messenger.stealth.BlindTokenService
@@ -66,6 +67,7 @@ class MessagingRuntime @Inject constructor(
     private val uploadPreKeys: UploadPreKeysUseCase,
     private val serverKeys: ServerKeysProvider,
     private val blindTokens: BlindTokenService,
+    private val rotateSignedPreKey: RotateSignedPreKeyUseCase,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val startMutex = Mutex()
@@ -202,6 +204,8 @@ class MessagingRuntime @Inject constructor(
                 runCatching { uploadPreKeys.replenishIfNeeded(deviceId) }
                     .onFailure { Log.w(TAG, "OTPK replenish failed", it) }
             }
+            runCatching { rotateSignedPreKey.rotateIfNeeded() }
+                .onFailure { Log.w(TAG, "SPK rotation failed", it) }
         }
     }
 

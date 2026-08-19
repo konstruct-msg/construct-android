@@ -133,6 +133,70 @@ class SendMessageUseCaseTest {
         assertTrue(failed.reason.contains("identity"))
         assertEquals(DeliveryStatus.FAILED.name, messages.rows[failed.messageId]?.deliveryStatus)
     }
+
+    @Test
+    fun `retryable send is retried then succeeds`() = runTest {
+        val messages = FakeMessageDao()
+        val keystore: KeystoreManager = mock()
+        whenever(keystore.getUserId()).thenReturn(myId)
+        val crypto: CryptoManager = mock()
+        whenever(crypto.isMessagingReady).thenReturn(true)
+        val sessionManager: SessionManager = mock()
+        whenever(sessionManager.ensureSession(peer)).thenReturn(byteArrayOf(1))
+        val orchestrator: OrchestratorGateway = mock()
+        whenever(orchestrator.handleEvent(any())).thenReturn(
+            listOf(
+                CfeAction.SaveSessionToSecureStore("session:$peer", byteArrayOf(9)),
+                CfeAction.SendEncryptedMessage(peer, byteArrayOf(7, 7), "ignored", 0u),
+            ),
+        )
+        val messaging: MessagingService = mock()
+        whenever(
+            messaging.sendMessage(
+                messageId = any(),
+                senderId = eq(myId),
+                recipientId = eq(peer),
+                conversationId = eq(""),
+                encryptedPayload = any(),
+                timestampMs = any(),
+                contentType = any(),
+                sealedInner = anyOrNull(),
+            ),
+        ).thenReturn(
+            MessagingService.SendResult("ok", false, "UNAVAILABLE", true, 0, "a"),
+            MessagingService.SendResult("ok", true, "", true, 0, "b"),
+        )
+        val policy: StealthPolicy = mock()
+        whenever(policy.shouldUseSealedSender()).thenReturn(false)
+        val sessions = mock<SessionStateStore>()
+
+        val useCase = SendMessageUseCase(
+            keystoreManager = keystore,
+            sessionManager = sessionManager,
+            orchestrator = orchestrator,
+            cryptoManager = crypto,
+            messagingService = messaging,
+            stealthPolicy = policy,
+            stealthSender = mock(),
+            messageDao = messages,
+            chatDao = FakeChatDao(),
+            userDao = FakeUserDao(),
+            sessionStateStore = sessions,
+        )
+
+        val outcome = useCase(peer, "hello")
+        assertTrue(outcome is SendOutcome.Sent)
+        org.mockito.kotlin.verify(messaging, org.mockito.kotlin.times(2)).sendMessage(
+            messageId = any(),
+            senderId = eq(myId),
+            recipientId = eq(peer),
+            conversationId = eq(""),
+            encryptedPayload = any(),
+            timestampMs = any(),
+            contentType = any(),
+            sealedInner = anyOrNull(),
+        )
+    }
 }
 
 private class FakeMessageDao : MessageDao {

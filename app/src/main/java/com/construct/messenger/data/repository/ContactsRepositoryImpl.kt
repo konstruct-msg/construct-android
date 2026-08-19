@@ -3,6 +3,8 @@ package com.construct.messenger.data.repository
 import android.util.Log
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager
+import com.construct.messenger.data.local.db.IssuedInviteDao
+import com.construct.messenger.data.local.db.IssuedInviteEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.data.model.Contact
@@ -29,7 +31,10 @@ import shared.proto.services.v1.UserServiceOuterClass.ContactRequestAction
 import shared.proto.services.v1.UserServiceOuterClass.FindUserRequest
 import shared.proto.services.v1.UserServiceOuterClass.GetContactRequestsRequest
 import shared.proto.services.v1.UserServiceOuterClass.RespondToContactRequestRequest
+import shared.proto.services.v1.UserServiceOuterClass.CheckUsernameAvailabilityRequest
+import shared.proto.services.v1.UserServiceOuterClass.GetUserProfileRequest
 import shared.proto.services.v1.UserServiceOuterClass.SendContactRequestRequest
+import shared.proto.services.v1.UserServiceOuterClass.SetDiscoverableRequest
 
 @Singleton
 class ContactsRepositoryImpl @Inject constructor(
@@ -38,6 +43,7 @@ class ContactsRepositoryImpl @Inject constructor(
     private val generator: InviteGenerator,
     private val verifier: InviteVerifier,
     private val grpcClient: GrpcClient,
+    private val issuedInviteDao: IssuedInviteDao,
 ) : ContactsRepository {
 
     private val incoming = MutableStateFlow<List<IncomingContactRequest>>(emptyList())
@@ -56,12 +62,21 @@ class ContactsRepositoryImpl @Inject constructor(
     override suspend fun mintLink(includeUsername: Boolean): MintedInvite {
         val userId = keystoreManager.getUserId() ?: error("not authenticated")
         val deviceId = keystoreManager.getDeviceId() ?: error("no device id")
-        return generator.mintLink(
+        val minted = generator.mintLink(
             userId = userId,
             deviceId = deviceId,
             username = null,
             ttlSeconds = InviteConfig.TTL_SECONDS.toInt(),
         )
+        issuedInviteDao.upsert(
+            IssuedInviteEntity(
+                jti = minted.jti,
+                kind = "link",
+                issuedAtEpochSec = minted.issuedAtEpochSec,
+                ttlSeconds = minted.ttlSeconds,
+            ),
+        )
+        return minted
     }
 
     override suspend fun accept(raw: String): AcceptInviteResult {
@@ -98,11 +113,16 @@ class ContactsRepositoryImpl @Inject constructor(
             val response = grpcClient.invite.revokeInvite(
                 RevokeInviteRequest.newBuilder().setJti(jti).build(),
             )
+            if (response.success) issuedInviteDao.delete(jti)
             response.success
         } catch (e: Exception) {
             Log.w(TAG, "revoke $jti failed", e)
             false
         }
+    }
+
+    override val issuedInvites: Flow<List<IssuedInvite>> = issuedInviteDao.observeAll().map { rows ->
+        rows.map { IssuedInvite(it.jti, it.kind, it.issuedAtEpochSec, it.ttlSeconds) }
     }
 
     override suspend fun findByUsername(username: String): FindUserResult {
@@ -174,10 +194,59 @@ class ContactsRepositoryImpl @Inject constructor(
                 ),
             )
             incoming.value = incoming.value.filterNot { it.requestId == requestId }
+            getProfile(fromUserId)?.let { profile ->
+                val row = userDao.getById(fromUserId) ?: return@let
+                userDao.upsert(
+                    row.copy(
+                        displayName = profile.displayName.ifBlank { row.displayName },
+                        username = profile.username.ifBlank { row.username },
+                    ),
+                )
+            }
             true
         } catch (e: Exception) {
             Log.w(TAG, "acceptRequest failed", e)
             false
+        }
+    }
+
+    override suspend fun checkUsername(username: String): UsernameAvailability {
+        val needle = username.trim().removePrefix("@")
+        if (needle.isEmpty()) return UsernameAvailability(false, "invalid_format")
+        return try {
+            val response = grpcClient.user.checkUsernameAvailability(
+                CheckUsernameAvailabilityRequest.newBuilder().setUsername(needle).build(),
+            )
+            UsernameAvailability(response.available, if (response.hasReason()) response.reason else null)
+        } catch (e: Exception) {
+            UsernameAvailability(false, e.message)
+        }
+    }
+
+    override suspend fun setDiscoverable(enabled: Boolean): Boolean {
+        return try {
+            grpcClient.user.setDiscoverable(
+                SetDiscoverableRequest.newBuilder().setDiscoverable(enabled).build(),
+            ).discoverable
+        } catch (e: Exception) {
+            Log.w(TAG, "setDiscoverable failed", e)
+            false
+        }
+    }
+
+    override suspend fun getProfile(userId: String): UserProfile? {
+        return try {
+            val profile = grpcClient.user.getUserProfile(
+                GetUserProfileRequest.newBuilder().setUserId(userId).build(),
+            ).profile
+            UserProfile(
+                userId = profile.userId.ifEmpty { userId },
+                displayName = if (profile.hasDisplayName()) profile.displayName else "",
+                username = if (profile.hasUsername()) profile.username else "",
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "getProfile failed", e)
+            null
         }
     }
 

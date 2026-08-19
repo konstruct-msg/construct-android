@@ -22,4 +22,7 @@ interface AuthRepository {
      * @return `true` if an identity is ready ([authState].isInitialized).
      */
     suspend fun restoreSession(): Boolean
+
+    /** END_SESSION every live peer, `Logout` RPC, drop tokens, stop runtime. */
+    suspend fun logout()
 }

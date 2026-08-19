@@ -675,6 +675,27 @@ app/src/main/java/com/construct/messenger/
 
 ---
 
+## Phase 5.3 — Remaining 1:1 API (no device required)
+
+**Status:** implemented 2026-08-19 (JVM tests; no live iOS↔Android)  
+**Goal:** finish 1:1 production-gRPC surface that iOS already calls, plus JVM
+wire-contract tests. Not VEIL / FCM / calls / MLS / media / recovery.
+Unauth sealed transport and END_SESSION identity-box stay deferred
+(lockstep with iOS / missing FFI).
+
+| # | Item | Why | Done when |
+|---|------|-----|-----------|
+| 1 | Wire contract tests | Interop stand-in | KNST / receipt / invite v5 / no `conversation_id` / END_SESSION 1024 / SealedInner type 0 |
+| 2 | `CheckUsernameAvailability` + `SetDiscoverable` | FindUser is dead without opt-in | alias checked on onboarding; discoverable=true after register-with-alias |
+| 3 | `Logout` + END_SESSION to every live session | iOS sign-out | tokens cleared, runtime stopped, peers notified |
+| 4 | `GetUserProfile` / `UpdateUserProfile` | names after FindUser / accept | repository + Settings profile row |
+| 5 | `RotateSignedPreKey` | SPK ages out (~7d) | bootstrap after runtime start; classic SPK (Kyber later) |
+| 6 | SESSION_PING / SESSION_READY producers | RESPONDER handshake phase 2 | READY after `initReceivingSession`; type in KNST byte 5 |
+| 7 | Invite `jti` journal | `RevokeInvite` needs a local list | Room row per mint; revoke burns journal + RPC |
+| 8 | Bounded send retry | iOS send coordinator | 3 attempts, same `messageId` / idempotency, only if `retryable` |
+
+---
+
 ## Implementation Order
 
 1. **Phase 1:** Crypto Core integration (UniFFI wrapper) — ✅ done
@@ -684,5 +705,5 @@ app/src/main/java/com/construct/messenger/
 5. **Phase 5:** Message stream + 1:1 send — ✅ done; VEIL transport — pending
 6. **Phase 6:** WebRTC calls — pending
 7. **Phase 7:** FCM push — pending
-8. **Phase 8:** UI — 1:1 Chat/Synaps wired; settings subscreens, honeycomb, FindUser pending
+8. **Phase 8:** UI — 1:1 Chat/Synaps wired; FindUser + logout + discoverable; honeycomb/settings subscreens pending
 9. **Phase 9:** Localization `en`/`ru` in progress; Play packaging pending
