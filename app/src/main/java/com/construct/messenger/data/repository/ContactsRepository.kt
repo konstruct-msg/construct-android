@@ -48,4 +48,31 @@ interface ContactsRepository {
     suspend fun refreshRequests()
 
     suspend fun acceptRequest(requestId: String, fromUserId: String): Boolean
+
+    suspend fun checkUsername(username: String): UsernameAvailability
+
+    suspend fun setDiscoverable(enabled: Boolean): Boolean
+
+    suspend fun getProfile(userId: String): UserProfile?
+
+    val issuedInvites: Flow<List<IssuedInvite>>
+}
+
+data class UsernameAvailability(val available: Boolean, val reason: String? = null)
+
+data class UserProfile(
+    val userId: String,
+    val displayName: String,
+    val username: String,
+    val discoverable: Boolean = false,
+)
+
+data class IssuedInvite(
+    val jti: String,
+    val kind: String,
+    val issuedAtEpochSec: Long,
+    val ttlSeconds: Int,
+) {
+    fun isLive(nowEpochSec: Long = System.currentTimeMillis() / 1000): Boolean =
+        nowEpochSec < issuedAtEpochSec + ttlSeconds
 }

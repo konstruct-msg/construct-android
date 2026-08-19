@@ -22,6 +22,7 @@ import com.construct.messenger.util.KnstFrame
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import shared.proto.messaging.v1.Content.MessageContent
 import shared.proto.messaging.v1.Content.TextMessage
@@ -92,46 +93,71 @@ class SendMessageUseCase @Inject constructor(
                 ?: error("orchestrator returned no SendEncryptedMessage")
 
             val stealthOn = stealthPolicy.shouldUseSealedSender()
-            val result = if (stealthOn) {
+            val sealed = if (stealthOn) {
                 val ik = identityKey ?: error("stealth on but no recipient identity key — refusing identified downgrade")
-                val sealed = stealthSender.buildSealedInner(
+                stealthSender.buildSealedInner(
                     recipientUserId = contactId,
                     recipientIdentityKey = ik,
                     encryptedPayload = wire,
                     contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
                 )
-                if (MessagingService.SEALED_UNAUTHENTICATED_TRANSPORT) {
-                    messagingService.sendSealedMessage(sealed)
-                } else {
-                    messagingService.sendMessage(
-                        messageId = messageId,
-                        senderId = myId,
-                        recipientId = contactId,
-                        conversationId = "",
-                        encryptedPayload = ByteArray(0),
-                        timestampMs = timestampMs,
-                        contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
-                        sealedInner = sealed,
-                    )
-                }
             } else {
-                messagingService.sendMessage(
-                    messageId = messageId,
-                    senderId = myId,
-                    recipientId = contactId,
-                    conversationId = "",
-                    encryptedPayload = wire,
-                    timestampMs = timestampMs,
-                    contentType = ContentType.CONTENT_TYPE_E2EE_SIGNAL,
-                )
+                null
             }
 
-            if (!result.success) {
-                messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
-                return SendOutcome.Failed(messageId, result.errorCode.ifEmpty { "send failed" })
+            var lastError = "send failed"
+            repeat(MAX_ATTEMPTS) { attempt ->
+                val result = try {
+                    if (sealed != null) {
+                        if (MessagingService.SEALED_UNAUTHENTICATED_TRANSPORT) {
+                            messagingService.sendSealedMessage(sealed)
+                        } else {
+                            messagingService.sendMessage(
+                                messageId = messageId,
+                                senderId = myId,
+                                recipientId = contactId,
+                                conversationId = "",
+                                encryptedPayload = ByteArray(0),
+                                timestampMs = timestampMs,
+                                contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
+                                sealedInner = sealed,
+                            )
+                        }
+                    } else {
+                        messagingService.sendMessage(
+                            messageId = messageId,
+                            senderId = myId,
+                            recipientId = contactId,
+                            conversationId = "",
+                            encryptedPayload = wire,
+                            timestampMs = timestampMs,
+                            contentType = ContentType.CONTENT_TYPE_E2EE_SIGNAL,
+                        )
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    if (attempt == MAX_ATTEMPTS - 1) {
+                        messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
+                        return SendOutcome.Failed(messageId, e.message ?: "send failed")
+                    }
+                    delay(BACKOFF_MS * (attempt + 1))
+                    return@repeat
+                }
+                if (result.success) {
+                    messageDao.updateDeliveryStatus(messageId, DeliveryStatus.SENT.name)
+                    return SendOutcome.Sent(messageId)
+                }
+                lastError = result.errorCode.ifEmpty { "send failed" }
+                if (!result.retryable || attempt == MAX_ATTEMPTS - 1) {
+                    messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
+                    return SendOutcome.Failed(messageId, lastError)
+                }
+                val wait = result.retryAfterMs.coerceAtLeast(BACKOFF_MS) * (attempt + 1)
+                delay(wait)
             }
-            messageDao.updateDeliveryStatus(messageId, DeliveryStatus.SENT.name)
-            SendOutcome.Sent(messageId)
+            messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
+            SendOutcome.Failed(messageId, lastError)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -208,5 +234,7 @@ class SendMessageUseCase @Inject constructor(
 
     private companion object {
         const val TAG = "SendMessageUseCase"
+        const val MAX_ATTEMPTS = 3
+        const val BACKOFF_MS = 400L
     }
 }

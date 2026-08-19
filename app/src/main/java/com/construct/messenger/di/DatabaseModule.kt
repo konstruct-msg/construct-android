@@ -10,6 +10,7 @@ import com.construct.messenger.data.local.db.ConstructDatabase
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.SessionMetaDao
 import com.construct.messenger.data.local.db.SessionStateDao
+import com.construct.messenger.data.local.db.IssuedInviteDao
 import com.construct.messenger.data.local.db.UserDao
 import dagger.Module
 import dagger.Provides
@@ -47,6 +48,9 @@ object DatabaseModule {
 
     @Provides
     fun provideSessionMetaDao(db: ConstructDatabase): SessionMetaDao = db.sessionMetaDao()
+
+    @Provides
+    fun provideIssuedInviteDao(db: ConstructDatabase): IssuedInviteDao = db.issuedInviteDao()
 
     @Provides
     @Singleton

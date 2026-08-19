@@ -83,6 +83,11 @@
     <string name="settings_row_diagnostics">Diagnostics</string>
     <string name="settings_recovery_banner">Social recovery is not set up. Tap to configure.</string>
     <string name="settings_discoverable_on">Discoverable</string>
+    <string name="settings_discoverable_off">Hidden</string>
+    <string name="settings_row_discoverable">Username search</string>
+    <string name="settings_row_sign_out">Sign out</string>
+    <string name="onboarding_username_taken">alias taken</string>
+    <string name="onboarding_username_invalid">invalid alias</string>
     <string name="settings_username_format">@%1$s</string>
 
     <!-- Tabs -->

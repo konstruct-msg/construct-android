@@ -80,6 +80,11 @@
     <string name="settings_row_diagnostics">Диагностика</string>
     <string name="settings_recovery_banner">Социальное восстановление не настроено. Нажмите, чтобы настроить.</string>
     <string name="settings_discoverable_on">Обнаруживаемый</string>
+    <string name="settings_discoverable_off">Скрыт</string>
+    <string name="settings_row_discoverable">Поиск по псевдониму</string>
+    <string name="settings_row_sign_out">Выйти</string>
+    <string name="onboarding_username_taken">псевдоним занят</string>
+    <string name="onboarding_username_invalid">некорректный псевдоним</string>
     <string name="settings_username_format">@%1$s</string>
 
     <!-- Tabs -->

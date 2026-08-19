@@ -193,6 +193,10 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         orchestrator?.hasSession(contactId) ?: false
     }
 
+    fun rotateSignedPrekey(): uniffi.construct_core.RotatedSpkBundle = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first")).rotateSignedPrekey()
+    }
+
     // ── Stateless helpers (free functions / no core state) ──────────────────
 
     fun generateMnemonic(wordCount: Int): String = generateMnemonic(wordCount.toUByte())

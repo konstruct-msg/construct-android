@@ -3,6 +3,7 @@ package com.construct.messenger.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.repository.AuthRepository
+import com.construct.messenger.data.repository.ContactsRepository
 import com.construct.messenger.domain.usecase.RegistrationStep
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -39,7 +40,8 @@ sealed interface OnboardingEvent {
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val contactsRepository: ContactsRepository,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(OnboardingUiState())
     private val mutableEvents = MutableSharedFlow<OnboardingEvent>()
@@ -59,6 +61,15 @@ class OnboardingViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
+                if (username != null) {
+                    val availability = contactsRepository.checkUsername(username)
+                    if (!availability.available) {
+                        mutableUiState.update {
+                            it.copy(step = RegistrationStep.Error(availability.reason ?: "alias taken"))
+                        }
+                        return@launch
+                    }
+                }
                 authRepository.initializeIdentity(username) { step ->
                     mutableUiState.update { it.copy(step = step) }
                 }

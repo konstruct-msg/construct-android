@@ -76,4 +76,10 @@ private class FakeContactsRepository : ContactsRepository {
     override suspend fun sendContactRequest(userId: String) = false
     override suspend fun refreshRequests() = Unit
     override suspend fun acceptRequest(requestId: String, fromUserId: String) = false
+    override suspend fun checkUsername(username: String) =
+        com.construct.messenger.data.repository.UsernameAvailability(true)
+    override suspend fun setDiscoverable(enabled: Boolean) = true
+    override suspend fun getProfile(userId: String) = null
+    override val issuedInvites =
+        MutableStateFlow<List<com.construct.messenger.data.repository.IssuedInvite>>(emptyList())
 }

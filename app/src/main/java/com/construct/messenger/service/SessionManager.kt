@@ -127,6 +127,8 @@ class SessionManager @Inject constructor(
     }
 
     fun removeSession(contactId: String): Boolean = cryptoManager.removeSession(contactId)
+
+    fun liveContactIds(): List<String> = cryptoManager.getAllSessionContactIds()
 }
 
 /// Proto `CryptoSuite` enum → the core's SuiteID (`suite_id.rs`): 1 = CLASSIC

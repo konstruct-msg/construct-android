@@ -29,6 +29,7 @@ class ResponderInitUseCase @Inject constructor(
     private val sessionStateStore: SessionStateStore,
     private val keystoreManager: KeystoreManager,
     private val uploadPreKeys: UploadPreKeysUseCase,
+    private val sessionControl: SessionControlUseCase,
 ) {
     private val inFlight = ConcurrentHashMap.newKeySet<String>()
 
@@ -65,6 +66,8 @@ class ResponderInitUseCase @Inject constructor(
             keystoreManager.getDeviceId()?.let { deviceId ->
                 runCatching { uploadPreKeys.replenishIfNeeded(deviceId) }
             }
+            runCatching { sessionControl.sendReady(contactId) }
+                .onFailure { Log.w(TAG, "session_ready failed ${contactId.take(8)}…", it) }
             val plaintext = init.decryptedMessage.map { it.toByte() }.toByteArray()
             Log.i(TAG, "RESPONDER session for ${contactId.take(8)}… knst=${IncomingPlaintext.isKnst(plaintext)}")
             Result(contactId, incoming.messageId, plaintext)

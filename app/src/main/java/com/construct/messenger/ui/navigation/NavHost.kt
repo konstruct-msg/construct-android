@@ -96,7 +96,13 @@ fun KonstructNavHost(
                     navController.navigate(Screen.Chat.createRoute(contactId)) {
                         launchSingleTop = true
                     }
-                }
+                },
+                onSignedOut = {
+                    navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(Screen.Main.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
         composable(

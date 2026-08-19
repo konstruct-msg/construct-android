@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +46,10 @@ import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.HairlineBorder
 import com.construct.messenger.ui.theme.ctBold
 import com.construct.messenger.ui.theme.ctRegular
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.construct.messenger.viewmodel.SettingsEvent
+import com.construct.messenger.viewmodel.SettingsViewModel
 
 /**
  * Settings hub on fake profile data.
@@ -63,6 +69,29 @@ private data class FakeSettingsProfile(
 private val FakeProfile = FakeSettingsProfile()
 
 @Composable
+fun SettingsRoute(
+    onSignedOut: () -> Unit,
+    onNavigateBack: (() -> Unit)? = null,
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
+    val ui by viewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(viewModel) {
+        viewModel.eventsFlow.collect { event ->
+            if (event is SettingsEvent.SignedOut) onSignedOut()
+        }
+    }
+    SettingsScreen(
+        onNavigateBack = onNavigateBack,
+        onSignOut = viewModel::signOut,
+        onToggleDiscoverable = viewModel::toggleDiscoverable,
+        liveDisplayName = ui.profile?.displayName?.takeIf { it.isNotBlank() },
+        liveUsername = ui.profile?.username?.takeIf { it.isNotBlank() },
+        liveUserId = ui.profile?.userId?.takeIf { it.isNotBlank() },
+        liveDiscoverable = ui.discoverable,
+    )
+}
+
+@Composable
 fun SettingsScreen(
     onNavigateBack: (() -> Unit)? = null,
     onProfileClick: () -> Unit = {},
@@ -72,8 +101,19 @@ fun SettingsScreen(
     onSecurityClick: () -> Unit = {},
     onLicensesClick: () -> Unit = {},
     onDiagnosticsClick: () -> Unit = {},
+    onSignOut: () -> Unit = {},
+    onToggleDiscoverable: () -> Unit = {},
+    liveDisplayName: String? = null,
+    liveUsername: String? = null,
+    liveUserId: String? = null,
+    liveDiscoverable: Boolean? = null,
 ) {
-    val profile = FakeProfile
+    val profile = FakeProfile.copy(
+        userId = liveUserId ?: FakeProfile.userId,
+        displayName = liveDisplayName ?: FakeProfile.displayName,
+        username = liveUsername ?: FakeProfile.username,
+        discoverable = liveDiscoverable ?: FakeProfile.discoverable,
+    )
 
     Column(
         modifier = Modifier
@@ -163,6 +203,26 @@ fun SettingsScreen(
                     icon = Icons.Default.BugReport,
                     isAction = true,
                     modifier = Modifier.clickable(onClick = onDiagnosticsClick),
+                )
+            }
+
+            CTSectionGroup {
+                CTSettingsRow(
+                    label = stringResource(R.string.settings_row_discoverable),
+                    value = if (profile.discoverable) {
+                        stringResource(R.string.settings_discoverable_on)
+                    } else {
+                        stringResource(R.string.settings_discoverable_off)
+                    },
+                    isAction = true,
+                    modifier = Modifier.clickable(onClick = onToggleDiscoverable),
+                )
+                CTSep()
+                CTSettingsRow(
+                    label = stringResource(R.string.settings_row_sign_out),
+                    isDestructive = true,
+                    isAction = true,
+                    modifier = Modifier.clickable(onClick = onSignOut),
                 )
             }
         }

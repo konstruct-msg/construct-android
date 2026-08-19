@@ -5,10 +5,13 @@ import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.auth.AuthSessionManager
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.model.AuthState
+import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.domain.usecase.LoginUseCase
 import com.construct.messenger.domain.usecase.RegisterUseCase
 import com.construct.messenger.domain.usecase.RegistrationStep
+import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.service.MessagingRuntime
+import shared.proto.services.v1.AuthServiceOuterClass.LogoutRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +31,8 @@ class AuthRepositoryImpl @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val authSession: AuthSessionManager,
     private val messagingRuntime: MessagingRuntime,
+    private val sessionControl: SessionControlUseCase,
+    private val grpcClient: GrpcClient,
 ) : AuthRepository {
 
     private val mutableAuthState = MutableStateFlow(
@@ -107,6 +112,24 @@ class AuthRepositoryImpl @Inject constructor(
             ?: error("session loaded but userId is missing")
         cryptoManager.loadOrCreate(savedPrivateKeys)
         cryptoManager.setLocalUserId(userId)
+    }
+
+    override suspend fun logout() {
+        runCatching { sessionControl.sendEndSessionToAll() }
+            .onFailure { Log.w(TAG, "END_SESSION broadcast on logout failed", it) }
+        val token = keystoreManager.getAccessToken()
+        if (token != null) {
+            runCatching {
+                grpcClient.auth.logout(
+                    LogoutRequest.newBuilder().setAccessToken(token).setAllDevices(false).build(),
+                )
+            }.onFailure { Log.w(TAG, "Logout RPC failed", it) }
+        }
+        messagingRuntime.stop()
+        authSession.clearSession()
+        keystoreManager.clearTokens()
+        cryptoManager.close()
+        mutableAuthState.value = AuthState()
     }
 
     private companion object {
