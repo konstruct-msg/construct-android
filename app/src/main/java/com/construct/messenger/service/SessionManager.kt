@@ -2,6 +2,9 @@ package com.construct.messenger.service
 
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
+import com.construct.messenger.data.local.db.UserDao
+import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.util.DisplayNameGenerator
 import shared.proto.core.v1.Crypto.CryptoSuite
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundleRequest
 import shared.proto.services.v1.KeyServiceOuterClass.PreKeyBundle
@@ -24,15 +27,44 @@ import javax.inject.Singleton
 class SessionManager @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val grpcClient: GrpcClient,
+    private val userDao: UserDao,
 ) {
+
+    fun hasSession(contactId: String): Boolean = cryptoManager.hasSession(contactId)
+
+    /**
+     * Ensure a live Double-Ratchet session exists for [contactId].
+     *
+     * @return the peer's X25519 identity public key (needed for sealed sender).
+     *   Fetched with the prekey bundle on first init and remembered on [UserEntity].
+     *   GetPreKeyBundle is destructive (consumes an OTPK) — never call it just
+     *   to read the identity key when a session already exists.
+     */
+    suspend fun ensureSession(contactId: String): ByteArray? {
+        val stored = userDao.getById(contactId)?.identityPublic
+        if (cryptoManager.hasSession(contactId)) return stored
+        initSession(contactId)
+        return userDao.getById(contactId)?.identityPublic
+    }
 
     /** INITIATOR path: fetch [contactId]'s pre-key bundle and start a new session. */
     suspend fun initSession(contactId: String): String {
         val response = grpcClient.key.getPreKeyBundle(
             GetPreKeyBundleRequest.newBuilder().setUserId(contactId).build(),
         )
+        rememberIdentity(contactId, response.bundle.identityKey.toByteArray())
         val bundle = response.bundle.toBinaryKeyBundle(response.verifyingKey.toByteArray())
         return cryptoManager.initSession(contactId, bundle)
+    }
+
+    private suspend fun rememberIdentity(contactId: String, identity: ByteArray) {
+        val existing = userDao.getById(contactId)
+        val base = existing ?: UserEntity(
+            id = contactId,
+            displayName = DisplayNameGenerator.generate(contactId),
+            isContact = true,
+        )
+        userDao.upsert(base.copy(identityPublic = identity))
     }
 
     /** RESPONDER path: establish a session from an inbound first message + sender's bundle. */
@@ -66,6 +98,8 @@ class SessionManager @Inject constructor(
     fun importSessions(sessions: Map<String, ByteArray>) {
         sessions.forEach { (contactId, bytes) -> cryptoManager.importSessionBytes(contactId, bytes) }
     }
+
+    fun removeSession(contactId: String): Boolean = cryptoManager.removeSession(contactId)
 }
 
 /// Proto `CryptoSuite` enum → the core's SuiteID (`suite_id.rs`): 1 = CLASSIC

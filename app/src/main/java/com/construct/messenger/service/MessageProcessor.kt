@@ -84,7 +84,7 @@ class MessageProcessor @Inject constructor(
      * orchestrator (all outward work goes through [effects]) so it is unit-tested
      * with a fake. First matching action wins; unmatched → ACK as delivered.
      */
-    internal fun route(
+    internal suspend fun route(
         actions: List<CfeAction>,
         incoming: MessageRouter.IncomingMessage,
     ): ProcessingOutcome {
@@ -130,7 +130,7 @@ class MessageProcessor @Inject constructor(
     /** Executes the stateless effect-actions (persist / receipt / notify / …).
      * Unknown actions are logged loudly, never silently dropped, so a new Rust
      * action surfaces here instead of vanishing. */
-    private fun executeSideEffects(actions: List<CfeAction>, incoming: MessageRouter.IncomingMessage) {
+    private suspend fun executeSideEffects(actions: List<CfeAction>, incoming: MessageRouter.IncomingMessage) {
         for (action in actions) {
             when (action) {
                 is CfeAction.MessageDecrypted ->
@@ -176,18 +176,18 @@ interface OrchestratorGateway {
 /** Outward side effects the processor delegates to the repository/session layer.
  * Semantics ported from iOS `SessionActionExecutor` + `MessageRouter` delegate. */
 interface ProcessorEffects {
-    fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray)
-    fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray)
-    fun persistMessage(messageJson: String)
-    fun sendReceipt(messageId: String, toUserId: String, status: String)
-    fun notifyNewMessage(chatId: String, preview: String)
-    fun markDelivered(messageId: String)
-    fun markProcessed(messageId: String, senderId: String)
-    fun saveSession(key: String, data: ByteArray)
-    fun archiveSession(contactId: String)
-    fun requestHeal(contactId: String, role: String)
-    fun requestEndSession(contactId: String)
-    fun requestKeyBundle(userId: String, incoming: MessageRouter.IncomingMessage)
+    suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray)
+    suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray)
+    suspend fun persistMessage(messageJson: String)
+    suspend fun sendReceipt(messageId: String, toUserId: String, status: String)
+    suspend fun notifyNewMessage(chatId: String, preview: String)
+    suspend fun markDelivered(messageId: String)
+    suspend fun markProcessed(messageId: String, senderId: String)
+    suspend fun saveSession(key: String, data: ByteArray)
+    suspend fun archiveSession(contactId: String)
+    suspend fun requestHeal(contactId: String, role: String)
+    suspend fun requestEndSession(contactId: String)
+    suspend fun requestKeyBundle(userId: String, incoming: MessageRouter.IncomingMessage)
 
     /** Whether [messageId] is already recorded delivered in the local DB
      * (answers the CFE `checkAckInDb` round-trip after a restart). */

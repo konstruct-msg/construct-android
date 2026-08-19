@@ -78,6 +78,8 @@ class OnboardingViewModelTest {
         override suspend fun initializeIdentity(username: String?, onStep: (RegistrationStep) -> Unit) {
             throw IllegalStateException(errorMessage)
         }
+
+        override suspend fun restoreSession(): Boolean = false
     }
 
     private class DelayedCountingAuthRepository : AuthRepository {
@@ -93,5 +95,7 @@ class OnboardingViewModelTest {
             delay(250)
             mutableAuthState.value = AuthState(isInitialized = true, username = username)
         }
+
+        override suspend fun restoreSession(): Boolean = mutableAuthState.value.isInitialized
     }
 }

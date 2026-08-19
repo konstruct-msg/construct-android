@@ -162,21 +162,22 @@ construct-android/
 
 **Данные / ViewModels:**
 - `ChatSummary`, `Message`, `AuthState`.
-- `MockChatsRepository` с тестовыми чатами.
+- `AuthRepositoryImpl` — регистрация, login, cold-start restore; поднимает `MessagingRuntime`.
+- `ChatsRepositoryImpl` / `MessagesRepositoryImpl` — Room, не моки.
 - `MainViewModel`, `OnboardingViewModel`, `SplashViewModel`.
 
 **Локализация:**
 - `strings.xml` для `en` и `ru` (ключевые экраны).
 
-### Не реализовано
+### Не реализовано (протокол)
 
-- Реальная регистрация / сессии / PoW.
-- Полноценная обёртка `CryptoManager` и интеграция с `construct-core`.
-- gRPC-сервисы и сетевая подсистема.
-- Room-хранилище (сейчас только mock-репозитории).
+- Healing / END_SESSION на проводе, инвайты / контакты.
+- Push (FCM), WebRTC/звонки, VEIL, recovery BIP39.
+
+### Не реализовано (UI)
+
+- Экран чата ещё не подписан на `MessagesRepository.send` / `observeContact` (инпут / пузыри есть как компоненты).
 - Большинство экранов настроек (Account, Appearance, Network, Security).
-- `MessageBubble`, `MessageInputView`, отправка сообщений.
-- Push-уведомления (FCM), WebRTC/звонки, VEIL.
 - Полная локализация (`ja` и оставшиеся ключи).
 
 ### Известные расхождения

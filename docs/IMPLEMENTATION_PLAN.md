@@ -387,7 +387,7 @@ regenerate Kotlin UniFFI bindings, flip a manifest flag. No new Kotlin
 routing code.
 
 ### 5.2 Message Stream
-**Status:** Pending
+**Status:** ✅ Done (transport + runtime wiring 2026-08-19; send path still pending)
 **Priority:** HIGH
 **Depends on:** 3.2
 
@@ -598,12 +598,12 @@ app/src/main/java/com/construct/messenger/
 │   │   ├── GrpcClient.kt                               ✅
 │   │   ├── README.md                                   ✅ (codegen pipeline + grpc-kotlin gotcha)
 │   │   ├── AuthService.kt / KeyService.kt / ...         ⬜ not created — see §2.3
-│   │   ├── MessageStreamService.kt                     ⬜
+│   │   ├── MessageStreamService.kt                     ✅
 │   │   └── VeilProxy.kt   (thin wrapper over Rust VEIL coordinator; see §5.1) ⬜
 │   ├── local/
 │   │   ├── KeystoreManager.kt                          ✅ (tokens only — see §2.2)
 │   │   └── FcmService.kt                               ⬜
-│   └── repository/                                     ⬜ (no repository layer yet; use cases call CryptoManager/GrpcClient/SessionManager directly)
+│   └── repository/                                     ✅ Auth / Chats / Messages (Room)
 ├── di/                                                  ⬜ (no AppModule needed so far — see §2.1)
 ├── domain/
 │   ├── model/                                           ⬜

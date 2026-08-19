@@ -34,6 +34,7 @@ class SplashViewModel @Inject constructor(
 
     fun decideNextRoute() {
         viewModelScope.launch {
+            authRepository.restoreSession()
             val route = when {
                 !authRepository.authState.value.isInitialized -> SplashRoute.Onboarding
                 // Registered but never oriented (fresh registration or pre-feature upgrade).

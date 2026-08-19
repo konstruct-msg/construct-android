@@ -26,6 +26,8 @@ data class UserEntity(
     val isContact: Boolean = false,
     val isBlocked: Boolean = false,
     val isSharingWithMe: Boolean = false,
+    /** Peer's X25519 identity public key — sealed-sender input. Remembered at session init. */
+    val identityPublic: ByteArray? = null,
 ) {
     // ByteArray field: structural equality must be explicit.
     override fun equals(other: Any?): Boolean {
@@ -37,7 +39,8 @@ data class UserEntity(
             avatarData.contentEquals(other.avatarData) &&
             isContact == other.isContact &&
             isBlocked == other.isBlocked &&
-            isSharingWithMe == other.isSharingWithMe
+            isSharingWithMe == other.isSharingWithMe &&
+            identityPublic.contentEquals(other.identityPublic)
     }
 
     override fun hashCode(): Int {
@@ -48,6 +51,7 @@ data class UserEntity(
         result = 31 * result + isContact.hashCode()
         result = 31 * result + isBlocked.hashCode()
         result = 31 * result + isSharingWithMe.hashCode()
+        result = 31 * result + identityPublic.contentHashCode()
         return result
     }
 }
@@ -57,6 +61,9 @@ interface UserDao {
 
     @Query("SELECT * FROM users WHERE isContact = 1 AND isBlocked = 0 ORDER BY displayName ASC")
     fun observeContacts(): Flow<List<UserEntity>>
+
+    @Query("SELECT * FROM users")
+    fun observeAll(): Flow<List<UserEntity>>
 
     @Query("SELECT * FROM users WHERE id = :userId")
     suspend fun getById(userId: String): UserEntity?

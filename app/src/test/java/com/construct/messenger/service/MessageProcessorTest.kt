@@ -23,20 +23,20 @@ class MessageProcessorTest {
     private class RecordingEffects : ProcessorEffects {
         val calls = mutableListOf<String>()
         var ackedInDb = false
-        override fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
+        override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
             calls += "onDecrypted:$contactId:$messageId"
         }
-        override fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray) { calls += "onCallSignal:$messageId" }
-        override fun persistMessage(messageJson: String) { calls += "persist:$messageJson" }
-        override fun sendReceipt(messageId: String, toUserId: String, status: String) { calls += "receipt:$messageId:$status" }
-        override fun notifyNewMessage(chatId: String, preview: String) { calls += "notify:$chatId" }
-        override fun markDelivered(messageId: String) { calls += "markDelivered:$messageId" }
-        override fun markProcessed(messageId: String, senderId: String) { calls += "markProcessed:$messageId" }
-        override fun saveSession(key: String, data: ByteArray) { calls += "saveSession:$key" }
-        override fun archiveSession(contactId: String) { calls += "archive:$contactId" }
-        override fun requestHeal(contactId: String, role: String) { calls += "heal:$contactId:$role" }
-        override fun requestEndSession(contactId: String) { calls += "endSession:$contactId" }
-        override fun requestKeyBundle(userId: String, incoming: MessageRouter.IncomingMessage) { calls += "keyBundle:$userId" }
+        override suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray) { calls += "onCallSignal:$messageId" }
+        override suspend fun persistMessage(messageJson: String) { calls += "persist:$messageJson" }
+        override suspend fun sendReceipt(messageId: String, toUserId: String, status: String) { calls += "receipt:$messageId:$status" }
+        override suspend fun notifyNewMessage(chatId: String, preview: String) { calls += "notify:$chatId" }
+        override suspend fun markDelivered(messageId: String) { calls += "markDelivered:$messageId" }
+        override suspend fun markProcessed(messageId: String, senderId: String) { calls += "markProcessed:$messageId" }
+        override suspend fun saveSession(key: String, data: ByteArray) { calls += "saveSession:$key" }
+        override suspend fun archiveSession(contactId: String) { calls += "archive:$contactId" }
+        override suspend fun requestHeal(contactId: String, role: String) { calls += "heal:$contactId:$role" }
+        override suspend fun requestEndSession(contactId: String) { calls += "endSession:$contactId" }
+        override suspend fun requestKeyBundle(userId: String, incoming: MessageRouter.IncomingMessage) { calls += "keyBundle:$userId" }
         override fun isAckedInDb(messageId: String): Boolean = ackedInDb
     }
 
@@ -54,7 +54,7 @@ class MessageProcessorTest {
     // ── route() branches (pure) ──────────────────────────────────────────
 
     @Test
-    fun `messageDecrypted executes side effects and reports Processed`() {
+    fun `messageDecrypted executes side effects and reports Processed`() = runBlocking {
         val effects = RecordingEffects()
         val processor = MessageProcessor(FakeGateway(), effects)
         val actions = listOf(
@@ -74,7 +74,7 @@ class MessageProcessorTest {
     }
 
     @Test
-    fun `sessionHealNeeded defers and requests heal`() {
+    fun `sessionHealNeeded defers and requests heal`() = runBlocking {
         val effects = RecordingEffects()
         val processor = MessageProcessor(FakeGateway(), effects)
 
@@ -85,7 +85,7 @@ class MessageProcessorTest {
     }
 
     @Test
-    fun `sendEndSession acks, marks processed and requests end session`() {
+    fun `sendEndSession acks, marks processed and requests end session`() = runBlocking {
         val effects = RecordingEffects()
         val processor = MessageProcessor(FakeGateway(), effects)
 
@@ -98,7 +98,7 @@ class MessageProcessorTest {
     }
 
     @Test
-    fun `fetchPublicKeyBundle defers and requests bundle`() {
+    fun `fetchPublicKeyBundle defers and requests bundle`() = runBlocking {
         val effects = RecordingEffects()
         val processor = MessageProcessor(FakeGateway(), effects)
 
@@ -109,7 +109,7 @@ class MessageProcessorTest {
     }
 
     @Test
-    fun `no actionable decision acks as delivered`() {
+    fun `no actionable decision acks as delivered`() = runBlocking {
         val effects = RecordingEffects()
         val processor = MessageProcessor(FakeGateway(), effects)
 

@@ -1,10 +1,14 @@
 package com.construct.messenger.data.repository
 
+import android.util.Log
+import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.data.auth.AuthSessionManager
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.model.AuthState
 import com.construct.messenger.domain.usecase.LoginUseCase
 import com.construct.messenger.domain.usecase.RegisterUseCase
 import com.construct.messenger.domain.usecase.RegistrationStep
+import com.construct.messenger.service.MessagingRuntime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +25,9 @@ class AuthRepositoryImpl @Inject constructor(
     private val registerUseCase: RegisterUseCase,
     private val loginUseCase: LoginUseCase,
     private val keystoreManager: KeystoreManager,
+    private val cryptoManager: CryptoManager,
+    private val authSession: AuthSessionManager,
+    private val messagingRuntime: MessagingRuntime,
 ) : AuthRepository {
 
     private val mutableAuthState = MutableStateFlow(
@@ -44,10 +51,65 @@ class AuthRepositoryImpl @Inject constructor(
             resolvedUsername = username
         }
 
+        val userId = keystoreManager.getUserId()
+        if (userId != null) {
+            authSession.onAuthenticated(userId, resolvedDeviceId)
+        }
         mutableAuthState.value = AuthState(
             isInitialized = true,
             deviceId = resolvedDeviceId,
             username = resolvedUsername,
         )
+        messagingRuntime.start()
+    }
+
+    override suspend fun restoreSession(): Boolean {
+        val keys = keystoreManager.getPrivateKeys()
+        val deviceId = keystoreManager.getDeviceId()
+        if (keys == null || deviceId == null) {
+            mutableAuthState.value = AuthState(isInitialized = false)
+            return false
+        }
+
+        try {
+            val sessionOk = authSession.loadSession()
+            val userId = authSession.userId ?: keystoreManager.getUserId()
+            if (sessionOk && userId != null) {
+                ensureOrchestrator(keys)
+            } else {
+                loginUseCase(deviceId, keys)
+                val loggedInUserId = keystoreManager.getUserId()
+                    ?: error("LoginUseCase succeeded without persisting userId")
+                authSession.onAuthenticated(loggedInUserId, deviceId)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "restoreSession failed", e)
+            mutableAuthState.value = AuthState(isInitialized = false)
+            return false
+        }
+
+        mutableAuthState.value = AuthState(
+            isInitialized = true,
+            deviceId = deviceId,
+            username = null,
+        )
+        messagingRuntime.start()
+        return true
+    }
+
+    /**
+     * Tokens were valid; the process is new so the UniFFI core is empty.
+     * [userId] must be the server UUID (36 chars), never the device hash.
+     */
+    private fun ensureOrchestrator(savedPrivateKeys: ByteArray) {
+        if (cryptoManager.isMessagingReady) return
+        val userId = authSession.userId ?: keystoreManager.getUserId()
+            ?: error("session loaded but userId is missing")
+        cryptoManager.loadOrCreate(savedPrivateKeys)
+        cryptoManager.setLocalUserId(userId)
+    }
+
+    private companion object {
+        const val TAG = "AuthRepository"
     }
 }

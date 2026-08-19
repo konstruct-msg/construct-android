@@ -76,7 +76,8 @@ class MessagingService @Inject constructor(
                     .build()
             } else {
                 sender = UserId.newBuilder().setUserId(senderId).build()
-                setConversationId(conversationId)
+                // conversation_id is never written — names the pair in the clear
+                // (WIRE_FORMAT_RULES). Parameter kept so call sites compile.
                 setContentType(contentType)
                 setEncryptedPayload(ByteString.copyFrom(encryptedPayload))
             }

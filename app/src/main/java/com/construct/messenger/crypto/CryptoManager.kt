@@ -186,6 +186,10 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         orchestrator?.getAllSessionContactIds() ?: requireBootstrap().getAllSessionContactIds()
     }
 
+    fun hasSession(contactId: String): Boolean = synchronized(coreLock) {
+        orchestrator?.hasSession(contactId) ?: false
+    }
+
     // ── Stateless helpers (free functions / no core state) ──────────────────
 
     fun generateMnemonic(wordCount: Int): String = generateMnemonic(wordCount.toUByte())

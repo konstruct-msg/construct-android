@@ -22,4 +22,6 @@ class MockAuthRepository @Inject constructor() : AuthRepository {
         onStep(RegistrationStep.Complete)
         mutableAuthState.value = AuthState(isInitialized = true)
     }
+
+    override suspend fun restoreSession(): Boolean = mutableAuthState.value.isInitialized
 }
