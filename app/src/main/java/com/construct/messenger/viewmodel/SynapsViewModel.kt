@@ -6,6 +6,8 @@ import com.construct.messenger.data.local.PendingInviteStore
 import com.construct.messenger.data.model.Contact
 import com.construct.messenger.data.repository.AcceptInviteResult
 import com.construct.messenger.data.repository.ContactsRepository
+import com.construct.messenger.data.repository.FindUserResult
+import com.construct.messenger.data.repository.IncomingContactRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +20,7 @@ import kotlinx.coroutines.launch
 
 data class SynapsUiState(
     val contacts: List<Contact> = emptyList(),
+    val incomingRequests: List<IncomingContactRequest> = emptyList(),
     val query: String = "",
     val paste: String = "",
     val status: String? = null,
@@ -44,9 +47,11 @@ class SynapsViewModel @Inject constructor(
 
     val uiState: StateFlow<SynapsUiState> = combine(
         contactsRepository.contacts,
+        contactsRepository.incomingRequests,
         form,
-    ) { contacts, rest -> rest.copy(contacts = contacts) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, SynapsUiState())
+    ) { contacts, incoming, rest ->
+        rest.copy(contacts = contacts, incomingRequests = incoming)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, SynapsUiState())
 
     init {
         viewModelScope.launch {
@@ -58,6 +63,7 @@ class SynapsViewModel @Inject constructor(
                 }
             }
         }
+        viewModelScope.launch { contactsRepository.refreshRequests() }
     }
 
     fun onQueryChange(value: String) {
@@ -96,6 +102,40 @@ class SynapsViewModel @Inject constructor(
                     it.copy(busy = false, status = result.reason)
                 }
             }
+        }
+    }
+
+    fun findAndRequest() {
+        val raw = form.value.query.trim().removePrefix("@")
+        if (raw.isEmpty() || form.value.busy) return
+        form.update { it.copy(busy = true, status = null) }
+        viewModelScope.launch {
+            when (val found = contactsRepository.findByUsername(raw)) {
+                is FindUserResult.Found -> {
+                    val sent = contactsRepository.sendContactRequest(found.userId)
+                    form.update {
+                        it.copy(
+                            busy = false,
+                            status = if (sent) "@$raw" else "request failed",
+                        )
+                    }
+                }
+                FindUserResult.NotFound -> form.update {
+                    it.copy(busy = false, status = "not found")
+                }
+                is FindUserResult.Failed -> form.update {
+                    it.copy(busy = false, status = found.reason)
+                }
+            }
+        }
+    }
+
+    fun acceptRequest(request: IncomingContactRequest) {
+        if (form.value.busy) return
+        form.update { it.copy(busy = true) }
+        viewModelScope.launch {
+            val ok = contactsRepository.acceptRequest(request.requestId, request.fromUserId)
+            form.update { it.copy(busy = false, status = if (ok) request.displayName else "accept failed") }
         }
     }
 }

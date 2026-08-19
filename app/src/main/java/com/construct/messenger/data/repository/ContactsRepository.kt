@@ -9,6 +9,19 @@ sealed interface AcceptInviteResult {
     data class Failed(val reason: String) : AcceptInviteResult
 }
 
+sealed interface FindUserResult {
+    data class Found(val userId: String) : FindUserResult
+    data object NotFound : FindUserResult
+    data class Failed(val reason: String) : FindUserResult
+}
+
+data class IncomingContactRequest(
+    val requestId: String,
+    val fromUserId: String,
+    val displayName: String,
+    val username: String,
+)
+
 /**
  * Contacts + device-minted invites. UI mints a link, pastes a link, lists contacts.
  *
@@ -24,4 +37,15 @@ interface ContactsRepository {
 
     /** Pre-burn [jti] so an unused invite cannot be redeemed. */
     suspend fun revoke(jti: String): Boolean
+
+    val incomingRequests: Flow<List<IncomingContactRequest>>
+
+    /** Exact username match. Server returns NOT_FOUND for missing *and* non-discoverable. */
+    suspend fun findByUsername(username: String): FindUserResult
+
+    suspend fun sendContactRequest(userId: String): Boolean
+
+    suspend fun refreshRequests()
+
+    suspend fun acceptRequest(requestId: String, fromUserId: String): Boolean
 }

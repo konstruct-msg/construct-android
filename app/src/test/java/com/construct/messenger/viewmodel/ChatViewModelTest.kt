@@ -5,6 +5,8 @@ import com.construct.messenger.data.model.Contact
 import com.construct.messenger.data.model.Message
 import com.construct.messenger.data.repository.AcceptInviteResult
 import com.construct.messenger.data.repository.ContactsRepository
+import com.construct.messenger.data.repository.FindUserResult
+import com.construct.messenger.data.repository.IncomingContactRequest
 import com.construct.messenger.data.repository.MessagesRepository
 import com.construct.messenger.domain.usecase.SendOutcome
 import com.construct.messenger.invite.MintedInvite
@@ -69,4 +71,9 @@ private class FakeContactsRepository : ContactsRepository {
     override suspend fun accept(raw: String): AcceptInviteResult =
         AcceptInviteResult.Failed("unused")
     override suspend fun revoke(jti: String): Boolean = false
+    override val incomingRequests = MutableStateFlow<List<IncomingContactRequest>>(emptyList())
+    override suspend fun findByUsername(username: String): FindUserResult = FindUserResult.NotFound
+    override suspend fun sendContactRequest(userId: String) = false
+    override suspend fun refreshRequests() = Unit
+    override suspend fun acceptRequest(requestId: String, fromUserId: String) = false
 }

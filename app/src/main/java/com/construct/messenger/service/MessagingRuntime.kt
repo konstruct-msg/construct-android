@@ -8,6 +8,9 @@ import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.db.ChatDao
+import com.construct.messenger.data.local.db.MessageDao
+import com.construct.messenger.data.model.DeliveryStatus
+import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.domain.usecase.UploadPreKeysUseCase
 import com.construct.messenger.stealth.BlindTokenService
 import com.construct.messenger.stealth.ServerKeysProvider
@@ -25,6 +28,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import shared.proto.core.v1.EnvelopeOuterClass.Envelope
 import shared.proto.core.v1.EnvelopeOuterClass.SealedSenderEnvelope
 import shared.proto.core.v1.Identity.UserId
@@ -57,6 +61,8 @@ class MessagingRuntime @Inject constructor(
     private val processor: MessageProcessor,
     private val messagingService: MessagingService,
     private val chatDao: ChatDao,
+    private val messageDao: MessageDao,
+    private val sessionControl: SessionControlUseCase,
     private val uploadPreKeys: UploadPreKeysUseCase,
     private val serverKeys: ServerKeysProvider,
     private val blindTokens: BlindTokenService,
@@ -146,7 +152,7 @@ class MessagingRuntime @Inject constructor(
                     runCatching { processor.process(event.message) }
                         .onFailure { Log.e(TAG, "process incoming failed", it) }
                 is MessageRouter.RoutedEvent.Control ->
-                    runCatching { processor.process(event.message) }
+                    runCatching { handleControl(event.message) }
                         .onFailure { Log.e(TAG, "process control failed", it) }
                 is MessageRouter.RoutedEvent.Receipt -> {
                     val ids = if (event.receipt.hasDirect()) {
@@ -154,12 +160,34 @@ class MessagingRuntime @Inject constructor(
                     } else {
                         emptyList()
                     }
-                    Log.d(TAG, "receipt ids=${ids.take(3).joinToString { it.take(8) }}")
+                    applyTransportReceipts(ids)
                 }
                 is MessageRouter.RoutedEvent.Typing -> Unit
                 is MessageRouter.RoutedEvent.ConnectionChanged ->
                     Log.i(TAG, "stream connected=${event.connected}")
             }
+        }
+    }
+
+    private suspend fun handleControl(message: MessageRouter.IncomingMessage) {
+        when (message.contentType) {
+            ContentType.CONTENT_TYPE_SESSION_RESET -> {
+                sessionControl.inboundEndSession(message.senderId)
+                ackStore.markProcessed(message.messageId, message.senderId)
+            }
+            ContentType.CONTENT_TYPE_SESSION_RESET_INIT,
+            ContentType.CONTENT_TYPE_KEY_EXCHANGE,
+            -> processor.process(message)
+            else -> {
+                Log.d(TAG, "control ${message.contentType} ${message.messageId.take(8)}… — acked, not rendered")
+                ackStore.markProcessed(message.messageId, message.senderId)
+            }
+        }
+    }
+
+    private suspend fun applyTransportReceipts(ids: List<String>) {
+        for (id in ids) {
+            runCatching { messageDao.updateDeliveryStatus(id, DeliveryStatus.DELIVERED.name) }
         }
     }
 

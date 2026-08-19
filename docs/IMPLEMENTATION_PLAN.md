@@ -11,11 +11,10 @@
 > on real repositories. UI does **not** import gRPC, crypto, stealth, or
 > envelopes.
 >
-> Still open: heal / END_SESSION on the wire (3.3), session-control handlers
-> (3.4 — router already classifies 21/24/25/26), recovery (4), VEIL (5.1),
-> calls (6), FCM (7), settings subscreens, FindUser / contact requests,
-> honeycomb Synaps, Play packaging (9.2). Live iOS↔Android interop and
-> emulator smoke have not run.
+> Still open: recovery (4), VEIL (5.1), calls (6), FCM (7), settings
+> subscreens, honeycomb Synaps, Play packaging (9.2). Live iOS↔Android
+> interop and emulator smoke have not run. Heal / END_SESSION / receipts /
+> RESPONDER init / FindUser landed 2026-08-19.
 >
 > App package is **`com.construct.messenger`**. Canon: `docs/ANDROID_ONBOARDING.md`.
 > Envelope rules: `docs/WIRE_FORMAT_RULES.md`. New UI work: `GOOD_FIRST_ISSUES.md`.
@@ -214,7 +213,9 @@ CFE-binary rule (§1.2). Cold start (`MessagingRuntime`) imports every blob from
 - `data/local/SessionStateStore.kt`
 
 ### 3.3 Session Healing
-**Status:** Pending (CFE may emit heal / END_SESSION actions; `ProcessorEffectsImpl` logs them and does **not** put END_SESSION on the wire)
+**Status:** ✅ Done (2026-08-19) — `HealSessionUseCase` + `SessionControlUseCase`.
+Initiator sends padded type-21 END_SESSION; responder archives locally.
+`HealSuppressed` holds the stream cursor (does **not** ACK).
 **Priority:** MEDIUM
 **Depends on:** 3.2
 
@@ -621,7 +622,10 @@ app/src/main/java/com/construct/messenger/
 │       ├── LoginUseCase.kt                             ✅
 │       ├── UploadPreKeysUseCase.kt                     ✅
 │       ├── SendMessageUseCase.kt                       ✅
-│       ├── HealSessionUseCase.kt                       ⬜
+│       ├── SessionControlUseCase.kt                    ✅
+│       ├── HealSessionUseCase.kt                       ✅
+│       ├── SendReceiptUseCase.kt                       ✅
+│       ├── ResponderInitUseCase.kt                     ✅
 │       ├── SetupRecoveryUseCase.kt                     ⬜
 │       └── CallUseCase.kt                              ⬜
 ├── service/
@@ -675,7 +679,7 @@ app/src/main/java/com/construct/messenger/
 
 1. **Phase 1:** Crypto Core integration (UniFFI wrapper) — ✅ done
 2. **Phase 2:** DI, Keystore, gRPC base — ✅ done (2.1 turned out unnecessary as drafted; 2.2 scoped to tokens)
-3. **Phase 3:** Registration, Login, Session management — ✅ 3.1/3.2 done; 3.3 healing pending; 3.4 classify-only
+3. **Phase 3:** Registration, Login, Session management — ✅ 3.1–3.3 done; 3.4 classify + inbound END_SESSION / RESET_INIT
 4. **Phase 4:** Recovery — pending
 5. **Phase 5:** Message stream + 1:1 send — ✅ done; VEIL transport — pending
 6. **Phase 6:** WebRTC calls — pending

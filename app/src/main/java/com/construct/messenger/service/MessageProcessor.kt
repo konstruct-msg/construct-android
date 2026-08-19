@@ -103,6 +103,10 @@ class MessageProcessor @Inject constructor(
                     effects.requestHeal(action.contactId, action.role)
                     return ProcessingOutcome.Deferred
                 }
+                is CfeAction.HealSuppressed -> {
+                    Log.i(TAG, "heal suppressed ${action.contactId.take(8)}… retry ${action.retryAfterMs}ms — holding cursor")
+                    return ProcessingOutcome.Deferred
+                }
                 is CfeAction.SendEndSession -> {
                     effects.sendReceipt(incoming.messageId, action.contactId, "failed")
                     effects.markProcessed(incoming.messageId, incoming.senderId)

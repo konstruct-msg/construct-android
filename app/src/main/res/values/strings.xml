@@ -96,6 +96,8 @@
     <string name="synaps_paste_placeholder">Paste invite link</string>
     <string name="synaps_accept">Add contact</string>
     <string name="synaps_share_copied">Invite copied</string>
+    <string name="synaps_find_request">Send request</string>
+    <string name="synaps_requests_title">Incoming requests</string>
 
     <!-- Chat -->
     <string name="chat_input_placeholder">Message</string>

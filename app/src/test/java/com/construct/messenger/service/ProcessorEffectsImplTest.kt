@@ -41,6 +41,10 @@ class ProcessorEffectsImplTest {
             ackStore = acks,
             sessionStateStore = mock(),
             sessionManager = mock(),
+            sessionControl = mock(),
+            healSession = mock(),
+            sendReceiptUseCase = mock(),
+            responderInit = mock(),
         )
 
         effects.onDecrypted(peer, "msg-1", "hello".toByteArray())

@@ -150,8 +150,9 @@ not run.
       Bounded retry still on the caller. Identified envelope без conversation_id.
 - [x] Contacts / invites — mint v5 + AcceptInvite + RevokeInvite (2026-08-19)
 - [x] Stealth на send (fail-closed) + sealed-resolve на приёме (2026-08-19)
+- [x] Heal / END_SESSION on the wire + RESPONDER init + E2E receipts + GetIdentityKey (2026-08-19)
+- [x] FindUser / contact requests (UserService)
 - [ ] Unauth sealed transport flag flip + e2e iOS↔Android
-- [ ] Heal / END_SESSION on the wire
-- [ ] FindUser / contact requests; invite QR; honeycomb Synaps
+- [ ] invite QR; honeycomb Synaps
 - [ ] Расширение StreamEvent (ack/error/presence) под нужды UI
 - [ ] VEIL-фолбэк каналов (после стабилизации direct-пути)

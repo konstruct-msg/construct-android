@@ -93,6 +93,8 @@
     <string name="synaps_paste_placeholder">Вставьте ссылку-инвайт</string>
     <string name="synaps_accept">Добавить контакт</string>
     <string name="synaps_share_copied">Инвайт скопирован</string>
+    <string name="synaps_find_request">Отправить запрос</string>
+    <string name="synaps_requests_title">Входящие запросы</string>
 
     <!-- Chat -->
     <string name="chat_input_placeholder">Сообщение</string>
