@@ -808,7 +808,16 @@ fun ConnectionStatusIndicator() {
 | Пустой список чатов | No conversations yet | Пока нет чатов |
 | Подсказка пустого списка | Find someone by @alias or show your QR code | Найдите человека по @псевдониму или покажите свой QR-код |
 
-#### OrientationScreen (обзор приложения) — **на Android есть** (`OrientationScreen.kt`); replay из Settings ещё нет
+#### OrientationScreen (обзор приложения) — РЕАЛИЗОВАН (commit 14bfc4c, 2026-07-18)
+
+`ui/screens/orientation/OrientationScreen.kt` — три страницы, `HorizontalPager`,
+Skip всегда доступен, точки-индикатор, кнопка Continue → Enter Konstruct. Показывается
+один раз после регистрации: Onboarding → Orientation → Main (стартовый таб = Synaps).
+Splash маршрутизирует initialized-but-not-oriented → Orientation (свежая регистрация ИЛИ
+апгрейд с версии до фичи). Флаг завершения — `OrientationStore` (DataStore-preferences,
+не Keystore). **Replay из Settings** («Как устроен Конструкт») пока не подключён — экран
+уже принимает `fromSettings` для возврата назад вместо Main; остаётся добавить строку в
+`SettingsScreen`. Канонические тексты en+ru совпадают с iOS `orientation_*`.
 
 Обязательный экран после первой регистрации + replay из Settings
 («Как устроен Конструкт» / "How Konstruct works"). Три страницы, Skip всегда
