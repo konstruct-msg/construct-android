@@ -11,20 +11,23 @@ import com.construct.messenger.data.local.db.MessageEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.data.model.DeliveryStatus
+import com.construct.messenger.domain.usecase.HealSessionUseCase
+import com.construct.messenger.domain.usecase.ResponderInitUseCase
+import com.construct.messenger.domain.usecase.SendReceiptUseCase
+import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.IncomingPlaintext
+import com.construct.messenger.util.IncomingReceipt
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 
 /**
  * Room / Keystore / session-store implementation of [ProcessorEffects].
  *
- * Healing, END_SESSION on the wire, and key-bundle fetch are logged and deferred
- * to the send/heal package — they must not drop the decrypted payload or the ACK.
- * Receipts currently persist locally; the unary send of a delivery receipt lands
- * with [com.construct.messenger.domain.usecase.SendMessageUseCase].
+ * Heal / END_SESSION / receipts / responder-init go to dedicated use cases.
  */
 @Singleton
 class ProcessorEffectsImpl @Inject constructor(
@@ -35,10 +38,19 @@ class ProcessorEffectsImpl @Inject constructor(
     private val ackStore: AckStore,
     private val sessionStateStore: SessionStateStore,
     private val sessionManager: SessionManager,
+    private val sessionControl: SessionControlUseCase,
+    private val healSession: HealSessionUseCase,
+    private val sendReceiptUseCase: SendReceiptUseCase,
+    private val responderInit: ResponderInitUseCase,
 ) : ProcessorEffects {
 
     override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
         val decoded = IncomingPlaintext.decode(plaintext)
+        if (decoded.knstContentType == ContentType.CONTENT_TYPE_DELIVERY_RECEIPT_VALUE) {
+            IncomingReceipt.messageIds(plaintext).forEach { markDelivered(it) }
+            ackStore.markProcessed(messageId, contactId)
+            return
+        }
         if (!decoded.isUserVisible) {
             Log.d(TAG, "decrypted non-visible ${messageId.take(8)}… type=${decoded.knstContentType}")
             ackStore.markProcessed(messageId, contactId)
@@ -46,6 +58,9 @@ class ProcessorEffectsImpl @Inject constructor(
         }
         persistIncoming(contactId, messageId, decoded.text, System.currentTimeMillis())
         ackStore.markProcessed(messageId, contactId)
+        runCatching { sendReceiptUseCase.delivered(contactId, listOf(messageId)) }
+            .onFailure { Log.w(TAG, "e2e receipt send failed", it) }
+        runCatching { sessionManager.fetchIdentityKey(contactId) }
     }
 
     override suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray) {
@@ -60,10 +75,8 @@ class ProcessorEffectsImpl @Inject constructor(
     }
 
     override suspend fun sendReceipt(messageId: String, toUserId: String, status: String) {
-        Log.d(TAG, "receipt $status for ${messageId.take(8)}… → ${toUserId.take(8)}… (local only until send path)")
-        if (status == "delivered") {
-            markDelivered(messageId)
-        }
+        // User-visible persist already sends an E2E receipt from onDecrypted.
+        Log.d(TAG, "cfe receipt $status ${messageId.take(8)}…")
     }
 
     override suspend fun notifyNewMessage(chatId: String, preview: String) {
@@ -94,17 +107,16 @@ class ProcessorEffectsImpl @Inject constructor(
     }
 
     override suspend fun requestHeal(contactId: String, role: String) {
-        Log.w(TAG, "heal requested for ${contactId.take(8)}… role=$role — HealSessionUseCase not wired yet")
+        healSession.heal(contactId, role)
     }
 
     override suspend fun requestEndSession(contactId: String) {
-        Log.w(TAG, "END_SESSION requested for ${contactId.take(8)}… — tearing down local session only")
-        runCatching { archiveSession(contactId) }
-            .onFailure { if (it is CancellationException) throw it else Log.e(TAG, "archive after END_SESSION failed", it) }
+        sessionControl.sendEndSession(contactId)
     }
 
     override suspend fun requestKeyBundle(userId: String, incoming: MessageRouter.IncomingMessage) {
-        Log.w(TAG, "key bundle requested for ${userId.take(8)}… — responder init not wired yet")
+        val result = responderInit.establish(incoming) ?: return
+        onDecrypted(result.contactId, result.messageId, result.plaintext)
     }
 
     override fun isAckedInDb(messageId: String): Boolean = ackStore.isProcessed(messageId)

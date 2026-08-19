@@ -6,6 +6,7 @@ import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.util.DisplayNameGenerator
 import shared.proto.core.v1.Crypto.CryptoSuite
+import shared.proto.services.v1.KeyServiceOuterClass.GetIdentityKeyRequest
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundleRequest
 import shared.proto.services.v1.KeyServiceOuterClass.PreKeyBundle
 import uniffi.construct_core.BinaryFirstMessage
@@ -47,16 +48,39 @@ class SessionManager @Inject constructor(
         return userDao.getById(contactId)?.identityPublic
     }
 
-    /** INITIATOR path: fetch [contactId]'s pre-key bundle and start a new session. */
-    suspend fun initSession(contactId: String): String {
+    /**
+     * Fetch a peer prekey bundle. [consumeOtpk] must be true only for X3DH init
+     * (initiator or responder). Invite verify uses false.
+     */
+    suspend fun fetchPeerBundle(contactId: String, consumeOtpk: Boolean): BinaryKeyBundle {
         val response = grpcClient.key.getPreKeyBundle(
             GetPreKeyBundleRequest.newBuilder()
                 .setUserId(contactId)
-                .setConsumeOneTimePrekey(true)
+                .setConsumeOneTimePrekey(consumeOtpk)
                 .build(),
         )
         rememberIdentity(contactId, response.bundle.identityKey.toByteArray())
-        val bundle = response.bundle.toBinaryKeyBundle(response.verifyingKey.toByteArray())
+        return response.bundle.toBinaryKeyBundle(response.verifyingKey.toByteArray())
+    }
+
+    /** Non-destructive identity key for sealed-sender when we did not init the session. */
+    suspend fun fetchIdentityKey(contactId: String): ByteArray? {
+        val stored = userDao.getById(contactId)?.identityPublic
+        if (stored != null && stored.isNotEmpty()) return stored
+        return runCatching {
+            val response = grpcClient.key.getIdentityKey(
+                GetIdentityKeyRequest.newBuilder().setUserId(contactId).build(),
+            )
+            val key = response.identityKey.toByteArray()
+            if (key.isEmpty()) return@runCatching stored
+            rememberIdentity(contactId, key)
+            key
+        }.getOrNull() ?: stored
+    }
+
+    /** INITIATOR path: fetch [contactId]'s pre-key bundle and start a new session. */
+    suspend fun initSession(contactId: String): String {
+        val bundle = fetchPeerBundle(contactId, consumeOtpk = true)
         return cryptoManager.initSession(contactId, bundle)
     }
 

@@ -4,6 +4,8 @@ import com.construct.messenger.data.local.PendingInviteStore
 import com.construct.messenger.data.model.Contact
 import com.construct.messenger.data.repository.AcceptInviteResult
 import com.construct.messenger.data.repository.ContactsRepository
+import com.construct.messenger.data.repository.FindUserResult
+import com.construct.messenger.data.repository.IncomingContactRequest
 import com.construct.messenger.invite.MintedInvite
 import com.construct.messenger.test.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,6 +36,18 @@ class SynapsViewModelTest {
     }
 
     @Test
+    fun findAndRequestSendsWhenUserExists() = runTest {
+        val repo = FakeContacts().apply { foundId = "u-found" }
+        val viewModel = SynapsViewModel(repo, PendingInviteStore())
+        viewModel.onQueryChange("@alice")
+        viewModel.findAndRequest()
+        advanceUntilIdle()
+
+        assertEquals(listOf("u-found"), repo.requested)
+        assertEquals("@alice", viewModel.uiState.value.status)
+    }
+
+    @Test
     fun shareInviteStoresLink() = runTest {
         val repo = FakeContacts()
         val viewModel = SynapsViewModel(repo, PendingInviteStore())
@@ -61,4 +75,15 @@ private class FakeContacts : ContactsRepository {
         return AcceptInviteResult.Ok(contact)
     }
     override suspend fun revoke(jti: String) = true
+    override val incomingRequests = MutableStateFlow<List<IncomingContactRequest>>(emptyList())
+    var foundId: String? = null
+    val requested = mutableListOf<String>()
+    override suspend fun findByUsername(username: String): FindUserResult =
+        foundId?.let { FindUserResult.Found(it) } ?: FindUserResult.NotFound
+    override suspend fun sendContactRequest(userId: String): Boolean {
+        requested += userId
+        return true
+    }
+    override suspend fun refreshRequests() = Unit
+    override suspend fun acceptRequest(requestId: String, fromUserId: String) = true
 }

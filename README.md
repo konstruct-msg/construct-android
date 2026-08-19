@@ -132,6 +132,8 @@ construct-android/
 - Отправка: `SendMessageUseCase` (MessageContent → KNST → CFE OutgoingMessage). Stealth fail-closed. Identified конверт без `conversation_id`.
 - Контакты: mint v5 (QR ttl=300, link=43200), paste/`konstruct://add`, `AcceptInvite` / `RevokeInvite`.
 - OTPK upload после регистрации. `GetPreKeyBundle` на verify инвайта — `consume_one_time_prekey=false`.
+- END_SESSION (type 21, 1024 pad), heal, RESPONDER init, E2E receipts (KNST 14), `GetIdentityKey` на входящих.
+- FindUser / contact requests (`UserService`).
 
 ### UI
 
@@ -143,9 +145,8 @@ construct-android/
 
 ### Не сделано
 
-- Heal / END_SESSION на проводе; хендлеры session-control (роутер уже классифицирует 21/24/25/26).
 - VEIL, FCM, WebRTC/звонки, BIP39 recovery, media, MLS.
-- FindUser / contact requests; QR-экран инвайта; honeycomb Synaps.
+- QR-экран инвайта; honeycomb Synaps.
 - Экраны настроек (Account, Appearance, Network, Security).
 - `ja`. Live iOS↔Android interop не гоняли. Эмуляторный smoke упёрся в отсутствующий system image.
 

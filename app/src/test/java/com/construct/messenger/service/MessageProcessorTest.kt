@@ -85,6 +85,20 @@ class MessageProcessorTest {
     }
 
     @Test
+    fun `healSuppressed defers without ack`() = runBlocking {
+        val effects = RecordingEffects()
+        val processor = MessageProcessor(FakeGateway(), effects)
+
+        val outcome = processor.route(
+            listOf(CfeAction.HealSuppressed("bob", 5_000uL)),
+            incoming(),
+        )
+
+        assertEquals(ProcessingOutcome.Deferred, outcome)
+        assertTrue(effects.calls.none { it.startsWith("receipt:") })
+    }
+
+    @Test
     fun `sendEndSession acks, marks processed and requests end session`() = runBlocking {
         val effects = RecordingEffects()
         val processor = MessageProcessor(FakeGateway(), effects)

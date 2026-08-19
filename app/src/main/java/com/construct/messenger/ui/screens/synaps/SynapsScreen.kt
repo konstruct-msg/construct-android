@@ -88,12 +88,39 @@ fun SynapsScreen(
                 onClick = { viewModel.accept() },
                 enabled = uiState.paste.isNotBlank() && !uiState.busy,
             )
+            if (uiState.query.isNotBlank()) {
+                Spacer(Modifier.height(Spacing.small))
+                CTButton(
+                    label = stringResource(R.string.synaps_find_request),
+                    onClick = { viewModel.findAndRequest() },
+                    enabled = !uiState.busy,
+                )
+            }
             uiState.status?.let { message ->
                 Spacer(Modifier.height(Spacing.small))
                 Text(
                     text = message,
                     style = ctRegular(12),
                     color = CTColor.textDim,
+                )
+            }
+        }
+
+        if (uiState.incomingRequests.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.synaps_requests_title),
+                style = ctRegular(12),
+                color = CTColor.textDim,
+                modifier = Modifier.padding(horizontal = CTLayout.edgePad, vertical = Spacing.small),
+            )
+            uiState.incomingRequests.forEach { request ->
+                ContactRow(
+                    contact = Contact(
+                        userId = request.fromUserId,
+                        displayName = request.displayName,
+                        username = request.username,
+                    ),
+                    onClick = { viewModel.acceptRequest(request) },
                 )
             }
         }
