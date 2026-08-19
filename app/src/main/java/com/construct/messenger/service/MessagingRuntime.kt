@@ -1,0 +1,198 @@
+package com.construct.messenger.service
+
+import android.util.Log
+import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.data.api.MessageStreamService
+import com.construct.messenger.data.api.MessagingService
+import com.construct.messenger.data.local.AckStore
+import com.construct.messenger.data.local.KeystoreManager
+import com.construct.messenger.data.local.SessionStateStore
+import com.construct.messenger.data.local.db.ChatDao
+import com.construct.messenger.domain.usecase.UploadPreKeysUseCase
+import com.construct.messenger.stealth.BlindTokenService
+import com.construct.messenger.stealth.ServerKeysProvider
+import com.construct.messenger.ui.components.ConnectionStatus
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import shared.proto.core.v1.EnvelopeOuterClass.Envelope
+import shared.proto.core.v1.EnvelopeOuterClass.SealedSenderEnvelope
+import shared.proto.core.v1.Identity.UserId
+import shared.proto.services.v1.MessagingServiceOuterClass.PendingMessage
+
+/**
+ * Process-scoped messaging lifecycle. Owns session restore, the receive pipeline,
+ * and post-login stealth/OTPK bootstrap.
+ *
+ * **Not a ViewModel.** Splash / [com.construct.messenger.data.repository.AuthRepository]
+ * call [start] after identity is ready; [start] is idempotent.
+ *
+ * Pipeline:
+ * ```
+ * import CFE sessions → hydrate ACK store → drain GetPendingMessages
+ *   → MessageRouter.start + MessageProcessor collect
+ *   → MessageStreamService.start
+ *   → subscribe direct:<sorted ids> from Room
+ * ```
+ */
+@Singleton
+class MessagingRuntime @Inject constructor(
+    private val cryptoManager: CryptoManager,
+    private val keystoreManager: KeystoreManager,
+    private val sessionManager: SessionManager,
+    private val sessionStateStore: SessionStateStore,
+    private val ackStore: AckStore,
+    private val stream: MessageStreamService,
+    private val router: MessageRouter,
+    private val processor: MessageProcessor,
+    private val messagingService: MessagingService,
+    private val chatDao: ChatDao,
+    private val uploadPreKeys: UploadPreKeysUseCase,
+    private val serverKeys: ServerKeysProvider,
+    private val blindTokens: BlindTokenService,
+) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val startMutex = Mutex()
+
+    @Volatile
+    var isStarted: Boolean = false
+        private set
+
+    private var processorJob: Job? = null
+    private var subscriptionJob: Job? = null
+
+    val connectionStatus: StateFlow<ConnectionStatus> = stream.isConnected
+        .map { connected -> if (connected) ConnectionStatus.CONNECTED else ConnectionStatus.DISCONNECTED }
+        .stateIn(scope, SharingStarted.Eagerly, ConnectionStatus.UNKNOWN)
+
+    /**
+     * Bring the receive path up. No-op if already started or if the orchestrator
+     * is not ready ([CryptoManager.setLocalUserId] has not run).
+     */
+    suspend fun start() = startMutex.withLock {
+        if (isStarted) return
+        if (!cryptoManager.isMessagingReady) {
+            Log.w(TAG, "start skipped — orchestrator not ready (setLocalUserId first)")
+            return
+        }
+
+        restoreSessions()
+        ackStore.hydrate()
+        drainPending()
+
+        if (processorJob?.isActive != true) {
+            processorJob = scope.launch { collectRouted() }
+        }
+        router.start(scope)
+        stream.start(scope)
+        if (subscriptionJob?.isActive != true) {
+            subscriptionJob = scope.launch {
+                chatDao.observeAll().collect { chats ->
+                    stream.updateSubscriptions(chats.map { it.id })
+                }
+            }
+        }
+
+        isStarted = true
+        Log.i(TAG, "messaging runtime started")
+        launchBackgroundBootstrap()
+    }
+
+    fun stop() {
+        stream.stop()
+        router.stop()
+        processorJob?.cancel()
+        processorJob = null
+        subscriptionJob?.cancel()
+        subscriptionJob = null
+        isStarted = false
+    }
+
+    private suspend fun restoreSessions() {
+        val blobs = sessionStateStore.loadAllSessions()
+        if (blobs.isEmpty()) return
+        val byContact = blobs.mapKeys { (key, _) -> key.removePrefix(SESSION_KEY_PREFIX) }
+        runCatching { sessionManager.importSessions(byContact) }
+            .onFailure { Log.e(TAG, "session import failed (${blobs.size} blobs)", it) }
+        Log.i(TAG, "restored ${blobs.size} session blob(s)")
+    }
+
+    private suspend fun drainPending() {
+        runCatching {
+            val response = messagingService.getPendingMessages()
+            for (pending in response.messagesList) {
+                router.ingest(pending.toEnvelope())
+            }
+            if (response.messagesCount > 0) {
+                Log.i(TAG, "drained ${response.messagesCount} pending message(s)")
+            }
+        }.onFailure { Log.w(TAG, "pending-message drain failed — stream will catch up", it) }
+    }
+
+    private suspend fun collectRouted() {
+        router.routed.collect { event ->
+            when (event) {
+                is MessageRouter.RoutedEvent.Incoming ->
+                    runCatching { processor.process(event.message) }
+                        .onFailure { Log.e(TAG, "process incoming failed", it) }
+                is MessageRouter.RoutedEvent.Control ->
+                    runCatching { processor.process(event.message) }
+                        .onFailure { Log.e(TAG, "process control failed", it) }
+                is MessageRouter.RoutedEvent.Receipt -> {
+                    val ids = if (event.receipt.hasDirect()) {
+                        event.receipt.direct.messageIdsList
+                    } else {
+                        emptyList()
+                    }
+                    Log.d(TAG, "receipt ids=${ids.take(3).joinToString { it.take(8) }}")
+                }
+                is MessageRouter.RoutedEvent.Typing -> Unit
+                is MessageRouter.RoutedEvent.ConnectionChanged ->
+                    Log.i(TAG, "stream connected=${event.connected}")
+            }
+        }
+    }
+
+    private fun launchBackgroundBootstrap() {
+        scope.launch {
+            runCatching { serverKeys.prefetch() }
+                .onFailure { Log.w(TAG, "stealth key prefetch failed", it) }
+            runCatching { blindTokens.bootstrapInitialBatch() }
+                .onFailure { Log.w(TAG, "privacy-pass bootstrap failed", it) }
+            val deviceId = keystoreManager.getDeviceId()
+            if (deviceId != null) {
+                runCatching { uploadPreKeys.replenishIfNeeded(deviceId) }
+                    .onFailure { Log.w(TAG, "OTPK replenish failed", it) }
+            }
+        }
+    }
+
+    private companion object {
+        const val TAG = "MessagingRuntime"
+        const val SESSION_KEY_PREFIX = "session:"
+    }
+}
+
+private fun PendingMessage.toEnvelope(): Envelope = Envelope.newBuilder().apply {
+    setMessageId(messageId)
+    setTimestamp(timestamp)
+    setContentType(contentType)
+    if (sealedInnerData.size() > 0) {
+        sealedSender = SealedSenderEnvelope.newBuilder()
+            .setSealedInner(sealedInnerData)
+            .build()
+    } else {
+        sender = UserId.newBuilder().setUserId(senderId).build()
+        setEncryptedPayload(encryptedPayload)
+    }
+}.build()

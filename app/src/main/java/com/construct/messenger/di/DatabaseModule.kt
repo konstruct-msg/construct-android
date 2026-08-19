@@ -26,6 +26,8 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): ConstructDatabase =
         Room.databaseBuilder(context, ConstructDatabase::class.java, ConstructDatabase.NAME)
+            // Greenfield: identityPublic added in v2. No production installs yet.
+            .fallbackToDestructiveMigration()
             .build()
 
     @Provides

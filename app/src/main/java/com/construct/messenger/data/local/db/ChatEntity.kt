@@ -36,6 +36,9 @@ interface ChatDao {
     @Query("SELECT * FROM chats WHERE id = :chatId")
     suspend fun getById(chatId: String): ChatEntity?
 
+    @Query("SELECT id FROM chats")
+    suspend fun getAllIds(): List<String>
+
     @Upsert
     suspend fun upsert(chat: ChatEntity)
 

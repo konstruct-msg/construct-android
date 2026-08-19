@@ -20,7 +20,7 @@ import androidx.room.RoomDatabase
         SessionStateEntity::class,
         SessionMetaEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {

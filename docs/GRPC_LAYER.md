@@ -61,23 +61,11 @@ stealth/                     # sealed sender (см. §5)           [КАРКАС
 
 Рекомендуемая последовательность (каждый шаг тестируем сам по себе):
 
-1. **Приём.** `MessageStreamService.start(scope)` + `MessageRouter.start(scope)`
-   после логина → collect `MessageRouter.routed` → на `RoutedEvent.Incoming`
-   вызвать `MessageProcessor.process(msg)`. Роутер (dedup/sealed-resolve/
-   классификация) и процессор (CFE `handleEvent` → decrypt/persist/ack) готовы и
-   покрыты юнит-тестами. `OrchestratorGateway` уже реализован —
-   `CryptoManager` держит двухфазное ядро (`ClassicCryptoCore` →
-   `OrchestratorCore` в `setLocalUserId`, single-thread `coreLock`) и забинжен
-   через `di/CryptoModule`; оба флоу логина уже зовут `setLocalUserId`.
-   **Осталась ОДНА зависимость процессора:**
-   - `ProcessorEffects` — реализовать в репозитории/session-слое (persist из
-     `messageJson`, отправка receipt, notify, heal/END_SESSION/keyBundle,
-     `isAckedInDb` из БД). Семантику действий брать из iOS
-     `SessionActionExecutor` + свитча `MessageRouter.swift`. После этого
-     `MessageProcessor` можно инжектить и подключать к `MessageRouter.routed`.
+1. **Приём.** `AuthRepository.restoreSession()` / `initializeIdentity()` поднимает
+   `MessagingRuntime`: import CFE-сессий → hydrate ACK → drain `GetPendingMessages`
+   → `MessageRouter` + `MessageProcessor` + стрим. `ProcessorEffectsImpl` пишет
+   в Room. Подписки `direct:<sorted ids>` из `ChatDao`.
    Решение по основе: `construct-docs/decisions/android-receive-path-cfe-not-component.md`.
-   Подписки: `updateSubscriptions(listOf("direct:<idA>:<idB>", …))` — id
-   отсортированы, как на iOS.
 2. **Отправка.** ViewModel → SendMessageUseCase (нет; создать) →
    `SessionManager.encryptMessage` → ветвление из KDoc `MessagingService`
    (identified / legacy-sealed / Phase-2-sealed) → статусы в UI из `SendResult`.
@@ -149,9 +137,12 @@ E2e-проверка iOS↔Android закроет пункт §5 decision-док
       (2026-07-04). Основа: `construct-docs/decisions/android-receive-path-cfe-not-component.md`
 - [x] OrchestratorGateway — двухфазный OrchestratorCore в CryptoManager +
       CryptoModule bind (2026-07-04)
-- [ ] ProcessorEffects в репозитории/session-слое → инжект MessageProcessor,
-      подключение к MessageRouter.routed (§3.1)
-- [ ] SendMessageUseCase с retry/backoff (§3.2)
+- [x] ProcessorEffects в репозитории/session-слое → инжект MessageProcessor,
+      подключение к MessageRouter.routed (§3.1) — `ProcessorEffectsImpl` +
+      `MessagingRuntime` (2026-08-19). Heal / END_SESSION-on-wire / receipts-on-wire
+      ещё логируются, persist+ACK уже настоящие.
+- [x] SendMessageUseCase (§3.2) — KNST + CFE OutgoingMessage + fail-closed stealth.
+      Bounded retry still on the caller. Identified envelope без conversation_id.
 - [ ] Stealth в send/receive путях + e2e iOS↔Android
 - [ ] Расширение StreamEvent (ack/error/presence) под нужды UI
 - [ ] VEIL-фолбэк каналов (после стабилизации direct-пути)

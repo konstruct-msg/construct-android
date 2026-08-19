@@ -2,6 +2,7 @@ package com.construct.messenger.service
 
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
+import com.construct.messenger.data.local.db.UserDao
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -29,6 +30,7 @@ class SessionManagerTest {
 
     private val cryptoManager: CryptoManager = mock()
     private val grpcClient: GrpcClient = mock()
+    private val userDao: UserDao = mock()
     private val keyStub: KeyServiceCoroutineStub = mock()
 
     private lateinit var sessionManager: SessionManager
@@ -36,7 +38,7 @@ class SessionManagerTest {
     @Before
     fun setUp() {
         whenever(grpcClient.key).thenReturn(keyStub)
-        sessionManager = SessionManager(cryptoManager, grpcClient)
+        sessionManager = SessionManager(cryptoManager, grpcClient, userDao)
     }
 
     @Test

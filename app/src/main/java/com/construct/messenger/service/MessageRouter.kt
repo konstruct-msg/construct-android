@@ -102,6 +102,9 @@ class MessageRouter @Inject constructor(
         routeJob = null
     }
 
+    /** Feed a catch-up envelope (pending-messages unary) through the same path as the stream. */
+    fun ingest(envelope: Envelope) = route(envelope)
+
     private fun route(envelope: Envelope) {
         val messageId = envelope.messageId
         if (messageId.isNotEmpty() && seenMessageIds.put(messageId, Unit) != null) {
