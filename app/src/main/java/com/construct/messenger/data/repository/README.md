@@ -4,4 +4,5 @@ Repositories bridging data sources to domain — this is the UI-developer surfac
 
 - `AuthRepository` / `AuthRepositoryImpl` — register, login, cold-start restore, starts `MessagingRuntime`.
 - `ChatsRepository` / `ChatsRepositoryImpl` — Room-backed chat list (replaces `MockChatsRepository` in DI).
-- `MessagesRepository` / `MessagesRepositoryImpl` — observe 1:1 transcript. Send is a later use case.
+- `MessagesRepository` / `MessagesRepositoryImpl` — observe 1:1 transcript + send.
+- `ContactsRepository` / `ContactsRepositoryImpl` — mint/accept/revoke device-minted invites, Room contacts.

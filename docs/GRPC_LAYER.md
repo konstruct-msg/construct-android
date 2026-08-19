@@ -143,6 +143,7 @@ E2e-проверка iOS↔Android закроет пункт §5 decision-док
       ещё логируются, persist+ACK уже настоящие.
 - [x] SendMessageUseCase (§3.2) — KNST + CFE OutgoingMessage + fail-closed stealth.
       Bounded retry still on the caller. Identified envelope без conversation_id.
+- [x] Contacts / invites — mint v5 + AcceptInvite + RevokeInvite (2026-08-19)
 - [ ] Stealth в send/receive путях + e2e iOS↔Android
 - [ ] Расширение StreamEvent (ack/error/presence) под нужды UI
 - [ ] VEIL-фолбэк каналов (после стабилизации direct-пути)
