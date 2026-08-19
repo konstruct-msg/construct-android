@@ -1,6 +1,17 @@
 # Construct Messenger — Android Implementation Guide
 
 > **Цель**: предоставить Android-разработчику полное понимание архитектуры, дизайн-системы, UI-компонентов, бизнес-логики и крипто-протокола для реализации на Kotlin / Jetpack Compose.
+>
+> **Статус реализации (2026-08-19, `construct-android` `develop` @ `46f515d`).**
+> Это канон дизайна (iOS → Android), не трекер фаз. Фазы протокола —
+> `docs/IMPLEMENTATION_PLAN.md` в репозитории Android.
+>
+> **Уже в коде:** онбординг + Orientation; табы; список чатов (Room); чат
+> (пузыри + инпут + send/observe); Synaps — mint v5 / paste / список контактов
+> (не honeycomb); `konstruct://add`; session runtime / receive / send.
+> **Ещё нет:** honeycomb Synaps, FindUser / запросы, экраны Account / Appearance /
+> Network / Security, VEIL / FCM / звонки / recovery, heal на проводе.
+> Живой iOS↔Android прогон не делали.
 
 ---
 
@@ -797,7 +808,7 @@ fun ConnectionStatusIndicator() {
 | Пустой список чатов | No conversations yet | Пока нет чатов |
 | Подсказка пустого списка | Find someone by @alias or show your QR code | Найдите человека по @псевдониму или покажите свой QR-код |
 
-#### OrientationScreen (обзор приложения) — НА ANDROID ЕЩЁ НЕ РЕАЛИЗОВАН
+#### OrientationScreen (обзор приложения) — **на Android есть** (`OrientationScreen.kt`); replay из Settings ещё нет
 
 Обязательный экран после первой регистрации + replay из Settings
 («Как устроен Конструкт» / "How Konstruct works"). Три страницы, Skip всегда
@@ -839,6 +850,9 @@ Tab bar скрывается когда `isInChat || isInSettings == true`.
 
 ### 5.3 ChatsListView — список чатов
 
+> **Android сейчас:** `ChatsListScreen` + `ChatRow` на `ChatsRepository` (Room).
+> Empty CTA открывает Synaps. Swipe / pin / pull-to-refresh — нет.
+
 - `CTSearchBar` вверху
 - `List` / `LazyColumn` с `ChatRowView`
 - Pull-to-refresh (background fetch)
@@ -853,6 +867,10 @@ Tab bar скрывается когда `isInChat || isInSettings == true`.
 - Badge непрочитанных сообщений `[N]`
 
 ### 5.4 ChatView — экран чата
+
+> **Android сейчас:** `ChatScreen` + `ChatViewModel` — `LazyColumn` пузырей и
+> `MessageInputView`, observe/send через `MessagesRepository`. Нет поиска,
+> пагинации, звонка, swipe-to-dismiss.
 
 - `CTNavBar` с именем контакта, статусом соединения, кнопками поиска/звонка
 - `LazyColumn` с сообщениями
@@ -916,6 +934,11 @@ Tab bar скрывается когда `isInChat || isInSettings == true`.
 - Safety Numbers verification
 
 ### 5.10 SynapsView — контакты (соты)
+
+> **Android сейчас (намеренно проще канона):** mint v5 (share/copy link),
+> paste-accept, список контактов → чат. Honeycomb / ZoomableCloud, FindUser и
+> входящие contact requests — ещё нет. Deep link `konstruct://add` пишется в
+> `PendingInviteStore` и гасится после онбординга.
 
 - «Honeycomb» layout: зуммируемый/панорамируемый облако из круглых аватаров
 - `ZoomableCloud` + `HoneycombCloud` composables
@@ -1149,6 +1172,11 @@ data class User(
 ---
 
 ## 9. Структура проекта (Android Reference)
+
+Рекомендуемая структура (цель, не текущее дерево). Фактическая раскладка
+2026-08-19: `crypto/`, `data/`, `domain/`, `service/`, `invite/`, `stealth/`,
+`viewmodel/`, `ui/` — см. `docs/IMPLEMENTATION_PLAN.md` File Structure Summary
+и `README.md`. Пакетов `design/` и `security/` нет.
 
 Рекомендуемая структура Android-проекта, соответствующая iOS-архитектуре:
 

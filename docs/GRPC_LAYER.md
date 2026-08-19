@@ -1,9 +1,8 @@
 # gRPC Layer — состояние, архитектура, как подключать UI
 
-**Обновлено:** 2026-07-03. Аудитория: следующая смена, задача которой —
-соединить UI (`ui/`, `viewmodel/`) с функциональными слоями через
-репозитории. Здесь: что уже работает, что каркас, что отсутствует, и в каком
-порядке подключать.
+**Обновлено:** 2026-08-19. Аудитория: UI и протокол. 1:1 text slice замкнут
+(runtime → receive → send → invites → Chat/Synaps). Здесь: что работает,
+что каркас, что отсутствует. UI ходит только в репозитории.
 
 Канон по фазам: `docs/IMPLEMENTATION_PLAN.md`. Крипто-пайплайн:
 `docs/CRYPTO_CORE.md`, `docs/FFI_BINARY_FORMAT.md`.
@@ -13,8 +12,8 @@
 ```
 data/api/
 ├── GrpcClient.kt            # 2 канала + все coroutine-стабы   [РАБОТАЕТ]
-├── MessagingService.kt      # унарные send/sendSealed/pending  [КАРКАС — см. §4]
-├── MessageStreamService.kt  # bidi-стрим приёма                [КАРКАС — см. §4]
+├── MessagingService.kt      # унарные send/sendSealed/pending  [РАБОТАЕТ]
+├── MessageStreamService.kt  # bidi-стрим приёма                [РАБОТАЕТ]
 data/auth/
 ├── AuthInterceptor.kt       # Bearer + x-user-id/x-device-id   [РАБОТАЕТ]
 ├── TokenRefreshCoordinator.kt                                  [РАБОТАЕТ]
@@ -41,9 +40,12 @@ crypto/
 di/
 ├── CryptoModule.kt          # bind OrchestratorGateway→CryptoMgr [ГОТОВ]
 ├── DatabaseModule.kt        # Room DB + DAOs + AckStore         [ГОТОВ]
-stealth/                     # sealed sender (см. §5)           [КАРКАС]
+invite/                      # v5 mint / verify / AcceptInvite  [РАБОТАЕТ]
+stealth/                     # sealed sender (см. §5)           [НА SEND]
 ├── StealthPolicy.kt  ServerKeysProvider.kt  TokenWalletService.kt
 ├── BlindTokenService.kt  StealthSenderService.kt
+service/MessagingRuntime.kt  # cold start → stream              [РАБОТАЕТ]
+domain/usecase/SendMessageUseCase.kt                            [РАБОТАЕТ]
 ```
 
 ## 2. Два канала — почему их два и что по какому ходит
@@ -66,9 +68,9 @@ stealth/                     # sealed sender (см. §5)           [КАРКАС
    → `MessageRouter` + `MessageProcessor` + стрим. `ProcessorEffectsImpl` пишет
    в Room. Подписки `direct:<sorted ids>` из `ChatDao`.
    Решение по основе: `construct-docs/decisions/android-receive-path-cfe-not-component.md`.
-2. **Отправка.** ViewModel → SendMessageUseCase (нет; создать) →
-   `SessionManager.encryptMessage` → ветвление из KDoc `MessagingService`
-   (identified / legacy-sealed / Phase-2-sealed) → статусы в UI из `SendResult`.
+2. **Отправка.** `ChatViewModel` → `MessagesRepository.send` →
+   `SendMessageUseCase` (KNST + CFE `OutgoingMessage` + fail-closed stealth).
+   Не `encryptMessage` на сыром UTF-8. Identified конверт без `conversation_id`.
 3. **Догон.** `MessagingService.getPendingMessages(cursor)` на холодном старте
    до открытия стрима; курсор стрима персистится самим `MessageStreamService`.
 4. **Stealth-бутстрап.** После логина: `ServerKeysProvider.prefetch()` +
@@ -100,8 +102,11 @@ Kotlin-обвязка зеркалит iOS: политика (always-on в relea
 well-known-ключи (24ч кэш), кошелёк (EncryptedSharedPreferences), issuance
 (лимит сервера 20/час), сертификат (кэш 24ч, verify bundle-ключом).
 
-**Интеграции в send/receive ещё нет** — это часть шагов 1–2 из §3.
-E2e-проверка iOS↔Android закроет пункт §5 decision-дока.
+Send path: fail-closed sealed inner (`SealedInner.content_type` unspecified).
+Receive: `MessageRouter` sealed-resolve. **Unauthenticated sealed transport
+flag still false** (lockstep with iOS). Wallet/cert prefetch after login is
+not yet a dedicated bootstrap step. Live iOS↔Android sealed round-trip has
+not run.
 
 ## 6. Gotchas (стоившие времени — не наступать повторно)
 
@@ -144,6 +149,9 @@ E2e-проверка iOS↔Android закроет пункт §5 decision-док
 - [x] SendMessageUseCase (§3.2) — KNST + CFE OutgoingMessage + fail-closed stealth.
       Bounded retry still on the caller. Identified envelope без conversation_id.
 - [x] Contacts / invites — mint v5 + AcceptInvite + RevokeInvite (2026-08-19)
-- [ ] Stealth в send/receive путях + e2e iOS↔Android
+- [x] Stealth на send (fail-closed) + sealed-resolve на приёме (2026-08-19)
+- [ ] Unauth sealed transport flag flip + e2e iOS↔Android
+- [ ] Heal / END_SESSION on the wire
+- [ ] FindUser / contact requests; invite QR; honeycomb Synaps
 - [ ] Расширение StreamEvent (ack/error/presence) под нужды UI
 - [ ] VEIL-фолбэк каналов (после стабилизации direct-пути)

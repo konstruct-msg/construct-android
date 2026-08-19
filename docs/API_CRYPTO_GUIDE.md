@@ -8,14 +8,22 @@
 > сгенерированных биндингов, а не по плану. Ссылки на Swift-файлы даны намеренно —
 > при сомнении смотри туда.
 >
+> **Актуальное состояние слоя (2026-08-19):** `docs/GRPC_LAYER.md` и
+> `docs/IMPLEMENTATION_PLAN.md`. Этот гайд — разбор iOS API, не трекер статусов.
+> Протосы vendored в `app/src/main/proto/` (`scripts/sync-protos.sh`); stubs
+> генерит Gradle plugin, не `generate_grpc_kotlin.sh`. Android-репо — не «только
+> UI»: runtime, send/receive и v5 invites уже в дереве.
+>
 > Связанные доки: `IMPLEMENTATION_PLAN.md` (Phases 1, 2.3, 5), `AGENTS.md`,
-> `ANDROID_ONBOARDING.md`, `CRYPTO_CORE.md`, `SESSION_INITIALIZATION.md`, `SESSTION_LIFECYCLE.md`
+> `ANDROID_ONBOARDING.md`, `CRYPTO_CORE.md`, `SESSION_INITIALIZATION.md`, `SESSTION_LIFECYCLE.md`,
+> `GRPC_LAYER.md`, `WIRE_FORMAT_RULES.md`
 
 ---
 
 ## Карта репозиториев
 
-Клиент собирается из **трёх** репозиториев. Android-репо — только UI + тонкие обёртки.
+Клиент собирается из **трёх** репозиториев. Kotlin — оболочка вокруг Rust core
+и gRPC; криптографию на Kotlin не пишем.
 
 | Репо | Что даёт | Где ожидается |
 |------|----------|---------------|
