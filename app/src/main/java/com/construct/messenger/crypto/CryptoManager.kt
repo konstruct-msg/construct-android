@@ -22,9 +22,12 @@ import uniffi.construct_core.createCryptoCoreFromKeys
 import uniffi.construct_core.createOrchestratorCoreFromKeys
 import uniffi.construct_core.deriveDeviceId
 import uniffi.construct_core.deriveRecoveryKeypair
+import uniffi.construct_core.deriveVerifyingKeyFromSecret
 import uniffi.construct_core.generateMnemonic
 import uniffi.construct_core.mnemonicToSeed
+import uniffi.construct_core.signInviteData
 import uniffi.construct_core.signRecoveryChallenge
+import uniffi.construct_core.verifyInviteSignature
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -214,6 +217,24 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
 
     /** Deterministic device id derived from this identity's public key — matches iOS `deriveDeviceId`. */
     fun deriveDeviceId(bundle: RegistrationBundleFields): String = deriveDeviceId(bundle.identityPublic)
+
+    fun deriveDeviceIdFromIdentity(identityPublic: ByteArray): String =
+        deriveDeviceId(identityPublic.toUByteList())
+
+    fun signingKeyBytes(): ByteArray = synchronized(coreLock) {
+        (orchestrator?.getSigningKeyBytes() ?: requireBootstrap().getSigningKeyBytes())
+    }
+
+    fun signInvite(canonical: String): ByteArray = synchronized(coreLock) {
+        signInviteData(canonical, signingKeyBytes().toUByteList()).signature.toByteArray()
+    }
+
+    fun verifyInvite(canonical: String, signature: ByteArray, verifyingKey: ByteArray): Boolean =
+        verifyInviteSignature(canonical, signature.toUByteList(), verifyingKey.toUByteList())
+
+    fun verifyingKeyFromSigningSecret(): ByteArray = synchronized(coreLock) {
+        deriveVerifyingKeyFromSecret(signingKeyBytes().toUByteList()).toByteArray()
+    }
 
     /**
      * Ed25519-signs [message] with this device's signing key. Used for the device

@@ -171,7 +171,7 @@ construct-android/
 
 ### Не реализовано (протокол)
 
-- Healing / END_SESSION на проводе, инвайты / контакты.
+- Healing / END_SESSION на проводе.
 - Push (FCM), WebRTC/звонки, VEIL, recovery BIP39.
 
 ### Не реализовано (UI)

@@ -50,7 +50,10 @@ class SessionManager @Inject constructor(
     /** INITIATOR path: fetch [contactId]'s pre-key bundle and start a new session. */
     suspend fun initSession(contactId: String): String {
         val response = grpcClient.key.getPreKeyBundle(
-            GetPreKeyBundleRequest.newBuilder().setUserId(contactId).build(),
+            GetPreKeyBundleRequest.newBuilder()
+                .setUserId(contactId)
+                .setConsumeOneTimePrekey(true)
+                .build(),
         )
         rememberIdentity(contactId, response.bundle.identityKey.toByteArray())
         val bundle = response.bundle.toBinaryKeyBundle(response.verifyingKey.toByteArray())
