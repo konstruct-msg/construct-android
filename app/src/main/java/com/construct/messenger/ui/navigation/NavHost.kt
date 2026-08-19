@@ -104,9 +104,6 @@ fun KonstructNavHost(
             arguments = listOf(navArgument("contactId") { type = NavType.StringType })
         ) { backStackEntry ->
             ChatScreen(
-                contactId = requireNotNull(backStackEntry.arguments?.getString("contactId")) {
-                    "Missing contactId route argument"
-                },
                 onNavigateBack = { navController.popBackStack() }
             )
         }

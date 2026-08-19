@@ -90,6 +90,13 @@
 
     <!-- Synaps -->
     <string name="synaps_empty_title">Пока нет контактов</string>
+    <string name="synaps_paste_placeholder">Вставьте ссылку-инвайт</string>
+    <string name="synaps_accept">Добавить контакт</string>
+    <string name="synaps_share_copied">Инвайт скопирован</string>
+
+    <!-- Chat -->
+    <string name="chat_input_placeholder">Сообщение</string>
+    <string name="chat_send">Отправить</string>
 
     <!-- Calls -->
     <string name="calls_empty_title">Пока нет звонков</string>

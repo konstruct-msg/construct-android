@@ -40,11 +40,11 @@ import com.construct.messenger.viewmodel.MainViewModel
 @Composable
 fun ChatsListScreen(
     onNavigateToChat: (String) -> Unit,
+    onFindPeople: () -> Unit = {},
     viewModel: MainViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf("") }
-    val canStartStream = uiState.suggestedContactId.isNotBlank()
 
     Column(
         modifier = Modifier
@@ -87,9 +87,7 @@ fun ChatsListScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(enabled = canStartStream) {
-                        onNavigateToChat(uiState.suggestedContactId)
-                    }
+                    .clickable(onClick = onFindPeople)
                     .background(CTColor.bgMsg)
                     .padding(16.dp)
             ) {

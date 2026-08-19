@@ -93,6 +93,13 @@
 
     <!-- Synaps -->
     <string name="synaps_empty_title">No contacts yet</string>
+    <string name="synaps_paste_placeholder">Paste invite link</string>
+    <string name="synaps_accept">Add contact</string>
+    <string name="synaps_share_copied">Invite copied</string>
+
+    <!-- Chat -->
+    <string name="chat_input_placeholder">Message</string>
+    <string name="chat_send">Send</string>
 
     <!-- Calls -->
     <string name="calls_empty_title">No calls yet</string>
