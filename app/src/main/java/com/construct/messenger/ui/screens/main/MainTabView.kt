@@ -81,8 +81,11 @@ fun MainTabView(
                 .background(CTColor.bg)
         ) {
             when (selectedTab) {
-                0 -> ChatsListScreen(onNavigateToChat = onNavigateToChat)
-                1 -> SynapsScreen()
+                0 -> ChatsListScreen(
+                    onNavigateToChat = onNavigateToChat,
+                    onFindPeople = { selectedTab = 1 },
+                )
+                1 -> SynapsScreen(onNavigateToChat = onNavigateToChat)
                 2 -> CallsScreen()
                 3 -> SettingsScreen()
             }
