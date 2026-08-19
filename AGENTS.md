@@ -17,10 +17,13 @@ Uses `construct-core` via UniFFI/JNI bindings (same direct path as iOS — NOT v
 app/src/main/
 ├── java/.../
 │   ├── crypto/         — CryptoManager (UniFFI wrapper around construct-core)
+│   ├── invite/         — device-minted v5 invites (CIv1 + konstruct://add)
+│   ├── stealth/        — sealed-sender policy / wallet / cert (fail-closed on send)
 │   ├── viewmodel/      — Hilt-injected ViewModels (@HiltViewModel)
 │   ├── ui/             — Compose screens and components
-│   ├── data/           — Repository layer, Room DB, DataStore
-│   ├── service/        — Background services (messaging, push)
+│   ├── data/           — repositories, Room, gRPC (UI must not import data/api)
+│   ├── domain/         — Register / Login / UploadPreKeys / SendMessage
+│   ├── service/        — MessagingRuntime, SessionManager, router / processor
 │   └── di/             — Hilt modules
 └── jniLibs/            — .so files from construct-core Rust build
     ├── arm64-v8a/
@@ -60,9 +63,11 @@ Copy resulting `.so` files to `app/src/main/jniLibs/<abi>/`.
 
 - Use `@HiltViewModel` for all ViewModels — no manual ViewModel factories
 - All crypto operations go through `CryptoManager` — do not call UniFFI bindings directly from UI
+- UI / ViewModels talk to **repositories only** — no `data/api`, `crypto`, `stealth`, or proto envelopes
 - Compose UI only — no XML layouts
 - Room DB for local message persistence
-- gRPC channel lives in a singleton service (not recreated per-screen)
+- gRPC lives in the `GrpcClient` singleton (two channels: auth + sealed); `MessagingRuntime` owns cold start
+- Working slice (2026-08-19): 1:1 text over production gRPC. Status: `docs/IMPLEMENTATION_PLAN.md`
 
 ---
 
