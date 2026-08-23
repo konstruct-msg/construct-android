@@ -119,6 +119,31 @@ moved to native `TabView`; prefer Material3 `NavigationBar` (icon-only) over the
 
 ---
 
+## No Google Play Services — decided 2026-08-23, before any delivery code existed
+
+**Nothing in this app may require GMS on the device.** No FCM, no Play Integrity, no Play
+Location. Google *build-time* dependencies are fine and already present (Hilt, KSP, protobuf) —
+they ask nothing of the device.
+
+This is checkable right now and must stay that way: the manifest declares two permissions
+(`INTERNET`, `ACCESS_NETWORK_STATE`), no `<service>`, no `<receiver>`, and there is no push code
+in the tree at all — only `services/notification_service.proto`.
+
+- **Delivery is our own connection**: a persistent `MessageStream` in a foreground service. Not a
+  second notification channel.
+- **UnifiedPush is an option, never the base.** The default path must work with no distributor.
+- **One APK.** No GMS/FOSS flavours — two flavours are two delivery behaviours and a permanent
+  question about which one is real.
+- The battery cost and the persistent foreground notification are stated to the user, not hidden.
+
+Why it is an invariant and not a preference: FCM would hand a third party the fact and timing of
+every message you receive plus a stable device id — exactly the metadata sealed sender exists to
+keep from our *own* server. And a client that needs no GMS **is** the GrapheneOS client, so this
+is also why there will not be a separate one.
+
+Full reasoning and rejected alternatives: `~/Code/construct-docs/decisions/android-without-play-services.md`.
+Where Android sits among the platforms: `~/Code/construct-docs/decisions/client-platform-sequencing.md`.
+
 ## Wire format — read before touching the send path
 
 **`docs/WIRE_FORMAT_RULES.md`** — what Android may and may not put on the envelope, and why.
