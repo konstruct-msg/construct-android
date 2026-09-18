@@ -7,8 +7,10 @@ import com.construct.messenger.data.local.db.SessionStateEntity
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
+import uniffi.construct_core.CfeSecureStoreSlot
 
 class SessionStateStoreTest {
 
@@ -83,6 +85,23 @@ class SessionStateStoreTest {
 
         assertNull(store.loadSession("session:peer-1"))
         assertArrayEquals(byteArrayOf(2), store.loadSession("session:peer-2"))
+    }
+
+    @Test
+    fun `typed slots map to isolated room keys and empty bytes delete`() = runTest {
+        val store = newStore()
+
+        store.saveSecureStore(CfeSecureStoreSlot.Session("peer-1"), byteArrayOf(1))
+        store.saveSecureStore(CfeSecureStoreSlot.OrchestratorState, byteArrayOf(2))
+        store.saveSecureStore(CfeSecureStoreSlot.SessionArchive("peer-1"), byteArrayOf(3))
+
+        val all = store.loadAllSessions()
+        assertEquals(setOf("session:peer-1", "core:orchestrator-state", "archive:peer-1"), all.keys)
+        assertNotNull(store.getEstablishedAt("peer-1"))
+
+        store.saveSecureStore(CfeSecureStoreSlot.Session("peer-1"), ByteArray(0))
+        assertNull(store.loadSession("session:peer-1"))
+        assertArrayEquals(byteArrayOf(3), store.loadSession("archive:peer-1"))
     }
 
     @Test

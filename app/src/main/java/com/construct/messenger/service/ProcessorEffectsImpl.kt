@@ -1,6 +1,7 @@
 package com.construct.messenger.service
 
 import android.util.Log
+import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
@@ -23,6 +24,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
+import uniffi.construct_core.CfeSecureStoreSlot
 
 /**
  * Room / Keystore / session-store implementation of [ProcessorEffects].
@@ -31,6 +33,7 @@ import shared.proto.core.v1.EnvelopeOuterClass.ContentType
  */
 @Singleton
 class ProcessorEffectsImpl @Inject constructor(
+    private val cryptoManager: CryptoManager,
     private val keystoreManager: KeystoreManager,
     private val messageDao: MessageDao,
     private val chatDao: ChatDao,
@@ -92,17 +95,38 @@ class ProcessorEffectsImpl @Inject constructor(
         ackStore.markProcessed(messageId, senderId)
     }
 
-    override suspend fun saveSession(key: String, data: ByteArray) {
-        sessionStateStore.saveSession(key, data)
-        val contactId = contactIdFromStoreKey(key)
-        if (sessionStateStore.getEstablishedAt(contactId) == null) {
-            sessionStateStore.setEstablishedAt(contactId, System.currentTimeMillis())
+    override suspend fun saveSecureStore(slot: CfeSecureStoreSlot, data: ByteArray) {
+        sessionStateStore.saveSecureStore(slot, data)
+    }
+
+    override suspend fun applyPqContribution(contactId: String, kemSharedSecret: ByteArray) {
+        cryptoManager.applyPqContribution(contactId, kemSharedSecret)
+    }
+
+    override suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray) {
+        if (archiveBytes.isNotEmpty()) {
+            sessionStateStore.saveSecureStore(
+                CfeSecureStoreSlot.SessionArchive(contactId),
+                archiveBytes,
+            )
         }
+        sessionManager.removeSession(contactId)
+        sessionStateStore.saveSecureStore(CfeSecureStoreSlot.Session(contactId), ByteArray(0))
+        sessionStateStore.removeMeta(contactId)
+        Log.i(TAG, "session terminated ${contactId.take(8)}…; archive=${archiveBytes.size}B")
+    }
+
+    override suspend fun pruneAckStore(cutoffTs: Long) {
+        ackStore.prune(cutoffTs)
+    }
+
+    override suspend fun sendHeartbeat(contactId: String) {
+        sessionControl.sendPing(contactId)
     }
 
     override suspend fun archiveSession(contactId: String) {
         sessionManager.removeSession(contactId)
-        sessionStateStore.removeSession(sessionStoreKey(contactId))
+        sessionStateStore.saveSecureStore(CfeSecureStoreSlot.Session(contactId), ByteArray(0))
         sessionStateStore.removeMeta(contactId)
     }
 
@@ -165,11 +189,5 @@ class ProcessorEffectsImpl @Inject constructor(
 
     private companion object {
         const val TAG = "ProcessorEffects"
-        const val SESSION_KEY_PREFIX = "session:"
-
-        fun sessionStoreKey(contactId: String) =
-            if (contactId.startsWith(SESSION_KEY_PREFIX)) contactId else SESSION_KEY_PREFIX + contactId
-
-        fun contactIdFromStoreKey(key: String) = key.removePrefix(SESSION_KEY_PREFIX)
     }
 }

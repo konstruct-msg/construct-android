@@ -193,6 +193,41 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         orchestrator?.hasSession(contactId) ?: false
     }
 
+    /** Apply a post-quantum contribution exactly where the core's CFE action says. */
+    fun applyPqContribution(contactId: String, kemSharedSecret: ByteArray) = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .applyPqContribution(contactId, kemSharedSecret.toUByteList())
+    }
+
+    /** CFE coordination snapshots; callers persist the returned bytes in typed slots. */
+    fun exportOrchestratorState(): ByteArray = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .exportOrchestratorState()
+            .toByteArray()
+    }
+
+    fun importOrchestratorState(bytes: ByteArray) = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .importOrchestratorState(bytes.toUByteList())
+    }
+
+    fun exportKyberSessionState(): ByteArray = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .exportKyberSessionState()
+            .toByteArray()
+    }
+
+    fun importKyberSessionState(bytes: ByteArray) = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .importKyberSessionState(bytes.toUByteList())
+    }
+
+    /** Drop all Rust-owned state for a contact, not only its hot ratchet blob. */
+    fun forgetContactState(contactId: String) = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .forgetContactState(contactId)
+    }
+
     fun rotateSignedPrekey(): uniffi.construct_core.RotatedSpkBundle = synchronized(coreLock) {
         (orchestrator ?: error("orchestrator not ready — setLocalUserId first")).rotateSignedPrekey()
     }

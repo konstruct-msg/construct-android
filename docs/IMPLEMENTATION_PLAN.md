@@ -1,26 +1,30 @@
 # Konstrukt Messenger Android — Implementation Plan
 
-> **Last actualized:** 2026-08-19. Working slice is **1:1 text over production gRPC**.
+> **Last actualized:** 2026-09-17. Working slice is **1:1 text over production gRPC**
+> with the current `construct-core` CFE artifact (`0.17.0+1241ec58d465`).
 > `veil-front` lands via a construct-core rebuild + flag flip (no Kotlin
 > routing). See `construct-docs/cryptocore/OBFUSCATION_IMPLEMENTATION_PLAN_veil-front.md`.
 
 > ## Current reality vs this plan
-> Target architecture. On `develop` (`46f515d`): UniFFI core, two gRPC
+> Current reality. On `develop`: UniFFI `OrchestratorCore`, two gRPC
 > channels, PASETO auth, OTPK upload, `MessagingRuntime`, CFE receive,
 > `SendMessageUseCase` (KNST + fail-closed stealth), v5 invites, Chat/Synaps
 > on real repositories. UI does **not** import gRPC, crypto, stealth, or
-> envelopes.
+> envelopes. The receive and send paths execute the same typed CFE actions as
+> iOS; durable state is written through typed secure-store slots.
 >
-> Still open: recovery (4), VEIL (5.1), calls (6), FCM (7), settings
-> subscreens, honeycomb Synaps, Play packaging (9.2). Live iOS↔Android
-> interop and emulator smoke have not run. Heal / END_SESSION / receipts /
-> RESPONDER init / FindUser landed 2026-08-19.
+> Still open: recovery (4), VEIL (5.1), calls (6), settings subscreens,
+> honeycomb Synaps, Play packaging (9.2), multi-device account→device
+> registry, CFE timer bridge, and live iOS↔Android interop/emulator smoke.
+> No FCM is planned: delivery remains the persistent stream/foreground-service
+> path, per the no-GMS decision.
 >
 > App package is **`com.construct.messenger`**. Canon: `docs/ANDROID_ONBOARDING.md`.
 > Envelope rules: `docs/WIRE_FORMAT_RULES.md`. New UI work: `GOOD_FIRST_ISSUES.md`.
 
 ## Phase 0: Project Setup (DONE)
-- ✅ Gradle 9.3.1 + Kotlin 2.0
+- ✅ Gradle 9.5 + AGP 9.3.1 + Kotlin 2.2.10 + KSP 2.3.6
+- ✅ Hilt 2.60.1 + Room 2.8.5 (KSP-compatible)
 - ✅ Compose with Kotlin Compiler plugin
 - ✅ Hilt for DI (`KonstructApp` `@HiltAndroidApp` + `MainActivity` `@AndroidEntryPoint`)
 - ✅ Directory structure (skeleton packages with README stubs)
@@ -34,11 +38,12 @@
 **Priority:** HIGH
 **Depends on:** construct-core repo
 
-Built via `build_crypto_lib.sh --all` (cargo + NDK cross-compile for
-`aarch64-linux-android`, `armv7-linux-androideabi`, `x86_64-linux-android`,
-`--features android,post-quantum`), then `uniffi-bindgen generate --language
-kotlin`. Re-run the script and regenerate bindings whenever `construct-core`
-changes (e.g. the ML-KEM/ML-DSA-65 switch picked up 2026-06-24).
+The checked-in `.so` files and generated Kotlin binding come from the official
+rolling `construct-core` Android artifact, built with `android,post-quantum`.
+The source build remains useful for core development, but Android consumes the
+artifact from `https://github.com/konstruct-msg/construct-core/releases/download/latest/construct-core-android.tar.gz`.
+Refresh both the three ABIs and `construct_core.kt` together whenever the UDL
+changes; never hand-edit the generated binding.
 
 **Files:**
 - `app/src/main/jniLibs/{arm64-v8a,armeabi-v7a,x86_64}/libconstruct_core.so`
@@ -46,15 +51,17 @@ changes (e.g. the ML-KEM/ML-DSA-65 switch picked up 2026-06-24).
   (UniFFI bindings, package `uniffi.construct_core` — DO NOT EDIT, regenerate)
 
 ### 1.2 Crypto API Wrapper
-**Status:** ✅ Done (core wiring; PQ contribution mixing not yet exposed)
+**Status:** ✅ Done (OrchestratorCore + CFE state snapshots + PQ contribution)
 **Priority:** HIGH
 **Depends on:** 1.1
 
-`CryptoManager.kt` wraps `uniffi.construct_core.ClassicCryptoCore`:
+`CryptoManager.kt` keeps the bootstrap `ClassicCryptoCore` only for registration,
+then promotes to `OrchestratorCore`, which is the messaging core:
 `loadOrCreate()`, `setLocalUserId`, `exportPrivateKeys`, `generateOneTimePrekeys`,
 `initSession`/`initReceivingSession`, `encryptMessage`/`decryptMessage`,
 `exportSessionBytes`/`importSessionBytes` (CFE binary), `removeSession`,
-`getAllSessionContactIds`, `generateMnemonic`, `deriveRecoveryKeypair`,
+`getAllSessionContactIds`, `applyPqContribution`, orchestrator/PQ snapshot
+export/import, `forgetContactState`, `generateMnemonic`, `deriveRecoveryKeypair`,
 `computePow`, `signWithDeviceKey` (Ed25519 sign, repurposes the
 `signRecoveryChallenge` FFI export — there is no dedicated bare-sign function
 yet; swap this if/when `construct-core` adds one).
@@ -180,7 +187,8 @@ used elsewhere, matching iOS `AuthServiceClient.registerDevice` exactly.
   PQ capability re-advertise.
 
 ### 3.2 Session Lifecycle
-**Status:** ✅ Done (INITIATOR + RESPONDER via CFE receive). Identity public is
+**Status:** ✅ Done for the current 1:1 account-id slice (INITIATOR + RESPONDER
+via CFE receive). Identity public is
 stored on `UserEntity` at `initSession` only — inbound-only reply with stealth
 on still needs the peer key on the row.
 **Priority:** HIGH
@@ -197,15 +205,18 @@ class SessionManager @Inject constructor(
     fun initReceivingSession(contactId, senderBundle, firstMessage)  // RESPONDER
     fun encryptMessage(contactId, plaintext)
     fun decryptMessage(sessionId, ephemeralPublicKey, messageNumber, content)
-    fun exportSessions(): Map<String, ByteArray>                 // CFE binary, not String/JSON
+    fun exportSessions(): Map<String, ByteArray>                 // legacy hot blobs only
     fun importSessions(sessions: Map<String, ByteArray>)
 }
 ```
 
 `exportSessions()` / `importSessions()` use `ByteArray`, not `String`, per the
-CFE-binary rule (§1.2). Cold start (`MessagingRuntime`) imports every blob from
-`SessionStateStore` before opening the stream; send/receive persist the blob
-*before* the unary RPC (sender-state-durability-before-send).
+CFE-binary rule (§1.2). `SessionStateStore` maps the core's typed
+`CfeSecureStoreSlot` values to Room keys: hot session, archive, deferred PQ,
+Kyber snapshot, signed-prekey slot, and orchestrator snapshot. Cold start
+restores orchestrator/PQ snapshots first and imports only `Session` slots before
+opening the stream. Send/receive persist the returned state *before* the unary
+RPC (sender-state-durability-before-send).
 
 **Files:**
 - `service/SessionManager.kt`
@@ -213,9 +224,12 @@ CFE-binary rule (§1.2). Cold start (`MessagingRuntime`) imports every blob from
 - `data/local/SessionStateStore.kt`
 
 ### 3.3 Session Healing
-**Status:** ✅ Done (2026-08-19) — `HealSessionUseCase` + `SessionControlUseCase`.
-Initiator sends padded type-21 END_SESSION; responder archives locally.
-`HealSuppressed` holds the stream cursor (does **not** ACK).
+**Status:** ✅ Core decision path done; Android bridge is partial. Rust CFE owns
+the heal/END_SESSION decision and returns typed actions. Android executes
+`SessionHealNeeded`, `EndSessionSuppressed`, `SessionTerminated`, typed storage,
+and the sender-state durability rule. The timer bridge and full multi-device
+teardown plan are still open. `HealSuppressed`/`EndSessionSuppressed` hold the
+stream cursor (do **not** ACK).
 **Priority:** MEDIUM
 **Depends on:** 3.2
 
@@ -231,8 +245,10 @@ Initiator sends padded type-21 END_SESSION; responder archives locally.
 4. If max attempts: send END_SESSION
 ```
 
-**Files to create:**
-- `domain/usecase/HealSessionUseCase.kt`
+**Android bridge:**
+- `service/MessageProcessor.kt`
+- `service/ProcessorEffectsImpl.kt`
+- `domain/usecase/HealSessionUseCase.kt` (transport side effect only)
 
 ### 3.4 Session-Control Message Format
 **Status:** Partial — `MessageRouter` classifies `content_type` 21/24/25/26 and
@@ -393,7 +409,8 @@ regenerate Kotlin UniFFI bindings, flip a manifest flag. No new Kotlin
 routing code.
 
 ### 5.2 Message Stream
-**Status:** ✅ Done (transport + runtime + 1:1 send, 2026-08-19)
+**Status:** ✅ Done (transport + runtime + 1:1 send, typed CFE persistence,
+2026-09-17)
 **Priority:** HIGH
 **Depends on:** 3.2
 

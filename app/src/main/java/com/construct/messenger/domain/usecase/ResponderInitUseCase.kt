@@ -13,6 +13,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import uniffi.construct_core.BinaryFirstMessage
 import uniffi.construct_core.CfeIncomingEvent
+import uniffi.construct_core.CfeSecureStoreSlot
 import uniffi.construct_core.wirePayloadUnpack
 
 /**
@@ -56,12 +57,13 @@ class ResponderInitUseCase @Inject constructor(
             )
             val init = sessionManager.initReceivingSession(contactId, bundle, first)
             val blob = cryptoManager.exportSessionBytes(contactId)
-            sessionStateStore.saveSession("session:$contactId", blob)
+            sessionStateStore.saveSecureStore(CfeSecureStoreSlot.Session(contactId), blob)
             if (sessionStateStore.getEstablishedAt(contactId) == null) {
                 sessionStateStore.setEstablishedAt(contactId, System.currentTimeMillis())
             }
             runCatching {
-                orchestrator.handleEvent(CfeIncomingEvent.SessionInitCompleted(contactId, blob))
+                val completed = orchestrator.handleEvent(CfeIncomingEvent.SessionInitCompleted(contactId, blob))
+                sessionStateStore.saveCfeActions(completed)
             }
             keystoreManager.getDeviceId()?.let { deviceId ->
                 runCatching { uploadPreKeys.replenishIfNeeded(deviceId) }

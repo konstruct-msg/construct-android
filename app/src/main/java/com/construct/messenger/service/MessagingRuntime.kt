@@ -129,10 +129,27 @@ class MessagingRuntime @Inject constructor(
     private suspend fun restoreSessions() {
         val blobs = sessionStateStore.loadAllSessions()
         if (blobs.isEmpty()) return
-        val byContact = blobs.mapKeys { (key, _) -> key.removePrefix(SESSION_KEY_PREFIX) }
-        runCatching { sessionManager.importSessions(byContact) }
-            .onFailure { Log.e(TAG, "session import failed (${blobs.size} blobs)", it) }
-        Log.i(TAG, "restored ${blobs.size} session blob(s)")
+
+        // The orchestrator owns more than the ratchet. Restore its coordination
+        // snapshots before any queued message reaches CFE; importing every Room
+        // row as a session would feed archive/PQ/core state into the wrong API.
+        blobs[SessionStateStore.ORCHESTRATOR_STATE_KEY]?.let { bytes ->
+            runCatching { cryptoManager.importOrchestratorState(bytes) }
+                .onFailure { Log.e(TAG, "orchestrator state restore failed", it) }
+        }
+        blobs[SessionStateStore.KYBER_SESSION_STATE_KEY]?.let { bytes ->
+            runCatching { cryptoManager.importKyberSessionState(bytes) }
+                .onFailure { Log.e(TAG, "Kyber state restore failed", it) }
+        }
+
+        val sessions = blobs
+            .filterKeys { it.startsWith(SessionStateStore.SESSION_KEY_PREFIX) }
+            .mapKeys { (key, _) -> key.removePrefix(SessionStateStore.SESSION_KEY_PREFIX) }
+        if (sessions.isNotEmpty()) {
+            runCatching { sessionManager.importSessions(sessions) }
+                .onFailure { Log.e(TAG, "session import failed (${sessions.size} blobs)", it) }
+        }
+        Log.i(TAG, "restored ${sessions.size} session blob(s) and core snapshots")
     }
 
     private suspend fun drainPending() {
@@ -211,7 +228,6 @@ class MessagingRuntime @Inject constructor(
 
     private companion object {
         const val TAG = "MessagingRuntime"
-        const val SESSION_KEY_PREFIX = "session:"
     }
 }
 

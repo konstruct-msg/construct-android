@@ -71,7 +71,10 @@ class AckStoreTest {
         // An ancient row written straight to the DB (bypassing the mirror).
         dao.insert(AckedMessageEntity("old", "sender-2", processedAtMs = 1_000L))
 
-        val deleted = store.prune(olderThanMs = System.currentTimeMillis())
+        // Use the exact timestamp boundary: the fresh row is not older than
+        // its own timestamp, while the ancient row is.
+        val keepAt = dao.rows.getValue("new").processedAtMs
+        val deleted = store.prune(olderThanMs = keepAt)
 
         assertEquals(1, deleted)
         assertFalse(dao.exists("old"))

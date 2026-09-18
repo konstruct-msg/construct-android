@@ -1,5 +1,6 @@
 package com.construct.messenger.service
 
+import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
@@ -34,6 +35,7 @@ class ProcessorEffectsImplTest {
         whenever(keystore.getUserId()).thenReturn(myId)
 
         val effects = ProcessorEffectsImpl(
+            cryptoManager = mock<CryptoManager>(),
             keystoreManager = keystore,
             messageDao = messages,
             chatDao = chats,

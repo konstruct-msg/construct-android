@@ -149,14 +149,7 @@ class SessionControlUseCase @Inject constructor(
         val actions = orchestrator.handleEvent(
             CfeIncomingEvent.OutgoingMessage(contactId, messageId, plaintext, 0u),
         )
-        var saved = false
-        for (action in actions) {
-            if (action is CfeAction.SaveSessionToSecureStore) {
-                sessionStateStore.saveSession(action.key, action.data)
-                saved = true
-            }
-        }
-        if (!saved) return
+        if (!sessionStateStore.saveCfeActions(actions)) return
         val wire = actions.filterIsInstance<CfeAction.SendEncryptedMessage>()
             .firstOrNull { it.to == contactId }
             ?.payload
@@ -198,7 +191,12 @@ class SessionControlUseCase @Inject constructor(
 
     private suspend fun archiveLocal(contactId: String) {
         runCatching { sessionManager.removeSession(contactId) }
-        runCatching { sessionStateStore.removeSession("session:$contactId") }
+        runCatching {
+            sessionStateStore.saveSecureStore(
+                uniffi.construct_core.CfeSecureStoreSlot.Session(contactId),
+                ByteArray(0),
+            )
+        }
         runCatching { sessionStateStore.removeMeta(contactId) }
     }
 

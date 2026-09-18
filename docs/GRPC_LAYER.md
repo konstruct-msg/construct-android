@@ -1,6 +1,6 @@
 # gRPC Layer — состояние, архитектура, как подключать UI
 
-**Обновлено:** 2026-08-19. Аудитория: UI и протокол. 1:1 text slice замкнут
+**Обновлено:** 2026-09-17. Аудитория: UI и протокол. 1:1 text slice замкнут
 (runtime → receive → send → invites → Chat/Synaps). Здесь: что работает,
 что каркас, что отсутствует. UI ходит только в репозитории.
 
@@ -23,18 +23,19 @@ data/local/
 ├── KeystoreManager.kt       # токены + private keys (CFE)      [РАБОТАЕТ]
 ├── AckStore.kt              # durable dedup (Room + in-memory   [ГОТОВ+тесты]
 │                            # mirror, hydrate() до стрима!)
-├── SessionStateStore.kt     # CFE session blobs + establishedAt [ГОТОВ+тесты]
+├── SessionStateStore.kt     # typed CFE slots + establishedAt [ГОТОВ+тесты]
 ├── db/                      # Room: chats/messages/users/       [ГОТОВ]
 │                            # acked_messages/session_state/session_meta
 service/
 ├── SessionManager.kt        # DR-сессии поверх CryptoManager   [РАБОТАЕТ]
 ├── MessageRouter.kt         # стрим → домен-события: dedup,    [ГОТОВ+тесты]
 │                            # sealed-résolve, control/message
-├── MessageProcessor.kt      # CFE handleEvent → decrypt/persist [ГОТОВ+тесты]
-│                            # /ack; OrchestratorGateway+Effects
+├── MessageProcessor.kt      # CFE handleEvent → typed actions   [ГОТОВ+тесты]
+│                            # /decrypt/persist/ack; Gateway+Effects
 crypto/
 ├── CryptoManager.kt         # двухфазное ядро (Classic→Orchestr) [РАБОТАЕТ]
 │                            # + OrchestratorGateway (handleEvent)
+│                            # + orchestrator/PQ state snapshots
 │                            # wire-формат парсит ТОЛЬКО Rust core
 │                            # (wire_payload.rs; дублей на Kotlin нет)
 di/
@@ -64,9 +65,10 @@ domain/usecase/SendMessageUseCase.kt                            [РАБОТАЕ�
 Рекомендуемая последовательность (каждый шаг тестируем сам по себе):
 
 1. **Приём.** `AuthRepository.restoreSession()` / `initializeIdentity()` поднимает
-   `MessagingRuntime`: import CFE-сессий → hydrate ACK → drain `GetPendingMessages`
-   → `MessageRouter` + `MessageProcessor` + стрим. `ProcessorEffectsImpl` пишет
-   в Room. Подписки `direct:<sorted ids>` из `ChatDao`.
+   `MessagingRuntime`: restore orchestrator/PQ snapshots → import only `Session`
+   slots → hydrate ACK → drain `GetPendingMessages` → `MessageRouter` +
+   `MessageProcessor` + стрим. `ProcessorEffectsImpl` пишет в Room and applies
+   every typed secure-store action. Подписки `direct:<sorted ids>` из `ChatDao`.
    Решение по основе: `construct-docs/decisions/android-receive-path-cfe-not-component.md`.
 2. **Отправка.** `ChatViewModel` → `MessagesRepository.send` →
    `SendMessageUseCase` (KNST + CFE `OutgoingMessage` + fail-closed stealth).
@@ -81,13 +83,16 @@ domain/usecase/SendMessageUseCase.kt                            [РАБОТАЕ�
 `MessagingService`/`MessageStreamService` компилируются против свежих протосов
 и готовы к вызову, но:
 
-- **retry/backoff отправки** — на вызывающей стороне (iOS: bounded retry в
-  send-координаторе; здесь его ещё нет);
+- **retry/backoff отправки** — bounded retry уже в `SendMessageUseCase`;
 - **re-subscribe без реконнекта** — `updateSubscriptions` применяется со
   следующего коннекта;
 - **acks/errors/presence из стрима** — логируются, но не пробрасываются:
   расширить `StreamEvent`, когда появится потребитель;
 - **VEIL-фолбэк транспорта** — не подключён (оба канала direct TLS);
+- **multi-device account→device routing** — core planning API уже приехал в
+  binding, но Android registry и device-addressed gRPC path ещё не подключены;
+- **CFE timers / AppLaunched / reconnect events** — event/action bridge ещё не
+  доведён до parity с iOS;
 - **`SEALED_UNAUTHENTICATED_TRANSPORT = false`** — флип синхронно с iOS
   `FeatureFlags.sealedSenderUnauthenticatedTransport` (rollout-порядок в
   decision-доке §4).
@@ -144,8 +149,9 @@ not run.
       CryptoModule bind (2026-07-04)
 - [x] ProcessorEffects в репозитории/session-слое → инжект MessageProcessor,
       подключение к MessageRouter.routed (§3.1) — `ProcessorEffectsImpl` +
-      `MessagingRuntime` (2026-08-19). Heal / END_SESSION-on-wire / receipts-on-wire
-      ещё логируются, persist+ACK уже настоящие.
+      `MessagingRuntime` (2026-09-17). Typed secure-store, PQ contribution,
+      session archive/termination, persist+ACK and receipts are wired; timer
+      bridge and full device routing remain open.
 - [x] SendMessageUseCase (§3.2) — KNST + CFE OutgoingMessage + fail-closed stealth.
       Bounded retry still on the caller. Identified envelope без conversation_id.
 - [x] Contacts / invites — mint v5 + AcceptInvite + RevokeInvite (2026-08-19)

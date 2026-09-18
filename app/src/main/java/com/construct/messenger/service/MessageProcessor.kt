@@ -107,10 +107,28 @@ class MessageProcessor @Inject constructor(
                     Log.i(TAG, "heal suppressed ${action.contactId.take(8)}… retry ${action.retryAfterMs}ms — holding cursor")
                     return ProcessingOutcome.Deferred
                 }
+                is CfeAction.EndSessionSuppressed -> {
+                    Log.i(TAG, "END_SESSION suppressed ${action.contactId.take(8)}… retry ${action.retryAfterMs}ms — holding cursor")
+                    return ProcessingOutcome.Deferred
+                }
+                is CfeAction.MessageQueuedPendingInit -> {
+                    Log.i(TAG, "message queued behind init ${action.contactId.take(8)}… count=${action.queuedCount} — holding cursor")
+                    return ProcessingOutcome.Deferred
+                }
                 is CfeAction.SendEndSession -> {
                     effects.sendReceipt(incoming.messageId, action.contactId, "failed")
                     effects.markProcessed(incoming.messageId, incoming.senderId)
                     effects.requestEndSession(action.contactId)
+                    return ProcessingOutcome.Acked
+                }
+                is CfeAction.SendHeartbeat -> {
+                    executeSideEffects(actions, incoming)
+                    effects.markProcessed(incoming.messageId, incoming.senderId)
+                    return ProcessingOutcome.Acked
+                }
+                is CfeAction.SessionTerminated -> {
+                    executeSideEffects(actions, incoming)
+                    effects.markProcessed(incoming.messageId, incoming.senderId)
                     return ProcessingOutcome.Acked
                 }
                 is CfeAction.FetchPublicKeyBundle -> {
@@ -145,10 +163,38 @@ class MessageProcessor @Inject constructor(
                 is CfeAction.SendReceipt -> effects.sendReceipt(action.messageId, incoming.senderId, action.status)
                 is CfeAction.NotifyNewMessage -> effects.notifyNewMessage(action.chatId, action.preview)
                 is CfeAction.MarkMessageDelivered -> effects.markDelivered(action.messageId)
-                is CfeAction.SaveSessionToSecureStore -> effects.saveSession(action.key, action.data)
+                is CfeAction.PersistAck -> effects.markProcessed(action.messageId, incoming.senderId)
+                is CfeAction.PruneAckStore -> effects.pruneAckStore(action.cutoffTs.toLong())
+                is CfeAction.ApplyPqContribution ->
+                    effects.applyPqContribution(action.contactId, action.kemSs)
+                is CfeAction.SaveToSecureStore ->
+                    effects.saveSecureStore(action.slot, action.data)
                 is CfeAction.ArchiveSession -> effects.archiveSession(action.contactId)
-                // Not yet wired — surface loudly rather than drop.
-                else -> Log.w(TAG, "unhandled CfeAction ${action::class.simpleName} — no-op (extend MessageProcessor)")
+                is CfeAction.SessionTerminated ->
+                    effects.sessionTerminated(action.contactId, action.archiveBytes)
+                is CfeAction.SendHeartbeat -> effects.sendHeartbeat(action.contactId)
+                is CfeAction.NotifySessionCreated ->
+                    Log.i(TAG, "session created ${action.contactId.take(8)}…")
+                is CfeAction.NotifyError ->
+                    Log.e(TAG, "CFE ${action.code}: ${action.message}")
+                is CfeAction.ScheduleTimer ->
+                    Log.w(TAG, "CFE timer requested but Android timer bridge is not wired: ${action.timerId}")
+                is CfeAction.CancelTimer ->
+                    Log.w(TAG, "CFE timer cancellation requested but Android timer bridge is not wired: ${action.timerId}")
+                is CfeAction.NotifyLinkedDevicesOfSessionReset ->
+                    Log.i(TAG, "linked-device reset notification pending for ${action.contactId.take(8)}…")
+                is CfeAction.EndSessionSuppressed,
+                is CfeAction.MessageQueuedPendingInit,
+                is CfeAction.SessionHealNeeded,
+                is CfeAction.HealSuppressed,
+                is CfeAction.CheckAckInDb,
+                is CfeAction.DecryptMessage,
+                is CfeAction.EncryptMessage,
+                is CfeAction.InitSession,
+                is CfeAction.SendEncryptedMessage,
+                is CfeAction.SendEndSession,
+                is CfeAction.FetchPublicKeyBundle,
+                -> Log.d(TAG, "CFE action consumed by routing layer: ${action::class.simpleName}")
             }
         }
     }
@@ -187,7 +233,11 @@ interface ProcessorEffects {
     suspend fun notifyNewMessage(chatId: String, preview: String)
     suspend fun markDelivered(messageId: String)
     suspend fun markProcessed(messageId: String, senderId: String)
-    suspend fun saveSession(key: String, data: ByteArray)
+    suspend fun saveSecureStore(slot: uniffi.construct_core.CfeSecureStoreSlot, data: ByteArray)
+    suspend fun applyPqContribution(contactId: String, kemSharedSecret: ByteArray)
+    suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray)
+    suspend fun pruneAckStore(cutoffTs: Long)
+    suspend fun sendHeartbeat(contactId: String)
     suspend fun archiveSession(contactId: String)
     suspend fun requestHeal(contactId: String, role: String)
     suspend fun requestEndSession(contactId: String)
