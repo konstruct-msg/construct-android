@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">Konstruct Messenger</string>
+    <string name="messaging_foreground_notification">Secure messaging connection is active</string>
+    <string name="messaging_foreground_channel">Messaging connection</string>
+    <string name="messaging_foreground_channel_description">Keeps encrypted messages available without Google Play Services.</string>
 
     <!-- Brand wordmark — not translated -->
     <string name="brand_name" translatable="false">KONSTRUCT</string>

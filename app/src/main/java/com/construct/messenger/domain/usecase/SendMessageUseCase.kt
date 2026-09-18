@@ -19,6 +19,7 @@ import com.construct.messenger.stealth.StealthSenderService
 import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.KnstFrame
+import com.construct.messenger.util.SenderSyncRouting
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -28,6 +29,7 @@ import shared.proto.messaging.v1.Content.MessageContent
 import shared.proto.messaging.v1.Content.TextMessage
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
+import uniffi.construct_core.DeliveryAudience
 
 sealed interface SendOutcome {
     data class Sent(val messageId: String) : SendOutcome
@@ -148,6 +150,20 @@ class SendMessageUseCase @Inject constructor(
                 }
                 if (result.success) {
                     messageDao.updateDeliveryStatus(messageId, DeliveryStatus.SENT.name)
+                    runCatching {
+                        fanOutCopies(
+                            myId = myId,
+                            contactId = contactId,
+                            baseMessageId = messageId,
+                            timestampMs = timestampMs,
+                            plaintext = plaintext,
+                            primary = peer,
+                        )
+                    }.onFailure {
+                        // The primary copy is already durable and accepted. A linked-device
+                        // copy is best-effort and can be retried by the next send/reconcile pass.
+                        Log.w(TAG, "per-device fan-out failed ${messageId.take(8)}…", it)
+                    }
                     return SendOutcome.Sent(messageId)
                 }
                 lastError = result.errorCode.ifEmpty { "send failed" }
@@ -214,6 +230,152 @@ class SendMessageUseCase @Inject constructor(
                     displayName = DisplayNameGenerator.generate(contactId),
                     isContact = true,
                 ),
+            )
+        }
+    }
+
+    private suspend fun fanOutCopies(
+        myId: String,
+        contactId: String,
+        baseMessageId: String,
+        timestampMs: Long,
+        plaintext: ByteArray,
+        primary: SessionManager.SessionPeer,
+    ) {
+        val ourDeviceId = cryptoManager.currentDeviceId() ?: return
+        val recipientBundles = if (contactId == myId) {
+            emptyList()
+        } else {
+            runCatching { sessionManager.discoverPeerBundles(contactId) }
+                .getOrElse {
+                    Log.w(TAG, "recipient device discovery failed ${contactId.take(8)}…", it)
+                    emptyList()
+                }
+        }
+        val ownBundles = runCatching { sessionManager.discoverOwnDeviceBundles(myId) }
+            .getOrElse {
+                Log.w(TAG, "own device discovery failed", it)
+                emptyList()
+            }
+        val targets = cryptoManager.planSend(
+            recipientDeviceIds = recipientBundles.map { it.deviceId },
+            ownDeviceIds = ownBundles.map { it.deviceId },
+            ourDeviceId = ourDeviceId,
+            recipientIsSelf = contactId == myId,
+            primarySendCovered = primary.deviceId,
+        )
+        if (targets.isEmpty()) return
+
+        val bundlesByDevice = (recipientBundles + ownBundles).associateBy { it.deviceId }
+        for (target in targets) {
+            val accountId = if (target.audience == DeliveryAudience.RECIPIENT) contactId else myId
+            val bundle = bundlesByDevice[target.deviceId]
+            val peer = runCatching {
+                sessionManager.ensureSessionForDevice(accountId, target.deviceId)
+            }.getOrElse {
+                Log.w(TAG, "fan-out session init failed ${target.deviceId.take(8)}…", it)
+                continue
+            }
+            val identity = bundle?.identityPublic ?: peer.identityPublic
+            if (identity.isEmpty()) {
+                Log.w(TAG, "fan-out identity missing ${target.deviceId.take(8)}…")
+                continue
+            }
+            val tag = runCatching {
+                cryptoManager.deviceCopyTag(baseMessageId, target.deviceId, identity)
+            }.getOrElse {
+                Log.w(TAG, "fan-out tag failed ${target.deviceId.take(8)}…", it)
+                continue
+            }
+            val isOwnReplica = target.audience == DeliveryAudience.OWN_REPLICA
+            val wireMessageId = baseMessageId + if (isOwnReplica) "-ss-$tag" else "-fd-$tag"
+            val routedPlaintext = if (isOwnReplica) {
+                // SENDER_SYNC is the outer envelope type. Its encrypted body remains the same
+                // user-message KNST frame (type=1), prefixed with SSR1 for post-decrypt routing.
+                SenderSyncRouting.encode(contactId, plaintext)
+            } else {
+                plaintext
+            }
+            val actions = orchestrator.handleEvent(
+                CfeIncomingEvent.OutgoingMessage(
+                    contactId = target.deviceId,
+                    messageId = wireMessageId,
+                    plaintext = routedPlaintext,
+                    contentType = 0u,
+                ),
+            )
+            persistSessionActions(actions)
+            val encrypted = actions.filterIsInstance<CfeAction.SendEncryptedMessage>()
+                .firstOrNull { it.to == target.deviceId }
+                ?.payload
+                ?: run {
+                    Log.w(TAG, "fan-out core returned no ciphertext ${target.deviceId.take(8)}…")
+                    continue
+                }
+            val result = if (isOwnReplica) {
+                messagingService.sendMessage(
+                    messageId = wireMessageId,
+                    senderId = myId,
+                    recipientId = myId,
+                    conversationId = "",
+                    encryptedPayload = encrypted,
+                    timestampMs = timestampMs,
+                    contentType = ContentType.CONTENT_TYPE_SENDER_SYNC,
+                )
+            } else {
+                sendRecipientCopy(
+                    messageId = wireMessageId,
+                    senderId = myId,
+                    recipientId = contactId,
+                    timestampMs = timestampMs,
+                    encryptedPayload = encrypted,
+                    identityPublic = identity,
+                )
+            }
+            if (!result.success) {
+                Log.w(TAG, "fan-out rejected ${target.deviceId.take(8)}… ${result.errorCode}")
+            }
+        }
+    }
+
+    private suspend fun sendRecipientCopy(
+        messageId: String,
+        senderId: String,
+        recipientId: String,
+        timestampMs: Long,
+        encryptedPayload: ByteArray,
+        identityPublic: ByteArray,
+    ): MessagingService.SendResult {
+        return if (stealthPolicy.shouldUseSealedSender()) {
+            val sealed = stealthSender.buildSealedInner(
+                recipientUserId = recipientId,
+                recipientIdentityKey = identityPublic,
+                encryptedPayload = encryptedPayload,
+                contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
+            )
+            if (MessagingService.SEALED_UNAUTHENTICATED_TRANSPORT) {
+                messagingService.sendSealedMessage(sealed)
+            } else {
+                messagingService.sendMessage(
+                    messageId = messageId,
+                    senderId = senderId,
+                    recipientId = recipientId,
+                    conversationId = "",
+                    encryptedPayload = ByteArray(0),
+                    timestampMs = timestampMs,
+                    contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
+                    sealedInner = sealed,
+                )
+            }
+        } else {
+            messagingService.sendMessage(
+                messageId = messageId,
+                senderId = senderId,
+                recipientId = recipientId,
+                conversationId = "",
+                encryptedPayload = encryptedPayload,
+                timestampMs = timestampMs,
+                contentType = ContentType.CONTENT_TYPE_E2EE_SIGNAL,
             )
         }
     }

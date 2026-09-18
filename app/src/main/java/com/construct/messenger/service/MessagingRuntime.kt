@@ -207,6 +207,7 @@ class MessagingRuntime @Inject constructor(
             }
             ContentType.CONTENT_TYPE_SESSION_RESET_INIT,
             ContentType.CONTENT_TYPE_KEY_EXCHANGE,
+            ContentType.CONTENT_TYPE_SENDER_SYNC,
             -> processor.process(message)
             else -> {
                 Log.d(TAG, "control ${message.contentType} ${message.messageId.take(8)}… — acked, not rendered")

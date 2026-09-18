@@ -12,9 +12,10 @@
 > action executor; typed secure-store persistence; orchestrator/PQ snapshots;
 > current `construct-core` Android artifact.
 > **Ещё нет:** honeycomb Synaps, FindUser / запросы, экраны Account / Appearance /
-> Network / Security, VEIL / звонки / recovery, полный multi-device fan-out /
-> receive candidate walk и живой iOS↔Android прогон. Account→device registry,
-> device-only core boundary и CFE timer bridge уже подключены.
+> Network / Security, VEIL / звонки / recovery, queued multi-carrier receive walk
+> и живой iOS↔Android прогон. Account→device registry, device-only core boundary,
+> per-device fan-out, SSR1 sender-sync, bundle candidate walk и CFE timer bridge
+> уже подключены.
 > **FCM не будет:** delivery — собственный persistent stream в foreground service,
 > без требования Google Play Services.
 
@@ -1109,8 +1110,10 @@ data class CryptoDeviceId(val rawValue: String)   // hex 32
 invite/device границах. `PeerDeviceRegistry` переводит account→device и
 проверяет `deriveDeviceId(identityPublic)` перед записью. Сеть всё ещё получает
 account id: server fan-out сам кладёт один envelope в per-device очереди.
-Android пока выбирает один известный device для 1:1 и не реализует полный
-`planReceivingInit` candidate walk / fan-out как iOS.
+Android получает account→device set, отдаёт его `planSend`, отправляет recipient
+copies и own replicas, а на входе пробует все non-destructive bundle candidates
+через `planReceivingInit`. Очередь нескольких carrier сообщений и live interop
+ещё не покрыты.
 
 ### 8.2 DisplayName Resolution
 

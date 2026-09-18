@@ -20,6 +20,7 @@ import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.IncomingPlaintext
 import com.construct.messenger.util.IncomingReceipt
+import com.construct.messenger.util.SenderSyncRouting
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -65,6 +66,37 @@ class ProcessorEffectsImpl @Inject constructor(
         runCatching { sendReceiptUseCase.delivered(accountId, listOf(messageId)) }
             .onFailure { Log.w(TAG, "e2e receipt send failed", it) }
         runCatching { sessionManager.fetchIdentityKey(contactId) }
+    }
+
+    override suspend fun onSenderSync(
+        contactId: String,
+        messageId: String,
+        plaintext: ByteArray,
+        timestampMs: Long,
+    ) {
+        val accountId = sessionManager.accountIdForDevice(contactId)
+            ?: keystoreManager.getUserId()
+            ?: contactId
+        val routed = SenderSyncRouting.decode(plaintext)
+        if (routed == null) {
+            Log.w(TAG, "sender-sync without SSR1 ${messageId.take(8)}… — acking")
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
+        val decoded = IncomingPlaintext.decode(routed.payload)
+        if (!decoded.isUserVisible) {
+            Log.d(TAG, "sender-sync non-visible ${messageId.take(8)}… type=${decoded.knstContentType}")
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
+        val baseMessageId = DeviceCopyRoute.parse(messageId)?.baseMessageId ?: messageId
+        persistOutgoingCopy(
+            partnerUserId = routed.partnerUserId,
+            messageId = baseMessageId,
+            text = decoded.text,
+            timestampMs = timestampMs,
+        )
+        ackStore.markProcessed(messageId, accountId)
     }
 
     override suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray) {
@@ -141,7 +173,8 @@ class ProcessorEffectsImpl @Inject constructor(
     }
 
     override suspend fun requestKeyBundle(userId: String, incoming: MessageRouter.IncomingMessage) {
-        val result = responderInit.establish(incoming) ?: return
+        val preferredDeviceId = userId.takeIf { com.construct.messenger.data.model.IdentityIds.isCryptoDeviceId(it) }
+        val result = responderInit.establish(incoming, preferredDeviceId) ?: return
         onDecrypted(result.contactId, result.messageId, result.plaintext)
     }
 
@@ -183,6 +216,52 @@ class ProcessorEffectsImpl @Inject constructor(
                 UserEntity(
                     id = contactId,
                     displayName = DisplayNameGenerator.generate(contactId),
+                    isContact = true,
+                ),
+            )
+        }
+    }
+
+    private suspend fun persistOutgoingCopy(
+        partnerUserId: String,
+        messageId: String,
+        text: String,
+        timestampMs: Long,
+    ) {
+        val myId = keystoreManager.getUserId() ?: run {
+            Log.e(TAG, "persistOutgoingCopy: no local user id — dropping ${messageId.take(8)}…")
+            return
+        }
+        val chatId = ConversationId.direct(myId, partnerUserId)
+        messageDao.insert(
+            MessageEntity(
+                id = messageId,
+                chatId = chatId,
+                text = text,
+                isSentByMe = true,
+                timestamp = timestampMs,
+                deliveryStatus = DeliveryStatus.SENT.name,
+            ),
+        )
+        val existing = chatDao.getById(chatId)
+        if (existing == null) {
+            chatDao.upsert(
+                ChatEntity(
+                    id = chatId,
+                    otherUserId = partnerUserId,
+                    lastMessageText = text,
+                    lastMessageTime = timestampMs,
+                    unreadCount = 0,
+                ),
+            )
+        } else {
+            chatDao.updateLastMessage(chatId, text, timestampMs)
+        }
+        if (userDao.getById(partnerUserId) == null) {
+            userDao.upsert(
+                UserEntity(
+                    id = partnerUserId,
+                    displayName = DisplayNameGenerator.generate(partnerUserId),
                     isContact = true,
                 ),
             )

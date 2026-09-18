@@ -19,6 +19,7 @@ import shared.proto.messaging.v1.Content.SessionControl
 import shared.proto.messaging.v1.Content.SessionOp
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
+import uniffi.construct_core.TeardownAction
 
 /**
  * Puts END_SESSION (content type 21) on the wire, then tears down the local session.
@@ -47,8 +48,26 @@ class SessionControlUseCase @Inject constructor(
     private val lastSentAt = mutableMapOf<String, Long>()
 
     suspend fun sendEndSessionToAll() {
-        for (id in sessionManager.liveContactIds()) {
-            sendEndSession(id, force = true)
+        val liveDevices = sessionManager.liveContactIds()
+        val liveByAccount = liveDevices
+            .mapNotNull { deviceId ->
+                sessionManager.accountIdForDevice(deviceId)?.let { accountId -> accountId to deviceId }
+            }
+            .groupBy({ it.first }, { it.second })
+        for ((accountId, activeDevices) in liveByAccount) {
+            val candidates = (sessionManager.knownDeviceIds(accountId) + activeDevices).distinct()
+            val decisions = if (cryptoManager.isMessagingReady) {
+                cryptoManager.planTeardown(candidates, peerOnDeadSession = false)
+            } else {
+                activeDevices.map { deviceId ->
+                    uniffi.construct_core.TeardownDecision(deviceId, TeardownAction.SEND_AND_ARCHIVE)
+                }
+            }
+            for (decision in decisions) {
+                if (decision.action != TeardownAction.SKIP) {
+                    sendEndSession(decision.deviceId, force = true)
+                }
+            }
         }
     }
 

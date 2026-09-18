@@ -25,10 +25,15 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import uniffi.construct_core.BinaryKeyBundle
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.CfeSecureStoreSlot
+import uniffi.construct_core.DeliveryAudience
+import uniffi.construct_core.DeliveryTarget
 
 class SendMessageUseCaseTest {
 
@@ -97,6 +102,93 @@ class SendMessageUseCaseTest {
         assertEquals(DeliveryStatus.SENT.name, messages.rows[id]?.deliveryStatus)
         assertEquals("hello", messages.rows[id]?.text)
         assertTrue(messages.rows[id]?.isSentByMe == true)
+    }
+
+    @Test
+    fun `successful primary send fans out an opaque recipient copy`() = runTest {
+        val messages = FakeMessageDao()
+        val chats = FakeChatDao()
+        val users = FakeUserDao()
+        val sessions = mock<SessionStateStore>()
+        whenever(sessions.saveCfeActions(any())).thenReturn(true)
+        val keystore: KeystoreManager = mock()
+        whenever(keystore.getUserId()).thenReturn(myId)
+        val crypto: CryptoManager = mock()
+        whenever(crypto.isMessagingReady).thenReturn(true)
+        whenever(crypto.currentDeviceId()).thenReturn("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        whenever(crypto.planSend(any(), any(), any(), any(), any())).thenReturn(
+            listOf(DeliveryTarget("22222222222222222222222222222222", DeliveryAudience.RECIPIENT)),
+        )
+        whenever(crypto.deviceCopyTag(any(), eq("22222222222222222222222222222222"), any()))
+            .thenReturn("0123456789abcdef")
+        val sessionManager: SessionManager = mock()
+        whenever(sessionManager.ensureSession(peer)).thenReturn(
+            SessionManager.SessionPeer(peer, peerDevice, byteArrayOf(1, 2, 3)),
+        )
+        whenever(sessionManager.discoverPeerBundles(peer)).thenReturn(
+            listOf(
+                SessionManager.PeerBundle(
+                    accountId = peer,
+                    deviceId = "22222222222222222222222222222222",
+                    identityPublic = byteArrayOf(4, 5, 6),
+                    bundle = mock<BinaryKeyBundle>(),
+                ),
+            ),
+        )
+        whenever(sessionManager.discoverOwnDeviceBundles(myId)).thenReturn(emptyList())
+        whenever(sessionManager.ensureSessionForDevice(peer, "22222222222222222222222222222222"))
+            .thenReturn(SessionManager.SessionPeer(peer, "22222222222222222222222222222222", byteArrayOf(4, 5, 6)))
+        val orchestrator: OrchestratorGateway = mock()
+        whenever(orchestrator.handleEvent(any())).thenReturn(
+            listOf(
+                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(peerDevice), byteArrayOf(9)),
+                CfeAction.SendEncryptedMessage(peerDevice, byteArrayOf(7, 7), "ignored", 0u),
+                CfeAction.SendEncryptedMessage("22222222222222222222222222222222", byteArrayOf(8, 8), "ignored", 0u),
+            ),
+        )
+        val messaging: MessagingService = mock()
+        whenever(
+            messaging.sendMessage(
+                messageId = any(),
+                senderId = eq(myId),
+                recipientId = eq(peer),
+                conversationId = eq(""),
+                encryptedPayload = any(),
+                timestampMs = any(),
+                contentType = any(),
+                sealedInner = anyOrNull(),
+            ),
+        ).thenReturn(MessagingService.SendResult("ok", true, "", true, 0, "a"))
+        val policy: StealthPolicy = mock()
+        whenever(policy.shouldUseSealedSender()).thenReturn(false)
+
+        val useCase = SendMessageUseCase(
+            keystoreManager = keystore,
+            sessionManager = sessionManager,
+            orchestrator = orchestrator,
+            cryptoManager = crypto,
+            messagingService = messaging,
+            stealthPolicy = policy,
+            stealthSender = mock(),
+            messageDao = messages,
+            chatDao = chats,
+            userDao = users,
+            sessionStateStore = sessions,
+        )
+
+        val outcome = useCase(peer, "hello")
+
+        assertTrue(outcome is SendOutcome.Sent)
+        verify(messaging, times(2)).sendMessage(
+            messageId = any(),
+            senderId = eq(myId),
+            recipientId = eq(peer),
+            conversationId = eq(""),
+            encryptedPayload = any(),
+            timestampMs = any(),
+            contentType = any(),
+            sealedInner = anyOrNull(),
+        )
     }
 
     @Test

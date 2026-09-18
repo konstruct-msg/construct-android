@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">Konstruct Messenger</string>
+    <string name="messaging_foreground_notification">Защищённое соединение обмена сообщениями активно</string>
+    <string name="messaging_foreground_channel">Соединение обмена сообщениями</string>
+    <string name="messaging_foreground_channel_description">Поддерживает зашифрованную доставку без Google Play Services.</string>
 
     <!-- Onboarding -->
     <string name="onboarding_subtitle">интернет — пространство свободы выражения мысли.\nидентичность — конструкт.</string>

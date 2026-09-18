@@ -18,8 +18,10 @@
 > account→device mappings, `GetPreKeyBundlesResponse.active_devices` is honoured,
 > and `CfeTimerBridge` feeds AppLaunched/reconnect/timer events back to CFE.
 > Still open: recovery (4), VEIL (5.1), calls (6), settings subscreens,
-> honeycomb Synaps, Play packaging (9.2), full per-device send fan-out and
-> receive candidate walking, plus live iOS↔Android interop/emulator smoke.
+> honeycomb Synaps, Play packaging (9.2), queued multi-carrier receive walking,
+> plus live iOS↔Android interop/emulator smoke. Recipient/replica fan-out,
+> SSR1 sender-sync receive, bundle candidate walking, and planned teardown are
+> now wired through the core plans.
 > No FCM is planned: delivery remains the persistent stream/foreground-service
 > path, per the no-GMS decision.
 >
@@ -192,10 +194,12 @@ used elsewhere, matching iOS `AuthServiceClient.registerDevice` exactly.
 
 ### 3.2 Session Lifecycle
 **Status:** ✅ Device-addressed core boundary and durable account→device registry
-are implemented for the current 1:1 send/receive slice (INITIATOR + RESPONDER via
-CFE receive). The network remains account-addressed; `CryptoDeviceId` is used for
+are implemented for the current multi-device send/receive slice (INITIATOR + RESPONDER
+via CFE receive). The network remains account-addressed; `CryptoDeviceId` is used for
 core sessions and `active_devices` is the only server-authoritative pruning input.
-Full per-device fan-out and receive candidate walking remain open.
+Send fan-out covers recipient devices and own replicas; receive init walks every
+non-destructive bundle candidate for the current carrier. A queued multi-carrier
+reconciliation pass and live iOS↔Android interop remain open.
 **Priority:** HIGH
 
 **States:** NONE -> INITIALIZING -> ACTIVE -> HEALING -> NONE
@@ -226,7 +230,8 @@ the heal/END_SESSION decision and returns typed actions. Android executes
 `SessionHealNeeded`, `EndSessionSuppressed`, `SessionTerminated`, typed storage,
 and the sender-state durability rule. `CfeTimerBridge` now executes
 `ScheduleTimer`/`CancelTimer`, `TimerFired`, `AppLaunched`, and
-`NetworkReconnected`; full multi-device teardown/fan-out remains open.
+`NetworkReconnected`; per-device teardown planning, recipient/replica fan-out and
+SSR1 sender-sync routing are wired; queued multi-carrier reconciliation remains open.
 `HealSuppressed`/`EndSessionSuppressed` hold the stream cursor (do **not** ACK).
 **Priority:** MEDIUM
 **Depends on:** 3.2
