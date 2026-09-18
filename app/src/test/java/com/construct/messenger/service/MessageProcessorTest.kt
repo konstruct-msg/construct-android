@@ -4,12 +4,17 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.CfeSecureStoreSlot
 
 class MessageProcessorTest {
+
+    private val sessionManager: SessionManager = mock()
+    private val timerBridge: CfeTimerBridge = mock()
 
     private class FakeGateway(
         var responses: MutableList<List<CfeAction>> = mutableListOf(),
@@ -61,7 +66,7 @@ class MessageProcessorTest {
     @Test
     fun `messageDecrypted executes side effects and reports Processed`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge)
         val actions = listOf(
             CfeAction.MessageDecrypted("alice", "m1", byteArrayOf(7)),
             CfeAction.PersistMessage("{json}"),
@@ -81,7 +86,7 @@ class MessageProcessorTest {
     @Test
     fun `sessionHealNeeded defers and requests heal`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge)
 
         val outcome = processor.route(listOf(CfeAction.SessionHealNeeded("bob", "initiator")), incoming())
 
@@ -92,7 +97,7 @@ class MessageProcessorTest {
     @Test
     fun `healSuppressed defers without ack`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge)
 
         val outcome = processor.route(
             listOf(CfeAction.HealSuppressed("bob", 5_000uL)),
@@ -106,7 +111,7 @@ class MessageProcessorTest {
     @Test
     fun `sendEndSession acks, marks processed and requests end session`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge)
 
         val outcome = processor.route(listOf(CfeAction.SendEndSession("bob")), incoming())
 
@@ -119,7 +124,7 @@ class MessageProcessorTest {
     @Test
     fun `fetchPublicKeyBundle defers and requests bundle`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge)
 
         val outcome = processor.route(listOf(CfeAction.FetchPublicKeyBundle("carol")), incoming())
 
@@ -130,7 +135,7 @@ class MessageProcessorTest {
     @Test
     fun `no actionable decision acks as delivered`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge)
 
         val outcome = processor.route(listOf(CfeAction.PruneAckStore(0uL)), incoming())
 
@@ -143,8 +148,9 @@ class MessageProcessorTest {
     @Test
     fun `process drives handleEvent and routes decrypted`() = runBlocking {
         val effects = RecordingEffects()
+        whenever(sessionManager.resolveDeviceId("alice")).thenReturn("11111111111111111111111111111111")
         val gateway = FakeGateway(mutableListOf(listOf(CfeAction.MessageDecrypted("alice", "m1", byteArrayOf(9)))))
-        val processor = MessageProcessor(gateway, effects)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge)
 
         val outcome = processor.process(incoming())
 
@@ -156,13 +162,14 @@ class MessageProcessorTest {
     @Test
     fun `process handles checkAckInDb round-trip`() = runBlocking {
         val effects = RecordingEffects().apply { ackedInDb = false }
+        whenever(sessionManager.resolveDeviceId("alice")).thenReturn("11111111111111111111111111111111")
         val gateway = FakeGateway(
             mutableListOf(
                 listOf(CfeAction.CheckAckInDb("m1")),                       // first pass: cache miss
                 listOf(CfeAction.MessageDecrypted("alice", "m1", byteArrayOf(1))), // after AckDbResult
             ),
         )
-        val processor = MessageProcessor(gateway, effects)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge)
 
         val outcome = processor.process(incoming())
 
@@ -175,10 +182,11 @@ class MessageProcessorTest {
     @Test
     fun `process on handleEvent throw ends session and acks`() = runBlocking {
         val effects = RecordingEffects()
+        whenever(sessionManager.resolveDeviceId("alice")).thenReturn("11111111111111111111111111111111")
         val gateway = object : OrchestratorGateway {
             override fun handleEvent(event: CfeIncomingEvent): List<CfeAction> = throw RuntimeException("boom")
         }
-        val processor = MessageProcessor(gateway, effects)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge)
 
         val outcome = processor.process(incoming())
 
@@ -193,10 +201,11 @@ class MessageProcessorTest {
         // which carries no routing decision — the processor ACKs it as delivered
         // so the cursor advances and the message is never re-fetched.
         val effects = RecordingEffects()
+        whenever(sessionManager.resolveDeviceId("alice")).thenReturn("11111111111111111111111111111111")
         val gateway = FakeGateway(
             mutableListOf(listOf(CfeAction.NotifyError("MALFORMED_WIRE_PAYLOAD", "too short"))),
         )
-        val processor = MessageProcessor(gateway, effects)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge)
 
         val outcome = processor.process(incoming().copy(encryptedPayload = ByteArray(4)))
 

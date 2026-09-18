@@ -76,11 +76,11 @@ class SendMessageUseCase @Inject constructor(
         persistOutgoing(chatId, contactId, messageId, body, timestampMs, DeliveryStatus.SENDING)
 
         return try {
-            val identityKey = sessionManager.ensureSession(contactId)
+            val peer = sessionManager.ensureSession(contactId)
             val plaintext = knstText(body, messageId)
             val actions = orchestrator.handleEvent(
                 CfeIncomingEvent.OutgoingMessage(
-                    contactId = contactId,
+                    contactId = peer.deviceId,
                     messageId = messageId,
                     plaintext = plaintext,
                     contentType = 0u,
@@ -88,13 +88,15 @@ class SendMessageUseCase @Inject constructor(
             )
             persistSessionActions(actions)
             val wire = actions.filterIsInstance<CfeAction.SendEncryptedMessage>()
-                .firstOrNull { it.to == contactId }
+                .firstOrNull { it.to == peer.deviceId }
                 ?.payload
                 ?: error("orchestrator returned no SendEncryptedMessage")
 
             val stealthOn = stealthPolicy.shouldUseSealedSender()
             val sealed = if (stealthOn) {
-                val ik = identityKey ?: error("stealth on but no recipient identity key — refusing identified downgrade")
+                val ik = peer.identityPublic
+                    .takeIf { it.isNotEmpty() }
+                    ?: error("stealth on but no recipient identity key — refusing identified downgrade")
                 stealthSender.buildSealedInner(
                     recipientUserId = contactId,
                     recipientIdentityKey = ik,

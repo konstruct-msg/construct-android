@@ -3,10 +3,12 @@
 **Источник**: `CryptoManager.swift`, `CryptoSessionInitializationService.swift`, `MessageCryptoService.swift`
 **Rust FFI**: `construct_core.swift` (UniFFI) → `construct_core.kt` (same UniFFI bindings)
 
-> **2026-08-19:** `CryptoManager.kt` — рабочая обёртка (Classic → Orchestrator,
+> **2026-09-18:** `CryptoManager.kt` — рабочая обёртка (Classic → Orchestrator,
 > `coreLock`, `handleEvent`). Этот файл — порт-гайд с iOS, не снимок текущего
 > Kotlin API. Актуальный receive path: CFE `handleEvent`, не component decrypt
-> (`android-receive-path-cfe-not-component`).
+> (`android-receive-path-cfe-not-component`). Account ids are network/Room
+> identifiers; `CryptoManager` and CFE sessions use the derived `CryptoDeviceId`.
+> Peer translation is durable in `PeerDeviceRegistry`.
 
 ---
 

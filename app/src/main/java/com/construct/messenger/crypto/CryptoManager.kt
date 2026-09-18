@@ -28,6 +28,7 @@ import uniffi.construct_core.mnemonicToSeed
 import uniffi.construct_core.signInviteData
 import uniffi.construct_core.signRecoveryChallenge
 import uniffi.construct_core.verifyInviteSignature
+import com.construct.messenger.data.model.IdentityIds
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -63,6 +64,10 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     @Volatile
     private var orchestrator: OrchestratorCore? = null
 
+    /** Account id is an app/network concern; this is the id the core must receive. */
+    @Volatile
+    private var localDeviceId: String? = null
+
     /** True once [setLocalUserId] has built the orchestrator — the receive path
      * (CFE `handleEvent`) is only available after this. */
     val isMessagingReady: Boolean
@@ -79,21 +84,35 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
             createCryptoCore()
         }
         bootstrapCore = instance
-        instance.getRegistrationBundleFields()
+        val bundle = instance.getRegistrationBundleFields()
+        localDeviceId = deriveDeviceId(bundle).also { derived ->
+            check(IdentityIds.isCryptoDeviceId(derived)) {
+                "construct-core returned invalid local CryptoDeviceId"
+            }
+        }
+        bundle
     }
 
     /**
-     * Promote to the orchestrator once the server-assigned [userId] (a 36-char
-     * UUID — NOT the device hash; wrong id = permanent AEAD failure) is known.
+     * Promote to the orchestrator once the server-assigned account [userId] is known.
+     * The account is retained by the app; only this device's derived CryptoDeviceId crosses
+     * into the session core. Both sides of the ratchet AD therefore name devices.
      * Idempotent: updates the id on an existing orchestrator.
      */
     fun setLocalUserId(userId: String) = synchronized(coreLock) {
+        require(userId.isNotEmpty()) { "server account id must not be empty" }
+        val deviceId = localDeviceId ?: run {
+            val current = bootstrapCore?.getRegistrationBundleFields()
+                ?: error("CryptoManager not initialized — call loadOrCreate() first")
+            deriveDeviceId(current).also { localDeviceId = it }
+        }
+        check(IdentityIds.isCryptoDeviceId(deviceId)) { "invalid local CryptoDeviceId" }
         orchestrator?.let {
-            it.setLocalUserId(userId)
+            it.setLocalUserId(deviceId)
             return@synchronized
         }
         val boot = requireBootstrap()
-        val orch = createOrchestratorCoreFromKeys(boot.exportPrivateKeys(), userId)
+        val orch = createOrchestratorCoreFromKeys(boot.exportPrivateKeys(), deviceId)
         // Carry OTPKs generated this session (registration) into the orchestrator;
         // no-op when the bootstrap core generated none (returning-user login).
         runCatching { orch.importOneTimePrekeys(boot.exportOneTimePrekeys()) }
@@ -101,6 +120,9 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         bootstrapCore = null
         boot.close()
     }
+
+    /** Device-space identity currently bound into OrchestratorCore. */
+    fun currentDeviceId(): String? = synchronized(coreLock) { localDeviceId }
 
     // ── OrchestratorGateway (CFE receive path) ──────────────────────────────
 
@@ -291,6 +313,7 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         orchestrator = null
         bootstrapCore?.close()
         bootstrapCore = null
+        localDeviceId = null
     }
 }
 

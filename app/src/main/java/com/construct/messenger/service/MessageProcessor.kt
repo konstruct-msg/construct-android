@@ -38,11 +38,21 @@ import uniffi.construct_core.CfeIncomingEvent
 class MessageProcessor @Inject constructor(
     private val orchestrator: OrchestratorGateway,
     private val effects: ProcessorEffects,
+    private val sessionManager: SessionManager,
+    private val timerBridge: CfeTimerBridge,
 ) {
     suspend fun process(incoming: MessageRouter.IncomingMessage): ProcessingOutcome {
+        val contactId = sessionManager.resolveDeviceId(incoming.senderId)
+            ?: runCatching {
+                sessionManager.discoverPeerDevices(incoming.senderId).firstOrNull()?.deviceId
+            }.getOrNull()
+            ?: run {
+                Log.w(TAG, "cannot name incoming peer device ${incoming.senderId.take(8)}… — deferring")
+                return ProcessingOutcome.Deferred
+            }
         val event = CfeIncomingEvent.MessageReceived(
             messageId = incoming.messageId,
-            from = incoming.senderId,
+            from = contactId,
             data = incoming.encryptedPayload,
             // The core derives msgNum/kemCt from `data` via the canonical parser;
             // malformed payloads come back as a NotifyError action → ACKed below.
@@ -178,9 +188,9 @@ class MessageProcessor @Inject constructor(
                 is CfeAction.NotifyError ->
                     Log.e(TAG, "CFE ${action.code}: ${action.message}")
                 is CfeAction.ScheduleTimer ->
-                    Log.w(TAG, "CFE timer requested but Android timer bridge is not wired: ${action.timerId}")
+                    timerBridge.schedule(action.timerId, action.delayMs)
                 is CfeAction.CancelTimer ->
-                    Log.w(TAG, "CFE timer cancellation requested but Android timer bridge is not wired: ${action.timerId}")
+                    timerBridge.cancel(action.timerId)
                 is CfeAction.NotifyLinkedDevicesOfSessionReset ->
                     Log.i(TAG, "linked-device reset notification pending for ${action.contactId.take(8)}…")
                 is CfeAction.EndSessionSuppressed,
@@ -238,6 +248,7 @@ interface ProcessorEffects {
     suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray)
     suspend fun pruneAckStore(cutoffTs: Long)
     suspend fun sendHeartbeat(contactId: String)
+    suspend fun notifyLinkedDevicesOfSessionReset(contactId: String) = Unit
     suspend fun archiveSession(contactId: String)
     suspend fun requestHeal(contactId: String, role: String)
     suspend fun requestEndSession(contactId: String)

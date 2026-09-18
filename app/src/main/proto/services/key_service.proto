@@ -298,6 +298,10 @@ message GetPreKeyBundlesResponse {
 
   // Devices that had no pre-keys available
   repeated string unavailable_devices = 2;
+
+  // Every active device of user_id, independent of request narrowing or bundle validation.
+  // Clients may prune their durable registry only when this field is non-empty.
+  repeated string active_devices = 3;
 }
 
 message DevicePreKeyBundle {

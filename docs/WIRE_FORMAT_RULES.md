@@ -2,13 +2,15 @@
 
 **Читать перед работой над путём отправки** (`SendMessageUseCase`, stealth, multi-device).
 
-**Android implementation note (2026-09-17):** `MessageRouter` только нормализует
+**Android implementation note (2026-09-18):** `MessageRouter` только нормализует
 transport и классифицирует envelope; `MessageProcessor` передаёт полный wire blob
 в `OrchestratorCore.handleEvent`. Kotlin не разбирает `WirePayload` и не решает,
 когда heal/init/ACK допустимы. Все returned `SaveToSecureStore` actions сохраняются
 по typed `CfeSecureStoreSlot`; строковые ключи — только внутренняя Room-маппинг,
-не часть протокола. Current Android contact boundary ещё account-based; device
-routing нельзя добавлять, пока не появится account→device registry.
+не часть протокола. В Android account id остаётся сетевым адресатом, а CFE
+session/contact id — только `CryptoDeviceId`; перевод делает durable
+`PeerDeviceRegistry`. Полный per-device fan-out и receive candidate walk ещё не
+закрыты. Новых outer-envelope device fields добавлять нельзя.
 
 **Описание формата не здесь.** Раскладка слоёв, размеры заголовков и сводка «что видит сервер» —
 `~/Code/construct-docs/architecture/WIRE_FORMAT.md`. Этот файл намеренно не пересказывает её: копия
