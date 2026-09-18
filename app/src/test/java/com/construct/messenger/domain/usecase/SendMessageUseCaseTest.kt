@@ -28,6 +28,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
+import uniffi.construct_core.CfeSecureStoreSlot
 
 class SendMessageUseCaseTest {
 
@@ -49,10 +50,11 @@ class SendMessageUseCaseTest {
         val orchestrator: OrchestratorGateway = mock()
         whenever(orchestrator.handleEvent(any())).thenReturn(
             listOf(
-                CfeAction.SaveSessionToSecureStore("session:$peer", byteArrayOf(9)),
+                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(peer), byteArrayOf(9)),
                 CfeAction.SendEncryptedMessage(peer, byteArrayOf(7, 7), "ignored", 0u),
             ),
         )
+        whenever(sessions.saveCfeActions(any())).thenReturn(true)
         val messaging: MessagingService = mock()
         whenever(
             messaging.sendMessage(
@@ -106,10 +108,12 @@ class SendMessageUseCaseTest {
         val orchestrator: OrchestratorGateway = mock()
         whenever(orchestrator.handleEvent(any())).thenReturn(
             listOf(
-                CfeAction.SaveSessionToSecureStore("session:$peer", byteArrayOf(9)),
+                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(peer), byteArrayOf(9)),
                 CfeAction.SendEncryptedMessage(peer, byteArrayOf(7), "ignored", 0u),
             ),
         )
+        val sessions = mock<SessionStateStore>()
+        whenever(sessions.saveCfeActions(any())).thenReturn(true)
         val policy: StealthPolicy = mock()
         whenever(policy.shouldUseSealedSender()).thenReturn(true)
 
@@ -124,7 +128,7 @@ class SendMessageUseCaseTest {
             messageDao = messages,
             chatDao = FakeChatDao(),
             userDao = FakeUserDao(),
-            sessionStateStore = mock(),
+            sessionStateStore = sessions,
         )
 
         val outcome = useCase(peer, "secret")
@@ -146,7 +150,7 @@ class SendMessageUseCaseTest {
         val orchestrator: OrchestratorGateway = mock()
         whenever(orchestrator.handleEvent(any())).thenReturn(
             listOf(
-                CfeAction.SaveSessionToSecureStore("session:$peer", byteArrayOf(9)),
+                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(peer), byteArrayOf(9)),
                 CfeAction.SendEncryptedMessage(peer, byteArrayOf(7, 7), "ignored", 0u),
             ),
         )
@@ -169,6 +173,7 @@ class SendMessageUseCaseTest {
         val policy: StealthPolicy = mock()
         whenever(policy.shouldUseSealedSender()).thenReturn(false)
         val sessions = mock<SessionStateStore>()
+        whenever(sessions.saveCfeActions(any())).thenReturn(true)
 
         val useCase = SendMessageUseCase(
             keystoreManager = keystore,

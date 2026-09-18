@@ -70,14 +70,7 @@ class SendReceiptUseCase @Inject constructor(
                 contentType = 0u,
             ),
         )
-        var saved = false
-        for (action in actions) {
-            if (action is CfeAction.SaveSessionToSecureStore) {
-                sessionStateStore.saveSession(action.key, action.data)
-                saved = true
-            }
-        }
-        if (!saved) {
+        if (!sessionStateStore.saveCfeActions(actions)) {
             Log.w(TAG, "receipt encrypt without session persist — dropping")
             return
         }

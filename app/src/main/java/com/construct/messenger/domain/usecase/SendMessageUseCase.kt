@@ -168,14 +168,7 @@ class SendMessageUseCase @Inject constructor(
     }
 
     private suspend fun persistSessionActions(actions: List<CfeAction>) {
-        var saved = false
-        for (action in actions) {
-            if (action is CfeAction.SaveSessionToSecureStore) {
-                sessionStateStore.saveSession(action.key, action.data)
-                saved = true
-            }
-        }
-        if (!saved) {
+        if (!sessionStateStore.saveCfeActions(actions)) {
             error("session-state persist missing after encrypt — refusing to release ciphertext")
         }
     }

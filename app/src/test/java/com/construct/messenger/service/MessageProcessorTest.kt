@@ -7,6 +7,7 @@ import org.junit.Test
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
+import uniffi.construct_core.CfeSecureStoreSlot
 
 class MessageProcessorTest {
 
@@ -32,7 +33,11 @@ class MessageProcessorTest {
         override suspend fun notifyNewMessage(chatId: String, preview: String) { calls += "notify:$chatId" }
         override suspend fun markDelivered(messageId: String) { calls += "markDelivered:$messageId" }
         override suspend fun markProcessed(messageId: String, senderId: String) { calls += "markProcessed:$messageId" }
-        override suspend fun saveSession(key: String, data: ByteArray) { calls += "saveSession:$key" }
+        override suspend fun saveSecureStore(slot: CfeSecureStoreSlot, data: ByteArray) { calls += "saveSecureStore:$slot" }
+        override suspend fun applyPqContribution(contactId: String, kemSharedSecret: ByteArray) { calls += "applyPq:$contactId" }
+        override suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray) { calls += "terminated:$contactId" }
+        override suspend fun pruneAckStore(cutoffTs: Long) { calls += "prune:$cutoffTs" }
+        override suspend fun sendHeartbeat(contactId: String) { calls += "heartbeat:$contactId" }
         override suspend fun archiveSession(contactId: String) { calls += "archive:$contactId" }
         override suspend fun requestHeal(contactId: String, role: String) { calls += "heal:$contactId:$role" }
         override suspend fun requestEndSession(contactId: String) { calls += "endSession:$contactId" }

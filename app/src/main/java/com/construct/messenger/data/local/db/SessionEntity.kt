@@ -11,10 +11,9 @@ import androidx.room.Upsert
 /**
  * Opaque secure-store row for CFE session bytes.
  *
- * The Rust core emits `CfeAction.SaveSessionToSecureStore(key, data)`; [storeKey]
- * is that opaque key and [cfeBytes] is the CFE binary blob (16-byte header +
- * MessagePack, see `docs/FFI_BINARY_FORMAT.md`). Kotlin never parses the blob —
- * it round-trips back into Rust via `importSessionBytes` untouched.
+ * The Rust core emits typed `CfeAction.SaveToSecureStore(slot, data)` actions.
+ * [storeKey] is an Android-only mapping from that slot; [cfeBytes] remains the
+ * opaque CFE binary blob (16-byte header + MessagePack). Kotlin never parses it.
  *
  * ByteArray = BLOB; no base64/JSON stringification (CFE binary rule).
  */

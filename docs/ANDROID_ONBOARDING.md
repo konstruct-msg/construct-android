@@ -2,16 +2,20 @@
 
 > **Цель**: предоставить Android-разработчику полное понимание архитектуры, дизайн-системы, UI-компонентов, бизнес-логики и крипто-протокола для реализации на Kotlin / Jetpack Compose.
 >
-> **Статус реализации (2026-08-19, `construct-android` `develop` @ `46f515d`).**
+> **Статус реализации (2026-09-17, `construct-android` `develop`).**
 > Это канон дизайна (iOS → Android), не трекер фаз. Фазы протокола —
 > `docs/IMPLEMENTATION_PLAN.md` в репозитории Android.
 >
 > **Уже в коде:** онбординг + Orientation; табы; список чатов (Room); чат
 > (пузыри + инпут + send/observe); Synaps — mint v5 / paste / список контактов
-> (не honeycomb); `konstruct://add`; session runtime / receive / send.
+> (не honeycomb); `konstruct://add`; session runtime / receive / send; CFE
+> action executor; typed secure-store persistence; orchestrator/PQ snapshots;
+> current `construct-core` Android artifact.
 > **Ещё нет:** honeycomb Synaps, FindUser / запросы, экраны Account / Appearance /
-> Network / Security, VEIL / FCM / звонки / recovery, heal на проводе.
-> Живой iOS↔Android прогон не делали.
+> Network / Security, VEIL / звонки / recovery, multi-device account→device
+> registry, CFE timer bridge, и живой iOS↔Android прогон.
+> **FCM не будет:** delivery — собственный persistent stream в foreground service,
+> без требования Google Play Services.
 
 ---
 
@@ -1099,7 +1103,13 @@ data class ServerUserId(val rawValue: String)    // UUID 36
 data class CryptoDeviceId(val rawValue: String)   // hex 32
 ```
 
-**Важно**: NEVER путать эти типы. `CryptoDeviceId` НЕ передаётся в Rust session layer.
+**Важно**: NEVER путать эти типы. `ServerUserId` адресует аккаунт и gRPC/Room;
+`CryptoDeviceId` адресует конкретную реплику и используется в invite/device
+границах. Текущий Android 1:1 slice всё ещё передаёт `ServerUserId` как CFE
+`contactId`, потому что локального account→device registry ещё нет. Это
+временная граница совместимости, а не правило для будущего multi-device пути:
+его нужно заменить на registry + core `planTeardown`/`planReceivingInit`, как
+на iOS и в `client/ANDROID_CALL_THE_CORE.md`.
 
 ### 8.2 DisplayName Resolution
 
@@ -1313,7 +1323,28 @@ app/src/main/java/com/construct/messenger/
 
 ---
 
-## CryptoManager
+## Android implementation contract (актуально на 2026-09-17)
+
+`CryptoManager` — тонкая синхронная оболочка над UniFFI. До логина он держит
+`ClassicCryptoCore` для bootstrap/registration; после `setLocalUserId` создаёт
+`OrchestratorCore`, и только он используется для сообщений и CFE. Все native
+вызовы сериализованы через `coreLock`. В отличие от старого примера ниже,
+Android не разбирает wire payload и не принимает решения о heal: это делает
+Rust CFE.
+
+| iOS canon | Android mirror |
+|---|---|
+| `CryptoManager` + `OrchestratorCore` | `CryptoManager` + `OrchestratorCore` |
+| Keychain session/archive/core snapshots | Room `SessionStateStore` + Keystore tokens |
+| `SessionActionExecutor` | `MessageProcessor` + `ProcessorEffectsImpl` |
+| typed `SaveToSecureStore(slot,data)` | `CfeSecureStoreSlot` → Room key mapping |
+| `exportOrchestratorState` / PQ snapshot | same UniFFI calls, restored before stream |
+
+The generated binding and the three `.so` files are one artifact and must be
+refreshed together from the rolling construct-core Android release. Do not edit
+`construct_core.kt` manually.
+
+## Historical pseudocode (not a copy target)
 
 ```kotlin
 @Singleton
@@ -1507,11 +1538,11 @@ class CryptoManager @Inject constructor(
 
 | Aspect | iOS | Android |
 |--------|-----|---------|
-| Lock | `NSRecursiveLock()` | `Mutex()` from kotlinx-coroutines |
-| Thread | `@MainActor` | `suspend fun` + `Dispatchers.IO` |
+| Lock | `NSRecursiveLock()` | `synchronized(coreLock)` in `CryptoManager` |
+| Thread | `@MainActor` | `MessagingRuntime`/effects on `Dispatchers.IO` |
 | Secure Storage | Keychain | EncryptedSharedPreferences + Keystore |
 | Core Init | Sync in `setLocalUserId` | `viewModelScope.launch` for async init |
-| Error Handling | `throw` + `try?` | `Result<T, E>` + sealed errors |
+| Error Handling | `throw` + `try?` | exceptions at the CFE boundary + explicit `ProcessingOutcome` |
 
 ## iOS Anti-patterns Fixed
 
@@ -1637,11 +1668,20 @@ Owns all session state: `sessionStates`, `endSessionSentAt`, `resendAttemptedAt`
 
 ### SessionActionExecutor
 
-Executes `CfeAction` results from Rust. Stateless actions executed immediately; state-bound actions (`.messageDecrypted`, `.sessionHealNeeded`, `.sendEndSession`, `.fetchPublicKeyBundle`) are handled by caller.
+Android's executor is `MessageProcessor`. It routes the CFE result and
+`ProcessorEffectsImpl` applies the outward effects. The switch must keep the
+Rust action set visible: `ApplyPqContribution` mutates the core, every
+`SaveToSecureStore` writes its typed slot, `SessionTerminated` archives bytes
+and removes hot state, and `HealSuppressed`/`EndSessionSuppressed`/
+`MessageQueuedPendingInit` hold the cursor without ACK. Unknown actions must be
+added explicitly when the UDL changes; never restore the former string-key
+`SaveSessionToSecureStore` API.
 
 ### MessageRouter
 
-Routes incoming messages: ACK/dedup via `PersistentACKStore`, pending queue for messages before session init, delegate callbacks for session events.
+Routes incoming messages: ACK/dedup via `AckStore`, sealed-sender resolution,
+control/message classification, and delegation to `MessageProcessor`. It must
+not grow a second crypto or healing implementation; CFE is the decision source.
 
 ## Concurrency Model
 
