@@ -104,7 +104,8 @@ class AuthRepositoryImpl @Inject constructor(
 
     /**
      * Tokens were valid; the process is new so the UniFFI core is empty.
-     * [userId] must be the server UUID (36 chars), never the device hash.
+     * The account id is needed by the app/session layer; CryptoManager derives the
+     * local CryptoDeviceId and passes only that device id into construct-core.
      */
     private fun ensureOrchestrator(savedPrivateKeys: ByteArray) {
         if (cryptoManager.isMessagingReady) return

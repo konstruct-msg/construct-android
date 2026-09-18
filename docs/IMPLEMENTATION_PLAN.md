@@ -1,6 +1,6 @@
 # Konstrukt Messenger Android — Implementation Plan
 
-> **Last actualized:** 2026-09-17. Working slice is **1:1 text over production gRPC**
+> **Last actualized:** 2026-09-18. Working slice is **1:1 text over production gRPC**
 > with the current `construct-core` CFE artifact (`0.17.0+1241ec58d465`).
 > `veil-front` lands via a construct-core rebuild + flag flip (no Kotlin
 > routing). See `construct-docs/cryptocore/OBFUSCATION_IMPLEMENTATION_PLAN_veil-front.md`.
@@ -13,9 +13,13 @@
 > envelopes. The receive and send paths execute the same typed CFE actions as
 > iOS; durable state is written through typed secure-store slots.
 >
+> The first multi-device seams are now closed: `CryptoManager` passes only the
+> derived `CryptoDeviceId` into construct-core, `PeerDeviceRegistry` persists
+> account→device mappings, `GetPreKeyBundlesResponse.active_devices` is honoured,
+> and `CfeTimerBridge` feeds AppLaunched/reconnect/timer events back to CFE.
 > Still open: recovery (4), VEIL (5.1), calls (6), settings subscreens,
-> honeycomb Synaps, Play packaging (9.2), multi-device account→device
-> registry, CFE timer bridge, and live iOS↔Android interop/emulator smoke.
+> honeycomb Synaps, Play packaging (9.2), full per-device send fan-out and
+> receive candidate walking, plus live iOS↔Android interop/emulator smoke.
 > No FCM is planned: delivery remains the persistent stream/foreground-service
 > path, per the no-GMS decision.
 >
@@ -187,27 +191,20 @@ used elsewhere, matching iOS `AuthServiceClient.registerDevice` exactly.
   PQ capability re-advertise.
 
 ### 3.2 Session Lifecycle
-**Status:** ✅ Done for the current 1:1 account-id slice (INITIATOR + RESPONDER
-via CFE receive). Identity public is
-stored on `UserEntity` at `initSession` only — inbound-only reply with stealth
-on still needs the peer key on the row.
+**Status:** ✅ Device-addressed core boundary and durable account→device registry
+are implemented for the current 1:1 send/receive slice (INITIATOR + RESPONDER via
+CFE receive). The network remains account-addressed; `CryptoDeviceId` is used for
+core sessions and `active_devices` is the only server-authoritative pruning input.
+Full per-device fan-out and receive candidate walking remain open.
 **Priority:** HIGH
 
 **States:** NONE -> INITIALIZING -> ACTIVE -> HEALING -> NONE
 
-`SessionManager.kt`:
+`SessionManager.kt` and `PeerDeviceRegistry.kt`:
 ```kotlin
-class SessionManager @Inject constructor(
-    private val cryptoManager: CryptoManager,
-    private val grpcClient: GrpcClient,
-) {
-    suspend fun initSession(contactId: String): String          // INITIATOR — fetches PreKeyBundle via KeyService, maps to BinaryKeyBundle
-    fun initReceivingSession(contactId, senderBundle, firstMessage)  // RESPONDER
-    fun encryptMessage(contactId, plaintext)
-    fun decryptMessage(sessionId, ephemeralPublicKey, messageNumber, content)
-    fun exportSessions(): Map<String, ByteArray>                 // legacy hot blobs only
-    fun importSessions(sessions: Map<String, ByteArray>)
-}
+account id ──PeerDeviceRegistry──> CryptoDeviceId
+    │                                  │
+    └─ gRPC / Room / sealed recipient  └─ CFE session / AD / timer actions
 ```
 
 `exportSessions()` / `importSessions()` use `ByteArray`, not `String`, per the
@@ -227,9 +224,10 @@ RPC (sender-state-durability-before-send).
 **Status:** ✅ Core decision path done; Android bridge is partial. Rust CFE owns
 the heal/END_SESSION decision and returns typed actions. Android executes
 `SessionHealNeeded`, `EndSessionSuppressed`, `SessionTerminated`, typed storage,
-and the sender-state durability rule. The timer bridge and full multi-device
-teardown plan are still open. `HealSuppressed`/`EndSessionSuppressed` hold the
-stream cursor (do **not** ACK).
+and the sender-state durability rule. `CfeTimerBridge` now executes
+`ScheduleTimer`/`CancelTimer`, `TimerFired`, `AppLaunched`, and
+`NetworkReconnected`; full multi-device teardown/fan-out remains open.
+`HealSuppressed`/`EndSessionSuppressed` hold the stream cursor (do **not** ACK).
 **Priority:** MEDIUM
 **Depends on:** 3.2
 

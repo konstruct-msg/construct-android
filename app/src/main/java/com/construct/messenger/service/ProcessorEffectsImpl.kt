@@ -48,27 +48,29 @@ class ProcessorEffectsImpl @Inject constructor(
 ) : ProcessorEffects {
 
     override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
+        val accountId = sessionManager.accountIdForDevice(contactId) ?: contactId
         val decoded = IncomingPlaintext.decode(plaintext)
         if (decoded.knstContentType == ContentType.CONTENT_TYPE_DELIVERY_RECEIPT_VALUE) {
             IncomingReceipt.messageIds(plaintext).forEach { markDelivered(it) }
-            ackStore.markProcessed(messageId, contactId)
+            ackStore.markProcessed(messageId, accountId)
             return
         }
         if (!decoded.isUserVisible) {
             Log.d(TAG, "decrypted non-visible ${messageId.take(8)}… type=${decoded.knstContentType}")
-            ackStore.markProcessed(messageId, contactId)
+            ackStore.markProcessed(messageId, accountId)
             return
         }
-        persistIncoming(contactId, messageId, decoded.text, System.currentTimeMillis())
-        ackStore.markProcessed(messageId, contactId)
-        runCatching { sendReceiptUseCase.delivered(contactId, listOf(messageId)) }
+        persistIncoming(accountId, messageId, decoded.text, System.currentTimeMillis())
+        ackStore.markProcessed(messageId, accountId)
+        runCatching { sendReceiptUseCase.delivered(accountId, listOf(messageId)) }
             .onFailure { Log.w(TAG, "e2e receipt send failed", it) }
         runCatching { sessionManager.fetchIdentityKey(contactId) }
     }
 
     override suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray) {
-        Log.i(TAG, "call signal from ${contactId.take(8)}… ${messageId.take(8)}… (${protoBytes.size}B) — not wired")
-        ackStore.markProcessed(messageId, contactId)
+        val accountId = sessionManager.accountIdForDevice(contactId) ?: contactId
+        Log.i(TAG, "call signal from ${accountId.take(8)}… ${messageId.take(8)}… (${protoBytes.size}B) — not wired")
+        ackStore.markProcessed(messageId, accountId)
     }
 
     override suspend fun persistMessage(messageJson: String) {

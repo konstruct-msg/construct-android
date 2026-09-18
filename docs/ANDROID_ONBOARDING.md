@@ -2,7 +2,7 @@
 
 > **Цель**: предоставить Android-разработчику полное понимание архитектуры, дизайн-системы, UI-компонентов, бизнес-логики и крипто-протокола для реализации на Kotlin / Jetpack Compose.
 >
-> **Статус реализации (2026-09-17, `construct-android` `develop`).**
+> **Статус реализации (2026-09-18, `construct-android` `develop`).**
 > Это канон дизайна (iOS → Android), не трекер фаз. Фазы протокола —
 > `docs/IMPLEMENTATION_PLAN.md` в репозитории Android.
 >
@@ -12,8 +12,9 @@
 > action executor; typed secure-store persistence; orchestrator/PQ snapshots;
 > current `construct-core` Android artifact.
 > **Ещё нет:** honeycomb Synaps, FindUser / запросы, экраны Account / Appearance /
-> Network / Security, VEIL / звонки / recovery, multi-device account→device
-> registry, CFE timer bridge, и живой iOS↔Android прогон.
+> Network / Security, VEIL / звонки / recovery, полный multi-device fan-out /
+> receive candidate walk и живой iOS↔Android прогон. Account→device registry,
+> device-only core boundary и CFE timer bridge уже подключены.
 > **FCM не будет:** delivery — собственный persistent stream в foreground service,
 > без требования Google Play Services.
 
@@ -1094,7 +1095,7 @@ object DisplayNameGenerator {
 
 | Тип | Формат | Источник | Использование |
 |---|---|---|---|
-| `ServerUserId` | 36-char UUID `14f28d31-…` | Сервер | Все session addressing: local_user_id, contact_id, conversation_id |
+| `ServerUserId` | 36-char UUID `14f28d31-…` | Сервер | gRPC, Room, conversation/sealed recipient |
 | `CryptoDeviceId` | 32-char hex `6f5e37ac…` | deriveDeviceId(identityPublicKey) | Multi-device linking, QR коды |
 
 ```kotlin
@@ -1104,12 +1105,12 @@ data class CryptoDeviceId(val rawValue: String)   // hex 32
 ```
 
 **Важно**: NEVER путать эти типы. `ServerUserId` адресует аккаунт и gRPC/Room;
-`CryptoDeviceId` адресует конкретную реплику и используется в invite/device
-границах. Текущий Android 1:1 slice всё ещё передаёт `ServerUserId` как CFE
-`contactId`, потому что локального account→device registry ещё нет. Это
-временная граница совместимости, а не правило для будущего multi-device пути:
-его нужно заменить на registry + core `planTeardown`/`planReceivingInit`, как
-на iOS и в `client/ANDROID_CALL_THE_CORE.md`.
+`CryptoDeviceId` адресует конкретную реплику и используется в CFE session/AD,
+invite/device границах. `PeerDeviceRegistry` переводит account→device и
+проверяет `deriveDeviceId(identityPublic)` перед записью. Сеть всё ещё получает
+account id: server fan-out сам кладёт один envelope в per-device очереди.
+Android пока выбирает один известный device для 1:1 и не реализует полный
+`planReceivingInit` candidate walk / fan-out как iOS.
 
 ### 8.2 DisplayName Resolution
 
@@ -1323,20 +1324,21 @@ app/src/main/java/com/construct/messenger/
 
 ---
 
-## Android implementation contract (актуально на 2026-09-17)
+## Android implementation contract (актуально на 2026-09-18)
 
 `CryptoManager` — тонкая синхронная оболочка над UniFFI. До логина он держит
 `ClassicCryptoCore` для bootstrap/registration; после `setLocalUserId` создаёт
-`OrchestratorCore`, и только он используется для сообщений и CFE. Все native
-вызовы сериализованы через `coreLock`. В отличие от старого примера ниже,
-Android не разбирает wire payload и не принимает решения о heal: это делает
-Rust CFE.
+`OrchestratorCore`, передавая туда только локальный `CryptoDeviceId`, выведенный
+из identity key. Все native вызовы сериализованы через `coreLock`. В отличие от
+старого примера ниже, Android не разбирает wire payload и не принимает решения
+о heal: это делает Rust CFE. `PeerDeviceRegistry` хранит server account→device
+mapping, а `CfeTimerBridge` владеет только platform wake-up для core timers.
 
 | iOS canon | Android mirror |
 |---|---|
-| `CryptoManager` + `OrchestratorCore` | `CryptoManager` + `OrchestratorCore` |
+| `CryptoManager` + `OrchestratorCore` | `CryptoManager` + `OrchestratorCore` (device-space ids) |
 | Keychain session/archive/core snapshots | Room `SessionStateStore` + Keystore tokens |
-| `SessionActionExecutor` | `MessageProcessor` + `ProcessorEffectsImpl` |
+| `SessionActionExecutor` | `MessageProcessor` + `ProcessorEffectsImpl` + `CfeTimerBridge` |
 | typed `SaveToSecureStore(slot,data)` | `CfeSecureStoreSlot` → Room key mapping |
 | `exportOrchestratorState` / PQ snapshot | same UniFFI calls, restored before stream |
 

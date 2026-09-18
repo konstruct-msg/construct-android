@@ -1,13 +1,17 @@
 package com.construct.messenger.service
 
+import android.util.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.data.local.PeerDeviceRegistry
+import com.construct.messenger.data.model.IdentityIds
 import com.construct.messenger.util.DisplayNameGenerator
 import shared.proto.core.v1.Crypto.CryptoSuite
 import shared.proto.services.v1.KeyServiceOuterClass.GetIdentityKeyRequest
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundleRequest
+import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundlesRequest
 import shared.proto.services.v1.KeyServiceOuterClass.PreKeyBundle
 import uniffi.construct_core.BinaryFirstMessage
 import uniffi.construct_core.BinaryKeyBundle
@@ -29,9 +33,19 @@ class SessionManager @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val grpcClient: GrpcClient,
     private val userDao: UserDao,
+    private val peerDeviceRegistry: PeerDeviceRegistry,
 ) {
 
-    fun hasSession(contactId: String): Boolean = cryptoManager.hasSession(contactId)
+    suspend fun hasSession(contactId: String): Boolean {
+        val deviceId = peerDeviceRegistry.resolveDeviceId(contactId) ?: return false
+        return cryptoManager.hasSession(deviceId)
+    }
+
+    data class SessionPeer(
+        val accountId: String,
+        val deviceId: String,
+        val identityPublic: ByteArray,
+    )
 
     /**
      * Ensure a live Double-Ratchet session exists for [contactId].
@@ -41,11 +55,21 @@ class SessionManager @Inject constructor(
      *   GetPreKeyBundle is destructive (consumes an OTPK) — never call it just
      *   to read the identity key when a session already exists.
      */
-    suspend fun ensureSession(contactId: String): ByteArray? {
-        val stored = userDao.getById(contactId)?.identityPublic
-        if (cryptoManager.hasSession(contactId)) return stored
-        initSession(contactId)
-        return userDao.getById(contactId)?.identityPublic
+    suspend fun ensureSession(contactId: String): SessionPeer {
+        val deviceId = peerDeviceRegistry.resolveDeviceId(contactId)
+        if (deviceId != null && cryptoManager.hasSession(deviceId)) {
+            val identity = peerDeviceRegistry.identityForDevice(deviceId)
+                ?: userDao.getById(contactId)?.identityPublic
+                ?: error("missing identity key for $contactId")
+            return SessionPeer(
+                accountId = peerDeviceRegistry.accountIdForDevice(deviceId) ?: contactId,
+                deviceId = deviceId,
+                identityPublic = identity,
+            )
+        }
+        val fetched = fetchPeerBundleData(contactId, consumeOtpk = true, deviceId = deviceId)
+        cryptoManager.initSession(fetched.deviceId, fetched.bundle)
+        return SessionPeer(fetched.accountId, fetched.deviceId, fetched.identityPublic)
     }
 
     /**
@@ -53,35 +77,114 @@ class SessionManager @Inject constructor(
      * (initiator or responder). Invite verify uses false.
      */
     suspend fun fetchPeerBundle(contactId: String, consumeOtpk: Boolean): BinaryKeyBundle {
-        val response = grpcClient.key.getPreKeyBundle(
-            GetPreKeyBundleRequest.newBuilder()
-                .setUserId(contactId)
-                .setConsumeOneTimePrekey(consumeOtpk)
+        return fetchPeerBundleData(contactId, consumeOtpk).bundle
+    }
+
+    suspend fun fetchPeerBundleData(
+        contactId: String,
+        consumeOtpk: Boolean,
+        deviceId: String? = null,
+    ): PeerBundle {
+        val accountId = accountFor(contactId)
+        val request = GetPreKeyBundleRequest.newBuilder()
+            .setUserId(accountId)
+            .setConsumeOneTimePrekey(consumeOtpk)
+        deviceId?.takeIf(IdentityIds::isCryptoDeviceId)?.let(request::setDeviceId)
+        val response = grpcClient.key.getPreKeyBundle(request.build())
+        val identity = response.bundle.identityKey.toByteArray()
+        val derivedDeviceId = cryptoManager.deriveDeviceIdFromIdentity(identity)
+        require(IdentityIds.isCryptoDeviceId(derivedDeviceId)) { "invalid peer CryptoDeviceId" }
+        if (response.deviceId.isNotEmpty() && response.deviceId != derivedDeviceId) {
+            error("peer device id does not match identity key")
+        }
+        peerDeviceRegistry.record(accountId, derivedDeviceId, identity)
+        rememberIdentity(accountId, identity)
+        return PeerBundle(
+            accountId = accountId,
+            deviceId = derivedDeviceId,
+            identityPublic = identity,
+            bundle = response.bundle.toBinaryKeyBundle(response.verifyingKey.toByteArray()),
+        )
+    }
+
+    /** Refresh the account -> all active device mappings without consuming OTPKs. */
+    suspend fun discoverPeerDevices(contactId: String): List<PeerDeviceRegistry.PeerDevice> {
+        val accountId = accountFor(contactId)
+        val response = grpcClient.key.getPreKeyBundles(
+            GetPreKeyBundlesRequest.newBuilder()
+                .setUserId(accountId)
+                .setConsumeOneTimePrekey(false)
                 .build(),
         )
-        rememberIdentity(contactId, response.bundle.identityKey.toByteArray())
-        return response.bundle.toBinaryKeyBundle(response.verifyingKey.toByteArray())
+        val devices = response.bundlesList.mapNotNull { entry ->
+            val identity = entry.bundle.identityKey.toByteArray()
+            if (identity.isEmpty()) return@mapNotNull null
+            val derived = cryptoManager.deriveDeviceIdFromIdentity(identity)
+            if (!IdentityIds.isCryptoDeviceId(derived)) return@mapNotNull null
+            if (entry.deviceId.isNotEmpty() && entry.deviceId != derived) {
+                Log.w(TAG, "ignoring mismatched device bundle ${entry.deviceId.take(8)}…")
+                return@mapNotNull null
+            }
+            PeerDeviceRegistry.PeerDevice(derived, identity, entry.platformValue)
+        }
+        peerDeviceRegistry.recordAll(accountId, devices, response.activeDevicesList)
+        devices.forEach { rememberIdentity(accountId, it.identityPublic) }
+        return devices
+    }
+
+    private suspend fun accountFor(contactId: String): String =
+        if (IdentityIds.isCryptoDeviceId(contactId)) {
+            peerDeviceRegistry.accountIdForDevice(contactId)
+                ?: error("no account mapping for peer device ${contactId.take(8)}…")
+        } else {
+            contactId
+        }
+
+    suspend fun resolveDeviceId(accountOrDeviceId: String): String? =
+        peerDeviceRegistry.resolveDeviceId(accountOrDeviceId)
+
+    suspend fun accountIdForDevice(deviceId: String): String? =
+        peerDeviceRegistry.accountIdForDevice(deviceId)
+
+    suspend fun resolveTarget(accountOrDeviceId: String): SessionPeer? {
+        val deviceId = peerDeviceRegistry.resolveDeviceId(accountOrDeviceId) ?: return null
+        val accountId = peerDeviceRegistry.accountIdForDevice(deviceId) ?: return null
+        val identity = peerDeviceRegistry.identityForDevice(deviceId) ?: return null
+        return SessionPeer(accountId, deviceId, identity)
     }
 
     /** Non-destructive identity key for sealed-sender when we did not init the session. */
     suspend fun fetchIdentityKey(contactId: String): ByteArray? {
-        val stored = userDao.getById(contactId)?.identityPublic
+        val stored = if (IdentityIds.isCryptoDeviceId(contactId)) {
+            peerDeviceRegistry.identityForDevice(contactId)
+        } else {
+            userDao.getById(contactId)?.identityPublic
+        }
         if (stored != null && stored.isNotEmpty()) return stored
+        val accountId = if (IdentityIds.isCryptoDeviceId(contactId)) {
+            peerDeviceRegistry.accountIdForDevice(contactId) ?: return null
+        } else {
+            contactId
+        }
         return runCatching {
             val response = grpcClient.key.getIdentityKey(
-                GetIdentityKeyRequest.newBuilder().setUserId(contactId).build(),
+                GetIdentityKeyRequest.newBuilder().setUserId(accountId).build(),
             )
             val key = response.identityKey.toByteArray()
             if (key.isEmpty()) return@runCatching stored
-            rememberIdentity(contactId, key)
+            val deviceId = cryptoManager.deriveDeviceIdFromIdentity(key)
+            if (IdentityIds.isCryptoDeviceId(deviceId)) {
+                peerDeviceRegistry.record(accountId, deviceId, key)
+            }
+            rememberIdentity(accountId, key)
             key
         }.getOrNull() ?: stored
     }
 
     /** INITIATOR path: fetch [contactId]'s pre-key bundle and start a new session. */
     suspend fun initSession(contactId: String): String {
-        val bundle = fetchPeerBundle(contactId, consumeOtpk = true)
-        return cryptoManager.initSession(contactId, bundle)
+        val fetched = fetchPeerBundleData(contactId, consumeOtpk = true)
+        return cryptoManager.initSession(fetched.deviceId, fetched.bundle)
     }
 
     private suspend fun rememberIdentity(contactId: String, identity: ByteArray) {
@@ -129,6 +232,17 @@ class SessionManager @Inject constructor(
     fun removeSession(contactId: String): Boolean = cryptoManager.removeSession(contactId)
 
     fun liveContactIds(): List<String> = cryptoManager.getAllSessionContactIds()
+
+    data class PeerBundle(
+        val accountId: String,
+        val deviceId: String,
+        val identityPublic: ByteArray,
+        val bundle: BinaryKeyBundle,
+    )
+
+    private companion object {
+        const val TAG = "SessionManager"
+    }
 }
 
 /// Proto `CryptoSuite` enum → the core's SuiteID (`suite_id.rs`): 1 = CLASSIC

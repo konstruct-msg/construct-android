@@ -7,6 +7,7 @@ import com.construct.messenger.data.api.MessagingService
 import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
+import com.construct.messenger.data.model.IdentityIds
 import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.model.DeliveryStatus
@@ -68,6 +69,7 @@ class MessagingRuntime @Inject constructor(
     private val serverKeys: ServerKeysProvider,
     private val blindTokens: BlindTokenService,
     private val rotateSignedPreKey: RotateSignedPreKeyUseCase,
+    private val timerBridge: CfeTimerBridge,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val startMutex = Mutex()
@@ -103,6 +105,7 @@ class MessagingRuntime @Inject constructor(
         }
         router.start(scope)
         stream.start(scope)
+        timerBridge.start()
         if (subscriptionJob?.isActive != true) {
             subscriptionJob = scope.launch {
                 chatDao.observeAll().collect { chats ->
@@ -118,6 +121,7 @@ class MessagingRuntime @Inject constructor(
 
     fun stop() {
         stream.stop()
+        timerBridge.stop()
         router.stop()
         processorJob?.cancel()
         processorJob = null
@@ -143,7 +147,10 @@ class MessagingRuntime @Inject constructor(
         }
 
         val sessions = blobs
-            .filterKeys { it.startsWith(SessionStateStore.SESSION_KEY_PREFIX) }
+            .filterKeys {
+                it.startsWith(SessionStateStore.SESSION_KEY_PREFIX) &&
+                    IdentityIds.isCryptoDeviceId(it.removePrefix(SessionStateStore.SESSION_KEY_PREFIX))
+            }
             .mapKeys { (key, _) -> key.removePrefix(SessionStateStore.SESSION_KEY_PREFIX) }
         if (sessions.isNotEmpty()) {
             runCatching { sessionManager.importSessions(sessions) }
@@ -182,8 +189,12 @@ class MessagingRuntime @Inject constructor(
                     applyTransportReceipts(ids)
                 }
                 is MessageRouter.RoutedEvent.Typing -> Unit
-                is MessageRouter.RoutedEvent.ConnectionChanged ->
+                is MessageRouter.RoutedEvent.ConnectionChanged -> {
+                    if (event.connected) {
+                        timerBridge.onNetworkReconnected()
+                    }
                     Log.i(TAG, "stream connected=${event.connected}")
+                }
             }
         }
     }

@@ -20,8 +20,9 @@ import androidx.room.RoomDatabase
         SessionStateEntity::class,
         SessionMetaEntity::class,
         IssuedInviteEntity::class,
+        PeerDeviceEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -32,6 +33,7 @@ abstract class ConstructDatabase : RoomDatabase() {
     abstract fun sessionStateDao(): SessionStateDao
     abstract fun sessionMetaDao(): SessionMetaDao
     abstract fun issuedInviteDao(): IssuedInviteDao
+    abstract fun peerDeviceDao(): PeerDeviceDao
 
     companion object {
         const val NAME = "construct.db"

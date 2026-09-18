@@ -1,6 +1,6 @@
 # gRPC Layer — состояние, архитектура, как подключать UI
 
-**Обновлено:** 2026-09-17. Аудитория: UI и протокол. 1:1 text slice замкнут
+**Обновлено:** 2026-09-18. Аудитория: UI и протокол. 1:1 text slice замкнут
 (runtime → receive → send → invites → Chat/Synaps). Здесь: что работает,
 что каркас, что отсутствует. UI ходит только в репозитории.
 
@@ -24,6 +24,7 @@ data/local/
 ├── AckStore.kt              # durable dedup (Room + in-memory   [ГОТОВ+тесты]
 │                            # mirror, hydrate() до стрима!)
 ├── SessionStateStore.kt     # typed CFE slots + establishedAt [ГОТОВ+тесты]
+├── PeerDeviceRegistry.kt    # durable account→device mapping [ГОТОВ]
 ├── db/                      # Room: chats/messages/users/       [ГОТОВ]
 │                            # acked_messages/session_state/session_meta
 service/
@@ -32,6 +33,7 @@ service/
 │                            # sealed-résolve, control/message
 ├── MessageProcessor.kt      # CFE handleEvent → typed actions   [ГОТОВ+тесты]
 │                            # /decrypt/persist/ack; Gateway+Effects
+├── CfeTimerBridge.kt        # AppLaunched/reconnect/timers     [ГОТОВ]
 crypto/
 ├── CryptoManager.kt         # двухфазное ядро (Classic→Orchestr) [РАБОТАЕТ]
 │                            # + OrchestratorGateway (handleEvent)
@@ -89,10 +91,10 @@ domain/usecase/SendMessageUseCase.kt                            [РАБОТАЕ�
 - **acks/errors/presence из стрима** — логируются, но не пробрасываются:
   расширить `StreamEvent`, когда появится потребитель;
 - **VEIL-фолбэк транспорта** — не подключён (оба канала direct TLS);
-- **multi-device account→device routing** — core planning API уже приехал в
-  binding, но Android registry и device-addressed gRPC path ещё не подключены;
-- **CFE timers / AppLaunched / reconnect events** — event/action bridge ещё не
-  доведён до parity с iOS;
+- **multi-device account→device routing** — registry and device-only core
+  addressing are connected; full fan-out and receive candidate walk remain;
+- **CFE timers / AppLaunched / reconnect events** — wired through
+  `CfeTimerBridge`; production transport coverage remains;
 - **`SEALED_UNAUTHENTICATED_TRANSPORT = false`** — флип синхронно с iOS
   `FeatureFlags.sealedSenderUnauthenticatedTransport` (rollout-порядок в
   decision-доке §4).

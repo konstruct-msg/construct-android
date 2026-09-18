@@ -5,7 +5,6 @@ import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.MessagingService
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
-import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
@@ -37,14 +36,16 @@ class SendReceiptUseCase @Inject constructor(
     private val messagingService: MessagingService,
     private val stealthPolicy: StealthPolicy,
     private val stealthSender: StealthSenderService,
-    private val userDao: UserDao,
     private val sessionStateStore: SessionStateStore,
 ) {
     suspend fun delivered(contactId: String, messageIds: List<String>) {
         if (messageIds.isEmpty()) return
+        val target = sessionManager.resolveTarget(contactId) ?: return
+        val deviceId = target.deviceId
+        val accountId = target.accountId
         val myId = keystoreManager.getUserId() ?: return
-        if (!cryptoManager.isMessagingReady || !sessionManager.hasSession(contactId)) {
-            Log.d(TAG, "receipt skip — no session ${contactId.take(8)}…")
+        if (!cryptoManager.isMessagingReady || !sessionManager.hasSession(deviceId)) {
+            Log.d(TAG, "receipt skip — no session ${deviceId.take(8)}…")
             return
         }
 
@@ -55,7 +56,7 @@ class SendReceiptUseCase @Inject constructor(
                     .addAllMessageIds(messageIds)
                     .setStatus(ReceiptStatus.RECEIPT_STATUS_DELIVERED)
                     .setTimestamp(System.currentTimeMillis())
-                    .setRecipientUserId(contactId),
+                    .setRecipientUserId(accountId),
             )
             .build()
             .toByteArray()
@@ -64,7 +65,7 @@ class SendReceiptUseCase @Inject constructor(
 
         val actions = orchestrator.handleEvent(
             CfeIncomingEvent.OutgoingMessage(
-                contactId = contactId,
+                contactId = deviceId,
                 messageId = receiptId,
                 plaintext = plaintext,
                 contentType = 0u,
@@ -75,7 +76,7 @@ class SendReceiptUseCase @Inject constructor(
             return
         }
         val wire = actions.filterIsInstance<CfeAction.SendEncryptedMessage>()
-            .firstOrNull { it.to == contactId }
+            .firstOrNull { it.to == deviceId }
             ?.payload
             ?: run {
                 Log.w(TAG, "receipt: no SendEncryptedMessage")
@@ -86,13 +87,13 @@ class SendReceiptUseCase @Inject constructor(
         val stealthOn = stealthPolicy.shouldUseSealedSender()
         try {
             if (stealthOn) {
-                val ik = userDao.getById(contactId)?.identityPublic
-                if (ik == null || ik.isEmpty()) {
+                val ik = target.identityPublic
+                if (ik.isEmpty()) {
                     Log.w(TAG, "receipt stealth-on, no IK — dropped")
                     return
                 }
                 val sealed = stealthSender.buildSealedInner(
-                    recipientUserId = contactId,
+                    recipientUserId = accountId,
                     recipientIdentityKey = ik,
                     encryptedPayload = wire,
                     contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
@@ -103,7 +104,7 @@ class SendReceiptUseCase @Inject constructor(
                     messagingService.sendMessage(
                         messageId = receiptId,
                         senderId = myId,
-                        recipientId = contactId,
+                        recipientId = accountId,
                         conversationId = "",
                         encryptedPayload = ByteArray(0),
                         timestampMs = timestampMs,
@@ -115,7 +116,7 @@ class SendReceiptUseCase @Inject constructor(
                 messagingService.sendMessage(
                     messageId = receiptId,
                     senderId = myId,
-                    recipientId = contactId,
+                    recipientId = accountId,
                     conversationId = "",
                     encryptedPayload = wire,
                     timestampMs = timestampMs,
@@ -123,7 +124,7 @@ class SendReceiptUseCase @Inject constructor(
                 )
             }
         } catch (e: Exception) {
-            Log.w(TAG, "receipt send failed ${contactId.take(8)}…", e)
+            Log.w(TAG, "receipt send failed ${deviceId.take(8)}…", e)
         }
     }
 

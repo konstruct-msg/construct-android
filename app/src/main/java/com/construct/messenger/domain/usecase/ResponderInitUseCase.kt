@@ -37,14 +37,21 @@ class ResponderInitUseCase @Inject constructor(
     data class Result(val contactId: String, val messageId: String, val plaintext: ByteArray)
 
     suspend fun establish(incoming: MessageRouter.IncomingMessage): Result? {
-        val contactId = incoming.senderId
-        if (!inFlight.add(contactId)) {
-            Log.i(TAG, "init already in flight ${contactId.take(8)}…")
+        val accountId = incoming.senderId
+        val knownDeviceId = sessionManager.resolveDeviceId(accountId)
+            ?: sessionManager.discoverPeerDevices(accountId).firstOrNull()?.deviceId
+            ?: return null
+        if (!inFlight.add(knownDeviceId)) {
+            Log.i(TAG, "init already in flight ${knownDeviceId.take(8)}…")
             return null
         }
         return try {
             if (!cryptoManager.isMessagingReady) return null
-            val bundle = sessionManager.fetchPeerBundle(contactId, consumeOtpk = true)
+            val fetched = sessionManager.fetchPeerBundleData(
+                accountId,
+                consumeOtpk = true,
+                deviceId = knownDeviceId,
+            )
             val wire = wirePayloadUnpack(incoming.encryptedPayload.map { it.toUByte() })
             val first = BinaryFirstMessage(
                 ephemeralPublicKey = wire.dhPublicKey,
@@ -55,29 +62,29 @@ class ResponderInitUseCase @Inject constructor(
                 pqMessageEpoch = wire.pqMessageEpoch,
                 pqRatchetField = wire.pqRatchetField,
             )
-            val init = sessionManager.initReceivingSession(contactId, bundle, first)
-            val blob = cryptoManager.exportSessionBytes(contactId)
-            sessionStateStore.saveSecureStore(CfeSecureStoreSlot.Session(contactId), blob)
-            if (sessionStateStore.getEstablishedAt(contactId) == null) {
-                sessionStateStore.setEstablishedAt(contactId, System.currentTimeMillis())
+            val init = sessionManager.initReceivingSession(fetched.deviceId, fetched.bundle, first)
+            val blob = cryptoManager.exportSessionBytes(fetched.deviceId)
+            sessionStateStore.saveSecureStore(CfeSecureStoreSlot.Session(fetched.deviceId), blob)
+            if (sessionStateStore.getEstablishedAt(fetched.deviceId) == null) {
+                sessionStateStore.setEstablishedAt(fetched.deviceId, System.currentTimeMillis())
             }
             runCatching {
-                val completed = orchestrator.handleEvent(CfeIncomingEvent.SessionInitCompleted(contactId, blob))
+                val completed = orchestrator.handleEvent(CfeIncomingEvent.SessionInitCompleted(fetched.deviceId, blob))
                 sessionStateStore.saveCfeActions(completed)
             }
             keystoreManager.getDeviceId()?.let { deviceId ->
                 runCatching { uploadPreKeys.replenishIfNeeded(deviceId) }
             }
-            runCatching { sessionControl.sendReady(contactId) }
-                .onFailure { Log.w(TAG, "session_ready failed ${contactId.take(8)}…", it) }
+            runCatching { sessionControl.sendReady(fetched.deviceId) }
+                .onFailure { Log.w(TAG, "session_ready failed ${fetched.deviceId.take(8)}…", it) }
             val plaintext = init.decryptedMessage.map { it.toByte() }.toByteArray()
-            Log.i(TAG, "RESPONDER session for ${contactId.take(8)}… knst=${IncomingPlaintext.isKnst(plaintext)}")
-            Result(contactId, incoming.messageId, plaintext)
+            Log.i(TAG, "RESPONDER session for ${fetched.deviceId.take(8)}… knst=${IncomingPlaintext.isKnst(plaintext)}")
+            Result(fetched.deviceId, incoming.messageId, plaintext)
         } catch (e: Exception) {
-            Log.e(TAG, "RESPONDER init failed ${contactId.take(8)}…", e)
+            Log.e(TAG, "RESPONDER init failed ${knownDeviceId.take(8)}…", e)
             null
         } finally {
-            inFlight.remove(contactId)
+            inFlight.remove(knownDeviceId)
         }
     }
 

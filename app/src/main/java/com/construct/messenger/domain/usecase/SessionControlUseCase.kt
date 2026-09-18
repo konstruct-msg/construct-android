@@ -5,7 +5,6 @@ import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.MessagingService
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
-import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
@@ -38,7 +37,6 @@ class SessionControlUseCase @Inject constructor(
     private val keystoreManager: KeystoreManager,
     private val sessionManager: SessionManager,
     private val sessionStateStore: SessionStateStore,
-    private val userDao: UserDao,
     private val messagingService: MessagingService,
     private val stealthPolicy: StealthPolicy,
     private val stealthSender: StealthSenderService,
@@ -64,30 +62,36 @@ class SessionControlUseCase @Inject constructor(
     }
 
     suspend fun sendEndSession(contactId: String, force: Boolean = false): Boolean {
-        val now = System.currentTimeMillis()
-        val last = lastSentAt[contactId] ?: 0L
-        if (!force && now - last < COOLDOWN_MS) {
-            Log.i(TAG, "END_SESSION cooldown ${contactId.take(8)}…")
+        val target = sessionManager.resolveTarget(contactId) ?: run {
+            Log.w(TAG, "END_SESSION skipped — no account/device mapping ${contactId.take(8)}…")
             return false
         }
-        lastSentAt[contactId] = now
+        val deviceId = target.deviceId
+        val accountId = target.accountId
+        val now = System.currentTimeMillis()
+        val last = lastSentAt[deviceId] ?: 0L
+        if (!force && now - last < COOLDOWN_MS) {
+            Log.i(TAG, "END_SESSION cooldown ${deviceId.take(8)}…")
+            return false
+        }
+        lastSentAt[deviceId] = now
 
         val myId = keystoreManager.getUserId() ?: return false
         val payload = ByteArray(PADDED_SIZE).also { random.nextBytes(it) }
         val messageId = UUID.randomUUID().toString().lowercase()
         val timestampMs = System.currentTimeMillis()
         val stealthOn = stealthPolicy.shouldUseSealedSender()
-        val identity = userDao.getById(contactId)?.identityPublic
+        val identity = target.identityPublic
 
         val result = try {
             if (stealthOn) {
-                if (identity == null || identity.isEmpty()) {
-                    Log.w(TAG, "END_SESSION stealth-on, no IK for ${contactId.take(8)}… — not identified-downgrading")
-                    archiveLocal(contactId)
+                if (identity.isEmpty()) {
+                    Log.w(TAG, "END_SESSION stealth-on, no IK for ${deviceId.take(8)}… — not identified-downgrading")
+                    archiveLocal(deviceId)
                     return false
                 }
                 val sealed = stealthSender.buildSealedInner(
-                    recipientUserId = contactId,
+                    recipientUserId = accountId,
                     recipientIdentityKey = identity,
                     encryptedPayload = payload,
                     contentType = ContentType.CONTENT_TYPE_SESSION_RESET,
@@ -98,7 +102,7 @@ class SessionControlUseCase @Inject constructor(
                     messagingService.sendMessage(
                         messageId = messageId,
                         senderId = myId,
-                        recipientId = contactId,
+                        recipientId = accountId,
                         conversationId = "",
                         encryptedPayload = ByteArray(0),
                         timestampMs = timestampMs,
@@ -110,7 +114,7 @@ class SessionControlUseCase @Inject constructor(
                 messagingService.sendMessage(
                     messageId = messageId,
                     senderId = myId,
-                    recipientId = contactId,
+                    recipientId = accountId,
                     conversationId = "",
                     encryptedPayload = payload,
                     timestampMs = timestampMs,
@@ -118,15 +122,15 @@ class SessionControlUseCase @Inject constructor(
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "END_SESSION RPC failed ${contactId.take(8)}…", e)
-            archiveLocal(contactId)
+            Log.e(TAG, "END_SESSION RPC failed ${deviceId.take(8)}…", e)
+            archiveLocal(deviceId)
             return false
         }
 
         if (!result.success) {
             Log.w(TAG, "END_SESSION rejected ${result.errorCode}")
         }
-        archiveLocal(contactId)
+        archiveLocal(deviceId)
         return result.success
     }
 
@@ -136,8 +140,11 @@ class SessionControlUseCase @Inject constructor(
     }
 
     private suspend fun sendEncryptedControl(contactId: String, op: SessionOp, knstType: Int) {
+        val target = sessionManager.resolveTarget(contactId) ?: return
+        val deviceId = target.deviceId
+        val accountId = target.accountId
         val myId = keystoreManager.getUserId() ?: return
-        if (!cryptoManager.isMessagingReady || !sessionManager.hasSession(contactId)) return
+        if (!cryptoManager.isMessagingReady || !sessionManager.hasSession(deviceId)) return
         val messageId = UUID.randomUUID().toString().lowercase()
         val payload = SessionControl.newBuilder()
             .setOp(op)
@@ -147,28 +154,27 @@ class SessionControlUseCase @Inject constructor(
         val uuid = runCatching { UUID.fromString(messageId) }.getOrElse { UUID.randomUUID() }
         val plaintext = KnstFrame.pack(payload, knstType, uuid)
         val actions = orchestrator.handleEvent(
-            CfeIncomingEvent.OutgoingMessage(contactId, messageId, plaintext, 0u),
+            CfeIncomingEvent.OutgoingMessage(deviceId, messageId, plaintext, 0u),
         )
         if (!sessionStateStore.saveCfeActions(actions)) return
         val wire = actions.filterIsInstance<CfeAction.SendEncryptedMessage>()
-            .firstOrNull { it.to == contactId }
+            .firstOrNull { it.to == deviceId }
             ?.payload
             ?: return
         val timestampMs = System.currentTimeMillis()
         val stealthOn = stealthPolicy.shouldUseSealedSender()
         runCatching {
             if (stealthOn) {
-                val ik = userDao.getById(contactId)?.identityPublic ?: return
                 val sealed = stealthSender.buildSealedInner(
-                    recipientUserId = contactId,
-                    recipientIdentityKey = ik,
+                    recipientUserId = accountId,
+                    recipientIdentityKey = target.identityPublic,
                     encryptedPayload = wire,
                     contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
                 )
                 messagingService.sendMessage(
                     messageId = messageId,
                     senderId = myId,
-                    recipientId = contactId,
+                    recipientId = accountId,
                     conversationId = "",
                     encryptedPayload = ByteArray(0),
                     timestampMs = timestampMs,
@@ -179,14 +185,14 @@ class SessionControlUseCase @Inject constructor(
                 messagingService.sendMessage(
                     messageId = messageId,
                     senderId = myId,
-                    recipientId = contactId,
+                    recipientId = accountId,
                     conversationId = "",
                     encryptedPayload = wire,
                     timestampMs = timestampMs,
                     contentType = ContentType.CONTENT_TYPE_E2EE_SIGNAL,
                 )
             }
-        }.onFailure { Log.w(TAG, "control $op failed ${contactId.take(8)}…", it) }
+        }.onFailure { Log.w(TAG, "control $op failed ${deviceId.take(8)}…", it) }
     }
 
     private suspend fun archiveLocal(contactId: String) {

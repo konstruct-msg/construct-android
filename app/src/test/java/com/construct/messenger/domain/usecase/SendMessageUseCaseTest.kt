@@ -34,6 +34,7 @@ class SendMessageUseCaseTest {
 
     private val myId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
     private val peer = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+    private val peerDevice = "11111111111111111111111111111111"
 
     @Test
     fun `identified send persists SENT after successful RPC`() = runTest {
@@ -46,12 +47,14 @@ class SendMessageUseCaseTest {
         val crypto: CryptoManager = mock()
         whenever(crypto.isMessagingReady).thenReturn(true)
         val sessionManager: SessionManager = mock()
-        whenever(sessionManager.ensureSession(peer)).thenReturn(byteArrayOf(1, 2, 3))
+        whenever(sessionManager.ensureSession(peer)).thenReturn(
+            SessionManager.SessionPeer(peer, peerDevice, byteArrayOf(1, 2, 3)),
+        )
         val orchestrator: OrchestratorGateway = mock()
         whenever(orchestrator.handleEvent(any())).thenReturn(
             listOf(
-                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(peer), byteArrayOf(9)),
-                CfeAction.SendEncryptedMessage(peer, byteArrayOf(7, 7), "ignored", 0u),
+                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(peerDevice), byteArrayOf(9)),
+                CfeAction.SendEncryptedMessage(peerDevice, byteArrayOf(7, 7), "ignored", 0u),
             ),
         )
         whenever(sessions.saveCfeActions(any())).thenReturn(true)
@@ -104,12 +107,14 @@ class SendMessageUseCaseTest {
         val crypto: CryptoManager = mock()
         whenever(crypto.isMessagingReady).thenReturn(true)
         val sessionManager: SessionManager = mock()
-        whenever(sessionManager.ensureSession(peer)).thenReturn(null)
+        whenever(sessionManager.ensureSession(peer)).thenReturn(
+            SessionManager.SessionPeer(peer, peerDevice, byteArrayOf()),
+        )
         val orchestrator: OrchestratorGateway = mock()
         whenever(orchestrator.handleEvent(any())).thenReturn(
             listOf(
-                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(peer), byteArrayOf(9)),
-                CfeAction.SendEncryptedMessage(peer, byteArrayOf(7), "ignored", 0u),
+                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(peerDevice), byteArrayOf(9)),
+                CfeAction.SendEncryptedMessage(peerDevice, byteArrayOf(7), "ignored", 0u),
             ),
         )
         val sessions = mock<SessionStateStore>()
@@ -146,12 +151,14 @@ class SendMessageUseCaseTest {
         val crypto: CryptoManager = mock()
         whenever(crypto.isMessagingReady).thenReturn(true)
         val sessionManager: SessionManager = mock()
-        whenever(sessionManager.ensureSession(peer)).thenReturn(byteArrayOf(1))
+        whenever(sessionManager.ensureSession(peer)).thenReturn(
+            SessionManager.SessionPeer(peer, peerDevice, byteArrayOf(1)),
+        )
         val orchestrator: OrchestratorGateway = mock()
         whenever(orchestrator.handleEvent(any())).thenReturn(
             listOf(
-                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(peer), byteArrayOf(9)),
-                CfeAction.SendEncryptedMessage(peer, byteArrayOf(7, 7), "ignored", 0u),
+                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(peerDevice), byteArrayOf(9)),
+                CfeAction.SendEncryptedMessage(peerDevice, byteArrayOf(7, 7), "ignored", 0u),
             ),
         )
         val messaging: MessagingService = mock()
