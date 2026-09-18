@@ -1,6 +1,8 @@
 package com.construct.messenger.service
 
 import android.util.Log
+import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.data.local.KeystoreManager
 import javax.inject.Inject
 import javax.inject.Singleton
 import uniffi.construct_core.CfeAction
@@ -40,9 +42,18 @@ class MessageProcessor @Inject constructor(
     private val effects: ProcessorEffects,
     private val sessionManager: SessionManager,
     private val timerBridge: CfeTimerBridge,
+    private val cryptoManager: CryptoManager,
+    private val keystoreManager: KeystoreManager,
 ) {
     suspend fun process(incoming: MessageRouter.IncomingMessage): ProcessingOutcome {
-        val contactId = sessionManager.resolveDeviceId(incoming.senderId)
+        val copyRoute = resolveCopyRoute(incoming)
+        if (copyRoute is CopyRouteResolution.Foreign) {
+            effects.markProcessed(incoming.messageId, incoming.senderId)
+            return ProcessingOutcome.Acked
+        }
+        val preferredDeviceId = (copyRoute as? CopyRouteResolution.Local)?.deviceId
+        val contactId = preferredDeviceId
+            ?: sessionManager.resolveDeviceId(incoming.senderId)
             ?: runCatching {
                 sessionManager.discoverPeerDevices(incoming.senderId).firstOrNull()?.deviceId
             }.getOrNull()
@@ -87,6 +98,49 @@ class MessageProcessor @Inject constructor(
         }
 
         return route(actions, incoming)
+    }
+
+    private suspend fun resolveCopyRoute(incoming: MessageRouter.IncomingMessage): CopyRouteResolution {
+        val route = DeviceCopyRoute.parse(incoming.messageId) ?: return CopyRouteResolution.NotADeviceCopy
+        val localDeviceId = cryptoManager.currentDeviceId() ?: return CopyRouteResolution.NotADeviceCopy
+        val localAccountId = keystoreManager.getUserId()
+        val candidates = runCatching {
+            if (route.audience == DeviceCopyRoute.Audience.OWN_REPLICA &&
+                incoming.senderId == localAccountId
+            ) {
+                sessionManager.discoverOwnDeviceBundles(incoming.senderId)
+            } else {
+                sessionManager.discoverPeerBundles(incoming.senderId)
+            }
+        }.getOrDefault(emptyList())
+
+        if (candidates.isEmpty()) return CopyRouteResolution.NotADeviceCopy
+        val matches = candidates.filter { candidate ->
+            candidate.deviceId != localDeviceId || route.audience == DeviceCopyRoute.Audience.RECIPIENT
+        }.any { candidate ->
+            cryptoManager.deviceCopyTagMatches(
+                tag = route.tag,
+                baseMessageId = route.baseMessageId,
+                ourDeviceId = localDeviceId,
+                peerIdentityPublic = candidate.identityPublic,
+            )
+        }
+        return if (matches) {
+            val matching = candidates.firstOrNull { candidate ->
+                cryptoManager.deviceCopyTagMatches(
+                    tag = route.tag,
+                    baseMessageId = route.baseMessageId,
+                    ourDeviceId = localDeviceId,
+                    peerIdentityPublic = candidate.identityPublic,
+                )
+            }
+            if (matching != null) CopyRouteResolution.Local(matching.deviceId)
+            else CopyRouteResolution.NotADeviceCopy
+        } else {
+            // A validly shaped copy for another device is not a decrypt failure. ACK it without
+            // starting a candidate walk or burning a pre-key on a ciphertext we cannot open.
+            CopyRouteResolution.Foreign
+        }
     }
 
     /**
@@ -165,8 +219,18 @@ class MessageProcessor @Inject constructor(
     private suspend fun executeSideEffects(actions: List<CfeAction>, incoming: MessageRouter.IncomingMessage) {
         for (action in actions) {
             when (action) {
-                is CfeAction.MessageDecrypted ->
+                is CfeAction.MessageDecrypted -> if (
+                    incoming.contentType == shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_SENDER_SYNC
+                ) {
+                    effects.onSenderSync(
+                        action.contactId.ifEmpty { incoming.senderId },
+                        action.messageId,
+                        action.plaintext,
+                        incoming.timestampMs,
+                    )
+                } else {
                     effects.onDecrypted(action.contactId.ifEmpty { incoming.senderId }, action.messageId, action.plaintext)
+                }
                 is CfeAction.CallSignalDecrypted ->
                     effects.onCallSignal(action.contactId, action.messageId, action.protoBytes)
                 is CfeAction.PersistMessage -> effects.persistMessage(action.messageJson)
@@ -212,6 +276,12 @@ class MessageProcessor @Inject constructor(
     private companion object {
         const val TAG = "MessageProcessor"
     }
+
+    private sealed interface CopyRouteResolution {
+        data object NotADeviceCopy : CopyRouteResolution
+        data class Local(val deviceId: String) : CopyRouteResolution
+        data object Foreign : CopyRouteResolution
+    }
 }
 
 /** Cursor-control result — mirrors iOS `streamOutcome`. */
@@ -237,6 +307,7 @@ interface OrchestratorGateway {
  * Semantics ported from iOS `SessionActionExecutor` + `MessageRouter` delegate. */
 interface ProcessorEffects {
     suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray)
+    suspend fun onSenderSync(contactId: String, messageId: String, plaintext: ByteArray, timestampMs: Long) = Unit
     suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray)
     suspend fun persistMessage(messageJson: String)
     suspend fun sendReceipt(messageId: String, toUserId: String, status: String)

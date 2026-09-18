@@ -4,6 +4,7 @@ import android.util.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
+import com.construct.messenger.data.model.IdentityIds
 import com.construct.messenger.service.MessageRouter
 import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.SessionManager
@@ -14,6 +15,7 @@ import javax.inject.Singleton
 import uniffi.construct_core.BinaryFirstMessage
 import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.CfeSecureStoreSlot
+import uniffi.construct_core.ReceivingInitCarrier
 import uniffi.construct_core.wirePayloadUnpack
 
 /**
@@ -36,23 +38,33 @@ class ResponderInitUseCase @Inject constructor(
 
     data class Result(val contactId: String, val messageId: String, val plaintext: ByteArray)
 
-    suspend fun establish(incoming: MessageRouter.IncomingMessage): Result? {
+    suspend fun establish(
+        incoming: MessageRouter.IncomingMessage,
+        preferredDeviceId: String? = null,
+    ): Result? {
         val accountId = incoming.senderId
-        val knownDeviceId = sessionManager.resolveDeviceId(accountId)
-            ?: sessionManager.discoverPeerDevices(accountId).firstOrNull()?.deviceId
-            ?: return null
-        if (!inFlight.add(knownDeviceId)) {
-            Log.i(TAG, "init already in flight ${knownDeviceId.take(8)}…")
+        if (!inFlight.add(accountId)) {
+            Log.i(TAG, "init already in flight ${accountId.take(8)}…")
             return null
         }
         return try {
             if (!cryptoManager.isMessagingReady) return null
-            val fetched = sessionManager.fetchPeerBundleData(
-                accountId,
-                consumeOtpk = true,
-                deviceId = knownDeviceId,
-            )
+            val discovered = sessionManager.discoverPeerBundles(accountId)
+            if (discovered.isEmpty()) return null
+            val candidates = if (preferredDeviceId != null && IdentityIds.isCryptoDeviceId(preferredDeviceId)) {
+                discovered.sortedBy { if (it.deviceId == preferredDeviceId) 0 else 1 }
+            } else {
+                discovered
+            }
             val wire = wirePayloadUnpack(incoming.encryptedPayload.map { it.toUByte() })
+            val carrier = ReceivingInitCarrier(
+                messageNumber = wire.messageNumber,
+                oneTimePrekeyId = wire.oneTimePrekeyId,
+                kemCiphertextBytes = wire.kemCiphertext?.size?.toUInt() ?: 0u,
+                pqMessageEpoch = wire.pqMessageEpoch,
+                isSessionResetInit = incoming.contentType ==
+                    shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_SESSION_RESET_INIT,
+            )
             val first = BinaryFirstMessage(
                 ephemeralPublicKey = wire.dhPublicKey,
                 messageNumber = wire.messageNumber,
@@ -62,29 +74,47 @@ class ResponderInitUseCase @Inject constructor(
                 pqMessageEpoch = wire.pqMessageEpoch,
                 pqRatchetField = wire.pqRatchetField,
             )
-            val init = sessionManager.initReceivingSession(fetched.deviceId, fetched.bundle, first)
-            val blob = cryptoManager.exportSessionBytes(fetched.deviceId)
-            sessionStateStore.saveSecureStore(CfeSecureStoreSlot.Session(fetched.deviceId), blob)
-            if (sessionStateStore.getEstablishedAt(fetched.deviceId) == null) {
-                sessionStateStore.setEstablishedAt(fetched.deviceId, System.currentTimeMillis())
+            val attempts = cryptoManager.planReceivingInit(listOf(carrier), candidates.size)
+            for (attempt in attempts) {
+                val candidate = candidates.getOrNull(attempt.bundleIndex.toInt()) ?: continue
+                val init = runCatching {
+                    sessionManager.initReceivingSession(candidate.deviceId, candidate.bundle, first)
+                }.onFailure {
+                    Log.d(TAG, "candidate failed ${candidate.deviceId.take(8)}…", it)
+                }.getOrNull() ?: continue
+
+                val blob = cryptoManager.exportSessionBytes(candidate.deviceId)
+                sessionStateStore.saveSecureStore(CfeSecureStoreSlot.Session(candidate.deviceId), blob)
+                if (sessionStateStore.getEstablishedAt(candidate.deviceId) == null) {
+                    sessionStateStore.setEstablishedAt(candidate.deviceId, System.currentTimeMillis())
+                }
+                runCatching {
+                    val completed = orchestrator.handleEvent(
+                        CfeIncomingEvent.SessionInitCompleted(candidate.deviceId, blob),
+                    )
+                    sessionStateStore.saveCfeActions(completed)
+                }
+                keystoreManager.getDeviceId()?.let { deviceId ->
+                    runCatching { uploadPreKeys.replenishIfNeeded(deviceId) }
+                }
+                runCatching { sessionControl.sendReady(candidate.deviceId) }
+                    .onFailure { Log.w(TAG, "session_ready failed ${candidate.deviceId.take(8)}…", it) }
+                val plaintext = init.decryptedMessage.map { it.toByte() }.toByteArray()
+                Log.i(
+                    TAG,
+                    "RESPONDER session for ${candidate.deviceId.take(8)}… " +
+                        "attempt=${attempt.bundleIndex + 1u}/${candidates.size} " +
+                        "knst=${IncomingPlaintext.isKnst(plaintext)}",
+                )
+                return Result(candidate.deviceId, incoming.messageId, plaintext)
             }
-            runCatching {
-                val completed = orchestrator.handleEvent(CfeIncomingEvent.SessionInitCompleted(fetched.deviceId, blob))
-                sessionStateStore.saveCfeActions(completed)
-            }
-            keystoreManager.getDeviceId()?.let { deviceId ->
-                runCatching { uploadPreKeys.replenishIfNeeded(deviceId) }
-            }
-            runCatching { sessionControl.sendReady(fetched.deviceId) }
-                .onFailure { Log.w(TAG, "session_ready failed ${fetched.deviceId.take(8)}…", it) }
-            val plaintext = init.decryptedMessage.map { it.toByte() }.toByteArray()
-            Log.i(TAG, "RESPONDER session for ${fetched.deviceId.take(8)}… knst=${IncomingPlaintext.isKnst(plaintext)}")
-            Result(fetched.deviceId, incoming.messageId, plaintext)
+            Log.w(TAG, "RESPONDER candidates exhausted for ${accountId.take(8)}…")
+            null
         } catch (e: Exception) {
-            Log.e(TAG, "RESPONDER init failed ${knownDeviceId.take(8)}…", e)
+            Log.e(TAG, "RESPONDER init failed ${accountId.take(8)}…", e)
             null
         } finally {
-            inFlight.remove(knownDeviceId)
+            inFlight.remove(accountId)
         }
     }
 

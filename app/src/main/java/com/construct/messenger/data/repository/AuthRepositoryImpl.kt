@@ -1,6 +1,9 @@
 package com.construct.messenger.data.repository
 
+import android.content.Context
+import android.content.Intent
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.auth.AuthSessionManager
 import com.construct.messenger.data.local.KeystoreManager
@@ -11,6 +14,8 @@ import com.construct.messenger.domain.usecase.RegisterUseCase
 import com.construct.messenger.domain.usecase.RegistrationStep
 import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.service.MessagingRuntime
+import com.construct.messenger.service.MessagingForegroundService
+import dagger.hilt.android.qualifiers.ApplicationContext
 import shared.proto.services.v1.AuthServiceOuterClass.LogoutRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +30,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val registerUseCase: RegisterUseCase,
     private val loginUseCase: LoginUseCase,
     private val keystoreManager: KeystoreManager,
@@ -65,7 +71,7 @@ class AuthRepositoryImpl @Inject constructor(
             deviceId = resolvedDeviceId,
             username = resolvedUsername,
         )
-        messagingRuntime.start()
+        startMessagingService()
     }
 
     override suspend fun restoreSession(): Boolean {
@@ -98,7 +104,7 @@ class AuthRepositoryImpl @Inject constructor(
             deviceId = deviceId,
             username = null,
         )
-        messagingRuntime.start()
+        startMessagingService()
         return true
     }
 
@@ -127,6 +133,7 @@ class AuthRepositoryImpl @Inject constructor(
             }.onFailure { Log.w(TAG, "Logout RPC failed", it) }
         }
         messagingRuntime.stop()
+        context.stopService(Intent(context, MessagingForegroundService::class.java))
         authSession.clearSession()
         keystoreManager.clearTokens()
         cryptoManager.close()
@@ -135,5 +142,12 @@ class AuthRepositoryImpl @Inject constructor(
 
     private companion object {
         const val TAG = "AuthRepository"
+    }
+
+    private fun startMessagingService() {
+        ContextCompat.startForegroundService(
+            context,
+            Intent(context, MessagingForegroundService::class.java),
+        )
     }
 }

@@ -22,7 +22,7 @@ private val Context.orientationDataStore: DataStore<Preferences> by
  */
 @Singleton
 class DataStoreOrientationStore @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : OrientationStore {
 
     override val completed: Flow<Boolean> =

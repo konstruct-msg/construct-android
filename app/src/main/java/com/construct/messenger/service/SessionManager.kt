@@ -72,6 +72,19 @@ class SessionManager @Inject constructor(
         return SessionPeer(fetched.accountId, fetched.deviceId, fetched.identityPublic)
     }
 
+    /** Ensure a session with one explicitly selected device from a multi-device account. */
+    suspend fun ensureSessionForDevice(accountOrDeviceId: String, deviceId: String): SessionPeer {
+        require(IdentityIds.isCryptoDeviceId(deviceId)) { "invalid peer CryptoDeviceId" }
+        val accountId = accountFor(accountOrDeviceId)
+        val identity = peerDeviceRegistry.identityForDevice(deviceId)
+        if (cryptoManager.hasSession(deviceId) && identity != null) {
+            return SessionPeer(accountId, deviceId, identity)
+        }
+        val fetched = fetchPeerBundleData(accountId, consumeOtpk = true, deviceId = deviceId)
+        cryptoManager.initSession(fetched.deviceId, fetched.bundle)
+        return SessionPeer(fetched.accountId, fetched.deviceId, fetched.identityPublic)
+    }
+
     /**
      * Fetch a peer prekey bundle. [consumeOtpk] must be true only for X3DH init
      * (initiator or responder). Invite verify uses false.
@@ -109,6 +122,16 @@ class SessionManager @Inject constructor(
 
     /** Refresh the account -> all active device mappings without consuming OTPKs. */
     suspend fun discoverPeerDevices(contactId: String): List<PeerDeviceRegistry.PeerDevice> {
+        return discoverPeerBundles(contactId).map { bundle ->
+            PeerDeviceRegistry.PeerDevice(bundle.deviceId, bundle.identityPublic, bundle.platform)
+        }
+    }
+
+    /** Fetch every active device bundle without consuming an OTPK. Used by fan-out and receive init. */
+    suspend fun discoverPeerBundles(
+        contactId: String,
+        rememberAsContact: Boolean = true,
+    ): List<PeerBundle> {
         val accountId = accountFor(contactId)
         val response = grpcClient.key.getPreKeyBundles(
             GetPreKeyBundlesRequest.newBuilder()
@@ -116,7 +139,7 @@ class SessionManager @Inject constructor(
                 .setConsumeOneTimePrekey(false)
                 .build(),
         )
-        val devices = response.bundlesList.mapNotNull { entry ->
+        val bundles = response.bundlesList.mapNotNull { entry ->
             val identity = entry.bundle.identityKey.toByteArray()
             if (identity.isEmpty()) return@mapNotNull null
             val derived = cryptoManager.deriveDeviceIdFromIdentity(identity)
@@ -125,12 +148,28 @@ class SessionManager @Inject constructor(
                 Log.w(TAG, "ignoring mismatched device bundle ${entry.deviceId.take(8)}…")
                 return@mapNotNull null
             }
-            PeerDeviceRegistry.PeerDevice(derived, identity, entry.platformValue)
+            PeerBundle(
+                accountId = accountId,
+                deviceId = derived,
+                identityPublic = identity,
+                platform = entry.platformValue,
+                bundle = entry.bundle.toBinaryKeyBundle(entry.verifyingKey.toByteArray()),
+            )
         }
-        peerDeviceRegistry.recordAll(accountId, devices, response.activeDevicesList)
-        devices.forEach { rememberIdentity(accountId, it.identityPublic) }
-        return devices
+        peerDeviceRegistry.recordAll(
+            accountId,
+            bundles.map { PeerDeviceRegistry.PeerDevice(it.deviceId, it.identityPublic, it.platform) },
+            response.activeDevicesList,
+        )
+        if (rememberAsContact) {
+            bundles.forEach { rememberIdentity(accountId, it.identityPublic) }
+        }
+        return bundles
     }
+
+    /** Own devices are fetched through the same server answer but are not contacts in Room. */
+    suspend fun discoverOwnDeviceBundles(accountId: String): List<PeerBundle> =
+        discoverPeerBundles(accountId, rememberAsContact = false)
 
     private suspend fun accountFor(contactId: String): String =
         if (IdentityIds.isCryptoDeviceId(contactId)) {
@@ -145,6 +184,9 @@ class SessionManager @Inject constructor(
 
     suspend fun accountIdForDevice(deviceId: String): String? =
         peerDeviceRegistry.accountIdForDevice(deviceId)
+
+    suspend fun knownDeviceIds(accountId: String): List<String> =
+        peerDeviceRegistry.knownDevices(accountId).map { it.deviceId }
 
     suspend fun resolveTarget(accountOrDeviceId: String): SessionPeer? {
         val deviceId = peerDeviceRegistry.resolveDeviceId(accountOrDeviceId) ?: return null
@@ -237,6 +279,7 @@ class SessionManager @Inject constructor(
         val accountId: String,
         val deviceId: String,
         val identityPublic: ByteArray,
+        val platform: Int = 0,
         val bundle: BinaryKeyBundle,
     )
 

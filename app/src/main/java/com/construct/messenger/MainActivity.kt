@@ -1,8 +1,12 @@
 package com.construct.messenger
 
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.Manifest
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -21,11 +25,21 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (!granted) {
+            // The foreground service still keeps the stream alive; Android may hide its
+            // drawer notification until the user enables notifications in system settings.
+        }
+    }
+
     @Inject
     lateinit var pendingInvites: PendingInviteStore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestNotificationPermissionIfNeeded()
         captureInvite(intent)
         val barScrim = CTColor.bg.toArgb()
         enableEdgeToEdge(
@@ -55,6 +69,14 @@ class MainActivity : ComponentActivity() {
         val data = intent?.data?.toString() ?: return
         if (data.startsWith("konstruct://add")) {
             pendingInvites.offer(data)
+        }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 }

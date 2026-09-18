@@ -7,13 +7,17 @@ import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.ClassicCryptoCore
 import uniffi.construct_core.DecryptedMessageResult
+import uniffi.construct_core.DeliveryTarget
 import uniffi.construct_core.EncryptedMessageComponents
 import uniffi.construct_core.OrchestratorCore
 import uniffi.construct_core.OtpkPair
 import uniffi.construct_core.PowSolution
 import uniffi.construct_core.RecoveryKeypair
+import uniffi.construct_core.ReceivingInitAttempt
+import uniffi.construct_core.ReceivingInitCarrier
 import uniffi.construct_core.RegistrationBundleFields
 import uniffi.construct_core.SessionInitResult
+import uniffi.construct_core.TeardownDecision
 import uniffi.construct_core.PowProgressCallback
 import uniffi.construct_core.computePow
 import uniffi.construct_core.computePowWithProgress
@@ -25,6 +29,7 @@ import uniffi.construct_core.deriveRecoveryKeypair
 import uniffi.construct_core.deriveVerifyingKeyFromSecret
 import uniffi.construct_core.generateMnemonic
 import uniffi.construct_core.mnemonicToSeed
+import uniffi.construct_core.planSend as planSendTargets
 import uniffi.construct_core.signInviteData
 import uniffi.construct_core.signRecoveryChallenge
 import uniffi.construct_core.verifyInviteSignature
@@ -68,6 +73,9 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     @Volatile
     private var localDeviceId: String? = null
 
+    @Volatile
+    private var localIdentityPublic: ByteArray? = null
+
     /** True once [setLocalUserId] has built the orchestrator — the receive path
      * (CFE `handleEvent`) is only available after this. */
     val isMessagingReady: Boolean
@@ -85,6 +93,7 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         }
         bootstrapCore = instance
         val bundle = instance.getRegistrationBundleFields()
+        localIdentityPublic = bundle.identityPublic.toByteArray()
         localDeviceId = deriveDeviceId(bundle).also { derived ->
             check(IdentityIds.isCryptoDeviceId(derived)) {
                 "construct-core returned invalid local CryptoDeviceId"
@@ -123,6 +132,9 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
 
     /** Device-space identity currently bound into OrchestratorCore. */
     fun currentDeviceId(): String? = synchronized(coreLock) { localDeviceId }
+
+    /** Public half used for device-copy routing and peer registry validation. */
+    fun currentIdentityPublic(): ByteArray? = synchronized(coreLock) { localIdentityPublic?.copyOf() }
 
     // ── OrchestratorGateway (CFE receive path) ──────────────────────────────
 
@@ -213,6 +225,66 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
 
     fun hasSession(contactId: String): Boolean = synchronized(coreLock) {
         orchestrator?.hasSession(contactId) ?: false
+    }
+
+    /** Core-owned multi-device delivery plan; account→device translation stays in the app. */
+    fun planSend(
+        recipientDeviceIds: List<String>,
+        ownDeviceIds: List<String>,
+        ourDeviceId: String,
+        recipientIsSelf: Boolean,
+        primarySendCovered: String,
+    ): List<DeliveryTarget> = planSendTargets(
+        recipientDeviceIds,
+        ownDeviceIds,
+        ourDeviceId,
+        recipientIsSelf,
+        primarySendCovered,
+    )
+
+    /** Core-owned teardown plan over a client-supplied account→device set. */
+    fun planTeardown(candidateDeviceIds: List<String>, peerOnDeadSession: Boolean): List<TeardownDecision> =
+        synchronized(coreLock) {
+            (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+                .planTeardown(candidateDeviceIds, peerOnDeadSession)
+        }
+
+    /** Core-owned two-dimensional receive-init plan: carriers × candidate bundles. */
+    fun planReceivingInit(
+        carriers: List<ReceivingInitCarrier>,
+        bundleCount: Int,
+    ): List<ReceivingInitAttempt> = synchronized(coreLock) {
+        require(bundleCount >= 0) { "bundleCount must not be negative" }
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .planReceivingInit(carriers, bundleCount.toUInt())
+    }
+
+    fun deviceCopyTag(
+        baseMessageId: String,
+        targetDeviceId: String,
+        peerIdentityPublic: ByteArray,
+    ): String = synchronized(coreLock) {
+        uniffi.construct_core.deviceCopyTag(
+            baseMessageId,
+            targetDeviceId,
+            identityKeyBytes().toUByteList(),
+            peerIdentityPublic.toUByteList(),
+        )
+    }
+
+    fun deviceCopyTagMatches(
+        tag: String,
+        baseMessageId: String,
+        ourDeviceId: String,
+        peerIdentityPublic: ByteArray,
+    ): Boolean = synchronized(coreLock) {
+        uniffi.construct_core.deviceCopyTagMatches(
+            tag,
+            baseMessageId,
+            ourDeviceId,
+            identityKeyBytes().toUByteList(),
+            peerIdentityPublic.toUByteList(),
+        )
     }
 
     /** Apply a post-quantum contribution exactly where the core's CFE action says. */
@@ -314,6 +386,7 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         bootstrapCore?.close()
         bootstrapCore = null
         localDeviceId = null
+        localIdentityPublic = null
     }
 }
 

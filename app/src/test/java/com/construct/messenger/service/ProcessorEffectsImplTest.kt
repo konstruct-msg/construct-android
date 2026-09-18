@@ -11,12 +11,17 @@ import com.construct.messenger.data.local.db.MessageEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.util.ConversationId
+import com.construct.messenger.util.KnstFrame
+import com.construct.messenger.util.SenderSyncRouting
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.UUID
+import shared.proto.messaging.v1.Content.MessageContent
+import shared.proto.messaging.v1.Content.TextMessage
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -58,6 +63,52 @@ class ProcessorEffectsImplTest {
         assertEquals(1, chats.rows[chatId]?.unreadCount)
         assertEquals(peer, users.rows[peer]?.id)
         assertTrue(acks.isProcessed("msg-1"))
+    }
+
+    @Test
+    fun `onSenderSync strips SSR1 and persists sent copy under base id`() = runTest {
+        val messages = FakeMessageDao()
+        val chats = FakeChatDao()
+        val users = FakeUserDao()
+        val acks = FakeAckStore()
+        val keystore: KeystoreManager = mock()
+        whenever(keystore.getUserId()).thenReturn(myId)
+        val effects = ProcessorEffectsImpl(
+            cryptoManager = mock<CryptoManager>(),
+            keystoreManager = keystore,
+            messageDao = messages,
+            chatDao = chats,
+            userDao = users,
+            ackStore = acks,
+            sessionStateStore = mock(),
+            sessionManager = mock(),
+            sessionControl = mock(),
+            healSession = mock(),
+            sendReceiptUseCase = mock(),
+            responderInit = mock(),
+        )
+        val baseId = "550e8400-e29b-41d4-a716-446655440000"
+        val content = MessageContent.newBuilder()
+            .setText(TextMessage.newBuilder().setText("mirrored"))
+            .build()
+            .toByteArray()
+        val knst = KnstFrame.pack(content, KnstFrame.TYPE_E2EE_SIGNAL, UUID.fromString(baseId))
+        val routed = SenderSyncRouting.encode(peer, knst)
+
+        effects.onSenderSync(
+            contactId = "source-device-opaque",
+            messageId = "$baseId-ss-0123456789abcdef",
+            plaintext = routed,
+            timestampMs = 42L,
+        )
+
+        val chatId = ConversationId.direct(myId, peer)
+        assertEquals("mirrored", messages.rows[baseId]?.text)
+        assertEquals(true, messages.rows[baseId]?.isSentByMe)
+        assertEquals(42L, messages.rows[baseId]?.timestamp)
+        assertEquals(chatId, messages.rows[baseId]?.chatId)
+        assertEquals(0, chats.rows[chatId]?.unreadCount)
+        assertTrue(acks.isProcessed("$baseId-ss-0123456789abcdef"))
     }
 }
 

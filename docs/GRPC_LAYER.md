@@ -92,7 +92,8 @@ domain/usecase/SendMessageUseCase.kt                            [РАБОТАЕ�
   расширить `StreamEvent`, когда появится потребитель;
 - **VEIL-фолбэк транспорта** — не подключён (оба канала direct TLS);
 - **multi-device account→device routing** — registry and device-only core
-  addressing are connected; full fan-out and receive candidate walk remain;
+  addressing are connected; send fan-out, SSR1 sender-sync and bundle candidate
+  walk use the core plans; queued multi-carrier receive reconciliation remains;
 - **CFE timers / AppLaunched / reconnect events** — wired through
   `CfeTimerBridge`; production transport coverage remains;
 - **`SEALED_UNAUTHENTICATED_TRANSPORT = false`** — флип синхронно с iOS

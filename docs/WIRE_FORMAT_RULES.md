@@ -9,8 +9,10 @@ transport и классифицирует envelope; `MessageProcessor` пере�
 по typed `CfeSecureStoreSlot`; строковые ключи — только внутренняя Room-маппинг,
 не часть протокола. В Android account id остаётся сетевым адресатом, а CFE
 session/contact id — только `CryptoDeviceId`; перевод делает durable
-`PeerDeviceRegistry`. Полный per-device fan-out и receive candidate walk ещё не
-закрыты. Новых outer-envelope device fields добавлять нельзя.
+`PeerDeviceRegistry`. Recipient/own-replica fan-out, opaque `-fd-`/`-ss-` copy ids,
+SSR1 sender-sync routing and non-destructive bundle candidate walking now use the
+core plans. Queued multi-carrier receive reconciliation and live interop remain
+open. Новых outer-envelope device fields добавлять нельзя.
 
 **Описание формата не здесь.** Раскладка слоёв, размеры заголовков и сводка «что видит сервер» —
 `~/Code/construct-docs/architecture/WIRE_FORMAT.md`. Этот файл намеренно не пересказывает её: копия
