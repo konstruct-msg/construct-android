@@ -32,7 +32,7 @@ iOS-приложение** `construct-ios`. Документы могли уст
 
 - **JDK 21**
 - **Android SDK** (compileSdk 35), minSdk 26
-- **Gradle 9.3.1** (через `./gradlew`, скачивается автоматически)
+- **Gradle 9.5.0** (через `./gradlew`, скачивается автоматически)
 - Для пересборки криптоядра: Rust + Android NDK + `uniffi-bindgen`
 - Для генерации gRPC: `protoc`, `protoc-gen-grpc-kotlin`, `protoc-gen-java`
 
@@ -116,12 +116,13 @@ construct-android/
 ```
 
 > `docs/IMPLEMENTATION_PLAN.md` — целевые фазы **и** актуальные статусы (обновлено
-> 2026-08-19). 1:1 текст по production gRPC уже в дереве; VEIL / FCM / звонки /
-> recovery — нет.
+> 2026-09-21). 1:1 текст по production gRPC, multi-device fan-out и собственная
+> foreground-доставка уже в дереве; VEIL / звонки / recovery — нет. FCM не
+> планируется: приложение не зависит от Google Play Services.
 
 ---
 
-## Текущее состояние (2026-08-19, `develop` @ `46f515d`)
+## Текущее состояние (2026-09-21, `develop` @ `981f809`)
 
 Рабочий срез — **1:1 текст по production gRPC**. UI ходит только в репозитории.
 
@@ -134,6 +135,11 @@ construct-android/
 - OTPK upload после регистрации. `GetPreKeyBundle` на verify инвайта — `consume_one_time_prekey=false`.
 - END_SESSION (type 21, 1024 pad), heal, RESPONDER init, E2E receipts (KNST 14), `GetIdentityKey` на входящих.
 - FindUser / contact requests (`UserService`).
+- Account→device registry, recipient/own-replica fan-out, SSR1 sender sync и
+  non-destructive bundle candidate walk.
+- `CfeTimerBridge` передаёт launch/reconnect/timer events обратно в core.
+- `MessagingForegroundService` держит persistent `MessageStream` без GMS и
+  восстанавливает runtime после пересоздания процесса.
 
 ### UI
 
@@ -145,10 +151,11 @@ construct-android/
 
 ### Не сделано
 
-- VEIL, FCM, WebRTC/звонки, BIP39 recovery, media, MLS.
+- VEIL, WebRTC/звонки, BIP39 recovery, media, MLS.
 - QR-экран инвайта; honeycomb Synaps.
 - Экраны настроек (Account, Appearance, Network, Security).
-- `ja`. Live iOS↔Android interop не гоняли. Эмуляторный smoke упёрся в отсутствующий system image.
+- Queued multi-carrier receive reconciliation.
+- `ja`. Live iOS↔Android interop и smoke на реальном Android 11 ещё не гоняли.
 
 Моки (`data/mock/`) остались для тестов; Hilt биндит `*Impl`.
 

@@ -2,17 +2,18 @@
 
 > **Цель**: предоставить Android-разработчику полное понимание архитектуры, дизайн-системы, UI-компонентов, бизнес-логики и крипто-протокола для реализации на Kotlin / Jetpack Compose.
 >
-> **Статус реализации (2026-09-18, `construct-android` `develop`).**
+> **Статус реализации (2026-09-21, `construct-android` `develop`).**
 > Это канон дизайна (iOS → Android), не трекер фаз. Фазы протокола —
 > `docs/IMPLEMENTATION_PLAN.md` в репозитории Android.
 >
 > **Уже в коде:** онбординг + Orientation; табы; список чатов (Room); чат
-> (пузыри + инпут + send/observe); Synaps — mint v5 / paste / список контактов
-> (не honeycomb); `konstruct://add`; session runtime / receive / send; CFE
+> (пузыри + инпут + send/observe); Synaps — mint v5 / paste / список контактов /
+> FindUser / contact requests (не honeycomb); `konstruct://add`; session runtime /
+> receive / send; CFE
 > action executor; typed secure-store persistence; orchestrator/PQ snapshots;
 > current `construct-core` Android artifact.
-> **Ещё нет:** honeycomb Synaps, FindUser / запросы, экраны Account / Appearance /
-> Network / Security, VEIL / звонки / recovery, queued multi-carrier receive walk
+> **Ещё нет:** honeycomb Synaps, экраны Account / Appearance / Network / Security,
+> VEIL / звонки / recovery, queued multi-carrier receive walk
 > и живой iOS↔Android прогон. Account→device registry, device-only core boundary,
 > per-device fan-out, SSR1 sender-sync, bundle candidate walk и CFE timer bridge
 > уже подключены.
@@ -951,9 +952,9 @@ Tab bar скрывается когда `isInChat || isInSettings == true`.
 ### 5.10 SynapsView — контакты (соты)
 
 > **Android сейчас (намеренно проще канона):** mint v5 (share/copy link),
-> paste-accept, список контактов → чат. Honeycomb / ZoomableCloud, FindUser и
-> входящие contact requests — ещё нет. Deep link `konstruct://add` пишется в
-> `PendingInviteStore` и гасится после онбординга.
+> paste-accept, список контактов → чат, FindUser и входящие contact requests.
+> Honeycomb / ZoomableCloud и профильный sheet ещё не реализованы. Deep link
+> `konstruct://add` пишется в `PendingInviteStore` и гасится после онбординга.
 
 - «Honeycomb» layout: зуммируемый/панорамируемый облако из круглых аватаров
 - `ZoomableCloud` + `HoneycombCloud` composables
@@ -1197,7 +1198,7 @@ data class User(
 ## 9. Структура проекта (Android Reference)
 
 Рекомендуемая структура (цель, не текущее дерево). Фактическая раскладка
-2026-08-19: `crypto/`, `data/`, `domain/`, `service/`, `invite/`, `stealth/`,
+2026-09-21: `crypto/`, `data/`, `domain/`, `service/`, `invite/`, `stealth/`,
 `viewmodel/`, `ui/` — см. `docs/IMPLEMENTATION_PLAN.md` File Structure Summary
 и `README.md`. Пакетов `design/` и `security/` нет.
 
@@ -2105,21 +2106,27 @@ sealed class SessionError : Exception() {
 | State management | `@MainActor` dictionaries | `Mutex` + `StateFlow` |
 | DI | Singletons everywhere | Hilt injection |
 
-## Push (FCM) Registration
+## Background Delivery (No GMS)
 
-Server-side facts Android must know (fixed 2026-07-17, `construct-server` commit `938f395`):
+Android does not register an FCM token and must not depend on Google Play Services.
+The base delivery path is the existing authenticated `MessageStream`, hosted by
+`MessagingForegroundService` with a persistent, user-visible notification.
 
-- **Token length cap is 512 chars.** FCM registration tokens routinely run 140–200+ chars;
-  the old 128-char cap silently rejected them with `Validation error: Device token format is
-  invalid`. If registration fails with that error, check length last — the cap is now 512.
-- **Register with `push_environment`** appropriate for the build; the server routes per-token.
-- **Token invalidation semantics**: the server deletes a stored token ONLY on FCM/APNs
-  verdicts that condemn the *token* (APNs `400 BadDeviceToken` / `410 Unregistered`;
-  FCM equivalent unregistered errors). Provider-auth failures (403-class) never delete
-  tokens. Client-side rule mirrored from iOS: re-register the current FCM token on every
-  app launch — it self-heals any server-side deletion within one launch.
-- Push payload for calls: `construct_call` is a **nested** object (iOS bug 2026-06-16 —
-  reading `call_id` flat broke incoming-call wake). Parse nested.
+- The service starts after session restore/registration and stops on logout or when no
+  identity can be restored.
+- `START_STICKY` recreation restores the identity before restarting `MessagingRuntime`;
+  the runtime mutex prevents a duplicate stream during concurrent startup.
+- Android 13+ requests `POST_NOTIFICATIONS`; Android 14+ supplies the
+  `remoteMessaging` service type. Android 11 uses the normal two-argument
+  `startForeground` and notification-channel path.
+- Cold start/reconnect still follows one pipeline: import CFE state → hydrate ACK store →
+  drain `GetPendingMessages` → open the stream.
+- UnifiedPush may be an optional accelerator in the future, but it must never become a
+  prerequisite or a second source of protocol truth.
+
+The remaining work is hardware validation: process death, reboot, network loss/reconnect,
+pending drain, Doze/battery behavior, and live iOS↔Android delivery. Call wake-up policy is
+deferred with the WebRTC/Telecom slice; do not introduce FCM as a shortcut.
 
 ---
 

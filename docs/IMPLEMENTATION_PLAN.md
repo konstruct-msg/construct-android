@@ -1,6 +1,6 @@
 # Konstrukt Messenger Android — Implementation Plan
 
-> **Last actualized:** 2026-09-18. Working slice is **1:1 text over production gRPC**
+> **Last actualized:** 2026-09-21. Working slice is **1:1 text over production gRPC**
 > with the current `construct-core` CFE artifact (`0.17.0+1241ec58d465`).
 > `veil-front` lands via a construct-core rebuild + flag flip (no Kotlin
 > routing). See `construct-docs/cryptocore/OBFUSCATION_IMPLEMENTATION_PLAN_veil-front.md`.
@@ -19,7 +19,7 @@
 > and `CfeTimerBridge` feeds AppLaunched/reconnect/timer events back to CFE.
 > Still open: recovery (4), VEIL (5.1), calls (6), settings subscreens,
 > honeycomb Synaps, Play packaging (9.2), queued multi-carrier receive walking,
-> plus live iOS↔Android interop/emulator smoke. Recipient/replica fan-out,
+> plus live iOS↔Android interop and Android 11 hardware smoke. Recipient/replica fan-out,
 > SSR1 sender-sync receive, bundle candidate walking, and planned teardown are
 > now wired through the core plans.
 > No FCM is planned: delivery remains the persistent stream/foreground-service
@@ -254,10 +254,10 @@ SSR1 sender-sync routing are wired; queued multi-carrier reconciliation remains 
 - `domain/usecase/HealSessionUseCase.kt` (transport side effect only)
 
 ### 3.4 Session-Control Message Format
-**Status:** Partial — `MessageRouter` classifies `content_type` 21/24/25/26 and
-does not persist them as chat. Typed *handlers* (PING/READY/RESET_INIT/END on
-the wire) are not implemented. Android is greenfield: do **not** dual-send
-legacy magic strings; produce typed `SessionControl` only.
+**Status:** Partial — END_SESSION (21) and RESET_INIT (24) have live inbound
+handlers. PING/READY (25/26) have typed producers and are non-renderable after
+decrypt, but their inbound session-confirmation/watchdog transitions are not
+wired yet. Android is greenfield: do **not** dual-send legacy magic strings.
 **Priority:** HIGH
 **Depends on:** 3.2, 3.3, 5.2 (message stream)
 
@@ -271,22 +271,20 @@ The session handshake signals (`PING`, `READY`, `RESET_INIT`) are protocol
 control, not chat content. iOS historically encoded them as plaintext magic
 strings (`"__session_ready_<UUID>__"`) baked into the message body, which
 leaked into the transcript and broke on format skew (see
-`decisions/binary-control-message-format.md`). The fix moves the
-discriminator into the Envelope **`content_type`** field — outside the
-renderable text pipeline, so it can never become a chat bubble — and is not
-part of the Double-Ratchet AEAD associated data, so setting it never affects
-decryption.
+`decisions/binary-control-message-format.md`). Android uses two real wire
+forms: unencrypted outer-envelope types for reset/reset-init, and encrypted
+KNST type byte 5 for PING/READY. The latter stay inside Double-Ratchet
+ciphertext; `IncomingPlaintext` filters them before Room persistence.
 
-| Signal | `content_type` | Direction | Payload |
-|--------|---------------:|-----------|---------|
-| Session ping | `25` `CONTENT_TYPE_SESSION_PING` | INITIATOR → peer (tie-break nudge) | `SessionControl{op=PING}` |
-| Session ready | `26` `CONTENT_TYPE_SESSION_READY` | RESPONDER → INITIATOR (phase 2) | `SessionControl{op=READY}` |
-| Session reset-init | `24` `CONTENT_TYPE_SESSION_RESET_INIT` | tie-break winner (atomic re-init) | real X3DH first-ratchet carrier (msgNum=0) — **not** a pure signal |
-| End session | `21` `CONTENT_TYPE_SESSION_RESET` | either | 16-byte sentinel (unencrypted) |
+| Signal | Wire discriminator | Direction | Payload |
+|--------|--------------------|-----------|---------|
+| Session ping | KNST byte 5 = `25` `CONTENT_TYPE_SESSION_PING` | INITIATOR → peer | encrypted `SessionControl{op=PING}` |
+| Session ready | KNST byte 5 = `26` `CONTENT_TYPE_SESSION_READY` | RESPONDER → INITIATOR | encrypted `SessionControl{op=READY}` |
+| Session reset-init | outer `content_type=24` `CONTENT_TYPE_SESSION_RESET_INIT` | tie-break winner | real X3DH first-ratchet carrier (msgNum=0), not a pure signal |
+| End session | outer `content_type=21` `CONTENT_TYPE_SESSION_RESET` | either | unencrypted random 1024-byte pad |
 
-`SessionControl` (already vendored in `app/src/main/proto/messaging/e2ee.proto`,
-`ContentType` enum in `app/src/main/proto/core/envelope.proto` — proto plumbing
-for this is done, the Kotlin consumer/producer side is not):
+`SessionControl` is vendored in `app/src/main/proto/messaging/e2ee.proto`; its
+producer is `SessionControlUseCase.sendEncryptedControl`:
 
 ```protobuf
 message SessionControl {
@@ -300,25 +298,23 @@ enum SessionOp { SESSION_OP_UNSPECIFIED=0; PING=1; READY=2; RESET_INIT=3; END=4;
 No checksum needed — integrity is already guaranteed by the Double Ratchet
 AEAD tag.
 
-**Consumer rule (byte-sniff, accept both):** dispatch on `content_type`
-first; fall back to the legacy plaintext prefix only to interop with old iOS
-peers still in the field. A non-null result means "handle as control, return
-before persisting — never create a `Message` row." `RESET_INIT` (24) is
-special: the X3DH init already consumed the payload, so the inner content is
-just a sentinel.
+**Consumer rule:** dispatch outer 21/24 before the normal chat pipeline. After
+decrypt, inspect the KNST type before decoding a `MessageContent`; types 25/26
+must return before Room persistence. `RESET_INIT` (24) is special because its
+payload is the real X3DH carrier and must enter responder init.
 
 **Producer rule:** Android is greenfield — produce typed `SessionControl` only.
-Do **not** dual-send the iOS legacy magic string. Consume typed `content_type`
-first; fall back to the plaintext prefix only when reading old iOS peers.
+Do **not** dual-send the iOS legacy magic string. PING/READY travel as ordinary
+encrypted messages at the outer envelope so the relay does not need to preserve
+their semantic type; the KNST header is visible only after decrypt.
 
-> **Server dependency:** the server must recognize `content_type` 25/26 or it
-> re-emits them as `E2EE_SIGNAL` (1) and the typed path goes inert — fail-open,
-> not a dropped message, so dual-send still works via the string either way.
-> Server proto landed 2026-06-23 (`construct-server/shared/proto/core/envelope.proto`).
-
-**Where it lives today:** `service/MessageRouter.kt` (classify, do not persist).
-**Still to create:** handlers that *act* on 21/24/25/26 (heal, READY, RESET_INIT)
-without rendering a bubble.
+**Where it lives today:** `service/MessageRouter.kt` handles outer control types;
+`IncomingPlaintext.kt` filters decrypted KNST controls; `SessionControlUseCase.kt`
+produces typed PING/READY and END_SESSION.
+**Current handler state:** inbound 21 archives the local session without a bounce;
+24 goes through the responder-init/CFE path; 25/26 producers exist and all four
+types are guaranteed non-renderable. Inbound PING/READY still need their explicit
+session-confirmation/watchdog transitions; today they are ACKed as control frames.
 
 ---
 
@@ -503,33 +499,37 @@ equivalent of CallKit. Use it for:
 
 ---
 
-## Phase 7: Push Notifications
+## Phase 7: Background Delivery (No GMS)
 
-### 7.1 FCM Integration
-**Status:** Pending
-**Priority:** MEDIUM
-**Depends on:** 2.3
+### 7.1 Persistent foreground stream
+**Status:** ✅ Done for the current 1:1 slice (2026-09-18); real-device lifecycle
+and Doze smoke still required
+**Priority:** HIGH
+**Depends on:** 5.2
 
-```
-1. Get FCM token (must be a high-priority data message — NOT a notification message,
-   notification messages don't wake the app reliably)
-2. RPC: RegisterPushToken(token, platform=ANDROID)
-3. On new message: FCM data message -> wake up -> stream -> decrypt
-4. Use WorkManager for reliability
-5. For incoming calls: trigger ConnectionService.onShowIncomingCallUi
-   (NOT a notification — the system call UI is owned by Telecom framework, §6.1)
-```
+`MessagingForegroundService` owns the process-lifetime host for the existing
+`MessageStream`; it is not a second delivery channel. It starts only for an
+authenticated identity, restores the runtime after sticky process recreation,
+and stops when no identity can be restored or the user logs out.
 
-> **Cross-platform note:** Android does not have a true VoIP-push primitive
-> equivalent to iOS PushKit + CallKit. The closest is FCM high-priority data
-> message + `ConnectionService.onShowIncomingCallUi`. Battery / Doze
-> constraints make this less reliable than iOS PushKit; expect to add
-> WorkManager-driven catch-up paths and `setForegroundService` during active
-> calls. Treat this as a known platform parity gap, not a regression.
+- Android 8–13 use the ordinary two-argument `startForeground` path.
+- Android 13+ requests `POST_NOTIFICATIONS`.
+- Android 14+ declares and supplies the `remoteMessaging` foreground-service type.
+- Android 11 (API 30) is supported by the normal notification-channel path.
+- No FCM SDK, Play Integrity, Play Location, GMS/FOSS flavors, receiver, or
+  provider token registration is part of the base APK.
+- UnifiedPush may be added later only as an optional accelerator; the persistent
+  stream must remain fully functional without a distributor.
 
-**Files to create:**
-- `data/local/FcmService.kt`
-- `data/worker/MessageSyncWorker.kt`
+**Files:**
+- `service/MessagingForegroundService.kt`
+- `service/MessagingRuntime.kt`
+- `MainActivity.kt` (Android 13+ notification permission)
+- `AndroidManifest.xml`
+
+**Still to verify on hardware:** process kill/recreation, reboot, network
+loss/reconnect, pending-message drain, Doze/battery behavior, and delivery
+against a live iOS peer.
 
 ---
 
@@ -538,7 +538,8 @@ equivalent of CallKit. Use it for:
 ### 8.1 Navigation & Screens
 **Status:** In Progress (1:1 text path wired to real repositories; settings/calls still skeleton)
 **Priority:** HIGH
-**Depends on:** Phase 1–5.2 for 1:1 text (done); 6–7 for calls/push
+**Depends on:** Phase 1–5.2 and 7 for the current 1:1 text/delivery slice (done);
+6 for calls
 
 ```kotlin
 // Navigation
@@ -630,8 +631,7 @@ app/src/main/java/com/construct/messenger/
 │   │   ├── KeystoreManager.kt                          ✅ (tokens only — see §2.2)
 │   │   ├── AckStore.kt / SessionStateStore.kt          ✅
 │   │   ├── PendingInviteStore.kt                       ✅ (konstruct://add)
-│   │   ├── db/                                         ✅ chats/messages/users/acks/sessions
-│   │   └── FcmService.kt                               ⬜
+│   │   └── db/                                         ✅ chats/messages/users/acks/sessions
 │   └── repository/                                     ✅ Auth / Chats / Messages / Contacts
 ├── di/                                                  ✅ Crypto / Database / Repository / Store
 ├── invite/                                              ✅ v5 mint / verify / AcceptInvite
@@ -652,7 +652,9 @@ app/src/main/java/com/construct/messenger/
 │   ├── SessionManager.kt                               ✅
 │   ├── MessagingRuntime.kt                             ✅
 │   ├── MessageRouter.kt / MessageProcessor.kt          ✅
-│   └── ProcessorEffectsImpl.kt                         ✅ (heal/END_SESSION-on-wire deferred)
+│   ├── ProcessorEffectsImpl.kt                         ✅ (heal/END_SESSION transport effects)
+│   ├── CfeTimerBridge.kt                               ✅
+│   └── MessagingForegroundService.kt                   ✅
 ├── ui/
 │   ├── navigation/
 │   │   ├── Screen.kt
@@ -689,8 +691,6 @@ app/src/main/java/com/construct/messenger/
 │       ├── Type.kt
 │       ├── Theme.kt
 │       └── Symbol.kt
-└── workers/
-    └── MessageSyncWorker.kt                            ⬜
 ```
 
 ---
@@ -699,7 +699,7 @@ app/src/main/java/com/construct/messenger/
 
 **Status:** implemented 2026-08-19 (JVM tests; no live iOS↔Android)  
 **Goal:** finish 1:1 production-gRPC surface that iOS already calls, plus JVM
-wire-contract tests. Not VEIL / FCM / calls / MLS / media / recovery.
+wire-contract tests. Not VEIL / calls / MLS / media / recovery.
 Unauth sealed transport and END_SESSION identity-box stay deferred
 (lockstep with iOS / missing FFI).
 
@@ -724,6 +724,7 @@ Unauth sealed transport and END_SESSION identity-box stay deferred
 4. **Phase 4:** Recovery — pending
 5. **Phase 5:** Message stream + 1:1 send — ✅ done; VEIL transport — pending
 6. **Phase 6:** WebRTC calls — pending
-7. **Phase 7:** FCM push — pending
+7. **Phase 7:** persistent foreground delivery without GMS — ✅ implemented;
+   Android 11/device lifecycle smoke pending
 8. **Phase 8:** UI — 1:1 Chat/Synaps wired; FindUser + logout + discoverable; honeycomb/settings subscreens pending
 9. **Phase 9:** Localization `en`/`ru` in progress; Play packaging pending

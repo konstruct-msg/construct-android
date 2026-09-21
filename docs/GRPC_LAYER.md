@@ -153,8 +153,10 @@ not run.
 - [x] ProcessorEffects в репозитории/session-слое → инжект MessageProcessor,
       подключение к MessageRouter.routed (§3.1) — `ProcessorEffectsImpl` +
       `MessagingRuntime` (2026-09-17). Typed secure-store, PQ contribution,
-      session archive/termination, persist+ACK and receipts are wired; timer
-      bridge and full device routing remain open.
+      session archive/termination, persist+ACK and receipts are wired. The timer
+      bridge, account→device registry, recipient/replica fan-out, SSR1 routing,
+      and current-carrier bundle candidate walk are wired; queued multi-carrier
+      reconciliation and live interop remain open.
 - [x] SendMessageUseCase (§3.2) — KNST + CFE OutgoingMessage + fail-closed stealth.
       Bounded retry still on the caller. Identified envelope без conversation_id.
 - [x] Contacts / invites — mint v5 + AcceptInvite + RevokeInvite (2026-08-19)

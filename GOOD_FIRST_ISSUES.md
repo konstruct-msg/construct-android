@@ -1,7 +1,8 @@
 # Good First Issues
 
-UI-задачи после 1:1 text slice (2026-08-19). Протокол (runtime, send/receive,
-v5 invites) уже в дереве — **не** начинай с gRPC, CFE или конвертов.
+UI-задачи после 1:1 text slice (актуализировано 2026-09-21). Протокол
+(runtime, send/receive, v5 invites, multi-device fan-out и foreground delivery)
+уже в дереве — **не** начинай с gRPC, CFE или конвертов.
 
 Перед началом:
 - `AGENTS.md` — конвенции. UI ходит только в репозитории.
@@ -27,7 +28,8 @@ v5 invites) уже в дереве — **не** начинай с gRPC, CFE ил
 `ConnectionStatusIndicator`, `CTNoise`.
 
 Экраны на реальных репозиториях: Splash, Onboarding, Orientation, MainTabView,
-ChatsList, Chat (пузыри + send), Synaps (mint v5 / paste / список).
+ChatsList, Chat (пузыри + send), Synaps (mint v5 / paste / список / FindUser /
+contact requests).
 
 `ChatViewModel` / `SynapsViewModel`. Hilt биндит `*RepositoryImpl`, не моки.
 
@@ -52,30 +54,25 @@ Danger zone. Данные — `AuthRepository`, без новых RPC.
 Показать connected / connecting / disconnected. VEIL toggle **не** подключать
 (транспорта ещё нет) — disabled + «soon».
 
-### 4. FindUser на Synaps
-
-Поиск `@alias` через `UserService.FindUser` **за фасадом**
-`ContactsRepository` (новый метод, не из UI). Не ходи в gRPC из экрана.
-Contact requests — отдельный follow-up.
-
-### 5. QR инвайта
+### 4. QR инвайта
 
 Synaps сейчас share/copy текстовой ссылки. Канон iOS — QR на 300 с (v5).
 Можно начать с отображения той же ссылки как QR; mint уже v5.
 
-### 6. `values-ja/strings.xml`
+### 5. `values-ja/strings.xml`
 
 Скопировать ключи из `values/strings.xml`, перевести onboarding / main /
 Synaps / chat. Не выдумывать жаргон — см. §5.1 канон копирайта.
 
-### 7. Compose-тесты на `ChatRow` / `ConstructNavRow`
+### 6. Compose-тесты на `ChatRow` / `ConstructNavRow`
 
 `onClick` по тапу; preview не считается тестом.
 
 ---
 
-Не first-issue: honeycomb Synaps, heal/END_SESSION, VEIL, FCM, WebRTC,
-recovery, media. Это протокол / отдельный план.
+Не first-issue: honeycomb Synaps, queued multi-carrier receive, heal/END_SESSION,
+VEIL, foreground delivery, WebRTC, recovery, media. Это протокол / отдельный
+план. FCM не является задачей: базовый APK не зависит от GMS.
 
 Канон iOS: `construct-messenger/ConstructMessenger/`.
 Протокол: `docs/WIRE_FORMAT_RULES.md`, `docs/GRPC_LAYER.md`.

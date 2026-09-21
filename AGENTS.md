@@ -67,7 +67,8 @@ Copy resulting `.so` files to `app/src/main/jniLibs/<abi>/`.
 - Compose UI only — no XML layouts
 - Room DB for local message persistence
 - gRPC lives in the `GrpcClient` singleton (two channels: auth + sealed); `MessagingRuntime` owns cold start
-- Working slice (2026-08-19): 1:1 text over production gRPC. Status: `docs/IMPLEMENTATION_PLAN.md`
+- Working slice (2026-09-18): 1:1 text over production gRPC with foreground
+  delivery and multi-device fan-out. Status: `docs/IMPLEMENTATION_PLAN.md`
 
 ---
 
@@ -102,8 +103,8 @@ hex avatars). **Never** sacrifice usability or clash with Material guidelines.
 - **`CTSymbol.*` / ASCII** for **decorative chrome only** — `> SECTION` headers, `-`/`=`
   separators, the `>` system-message prefix. Never ASCII for state/controls.
 - **Status**: `CTStatusBadge(status:)` with the `CTStatus` enum (`ok error warning on off busy
-  unknown`) — never a `"[ok]"` / `"[err]"` text token. (Compose impl in `ANDROID_ONBOARDING.md`
-  §3.3; not yet in code — add when the first status row appears.)
+  unknown`) — never a `"[ok]"` / `"[err]"` text token. Compose implementation:
+  `ui/components/CTStatusBadge.kt`; canon: `ANDROID_ONBOARDING.md` §3.3.
 - **Selection** → `Icons.Default.Check` in `accent`; **on/off** → Material3 `Switch`.
 - Tokens: `CTColor.*`, `ctRegular(size)` / `ctBold(size)` (JetBrains Mono), `CornerRadius.*`,
   `Spacing.*`, `CTLayout.*`. No inline magic numbers.
@@ -125,9 +126,12 @@ moved to native `TabView`; prefer Material3 `NavigationBar` (icon-only) over the
 Location. Google *build-time* dependencies are fine and already present (Hilt, KSP, protobuf) —
 they ask nothing of the device.
 
-This is checkable right now and must stay that way: the manifest declares two permissions
-(`INTERNET`, `ACCESS_NETWORK_STATE`), no `<service>`, no `<receiver>`, and there is no push code
-in the tree at all — only `services/notification_service.proto`.
+This is checkable right now and must stay that way: the manifest declares network permissions
+plus the Android foreground-service/notification permissions, one non-exported
+`MessagingForegroundService`, no `<receiver>`, and no push-provider client code. On Android 13+
+the app requests `POST_NOTIFICATIONS`; on Android 14+ it starts with the `remoteMessaging`
+foreground-service type. Older supported devices, including Android 11, use the ordinary
+two-argument `startForeground` path.
 
 - **Delivery is our own connection**: a persistent `MessageStream` in a foreground service. Not a
   second notification channel.
@@ -198,4 +202,3 @@ Plain markdown, no YAML frontmatter. `[[wikilinks]]` to other sessions/decisions
 
 Append a one-line entry to `~/Code/construct-docs/log.md` after creating/updating a note.
 Format: `[YYYY-MM-DD HH:MM] note | <topic>`
-

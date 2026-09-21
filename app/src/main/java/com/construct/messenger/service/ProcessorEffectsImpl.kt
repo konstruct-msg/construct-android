@@ -117,7 +117,7 @@ class ProcessorEffectsImpl @Inject constructor(
     }
 
     override suspend fun notifyNewMessage(chatId: String, preview: String) {
-        // No FCM yet. Unread is incremented in persistIncoming.
+        // No push-provider notification path; unread is incremented in persistIncoming.
         Log.d(TAG, "notify $chatId preview=${preview.take(40)}")
     }
 
