@@ -3,6 +3,13 @@
 **Источник**: `SessionInitializationService.swift`, `CryptoSessionInitializationService.swift`, `PublicKeyBundleHandler.swift`, `SessionCoordinator.swift` (tie-break, ping, ready)
 **Протокол**: X3DH → Double Ratchet → PQXDH (Kyber-768)
 
+> **Historical design reference, not current implementation guidance.** This file
+> predates the CFE action executor and still contains pre-CFE pseudocode and legacy
+> `__session_*` examples. Current Android behavior is specified in
+> `IMPLEMENTATION_PLAN.md` §3.2–3.4 and `ANDROID_ONBOARDING.md` §12: device ids reach
+> the core, END/RESET_INIT use outer types 21/24, and encrypted PING/READY use KNST
+> byte 5 types 25/26. Do not copy the legacy snippets below into application code.
+
 ---
 
 ## Protocol Overview
@@ -421,4 +428,3 @@ sealed class SessionError : Exception() {
 | Timer/timeout | `Task.sleep` + manual cancel | `withTimeoutOrNull` |
 | State management | `@MainActor` dictionaries | `Mutex` + `StateFlow` |
 | DI | Singletons everywhere | Hilt injection |
-

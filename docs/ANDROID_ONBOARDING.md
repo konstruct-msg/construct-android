@@ -1167,18 +1167,12 @@ data class Message(
 )
 ```
 
-> **Control-message render guard (mirror of iOS Fix #3).** A session-control signal
-> (`ping`/`ready`/`reset_init`) must never appear in the transcript. Defense in depth — do
-> ALL of these, because a single missed check leaks a bubble:
-> 1. **Consumer**: dispatch on `content_type` before persisting and `return` (see
->    [Session-Control Message Format](#session-control-message-format-typed-binary--do-this-not-magic-strings)) — control rows are never created.
-> 2. **At persist**: if a row is created anyway, stamp `contentType` from the decrypted
->    text (`startsWith("__session_…")` / `"session_ready_"`) so the chat query can exclude
->    it (`WHERE contentType = 0`).
-> 3. **At display**: the chat query filters `contentType = 0` **and** a Kotlin-side guard
->    drops any row whose decrypted text matches a control prefix — iOS learned the hard way
->    that an at-rest-encrypted row has a null plaintext column, so a SQL `text LIKE` filter
->    silently fails; the authoritative filter runs on the decrypted display text.
+> **Control-message render guard.** A session-control signal must never appear in
+> the transcript. Android handles outer 21/24 before chat persistence and filters
+> decrypted KNST 25/26 in `IncomingPlaintext`. `MessageDao.observeChat` additionally
+> restricts rows to `contentType = 0`; any future path that deliberately stores a
+> control audit row must stamp the non-zero type. Android does not infer protocol
+> state by matching plaintext magic strings.
 ```kotlin
 // User (Contact)
 @Entity
@@ -1734,28 +1728,20 @@ Alice (INITIATOR)                          Bob (RESPONDER)
 
 ## Session-Control Message Format (typed binary — DO THIS, not magic strings)
 
-> ⚠️ **Android: implement the typed format from day one.** The handshake signals
-> (`ping`, `ready`, `reset_init`) are **protocol control, not chat content** — they must
-> never render as a bubble. iOS historically encoded them as plaintext magic strings
-> (`"__session_ready_<UUID>__"`), which leaked into the transcript and broke on format
-> skew. That approach is being retired (see
-> `decisions/binary-control-message-format.md`). The correct encoding puts the
-> discriminator in the Envelope **`content_type`** field; the discriminator is therefore
-> outside the renderable text pipeline and can never become a chat bubble.
+> **Current Android wire path (2026-09-21).** Handshake signals are protocol
+> control, never chat content. Android does not emit legacy `__session_*` strings.
+> END_SESSION and RESET_INIT use outer envelope types 21/24. PING and READY are
+> encrypted `SessionControl` protobufs whose semantic type is KNST header byte 5
+> (25/26); their outer envelope remains the ordinary encrypted-message type.
 
 ### Wire encoding
 
-The control signal rides a normal Double-Ratchet-encrypted message whose Envelope
-`content_type` identifies the op. The `content_type` is **not** part of the AEAD
-associated data (AD = `AD_VERSION ‖ local_user_id ‖ contact_id ‖ session_id ‖ dh_pub ‖
-msg_num`), so setting it never affects decryption.
-
-| Signal | `content_type` | Direction | Payload |
-|--------|---------------:|-----------|---------|
-| Session ping     | `25` `CONTENT_TYPE_SESSION_PING`        | INITIATOR → peer (tie-break nudge) | `SessionControl{op=PING}` |
-| Session ready    | `26` `CONTENT_TYPE_SESSION_READY`       | RESPONDER → INITIATOR (phase 2)    | `SessionControl{op=READY}` |
-| Session reset-init | `24` `CONTENT_TYPE_SESSION_RESET_INIT` | tie-break winner (atomic re-init)  | real X3DH first-ratchet carrier (msgNum=0) — **NOT** a pure signal |
-| End session      | `21` `CONTENT_TYPE_SESSION_RESET`       | either                              | 16-byte sentinel (unencrypted) |
+| Signal | Wire discriminator | Direction | Payload |
+|--------|--------------------|-----------|---------|
+| Session ping | KNST byte 5 = `25` | INITIATOR → peer | encrypted `SessionControl{op=PING}` |
+| Session ready | KNST byte 5 = `26` | RESPONDER → INITIATOR | encrypted `SessionControl{op=READY}` |
+| Session reset-init | outer `content_type=24` | tie-break winner | real X3DH first-ratchet carrier (msgNum=0), not a pure signal |
+| End session | outer `content_type=21` | either | unencrypted random 1024-byte pad |
 
 `SessionControl` (in `messaging/e2ee.proto`):
 
@@ -1771,50 +1757,32 @@ enum SessionOp { SESSION_OP_UNSPECIFIED=0; PING=1; READY=2; RESET_INIT=3; END=4;
 No checksum: integrity is already guaranteed by the Double Ratchet AEAD tag. The byte
 budget is spent on `version` + `op` for forward-compat.
 
-### Consumer rule (byte-sniff — accept BOTH)
+### Consumer rule
 
-Dispatch on `content_type` **before** the chunk reassembler / text pipeline. Fall back to
-the legacy plaintext prefix only to interop with older iOS peers still in the field:
+Dispatch outer 21/24 before the normal chat pipeline. After Double-Ratchet decrypt,
+inspect KNST byte 5 before decoding `MessageContent`; 25/26 return before Room persistence:
 
 ```kotlin
-fun sessionOp(contentType: Int, decryptedPlaintext: String?): SessionOp? =
-    when (contentType) {
-        25 -> SessionOp.PING
-        26 -> SessionOp.READY
-        24 -> SessionOp.RESET_INIT
-        21 -> SessionOp.END
-        else -> decryptedPlaintext?.let {            // legacy fallback (old iOS)
-            when {
-                it.startsWith("__session_ping")  -> SessionOp.PING
-                it.startsWith("__session_ready") || it.startsWith("session_ready_") -> SessionOp.READY
-                it.startsWith("__session_reset_init") || it.startsWith("session_reset_init_") -> SessionOp.RESET_INIT
-                else -> null
-            }
-        }
-    }
-// A non-null result → handle as control, return BEFORE persisting. Never create a Message row.
-// RESET_INIT (24) is special: the X3DH init already consumed the payload; the inner is a sentinel.
-// Also keep a render-time guard (see §8.3): never show a row whose decrypted text matches these prefixes.
+when (incoming.contentType) {
+    SESSION_RESET -> sessionControl.inboundEndSession(incoming.senderId)
+    SESSION_RESET_INIT -> processor.process(incoming) // responder init carrier
+    else -> processor.process(incoming)               // decrypt first
+}
+
+val decoded = IncomingPlaintext.decode(plaintext)
+if (!decoded.isUserVisible) {
+    ackStore.markProcessed(messageId, accountId)
+    return // KNST 25/26 never reach Room
+}
 ```
 
-### Producer rule (S3 binary payload — current state as of 2026-07-17)
+### Producer rule
 
-**iOS flipped S3 ON 2026-07-17** (`FeatureFlags.binarySessionControlPayload` default `true`):
-producers now send a serialized `SessionControl{op, nonce}` as the encrypted payload and the
-legacy magic string is dropped from the wire. Android should do the same **from day one** —
-there is no reason for a new platform to ever produce magic strings:
-
-- Producer: typed `content_type` (24/25/26) + payload = `SessionControl{op, nonce}.serialize()`.
-- Consumer: dispatch on `content_type` first, **keep the legacy string parser as a fallback
-  forever** (see Consumer rule above) — older iOS builds in the field may still produce strings.
-- Escape hatch (mirrors iOS): if an ancient pre-typed peer resurfaces, iOS can be toggled back
-  to string-producing dual-send per-device; Android does not need this toggle unless the same
-  situation arises.
-
-> **Rollout / server dependency**: the server must know `content_type` 25/26 or it
-> re-emits them as `E2EE_SIGNAL` (1) and the typed path goes inert (it does **not** drop
-> the message — it is fail-open). The server proto was updated 2026-06-23
-> (`construct-server/shared/proto/core/envelope.proto`) and is deployed fleet-wide.
+`SessionControlUseCase.sendEncryptedControl` serializes `SessionControl{op, nonce}`, packs
+it into KNST with type 25/26, asks CFE to encrypt it, persists returned state, then sends the
+ciphertext through the ordinary identified/sealed message path. No Kotlin routing loop and
+no legacy string or dual-send are permitted. Inbound PING/READY are already non-renderable;
+their explicit confirmation/watchdog state transitions remain open work.
 
 ### Control-plane storm hardening (END_SESSION / SESSION_RESET_INIT) — MANDATORY
 
@@ -1918,25 +1886,11 @@ Call `CryptoManager.initializeSession()` ([§10](#10-crypto-core--rust-ffi)).
 
 ### Step 4: Send Session Ping (msgNum=0)
 
-Dual-send: `content_type = ContentType.SESSION_PING` (= 25) **+** legacy string payload
-(see [Session-Control Message Format](#session-control-message-format-typed-binary--do-this-not-magic-strings)).
+Use `SessionControlUseCase.sendPing`: serialize `SessionControl{op=PING, nonce}`,
+pack it as KNST type 25, then encrypt it through CFE.
 
 ```kotlin
-suspend fun sendSessionPing(userId: ServerUserId) {
-    val pingContent = "__session_ping_${UUID.randomUUID()}__"   // legacy payload (interop w/ old iOS)
-    val payload = outboundSessionService.encryptSessionControl(
-        plaintext = pingContent,
-        messageId = UUID.randomUUID().toString(),
-        recipientId = userId
-    )
-    messagingServiceClient.sendMessage(
-        messageId = pingId, recipientId = userId,
-        senderId = currentUserId,
-        conversationId = ConversationId.direct(currentUserId, userId),
-        encryptedPayload = payload, timestamp = currentTimeMillis(),
-        contentType = ContentType.SESSION_PING
-    )
-}
+sessionControl.sendPing(peerDeviceId)
 ```
 
 ## RESPONDER Flow
@@ -1977,24 +1931,11 @@ if (firstMessage.kemCiphertext.isNotEmpty()) {
 
 ### Send Session Ready
 
-Dual-send: typed `content_type` **+** legacy string payload (see
-[Session-Control Message Format](#session-control-message-format-typed-binary--do-this-not-magic-strings)).
-The `content_type = ContentType.SESSION_READY` is **mandatory** — omitting it is exactly the
-bug that let `session_ready` render as a chat bubble on the peer.
+After successful receiving-session initialization, use `SessionControlUseCase.sendReady`.
+The helper emits an encrypted KNST type-26 control and never a renderable string.
 
 ```kotlin
-suspend fun sendSessionReady(userId: ServerUserId) {
-    val readyContent = "__session_ready_${UUID.randomUUID()}__"   // legacy payload (interop w/ old iOS)
-    val payload = outboundSessionService.encryptSessionControl(
-        plaintext = readyContent, messageId = UUID.randomUUID().toString(),
-        recipientId = userId
-    )
-    messagingServiceClient.sendMessage(
-        /* ... */,
-        contentType = ContentType.SESSION_READY   // = 26, typed dispatch on the peer
-    )
-    // S3 (post legacy-removal): payload = SessionControl{op=READY, nonce=…}.serialize(), no string.
-}
+sessionControl.sendReady(peerDeviceId)
 ```
 
 When INITIATOR receives `session_ready`: cancels tie-break watchdog, marks session active, confirms in `SessionConfirmationTracker`, drains pending queue.
@@ -2014,21 +1955,11 @@ if (DeviceIdOrdering.isNaturalInitiator(myId, peerId)) {
 
 ### SESSION_RESET_INIT (atomic)
 
-Already typed (`content_type = ContentType.SESSION_RESET_INIT` = 24). Unlike ping/ready this
-carries a **real** X3DH first-ratchet payload (msgNum=0), so the consumer must NOT discard the
-payload — only the post-init sentinel inner is dropped. See
-[Session-Control Message Format](#session-control-message-format-typed-binary--do-this-not-magic-strings).
-
-```kotlin
-suspend fun sendSessionResetInit(userId: ServerUserId) {
-    val sriContent = "__session_reset_init_${UUID.randomUUID()}__"
-    val payload = outboundSessionService.encryptSessionControl(
-        plaintext = sriContent, messageId = UUID.randomUUID().toString(),
-        recipientId = userId
-    )
-    messagingServiceClient.sendMessage(/* ... */, contentType = ContentType.SESSION_RESET_INIT)
-}
-```
+Inbound `content_type = SESSION_RESET_INIT` (=24) is supported and routed into
+`ResponderInitUseCase`; its payload is a real X3DH first-ratchet carrier and must
+not be discarded. Android does not currently expose a separate outbound SRI
+producer in Kotlin. If CFE adds/plans that action, the bridge must send the real
+carrier with outer type 24 — never a `__session_reset_init_*` sentinel.
 
 ### Watchdog Timers
 
