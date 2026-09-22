@@ -25,11 +25,21 @@ app/src/main/
 │   ├── domain/         — Register / Login / UploadPreKeys / SendMessage
 │   ├── service/        — MessagingRuntime, SessionManager, router / processor
 │   └── di/             — Hilt modules
-└── jniLibs/            — .so files from construct-core Rust build
+└── jniLibs/            — .so from construct-core; NOT in git, see below
     ├── arm64-v8a/
     ├── armeabi-v7a/
     └── x86_64/
 ```
+
+**The `.so` files are not in git** — `app/src/main/jniLibs/` is ignored, and a fresh clone has to
+build them before Gradle can assemble anything. Same rule as the iOS `*.xcframework` binaries, and
+for the same reason: they are build output of another repository, reproducible from it by one
+command, and committing them put 149.5 MB of binaries into a repository whose every other tracked
+file adds up to 2.6 MB. They were purged from history on 2026-09-22.
+
+They must be rebuilt whenever construct-core changes. UniFFI checks its interface checksums when
+the library loads, so a `.so` older than the bindings beside it does not fail at the call — the
+app does not start.
 
 ### Rust core integration
 
@@ -43,7 +53,8 @@ cargo build --release --target x86_64-linux-android
 uniffi-bindgen generate   --library target/aarch64-linux-android/release/libconstruct_core.so   --language kotlin   --out-dir bindings/kotlin
 ```
 
-Copy resulting `.so` files to `app/src/main/jniLibs/<abi>/`.
+Copy resulting `.so` files to `app/src/main/jniLibs/<abi>/` — or just run `./build_crypto_lib.sh`,
+which does all of the above. Either way the files stay untracked.
 
 ---
 

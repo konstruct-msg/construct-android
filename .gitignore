@@ -16,3 +16,9 @@ local.properties
 /graphify-out
 .cursor
 .kotlin/
+
+# Build output of construct-core, not source. Three .so per rebuild is ~27 MB, and by
+# 2026-09-22 seven such commits were 149.5 MB of the repository's 37 MB pack — against
+# 2.6 MB for every other tracked file put together. History purged that day; run
+# ./build_crypto_lib.sh after a fresh clone. Same rule as the iOS xcframeworks.
+app/src/main/jniLibs/
