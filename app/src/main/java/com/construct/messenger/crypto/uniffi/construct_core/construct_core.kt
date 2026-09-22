@@ -6385,6 +6385,67 @@ public object FfiConverterTypeTrafficProtectionManager: FfiConverter<TrafficProt
 
 
 /**
+ * Токены аутентификации (JWT)
+ */
+data class AuthTokens (
+    /**
+     * Access token (JWT, живёт 1 час)
+     */
+    var `accessToken`: kotlin.String
+    , 
+    /**
+     * Refresh token (JWT, живёт 30 дней)
+     */
+    var `refreshToken`: kotlin.String
+    , 
+    /**
+     * Unix timestamp когда истекает access token
+     */
+    var `expiresAt`: kotlin.Long
+    , 
+    /**
+     * User ID (UUID)
+     */
+    var `userId`: kotlin.String
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeAuthTokens: FfiConverterRustBuffer<AuthTokens> {
+    override fun read(buf: ByteBuffer): AuthTokens {
+        return AuthTokens(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: AuthTokens) = (
+            FfiConverterString.allocationSize(value.`accessToken`) +
+            FfiConverterString.allocationSize(value.`refreshToken`) +
+            FfiConverterLong.allocationSize(value.`expiresAt`) +
+            FfiConverterString.allocationSize(value.`userId`)
+    )
+
+    override fun write(value: AuthTokens, buf: ByteBuffer) {
+            FfiConverterString.write(value.`accessToken`, buf)
+            FfiConverterString.write(value.`refreshToken`, buf)
+            FfiConverterLong.write(value.`expiresAt`, buf)
+            FfiConverterString.write(value.`userId`, buf)
+    }
+}
+
+
+
+/**
  * Binary first-message bundle for init_receiving_session — no JSON encoding.
  */
 data class BinaryFirstMessage (
@@ -9138,6 +9199,22 @@ sealed class CfeIncomingEvent {
         companion object
     }
     
+    /**
+     * The platform is about to tear down the ratchet with `contact_id` and asks whether it may.
+     * Answered with `SendEndSession` or `EndSessionSuppressed` + `ScheduleTimer`, from the same
+     * window the core's own teardowns use. `peer_on_dead_session` is the platform's evidence
+     * that the previous teardown never landed.
+     */
+    data class TeardownRequested(
+        val `contactId`: kotlin.String, 
+        val `peerOnDeadSession`: kotlin.Boolean) : CfeIncomingEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
 
     
     companion object
@@ -9199,6 +9276,10 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterUInt.read(buf),
+                )
+            13 -> CfeIncomingEvent.TeardownRequested(
+                FfiConverterString.read(buf),
+                FfiConverterBoolean.read(buf),
                 )
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
@@ -9306,6 +9387,14 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 + FfiConverterUInt.allocationSize(value.`msgNum`)
             )
         }
+        is CfeIncomingEvent.TeardownRequested -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+                + FfiConverterBoolean.allocationSize(value.`peerOnDeadSession`)
+            )
+        }
     }
 
     override fun write(value: CfeIncomingEvent, buf: ByteBuffer) {
@@ -9385,6 +9474,12 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`data`, buf)
                 FfiConverterUInt.write(value.`msgNum`, buf)
+                Unit
+            }
+            is CfeIncomingEvent.TeardownRequested -> {
+                buf.putInt(13)
+                FfiConverterString.write(value.`contactId`, buf)
+                FfiConverterBoolean.write(value.`peerOnDeadSession`, buf)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
