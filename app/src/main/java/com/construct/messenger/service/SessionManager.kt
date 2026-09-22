@@ -168,6 +168,26 @@ class SessionManager @Inject constructor(
     }
 
     /** Own devices are fetched through the same server answer but are not contacts in Room. */
+    /**
+     * Devices of [contactId] this device already knows about, without asking the key server.
+     *
+     * The local half of a peer's device set. A send to someone we already hold sessions with must
+     * not wait on the key server — and must not spend a request on it — so the registry answers
+     * first and [discoverPeerBundles] only corrects it. The registry is a cache of server answers,
+     * not a trust root: every row got in through `accepts`, which re-derives the device id from
+     * the identity key it was advertised with.
+     */
+    suspend fun knownPeerDevices(contactId: String): List<SessionPeer> {
+        val accountId = accountFor(contactId)
+        return peerDeviceRegistry.knownDevices(accountId).map {
+            SessionPeer(
+                accountId = it.accountId,
+                deviceId = it.deviceId,
+                identityPublic = it.identityPublic,
+            )
+        }
+    }
+
     suspend fun discoverOwnDeviceBundles(accountId: String): List<PeerBundle> =
         discoverPeerBundles(accountId, rememberAsContact = false)
 

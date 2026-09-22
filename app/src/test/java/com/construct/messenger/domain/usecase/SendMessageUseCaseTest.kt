@@ -23,6 +23,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -30,236 +31,271 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import uniffi.construct_core.BinaryKeyBundle
 import uniffi.construct_core.CfeAction
-import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.CfeSecureStoreSlot
 import uniffi.construct_core.DeliveryAudience
 import uniffi.construct_core.DeliveryTarget
 
+/**
+ * The send path after §B item 1 of `decisions/a-peer-is-a-set-of-devices`.
+ *
+ * There is no primary send. Every device of the recipient gets its own copy, named
+ * `<base>-fd-<tag>`, sealed to that device's identity key and retried the same way — where one
+ * device used to get an ordinary account-addressed send with retries and a status, and the rest
+ * got a fan-out with none of that.
+ */
 class SendMessageUseCaseTest {
 
     private val myId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
     private val peer = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
-    private val peerDevice = "11111111111111111111111111111111"
+    private val pinnedDevice = "11111111111111111111111111111111"
+    private val siblingDevice = "22222222222222222222222222222222"
+    private val ourDevice = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
-    @Test
-    fun `identified send persists SENT after successful RPC`() = runTest {
+    /**
+     * One peer with two devices, the transport accepting everything. Each test narrows what it
+     * cares about; everything else answers the ordinary way, because a stub that differs from the
+     * ordinary case is the thing a reader has to notice.
+     */
+    private class Harness {
         val messages = FakeMessageDao()
         val chats = FakeChatDao()
         val users = FakeUserDao()
-        val sessions = mock<SessionStateStore>()
+        val sessions: SessionStateStore = mock()
         val keystore: KeystoreManager = mock()
-        whenever(keystore.getUserId()).thenReturn(myId)
         val crypto: CryptoManager = mock()
-        whenever(crypto.isMessagingReady).thenReturn(true)
         val sessionManager: SessionManager = mock()
-        whenever(sessionManager.ensureSession(peer)).thenReturn(
-            SessionManager.SessionPeer(peer, peerDevice, byteArrayOf(1, 2, 3)),
-        )
         val orchestrator: OrchestratorGateway = mock()
-        whenever(orchestrator.handleEvent(any())).thenReturn(
-            listOf(
-                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(peerDevice), byteArrayOf(9)),
-                CfeAction.SendEncryptedMessage(peerDevice, byteArrayOf(7, 7), "ignored", 0u),
-            ),
-        )
-        whenever(sessions.saveCfeActions(any())).thenReturn(true)
         val messaging: MessagingService = mock()
+        val policy: StealthPolicy = mock()
+        val stealthSender: StealthSenderService = mock()
+
+        fun useCase() = SendMessageUseCase(
+            keystoreManager = keystore,
+            sessionManager = sessionManager,
+            orchestrator = orchestrator,
+            cryptoManager = crypto,
+            messagingService = messaging,
+            stealthPolicy = policy,
+            stealthSender = stealthSender,
+            messageDao = messages,
+            chatDao = chats,
+            userDao = users,
+            sessionStateStore = sessions,
+        )
+    }
+
+    private suspend fun harness(
+        devices: List<String> = listOf("11111111111111111111111111111111", "22222222222222222222222222222222"),
+        accepted: Boolean = true,
+    ): Harness {
+        val h = Harness()
+        whenever(h.keystore.getUserId()).thenReturn(myId)
+        whenever(h.crypto.isMessagingReady).thenReturn(true)
+        whenever(h.crypto.currentDeviceId()).thenReturn(ourDevice)
+        whenever(h.sessions.saveCfeActions(any())).thenReturn(true)
+        whenever(h.policy.shouldUseSealedSender()).thenReturn(false)
+
+        whenever(h.sessionManager.ensureSession(peer)).thenReturn(
+            SessionManager.SessionPeer(peer, pinnedDevice, byteArrayOf(1, 2, 3)),
+        )
+        whenever(h.sessionManager.knownPeerDevices(peer)).thenReturn(
+            devices.map { SessionManager.SessionPeer(peer, it, byteArrayOf(1, 2, 3)) },
+        )
+        whenever(h.sessionManager.discoverPeerBundles(peer)).thenReturn(
+            devices.map {
+                SessionManager.PeerBundle(
+                    accountId = peer,
+                    deviceId = it,
+                    identityPublic = byteArrayOf(4, 5, 6),
+                    bundle = mock<BinaryKeyBundle>(),
+                )
+            },
+        )
+        whenever(h.sessionManager.discoverOwnDeviceBundles(myId)).thenReturn(emptyList())
+        devices.forEach { device ->
+            whenever(h.sessionManager.ensureSessionForDevice(peer, device))
+                .thenReturn(SessionManager.SessionPeer(peer, device, byteArrayOf(4, 5, 6)))
+            whenever(h.crypto.deviceCopyTag(any(), eq(device), any())).thenReturn(device.take(16))
+        }
+        whenever(h.crypto.planSend(any(), any(), any(), any(), any())).thenReturn(
+            devices.map { DeliveryTarget(it, DeliveryAudience.RECIPIENT) },
+        )
+        whenever(h.orchestrator.handleEvent(any())).thenAnswer { invocation ->
+            val event = invocation.arguments[0] as uniffi.construct_core.CfeIncomingEvent.OutgoingMessage
+            listOf(
+                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(event.contactId), byteArrayOf(9)),
+                CfeAction.SendEncryptedMessage(event.contactId, byteArrayOf(7, 7), "ignored", 0u),
+            )
+        }
         whenever(
-            messaging.sendMessage(
+            h.messaging.sendMessage(
                 messageId = any(),
-                senderId = eq(myId),
-                recipientId = eq(peer),
-                conversationId = eq(""),
+                senderId = any(),
+                recipientId = any(),
+                conversationId = any(),
                 encryptedPayload = any(),
                 timestampMs = any(),
                 contentType = any(),
                 sealedInner = anyOrNull(),
             ),
         ).thenReturn(
-            MessagingService.SendResult("ok", true, "", true, 0, "a"),
+            MessagingService.SendResult("ok", accepted, if (accepted) "" else "PERMISSION_DENIED", false, 0, "a"),
         )
-        val policy: StealthPolicy = mock()
-        whenever(policy.shouldUseSealedSender()).thenReturn(false)
-
-        val useCase = SendMessageUseCase(
-            keystoreManager = keystore,
-            sessionManager = sessionManager,
-            orchestrator = orchestrator,
-            cryptoManager = crypto,
-            messagingService = messaging,
-            stealthPolicy = policy,
-            stealthSender = mock(),
-            messageDao = messages,
-            chatDao = chats,
-            userDao = users,
-            sessionStateStore = sessions,
-        )
-
-        val outcome = useCase(peer, "hello")
-
-        assertTrue(outcome is SendOutcome.Sent)
-        val id = (outcome as SendOutcome.Sent).messageId
-        assertEquals(DeliveryStatus.SENT.name, messages.rows[id]?.deliveryStatus)
-        assertEquals("hello", messages.rows[id]?.text)
-        assertTrue(messages.rows[id]?.isSentByMe == true)
+        return h
     }
 
-    @Test
-    fun `successful primary send fans out an opaque recipient copy`() = runTest {
-        val messages = FakeMessageDao()
-        val chats = FakeChatDao()
-        val users = FakeUserDao()
-        val sessions = mock<SessionStateStore>()
-        whenever(sessions.saveCfeActions(any())).thenReturn(true)
-        val keystore: KeystoreManager = mock()
-        whenever(keystore.getUserId()).thenReturn(myId)
-        val crypto: CryptoManager = mock()
-        whenever(crypto.isMessagingReady).thenReturn(true)
-        whenever(crypto.currentDeviceId()).thenReturn("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-        whenever(crypto.planSend(any(), any(), any(), any(), any())).thenReturn(
-            listOf(DeliveryTarget("22222222222222222222222222222222", DeliveryAudience.RECIPIENT)),
-        )
-        whenever(crypto.deviceCopyTag(any(), eq("22222222222222222222222222222222"), any()))
-            .thenReturn("0123456789abcdef")
-        val sessionManager: SessionManager = mock()
-        whenever(sessionManager.ensureSession(peer)).thenReturn(
-            SessionManager.SessionPeer(peer, peerDevice, byteArrayOf(1, 2, 3)),
-        )
-        whenever(sessionManager.discoverPeerBundles(peer)).thenReturn(
-            listOf(
-                SessionManager.PeerBundle(
-                    accountId = peer,
-                    deviceId = "22222222222222222222222222222222",
-                    identityPublic = byteArrayOf(4, 5, 6),
-                    bundle = mock<BinaryKeyBundle>(),
-                ),
-            ),
-        )
-        whenever(sessionManager.discoverOwnDeviceBundles(myId)).thenReturn(emptyList())
-        whenever(sessionManager.ensureSessionForDevice(peer, "22222222222222222222222222222222"))
-            .thenReturn(SessionManager.SessionPeer(peer, "22222222222222222222222222222222", byteArrayOf(4, 5, 6)))
-        val orchestrator: OrchestratorGateway = mock()
-        whenever(orchestrator.handleEvent(any())).thenReturn(
-            listOf(
-                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(peerDevice), byteArrayOf(9)),
-                CfeAction.SendEncryptedMessage(peerDevice, byteArrayOf(7, 7), "ignored", 0u),
-                CfeAction.SendEncryptedMessage("22222222222222222222222222222222", byteArrayOf(8, 8), "ignored", 0u),
-            ),
-        )
-        val messaging: MessagingService = mock()
-        whenever(
-            messaging.sendMessage(
-                messageId = any(),
-                senderId = eq(myId),
-                recipientId = eq(peer),
-                conversationId = eq(""),
-                encryptedPayload = any(),
-                timestampMs = any(),
-                contentType = any(),
-                sealedInner = anyOrNull(),
-            ),
-        ).thenReturn(MessagingService.SendResult("ok", true, "", true, 0, "a"))
-        val policy: StealthPolicy = mock()
-        whenever(policy.shouldUseSealedSender()).thenReturn(false)
-
-        val useCase = SendMessageUseCase(
-            keystoreManager = keystore,
-            sessionManager = sessionManager,
-            orchestrator = orchestrator,
-            cryptoManager = crypto,
-            messagingService = messaging,
-            stealthPolicy = policy,
-            stealthSender = mock(),
-            messageDao = messages,
-            chatDao = chats,
-            userDao = users,
-            sessionStateStore = sessions,
-        )
-
-        val outcome = useCase(peer, "hello")
-
-        assertTrue(outcome is SendOutcome.Sent)
-        verify(messaging, times(2)).sendMessage(
-            messageId = any(),
-            senderId = eq(myId),
-            recipientId = eq(peer),
-            conversationId = eq(""),
+    private suspend fun sentMessageIds(h: Harness): List<String> {
+        val captor = argumentCaptor<String>()
+        verify(h.messaging, org.mockito.kotlin.atLeastOnce()).sendMessage(
+            messageId = captor.capture(),
+            senderId = any(),
+            recipientId = any(),
+            conversationId = any(),
             encryptedPayload = any(),
             timestampMs = any(),
             contentType = any(),
             sealedInner = anyOrNull(),
         )
+        return captor.allValues
     }
 
     @Test
-    fun `stealth on without identity key fails closed`() = runTest {
-        val messages = FakeMessageDao()
-        val keystore: KeystoreManager = mock()
-        whenever(keystore.getUserId()).thenReturn(myId)
-        val crypto: CryptoManager = mock()
-        whenever(crypto.isMessagingReady).thenReturn(true)
-        val sessionManager: SessionManager = mock()
-        whenever(sessionManager.ensureSession(peer)).thenReturn(
-            SessionManager.SessionPeer(peer, peerDevice, byteArrayOf()),
-        )
-        val orchestrator: OrchestratorGateway = mock()
-        whenever(orchestrator.handleEvent(any())).thenReturn(
-            listOf(
-                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(peerDevice), byteArrayOf(9)),
-                CfeAction.SendEncryptedMessage(peerDevice, byteArrayOf(7), "ignored", 0u),
-            ),
-        )
-        val sessions = mock<SessionStateStore>()
-        whenever(sessions.saveCfeActions(any())).thenReturn(true)
-        val policy: StealthPolicy = mock()
-        whenever(policy.shouldUseSealedSender()).thenReturn(true)
+    fun `a successful send persists SENT`() = runTest {
+        val h = harness()
+        val outcome = h.useCase()(peer, "hello")
 
-        val useCase = SendMessageUseCase(
-            keystoreManager = keystore,
-            sessionManager = sessionManager,
-            orchestrator = orchestrator,
-            cryptoManager = crypto,
-            messagingService = mock(),
-            stealthPolicy = policy,
-            stealthSender = mock(),
-            messageDao = messages,
-            chatDao = FakeChatDao(),
-            userDao = FakeUserDao(),
-            sessionStateStore = sessions,
-        )
+        assertTrue(outcome is SendOutcome.Sent)
+        val id = (outcome as SendOutcome.Sent).messageId
+        assertEquals(DeliveryStatus.SENT.name, h.messages.rows[id]?.deliveryStatus)
+        assertEquals("hello", h.messages.rows[id]?.text)
+        assertTrue(h.messages.rows[id]?.isSentByMe == true)
+    }
 
-        val outcome = useCase(peer, "secret")
+    /**
+     * The claim this change exists for. Two devices, two copies, and **neither** is the bare
+     * message id — the copy that used to be the privileged one is named like every other.
+     *
+     * Mutation: give one device the bare `messageId` again — this reddens.
+     */
+    @Test
+    fun `every device of the peer gets its own device-named copy`() = runTest {
+        val h = harness()
+        val outcome = h.useCase()(peer, "hello")
+        assertTrue(outcome is SendOutcome.Sent)
+
+        val ids = sentMessageIds(h)
+        assertEquals(2, ids.size)
+        assertTrue("no copy may carry the bare id", ids.none { !it.contains("-fd-") })
+        assertTrue(ids.any { it.endsWith("-fd-" + pinnedDevice.take(16)) })
+        assertTrue(ids.any { it.endsWith("-fd-" + siblingDevice.take(16)) })
+    }
+
+    /**
+     * Nothing is covered in advance any more, so the core is asked to plan the whole set.
+     * `primary_send_covered` was the one parameter keeping the privileged copy alive in the
+     * protocol; this is what lets it be deleted there.
+     *
+     * Mutation: pass `pinnedDevice` — this reddens.
+     */
+    @Test
+    fun `the core is told no copy is already covered`() = runTest {
+        val h = harness()
+        h.useCase()(peer, "hello")
+
+        val covered = argumentCaptor<String>()
+        verify(h.crypto).planSend(any(), any(), any(), any(), covered.capture())
+        assertEquals("", covered.firstValue)
+    }
+
+    /**
+     * The device set is the local one, corrected by the directory — a send to a peer we already
+     * hold sessions with must not wait on the key server.
+     */
+    @Test
+    fun `a device the directory has not answered for is still sent to`() = runTest {
+        val h = harness()
+        whenever(h.sessionManager.discoverPeerBundles(peer)).thenThrow(RuntimeException("offline"))
+        val recipients = argumentCaptor<List<String>>()
+
+        val outcome = h.useCase()(peer, "hello")
+
+        assertTrue(outcome is SendOutcome.Sent)
+        verify(h.crypto).planSend(recipients.capture(), any(), any(), any(), any())
+        assertEquals(listOf(pinnedDevice, siblingDevice), recipients.firstValue)
+    }
+
+    /**
+     * One accepted copy is what `sent` has always meant — the message is in the person's mailbox.
+     * A device that refused is a log line, not a failed send.
+     */
+    @Test
+    fun `one accepted copy is enough for SENT`() = runTest {
+        val h = harness()
+        whenever(h.sessionManager.ensureSessionForDevice(peer, siblingDevice))
+            .thenThrow(RuntimeException("no bundle"))
+
+        val outcome = h.useCase()(peer, "hello")
+
+        assertTrue(outcome is SendOutcome.Sent)
+        assertEquals(1, sentMessageIds(h).size)
+    }
+
+    /**
+     * And none accepted is a failure, rather than the `sent` a fan-out used to report by saying
+     * nothing at all.
+     *
+     * Mutation: fold on `>= 0` — this reddens.
+     */
+    @Test
+    fun `no accepted copy is a failed send`() = runTest {
+        val h = harness(accepted = false)
+
+        val outcome = h.useCase()(peer, "hello")
+
+        assertTrue(outcome is SendOutcome.Failed)
+        val failed = outcome as SendOutcome.Failed
+        assertEquals(DeliveryStatus.FAILED.name, h.messages.rows[failed.messageId]?.deliveryStatus)
+    }
+
+    /**
+     * Fail closed: with stealth on, an empty identity key is an identified downgrade wearing a
+     * seal's name. The copy is refused rather than sealed to nothing — and with no copy left,
+     * the send fails.
+     */
+    @Test
+    fun `stealth on without an identity key fails closed`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        whenever(h.policy.shouldUseSealedSender()).thenReturn(true)
+        whenever(h.sessionManager.knownPeerDevices(peer)).thenReturn(
+            listOf(SessionManager.SessionPeer(peer, pinnedDevice, byteArrayOf())),
+        )
+        whenever(h.sessionManager.discoverPeerBundles(peer)).thenReturn(emptyList())
+        whenever(h.sessionManager.ensureSessionForDevice(peer, pinnedDevice))
+            .thenReturn(SessionManager.SessionPeer(peer, pinnedDevice, byteArrayOf()))
+
+        val outcome = h.useCase()(peer, "secret")
+
         assertTrue(outcome is SendOutcome.Failed)
         val failed = outcome as SendOutcome.Failed
         assertTrue(failed.reason.contains("identity"))
-        assertEquals(DeliveryStatus.FAILED.name, messages.rows[failed.messageId]?.deliveryStatus)
+        assertEquals(DeliveryStatus.FAILED.name, h.messages.rows[failed.messageId]?.deliveryStatus)
     }
 
+    /**
+     * The retry budget is per copy now. It used to belong to the primary send alone: a sibling
+     * device that answered UNAVAILABLE was simply logged.
+     *
+     * Mutation: send each copy once — this reddens.
+     */
     @Test
-    fun `retryable send is retried then succeeds`() = runTest {
-        val messages = FakeMessageDao()
-        val keystore: KeystoreManager = mock()
-        whenever(keystore.getUserId()).thenReturn(myId)
-        val crypto: CryptoManager = mock()
-        whenever(crypto.isMessagingReady).thenReturn(true)
-        val sessionManager: SessionManager = mock()
-        whenever(sessionManager.ensureSession(peer)).thenReturn(
-            SessionManager.SessionPeer(peer, peerDevice, byteArrayOf(1)),
-        )
-        val orchestrator: OrchestratorGateway = mock()
-        whenever(orchestrator.handleEvent(any())).thenReturn(
-            listOf(
-                CfeAction.SaveToSecureStore(CfeSecureStoreSlot.Session(peerDevice), byteArrayOf(9)),
-                CfeAction.SendEncryptedMessage(peerDevice, byteArrayOf(7, 7), "ignored", 0u),
-            ),
-        )
-        val messaging: MessagingService = mock()
+    fun `a retryable refusal is retried for a copy that is not the first`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
         whenever(
-            messaging.sendMessage(
+            h.messaging.sendMessage(
                 messageId = any(),
-                senderId = eq(myId),
-                recipientId = eq(peer),
-                conversationId = eq(""),
+                senderId = any(),
+                recipientId = any(),
+                conversationId = any(),
                 encryptedPayload = any(),
                 timestampMs = any(),
                 contentType = any(),
@@ -269,37 +305,11 @@ class SendMessageUseCaseTest {
             MessagingService.SendResult("ok", false, "UNAVAILABLE", true, 0, "a"),
             MessagingService.SendResult("ok", true, "", true, 0, "b"),
         )
-        val policy: StealthPolicy = mock()
-        whenever(policy.shouldUseSealedSender()).thenReturn(false)
-        val sessions = mock<SessionStateStore>()
-        whenever(sessions.saveCfeActions(any())).thenReturn(true)
 
-        val useCase = SendMessageUseCase(
-            keystoreManager = keystore,
-            sessionManager = sessionManager,
-            orchestrator = orchestrator,
-            cryptoManager = crypto,
-            messagingService = messaging,
-            stealthPolicy = policy,
-            stealthSender = mock(),
-            messageDao = messages,
-            chatDao = FakeChatDao(),
-            userDao = FakeUserDao(),
-            sessionStateStore = sessions,
-        )
+        val outcome = h.useCase()(peer, "hello")
 
-        val outcome = useCase(peer, "hello")
         assertTrue(outcome is SendOutcome.Sent)
-        org.mockito.kotlin.verify(messaging, org.mockito.kotlin.times(2)).sendMessage(
-            messageId = any(),
-            senderId = eq(myId),
-            recipientId = eq(peer),
-            conversationId = eq(""),
-            encryptedPayload = any(),
-            timestampMs = any(),
-            contentType = any(),
-            sealedInner = anyOrNull(),
-        )
+        assertEquals(2, sentMessageIds(h).size)
     }
 }
 

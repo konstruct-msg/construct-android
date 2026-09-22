@@ -37,18 +37,21 @@ sealed interface SendOutcome {
 }
 
 /**
- * 1:1 text send.
+ * 1:1 text send — one copy per device of the recipient, and no privileged one.
  *
- * **Canon:** iOS `ChatSendCoordinator.sendTextMessage` + `OutboundSessionService.encryptOutgoing`.
+ * **Canon:** iOS `OutboundMessagePipeline.sendToRecipientDevices` (`construct-messenger@4a74c013`).
  *
  * 1. Optimistic Room row (SENDING).
  * 2. `MessageContent` proto → KNST frame (type in byte 5).
- * 3. Ensure Double-Ratchet session (prekey fetch is destructive — only if missing).
- * 4. CFE `OutgoingMessage` → `SendEncryptedMessage` payload. Session blob must be
- *    persisted **before** the unary send (sender-state-durability-before-send).
- * 5. Stealth: sealed inner with `SealedInner.content_type` unspecified. Fail closed
- *    — never identified-downgrade when stealth is on.
- * 6. Unary send. Identified envelope carries sender+recipient only, no conversation_id.
+ * 3. Ensure a Double-Ratchet session with the pinned device (prekey fetch is destructive — only
+ *    if missing). This is establishment, not addressing: the set below is what the send reaches.
+ * 4. The recipient's device set — the registry, corrected by the directory — handed to the core's
+ *    `plan_send` with nothing marked as already covered.
+ * 5. Per device: CFE `OutgoingMessage` → `SendEncryptedMessage`. The session blob is persisted
+ *    **before** the unary send (sender-state-durability-before-send).
+ * 6. Per device: sealed to *that* device's identity key, named `<base>-fd-<tag>`, retried on a
+ *    retryable refusal. Fail closed — never identified-downgrade when stealth is on.
+ * 7. The row's status is a fold: SENT once any copy is accepted, FAILED when none is.
  */
 class SendMessageUseCase @Inject constructor(
     private val keystoreManager: KeystoreManager,
@@ -78,104 +81,27 @@ class SendMessageUseCase @Inject constructor(
         persistOutgoing(chatId, contactId, messageId, body, timestampMs, DeliveryStatus.SENDING)
 
         return try {
-            val peer = sessionManager.ensureSession(contactId)
             val plaintext = knstText(body, messageId)
-            val actions = orchestrator.handleEvent(
-                CfeIncomingEvent.OutgoingMessage(
-                    contactId = peer.deviceId,
-                    messageId = messageId,
-                    plaintext = plaintext,
-                    contentType = 0u,
-                ),
-            )
-            persistSessionActions(actions)
-            val wire = actions.filterIsInstance<CfeAction.SendEncryptedMessage>()
-                .firstOrNull { it.to == peer.deviceId }
-                ?.payload
-                ?: error("orchestrator returned no SendEncryptedMessage")
-
-            val stealthOn = stealthPolicy.shouldUseSealedSender()
-            val sealed = if (stealthOn) {
-                val ik = peer.identityPublic
-                    .takeIf { it.isNotEmpty() }
-                    ?: error("stealth on but no recipient identity key — refusing identified downgrade")
-                stealthSender.buildSealedInner(
-                    recipientUserId = contactId,
-                    recipientIdentityKey = ik,
-                    encryptedPayload = wire,
-                    contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
-                )
+            // Establishment is deliberately unchanged by this: the first send to a peer we hold
+            // nothing with still opens a session with the device the registry pins, and that
+            // device is also the offline answer for the set below when the key server cannot be
+            // reached. Which devices a send must hold sessions with is the machine's question,
+            // not this one's.
+            val pinned = sessionManager.ensureSession(contactId)
+            if (contactId == myId) {
+                return sendNoteToSelf(myId, messageId, timestampMs, plaintext, pinned)
+            }
+            val tally = deliverCopies(myId, contactId, messageId, timestampMs, plaintext, pinned)
+            if (tally.recipientAccepted > 0) {
+                // `sent` has always meant "in the person's mailbox", and one accepted copy puts
+                // it there. Devices that refused are named in the log, not in the row — a per
+                // device status needs a per device carrier, which Room does not have yet.
+                messageDao.updateDeliveryStatus(messageId, DeliveryStatus.SENT.name)
+                SendOutcome.Sent(messageId)
             } else {
-                null
+                messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
+                SendOutcome.Failed(messageId, tally.lastError)
             }
-
-            var lastError = "send failed"
-            repeat(MAX_ATTEMPTS) { attempt ->
-                val result = try {
-                    if (sealed != null) {
-                        if (MessagingService.SEALED_UNAUTHENTICATED_TRANSPORT) {
-                            messagingService.sendSealedMessage(sealed)
-                        } else {
-                            messagingService.sendMessage(
-                                messageId = messageId,
-                                senderId = myId,
-                                recipientId = contactId,
-                                conversationId = "",
-                                encryptedPayload = ByteArray(0),
-                                timestampMs = timestampMs,
-                                contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
-                                sealedInner = sealed,
-                            )
-                        }
-                    } else {
-                        messagingService.sendMessage(
-                            messageId = messageId,
-                            senderId = myId,
-                            recipientId = contactId,
-                            conversationId = "",
-                            encryptedPayload = wire,
-                            timestampMs = timestampMs,
-                            contentType = ContentType.CONTENT_TYPE_E2EE_SIGNAL,
-                        )
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    if (attempt == MAX_ATTEMPTS - 1) {
-                        messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
-                        return SendOutcome.Failed(messageId, e.message ?: "send failed")
-                    }
-                    delay(BACKOFF_MS * (attempt + 1))
-                    return@repeat
-                }
-                if (result.success) {
-                    messageDao.updateDeliveryStatus(messageId, DeliveryStatus.SENT.name)
-                    runCatching {
-                        fanOutCopies(
-                            myId = myId,
-                            contactId = contactId,
-                            baseMessageId = messageId,
-                            timestampMs = timestampMs,
-                            plaintext = plaintext,
-                            primary = peer,
-                        )
-                    }.onFailure {
-                        // The primary copy is already durable and accepted. A linked-device
-                        // copy is best-effort and can be retried by the next send/reconcile pass.
-                        Log.w(TAG, "per-device fan-out failed ${messageId.take(8)}…", it)
-                    }
-                    return SendOutcome.Sent(messageId)
-                }
-                lastError = result.errorCode.ifEmpty { "send failed" }
-                if (!result.retryable || attempt == MAX_ATTEMPTS - 1) {
-                    messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
-                    return SendOutcome.Failed(messageId, lastError)
-                }
-                val wait = result.retryAfterMs.coerceAtLeast(BACKOFF_MS) * (attempt + 1)
-                delay(wait)
-            }
-            messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
-            SendOutcome.Failed(messageId, lastError)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -183,6 +109,274 @@ class SendMessageUseCase @Inject constructor(
             messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
             SendOutcome.Failed(messageId, e.message ?: "send failed")
         }
+    }
+
+    /**
+     * A note to self, unchanged.
+     *
+     * `plan_send` returns no recipient targets when the recipient is us — the recipient's devices
+     * *are* our devices, and planning both audiences would send every replica two copies. So the
+     * account-addressed copy here is not a privileged one among device copies; it is the only
+     * thing that puts the message in our own mailbox, and removing it would leave a single-device
+     * user's notes in Room and nowhere else. Whether that copy should exist at all is a question
+     * about history sync, not about a peer's device set.
+     */
+    private suspend fun sendNoteToSelf(
+        myId: String,
+        messageId: String,
+        timestampMs: Long,
+        plaintext: ByteArray,
+        pinned: SessionManager.SessionPeer,
+    ): SendOutcome {
+        val encrypted = encryptFor(pinned.deviceId, messageId, plaintext)
+            ?: return SendOutcome.Failed(messageId, "no ciphertext")
+        val result = sendOneCopy(
+            myId = myId,
+            accountId = myId,
+            wireMessageId = messageId,
+            timestampMs = timestampMs,
+            encrypted = encrypted,
+            identityPublic = pinned.identityPublic,
+            isOwnReplica = false,
+        )
+        if (result?.success != true) {
+            messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
+            return SendOutcome.Failed(messageId, result?.errorCode?.ifEmpty { "send failed" } ?: "send failed")
+        }
+        messageDao.updateDeliveryStatus(messageId, DeliveryStatus.SENT.name)
+        runCatching {
+            deliverCopies(myId, myId, messageId, timestampMs, plaintext, pinned)
+        }.onFailure {
+            Log.w(TAG, "replica fan-out failed ${messageId.take(8)}…", it)
+        }
+        return SendOutcome.Sent(messageId)
+    }
+
+    private data class DeliveryTally(
+        val recipientAccepted: Int,
+        val replicaAccepted: Int,
+        val lastError: String,
+    )
+
+    /**
+     * One copy per device, through one sender.
+     *
+     * §B item 1 of `decisions/a-peer-is-a-set-of-devices`, the Android twin of the iOS change
+     * `construct-messenger@4a74c013`. Until now a message reached one of the recipient's devices
+     * by an ordinary send — addressed to the account, sealed to the pinned key, retried, its
+     * answer the row's status — and every other device by a fan-out with no retry, no status and
+     * a different naming. The second device of anyone was a second-class recipient.
+     *
+     * Every recipient copy now looks the same: named `<base>-fd-<tag>`, sealed to *that* device's
+     * identity key, retried the same way. Nothing is privileged, so nothing is ever already
+     * covered — `primarySendCovered` is the empty string and the core plans the whole set.
+     */
+    private suspend fun deliverCopies(
+        myId: String,
+        contactId: String,
+        baseMessageId: String,
+        timestampMs: Long,
+        plaintext: ByteArray,
+        pinned: SessionManager.SessionPeer,
+    ): DeliveryTally {
+        val ourDeviceId = cryptoManager.currentDeviceId()
+            ?: return DeliveryTally(0, 0, "no device id")
+        val recipientIsSelf = contactId == myId
+        val recipientDevices =
+            if (recipientIsSelf) emptyList() else recipientDeviceSet(contactId, pinned)
+        val ownBundles = runCatching { sessionManager.discoverOwnDeviceBundles(myId) }
+            .getOrElse {
+                Log.w(TAG, "own device discovery failed", it)
+                emptyList()
+            }
+
+        val targets = cryptoManager.planSend(
+            recipientDeviceIds = recipientDevices.map { it.deviceId },
+            ownDeviceIds = ownBundles.map { it.deviceId },
+            ourDeviceId = ourDeviceId,
+            recipientIsSelf = recipientIsSelf,
+            // No copy is privileged any more, so none is ever already covered. The core still
+            // takes the parameter; iOS has passed the empty string since 4a74c013 and this was
+            // the last caller keeping it load-bearing.
+            primarySendCovered = "",
+        )
+        if (targets.isEmpty()) return DeliveryTally(0, 0, "no device to send to")
+
+        val identityByDevice = HashMap<String, ByteArray>()
+        recipientDevices.forEach { identityByDevice[it.deviceId] = it.identityPublic }
+        ownBundles.forEach { identityByDevice[it.deviceId] = it.identityPublic }
+
+        var recipientAccepted = 0
+        var replicaAccepted = 0
+        var lastError = "send failed"
+        for (target in targets) {
+            val isOwnReplica = target.audience == DeliveryAudience.OWN_REPLICA
+            val accountId = if (isOwnReplica) myId else contactId
+            val peer = runCatching {
+                sessionManager.ensureSessionForDevice(accountId, target.deviceId)
+            }.getOrElse {
+                Log.w(TAG, "session init failed ${target.deviceId.take(8)}…", it)
+                lastError = "session init failed"
+                continue
+            }
+            val identity = identityByDevice[target.deviceId] ?: peer.identityPublic
+            if (identity.isEmpty()) {
+                // Fail closed rather than seal to nothing: with stealth on an empty key is an
+                // identified downgrade wearing a seal's name, and with stealth off it is a copy
+                // the named device could never verify.
+                Log.w(TAG, "identity missing ${target.deviceId.take(8)}… — copy skipped")
+                lastError = "no identity key"
+                continue
+            }
+            val tag = runCatching {
+                cryptoManager.deviceCopyTag(baseMessageId, target.deviceId, identity)
+            }.getOrElse {
+                Log.w(TAG, "copy tag failed ${target.deviceId.take(8)}…", it)
+                lastError = "tag failed"
+                continue
+            }
+            val wireMessageId = baseMessageId + if (isOwnReplica) "-ss-$tag" else "-fd-$tag"
+            val routedPlaintext = if (isOwnReplica) {
+                // SENDER_SYNC is the outer envelope type. Its encrypted body remains the same
+                // user-message KNST frame (type=1), prefixed with SSR1 for post-decrypt routing.
+                SenderSyncRouting.encode(contactId, plaintext)
+            } else {
+                plaintext
+            }
+            val encrypted = encryptFor(target.deviceId, wireMessageId, routedPlaintext)
+            if (encrypted == null) {
+                lastError = "no ciphertext"
+                continue
+            }
+            val result = sendOneCopy(
+                myId = myId,
+                accountId = accountId,
+                wireMessageId = wireMessageId,
+                timestampMs = timestampMs,
+                encrypted = encrypted,
+                identityPublic = identity,
+                isOwnReplica = isOwnReplica,
+            )
+            if (result?.success == true) {
+                if (isOwnReplica) replicaAccepted++ else recipientAccepted++
+            } else {
+                lastError = result?.errorCode?.ifEmpty { "send failed" } ?: "send failed"
+                Log.w(TAG, "copy rejected ${target.deviceId.take(8)}… $lastError")
+            }
+        }
+        return DeliveryTally(recipientAccepted, replicaAccepted, lastError)
+    }
+
+    /**
+     * The devices of [contactId] this send must reach.
+     *
+     * The registry answers first so a send to someone we already hold sessions with never waits
+     * on the key server, and the directory only corrects it — a device the account has since
+     * added appears, a key that rotated wins. The pinned device is the *offline* answer and only
+     * that: adding it unconditionally would resurrect a device the directory deliberately
+     * dropped.
+     */
+    private suspend fun recipientDeviceSet(
+        contactId: String,
+        pinned: SessionManager.SessionPeer,
+    ): List<SessionManager.SessionPeer> {
+        val merged = LinkedHashMap<String, SessionManager.SessionPeer>()
+        sessionManager.knownPeerDevices(contactId).forEach { merged[it.deviceId] = it }
+        runCatching { sessionManager.discoverPeerBundles(contactId) }
+            .getOrElse {
+                Log.w(TAG, "recipient device discovery failed ${contactId.take(8)}…", it)
+                emptyList()
+            }
+            .forEach {
+                merged[it.deviceId] = SessionManager.SessionPeer(
+                    accountId = it.accountId,
+                    deviceId = it.deviceId,
+                    identityPublic = it.identityPublic,
+                )
+            }
+        if (merged.isEmpty()) merged[pinned.deviceId] = pinned
+        return merged.values.toList()
+    }
+
+    /**
+     * Encrypt one copy for one device. The session blob is persisted **before** the caller is
+     * allowed to send it — see `decisions/sender-state-durability-before-send`: a ciphertext
+     * released over an advance a crash can roll back reuses a message number, and healing
+     * (msgNum==0 only) does not cover a mid-session desync.
+     */
+    private suspend fun encryptFor(
+        deviceId: String,
+        wireMessageId: String,
+        plaintext: ByteArray,
+    ): ByteArray? {
+        val actions = orchestrator.handleEvent(
+            CfeIncomingEvent.OutgoingMessage(
+                contactId = deviceId,
+                messageId = wireMessageId,
+                plaintext = plaintext,
+                contentType = 0u,
+            ),
+        )
+        persistSessionActions(actions)
+        val payload = actions.filterIsInstance<CfeAction.SendEncryptedMessage>()
+            .firstOrNull { it.to == deviceId }
+            ?.payload
+        if (payload == null) Log.w(TAG, "core returned no ciphertext ${deviceId.take(8)}…")
+        return payload
+    }
+
+    /**
+     * Send one copy, with the retry budget every copy now gets. `null` means the transport threw
+     * on the last attempt; a returned result may still carry `success = false`.
+     */
+    private suspend fun sendOneCopy(
+        myId: String,
+        accountId: String,
+        wireMessageId: String,
+        timestampMs: Long,
+        encrypted: ByteArray,
+        identityPublic: ByteArray,
+        isOwnReplica: Boolean,
+    ): MessagingService.SendResult? {
+        var last: MessagingService.SendResult? = null
+        repeat(MAX_ATTEMPTS) { attempt ->
+            val result = try {
+                if (isOwnReplica) {
+                    messagingService.sendMessage(
+                        messageId = wireMessageId,
+                        senderId = myId,
+                        recipientId = myId,
+                        conversationId = "",
+                        encryptedPayload = encrypted,
+                        timestampMs = timestampMs,
+                        contentType = ContentType.CONTENT_TYPE_SENDER_SYNC,
+                    )
+                } else {
+                    sendRecipientCopy(
+                        messageId = wireMessageId,
+                        senderId = myId,
+                        recipientId = accountId,
+                        timestampMs = timestampMs,
+                        encryptedPayload = encrypted,
+                        identityPublic = identityPublic,
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (attempt == MAX_ATTEMPTS - 1) {
+                    Log.w(TAG, "copy send threw ${wireMessageId.takeLast(16)}", e)
+                    return last
+                }
+                delay(BACKOFF_MS * (attempt + 1))
+                return@repeat
+            }
+            last = result
+            if (result.success) return result
+            if (!result.retryable || attempt == MAX_ATTEMPTS - 1) return result
+            delay(result.retryAfterMs.coerceAtLeast(BACKOFF_MS) * (attempt + 1))
+        }
+        return last
     }
 
     private suspend fun persistSessionActions(actions: List<CfeAction>) {
@@ -231,110 +425,6 @@ class SendMessageUseCase @Inject constructor(
                     isContact = true,
                 ),
             )
-        }
-    }
-
-    private suspend fun fanOutCopies(
-        myId: String,
-        contactId: String,
-        baseMessageId: String,
-        timestampMs: Long,
-        plaintext: ByteArray,
-        primary: SessionManager.SessionPeer,
-    ) {
-        val ourDeviceId = cryptoManager.currentDeviceId() ?: return
-        val recipientBundles = if (contactId == myId) {
-            emptyList()
-        } else {
-            runCatching { sessionManager.discoverPeerBundles(contactId) }
-                .getOrElse {
-                    Log.w(TAG, "recipient device discovery failed ${contactId.take(8)}…", it)
-                    emptyList()
-                }
-        }
-        val ownBundles = runCatching { sessionManager.discoverOwnDeviceBundles(myId) }
-            .getOrElse {
-                Log.w(TAG, "own device discovery failed", it)
-                emptyList()
-            }
-        val targets = cryptoManager.planSend(
-            recipientDeviceIds = recipientBundles.map { it.deviceId },
-            ownDeviceIds = ownBundles.map { it.deviceId },
-            ourDeviceId = ourDeviceId,
-            recipientIsSelf = contactId == myId,
-            primarySendCovered = primary.deviceId,
-        )
-        if (targets.isEmpty()) return
-
-        val bundlesByDevice = (recipientBundles + ownBundles).associateBy { it.deviceId }
-        for (target in targets) {
-            val accountId = if (target.audience == DeliveryAudience.RECIPIENT) contactId else myId
-            val bundle = bundlesByDevice[target.deviceId]
-            val peer = runCatching {
-                sessionManager.ensureSessionForDevice(accountId, target.deviceId)
-            }.getOrElse {
-                Log.w(TAG, "fan-out session init failed ${target.deviceId.take(8)}…", it)
-                continue
-            }
-            val identity = bundle?.identityPublic ?: peer.identityPublic
-            if (identity.isEmpty()) {
-                Log.w(TAG, "fan-out identity missing ${target.deviceId.take(8)}…")
-                continue
-            }
-            val tag = runCatching {
-                cryptoManager.deviceCopyTag(baseMessageId, target.deviceId, identity)
-            }.getOrElse {
-                Log.w(TAG, "fan-out tag failed ${target.deviceId.take(8)}…", it)
-                continue
-            }
-            val isOwnReplica = target.audience == DeliveryAudience.OWN_REPLICA
-            val wireMessageId = baseMessageId + if (isOwnReplica) "-ss-$tag" else "-fd-$tag"
-            val routedPlaintext = if (isOwnReplica) {
-                // SENDER_SYNC is the outer envelope type. Its encrypted body remains the same
-                // user-message KNST frame (type=1), prefixed with SSR1 for post-decrypt routing.
-                SenderSyncRouting.encode(contactId, plaintext)
-            } else {
-                plaintext
-            }
-            val actions = orchestrator.handleEvent(
-                CfeIncomingEvent.OutgoingMessage(
-                    contactId = target.deviceId,
-                    messageId = wireMessageId,
-                    plaintext = routedPlaintext,
-                    contentType = 0u,
-                ),
-            )
-            persistSessionActions(actions)
-            val encrypted = actions.filterIsInstance<CfeAction.SendEncryptedMessage>()
-                .firstOrNull { it.to == target.deviceId }
-                ?.payload
-                ?: run {
-                    Log.w(TAG, "fan-out core returned no ciphertext ${target.deviceId.take(8)}…")
-                    continue
-                }
-            val result = if (isOwnReplica) {
-                messagingService.sendMessage(
-                    messageId = wireMessageId,
-                    senderId = myId,
-                    recipientId = myId,
-                    conversationId = "",
-                    encryptedPayload = encrypted,
-                    timestampMs = timestampMs,
-                    contentType = ContentType.CONTENT_TYPE_SENDER_SYNC,
-                )
-            } else {
-                sendRecipientCopy(
-                    messageId = wireMessageId,
-                    senderId = myId,
-                    recipientId = contactId,
-                    timestampMs = timestampMs,
-                    encryptedPayload = encrypted,
-                    identityPublic = identity,
-                )
-            }
-            if (!result.success) {
-                Log.w(TAG, "fan-out rejected ${target.deviceId.take(8)}… ${result.errorCode}")
-            }
         }
     }
 
