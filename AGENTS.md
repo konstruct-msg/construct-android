@@ -39,7 +39,18 @@ file adds up to 2.6 MB. They were purged from history on 2026-09-22.
 
 They must be rebuilt whenever construct-core changes. UniFFI checks its interface checksums when
 the library loads, so a `.so` older than the bindings beside it does not fail at the call — the
-app does not start.
+app does not start, and the reason is not on the screen.
+
+**`construct-core.lock` records which core, and `checkCoreLibrary` enforces it.** Taking the
+binaries out of git took the record with them, so the lock file puts it back as one line of text:
+the `CONSTRUCT_CORE_VERSION` stamp the library carries in its own `.rodata`. A Gradle task reads
+that stamp out of each ABI's `.so` before `preBuild` and fails with both values when they differ,
+so the mismatch is caught on the machine that can fix it rather than at start-up on a device.
+`./build_crypto_lib.sh` rewrites the lock from what it just built, which makes moving to a new
+core a diff someone approves instead of something that happens quietly.
+
+Take the `.so` and `construct_core.kt` from the **same** build — the published archive contains
+both, and the lock only pins the library.
 
 ### Rust core integration
 

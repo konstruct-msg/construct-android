@@ -1,0 +1,19 @@
+# Which construct-core build this app is paired with.
+#
+# The .so files are not in git (see AGENTS.md), so without this file the repository would no
+# longer record *which* core it needs — only that it needs one. That record is what this is.
+# `checkCoreLibrary` in app/build.gradle refuses to build when the libraries in
+# app/src/main/jniLibs/ say something else.
+#
+# The value is the stamp the library carries in its own .rodata, readable after the file has been
+# copied anywhere and the README left behind:
+#
+#     strings -a libconstruct_core.so | grep -o 'CONSTRUCT_CORE_VERSION=.*'
+#
+# ./build_crypto_lib.sh rewrites this line from the libraries it just built, so moving to a new
+# core shows up here as a diff someone has to approve — which is the point. Take the .so and the
+# Kotlin bindings from the same build: UniFFI verifies its interface checksums when the library
+# loads, and a mismatched pair does not fail at the call, it fails at start-up.
+#
+# Ready-made builds: https://github.com/konstruct-msg/construct-core/releases/download/latest/construct-core-android.tar.gz
+CONSTRUCT_CORE_VERSION=0.17.1+7ba8366ce6a1
