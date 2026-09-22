@@ -117,7 +117,7 @@ class SendMessageUseCaseTest {
                 .thenReturn(SessionManager.SessionPeer(peer, device, byteArrayOf(4, 5, 6)))
             whenever(h.crypto.deviceCopyTag(any(), eq(device), any())).thenReturn(device.take(16))
         }
-        whenever(h.crypto.planSend(any(), any(), any(), any(), any())).thenReturn(
+        whenever(h.crypto.planSend(any(), any(), any(), any())).thenReturn(
             devices.map { DeliveryTarget(it, DeliveryAudience.RECIPIENT) },
         )
         whenever(h.orchestrator.handleEvent(any())).thenAnswer { invocation ->
@@ -191,20 +191,20 @@ class SendMessageUseCaseTest {
     }
 
     /**
-     * Nothing is covered in advance any more, so the core is asked to plan the whole set.
-     * `primary_send_covered` was the one parameter keeping the privileged copy alive in the
-     * protocol; this is what lets it be deleted there.
+     * The whole set goes to the core, with nothing subtracted on the way. `primary_send_covered`
+     * was the parameter that used to subtract one device here, and it is gone from `plan_send`
+     * entirely now that no client sends a privileged copy.
      *
-     * Mutation: pass `pinnedDevice` — this reddens.
+     * Mutation: drop the pinned device from the list handed to the core — this reddens.
      */
     @Test
-    fun `the core is told no copy is already covered`() = runTest {
+    fun `the whole device set is handed to the core`() = runTest {
         val h = harness()
         h.useCase()(peer, "hello")
 
-        val covered = argumentCaptor<String>()
-        verify(h.crypto).planSend(any(), any(), any(), any(), covered.capture())
-        assertEquals("", covered.firstValue)
+        val recipients = argumentCaptor<List<String>>()
+        verify(h.crypto).planSend(recipients.capture(), any(), any(), any())
+        assertEquals(listOf(pinnedDevice, siblingDevice), recipients.firstValue)
     }
 
     /**
@@ -220,7 +220,7 @@ class SendMessageUseCaseTest {
         val outcome = h.useCase()(peer, "hello")
 
         assertTrue(outcome is SendOutcome.Sent)
-        verify(h.crypto).planSend(recipients.capture(), any(), any(), any(), any())
+        verify(h.crypto).planSend(recipients.capture(), any(), any(), any())
         assertEquals(listOf(pinnedDevice, siblingDevice), recipients.firstValue)
     }
 

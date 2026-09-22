@@ -168,8 +168,9 @@ class SendMessageUseCase @Inject constructor(
      * a different naming. The second device of anyone was a second-class recipient.
      *
      * Every recipient copy now looks the same: named `<base>-fd-<tag>`, sealed to *that* device's
-     * identity key, retried the same way. Nothing is privileged, so nothing is ever already
-     * covered — `primarySendCovered` is the empty string and the core plans the whole set.
+     * identity key, retried the same way. Nothing is privileged, so nothing can be already
+     * covered — `plan_send` lost the parameter that used to say so, once this was the last caller
+     * relying on it.
      */
     private suspend fun deliverCopies(
         myId: String,
@@ -195,10 +196,6 @@ class SendMessageUseCase @Inject constructor(
             ownDeviceIds = ownBundles.map { it.deviceId },
             ourDeviceId = ourDeviceId,
             recipientIsSelf = recipientIsSelf,
-            // No copy is privileged any more, so none is ever already covered. The core still
-            // takes the parameter; iOS has passed the empty string since 4a74c013 and this was
-            // the last caller keeping it load-bearing.
-            primarySendCovered = "",
         )
         if (targets.isEmpty()) return DeliveryTally(0, 0, "no device to send to")
 

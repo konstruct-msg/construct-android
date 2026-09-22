@@ -233,13 +233,11 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         ownDeviceIds: List<String>,
         ourDeviceId: String,
         recipientIsSelf: Boolean,
-        primarySendCovered: String,
     ): List<DeliveryTarget> = planSendTargets(
         recipientDeviceIds,
         ownDeviceIds,
         ourDeviceId,
         recipientIsSelf,
-        primarySendCovered,
     )
 
     /** Core-owned teardown plan over a client-supplied account→device set. */

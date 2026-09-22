@@ -1424,7 +1424,7 @@ external fun uniffi_construct_core_fn_func_plan_initiation(`context`: RustBuffer
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_plan_receiving_decrypt(`sessionDeviceIds`: RustBuffer.ByValue,`preferredDeviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_plan_send(`recipientDeviceIds`: RustBuffer.ByValue,`ownDeviceIds`: RustBuffer.ByValue,`ourDeviceId`: RustBuffer.ByValue,`recipientIsSelf`: Byte,`primarySendCovered`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_func_plan_send(`recipientDeviceIds`: RustBuffer.ByValue,`ownDeviceIds`: RustBuffer.ByValue,`ourDeviceId`: RustBuffer.ByValue,`recipientIsSelf`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_pp_blind_token(`nonce`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1712,7 +1712,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_plan_receiving_decrypt() != 26416.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_plan_send() != 10892.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_plan_send() != 48521.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_pp_blind_token() != 34290.toShort()) {
@@ -11240,13 +11240,13 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * Every device that must receive its own ciphertext of an outgoing message.
          * The caller owns the account-space facts — whose devices these are, and whether the
          * recipient is itself — and passes them in; the decision over the sets is made here.
-         * Empty strings mean "unknown"/"none" for `our_device_id` and `primary_send_covered`.
-         */ fun `planSend`(`recipientDeviceIds`: List<kotlin.String>, `ownDeviceIds`: List<kotlin.String>, `ourDeviceId`: kotlin.String, `recipientIsSelf`: kotlin.Boolean, `primarySendCovered`: kotlin.String): List<DeliveryTarget> {
+         * An empty `our_device_id` means "unknown", and then no own-replica copy is planned.
+         */ fun `planSend`(`recipientDeviceIds`: List<kotlin.String>, `ownDeviceIds`: List<kotlin.String>, `ourDeviceId`: kotlin.String, `recipientIsSelf`: kotlin.Boolean): List<DeliveryTarget> {
             return FfiConverterSequenceTypeDeliveryTarget.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_func_plan_send(
     
-        FfiConverterSequenceString.lower(`recipientDeviceIds`),FfiConverterSequenceString.lower(`ownDeviceIds`),FfiConverterString.lower(`ourDeviceId`),FfiConverterBoolean.lower(`recipientIsSelf`),FfiConverterString.lower(`primarySendCovered`),_status)
+        FfiConverterSequenceString.lower(`recipientDeviceIds`),FfiConverterSequenceString.lower(`ownDeviceIds`),FfiConverterString.lower(`ourDeviceId`),FfiConverterBoolean.lower(`recipientIsSelf`),_status)
 }
     )
     }
