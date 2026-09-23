@@ -277,6 +277,8 @@ class MessageProcessor @Inject constructor(
                 is CfeAction.SessionHealNeeded,
                 is CfeAction.HealSuppressed,
                 is CfeAction.HeldPendingAck,
+                is CfeAction.HealAttemptAllowed,
+                is CfeAction.HealExhausted,
                 is CfeAction.CheckAckInDb,
                 is CfeAction.DecryptMessage,
                 is CfeAction.EncryptMessage,
