@@ -171,6 +171,21 @@ class MessageProcessor @Inject constructor(
                     Log.i(TAG, "heal suppressed ${action.contactId.take(8)}… retry ${action.retryAfterMs}ms — holding cursor")
                     return ProcessingOutcome.Deferred
                 }
+                is CfeAction.HeldPendingAck -> {
+                    // Our own SESSION_RESET_INIT to this device is unanswered, so this failure is
+                    // our re-init's own consequence and neither a heal nor a teardown answers it.
+                    //
+                    // iOS buffers the message and replays it when the wait ends; this client has
+                    // no such buffer yet, so it holds the cursor and lets the server re-deliver,
+                    // exactly as it does for a suppressed heal. The difference matters when the
+                    // wait outlasts what the server will re-send — that is the buffer's reason
+                    // for existing, and it is what this arm still owes.
+                    //
+                    // What it must not do is fall to the `else` below: that ACKs the message as
+                    // delivered, which is the drop this action exists to prevent.
+                    Log.i(TAG, "held behind our unacked SESSION_RESET_INIT to ${action.contactId.take(8)}… — holding cursor")
+                    return ProcessingOutcome.Deferred
+                }
                 is CfeAction.EndSessionSuppressed -> {
                     Log.i(TAG, "END_SESSION suppressed ${action.contactId.take(8)}… retry ${action.retryAfterMs}ms — holding cursor")
                     return ProcessingOutcome.Deferred
@@ -261,6 +276,7 @@ class MessageProcessor @Inject constructor(
                 is CfeAction.MessageQueuedPendingInit,
                 is CfeAction.SessionHealNeeded,
                 is CfeAction.HealSuppressed,
+                is CfeAction.HeldPendingAck,
                 is CfeAction.CheckAckInDb,
                 is CfeAction.DecryptMessage,
                 is CfeAction.EncryptMessage,

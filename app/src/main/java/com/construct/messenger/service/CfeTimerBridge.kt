@@ -116,6 +116,7 @@ class CfeTimerBridge @Inject constructor(
                 is CfeAction.HealSuppressed,
                 is CfeAction.EndSessionSuppressed,
                 is CfeAction.MessageQueuedPendingInit,
+                is CfeAction.HeldPendingAck,
                 -> Log.i(TAG, "CFE deferred action ${action::class.simpleName}")
                 is CfeAction.FetchPublicKeyBundle,
                 is CfeAction.CheckAckInDb,
