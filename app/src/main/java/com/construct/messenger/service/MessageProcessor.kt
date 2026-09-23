@@ -287,6 +287,18 @@ class MessageProcessor @Inject constructor(
                 is CfeAction.SendEndSession,
                 is CfeAction.FetchPublicKeyBundle,
                 -> Log.d(TAG, "CFE action consumed by routing layer: ${action::class.simpleName}")
+                // The machine's answers about *opening* a session. This client does not ask it —
+                // its session opening is still its own, so nothing here consumes these and the
+                // honest record is a warning, not a "consumed by" line that would read as wired.
+                // iOS acts on all six (`SessionActionExecutor`); the Android half is step 2 of
+                // `decisions/session-is-one-state-machine.md`, not yet started here.
+                is CfeAction.OpenSession,
+                is CfeAction.OpenDeferred,
+                is CfeAction.OpenNotNeeded,
+                is CfeAction.OpeningGaveUp,
+                is CfeAction.ResendSri,
+                is CfeAction.EndSessionNotNeeded,
+                -> Log.w(TAG, "CFE session-open action not acted on by this client: ${action::class.simpleName}")
             }
         }
     }

@@ -130,6 +130,17 @@ class CfeTimerBridge @Inject constructor(
                 is CfeAction.InitSession,
                 is CfeAction.SendEncryptedMessage,
                 -> Log.d(TAG, "CFE routing action on timer path: ${action::class.simpleName}")
+                // The machine's answers about opening a session. Reached from here whenever an
+                // alarm it armed fires, and nothing on this client acts on them yet — session
+                // opening is still Android's own. Warned rather than folded into the line above,
+                // which would read as wired. iOS acts on all six; see `MessageProcessor`.
+                is CfeAction.OpenSession,
+                is CfeAction.OpenDeferred,
+                is CfeAction.OpenNotNeeded,
+                is CfeAction.OpeningGaveUp,
+                is CfeAction.ResendSri,
+                is CfeAction.EndSessionNotNeeded,
+                -> Log.w(TAG, "CFE session-open action not acted on by this client: ${action::class.simpleName}")
             }
         }
     }
