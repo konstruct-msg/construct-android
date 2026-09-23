@@ -722,11 +722,17 @@ external fun uniffi_construct_core_checksum_func_derive_recovery_keypair(
 ): Short
 external fun uniffi_construct_core_checksum_func_derive_verifying_key_from_secret(
 ): Short
+external fun uniffi_construct_core_checksum_func_device_copy_tag(
+): Short
+external fun uniffi_construct_core_checksum_func_device_copy_tag_matches(
+): Short
 external fun uniffi_construct_core_checksum_func_format_federated_id(
 ): Short
 external fun uniffi_construct_core_checksum_func_generate_dummy_message(
 ): Short
 external fun uniffi_construct_core_checksum_func_generate_ephemeral_keypair(
+): Short
+external fun uniffi_construct_core_checksum_func_generate_intake_key(
 ): Short
 external fun uniffi_construct_core_checksum_func_generate_mnemonic(
 ): Short
@@ -739,6 +745,12 @@ external fun uniffi_construct_core_checksum_func_hybrid_sign(
 external fun uniffi_construct_core_checksum_func_hybrid_signature_keygen(
 ): Short
 external fun uniffi_construct_core_checksum_func_hybrid_verify(
+): Short
+external fun uniffi_construct_core_checksum_func_import_mls_store_cfe(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_epoch(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_tag(
 ): Short
 external fun uniffi_construct_core_checksum_func_is_dummy_message(
 ): Short
@@ -758,6 +770,14 @@ external fun uniffi_construct_core_checksum_func_mlkem768_keygen(
 ): Short
 external fun uniffi_construct_core_checksum_func_mnemonic_to_seed(
 ): Short
+external fun uniffi_construct_core_checksum_func_open_with_device_key(
+): Short
+external fun uniffi_construct_core_checksum_func_plan_initiation(
+): Short
+external fun uniffi_construct_core_checksum_func_plan_receiving_decrypt(
+): Short
+external fun uniffi_construct_core_checksum_func_plan_send(
+): Short
 external fun uniffi_construct_core_checksum_func_pp_blind_token(
 ): Short
 external fun uniffi_construct_core_checksum_func_pp_finalize_token(
@@ -766,9 +786,15 @@ external fun uniffi_construct_core_checksum_func_pp_seal_token_bytes(
 ): Short
 external fun uniffi_construct_core_checksum_func_pp_verify_client(
 ): Short
+external fun uniffi_construct_core_checksum_func_pp_verify_dleq(
+): Short
 external fun uniffi_construct_core_checksum_func_random_send_delay_ms(
 ): Short
+external fun uniffi_construct_core_checksum_func_receiving_init_kind(
+): Short
 external fun uniffi_construct_core_checksum_func_recommended_send_delay_ms(
+): Short
+external fun uniffi_construct_core_checksum_func_seal_to_device_key(
 ): Short
 external fun uniffi_construct_core_checksum_func_sealed_seal_sender_cert(
 ): Short
@@ -793,6 +819,8 @@ external fun uniffi_construct_core_checksum_func_sr_seal_recovery_bundle(
 external fun uniffi_construct_core_checksum_func_supports_pq_ratchet(
 ): Short
 external fun uniffi_construct_core_checksum_func_test_platform_bridge_roundtrip(
+): Short
+external fun uniffi_construct_core_checksum_func_tie_break_role(
 ): Short
 external fun uniffi_construct_core_checksum_func_validate_mnemonic(
 ): Short
@@ -844,6 +872,8 @@ external fun uniffi_construct_core_checksum_method_classiccryptocore_one_time_pr
 ): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_prekeys_available_count(
 ): Short
+external fun uniffi_construct_core_checksum_method_classiccryptocore_prune_one_time_prekeys_below(
+): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_remove_session(
 ): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_rotate_signed_prekey(
@@ -852,9 +882,29 @@ external fun uniffi_construct_core_checksum_method_classiccryptocore_set_local_u
 ): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_sign_bundle_data(
 ): Short
-external fun uniffi_construct_core_checksum_method_mlsgroup_epoch(
+external fun uniffi_construct_core_checksum_method_mlsstore_add_member(
 ): Short
-external fun uniffi_construct_core_checksum_method_mlsgroup_member_count(
+external fun uniffi_construct_core_checksum_method_mlsstore_create_group(
+): Short
+external fun uniffi_construct_core_checksum_method_mlsstore_decrypt(
+): Short
+external fun uniffi_construct_core_checksum_method_mlsstore_encrypt(
+): Short
+external fun uniffi_construct_core_checksum_method_mlsstore_epoch(
+): Short
+external fun uniffi_construct_core_checksum_method_mlsstore_export_cfe(
+): Short
+external fun uniffi_construct_core_checksum_method_mlsstore_generate_key_package(
+): Short
+external fun uniffi_construct_core_checksum_method_mlsstore_join_from_welcome(
+): Short
+external fun uniffi_construct_core_checksum_method_mlsstore_leave_group(
+): Short
+external fun uniffi_construct_core_checksum_method_mlsstore_member_count(
+): Short
+external fun uniffi_construct_core_checksum_method_mlsstore_process_commit(
+): Short
+external fun uniffi_construct_core_checksum_method_mlsstore_remove_member(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_ack_is_processed(
 ): Short
@@ -883,6 +933,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_export_orche
 external fun uniffi_construct_core_checksum_method_orchestratorcore_export_private_keys(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_export_session(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_forget_contact_state(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_generate_one_time_prekeys(
 ): Short
@@ -922,15 +974,25 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_init_session
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_init_session_allowing_stale(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_kyber_spk(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_one_time_prekey_count(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_plan_receiving_init(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_plan_teardown(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_prekeys_available_count(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_prune_one_time_prekeys_below(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_register_pq_deferred(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_remove_session(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_rotate_signed_prekey(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_set_kyber_spk(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_set_local_user_id(
 ): Short
@@ -988,7 +1050,7 @@ external fun uniffi_construct_core_checksum_method_trafficprotectionmanager_shou
 ): Short
 external fun uniffi_construct_core_checksum_method_trafficprotectionmanager_update_battery_level(
 ): Short
-external fun uniffi_construct_core_checksum_constructor_mlsgroup_new(
+external fun uniffi_construct_core_checksum_constructor_mlsstore_new(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_rustackstore_new(
 ): Short
@@ -1072,6 +1134,8 @@ external fun uniffi_construct_core_fn_method_classiccryptocore_one_time_prekey_c
 ): Int
 external fun uniffi_construct_core_fn_method_classiccryptocore_prekeys_available_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
+external fun uniffi_construct_core_fn_method_classiccryptocore_prune_one_time_prekeys_below(`ptr`: Long,`minKeepId`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): Int
 external fun uniffi_construct_core_fn_method_classiccryptocore_remove_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_classiccryptocore_rotate_signed_prekey(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1080,16 +1144,36 @@ external fun uniffi_construct_core_fn_method_classiccryptocore_set_local_user_id
 ): Unit
 external fun uniffi_construct_core_fn_method_classiccryptocore_sign_bundle_data(`ptr`: Long,`bundleDataJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_clone_mlsgroup(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_clone_mlsstore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_construct_core_fn_free_mlsgroup(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_free_mlsstore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_construct_core_fn_constructor_mlsgroup_new(`config`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_constructor_mlsstore_new(`signerPrivateKey`: RustBuffer.ByValue,`signerPublicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_construct_core_fn_method_mlsgroup_epoch(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_method_mlsstore_add_member(`ptr`: Long,`groupId`: RustBuffer.ByValue,`keyPackage`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_mlsstore_create_group(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_mlsstore_decrypt(`ptr`: Long,`groupId`: RustBuffer.ByValue,`ciphertext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_mlsstore_encrypt(`ptr`: Long,`groupId`: RustBuffer.ByValue,`plaintext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_mlsstore_epoch(`ptr`: Long,`groupId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_construct_core_fn_method_mlsgroup_member_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_method_mlsstore_export_cfe(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_mlsstore_generate_key_package(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_mlsstore_join_from_welcome(`ptr`: Long,`welcome`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_mlsstore_leave_group(`ptr`: Long,`groupId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_mlsstore_member_count(`ptr`: Long,`groupId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
+external fun uniffi_construct_core_fn_method_mlsstore_process_commit(`ptr`: Long,`groupId`: RustBuffer.ByValue,`commit`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_mlsstore_remove_member(`ptr`: Long,`groupId`: RustBuffer.ByValue,`leafIndex`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_clone_orchestratorcore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_free_orchestratorcore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1122,6 +1206,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_export_private_key
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_export_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_forget_contact_state(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_generate_one_time_prekeys(`ptr`: Long,`count`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_get_all_session_contact_ids(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1160,9 +1246,17 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_init_session(`ptr`
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_init_session_allowing_stale(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_kyber_spk(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_one_time_prekey_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
+external fun uniffi_construct_core_fn_method_orchestratorcore_plan_receiving_init(`ptr`: Long,`carriers`: RustBuffer.ByValue,`bundleCount`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_plan_teardown(`ptr`: Long,`candidateDeviceIds`: RustBuffer.ByValue,`peerOnDeadSession`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_prekeys_available_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Int
+external fun uniffi_construct_core_fn_method_orchestratorcore_prune_one_time_prekeys_below(`ptr`: Long,`minKeepId`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
 external fun uniffi_construct_core_fn_method_orchestratorcore_register_pq_deferred(`ptr`: Long,`contactId`: RustBuffer.ByValue,`otpkId`: Int,`sharedSecret`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1170,6 +1264,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_remove_session(`pt
 ): Byte
 external fun uniffi_construct_core_fn_method_orchestratorcore_rotate_signed_prekey(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_set_kyber_spk(`ptr`: Long,`keyId`: Int,`secretKey`: RustBuffer.ByValue,`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_set_local_user_id(`ptr`: Long,`userId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_sign_bundle_data(`ptr`: Long,`bundleDataJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1274,11 +1370,17 @@ external fun uniffi_construct_core_fn_func_derive_recovery_keypair(`seed`: RustB
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_derive_verifying_key_from_secret(`identitySecretKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_device_copy_tag(`baseMessageId`: RustBuffer.ByValue,`targetDeviceId`: RustBuffer.ByValue,`ourIdentityPrivate`: RustBuffer.ByValue,`peerIdentityPublic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_device_copy_tag_matches(`tag`: RustBuffer.ByValue,`baseMessageId`: RustBuffer.ByValue,`ourDeviceId`: RustBuffer.ByValue,`ourIdentityPrivate`: RustBuffer.ByValue,`peerIdentityPublic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_func_format_federated_id(`deviceId`: RustBuffer.ByValue,`serverHostname`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_generate_dummy_message(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_generate_ephemeral_keypair(uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_generate_intake_key(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_generate_mnemonic(`wordCount`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1292,6 +1394,12 @@ external fun uniffi_construct_core_fn_func_hybrid_signature_keygen(uniffi_out_er
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_hybrid_verify(`publicKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,`signature`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_func_import_mls_store_cfe(`data`: RustBuffer.ByValue,`signerPrivateKey`: RustBuffer.ByValue,`signerPublicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_func_intake_epoch(`unixSeconds`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_func_intake_tag(`intakeKey`: RustBuffer.ByValue,`recipientAccountId`: RustBuffer.ByValue,`epoch`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_is_dummy_message(`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_func_jittered_interval_ms(`baseMs`: Long,`jitterMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1310,6 +1418,14 @@ external fun uniffi_construct_core_fn_func_mlkem768_keygen(uniffi_out_err: Uniff
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_mnemonic_to_seed(`mnemonic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_open_with_device_key(`sealedBox`: RustBuffer.ByValue,`ourIdentityPriv`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_plan_initiation(`context`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_plan_receiving_decrypt(`sessionDeviceIds`: RustBuffer.ByValue,`preferredDeviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_plan_send(`recipientDeviceIds`: RustBuffer.ByValue,`ownDeviceIds`: RustBuffer.ByValue,`ourDeviceId`: RustBuffer.ByValue,`recipientIsSelf`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_pp_blind_token(`nonce`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_pp_finalize_token(`evaluatedBytes`: RustBuffer.ByValue,`blindFactorBytes`: RustBuffer.ByValue,`nonce`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1318,10 +1434,16 @@ external fun uniffi_construct_core_fn_func_pp_seal_token_bytes(`token`: RustBuff
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_pp_verify_client(`evaluatedBytes`: RustBuffer.ByValue,`nonce`: RustBuffer.ByValue,`serverPubkeyBytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_func_pp_verify_dleq(`blinded`: RustBuffer.ByValue,`evaluated`: RustBuffer.ByValue,`proof`: RustBuffer.ByValue,`issuerPublic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_func_random_send_delay_ms(`maxDelayMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_construct_core_fn_func_receiving_init_kind(`carrier`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_recommended_send_delay_ms(`isHighPriority`: Byte,`batteryLevel`: Float,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_construct_core_fn_func_seal_to_device_key(`plaintext`: RustBuffer.ByValue,`deviceIdentityKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sealed_seal_sender_cert(`certBytes`: RustBuffer.ByValue,`recipientIdentityKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sealed_unseal_sender_cert(`sealedBox`: RustBuffer.ByValue,`ourIdentityPriv`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1346,6 +1468,8 @@ external fun uniffi_construct_core_fn_func_supports_pq_ratchet(uniffi_out_err: U
 ): Byte
 external fun uniffi_construct_core_fn_func_test_platform_bridge_roundtrip(`bridge`: Long,`key`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_func_tie_break_role(`myId`: RustBuffer.ByValue,`peerId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_validate_mnemonic(`mnemonic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_func_verify_invite_signature(`data`: RustBuffer.ByValue,`signature`: RustBuffer.ByValue,`verifyingKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1486,7 +1610,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_compute_pow_with_progress() != 63236.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_compute_safety_number() != 13109.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_compute_safety_number() != 8965.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_create_crypto_core() != 59945.toShort()) {
@@ -1507,6 +1631,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_derive_verifying_key_from_secret() != 31516.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_device_copy_tag() != 42913.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_device_copy_tag_matches() != 64839.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_format_federated_id() != 19004.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1514,6 +1644,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_generate_ephemeral_keypair() != 59553.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_generate_intake_key() != 3346.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_generate_mnemonic() != 45721.toShort()) {
@@ -1532,6 +1665,15 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_hybrid_verify() != 56378.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_import_mls_store_cfe() != 54998.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_epoch() != 2449.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_tag() != 7949.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_is_dummy_message() != 41979.toShort()) {
@@ -1561,6 +1703,18 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_mnemonic_to_seed() != 53142.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_open_with_device_key() != 7865.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_plan_initiation() != 61324.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_plan_receiving_decrypt() != 26416.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_plan_send() != 48521.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_pp_blind_token() != 34290.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1573,10 +1727,19 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_pp_verify_client() != 14654.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_pp_verify_dleq() != 9036.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_random_send_delay_ms() != 9943.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_receiving_init_kind() != 46602.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_recommended_send_delay_ms() != 24315.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_seal_to_device_key() != 11700.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_sealed_seal_sender_cert() != 11670.toShort()) {
@@ -1613,6 +1776,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_test_platform_bridge_roundtrip() != 58358.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_tie_break_role() != 31131.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_validate_mnemonic() != 51524.toShort()) {
@@ -1690,6 +1856,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_prekeys_available_count() != 23711.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_prune_one_time_prekeys_below() != 49180.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_remove_session() != 11481.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1702,10 +1871,40 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_sign_bundle_data() != 22123.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_mlsgroup_epoch() != 38711.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_add_member() != 62203.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_mlsgroup_member_count() != 35958.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_create_group() != 12298.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_decrypt() != 59573.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_encrypt() != 53931.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_epoch() != 33449.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_export_cfe() != 18462.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_generate_key_package() != 24070.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_join_from_welcome() != 24122.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_leave_group() != 16325.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_member_count() != 32053.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_process_commit() != 27846.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_remove_member() != 14016.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_ack_is_processed() != 63134.toShort()) {
@@ -1748,6 +1947,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_session() != 59847.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_forget_contact_state() != 50563.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_generate_one_time_prekeys() != 33822.toShort()) {
@@ -1807,10 +2009,22 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_init_session_allowing_stale() != 35577.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_kyber_spk() != 239.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_one_time_prekey_count() != 21478.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_plan_receiving_init() != 11391.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_plan_teardown() != 62343.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_prekeys_available_count() != 33104.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_prune_one_time_prekeys_below() != 26303.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_register_pq_deferred() != 43713.toShort()) {
@@ -1820,6 +2034,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_rotate_signed_prekey() != 11331.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_set_kyber_spk() != 35729.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_set_local_user_id() != 22865.toShort()) {
@@ -1906,7 +2123,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_trafficprotectionmanager_update_battery_level() != 31087.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_constructor_mlsgroup_new() != 43378.toShort()) {
+    if (lib.uniffi_construct_core_checksum_constructor_mlsstore_new() != 26119.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_constructor_rustackstore_new() != 64675.toShort()) {
@@ -2517,6 +2734,8 @@ public interface ClassicCryptoCoreInterface {
     
     fun `prekeysAvailableCount`(): kotlin.UInt
     
+    fun `pruneOneTimePrekeysBelow`(`minKeepId`: kotlin.UInt): kotlin.UInt
+    
     fun `removeSession`(`contactId`: kotlin.String): kotlin.Boolean
     
     /**
@@ -2905,6 +3124,19 @@ open class ClassicCryptoCore: Disposable, AutoCloseable, ClassicCryptoCoreInterf
     }
     
 
+    override fun `pruneOneTimePrekeysBelow`(`minKeepId`: kotlin.UInt): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_classiccryptocore_prune_one_time_prekeys_below(
+        it,
+        FfiConverterUInt.lower(`minKeepId`),_status)
+}
+    }
+    )
+    }
+    
+
     override fun `removeSession`(`contactId`: kotlin.String): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     callWithHandle {
@@ -3100,27 +3332,98 @@ public object FfiConverterTypeClassicCryptoCore: FfiConverter<ClassicCryptoCore,
 
 //
 /**
- * MLS group — stateful wrapper around openmls::MlsGroup.
+ * Device-level MLS store (RFC 9420): ONE long-lived OpenMLS storage holding
+ * all group states plus key-package private material. A Welcome can only be
+ * decrypted by the store that generated the KeyPackage it addresses, so key
+ * package generation, joining and all group operations share this object.
+ *
+ * Persistence contract: after every mutating call, persist `export_cfe()`
+ * in the platform secure store. In particular, persist BEFORE uploading a
+ * generated key package — otherwise an inviter's Welcome will reference
+ * private keys the device no longer holds.
  */
-public interface MlsGroupInterface {
+public interface MlsStoreInterface {
+    
+    /**
+     * Add a member by their published KeyPackage. The commit is merged
+     * locally — call only when about to SubmitCommit.
+     */
+    fun `addMember`(`groupId`: List<kotlin.UByte>, `keyPackage`: List<kotlin.UByte>): MemberAddition
+    
+    /**
+     * Create a new group with this device as the sole member.
+     * Returns the group id — the handle for every other group call.
+     */
+    fun `createGroup`(): List<kotlin.UByte>
+    
+    /**
+     * Decrypt an application message from another member.
+     */
+    fun `decrypt`(`groupId`: List<kotlin.UByte>, `ciphertext`: List<kotlin.UByte>): List<kotlin.UByte>
+    
+    /**
+     * Encrypt an application message to the group.
+     */
+    fun `encrypt`(`groupId`: List<kotlin.UByte>, `plaintext`: List<kotlin.UByte>): List<kotlin.UByte>
     
     /**
      * Current MLS epoch. Increments on every commit.
      */
-    fun `epoch`(): kotlin.ULong
+    fun `epoch`(`groupId`: List<kotlin.UByte>): kotlin.ULong
+    
+    /**
+     * Snapshot the entire MLS storage as a CFE blob (msg_type 0x44).
+     */
+    fun `exportCfe`(): List<kotlin.UByte>
+    
+    /**
+     * Generate a KeyPackage for publishing (PublishKeyPackage). Writes its
+     * private material into this store — persist before uploading.
+     */
+    fun `generateKeyPackage`(): List<kotlin.UByte>
+    
+    /**
+     * Join a group from a Welcome message addressed to a KeyPackage
+     * generated by this store. Returns the joined group's id.
+     */
+    fun `joinFromWelcome`(`welcome`: List<kotlin.UByte>): List<kotlin.UByte>
+    
+    /**
+     * Propose leaving. Broadcast the returned message; another member's
+     * commit actually removes us.
+     */
+    fun `leaveGroup`(`groupId`: List<kotlin.UByte>): List<kotlin.UByte>
     
     /**
      * Current number of members in the group.
      */
-    fun `memberCount`(): kotlin.UInt
+    fun `memberCount`(`groupId`: List<kotlin.UByte>): kotlin.UInt
+    
+    /**
+     * Process and merge a commit produced by another member.
+     */
+    fun `processCommit`(`groupId`: List<kotlin.UByte>, `commit`: List<kotlin.UByte>)
+    
+    /**
+     * Remove a member by leaf index. Commit is merged locally.
+     */
+    fun `removeMember`(`groupId`: List<kotlin.UByte>, `leafIndex`: kotlin.UInt): List<kotlin.UByte>
     
     companion object
 }
 
 /**
- * MLS group — stateful wrapper around openmls::MlsGroup.
+ * Device-level MLS store (RFC 9420): ONE long-lived OpenMLS storage holding
+ * all group states plus key-package private material. A Welcome can only be
+ * decrypted by the store that generated the KeyPackage it addresses, so key
+ * package generation, joining and all group operations share this object.
+ *
+ * Persistence contract: after every mutating call, persist `export_cfe()`
+ * in the platform secure store. In particular, persist BEFORE uploading a
+ * generated key package — otherwise an inviter's Welcome will reference
+ * private keys the device no longer holds.
  */
-open class MlsGroup: Disposable, AutoCloseable, MlsGroupInterface
+open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
 {
 
     @Suppress("UNUSED_PARAMETER")
@@ -3145,14 +3448,14 @@ open class MlsGroup: Disposable, AutoCloseable, MlsGroupInterface
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
     }
     /**
-     * Create a new MLS group with the caller as the sole initial member.
+     * A fresh store bound to the device's Ed25519 identity keypair.
      */
-    constructor(`config`: GroupConfig) :
+    constructor(`signerPrivateKey`: List<kotlin.UByte>, `signerPublicKey`: List<kotlin.UByte>) :
         this(UniffiWithHandle, 
-    uniffiRustCallWithError(MlsException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_constructor_mlsgroup_new(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_constructor_mlsstore_new(
     
-        FfiConverterTypeGroupConfig.lower(`config`),_status)
+        FfiConverterSequenceUByte.lower(`signerPrivateKey`),FfiConverterSequenceUByte.lower(`signerPublicKey`),_status)
 }
     )
 
@@ -3210,7 +3513,7 @@ open class MlsGroup: Disposable, AutoCloseable, MlsGroupInterface
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_construct_core_fn_free_mlsgroup(handle, status)
+                UniffiLib.uniffi_construct_core_fn_free_mlsstore(handle, status)
             }
         }
     }
@@ -3223,18 +3526,38 @@ open class MlsGroup: Disposable, AutoCloseable, MlsGroupInterface
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_construct_core_fn_clone_mlsgroup(handle, status)
+            UniffiLib.uniffi_construct_core_fn_clone_mlsstore(handle, status)
         }
     }
 
     
     /**
-     * Current MLS epoch. Increments on every commit.
-     */override fun `epoch`(): kotlin.ULong {
-            return FfiConverterULong.lift(
+     * Add a member by their published KeyPackage. The commit is merged
+     * locally — call only when about to SubmitCommit.
+     */
+    @Throws(MlsException::class)override fun `addMember`(`groupId`: List<kotlin.UByte>, `keyPackage`: List<kotlin.UByte>): MemberAddition {
+            return FfiConverterTypeMemberAddition.lift(
     callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_mlsgroup_epoch(
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_mlsstore_add_member(
+        it,
+        FfiConverterSequenceUByte.lower(`groupId`),FfiConverterSequenceUByte.lower(`keyPackage`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Create a new group with this device as the sole member.
+     * Returns the group id — the handle for every other group call.
+     */
+    @Throws(MlsException::class)override fun `createGroup`(): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    callWithHandle {
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_mlsstore_create_group(
         it,
         _status)
 }
@@ -3245,14 +3568,170 @@ open class MlsGroup: Disposable, AutoCloseable, MlsGroupInterface
 
     
     /**
-     * Current number of members in the group.
-     */override fun `memberCount`(): kotlin.UInt {
-            return FfiConverterUInt.lift(
+     * Decrypt an application message from another member.
+     */
+    @Throws(MlsException::class)override fun `decrypt`(`groupId`: List<kotlin.UByte>, `ciphertext`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
     callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_mlsgroup_member_count(
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_mlsstore_decrypt(
+        it,
+        FfiConverterSequenceUByte.lower(`groupId`),FfiConverterSequenceUByte.lower(`ciphertext`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Encrypt an application message to the group.
+     */
+    @Throws(MlsException::class)override fun `encrypt`(`groupId`: List<kotlin.UByte>, `plaintext`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    callWithHandle {
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_mlsstore_encrypt(
+        it,
+        FfiConverterSequenceUByte.lower(`groupId`),FfiConverterSequenceUByte.lower(`plaintext`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Current MLS epoch. Increments on every commit.
+     */
+    @Throws(MlsException::class)override fun `epoch`(`groupId`: List<kotlin.UByte>): kotlin.ULong {
+            return FfiConverterULong.lift(
+    callWithHandle {
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_mlsstore_epoch(
+        it,
+        FfiConverterSequenceUByte.lower(`groupId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Snapshot the entire MLS storage as a CFE blob (msg_type 0x44).
+     */
+    @Throws(MlsException::class)override fun `exportCfe`(): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    callWithHandle {
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_mlsstore_export_cfe(
         it,
         _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Generate a KeyPackage for publishing (PublishKeyPackage). Writes its
+     * private material into this store — persist before uploading.
+     */
+    @Throws(MlsException::class)override fun `generateKeyPackage`(): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    callWithHandle {
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_mlsstore_generate_key_package(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Join a group from a Welcome message addressed to a KeyPackage
+     * generated by this store. Returns the joined group's id.
+     */
+    @Throws(MlsException::class)override fun `joinFromWelcome`(`welcome`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    callWithHandle {
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_mlsstore_join_from_welcome(
+        it,
+        FfiConverterSequenceUByte.lower(`welcome`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Propose leaving. Broadcast the returned message; another member's
+     * commit actually removes us.
+     */
+    @Throws(MlsException::class)override fun `leaveGroup`(`groupId`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    callWithHandle {
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_mlsstore_leave_group(
+        it,
+        FfiConverterSequenceUByte.lower(`groupId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Current number of members in the group.
+     */
+    @Throws(MlsException::class)override fun `memberCount`(`groupId`: List<kotlin.UByte>): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    callWithHandle {
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_mlsstore_member_count(
+        it,
+        FfiConverterSequenceUByte.lower(`groupId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Process and merge a commit produced by another member.
+     */
+    @Throws(MlsException::class)override fun `processCommit`(`groupId`: List<kotlin.UByte>, `commit`: List<kotlin.UByte>)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_mlsstore_process_commit(
+        it,
+        FfiConverterSequenceUByte.lower(`groupId`),FfiConverterSequenceUByte.lower(`commit`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * Remove a member by leaf index. Commit is merged locally.
+     */
+    @Throws(MlsException::class)override fun `removeMember`(`groupId`: List<kotlin.UByte>, `leafIndex`: kotlin.UInt): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    callWithHandle {
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_mlsstore_remove_member(
+        it,
+        FfiConverterSequenceUByte.lower(`groupId`),FfiConverterUInt.lower(`leafIndex`),_status)
 }
     }
     )
@@ -3277,22 +3756,22 @@ open class MlsGroup: Disposable, AutoCloseable, MlsGroupInterface
 /**
  * @suppress
  */
-public object FfiConverterTypeMlsGroup: FfiConverter<MlsGroup, Long> {
-    override fun lower(value: MlsGroup): Long {
+public object FfiConverterTypeMlsStore: FfiConverter<MlsStore, Long> {
+    override fun lower(value: MlsStore): Long {
         return value.uniffiCloneHandle()
     }
 
-    override fun lift(value: Long): MlsGroup {
-        return MlsGroup(UniffiWithHandle, value)
+    override fun lift(value: Long): MlsStore {
+        return MlsStore(UniffiWithHandle, value)
     }
 
-    override fun read(buf: ByteBuffer): MlsGroup {
+    override fun read(buf: ByteBuffer): MlsStore {
         return lift(buf.getLong())
     }
 
-    override fun allocationSize(value: MlsGroup) = 8UL
+    override fun allocationSize(value: MlsStore) = 8UL
 
-    override fun write(value: MlsGroup, buf: ByteBuffer) {
+    override fun write(value: MlsStore, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
@@ -3436,7 +3915,7 @@ public interface OrchestratorCoreInterface {
     
     /**
      * Export the PQContributionManager state as a CFE binary blob.
-     * Persist under key "kyber_session_state" in the secure store.
+     * Persist under CfeSecureStoreSlot::KyberSessionState.
      */
     fun `exportKyberSessionState`(): List<kotlin.UByte>
     
@@ -3445,13 +3924,30 @@ public interface OrchestratorCoreInterface {
     /**
      * Export the full orchestrator coordination state (ACK cache, healing queue,
      * init locks, archive index, prekey tracker) as a CFE binary blob.
-     * Persist under key "orchestrator_state" in the secure store.
+     * Persist under CfeSecureStoreSlot::OrchestratorState.
      */
     fun `exportOrchestratorState`(): List<kotlin.UByte>
     
     fun `exportPrivateKeys`(): List<kotlin.UByte>
     
     fun `exportSession`(`contactId`: kotlin.String): List<kotlin.UByte>
+    
+    /**
+     * Drop every piece of local orchestration state this core holds about `contact_id`:
+     * the ratchet, the archive and its timestamp, the prekey counter, the heal record, the PQ
+     * contribution, the init lock, the cooldown, the pending END_SESSION, the prewarm mark and
+     * the active-chat mark.
+     *
+     * `remove_session` removes the ratchet **and nothing else**, so all of the above outlive it
+     * and steer the next add for the same device — a contact the platform has already forgotten.
+     * None of them is reachable from outside this crate, which is why "the platform deleted this
+     * contact" had no expression here until now.
+     *
+     * Silent on the wire on purpose: a local deletion boundary, not a protocol reset. It archives
+     * nothing and emits no END_SESSION. A caller that wants the peer told does that first, with
+     * `plan_teardown`, and forgets afterwards.
+     */
+    fun `forgetContactState`(`contactId`: kotlin.String)
     
     fun `generateOneTimePrekeys`(`count`: kotlin.UInt): List<OtpkPair>
     
@@ -3517,9 +4013,27 @@ public interface OrchestratorCoreInterface {
     
     fun `initSessionAllowingStale`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String
     
+    fun `kyberSpk`(): KyberSpkRecord?
+    
     fun `oneTimePrekeyCount`(): kotlin.UInt
     
+    /**
+     * Every (carrier, bundle) pair worth attempting when opening a receiving session, in order.
+     * Both dimensions vary: fixing the carrier and rotating only the bundle finds the session
+     * only if the right carrier was guessed, and a wrong guess looks exactly like a broken bundle.
+     */
+    fun `planReceivingInit`(`carriers`: List<ReceivingInitCarrier>, `bundleCount`: kotlin.UInt): List<ReceivingInitAttempt>
+    
+    /**
+     * Which of `candidate_device_ids` a teardown goes to, and what to do with each.
+     * The caller passes the device set (it owns the account→devices translation, which this
+     * crate deliberately cannot do); the decision over the set is made here.
+     */
+    fun `planTeardown`(`candidateDeviceIds`: List<kotlin.String>, `peerOnDeadSession`: kotlin.Boolean): List<TeardownDecision>
+    
     fun `prekeysAvailableCount`(): kotlin.UInt
+    
+    fun `pruneOneTimePrekeysBelow`(`minKeepId`: kotlin.UInt): kotlin.UInt
     
     /**
      * Register a KEM shared secret as a deferred contribution.
@@ -3529,6 +4043,8 @@ public interface OrchestratorCoreInterface {
     fun `removeSession`(`contactId`: kotlin.String): kotlin.Boolean
     
     fun `rotateSignedPrekey`(): RotatedSpkBundle
+    
+    fun `setKyberSpk`(`keyId`: kotlin.UInt, `secretKey`: List<kotlin.UByte>, `publicKey`: List<kotlin.UByte>)
     
     fun `setLocalUserId`(`userId`: kotlin.String)
     
@@ -3779,7 +4295,7 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
     /**
      * Export the PQContributionManager state as a CFE binary blob.
-     * Persist under key "kyber_session_state" in the secure store.
+     * Persist under CfeSecureStoreSlot::KyberSessionState.
      */
     @Throws(CryptoException::class)override fun `exportKyberSessionState`(): List<kotlin.UByte> {
             return FfiConverterSequenceUByte.lift(
@@ -3812,7 +4328,7 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     /**
      * Export the full orchestrator coordination state (ACK cache, healing queue,
      * init locks, archive index, prekey tracker) as a CFE binary blob.
-     * Persist under key "orchestrator_state" in the secure store.
+     * Persist under CfeSecureStoreSlot::OrchestratorState.
      */
     @Throws(CryptoException::class)override fun `exportOrchestratorState`(): List<kotlin.UByte> {
             return FfiConverterSequenceUByte.lift(
@@ -3853,6 +4369,33 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     )
     }
+    
+
+    
+    /**
+     * Drop every piece of local orchestration state this core holds about `contact_id`:
+     * the ratchet, the archive and its timestamp, the prekey counter, the heal record, the PQ
+     * contribution, the init lock, the cooldown, the pending END_SESSION, the prewarm mark and
+     * the active-chat mark.
+     *
+     * `remove_session` removes the ratchet **and nothing else**, so all of the above outlive it
+     * and steer the next add for the same device — a contact the platform has already forgotten.
+     * None of them is reachable from outside this crate, which is why "the platform deleted this
+     * contact" had no expression here until now.
+     *
+     * Silent on the wire on purpose: a local deletion boundary, not a protocol reset. It archives
+     * nothing and emits no END_SESSION. A caller that wants the peer told does that first, with
+     * `plan_teardown`, and forgets afterwards.
+     */override fun `forgetContactState`(`contactId`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_forget_contact_state(
+        it,
+        FfiConverterString.lower(`contactId`),_status)
+}
+    }
+    
     
 
     
@@ -4137,6 +4680,19 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     
 
+    override fun `kyberSpk`(): KyberSpkRecord? {
+            return FfiConverterOptionalTypeKyberSpkRecord.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_kyber_spk(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
     override fun `oneTimePrekeyCount`(): kotlin.UInt {
             return FfiConverterUInt.lift(
     callWithHandle {
@@ -4150,6 +4706,42 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     
 
+    
+    /**
+     * Every (carrier, bundle) pair worth attempting when opening a receiving session, in order.
+     * Both dimensions vary: fixing the carrier and rotating only the bundle finds the session
+     * only if the right carrier was guessed, and a wrong guess looks exactly like a broken bundle.
+     */override fun `planReceivingInit`(`carriers`: List<ReceivingInitCarrier>, `bundleCount`: kotlin.UInt): List<ReceivingInitAttempt> {
+            return FfiConverterSequenceTypeReceivingInitAttempt.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_plan_receiving_init(
+        it,
+        FfiConverterSequenceTypeReceivingInitCarrier.lower(`carriers`),FfiConverterUInt.lower(`bundleCount`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Which of `candidate_device_ids` a teardown goes to, and what to do with each.
+     * The caller passes the device set (it owns the account→devices translation, which this
+     * crate deliberately cannot do); the decision over the set is made here.
+     */override fun `planTeardown`(`candidateDeviceIds`: List<kotlin.String>, `peerOnDeadSession`: kotlin.Boolean): List<TeardownDecision> {
+            return FfiConverterSequenceTypeTeardownDecision.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_plan_teardown(
+        it,
+        FfiConverterSequenceString.lower(`candidateDeviceIds`),FfiConverterBoolean.lower(`peerOnDeadSession`),_status)
+}
+    }
+    )
+    }
+    
+
     override fun `prekeysAvailableCount`(): kotlin.UInt {
             return FfiConverterUInt.lift(
     callWithHandle {
@@ -4157,6 +4749,19 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_prekeys_available_count(
         it,
         _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `pruneOneTimePrekeysBelow`(`minKeepId`: kotlin.UInt): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_prune_one_time_prekeys_below(
+        it,
+        FfiConverterUInt.lower(`minKeepId`),_status)
 }
     }
     )
@@ -4203,6 +4808,18 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     )
     }
+    
+
+    override fun `setKyberSpk`(`keyId`: kotlin.UInt, `secretKey`: List<kotlin.UByte>, `publicKey`: List<kotlin.UByte>)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_set_kyber_spk(
+        it,
+        FfiConverterUInt.lower(`keyId`),FfiConverterSequenceUByte.lower(`secretKey`),FfiConverterSequenceUByte.lower(`publicKey`),_status)
+}
+    }
+    
     
 
     override fun `setLocalUserId`(`userId`: kotlin.String)
@@ -5768,6 +6385,67 @@ public object FfiConverterTypeTrafficProtectionManager: FfiConverter<TrafficProt
 
 
 /**
+ * Токены аутентификации (JWT)
+ */
+data class AuthTokens (
+    /**
+     * Access token (JWT, живёт 1 час)
+     */
+    var `accessToken`: kotlin.String
+    , 
+    /**
+     * Refresh token (JWT, живёт 30 дней)
+     */
+    var `refreshToken`: kotlin.String
+    , 
+    /**
+     * Unix timestamp когда истекает access token
+     */
+    var `expiresAt`: kotlin.Long
+    , 
+    /**
+     * User ID (UUID)
+     */
+    var `userId`: kotlin.String
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeAuthTokens: FfiConverterRustBuffer<AuthTokens> {
+    override fun read(buf: ByteBuffer): AuthTokens {
+        return AuthTokens(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: AuthTokens) = (
+            FfiConverterString.allocationSize(value.`accessToken`) +
+            FfiConverterString.allocationSize(value.`refreshToken`) +
+            FfiConverterLong.allocationSize(value.`expiresAt`) +
+            FfiConverterString.allocationSize(value.`userId`)
+    )
+
+    override fun write(value: AuthTokens, buf: ByteBuffer) {
+            FfiConverterString.write(value.`accessToken`, buf)
+            FfiConverterString.write(value.`refreshToken`, buf)
+            FfiConverterLong.write(value.`expiresAt`, buf)
+            FfiConverterString.write(value.`userId`, buf)
+    }
+}
+
+
+
+/**
  * Binary first-message bundle for init_receiving_session — no JSON encoding.
  */
 data class BinaryFirstMessage (
@@ -6033,6 +6711,42 @@ public object FfiConverterTypeDecryptedMessageResult: FfiConverterRustBuffer<Dec
 
 
 
+data class DeliveryTarget (
+    var `deviceId`: kotlin.String
+    , 
+    var `audience`: DeliveryAudience
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeDeliveryTarget: FfiConverterRustBuffer<DeliveryTarget> {
+    override fun read(buf: ByteBuffer): DeliveryTarget {
+        return DeliveryTarget(
+            FfiConverterString.read(buf),
+            FfiConverterTypeDeliveryAudience.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: DeliveryTarget) = (
+            FfiConverterString.allocationSize(value.`deviceId`) +
+            FfiConverterTypeDeliveryAudience.allocationSize(value.`audience`)
+    )
+
+    override fun write(value: DeliveryTarget, buf: ByteBuffer) {
+            FfiConverterString.write(value.`deviceId`, buf)
+            FfiConverterTypeDeliveryAudience.write(value.`audience`, buf)
+    }
+}
+
+
+
 data class EncryptedMessageComponents (
     var `ephemeralPublicKey`: List<kotlin.UByte>
     , 
@@ -6177,50 +6891,6 @@ public object FfiConverterTypeEphemeralKeyPair: FfiConverterRustBuffer<Ephemeral
 
 
 /**
- * Configuration for creating or joining an MLS group.
- */
-data class GroupConfig (
-    var `signerPrivateKey`: List<kotlin.UByte>
-    , 
-    var `signerPublicKey`: List<kotlin.UByte>
-    , 
-    var `encryptedGroupContext`: List<kotlin.UByte>
-    
-){
-    
-
-    
-    companion object
-}
-
-/**
- * @suppress
- */
-public object FfiConverterTypeGroupConfig: FfiConverterRustBuffer<GroupConfig> {
-    override fun read(buf: ByteBuffer): GroupConfig {
-        return GroupConfig(
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
-        )
-    }
-
-    override fun allocationSize(value: GroupConfig) = (
-            FfiConverterSequenceUByte.allocationSize(value.`signerPrivateKey`) +
-            FfiConverterSequenceUByte.allocationSize(value.`signerPublicKey`) +
-            FfiConverterSequenceUByte.allocationSize(value.`encryptedGroupContext`)
-    )
-
-    override fun write(value: GroupConfig, buf: ByteBuffer) {
-            FfiConverterSequenceUByte.write(value.`signerPrivateKey`, buf)
-            FfiConverterSequenceUByte.write(value.`signerPublicKey`, buf)
-            FfiConverterSequenceUByte.write(value.`encryptedGroupContext`, buf)
-    }
-}
-
-
-
-/**
  * Packed result of `RustHealingQueue.record_attempt`.
  */
 data class HealingAttemptResult (
@@ -6321,6 +6991,74 @@ public object FfiConverterTypeHybridSignatureKeyPair: FfiConverterRustBuffer<Hyb
 
 
 
+/**
+ * What the caller knows at the moment it wants a session. Every field is something only the
+ * caller can see — the network, the outbox, the UI; the decision over them is made in the core.
+ */
+data class InitiationContext (
+    /**
+     * Ours and theirs in the space the session is addressed by. Anything else ranks a
+     * different pair — see tie_break_role.
+     */
+    var `myDeviceId`: kotlin.String
+    , 
+    var `peerDeviceId`: kotlin.String
+    , 
+    /**
+     * We sent a SESSION_RESET_INIT to this device; it is neither acknowledged nor expired.
+     */
+    var `ourInitInFlight`: kotlin.Boolean
+    , 
+    /**
+     * We hold the peer's init — received, not yet completed.
+     */
+    var `peerInitInFlight`: kotlin.Boolean
+    , 
+    /**
+     * Something is waiting to be sent to this device. Not "a warm session would be nice".
+     */
+    var `haveOutboundWork`: kotlin.Boolean
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeInitiationContext: FfiConverterRustBuffer<InitiationContext> {
+    override fun read(buf: ByteBuffer): InitiationContext {
+        return InitiationContext(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: InitiationContext) = (
+            FfiConverterString.allocationSize(value.`myDeviceId`) +
+            FfiConverterString.allocationSize(value.`peerDeviceId`) +
+            FfiConverterBoolean.allocationSize(value.`ourInitInFlight`) +
+            FfiConverterBoolean.allocationSize(value.`peerInitInFlight`) +
+            FfiConverterBoolean.allocationSize(value.`haveOutboundWork`)
+    )
+
+    override fun write(value: InitiationContext, buf: ByteBuffer) {
+            FfiConverterString.write(value.`myDeviceId`, buf)
+            FfiConverterString.write(value.`peerDeviceId`, buf)
+            FfiConverterBoolean.write(value.`ourInitInFlight`, buf)
+            FfiConverterBoolean.write(value.`peerInitInFlight`, buf)
+            FfiConverterBoolean.write(value.`haveOutboundWork`, buf)
+    }
+}
+
+
+
 data class InviteSignature (
     var `signature`: List<kotlin.UByte>
     
@@ -6347,6 +7085,52 @@ public object FfiConverterTypeInviteSignature: FfiConverterRustBuffer<InviteSign
 
     override fun write(value: InviteSignature, buf: ByteBuffer) {
             FfiConverterSequenceUByte.write(value.`signature`, buf)
+    }
+}
+
+
+
+/**
+ * ML-KEM-768 signed prekey held in the core key-state (PQXDH KEM leg).
+ * Persisted atomically inside the private-keys CFE blob — replaces the
+ * standalone platform Keychain triple (key-store consolidation Phase 2).
+ */
+data class KyberSpkRecord (
+    var `keyId`: kotlin.UInt
+    , 
+    var `publicKey`: List<kotlin.UByte>
+    , 
+    var `secretKey`: List<kotlin.UByte>
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeKyberSpkRecord: FfiConverterRustBuffer<KyberSpkRecord> {
+    override fun read(buf: ByteBuffer): KyberSpkRecord {
+        return KyberSpkRecord(
+            FfiConverterUInt.read(buf),
+            FfiConverterSequenceUByte.read(buf),
+            FfiConverterSequenceUByte.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: KyberSpkRecord) = (
+            FfiConverterUInt.allocationSize(value.`keyId`) +
+            FfiConverterSequenceUByte.allocationSize(value.`publicKey`) +
+            FfiConverterSequenceUByte.allocationSize(value.`secretKey`)
+    )
+
+    override fun write(value: KyberSpkRecord, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`keyId`, buf)
+            FfiConverterSequenceUByte.write(value.`publicKey`, buf)
+            FfiConverterSequenceUByte.write(value.`secretKey`, buf)
     }
 }
 
@@ -6477,13 +7261,15 @@ public object FfiConverterTypeMLKEMKeyPair: FfiConverterRustBuffer<MlkemKeyPair>
 
 /**
  * Result of adding a member to an MLS group.
+ * `commit` is broadcast to current members (SubmitCommit); `welcome` is
+ * delivered to the new member (InviteToGroup).
  */
 data class MemberAddition (
     var `commit`: List<kotlin.UByte>
     , 
     var `welcome`: List<kotlin.UByte>
     , 
-    var `leafIndex`: kotlin.UInt
+    var `memberCount`: kotlin.UInt
     
 ){
     
@@ -6507,13 +7293,13 @@ public object FfiConverterTypeMemberAddition: FfiConverterRustBuffer<MemberAddit
     override fun allocationSize(value: MemberAddition) = (
             FfiConverterSequenceUByte.allocationSize(value.`commit`) +
             FfiConverterSequenceUByte.allocationSize(value.`welcome`) +
-            FfiConverterUInt.allocationSize(value.`leafIndex`)
+            FfiConverterUInt.allocationSize(value.`memberCount`)
     )
 
     override fun write(value: MemberAddition, buf: ByteBuffer) {
             FfiConverterSequenceUByte.write(value.`commit`, buf)
             FfiConverterSequenceUByte.write(value.`welcome`, buf)
-            FfiConverterUInt.write(value.`leafIndex`, buf)
+            FfiConverterUInt.write(value.`memberCount`, buf)
     }
 }
 
@@ -6858,6 +7644,101 @@ public object FfiConverterTypePrivateKeysJson: FfiConverterRustBuffer<PrivateKey
 
 
 
+/**
+ * One attempt: open carrier `carrier_index` against bundle `bundle_index`.
+ * Indices into the caller's own arrays.
+ */
+data class ReceivingInitAttempt (
+    var `carrierIndex`: kotlin.UInt
+    , 
+    var `bundleIndex`: kotlin.UInt
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeReceivingInitAttempt: FfiConverterRustBuffer<ReceivingInitAttempt> {
+    override fun read(buf: ByteBuffer): ReceivingInitAttempt {
+        return ReceivingInitAttempt(
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ReceivingInitAttempt) = (
+            FfiConverterUInt.allocationSize(value.`carrierIndex`) +
+            FfiConverterUInt.allocationSize(value.`bundleIndex`)
+    )
+
+    override fun write(value: ReceivingInitAttempt, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`carrierIndex`, buf)
+            FfiConverterUInt.write(value.`bundleIndex`, buf)
+    }
+}
+
+
+
+/**
+ * The wire-visible shape of a queued message, for planning a receiving-session init.
+ * No ciphertext: deciding whether a message *could* open a session must not require its body.
+ */
+data class ReceivingInitCarrier (
+    var `messageNumber`: kotlin.UInt
+    , 
+    var `oneTimePrekeyId`: kotlin.UInt
+    , 
+    var `kemCiphertextBytes`: kotlin.UInt
+    , 
+    var `pqMessageEpoch`: kotlin.UInt
+    , 
+    var `isSessionResetInit`: kotlin.Boolean
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeReceivingInitCarrier: FfiConverterRustBuffer<ReceivingInitCarrier> {
+    override fun read(buf: ByteBuffer): ReceivingInitCarrier {
+        return ReceivingInitCarrier(
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ReceivingInitCarrier) = (
+            FfiConverterUInt.allocationSize(value.`messageNumber`) +
+            FfiConverterUInt.allocationSize(value.`oneTimePrekeyId`) +
+            FfiConverterUInt.allocationSize(value.`kemCiphertextBytes`) +
+            FfiConverterUInt.allocationSize(value.`pqMessageEpoch`) +
+            FfiConverterBoolean.allocationSize(value.`isSessionResetInit`)
+    )
+
+    override fun write(value: ReceivingInitCarrier, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`messageNumber`, buf)
+            FfiConverterUInt.write(value.`oneTimePrekeyId`, buf)
+            FfiConverterUInt.write(value.`kemCiphertextBytes`, buf)
+            FfiConverterUInt.write(value.`pqMessageEpoch`, buf)
+            FfiConverterBoolean.write(value.`isSessionResetInit`, buf)
+    }
+}
+
+
+
 data class RecoveryKeypair (
     var `privateKey`: List<kotlin.UByte>
     , 
@@ -7139,6 +8020,42 @@ public object FfiConverterTypeSrRecoveryBundle: FfiConverterRustBuffer<SrRecover
 
 
 
+data class TeardownDecision (
+    var `deviceId`: kotlin.String
+    , 
+    var `action`: TeardownAction
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTeardownDecision: FfiConverterRustBuffer<TeardownDecision> {
+    override fun read(buf: ByteBuffer): TeardownDecision {
+        return TeardownDecision(
+            FfiConverterString.read(buf),
+            FfiConverterTypeTeardownAction.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: TeardownDecision) = (
+            FfiConverterString.allocationSize(value.`deviceId`) +
+            FfiConverterTypeTeardownAction.allocationSize(value.`action`)
+    )
+
+    override fun write(value: TeardownDecision, buf: ByteBuffer) {
+            FfiConverterString.write(value.`deviceId`, buf)
+            FfiConverterTypeTeardownAction.write(value.`action`, buf)
+    }
+}
+
+
+
 data class TimingConfig (
     var `heartbeatIntervalSec`: kotlin.ULong
     , 
@@ -7266,9 +8183,6 @@ public object FfiConverterTypeWirePayload: FfiConverterRustBuffer<WirePayload> {
 
 
 
-/**
- * Result of checking whether a message has already been processed.
- */
 
 enum class AckCheckResult {
     
@@ -7398,9 +8312,13 @@ sealed class CfeAction {
         companion object
     }
     
-    data class SaveSessionToSecureStore(
-        val `key`: kotlin.String, 
-        val `data`: kotlin.ByteArray) : CfeAction()
+    /**
+     * END_SESSION suppressed by cooldown — the core owes it and sends it in retry_after_ms.
+     * Platform must NOT ACK.
+     */
+    data class EndSessionSuppressed(
+        val `contactId`: kotlin.String, 
+        val `retryAfterMs`: kotlin.ULong) : CfeAction()
         
     {
         
@@ -7408,8 +8326,25 @@ sealed class CfeAction {
         companion object
     }
     
-    data class LoadSessionFromSecureStore(
-        val `key`: kotlin.String) : CfeAction()
+    /**
+     * Message queued inside the core behind an in-flight session init. Nothing lost.
+     */
+    data class MessageQueuedPendingInit(
+        val `contactId`: kotlin.String, 
+        val `queuedCount`: kotlin.UInt) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Write `data` into `slot`; empty `data` is a delete sentinel where the slot says so.
+     */
+    data class SaveToSecureStore(
+        val `slot`: CfeSecureStoreSlot, 
+        val `data`: kotlin.ByteArray) : CfeAction()
         
     {
         
@@ -7648,75 +8583,80 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            9 -> CfeAction.SaveSessionToSecureStore(
+            9 -> CfeAction.EndSessionSuppressed(
                 FfiConverterString.read(buf),
+                FfiConverterULong.read(buf),
+                )
+            10 -> CfeAction.MessageQueuedPendingInit(
+                FfiConverterString.read(buf),
+                FfiConverterUInt.read(buf),
+                )
+            11 -> CfeAction.SaveToSecureStore(
+                FfiConverterTypeCfeSecureStoreSlot.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            10 -> CfeAction.LoadSessionFromSecureStore(
+            12 -> CfeAction.PersistMessage(
                 FfiConverterString.read(buf),
                 )
-            11 -> CfeAction.PersistMessage(
-                FfiConverterString.read(buf),
-                )
-            12 -> CfeAction.PersistAck(
+            13 -> CfeAction.PersistAck(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            13 -> CfeAction.PruneAckStore(
+            14 -> CfeAction.PruneAckStore(
                 FfiConverterULong.read(buf),
                 )
-            14 -> CfeAction.MarkMessageDelivered(
+            15 -> CfeAction.MarkMessageDelivered(
                 FfiConverterString.read(buf),
                 )
-            15 -> CfeAction.FetchPublicKeyBundle(
+            16 -> CfeAction.FetchPublicKeyBundle(
                 FfiConverterString.read(buf),
                 )
-            16 -> CfeAction.SendEncryptedMessage(
+            17 -> CfeAction.SendEncryptedMessage(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterUByte.read(buf),
                 )
-            17 -> CfeAction.SendReceipt(
+            18 -> CfeAction.SendReceipt(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            18 -> CfeAction.SendEndSession(
+            19 -> CfeAction.SendEndSession(
                 FfiConverterString.read(buf),
                 )
-            19 -> CfeAction.NotifyNewMessage(
-                FfiConverterString.read(buf),
-                FfiConverterString.read(buf),
-                )
-            20 -> CfeAction.NotifySessionCreated(
-                FfiConverterString.read(buf),
-                )
-            21 -> CfeAction.NotifyError(
+            20 -> CfeAction.NotifyNewMessage(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            22 -> CfeAction.ScheduleTimer(
+            21 -> CfeAction.NotifySessionCreated(
+                FfiConverterString.read(buf),
+                )
+            22 -> CfeAction.NotifyError(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                )
+            23 -> CfeAction.ScheduleTimer(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            23 -> CfeAction.CancelTimer(
+            24 -> CfeAction.CancelTimer(
                 FfiConverterString.read(buf),
                 )
-            24 -> CfeAction.CallSignalDecrypted(
+            25 -> CfeAction.CallSignalDecrypted(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            25 -> CfeAction.CheckAckInDb(
+            26 -> CfeAction.CheckAckInDb(
                 FfiConverterString.read(buf),
                 )
-            26 -> CfeAction.SendHeartbeat(
+            27 -> CfeAction.SendHeartbeat(
                 FfiConverterString.read(buf),
                 )
-            27 -> CfeAction.NotifyLinkedDevicesOfSessionReset(
+            28 -> CfeAction.NotifyLinkedDevicesOfSessionReset(
                 FfiConverterString.read(buf),
                 )
-            28 -> CfeAction.SessionTerminated(
+            29 -> CfeAction.SessionTerminated(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
@@ -7789,19 +8729,28 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 + FfiConverterULong.allocationSize(value.`retryAfterMs`)
             )
         }
-        is CfeAction.SaveSessionToSecureStore -> {
+        is CfeAction.EndSessionSuppressed -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
-                + FfiConverterString.allocationSize(value.`key`)
-                + FfiConverterByteArray.allocationSize(value.`data`)
+                + FfiConverterString.allocationSize(value.`contactId`)
+                + FfiConverterULong.allocationSize(value.`retryAfterMs`)
             )
         }
-        is CfeAction.LoadSessionFromSecureStore -> {
+        is CfeAction.MessageQueuedPendingInit -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
-                + FfiConverterString.allocationSize(value.`key`)
+                + FfiConverterString.allocationSize(value.`contactId`)
+                + FfiConverterUInt.allocationSize(value.`queuedCount`)
+            )
+        }
+        is CfeAction.SaveToSecureStore -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeCfeSecureStoreSlot.allocationSize(value.`slot`)
+                + FfiConverterByteArray.allocationSize(value.`data`)
             )
         }
         is CfeAction.PersistMessage -> {
@@ -7993,45 +8942,52 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterULong.write(value.`retryAfterMs`, buf)
                 Unit
             }
-            is CfeAction.SaveSessionToSecureStore -> {
+            is CfeAction.EndSessionSuppressed -> {
                 buf.putInt(9)
-                FfiConverterString.write(value.`key`, buf)
+                FfiConverterString.write(value.`contactId`, buf)
+                FfiConverterULong.write(value.`retryAfterMs`, buf)
+                Unit
+            }
+            is CfeAction.MessageQueuedPendingInit -> {
+                buf.putInt(10)
+                FfiConverterString.write(value.`contactId`, buf)
+                FfiConverterUInt.write(value.`queuedCount`, buf)
+                Unit
+            }
+            is CfeAction.SaveToSecureStore -> {
+                buf.putInt(11)
+                FfiConverterTypeCfeSecureStoreSlot.write(value.`slot`, buf)
                 FfiConverterByteArray.write(value.`data`, buf)
                 Unit
             }
-            is CfeAction.LoadSessionFromSecureStore -> {
-                buf.putInt(10)
-                FfiConverterString.write(value.`key`, buf)
-                Unit
-            }
             is CfeAction.PersistMessage -> {
-                buf.putInt(11)
+                buf.putInt(12)
                 FfiConverterString.write(value.`messageJson`, buf)
                 Unit
             }
             is CfeAction.PersistAck -> {
-                buf.putInt(12)
+                buf.putInt(13)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterULong.write(value.`timestamp`, buf)
                 Unit
             }
             is CfeAction.PruneAckStore -> {
-                buf.putInt(13)
+                buf.putInt(14)
                 FfiConverterULong.write(value.`cutoffTs`, buf)
                 Unit
             }
             is CfeAction.MarkMessageDelivered -> {
-                buf.putInt(14)
+                buf.putInt(15)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.FetchPublicKeyBundle -> {
-                buf.putInt(15)
+                buf.putInt(16)
                 FfiConverterString.write(value.`userId`, buf)
                 Unit
             }
             is CfeAction.SendEncryptedMessage -> {
-                buf.putInt(16)
+                buf.putInt(17)
                 FfiConverterString.write(value.`to`, buf)
                 FfiConverterByteArray.write(value.`payload`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
@@ -8039,68 +8995,68 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 Unit
             }
             is CfeAction.SendReceipt -> {
-                buf.putInt(17)
+                buf.putInt(18)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterString.write(value.`status`, buf)
                 Unit
             }
             is CfeAction.SendEndSession -> {
-                buf.putInt(18)
+                buf.putInt(19)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyNewMessage -> {
-                buf.putInt(19)
+                buf.putInt(20)
                 FfiConverterString.write(value.`chatId`, buf)
                 FfiConverterString.write(value.`preview`, buf)
                 Unit
             }
             is CfeAction.NotifySessionCreated -> {
-                buf.putInt(20)
+                buf.putInt(21)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyError -> {
-                buf.putInt(21)
+                buf.putInt(22)
                 FfiConverterString.write(value.`code`, buf)
                 FfiConverterString.write(value.`message`, buf)
                 Unit
             }
             is CfeAction.ScheduleTimer -> {
-                buf.putInt(22)
+                buf.putInt(23)
                 FfiConverterString.write(value.`timerId`, buf)
                 FfiConverterULong.write(value.`delayMs`, buf)
                 Unit
             }
             is CfeAction.CancelTimer -> {
-                buf.putInt(23)
+                buf.putInt(24)
                 FfiConverterString.write(value.`timerId`, buf)
                 Unit
             }
             is CfeAction.CallSignalDecrypted -> {
-                buf.putInt(24)
+                buf.putInt(25)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`protoBytes`, buf)
                 Unit
             }
             is CfeAction.CheckAckInDb -> {
-                buf.putInt(25)
+                buf.putInt(26)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.SendHeartbeat -> {
-                buf.putInt(26)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeAction.NotifyLinkedDevicesOfSessionReset -> {
                 buf.putInt(27)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
-            is CfeAction.SessionTerminated -> {
+            is CfeAction.NotifyLinkedDevicesOfSessionReset -> {
                 buf.putInt(28)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeAction.SessionTerminated -> {
+                buf.putInt(29)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterByteArray.write(value.`archiveBytes`, buf)
                 Unit
@@ -8177,16 +9133,6 @@ sealed class CfeIncomingEvent {
         companion object
     }
     
-    data class SessionLoaded(
-        val `key`: kotlin.String, 
-        val `data`: kotlin.ByteArray?) : CfeIncomingEvent()
-        
-    {
-        
-
-        companion object
-    }
-    
     data class KeyBundleFetched(
         val `userId`: kotlin.String, 
         val `bundleJson`: kotlin.String) : CfeIncomingEvent()
@@ -8253,6 +9199,22 @@ sealed class CfeIncomingEvent {
         companion object
     }
     
+    /**
+     * The platform is about to tear down the ratchet with `contact_id` and asks whether it may.
+     * Answered with `SendEndSession` or `EndSessionSuppressed` + `ScheduleTimer`, from the same
+     * window the core's own teardowns use. `peer_on_dead_session` is the platform's evidence
+     * that the previous teardown never landed.
+     */
+    data class TeardownRequested(
+        val `contactId`: kotlin.String, 
+        val `peerOnDeadSession`: kotlin.Boolean) : CfeIncomingEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
 
     
     companion object
@@ -8292,32 +9254,32 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
             5 -> CfeIncomingEvent.AckReceived(
                 FfiConverterString.read(buf),
                 )
-            6 -> CfeIncomingEvent.SessionLoaded(
-                FfiConverterString.read(buf),
-                FfiConverterOptionalByteArray.read(buf),
-                )
-            7 -> CfeIncomingEvent.KeyBundleFetched(
+            6 -> CfeIncomingEvent.KeyBundleFetched(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            8 -> CfeIncomingEvent.NetworkReconnected
-            9 -> CfeIncomingEvent.AppLaunched
-            10 -> CfeIncomingEvent.TimerFired(
+            7 -> CfeIncomingEvent.NetworkReconnected
+            8 -> CfeIncomingEvent.AppLaunched
+            9 -> CfeIncomingEvent.TimerFired(
                 FfiConverterString.read(buf),
                 )
-            11 -> CfeIncomingEvent.AckDbResult(
+            10 -> CfeIncomingEvent.AckDbResult(
                 FfiConverterString.read(buf),
                 FfiConverterBoolean.read(buf),
                 )
-            12 -> CfeIncomingEvent.ActiveChatChanged(
+            11 -> CfeIncomingEvent.ActiveChatChanged(
                 FfiConverterString.read(buf),
                 FfiConverterBoolean.read(buf),
                 )
-            13 -> CfeIncomingEvent.HeartbeatReceived(
+            12 -> CfeIncomingEvent.HeartbeatReceived(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterUInt.read(buf),
+                )
+            13 -> CfeIncomingEvent.TeardownRequested(
+                FfiConverterString.read(buf),
+                FfiConverterBoolean.read(buf),
                 )
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
@@ -8370,14 +9332,6 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
             (
                 4UL
                 + FfiConverterString.allocationSize(value.`messageId`)
-            )
-        }
-        is CfeIncomingEvent.SessionLoaded -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`key`)
-                + FfiConverterOptionalByteArray.allocationSize(value.`data`)
             )
         }
         is CfeIncomingEvent.KeyBundleFetched -> {
@@ -8433,6 +9387,14 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 + FfiConverterUInt.allocationSize(value.`msgNum`)
             )
         }
+        is CfeIncomingEvent.TeardownRequested -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+                + FfiConverterBoolean.allocationSize(value.`peerOnDeadSession`)
+            )
+        }
     }
 
     override fun write(value: CfeIncomingEvent, buf: ByteBuffer) {
@@ -8475,49 +9437,228 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
-            is CfeIncomingEvent.SessionLoaded -> {
-                buf.putInt(6)
-                FfiConverterString.write(value.`key`, buf)
-                FfiConverterOptionalByteArray.write(value.`data`, buf)
-                Unit
-            }
             is CfeIncomingEvent.KeyBundleFetched -> {
-                buf.putInt(7)
+                buf.putInt(6)
                 FfiConverterString.write(value.`userId`, buf)
                 FfiConverterString.write(value.`bundleJson`, buf)
                 Unit
             }
             is CfeIncomingEvent.NetworkReconnected -> {
-                buf.putInt(8)
+                buf.putInt(7)
                 Unit
             }
             is CfeIncomingEvent.AppLaunched -> {
-                buf.putInt(9)
+                buf.putInt(8)
                 Unit
             }
             is CfeIncomingEvent.TimerFired -> {
-                buf.putInt(10)
+                buf.putInt(9)
                 FfiConverterString.write(value.`timerId`, buf)
                 Unit
             }
             is CfeIncomingEvent.AckDbResult -> {
-                buf.putInt(11)
+                buf.putInt(10)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterBoolean.write(value.`isProcessed`, buf)
                 Unit
             }
             is CfeIncomingEvent.ActiveChatChanged -> {
-                buf.putInt(12)
+                buf.putInt(11)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterBoolean.write(value.`isActive`, buf)
                 Unit
             }
             is CfeIncomingEvent.HeartbeatReceived -> {
-                buf.putInt(13)
+                buf.putInt(12)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`data`, buf)
                 FfiConverterUInt.write(value.`msgNum`, buf)
+                Unit
+            }
+            is CfeIncomingEvent.TeardownRequested -> {
+                buf.putInt(13)
+                FfiConverterString.write(value.`contactId`, buf)
+                FfiConverterBoolean.write(value.`peerOnDeadSession`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * Which durable slot a `SaveToSecureStore` payload belongs in.
+ *
+ * The core names what the bytes are; the platform names where they go. This replaced a formatted
+ * string key (`"session_<id>"`, `"archive_<id>"`, …) that the platform parsed back apart — a
+ * naming rule for a store the core does not own, written six times across two repositories.
+ */
+sealed class CfeSecureStoreSlot {
+    
+    /**
+     * Double Ratchet state for one contact. Empty payload means delete.
+     */
+    data class Session(
+        val `contactId`: kotlin.String) : CfeSecureStoreSlot()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * A terminated session, kept for late-arriving messages. Empty payload means delete.
+     */
+    data class SessionArchive(
+        val `contactId`: kotlin.String) : CfeSecureStoreSlot()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Deferred ML-KEM contribution for one contact. Empty payload means delete.
+     */
+    data class PqDeferred(
+        val `contactId`: kotlin.String) : CfeSecureStoreSlot()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Whole PQContributionManager snapshot.
+     */
+    object KyberSessionState : CfeSecureStoreSlot()
+    
+    
+    /**
+     * Secret half of a committed ML-KEM signed prekey. No reachable emitter today.
+     */
+    data class KyberSignedPrekey(
+        val `keyId`: kotlin.UInt) : CfeSecureStoreSlot()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Orchestrator coordination state.
+     */
+    object OrchestratorState : CfeSecureStoreSlot()
+    
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCfeSecureStoreSlot : FfiConverterRustBuffer<CfeSecureStoreSlot>{
+    override fun read(buf: ByteBuffer): CfeSecureStoreSlot {
+        return when(buf.getInt()) {
+            1 -> CfeSecureStoreSlot.Session(
+                FfiConverterString.read(buf),
+                )
+            2 -> CfeSecureStoreSlot.SessionArchive(
+                FfiConverterString.read(buf),
+                )
+            3 -> CfeSecureStoreSlot.PqDeferred(
+                FfiConverterString.read(buf),
+                )
+            4 -> CfeSecureStoreSlot.KyberSessionState
+            5 -> CfeSecureStoreSlot.KyberSignedPrekey(
+                FfiConverterUInt.read(buf),
+                )
+            6 -> CfeSecureStoreSlot.OrchestratorState
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: CfeSecureStoreSlot) = when(value) {
+        is CfeSecureStoreSlot.Session -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
+        is CfeSecureStoreSlot.SessionArchive -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
+        is CfeSecureStoreSlot.PqDeferred -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
+        is CfeSecureStoreSlot.KyberSessionState -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is CfeSecureStoreSlot.KyberSignedPrekey -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUInt.allocationSize(value.`keyId`)
+            )
+        }
+        is CfeSecureStoreSlot.OrchestratorState -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: CfeSecureStoreSlot, buf: ByteBuffer) {
+        when(value) {
+            is CfeSecureStoreSlot.Session -> {
+                buf.putInt(1)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeSecureStoreSlot.SessionArchive -> {
+                buf.putInt(2)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeSecureStoreSlot.PqDeferred -> {
+                buf.putInt(3)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeSecureStoreSlot.KyberSessionState -> {
+                buf.putInt(4)
+                Unit
+            }
+            is CfeSecureStoreSlot.KyberSignedPrekey -> {
+                buf.putInt(5)
+                FfiConverterUInt.write(value.`keyId`, buf)
+                Unit
+            }
+            is CfeSecureStoreSlot.OrchestratorState -> {
+                buf.putInt(6)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
@@ -8633,6 +9774,92 @@ public object FfiConverterTypeCryptoError : FfiConverterRustBuffer<CryptoExcepti
 
 
 
+/**
+ * Result of checking whether a message has already been processed.
+ * Whose device an outgoing copy is for. A copy to our own device is the pair (me, me), which the
+ * relay already knows; a copy to a peer's device is not, and must be sealed to that device's key.
+ */
+
+enum class DeliveryAudience {
+    
+    RECIPIENT,
+    OWN_REPLICA;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeDeliveryAudience: FfiConverterRustBuffer<DeliveryAudience> {
+    override fun read(buf: ByteBuffer) = try {
+        DeliveryAudience.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: DeliveryAudience) = 4UL
+
+    override fun write(value: DeliveryAudience, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * Whether to open a session with a device right now, and as which side.
+ * See orchestration::initiation_plan. `tie_break_role` settles a collision that has happened;
+ * this settles whether to walk into one, and both peers must answer it compatibly.
+ */
+
+enum class InitiationDecision {
+    
+    /**
+     * Open a fresh session as INITIATOR now.
+     */
+    INITIATE,
+    /**
+     * One of ours is already in flight — join it. A second init derives a new root key, spends
+     * another one-time prekey, and orphans the first SESSION_RESET_INIT.
+     */
+    JOIN_IN_FLIGHT,
+    /**
+     * The peer's init is arriving and outranks ours. Take the responder side.
+     */
+    YIELD_TO_PEER,
+    /**
+     * Nothing to send and no init in the air. Opening spends a prekey on a session that carries
+     * nothing and doubles the chance of colliding with the peer's next one.
+     */
+    WAIT;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeInitiationDecision: FfiConverterRustBuffer<InitiationDecision> {
+    override fun read(buf: ByteBuffer) = try {
+        InitiationDecision.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: InitiationDecision) = 4UL
+
+    override fun write(value: InitiationDecision, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 
 
 /**
@@ -8717,6 +9944,94 @@ public object FfiConverterTypeMlsError : FfiConverterRustBuffer<MlsException> {
     }
 
 }
+
+
+
+/**
+ * What a queued message is, for the purpose of opening a receiving session.
+ */
+
+enum class ReceivingInitKind {
+    
+    /**
+     * Carries an X3DH init: this message can open a session.
+     */
+    HANDSHAKE,
+    /**
+     * Already inside a ratchet. Initialising from it fails and destroys the queue behind it.
+     */
+    MID_RATCHET,
+    /**
+     * `message_number == 0` but a PQ epoch has advanced — a re-keyed continuation, not an opener.
+     */
+    MID_SESSION_LEFTOVER;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeReceivingInitKind: FfiConverterRustBuffer<ReceivingInitKind> {
+    override fun read(buf: ByteBuffer) = try {
+        ReceivingInitKind.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: ReceivingInitKind) = 4UL
+
+    override fun write(value: ReceivingInitKind, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * What to do about one device when tearing down a session with a peer.
+ * See orchestration::teardown_plan — the decision lives in the core because it is a plan,
+ * and a plan is protocol.
+ */
+
+enum class TeardownAction {
+    
+    /**
+     * We hold a session with this device: send, then archive ours.
+     */
+    SEND_AND_ARCHIVE,
+    /**
+     * No session of ours, but the peer is demonstrably still on one — send, archive nothing.
+     */
+    SEND_ONLY,
+    /**
+     * Nothing to condemn, no evidence anyone is on a dead session — say nothing.
+     */
+    SKIP;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTeardownAction: FfiConverterRustBuffer<TeardownAction> {
+    override fun read(buf: ByteBuffer) = try {
+        TeardownAction.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: TeardownAction) = 4UL
+
+    override fun write(value: TeardownAction, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
 
 
 
@@ -9031,6 +10346,38 @@ public object FfiConverterOptionalByteArray: FfiConverterRustBuffer<kotlin.ByteA
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeKyberSpkRecord: FfiConverterRustBuffer<KyberSpkRecord?> {
+    override fun read(buf: ByteBuffer): KyberSpkRecord? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeKyberSpkRecord.read(buf)
+    }
+
+    override fun allocationSize(value: KyberSpkRecord?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeKyberSpkRecord.allocationSize(value)
+        }
+    }
+
+    override fun write(value: KyberSpkRecord?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeKyberSpkRecord.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeSessionHealthReport: FfiConverterRustBuffer<SessionHealthReport?> {
     override fun read(buf: ByteBuffer): SessionHealthReport? {
         if (buf.get().toInt() == 0) {
@@ -9183,6 +10530,34 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeDeliveryTarget: FfiConverterRustBuffer<List<DeliveryTarget>> {
+    override fun read(buf: ByteBuffer): List<DeliveryTarget> {
+        val len = buf.getInt()
+        return List<DeliveryTarget>(len) {
+            FfiConverterTypeDeliveryTarget.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<DeliveryTarget>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeDeliveryTarget.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<DeliveryTarget>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeDeliveryTarget.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeOfflineBatchMessage: FfiConverterRustBuffer<List<OfflineBatchMessage>> {
     override fun read(buf: ByteBuffer): List<OfflineBatchMessage> {
         val len = buf.getInt()
@@ -9267,6 +10642,90 @@ public object FfiConverterSequenceTypeOtpkPair: FfiConverterRustBuffer<List<Otpk
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeReceivingInitAttempt: FfiConverterRustBuffer<List<ReceivingInitAttempt>> {
+    override fun read(buf: ByteBuffer): List<ReceivingInitAttempt> {
+        val len = buf.getInt()
+        return List<ReceivingInitAttempt>(len) {
+            FfiConverterTypeReceivingInitAttempt.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<ReceivingInitAttempt>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeReceivingInitAttempt.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<ReceivingInitAttempt>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeReceivingInitAttempt.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeReceivingInitCarrier: FfiConverterRustBuffer<List<ReceivingInitCarrier>> {
+    override fun read(buf: ByteBuffer): List<ReceivingInitCarrier> {
+        val len = buf.getInt()
+        return List<ReceivingInitCarrier>(len) {
+            FfiConverterTypeReceivingInitCarrier.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<ReceivingInitCarrier>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeReceivingInitCarrier.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<ReceivingInitCarrier>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeReceivingInitCarrier.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeTeardownDecision: FfiConverterRustBuffer<List<TeardownDecision>> {
+    override fun read(buf: ByteBuffer): List<TeardownDecision> {
+        val len = buf.getInt()
+        return List<TeardownDecision>(len) {
+            FfiConverterTypeTeardownDecision.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<TeardownDecision>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeTeardownDecision.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<TeardownDecision>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeTeardownDecision.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<CfeAction>> {
     override fun read(buf: ByteBuffer): List<CfeAction> {
         val len = buf.getInt()
@@ -9285,6 +10744,34 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeCfeAction.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<List<kotlin.UByte>>> {
+    override fun read(buf: ByteBuffer): List<List<kotlin.UByte>> {
+        val len = buf.getInt()
+        return List<List<kotlin.UByte>>(len) {
+            FfiConverterSequenceUByte.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<List<kotlin.UByte>>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterSequenceUByte.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<List<kotlin.UByte>>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterSequenceUByte.write(it, buf)
         }
     }
 } fun `batteryAwareJitterMs`(`baseMs`: kotlin.ULong, `maxJitterMs`: kotlin.ULong, `batteryLevel`: kotlin.Float): kotlin.ULong {
@@ -9317,8 +10804,8 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     )
     }
     
- fun `computeSafetyNumber`(`myDeviceId`: kotlin.String, `theirDeviceId`: kotlin.String): kotlin.String {
-            return FfiConverterString.lift(
+ fun `computeSafetyNumber`(`myDeviceId`: kotlin.String, `theirDeviceId`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_func_compute_safety_number(
     
@@ -9396,6 +10883,39 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     )
     }
     
+
+        /**
+         * The tag a copy addressed to target_device_id travels under.
+         * base_message_id carries no per-device or per-chunk suffix, so every chunk
+         * of one message shares a tag.
+         */
+    @Throws(CryptoException::class) fun `deviceCopyTag`(`baseMessageId`: kotlin.String, `targetDeviceId`: kotlin.String, `ourIdentityPrivate`: List<kotlin.UByte>, `peerIdentityPublic`: List<kotlin.UByte>): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_device_copy_tag(
+    
+        FfiConverterString.lower(`baseMessageId`),FfiConverterString.lower(`targetDeviceId`),FfiConverterSequenceUByte.lower(`ourIdentityPrivate`),FfiConverterSequenceUByte.lower(`peerIdentityPublic`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Whether tag was written for our_device_id by the device behind
+         * peer_identity_public. False for any unusable input: callers ask "is this
+         * copy foreign?", and an undecidable answer there must be "not foreign" —
+         * wrongly opening a copy costs failed decrypts, wrongly discarding one
+         * loses a message from the transcript, silently.
+         */ fun `deviceCopyTagMatches`(`tag`: kotlin.String, `baseMessageId`: kotlin.String, `ourDeviceId`: kotlin.String, `ourIdentityPrivate`: List<kotlin.UByte>, `peerIdentityPublic`: List<kotlin.UByte>): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_device_copy_tag_matches(
+    
+        FfiConverterString.lower(`tag`),FfiConverterString.lower(`baseMessageId`),FfiConverterString.lower(`ourDeviceId`),FfiConverterSequenceUByte.lower(`ourIdentityPrivate`),FfiConverterSequenceUByte.lower(`peerIdentityPublic`),_status)
+}
+    )
+    }
+    
  fun `formatFederatedId`(`deviceId`: kotlin.String, `serverHostname`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCall() { _status ->
@@ -9421,6 +10941,16 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
             return FfiConverterTypeEphemeralKeyPair.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_generate_ephemeral_keypair(
+    
+        _status)
+}
+    )
+    }
+    
+ fun `generateIntakeKey`(): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_generate_intake_key(
     
         _status)
 }
@@ -9502,6 +11032,43 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     UniffiLib.uniffi_construct_core_fn_func_hybrid_verify(
     
         FfiConverterSequenceUByte.lower(`publicKey`),FfiConverterSequenceUByte.lower(`message`),FfiConverterSequenceUByte.lower(`signature`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Restore an MlsStore from a CFE blob previously produced by
+         * `export_cfe()`. The device Ed25519 signer keys are passed separately —
+         * they are never part of the blob.
+         */
+    @Throws(MlsException::class) fun `importMlsStoreCfe`(`data`: List<kotlin.UByte>, `signerPrivateKey`: List<kotlin.UByte>, `signerPublicKey`: List<kotlin.UByte>): MlsStore {
+            return FfiConverterTypeMlsStore.lift(
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_import_mls_store_cfe(
+    
+        FfiConverterSequenceUByte.lower(`data`),FfiConverterSequenceUByte.lower(`signerPrivateKey`),FfiConverterSequenceUByte.lower(`signerPublicKey`),_status)
+}
+    )
+    }
+    
+ fun `intakeEpoch`(`unixSeconds`: kotlin.ULong): kotlin.ULong {
+            return FfiConverterULong.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_epoch(
+    
+        FfiConverterULong.lower(`unixSeconds`),_status)
+}
+    )
+    }
+    
+
+    @Throws(CryptoException::class) fun `intakeTag`(`intakeKey`: List<kotlin.UByte>, `recipientAccountId`: kotlin.String, `epoch`: kotlin.ULong): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_tag(
+    
+        FfiConverterSequenceUByte.lower(`intakeKey`),FfiConverterString.lower(`recipientAccountId`),FfiConverterULong.lower(`epoch`),_status)
 }
     )
     }
@@ -9626,6 +11193,66 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     
 
         /**
+         * Open one of those copies with this device's X25519 identity private key.
+         * A copy sealed to a sibling fails the AEAD tag, so a caller finds its own by trying
+         * each — the intended use, because the stored blob carries no recipient labels.
+         */
+    @Throws(CryptoException::class) fun `openWithDeviceKey`(`sealedBox`: List<kotlin.UByte>, `ourIdentityPriv`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_open_with_device_key(
+    
+        FfiConverterSequenceUByte.lower(`sealedBox`),FfiConverterSequenceUByte.lower(`ourIdentityPriv`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Whether to open a session with a device now, and as which side.
+         *
+         * Called at the moment a client wants a session and has none it can use. Answering this
+         * locally is what produced 2026-09-04: both sides opened an INITIATOR session thirty-three
+         * seconds apart, each alone when it decided, and the conversation stopped for thirty-two
+         * seconds until one fell back to responder.
+         */ fun `planInitiation`(`context`: InitiationContext): InitiationDecision {
+            return FfiConverterTypeInitiationDecision.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_plan_initiation(
+    
+        FfiConverterTypeInitiationContext.lower(`context`),_status)
+}
+    )
+    }
+    
+ fun `planReceivingDecrypt`(`sessionDeviceIds`: List<kotlin.String>, `preferredDeviceId`: kotlin.String): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_plan_receiving_decrypt(
+    
+        FfiConverterSequenceString.lower(`sessionDeviceIds`),FfiConverterString.lower(`preferredDeviceId`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Every device that must receive its own ciphertext of an outgoing message.
+         * The caller owns the account-space facts — whose devices these are, and whether the
+         * recipient is itself — and passes them in; the decision over the sets is made here.
+         * An empty `our_device_id` means "unknown", and then no own-replica copy is planned.
+         */ fun `planSend`(`recipientDeviceIds`: List<kotlin.String>, `ownDeviceIds`: List<kotlin.String>, `ourDeviceId`: kotlin.String, `recipientIsSelf`: kotlin.Boolean): List<DeliveryTarget> {
+            return FfiConverterSequenceTypeDeliveryTarget.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_plan_send(
+    
+        FfiConverterSequenceString.lower(`recipientDeviceIds`),FfiConverterSequenceString.lower(`ownDeviceIds`),FfiConverterString.lower(`ourDeviceId`),FfiConverterBoolean.lower(`recipientIsSelf`),_status)
+}
+    )
+    }
+    
+
+        /**
          * Blind a 32-byte nonce for OPRF token issuance.
          * Returns packed 64 bytes: blinded_point[0..32] || blind_factor[32..64].
          * blinded_point is sent to server; blind_factor is kept secret until finalize().
@@ -9690,6 +11317,24 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     )
     }
     
+
+        /**
+         * Verify a batched DLEQ proof (IssueTokensResponse.dleq_proof) against the
+         * client-pinned issuer public key K. Returns true iff the same k links
+         * K = k*G and every evaluated[i] = k*blinded[i] — closes malicious-issuer
+         * key-tagging (Phase C). blinded/evaluated are the batch of 32-byte points
+         * (blinded as sent to IssueTokens, evaluated as returned); proof is 64 bytes;
+         * issuer_public is the pinned 32-byte K. False on any malformed input.
+         */ fun `ppVerifyDleq`(`blinded`: List<List<kotlin.UByte>>, `evaluated`: List<List<kotlin.UByte>>, `proof`: List<kotlin.UByte>, `issuerPublic`: List<kotlin.UByte>): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_pp_verify_dleq(
+    
+        FfiConverterSequenceSequenceUByte.lower(`blinded`),FfiConverterSequenceSequenceUByte.lower(`evaluated`),FfiConverterSequenceUByte.lower(`proof`),FfiConverterSequenceUByte.lower(`issuerPublic`),_status)
+}
+    )
+    }
+    
  fun `randomSendDelayMs`(`maxDelayMs`: kotlin.ULong): kotlin.ULong {
             return FfiConverterULong.lift(
     uniffiRustCall() { _status ->
@@ -9700,12 +11345,51 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     )
     }
     
+
+        /**
+         * Classify a queued message: can it open a receiving session?
+         * One rule, one implementation — every client asks rather than reimplements. A
+         * `message_number == 0` with an advanced PQ epoch is shaped like an opener and is not one,
+         * which is why this is a named function and not an inline check.
+         */ fun `receivingInitKind`(`carrier`: ReceivingInitCarrier): ReceivingInitKind {
+            return FfiConverterTypeReceivingInitKind.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_receiving_init_kind(
+    
+        FfiConverterTypeReceivingInitCarrier.lower(`carrier`),_status)
+}
+    )
+    }
+    
  fun `recommendedSendDelayMs`(`isHighPriority`: kotlin.Boolean, `batteryLevel`: kotlin.Float): kotlin.ULong {
             return FfiConverterULong.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_func_recommended_send_delay_ms(
     
         FfiConverterBoolean.lower(`isHighPriority`),FfiConverterFloat.lower(`batteryLevel`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Seal a device's own metadata to one of its account's devices.
+         *
+         * Same box as `sealed_seal_sender_cert` and the same implementation — two names because
+         * there are two purposes, and a name describing one is wrong on the other.
+         *
+         * The account has no shared key: every device holds its own X25519 identity pair, and
+         * linking establishes nothing between them. So metadata is sealed once per sibling and
+         * the copies stored together — a copy per device, units of them, and in exchange a
+         * revoked device stops being sealed to on the next re-seal instead of keeping the
+         * ability to read until a key is rotated.
+         */
+    @Throws(CryptoException::class) fun `sealToDeviceKey`(`plaintext`: List<kotlin.UByte>, `deviceIdentityKey`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_seal_to_device_key(
+    
+        FfiConverterSequenceUByte.lower(`plaintext`),FfiConverterSequenceUByte.lower(`deviceIdentityKey`),_status)
 }
     )
     }
@@ -9876,6 +11560,24 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     UniffiLib.uniffi_construct_core_fn_func_test_platform_bridge_roundtrip(
     
         FfiConverterTypePlatformBridge.lower(`bridge`),FfiConverterString.lower(`key`),FfiConverterByteArray.lower(`data`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Which side opens the session when both try at once: "Initiator" or "Responder".
+         *
+         * Higher id wins, by plain byte comparison — no normalisation, no parsing. Both peers
+         * compute it over the same pair, so a disagreement is a permanent deadlock rather than a
+         * retryable error. Pass the ids the session is addressed by; anything else ranks a
+         * different pair.
+         */ fun `tieBreakRole`(`myId`: kotlin.String, `peerId`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_tie_break_role(
+    
+        FfiConverterString.lower(`myId`),FfiConverterString.lower(`peerId`),_status)
 }
     )
     }

@@ -1,27 +1,36 @@
 # Konstrukt Messenger Android — Implementation Plan
 
-> **Last actualized:** 2026-07-07. UI Phase 8 refreshed to reflect mock-UI progress.
-> architecture (`construct-veil` happy-eyeballs, VEIL rename, CFE binary
-> session persistence, OTPK threshold = 20). The `veil-front` obfuscation
-> protocol (see `construct-docs/raw/02_Core_Crypto/protocols/OBFUSCATION_IMPLEMENTATION_PLAN_veil-front.md`)
-> lands on Android automatically via construct-core rebuild + flag flip
-> once it's ready upstream — no Android-specific work needed beyond M7
-> of that plan.
+> **Last actualized:** 2026-09-21. Working slice is **1:1 text over production gRPC**
+> with the current `construct-core` CFE artifact (`0.17.0+1241ec58d465`).
+> `veil-front` lands via a construct-core rebuild + flag flip (no Kotlin
+> routing). See `construct-docs/cryptocore/OBFUSCATION_IMPLEMENTATION_PLAN_veil-front.md`.
 
-> ## ⚠️ Current reality vs this plan
-> This document describes the **target** architecture. Phases 1.1–3.2 and
-> 2.2/2.3 now have a working skeleton (native libs, UniFFI bindings, gRPC
-> stubs generated at build time, `CryptoManager`, `GrpcClient`,
-> `SessionManager`, `KeystoreManager`, `RegisterUseCase`/`LoginUseCase`) —
-> see the per-phase status below. Session healing (3.3), recovery (4), VEIL
-> transport (5.1), message stream (5.2), calls (6), push (7), and most UI
-> screens (8) are **not started**. App package is **`com.construct.messenger`**
-> (namespace + applicationId), matching the paths in
-> `construct-docs/raw/ANDROID_ONBOARDING.md`.
-> New devs: start from `GOOD_FIRST_ISSUES.md`.
+> ## Current reality vs this plan
+> Current reality. On `develop`: UniFFI `OrchestratorCore`, two gRPC
+> channels, PASETO auth, OTPK upload, `MessagingRuntime`, CFE receive,
+> `SendMessageUseCase` (KNST + fail-closed stealth), v5 invites, Chat/Synaps
+> on real repositories. UI does **not** import gRPC, crypto, stealth, or
+> envelopes. The receive and send paths execute the same typed CFE actions as
+> iOS; durable state is written through typed secure-store slots.
+>
+> The first multi-device seams are now closed: `CryptoManager` passes only the
+> derived `CryptoDeviceId` into construct-core, `PeerDeviceRegistry` persists
+> account→device mappings, `GetPreKeyBundlesResponse.active_devices` is honoured,
+> and `CfeTimerBridge` feeds AppLaunched/reconnect/timer events back to CFE.
+> Still open: recovery (4), VEIL (5.1), calls (6), settings subscreens,
+> honeycomb Synaps, Play packaging (9.2), queued multi-carrier receive walking,
+> plus live iOS↔Android interop and Android 11 hardware smoke. Recipient/replica fan-out,
+> SSR1 sender-sync receive, bundle candidate walking, and planned teardown are
+> now wired through the core plans.
+> No FCM is planned: delivery remains the persistent stream/foreground-service
+> path, per the no-GMS decision.
+>
+> App package is **`com.construct.messenger`**. Canon: `docs/ANDROID_ONBOARDING.md`.
+> Envelope rules: `docs/WIRE_FORMAT_RULES.md`. New UI work: `GOOD_FIRST_ISSUES.md`.
 
 ## Phase 0: Project Setup (DONE)
-- ✅ Gradle 9.3.1 + Kotlin 2.0
+- ✅ Gradle 9.5 + AGP 9.3.1 + Kotlin 2.2.10 + KSP 2.3.6
+- ✅ Hilt 2.60.1 + Room 2.8.5 (KSP-compatible)
 - ✅ Compose with Kotlin Compiler plugin
 - ✅ Hilt for DI (`KonstructApp` `@HiltAndroidApp` + `MainActivity` `@AndroidEntryPoint`)
 - ✅ Directory structure (skeleton packages with README stubs)
@@ -35,11 +44,12 @@
 **Priority:** HIGH
 **Depends on:** construct-core repo
 
-Built via `build_crypto_lib.sh --all` (cargo + NDK cross-compile for
-`aarch64-linux-android`, `armv7-linux-androideabi`, `x86_64-linux-android`,
-`--features android,post-quantum`), then `uniffi-bindgen generate --language
-kotlin`. Re-run the script and regenerate bindings whenever `construct-core`
-changes (e.g. the ML-KEM/ML-DSA-65 switch picked up 2026-06-24).
+The checked-in `.so` files and generated Kotlin binding come from the official
+rolling `construct-core` Android artifact, built with `android,post-quantum`.
+The source build remains useful for core development, but Android consumes the
+artifact from `https://github.com/konstruct-msg/construct-core/releases/download/latest/construct-core-android.tar.gz`.
+Refresh both the three ABIs and `construct_core.kt` together whenever the UDL
+changes; never hand-edit the generated binding.
 
 **Files:**
 - `app/src/main/jniLibs/{arm64-v8a,armeabi-v7a,x86_64}/libconstruct_core.so`
@@ -47,15 +57,17 @@ changes (e.g. the ML-KEM/ML-DSA-65 switch picked up 2026-06-24).
   (UniFFI bindings, package `uniffi.construct_core` — DO NOT EDIT, regenerate)
 
 ### 1.2 Crypto API Wrapper
-**Status:** ✅ Done (core wiring; PQ contribution mixing not yet exposed)
+**Status:** ✅ Done (OrchestratorCore + CFE state snapshots + PQ contribution)
 **Priority:** HIGH
 **Depends on:** 1.1
 
-`CryptoManager.kt` wraps `uniffi.construct_core.ClassicCryptoCore`:
+`CryptoManager.kt` keeps the bootstrap `ClassicCryptoCore` only for registration,
+then promotes to `OrchestratorCore`, which is the messaging core:
 `loadOrCreate()`, `setLocalUserId`, `exportPrivateKeys`, `generateOneTimePrekeys`,
 `initSession`/`initReceivingSession`, `encryptMessage`/`decryptMessage`,
 `exportSessionBytes`/`importSessionBytes` (CFE binary), `removeSession`,
-`getAllSessionContactIds`, `generateMnemonic`, `deriveRecoveryKeypair`,
+`getAllSessionContactIds`, `applyPqContribution`, orchestrator/PQ snapshot
+export/import, `forgetContactState`, `generateMnemonic`, `deriveRecoveryKeypair`,
 `computePow`, `signWithDeviceKey` (Ed25519 sign, repurposes the
 `signRecoveryChallenge` FFI export — there is no dedicated bare-sign function
 yet; swap this if/when `construct-core` adds one).
@@ -104,7 +116,7 @@ a successful gRPC response.
 |-----|---------|---------------|
 | Auth token | EncryptedSharedPrefs | ✅ as planned |
 | Device identity key | Android Keystore-generated | ❌ not applicable — identity/signing keys live inside `construct-core` (Rust), persisted via `CryptoManager.exportPrivateKeys()`/CFE bytes, not Android-Keystore-generated keypairs |
-| Session JSON (per contact) | EncryptedSharedPrefs | ❌ not here — session bytes are CFE binary via `CryptoManager`/`SessionManager`, never JSON, and not yet wired to persistent storage (in-memory only today) |
+| Session JSON (per contact) | EncryptedSharedPrefs | ❌ not here — session bytes are CFE binary via `CryptoManager`/`SessionManager`, never JSON; persisted in Room `session_state` via `SessionStateStore` (2026-07-17), incl. `session_meta.establishedAt` for the stale-END_SESSION filter |
 | Recovery public key | EncryptedSharedPrefs | ❌ not implemented yet (Phase 4) |
 
 `expiresAt` is intentionally not persisted, matching iOS `KeychainManager` —
@@ -134,7 +146,10 @@ yet — add one when a use case needs it.
 
 Calls actually wired up so far: `AuthService.GetPowChallenge`,
 `AuthService.RegisterDevice`, `AuthService.AuthenticateDevice` (3.1),
-`KeyService.GetPreKeyBundle` (3.2, via `SessionManager`).
+`KeyService.GetPreKeyBundle` (3.2, via `SessionManager`; invite verify
+passes `consume_one_time_prekey=false`), `KeyService.UploadPreKeys` (3.1),
+`MessagingService.SendMessage` / `SendSealedMessage` / `MessageStream` /
+`GetPendingMessages` (5.2), `InviteService.AcceptInvite` / `RevokeInvite`.
 
 **Files:**
 - `app/src/main/proto/` (vendored `.proto` sources from `construct-protos`)
@@ -149,7 +164,7 @@ Calls actually wired up so far: `AuthService.GetPowChallenge`,
 ## Phase 3: Authentication & Session
 
 ### 3.1 Registration Flow
-**Status:** ✅ Done (steps 1–3; OTPK upload and recovery setup are separate, still pending)
+**Status:** ✅ Done (steps 1–4; recovery setup is Phase 4)
 **Priority:** HIGH
 **Depends on:** 1.2, 2.3
 
@@ -169,47 +184,55 @@ Calls actually wired up so far: `AuthService.GetPowChallenge`,
 used elsewhere, matching iOS `AuthServiceClient.registerDevice` exactly.
 
 **Not yet done:**
-- Step 4, upload initial OTPK batch (`KeyService.UploadPreKeys`, min 20 to
-  match iOS) — needs `CryptoManager.generateOneTimePrekeys()` wired to a new
-  use case.
 - Step 6, recovery phrase setup (`SetRecoveryKey`) — Phase 4.
 
 **Files:**
 - `domain/usecase/RegisterUseCase.kt`
 - `domain/usecase/LoginUseCase.kt`
+- `domain/usecase/UploadPreKeysUseCase.kt` — OTPK batch 100 after register;
+  PQ capability re-advertise.
 
 ### 3.2 Session Lifecycle
-**Status:** ✅ Done (INITIATOR path + crypto delegation; RESPONDER path is a thin pass-through, not exercised by a real inbound-message flow yet since 5.2 isn't built)
+**Status:** ✅ Device-addressed core boundary and durable account→device registry
+are implemented for the current multi-device send/receive slice (INITIATOR + RESPONDER
+via CFE receive). The network remains account-addressed; `CryptoDeviceId` is used for
+core sessions and `active_devices` is the only server-authoritative pruning input.
+Send fan-out covers recipient devices and own replicas; receive init walks every
+non-destructive bundle candidate for the current carrier. A queued multi-carrier
+reconciliation pass and live iOS↔Android interop remain open.
 **Priority:** HIGH
 
 **States:** NONE -> INITIALIZING -> ACTIVE -> HEALING -> NONE
 
-`SessionManager.kt`:
+`SessionManager.kt` and `PeerDeviceRegistry.kt`:
 ```kotlin
-class SessionManager @Inject constructor(
-    private val cryptoManager: CryptoManager,
-    private val grpcClient: GrpcClient,
-) {
-    suspend fun initSession(contactId: String): String          // INITIATOR — fetches PreKeyBundle via KeyService, maps to BinaryKeyBundle
-    fun initReceivingSession(contactId, senderBundle, firstMessage)  // RESPONDER
-    fun encryptMessage(contactId, plaintext)
-    fun decryptMessage(sessionId, ephemeralPublicKey, messageNumber, content)
-    fun exportSessions(): Map<String, ByteArray>                 // CFE binary, not String/JSON
-    fun importSessions(sessions: Map<String, ByteArray>)
-}
+account id ──PeerDeviceRegistry──> CryptoDeviceId
+    │                                  │
+    └─ gRPC / Room / sealed recipient  └─ CFE session / AD / timer actions
 ```
 
-Deviates from the original sketch in two ways: no `KeystoreManager`
-dependency (session bytes aren't persisted yet — `exportSessions()` exists
-but nothing calls it on a lifecycle event), and `exportSessions()`/
-`importSessions()` use `ByteArray`, not `String`, per the CFE-binary rule
-(§1.2).
+`exportSessions()` / `importSessions()` use `ByteArray`, not `String`, per the
+CFE-binary rule (§1.2). `SessionStateStore` maps the core's typed
+`CfeSecureStoreSlot` values to Room keys: hot session, archive, deferred PQ,
+Kyber snapshot, signed-prekey slot, and orchestrator snapshot. Cold start
+restores orchestrator/PQ snapshots first and imports only `Session` slots before
+opening the stream. Send/receive persist the returned state *before* the unary
+RPC (sender-state-durability-before-send).
 
 **Files:**
 - `service/SessionManager.kt`
+- `service/MessagingRuntime.kt`
+- `data/local/SessionStateStore.kt`
 
 ### 3.3 Session Healing
-**Status:** Pending
+**Status:** ✅ Core decision path done; Android bridge is partial. Rust CFE owns
+the heal/END_SESSION decision and returns typed actions. Android executes
+`SessionHealNeeded`, `EndSessionSuppressed`, `SessionTerminated`, typed storage,
+and the sender-state durability rule. `CfeTimerBridge` now executes
+`ScheduleTimer`/`CancelTimer`, `TimerFired`, `AppLaunched`, and
+`NetworkReconnected`; per-device teardown planning, recipient/replica fan-out and
+SSR1 sender-sync routing are wired; queued multi-carrier reconciliation remains open.
+`HealSuppressed`/`EndSessionSuppressed` hold the stream cursor (do **not** ACK).
 **Priority:** MEDIUM
 **Depends on:** 3.2
 
@@ -225,11 +248,16 @@ but nothing calls it on a lifecycle event), and `exportSessions()`/
 4. If max attempts: send END_SESSION
 ```
 
-**Files to create:**
-- `domain/usecase/HealSessionUseCase.kt`
+**Android bridge:**
+- `service/MessageProcessor.kt`
+- `service/ProcessorEffectsImpl.kt`
+- `domain/usecase/HealSessionUseCase.kt` (transport side effect only)
 
 ### 3.4 Session-Control Message Format
-**Status:** Pending
+**Status:** Partial — END_SESSION (21) and RESET_INIT (24) have live inbound
+handlers. PING/READY (25/26) have typed producers and are non-renderable after
+decrypt, but their inbound session-confirmation/watchdog transitions are not
+wired yet. Android is greenfield: do **not** dual-send legacy magic strings.
 **Priority:** HIGH
 **Depends on:** 3.2, 3.3, 5.2 (message stream)
 
@@ -243,22 +271,20 @@ The session handshake signals (`PING`, `READY`, `RESET_INIT`) are protocol
 control, not chat content. iOS historically encoded them as plaintext magic
 strings (`"__session_ready_<UUID>__"`) baked into the message body, which
 leaked into the transcript and broke on format skew (see
-`decisions/binary-control-message-format.md`). The fix moves the
-discriminator into the Envelope **`content_type`** field — outside the
-renderable text pipeline, so it can never become a chat bubble — and is not
-part of the Double-Ratchet AEAD associated data, so setting it never affects
-decryption.
+`decisions/binary-control-message-format.md`). Android uses two real wire
+forms: unencrypted outer-envelope types for reset/reset-init, and encrypted
+KNST type byte 5 for PING/READY. The latter stay inside Double-Ratchet
+ciphertext; `IncomingPlaintext` filters them before Room persistence.
 
-| Signal | `content_type` | Direction | Payload |
-|--------|---------------:|-----------|---------|
-| Session ping | `25` `CONTENT_TYPE_SESSION_PING` | INITIATOR → peer (tie-break nudge) | `SessionControl{op=PING}` |
-| Session ready | `26` `CONTENT_TYPE_SESSION_READY` | RESPONDER → INITIATOR (phase 2) | `SessionControl{op=READY}` |
-| Session reset-init | `24` `CONTENT_TYPE_SESSION_RESET_INIT` | tie-break winner (atomic re-init) | real X3DH first-ratchet carrier (msgNum=0) — **not** a pure signal |
-| End session | `21` `CONTENT_TYPE_SESSION_RESET` | either | 16-byte sentinel (unencrypted) |
+| Signal | Wire discriminator | Direction | Payload |
+|--------|--------------------|-----------|---------|
+| Session ping | KNST byte 5 = `25` `CONTENT_TYPE_SESSION_PING` | INITIATOR → peer | encrypted `SessionControl{op=PING}` |
+| Session ready | KNST byte 5 = `26` `CONTENT_TYPE_SESSION_READY` | RESPONDER → INITIATOR | encrypted `SessionControl{op=READY}` |
+| Session reset-init | outer `content_type=24` `CONTENT_TYPE_SESSION_RESET_INIT` | tie-break winner | real X3DH first-ratchet carrier (msgNum=0), not a pure signal |
+| End session | outer `content_type=21` `CONTENT_TYPE_SESSION_RESET` | either | unencrypted random 1024-byte pad |
 
-`SessionControl` (already vendored in `app/src/main/proto/messaging/e2ee.proto`,
-`ContentType` enum in `app/src/main/proto/core/envelope.proto` — proto plumbing
-for this is done, the Kotlin consumer/producer side is not):
+`SessionControl` is vendored in `app/src/main/proto/messaging/e2ee.proto`; its
+producer is `SessionControlUseCase.sendEncryptedControl`:
 
 ```protobuf
 message SessionControl {
@@ -272,28 +298,23 @@ enum SessionOp { SESSION_OP_UNSPECIFIED=0; PING=1; READY=2; RESET_INIT=3; END=4;
 No checksum needed — integrity is already guaranteed by the Double Ratchet
 AEAD tag.
 
-**Consumer rule (byte-sniff, accept both):** dispatch on `content_type`
-first; fall back to the legacy plaintext prefix only to interop with old iOS
-peers still in the field. A non-null result means "handle as control, return
-before persisting — never create a `Message` row." `RESET_INIT` (24) is
-special: the X3DH init already consumed the payload, so the inner content is
-just a sentinel.
+**Consumer rule:** dispatch outer 21/24 before the normal chat pipeline. After
+decrypt, inspect the KNST type before decoding a `MessageContent`; types 25/26
+must return before Room persistence. `RESET_INIT` (24) is special because its
+payload is the real X3DH carrier and must enter responder init.
 
-**Producer rule (dual-send during transition):** set the typed
-`content_type` **and** keep the legacy magic-string payload so old iOS peers
-that only understand the string still interop. Once the legacy fallback is
-retired fleet-wide on both platforms, switch the payload to a serialized
-`SessionControl` (carrying `nonce`) and stop sending the string.
+**Producer rule:** Android is greenfield — produce typed `SessionControl` only.
+Do **not** dual-send the iOS legacy magic string. PING/READY travel as ordinary
+encrypted messages at the outer envelope so the relay does not need to preserve
+their semantic type; the KNST header is visible only after decrypt.
 
-> **Server dependency:** the server must recognize `content_type` 25/26 or it
-> re-emits them as `E2EE_SIGNAL` (1) and the typed path goes inert — fail-open,
-> not a dropped message, so dual-send still works via the string either way.
-> Server proto landed 2026-06-23 (`construct-server/shared/proto/core/envelope.proto`).
-
-**Files to create:**
-- Dispatch logic in whatever owns the decrypt → render pipeline once 5.2
-  (Message Stream) exists — there is no message-receive path on Android yet
-  to attach this to.
+**Where it lives today:** `service/MessageRouter.kt` handles outer control types;
+`IncomingPlaintext.kt` filters decrypted KNST controls; `SessionControlUseCase.kt`
+produces typed PING/READY and END_SESSION.
+**Current handler state:** inbound 21 archives the local session without a bounce;
+24 goes through the responder-init/CFE path; 25/26 producers exist and all four
+types are guaranteed non-renderable. Inbound PING/READY still need their explicit
+session-confirmation/watchdog transitions; today they are ACKed as control frames.
 
 ---
 
@@ -387,21 +408,30 @@ regenerate Kotlin UniFFI bindings, flip a manifest flag. No new Kotlin
 routing code.
 
 ### 5.2 Message Stream
-**Status:** Pending
+**Status:** ✅ Done (transport + runtime + 1:1 send, typed CFE persistence,
+2026-09-17)
 **Priority:** HIGH
 **Depends on:** 3.2
 
 ```
-Client -> Server: Subscribe(user_id)
+Cold start: import CFE sessions → hydrate ACK → drain GetPendingMessages
+Client -> Server: Subscribe(direct:<sorted ids>)
 Server -> Client: MessageEnvelope (stream)
-Client -> Server: Ack(message_id)
-
-KeepAlive: every 30s
-On disconnect: reconnect -> drain pending
+KeepAlive: every 25s
+On disconnect: reconnect with persisted cursor
+Send: MessageContent → KNST → CFE OutgoingMessage → persist session → unary
 ```
 
-**Files to create:**
+Stealth on send is **fail-closed** (no identity key → do not identified-downgrade).
+Identified envelope carries sender+recipient only — no `conversation_id`.
+`GetPreKeyBundle` for invite verify uses `consume_one_time_prekey=false`.
+
+**Files:**
 - `data/api/MessageStreamService.kt`
+- `data/api/MessagingService.kt`
+- `service/MessagingRuntime.kt`
+- `service/MessageRouter.kt` / `MessageProcessor.kt` / `ProcessorEffectsImpl.kt`
+- `domain/usecase/SendMessageUseCase.kt`
 
 ---
 
@@ -469,63 +499,70 @@ equivalent of CallKit. Use it for:
 
 ---
 
-## Phase 7: Push Notifications
+## Phase 7: Background Delivery (No GMS)
 
-### 7.1 FCM Integration
-**Status:** Pending
-**Priority:** MEDIUM
-**Depends on:** 2.3
+### 7.1 Persistent foreground stream
+**Status:** ✅ Done for the current 1:1 slice (2026-09-18); real-device lifecycle
+and Doze smoke still required
+**Priority:** HIGH
+**Depends on:** 5.2
 
-```
-1. Get FCM token (must be a high-priority data message — NOT a notification message,
-   notification messages don't wake the app reliably)
-2. RPC: RegisterPushToken(token, platform=ANDROID)
-3. On new message: FCM data message -> wake up -> stream -> decrypt
-4. Use WorkManager for reliability
-5. For incoming calls: trigger ConnectionService.onShowIncomingCallUi
-   (NOT a notification — the system call UI is owned by Telecom framework, §6.1)
-```
+`MessagingForegroundService` owns the process-lifetime host for the existing
+`MessageStream`; it is not a second delivery channel. It starts only for an
+authenticated identity, restores the runtime after sticky process recreation,
+and stops when no identity can be restored or the user logs out.
 
-> **Cross-platform note:** Android does not have a true VoIP-push primitive
-> equivalent to iOS PushKit + CallKit. The closest is FCM high-priority data
-> message + `ConnectionService.onShowIncomingCallUi`. Battery / Doze
-> constraints make this less reliable than iOS PushKit; expect to add
-> WorkManager-driven catch-up paths and `setForegroundService` during active
-> calls. Treat this as a known platform parity gap, not a regression.
+- Android 8–13 use the ordinary two-argument `startForeground` path.
+- Android 13+ requests `POST_NOTIFICATIONS`.
+- Android 14+ declares and supplies the `remoteMessaging` foreground-service type.
+- Android 11 (API 30) is supported by the normal notification-channel path.
+- No FCM SDK, Play Integrity, Play Location, GMS/FOSS flavors, receiver, or
+  provider token registration is part of the base APK.
+- UnifiedPush may be added later only as an optional accelerator; the persistent
+  stream must remain fully functional without a distributor.
 
-**Files to create:**
-- `data/local/FcmService.kt`
-- `data/worker/MessageSyncWorker.kt`
+**Files:**
+- `service/MessagingForegroundService.kt`
+- `service/MessagingRuntime.kt`
+- `MainActivity.kt` (Android 13+ notification permission)
+- `AndroidManifest.xml`
+
+**Still to verify on hardware:** process kill/recreation, reboot, network
+loss/reconnect, pending-message drain, Doze/battery behavior, and delivery
+against a live iOS peer.
 
 ---
 
 ## Phase 8: UI Components
 
 ### 8.1 Navigation & Screens
-**Status:** In Progress (mock-UI skeleton)
+**Status:** In Progress (1:1 text path wired to real repositories; settings/calls still skeleton)
 **Priority:** HIGH
-**Depends on:** Phase 1-7 for real data; mock data works today
+**Depends on:** Phase 1–5.2 and 7 for the current 1:1 text/delivery slice (done);
+6 for calls
 
 ```kotlin
 // Navigation
-Splash -> Onboarding -> Main (conversation list) -> Chat -> Settings
-                    -> Recovery (if recovering)
+Splash -> Onboarding -> Orientation -> Main (Chats / Synaps / Calls / Settings)
+                    -> Chat
+                    -> Recovery (if recovering)   // not built
 ```
 
-**Screens implemented (mock data / skeleton):**
-- `SplashScreen` — launch placeholder.
-- `OnboardingScreen` — username input, create identity, restore/link actions.
-- `MainTabView` — root tab container (Chats / Synaps / Calls / Settings) using Material3 `NavigationBar`.
-- `ChatsListScreen` — conversation list with `CTSearchBar` and `ChatRow`.
-- `ChatScreen` — chat nav bar + empty message area skeleton.
-- `SynapsScreen` — contacts tab placeholder.
-- `CallsScreen` — calls tab placeholder.
-- `SettingsScreen` — settings root skeleton with nav bar.
+**Screens implemented (real data unless noted):**
+- `SplashScreen` — restore session / `MessagingRuntime`.
+- `OnboardingScreen` — username + `AuthRepository.initializeIdentity`.
+- `OrientationScreen` — first-run walkthrough (replay from Settings still missing).
+- `MainTabView` — Chats / Synaps / Calls / Settings on Material3 `NavigationBar`.
+- `ChatsListScreen` — Room `ChatsRepository`; empty CTA opens Synaps (not a fake contact).
+- `ChatScreen` — `LazyColumn` bubbles + `MessageInputView`; `ChatViewModel` observes/sends via `MessagesRepository`.
+- `SynapsScreen` — mint v5 invite (share/copy), paste-accept, contact list. Not honeycomb.
+- `CallsScreen` — placeholder.
+- `SettingsScreen` — settings root skeleton.
 
 **Still to implement:**
-- Message transcript (`MessageBubble`, `MessageInputView`, scroll-to-bottom, search overlay).
+- Synaps honeycomb + FindUser / contact-request UI + invite QR.
 - Settings subscreens: Account, Appearance, Network, Security.
-- Search / find-users screen.
+- Chat search overlay, pagination, call button.
 - Call screen (WebRTC).
 - Recovery flow screens.
 
@@ -534,35 +571,24 @@ Splash -> Onboarding -> Main (conversation list) -> Chat -> Settings
 **Priority:** HIGH
 
 **Implemented components (aligned with iOS canon):**
-- `CTNavBar` — nav bar with title, back, trailing action.
-- `CTTabBar` — custom tab bar (legacy; prefer Material3 `NavigationBar`).
-- `CTButton` — primary/destructive/disabled button.
-- `CTTextField` — input field.
-- `CTSearchBar` — search input with clear.
-- `CTSectionGroup` / `CTSettingsSectionHeader` / `CTSettingsRow` — settings sections.
-- `CTSep` — ASCII separator line.
-- `CTSystemMessage` — terminal-style system message (`> text`).
-- `CTStatusBadge` — Material-icon status indicator.
-- `CTAvatar` — circular avatar with deterministic accent + identicon.
-- `CTLogoView` — app logo (vector asset).
-- `ConstructNavRow` — navigation row with icon + chevron.
-- `ChatRow` — conversation list row.
+- `CTNavBar`, `CTTabBar` (legacy; prefer Material3 `NavigationBar`), `CTButton`,
+  `CTTextField`, `CTSearchBar`, `CTSectionGroup` / `CTSettingsSectionHeader` /
+  `CTSettingsRow`, `CTSep`, `CTSystemMessage`, `CTStatusBadge`, `CTAvatar`,
+  `CTLogoView`, `ConstructNavRow`, `ConstructActionRow`, `ConstructButtonRow`,
+  `CTModeSelector`, `ConnectionStatusIndicator`, `CTNoise`, `ChatRow`,
+  `MessageBubble`, `MessageInputView`.
 
 **Still to implement / enhance:**
-- `MessageBubble` (incoming / outgoing).
-- `MessageInputView` (text input + send/attach).
-- `ConstructActionRow` / `ConstructButtonRow`.
-- `CTModeSelector` (segmented control).
-- `ConnectionStatusIndicator`.
-- `CTNoise` / ASCII background texture.
+- Chat search overlay, scroll-to-bottom control, attach/mic (icons exist; no media pipeline).
 - `CTLoader` / progress indicators.
+- Wire `ConnectionStatusIndicator` to stream state.
 
 ---
 
 ## Phase 9: Polish
 
 ### 9.1 Localization
-**Status:** Pending
+**Status:** In Progress (`en` + `ru` for onboarding / chats / Synaps / chat composer; `ja` not started)
 **Priority:** LOW
 
 ```xml
@@ -598,24 +624,37 @@ app/src/main/java/com/construct/messenger/
 │   │   ├── GrpcClient.kt                               ✅
 │   │   ├── README.md                                   ✅ (codegen pipeline + grpc-kotlin gotcha)
 │   │   ├── AuthService.kt / KeyService.kt / ...         ⬜ not created — see §2.3
-│   │   ├── MessageStreamService.kt                     ⬜
+│   │   ├── MessageStreamService.kt                     ✅
+│   │   ├── MessagingService.kt                         ✅
 │   │   └── VeilProxy.kt   (thin wrapper over Rust VEIL coordinator; see §5.1) ⬜
 │   ├── local/
 │   │   ├── KeystoreManager.kt                          ✅ (tokens only — see §2.2)
-│   │   └── FcmService.kt                               ⬜
-│   └── repository/                                     ⬜ (no repository layer yet; use cases call CryptoManager/GrpcClient/SessionManager directly)
-├── di/                                                  ⬜ (no AppModule needed so far — see §2.1)
+│   │   ├── AckStore.kt / SessionStateStore.kt          ✅
+│   │   ├── PendingInviteStore.kt                       ✅ (konstruct://add)
+│   │   └── db/                                         ✅ chats/messages/users/acks/sessions
+│   └── repository/                                     ✅ Auth / Chats / Messages / Contacts
+├── di/                                                  ✅ Crypto / Database / Repository / Store
+├── invite/                                              ✅ v5 mint / verify / AcceptInvite
+├── stealth/                                             ✅ policy / wallet / cert / seal
 ├── domain/
-│   ├── model/                                           ⬜
 │   └── usecase/
 │       ├── RegisterUseCase.kt                          ✅
 │       ├── LoginUseCase.kt                             ✅
-│       ├── SendMessageUseCase.kt                       ⬜
-│       ├── HealSessionUseCase.kt                       ⬜
+│       ├── UploadPreKeysUseCase.kt                     ✅
+│       ├── SendMessageUseCase.kt                       ✅
+│       ├── SessionControlUseCase.kt                    ✅
+│       ├── HealSessionUseCase.kt                       ✅
+│       ├── SendReceiptUseCase.kt                       ✅
+│       ├── ResponderInitUseCase.kt                     ✅
 │       ├── SetupRecoveryUseCase.kt                     ⬜
 │       └── CallUseCase.kt                              ⬜
 ├── service/
-│   └── SessionManager.kt                               ✅
+│   ├── SessionManager.kt                               ✅
+│   ├── MessagingRuntime.kt                             ✅
+│   ├── MessageRouter.kt / MessageProcessor.kt          ✅
+│   ├── ProcessorEffectsImpl.kt                         ✅ (heal/END_SESSION transport effects)
+│   ├── CfeTimerBridge.kt                               ✅
+│   └── MessagingForegroundService.kt                   ✅
 ├── ui/
 │   ├── navigation/
 │   │   ├── Screen.kt
@@ -625,10 +664,12 @@ app/src/main/java/com/construct/messenger/
 │   │   ├── onboarding/
 │   │   ├── main/
 │   │   ├── chats/         ✅ ChatsListScreen.kt, ChatRow.kt
-│   │   ├── chat/          ✅ ChatScreen.kt
-│   │   ├── synaps/        ✅ SynapsScreen.kt
-│   │   ├── calls/         ✅ CallsScreen.kt
-│   │   └── settings/      ✅ SettingsScreen.kt
+│   │   ├── chat/          ✅ ChatScreen.kt (bubbles + composer)
+│   │   ├── synaps/        ✅ SynapsScreen.kt (mint / paste / list)
+│   │   ├── orientation/   ✅ OrientationScreen.kt
+│   │   ├── calls/         ✅ CallsScreen.kt (placeholder)
+│   │   └── settings/      ✅ SettingsScreen.kt (root only)
+│   ├── viewmodel/         ✅ Splash / Onboarding / Orientation / Main / Chat / Synaps
 │   ├── components/        ✅ (see §8.2)
 │   │   ├── CTNavBar.kt
 │   │   ├── CTButton.kt
@@ -650,9 +691,28 @@ app/src/main/java/com/construct/messenger/
 │       ├── Type.kt
 │       ├── Theme.kt
 │       └── Symbol.kt
-└── workers/
-    └── MessageSyncWorker.kt                            ⬜
 ```
+
+---
+
+## Phase 5.3 — Remaining 1:1 API (no device required)
+
+**Status:** implemented 2026-08-19 (JVM tests; no live iOS↔Android)  
+**Goal:** finish 1:1 production-gRPC surface that iOS already calls, plus JVM
+wire-contract tests. Not VEIL / calls / MLS / media / recovery.
+Unauth sealed transport and END_SESSION identity-box stay deferred
+(lockstep with iOS / missing FFI).
+
+| # | Item | Why | Done when |
+|---|------|-----|-----------|
+| 1 | Wire contract tests | Interop stand-in | KNST / receipt / invite v5 / no `conversation_id` / END_SESSION 1024 / SealedInner type 0 |
+| 2 | `CheckUsernameAvailability` + `SetDiscoverable` | FindUser is dead without opt-in | alias checked on onboarding; discoverable=true after register-with-alias |
+| 3 | `Logout` + END_SESSION to every live session | iOS sign-out | tokens cleared, runtime stopped, peers notified |
+| 4 | `GetUserProfile` / `UpdateUserProfile` | names after FindUser / accept | repository + Settings profile row |
+| 5 | `RotateSignedPreKey` | SPK ages out (~7d) | bootstrap after runtime start; classic SPK (Kyber later) |
+| 6 | SESSION_PING / SESSION_READY producers | RESPONDER handshake phase 2 | READY after `initReceivingSession`; type in KNST byte 5 |
+| 7 | Invite `jti` journal | `RevokeInvite` needs a local list | Room row per mint; revoke burns journal + RPC |
+| 8 | Bounded send retry | iOS send coordinator | 3 attempts, same `messageId` / idempotency, only if `retryable` |
 
 ---
 
@@ -660,10 +720,11 @@ app/src/main/java/com/construct/messenger/
 
 1. **Phase 1:** Crypto Core integration (UniFFI wrapper) — ✅ done
 2. **Phase 2:** DI, Keystore, gRPC base — ✅ done (2.1 turned out unnecessary as drafted; 2.2 scoped to tokens)
-3. **Phase 3:** Registration, Login, Session management — ✅ 3.1/3.2 done; 3.3 (healing) and 3.4 (session-control message format) pending
+3. **Phase 3:** Registration, Login, Session management — ✅ 3.1–3.3 done; 3.4 classify + inbound END_SESSION / RESET_INIT
 4. **Phase 4:** Recovery — pending
-5. **Phase 5:** Message stream, VEIL transport — pending
+5. **Phase 5:** Message stream + 1:1 send — ✅ done; VEIL transport — pending
 6. **Phase 6:** WebRTC calls — pending
-7. **Phase 7:** FCM push — pending
-8. **Phase 8:** UI screens and components — in progress (mock navigation + most core components done; message bubbles, input, settings subscreens pending)
-9. **Phase 9:** Localization, final polish — pending
+7. **Phase 7:** persistent foreground delivery without GMS — ✅ implemented;
+   Android 11/device lifecycle smoke pending
+8. **Phase 8:** UI — 1:1 Chat/Synaps wired; FindUser + logout + discoverable; honeycomb/settings subscreens pending
+9. **Phase 9:** Localization `en`/`ru` in progress; Play packaging pending

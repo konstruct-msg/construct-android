@@ -7,13 +7,17 @@ import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.ClassicCryptoCore
 import uniffi.construct_core.DecryptedMessageResult
+import uniffi.construct_core.DeliveryTarget
 import uniffi.construct_core.EncryptedMessageComponents
 import uniffi.construct_core.OrchestratorCore
 import uniffi.construct_core.OtpkPair
 import uniffi.construct_core.PowSolution
 import uniffi.construct_core.RecoveryKeypair
+import uniffi.construct_core.ReceivingInitAttempt
+import uniffi.construct_core.ReceivingInitCarrier
 import uniffi.construct_core.RegistrationBundleFields
 import uniffi.construct_core.SessionInitResult
+import uniffi.construct_core.TeardownDecision
 import uniffi.construct_core.PowProgressCallback
 import uniffi.construct_core.computePow
 import uniffi.construct_core.computePowWithProgress
@@ -22,9 +26,14 @@ import uniffi.construct_core.createCryptoCoreFromKeys
 import uniffi.construct_core.createOrchestratorCoreFromKeys
 import uniffi.construct_core.deriveDeviceId
 import uniffi.construct_core.deriveRecoveryKeypair
+import uniffi.construct_core.deriveVerifyingKeyFromSecret
 import uniffi.construct_core.generateMnemonic
 import uniffi.construct_core.mnemonicToSeed
+import uniffi.construct_core.planSend as planSendTargets
+import uniffi.construct_core.signInviteData
 import uniffi.construct_core.signRecoveryChallenge
+import uniffi.construct_core.verifyInviteSignature
+import com.construct.messenger.data.model.IdentityIds
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -60,6 +69,13 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     @Volatile
     private var orchestrator: OrchestratorCore? = null
 
+    /** Account id is an app/network concern; this is the id the core must receive. */
+    @Volatile
+    private var localDeviceId: String? = null
+
+    @Volatile
+    private var localIdentityPublic: ByteArray? = null
+
     /** True once [setLocalUserId] has built the orchestrator — the receive path
      * (CFE `handleEvent`) is only available after this. */
     val isMessagingReady: Boolean
@@ -76,21 +92,36 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
             createCryptoCore()
         }
         bootstrapCore = instance
-        instance.getRegistrationBundleFields()
+        val bundle = instance.getRegistrationBundleFields()
+        localIdentityPublic = bundle.identityPublic.toByteArray()
+        localDeviceId = deriveDeviceId(bundle).also { derived ->
+            check(IdentityIds.isCryptoDeviceId(derived)) {
+                "construct-core returned invalid local CryptoDeviceId"
+            }
+        }
+        bundle
     }
 
     /**
-     * Promote to the orchestrator once the server-assigned [userId] (a 36-char
-     * UUID — NOT the device hash; wrong id = permanent AEAD failure) is known.
+     * Promote to the orchestrator once the server-assigned account [userId] is known.
+     * The account is retained by the app; only this device's derived CryptoDeviceId crosses
+     * into the session core. Both sides of the ratchet AD therefore name devices.
      * Idempotent: updates the id on an existing orchestrator.
      */
     fun setLocalUserId(userId: String) = synchronized(coreLock) {
+        require(userId.isNotEmpty()) { "server account id must not be empty" }
+        val deviceId = localDeviceId ?: run {
+            val current = bootstrapCore?.getRegistrationBundleFields()
+                ?: error("CryptoManager not initialized — call loadOrCreate() first")
+            deriveDeviceId(current).also { localDeviceId = it }
+        }
+        check(IdentityIds.isCryptoDeviceId(deviceId)) { "invalid local CryptoDeviceId" }
         orchestrator?.let {
-            it.setLocalUserId(userId)
+            it.setLocalUserId(deviceId)
             return@synchronized
         }
         val boot = requireBootstrap()
-        val orch = createOrchestratorCoreFromKeys(boot.exportPrivateKeys(), userId)
+        val orch = createOrchestratorCoreFromKeys(boot.exportPrivateKeys(), deviceId)
         // Carry OTPKs generated this session (registration) into the orchestrator;
         // no-op when the bootstrap core generated none (returning-user login).
         runCatching { orch.importOneTimePrekeys(boot.exportOneTimePrekeys()) }
@@ -98,6 +129,12 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         bootstrapCore = null
         boot.close()
     }
+
+    /** Device-space identity currently bound into OrchestratorCore. */
+    fun currentDeviceId(): String? = synchronized(coreLock) { localDeviceId }
+
+    /** Public half used for device-copy routing and peer registry validation. */
+    fun currentIdentityPublic(): ByteArray? = synchronized(coreLock) { localIdentityPublic?.copyOf() }
 
     // ── OrchestratorGateway (CFE receive path) ──────────────────────────────
 
@@ -186,6 +223,107 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         orchestrator?.getAllSessionContactIds() ?: requireBootstrap().getAllSessionContactIds()
     }
 
+    fun hasSession(contactId: String): Boolean = synchronized(coreLock) {
+        orchestrator?.hasSession(contactId) ?: false
+    }
+
+    /** Core-owned multi-device delivery plan; account→device translation stays in the app. */
+    fun planSend(
+        recipientDeviceIds: List<String>,
+        ownDeviceIds: List<String>,
+        ourDeviceId: String,
+        recipientIsSelf: Boolean,
+    ): List<DeliveryTarget> = planSendTargets(
+        recipientDeviceIds,
+        ownDeviceIds,
+        ourDeviceId,
+        recipientIsSelf,
+    )
+
+    /** Core-owned teardown plan over a client-supplied account→device set. */
+    fun planTeardown(candidateDeviceIds: List<String>, peerOnDeadSession: Boolean): List<TeardownDecision> =
+        synchronized(coreLock) {
+            (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+                .planTeardown(candidateDeviceIds, peerOnDeadSession)
+        }
+
+    /** Core-owned two-dimensional receive-init plan: carriers × candidate bundles. */
+    fun planReceivingInit(
+        carriers: List<ReceivingInitCarrier>,
+        bundleCount: Int,
+    ): List<ReceivingInitAttempt> = synchronized(coreLock) {
+        require(bundleCount >= 0) { "bundleCount must not be negative" }
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .planReceivingInit(carriers, bundleCount.toUInt())
+    }
+
+    fun deviceCopyTag(
+        baseMessageId: String,
+        targetDeviceId: String,
+        peerIdentityPublic: ByteArray,
+    ): String = synchronized(coreLock) {
+        uniffi.construct_core.deviceCopyTag(
+            baseMessageId,
+            targetDeviceId,
+            identityKeyBytes().toUByteList(),
+            peerIdentityPublic.toUByteList(),
+        )
+    }
+
+    fun deviceCopyTagMatches(
+        tag: String,
+        baseMessageId: String,
+        ourDeviceId: String,
+        peerIdentityPublic: ByteArray,
+    ): Boolean = synchronized(coreLock) {
+        uniffi.construct_core.deviceCopyTagMatches(
+            tag,
+            baseMessageId,
+            ourDeviceId,
+            identityKeyBytes().toUByteList(),
+            peerIdentityPublic.toUByteList(),
+        )
+    }
+
+    /** Apply a post-quantum contribution exactly where the core's CFE action says. */
+    fun applyPqContribution(contactId: String, kemSharedSecret: ByteArray) = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .applyPqContribution(contactId, kemSharedSecret.toUByteList())
+    }
+
+    /** CFE coordination snapshots; callers persist the returned bytes in typed slots. */
+    fun exportOrchestratorState(): ByteArray = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .exportOrchestratorState()
+            .toByteArray()
+    }
+
+    fun importOrchestratorState(bytes: ByteArray) = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .importOrchestratorState(bytes.toUByteList())
+    }
+
+    fun exportKyberSessionState(): ByteArray = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .exportKyberSessionState()
+            .toByteArray()
+    }
+
+    fun importKyberSessionState(bytes: ByteArray) = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .importKyberSessionState(bytes.toUByteList())
+    }
+
+    /** Drop all Rust-owned state for a contact, not only its hot ratchet blob. */
+    fun forgetContactState(contactId: String) = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .forgetContactState(contactId)
+    }
+
+    fun rotateSignedPrekey(): uniffi.construct_core.RotatedSpkBundle = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first")).rotateSignedPrekey()
+    }
+
     // ── Stateless helpers (free functions / no core state) ──────────────────
 
     fun generateMnemonic(wordCount: Int): String = generateMnemonic(wordCount.toUByte())
@@ -211,6 +349,24 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     /** Deterministic device id derived from this identity's public key — matches iOS `deriveDeviceId`. */
     fun deriveDeviceId(bundle: RegistrationBundleFields): String = deriveDeviceId(bundle.identityPublic)
 
+    fun deriveDeviceIdFromIdentity(identityPublic: ByteArray): String =
+        deriveDeviceId(identityPublic.toUByteList())
+
+    fun signingKeyBytes(): ByteArray = synchronized(coreLock) {
+        (orchestrator?.getSigningKeyBytes() ?: requireBootstrap().getSigningKeyBytes())
+    }
+
+    fun signInvite(canonical: String): ByteArray = synchronized(coreLock) {
+        signInviteData(canonical, signingKeyBytes().toUByteList()).signature.toByteArray()
+    }
+
+    fun verifyInvite(canonical: String, signature: ByteArray, verifyingKey: ByteArray): Boolean =
+        verifyInviteSignature(canonical, signature.toUByteList(), verifyingKey.toUByteList())
+
+    fun verifyingKeyFromSigningSecret(): ByteArray = synchronized(coreLock) {
+        deriveVerifyingKeyFromSecret(signingKeyBytes().toUByteList()).toByteArray()
+    }
+
     /**
      * Ed25519-signs [message] with this device's signing key. Used for the device
      * auth challenge (`"{device_id}{timestamp}"`) — there is no dedicated FFI export for
@@ -227,6 +383,8 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         orchestrator = null
         bootstrapCore?.close()
         bootstrapCore = null
+        localDeviceId = null
+        localIdentityPublic = null
     }
 }
 

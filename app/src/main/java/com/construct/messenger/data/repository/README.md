@@ -1,5 +1,9 @@
 # data/repository/
 
-Repositories bridging data sources to domain.
+Repositories bridging data sources to domain — this is the UI-developer surface.
 
-- `AuthRepository.kt`, `SessionRepository.kt`, `UserRepository.kt`
+- `AuthRepository` / `AuthRepositoryImpl` — register, login, cold-start restore, starts the
+  `MessagingForegroundService`, which owns `MessagingRuntime` while the identity is active.
+- `ChatsRepository` / `ChatsRepositoryImpl` — Room-backed chat list (replaces `MockChatsRepository` in DI).
+- `MessagesRepository` / `MessagesRepositoryImpl` — observe 1:1 transcript + send.
+- `ContactsRepository` / `ContactsRepositoryImpl` — mint/accept/revoke device-minted invites, Room contacts.

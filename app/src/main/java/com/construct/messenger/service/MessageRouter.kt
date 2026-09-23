@@ -34,9 +34,9 @@ import shared.proto.signaling.v1.Presence.TypingIndicator
  *     decrypt control payloads.
  *
  * The router does NOT decrypt: decryption + session healing belong to the
- * processor layer (next step — see `docs/GRPC_LAYER.md` §3.1; long-term that
- * layer should drive `OrchestratorCore.handleEvent`, which parses the wire
- * payload inside Rust, rather than the component-based `decryptMessage`).
+ * processor layer, which drives `OrchestratorCore.handleEvent`. The core parses
+ * the wire payload and returns typed actions; Kotlin does not recreate the
+ * component-based routing decision.
  *
  * Consume via [routed] — a hot flow; repositories collect and own persistence.
  */
@@ -101,6 +101,9 @@ class MessageRouter @Inject constructor(
         routeJob?.cancel()
         routeJob = null
     }
+
+    /** Feed a catch-up envelope (pending-messages unary) through the same path as the stream. */
+    fun ingest(envelope: Envelope) = route(envelope)
 
     private fun route(envelope: Envelope) {
         val messageId = envelope.messageId

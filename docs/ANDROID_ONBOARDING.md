@@ -1,6 +1,24 @@
 # Construct Messenger — Android Implementation Guide
 
 > **Цель**: предоставить Android-разработчику полное понимание архитектуры, дизайн-системы, UI-компонентов, бизнес-логики и крипто-протокола для реализации на Kotlin / Jetpack Compose.
+>
+> **Статус реализации (2026-09-21, `construct-android` `develop`).**
+> Это канон дизайна (iOS → Android), не трекер фаз. Фазы протокола —
+> `docs/IMPLEMENTATION_PLAN.md` в репозитории Android.
+>
+> **Уже в коде:** онбординг + Orientation; табы; список чатов (Room); чат
+> (пузыри + инпут + send/observe); Synaps — mint v5 / paste / список контактов /
+> FindUser / contact requests (не honeycomb); `konstruct://add`; session runtime /
+> receive / send; CFE
+> action executor; typed secure-store persistence; orchestrator/PQ snapshots;
+> current `construct-core` Android artifact.
+> **Ещё нет:** honeycomb Synaps, экраны Account / Appearance / Network / Security,
+> VEIL / звонки / recovery, queued multi-carrier receive walk
+> и живой iOS↔Android прогон. Account→device registry, device-only core boundary,
+> per-device fan-out, SSR1 sender-sync, bundle candidate walk и CFE timer bridge
+> уже подключены.
+> **FCM не будет:** delivery — собственный persistent stream в foreground service,
+> без требования Google Play Services.
 
 ---
 
@@ -764,6 +782,76 @@ fun ConnectionStatusIndicator() {
 - `DetailRow` — summary после регистрации (username, deviceId)
 - PoW прогресс: от 0 до 1
 
+#### Тексты онбординга — канон (2026-07-17, iOS commit `3bb68b49`)
+
+Правила копирайтинга для всех new-user-facing экранов (онбординг, регистрация,
+ориентация, empty states первого запуска). Android обязан следовать им же:
+
+1. **Никакого жаргона глоссария** в текстах для новичка: слова *node, replica,
+   Streams / Поток, идентификатор устройства* запрещены. В UI-текстах — только
+   видимые имена экранов: **Chats/Чаты, Synaps, Settings/Настройки**.
+2. **Никаких лозунгов** про доверие и самоописаний: "trust is computed",
+   "Establishing trust", "Доверие приглашают, а не собирают", "postmodern
+   messenger" — всё это удалено на iOS и не должно появиться на Android.
+3. **Декларируем ровно два тезиса** — и только в теглайне первого экрана:
+   *интернет — пространство свободы выражения мысли; идентичность — конструкт*
+   (бодрийяровский смысл — создаётся с нуля и не отсылает ни к чему вне себя, —
+   но имя Бодрийяра в UI не упоминается).
+4. RU: «идентичность», не «личность». Бренд: **Konstruct** (EN) /
+   **Конструкт** (RU) / **共創** (JA) — «Construct» латиницей в RU-тексте запрещён.
+
+Канонические значения (совпадают с iOS `Localizable.strings`, ключи Android могут
+отличаться именем — значения обязаны совпадать):
+
+| Смысл | EN | RU |
+|---|---|---|
+| Теглайн | the internet is a space of free thought.\nidentity is a construct. | интернет — пространство свободы выражения мысли.\nидентичность — конструкт. |
+| Кнопка создания | CREATE IDENTITY | СОЗДАТЬ ИДЕНТИЧНОСТЬ |
+| Стадия регистрации | Creating your keys | Создание ключей |
+| PoW: энтропия | randomness collected | случайность собрана |
+| PoW: подбор | anti-spam proof in progress | антиспам-проверка |
+| PoW: готово | done | готово |
+| QR-подпись (invite) | this code is an invitation to connect. | этот код — приглашение связаться. |
+| Пустой список чатов | No conversations yet | Пока нет чатов |
+| Подсказка пустого списка | Find someone by @alias or show your QR code | Найдите человека по @псевдониму или покажите свой QR-код |
+
+#### OrientationScreen (обзор приложения) — РЕАЛИЗОВАН (commit 14bfc4c, 2026-07-18)
+
+`ui/screens/orientation/OrientationScreen.kt` — три страницы, `HorizontalPager`,
+Skip всегда доступен, точки-индикатор, кнопка Continue → Enter Konstruct. Показывается
+один раз после регистрации: Onboarding → Orientation → Main (стартовый таб = Synaps).
+Splash маршрутизирует initialized-but-not-oriented → Orientation (свежая регистрация ИЛИ
+апгрейд с версии до фичи). Флаг завершения — `OrientationStore` (DataStore-preferences,
+не Keystore). **Replay из Settings** («Как устроен Конструкт») пока не подключён — экран
+уже принимает `fromSettings` для возврата назад вместо Main; остаётся добавить строку в
+`SettingsScreen`. Канонические тексты en+ru совпадают с iOS `orientation_*`.
+
+Обязательный экран после первой регистрации + replay из Settings
+(«Как устроен Конструкт» / "How Konstruct works"). Три страницы, Skip всегда
+доступен; на последней — кнопка «Войти в Конструкт» / "Enter Konstruct".
+Канонические тексты (iOS `orientation_*`):
+
+1. **Идентичность / Identity** — иллюстрация: гекс + ключ.
+   Body EN: "No phone number, no email, no real name. Your identity is created
+   from scratch on this phone and refers to nothing outside itself. Who you are
+   here is what you make."
+   Body RU: «Без телефона, почты и настоящего имени. Идентичность создаётся с
+   нуля на этом телефоне и не отсылает ни к чему вне себя. Кто вы здесь —
+   решаете вы.»
+   Caption: "A public @alias is optional. Your keys never leave this phone." /
+   «Публичный @псевдоним необязателен. Ключи не покидают телефон.»
+2. **Люди / People** — две карточки: «QR / ссылка» (Показать или сканировать.
+   Действует 5 минут.) и «Поиск» (Найти @псевдоним → отправить запрос.).
+   Body RU: «Общего каталога нет, и вас нельзя найти без вашего ведома. Чтобы
+   начать общение, один приглашает другого: покажите QR-код, отправьте ссылку
+   или найдите @псевдоним и отправьте запрос.»
+   Caption: "Nobody can message you without your consent." / «Никто не напишет
+   вам без вашего согласия.»
+3. **Три места / Three places** — карта приложения строками **Чаты**
+   (Личная переписка), **Synaps** (Люди, поиск, запросы), **Настройки**
+   (QR, восстановление, устройства).
+   Caption: «Начните с Synaps — покажите QR или найдите человека.»
+
 ### 5.2 MainTabView (корневой экран)
 
 - **ChatsListView** (Tab 0) — всегда загружен
@@ -777,6 +865,9 @@ fun ConnectionStatusIndicator() {
 Tab bar скрывается когда `isInChat || isInSettings == true`.
 
 ### 5.3 ChatsListView — список чатов
+
+> **Android сейчас:** `ChatsListScreen` + `ChatRow` на `ChatsRepository` (Room).
+> Empty CTA открывает Synaps. Swipe / pin / pull-to-refresh — нет.
 
 - `CTSearchBar` вверху
 - `List` / `LazyColumn` с `ChatRowView`
@@ -792,6 +883,10 @@ Tab bar скрывается когда `isInChat || isInSettings == true`.
 - Badge непрочитанных сообщений `[N]`
 
 ### 5.4 ChatView — экран чата
+
+> **Android сейчас:** `ChatScreen` + `ChatViewModel` — `LazyColumn` пузырей и
+> `MessageInputView`, observe/send через `MessagesRepository`. Нет поиска,
+> пагинации, звонка, swipe-to-dismiss.
 
 - `CTNavBar` с именем контакта, статусом соединения, кнопками поиска/звонка
 - `LazyColumn` с сообщениями
@@ -855,6 +950,11 @@ Tab bar скрывается когда `isInChat || isInSettings == true`.
 - Safety Numbers verification
 
 ### 5.10 SynapsView — контакты (соты)
+
+> **Android сейчас (намеренно проще канона):** mint v5 (share/copy link),
+> paste-accept, список контактов → чат, FindUser и входящие contact requests.
+> Honeycomb / ZoomableCloud и профильный sheet ещё не реализованы. Deep link
+> `konstruct://add` пишется в `PendingInviteStore` и гасится после онбординга.
 
 - «Honeycomb» layout: зуммируемый/панорамируемый облако из круглых аватаров
 - `ZoomableCloud` + `HoneycombCloud` composables
@@ -997,7 +1097,7 @@ object DisplayNameGenerator {
 
 | Тип | Формат | Источник | Использование |
 |---|---|---|---|
-| `ServerUserId` | 36-char UUID `14f28d31-…` | Сервер | Все session addressing: local_user_id, contact_id, conversation_id |
+| `ServerUserId` | 36-char UUID `14f28d31-…` | Сервер | gRPC, Room, conversation/sealed recipient |
 | `CryptoDeviceId` | 32-char hex `6f5e37ac…` | deriveDeviceId(identityPublicKey) | Multi-device linking, QR коды |
 
 ```kotlin
@@ -1006,7 +1106,15 @@ data class ServerUserId(val rawValue: String)    // UUID 36
 data class CryptoDeviceId(val rawValue: String)   // hex 32
 ```
 
-**Важно**: NEVER путать эти типы. `CryptoDeviceId` НЕ передаётся в Rust session layer.
+**Важно**: NEVER путать эти типы. `ServerUserId` адресует аккаунт и gRPC/Room;
+`CryptoDeviceId` адресует конкретную реплику и используется в CFE session/AD,
+invite/device границах. `PeerDeviceRegistry` переводит account→device и
+проверяет `deriveDeviceId(identityPublic)` перед записью. Сеть всё ещё получает
+account id: server fan-out сам кладёт один envelope в per-device очереди.
+Android получает account→device set, отдаёт его `planSend`, отправляет recipient
+copies и own replicas, а на входе пробует все non-destructive bundle candidates
+через `planReceivingInit`. Очередь нескольких carrier сообщений и live interop
+ещё не покрыты.
 
 ### 8.2 DisplayName Resolution
 
@@ -1059,18 +1167,12 @@ data class Message(
 )
 ```
 
-> **Control-message render guard (mirror of iOS Fix #3).** A session-control signal
-> (`ping`/`ready`/`reset_init`) must never appear in the transcript. Defense in depth — do
-> ALL of these, because a single missed check leaks a bubble:
-> 1. **Consumer**: dispatch on `content_type` before persisting and `return` (see
->    [Session-Control Message Format](#session-control-message-format-typed-binary--do-this-not-magic-strings)) — control rows are never created.
-> 2. **At persist**: if a row is created anyway, stamp `contentType` from the decrypted
->    text (`startsWith("__session_…")` / `"session_ready_"`) so the chat query can exclude
->    it (`WHERE contentType = 0`).
-> 3. **At display**: the chat query filters `contentType = 0` **and** a Kotlin-side guard
->    drops any row whose decrypted text matches a control prefix — iOS learned the hard way
->    that an at-rest-encrypted row has a null plaintext column, so a SQL `text LIKE` filter
->    silently fails; the authoritative filter runs on the decrypted display text.
+> **Control-message render guard.** A session-control signal must never appear in
+> the transcript. Android handles outer 21/24 before chat persistence and filters
+> decrypted KNST 25/26 in `IncomingPlaintext`. `MessageDao.observeChat` additionally
+> restricts rows to `contentType = 0`; any future path that deliberately stores a
+> control audit row must stamp the non-zero type. Android does not infer protocol
+> state by matching plaintext magic strings.
 ```kotlin
 // User (Contact)
 @Entity
@@ -1088,6 +1190,11 @@ data class User(
 ---
 
 ## 9. Структура проекта (Android Reference)
+
+Рекомендуемая структура (цель, не текущее дерево). Фактическая раскладка
+2026-09-21: `crypto/`, `data/`, `domain/`, `service/`, `invite/`, `stealth/`,
+`viewmodel/`, `ui/` — см. `docs/IMPLEMENTATION_PLAN.md` File Structure Summary
+и `README.md`. Пакетов `design/` и `security/` нет.
 
 Рекомендуемая структура Android-проекта, соответствующая iOS-архитектуре:
 
@@ -1215,7 +1322,29 @@ app/src/main/java/com/construct/messenger/
 
 ---
 
-## CryptoManager
+## Android implementation contract (актуально на 2026-09-18)
+
+`CryptoManager` — тонкая синхронная оболочка над UniFFI. До логина он держит
+`ClassicCryptoCore` для bootstrap/registration; после `setLocalUserId` создаёт
+`OrchestratorCore`, передавая туда только локальный `CryptoDeviceId`, выведенный
+из identity key. Все native вызовы сериализованы через `coreLock`. В отличие от
+старого примера ниже, Android не разбирает wire payload и не принимает решения
+о heal: это делает Rust CFE. `PeerDeviceRegistry` хранит server account→device
+mapping, а `CfeTimerBridge` владеет только platform wake-up для core timers.
+
+| iOS canon | Android mirror |
+|---|---|
+| `CryptoManager` + `OrchestratorCore` | `CryptoManager` + `OrchestratorCore` (device-space ids) |
+| Keychain session/archive/core snapshots | Room `SessionStateStore` + Keystore tokens |
+| `SessionActionExecutor` | `MessageProcessor` + `ProcessorEffectsImpl` + `CfeTimerBridge` |
+| typed `SaveToSecureStore(slot,data)` | `CfeSecureStoreSlot` → Room key mapping |
+| `exportOrchestratorState` / PQ snapshot | same UniFFI calls, restored before stream |
+
+The generated binding and the three `.so` files are one artifact and must be
+refreshed together from the rolling construct-core Android release. Do not edit
+`construct_core.kt` manually.
+
+## Historical pseudocode (not a copy target)
 
 ```kotlin
 @Singleton
@@ -1409,11 +1538,11 @@ class CryptoManager @Inject constructor(
 
 | Aspect | iOS | Android |
 |--------|-----|---------|
-| Lock | `NSRecursiveLock()` | `Mutex()` from kotlinx-coroutines |
-| Thread | `@MainActor` | `suspend fun` + `Dispatchers.IO` |
+| Lock | `NSRecursiveLock()` | `synchronized(coreLock)` in `CryptoManager` |
+| Thread | `@MainActor` | `MessagingRuntime`/effects on `Dispatchers.IO` |
 | Secure Storage | Keychain | EncryptedSharedPreferences + Keystore |
 | Core Init | Sync in `setLocalUserId` | `viewModelScope.launch` for async init |
-| Error Handling | `throw` + `try?` | `Result<T, E>` + sealed errors |
+| Error Handling | `throw` + `try?` | exceptions at the CFE boundary + explicit `ProcessingOutcome` |
 
 ## iOS Anti-patterns Fixed
 
@@ -1539,11 +1668,20 @@ Owns all session state: `sessionStates`, `endSessionSentAt`, `resendAttemptedAt`
 
 ### SessionActionExecutor
 
-Executes `CfeAction` results from Rust. Stateless actions executed immediately; state-bound actions (`.messageDecrypted`, `.sessionHealNeeded`, `.sendEndSession`, `.fetchPublicKeyBundle`) are handled by caller.
+Android's executor is `MessageProcessor`. It routes the CFE result and
+`ProcessorEffectsImpl` applies the outward effects. The switch must keep the
+Rust action set visible: `ApplyPqContribution` mutates the core, every
+`SaveToSecureStore` writes its typed slot, `SessionTerminated` archives bytes
+and removes hot state, and `HealSuppressed`/`EndSessionSuppressed`/
+`MessageQueuedPendingInit` hold the cursor without ACK. Unknown actions must be
+added explicitly when the UDL changes; never restore the former string-key
+`SaveSessionToSecureStore` API.
 
 ### MessageRouter
 
-Routes incoming messages: ACK/dedup via `PersistentACKStore`, pending queue for messages before session init, delegate callbacks for session events.
+Routes incoming messages: ACK/dedup via `AckStore`, sealed-sender resolution,
+control/message classification, and delegation to `MessageProcessor`. It must
+not grow a second crypto or healing implementation; CFE is the decision source.
 
 ## Concurrency Model
 
@@ -1590,28 +1728,20 @@ Alice (INITIATOR)                          Bob (RESPONDER)
 
 ## Session-Control Message Format (typed binary — DO THIS, not magic strings)
 
-> ⚠️ **Android: implement the typed format from day one.** The handshake signals
-> (`ping`, `ready`, `reset_init`) are **protocol control, not chat content** — they must
-> never render as a bubble. iOS historically encoded them as plaintext magic strings
-> (`"__session_ready_<UUID>__"`), which leaked into the transcript and broke on format
-> skew. That approach is being retired (see
-> `decisions/binary-control-message-format.md`). The correct encoding puts the
-> discriminator in the Envelope **`content_type`** field; the discriminator is therefore
-> outside the renderable text pipeline and can never become a chat bubble.
+> **Current Android wire path (2026-09-21).** Handshake signals are protocol
+> control, never chat content. Android does not emit legacy `__session_*` strings.
+> END_SESSION and RESET_INIT use outer envelope types 21/24. PING and READY are
+> encrypted `SessionControl` protobufs whose semantic type is KNST header byte 5
+> (25/26); their outer envelope remains the ordinary encrypted-message type.
 
 ### Wire encoding
 
-The control signal rides a normal Double-Ratchet-encrypted message whose Envelope
-`content_type` identifies the op. The `content_type` is **not** part of the AEAD
-associated data (AD = `AD_VERSION ‖ local_user_id ‖ contact_id ‖ session_id ‖ dh_pub ‖
-msg_num`), so setting it never affects decryption.
-
-| Signal | `content_type` | Direction | Payload |
-|--------|---------------:|-----------|---------|
-| Session ping     | `25` `CONTENT_TYPE_SESSION_PING`        | INITIATOR → peer (tie-break nudge) | `SessionControl{op=PING}` |
-| Session ready    | `26` `CONTENT_TYPE_SESSION_READY`       | RESPONDER → INITIATOR (phase 2)    | `SessionControl{op=READY}` |
-| Session reset-init | `24` `CONTENT_TYPE_SESSION_RESET_INIT` | tie-break winner (atomic re-init)  | real X3DH first-ratchet carrier (msgNum=0) — **NOT** a pure signal |
-| End session      | `21` `CONTENT_TYPE_SESSION_RESET`       | either                              | 16-byte sentinel (unencrypted) |
+| Signal | Wire discriminator | Direction | Payload |
+|--------|--------------------|-----------|---------|
+| Session ping | KNST byte 5 = `25` | INITIATOR → peer | encrypted `SessionControl{op=PING}` |
+| Session ready | KNST byte 5 = `26` | RESPONDER → INITIATOR | encrypted `SessionControl{op=READY}` |
+| Session reset-init | outer `content_type=24` | tie-break winner | real X3DH first-ratchet carrier (msgNum=0), not a pure signal |
+| End session | outer `content_type=21` | either | unencrypted random 1024-byte pad |
 
 `SessionControl` (in `messaging/e2ee.proto`):
 
@@ -1627,44 +1757,66 @@ enum SessionOp { SESSION_OP_UNSPECIFIED=0; PING=1; READY=2; RESET_INIT=3; END=4;
 No checksum: integrity is already guaranteed by the Double Ratchet AEAD tag. The byte
 budget is spent on `version` + `op` for forward-compat.
 
-### Consumer rule (byte-sniff — accept BOTH)
+### Consumer rule
 
-Dispatch on `content_type` **before** the chunk reassembler / text pipeline. Fall back to
-the legacy plaintext prefix only to interop with older iOS peers still in the field:
+Dispatch outer 21/24 before the normal chat pipeline. After Double-Ratchet decrypt,
+inspect KNST byte 5 before decoding `MessageContent`; 25/26 return before Room persistence:
 
 ```kotlin
-fun sessionOp(contentType: Int, decryptedPlaintext: String?): SessionOp? =
-    when (contentType) {
-        25 -> SessionOp.PING
-        26 -> SessionOp.READY
-        24 -> SessionOp.RESET_INIT
-        21 -> SessionOp.END
-        else -> decryptedPlaintext?.let {            // legacy fallback (old iOS)
-            when {
-                it.startsWith("__session_ping")  -> SessionOp.PING
-                it.startsWith("__session_ready") || it.startsWith("session_ready_") -> SessionOp.READY
-                it.startsWith("__session_reset_init") || it.startsWith("session_reset_init_") -> SessionOp.RESET_INIT
-                else -> null
-            }
-        }
-    }
-// A non-null result → handle as control, return BEFORE persisting. Never create a Message row.
-// RESET_INIT (24) is special: the X3DH init already consumed the payload; the inner is a sentinel.
-// Also keep a render-time guard (see §8.3): never show a row whose decrypted text matches these prefixes.
+when (incoming.contentType) {
+    SESSION_RESET -> sessionControl.inboundEndSession(incoming.senderId)
+    SESSION_RESET_INIT -> processor.process(incoming) // responder init carrier
+    else -> processor.process(incoming)               // decrypt first
+}
+
+val decoded = IncomingPlaintext.decode(plaintext)
+if (!decoded.isUserVisible) {
+    ackStore.markProcessed(messageId, accountId)
+    return // KNST 25/26 never reach Room
+}
 ```
 
-### Producer rule (dual-send during transition)
+### Producer rule
 
-Set the typed `content_type` **and** keep the legacy magic string as the payload so that
-old iOS peers (which only understand the string) still interop. Once the legacy
-fallback is removed fleet-wide on both platforms, swap the payload to a serialized
-`SessionControl` (carrying `nonce`) and stop sending the string.
+`SessionControlUseCase.sendEncryptedControl` serializes `SessionControl{op, nonce}`, packs
+it into KNST with type 25/26, asks CFE to encrypt it, persists returned state, then sends the
+ciphertext through the ordinary identified/sealed message path. No Kotlin routing loop and
+no legacy string or dual-send are permitted. Inbound PING/READY are already non-renderable;
+their explicit confirmation/watchdog state transitions remain open work.
 
-> **Rollout / server dependency**: the server must know `content_type` 25/26 or it
-> re-emits them as `E2EE_SIGNAL` (1) and the typed path goes inert (it does **not** drop
-> the message — it is fail-open, so dual-send still works via the string). The server proto
-> was updated 2026-06-23 (`construct-server/shared/proto/core/envelope.proto`); deploy it
-> before flipping producers to typed-only.
+### Control-plane storm hardening (END_SESSION / SESSION_RESET_INIT) — MANDATORY
+
+iOS shipped these protections 2026-07-16/17 after a production desync storm (one OTPK
+mismatch → 7+ END_SESSIONs re-delivered from the offline queue → parallel INITIATOR
+re-inits destroyed a freshly established healthy session → permanent one-way messaging).
+Full root cause: `sessions/2026-07-16-end-session-storm-fix.md`. Android MUST implement
+the same invariants — they are protocol behaviour, not iOS implementation detail:
+
+1. **Inbound control coalesce (receive side).** After handling one END_SESSION or
+   SESSION_RESET_INIT for a peer, further control messages of the same class from that peer
+   within a **45 s** cooldown window are ACK'd only (mark processed + delivery receipt) and
+   NOT acted upon. An SRI also counts as END_SESSION for the coalesce window (it already
+   reset the peer). The server offline queue re-delivers control batches on every reconnect;
+   acting on each copy re-archives keys and re-tears sessions.
+2. **Debounced re-init + fresh-session guard.** On END_SESSION, delay the INITIATOR re-init
+   (~1.5 s debounce, one pending task per peer). When the debounce fires, **skip the re-init
+   entirely if a session with that peer now exists** — it was established after the
+   END_SESSION arrived and must not be destroyed. (Safe because the router wipes the old
+   session *before* delegating: any live session is post-END by construction.)
+3. **Cancel pending re-init on progress.** An incoming ping / session_ready / SRI, or a
+   successful RESPONDER init for that peer, cancels the pending END_SESSION re-init.
+4. **Single in-flight INITIATOR re-init per peer.** Coalesce concurrent re-init requests;
+   never run two X3DH inits for the same peer in parallel.
+5. **Outbound END_SESSION rate limit.** Per-peer cooldown on *sending* END_SESSION
+   (prewarm "session missing", init-failure paths). Re-delivered copies of the same failed
+   init must not each emit a fresh END_SESSION.
+6. **Stale END_SESSION filter.** Persist `establishedAt` per peer (survives restart, e.g.
+   Keychain/EncryptedSharedPreferences); on restore, hydrate it for CFE-restored sessions
+   *before* processing any queued control message. An END_SESSION whose timestamp pre-dates
+   the current session's `establishedAt` is stale — ACK and drop.
+7. **Never replay control carriers as "orphaned init".** END_SESSION / SRI / sender-sync
+   messages must be excluded from any msgNum=0 reprocessing queue — replaying them loops
+   session teardown on every reconnect.
 
 ## Key Bundle Structure
 
@@ -1734,25 +1886,11 @@ Call `CryptoManager.initializeSession()` ([§10](#10-crypto-core--rust-ffi)).
 
 ### Step 4: Send Session Ping (msgNum=0)
 
-Dual-send: `content_type = ContentType.SESSION_PING` (= 25) **+** legacy string payload
-(see [Session-Control Message Format](#session-control-message-format-typed-binary--do-this-not-magic-strings)).
+Use `SessionControlUseCase.sendPing`: serialize `SessionControl{op=PING, nonce}`,
+pack it as KNST type 25, then encrypt it through CFE.
 
 ```kotlin
-suspend fun sendSessionPing(userId: ServerUserId) {
-    val pingContent = "__session_ping_${UUID.randomUUID()}__"   // legacy payload (interop w/ old iOS)
-    val payload = outboundSessionService.encryptSessionControl(
-        plaintext = pingContent,
-        messageId = UUID.randomUUID().toString(),
-        recipientId = userId
-    )
-    messagingServiceClient.sendMessage(
-        messageId = pingId, recipientId = userId,
-        senderId = currentUserId,
-        conversationId = ConversationId.direct(currentUserId, userId),
-        encryptedPayload = payload, timestamp = currentTimeMillis(),
-        contentType = ContentType.SESSION_PING
-    )
-}
+sessionControl.sendPing(peerDeviceId)
 ```
 
 ## RESPONDER Flow
@@ -1793,24 +1931,11 @@ if (firstMessage.kemCiphertext.isNotEmpty()) {
 
 ### Send Session Ready
 
-Dual-send: typed `content_type` **+** legacy string payload (see
-[Session-Control Message Format](#session-control-message-format-typed-binary--do-this-not-magic-strings)).
-The `content_type = ContentType.SESSION_READY` is **mandatory** — omitting it is exactly the
-bug that let `session_ready` render as a chat bubble on the peer.
+After successful receiving-session initialization, use `SessionControlUseCase.sendReady`.
+The helper emits an encrypted KNST type-26 control and never a renderable string.
 
 ```kotlin
-suspend fun sendSessionReady(userId: ServerUserId) {
-    val readyContent = "__session_ready_${UUID.randomUUID()}__"   // legacy payload (interop w/ old iOS)
-    val payload = outboundSessionService.encryptSessionControl(
-        plaintext = readyContent, messageId = UUID.randomUUID().toString(),
-        recipientId = userId
-    )
-    messagingServiceClient.sendMessage(
-        /* ... */,
-        contentType = ContentType.SESSION_READY   // = 26, typed dispatch on the peer
-    )
-    // S3 (post legacy-removal): payload = SessionControl{op=READY, nonce=…}.serialize(), no string.
-}
+sessionControl.sendReady(peerDeviceId)
 ```
 
 When INITIATOR receives `session_ready`: cancels tie-break watchdog, marks session active, confirms in `SessionConfirmationTracker`, drains pending queue.
@@ -1830,21 +1955,11 @@ if (DeviceIdOrdering.isNaturalInitiator(myId, peerId)) {
 
 ### SESSION_RESET_INIT (atomic)
 
-Already typed (`content_type = ContentType.SESSION_RESET_INIT` = 24). Unlike ping/ready this
-carries a **real** X3DH first-ratchet payload (msgNum=0), so the consumer must NOT discard the
-payload — only the post-init sentinel inner is dropped. See
-[Session-Control Message Format](#session-control-message-format-typed-binary--do-this-not-magic-strings).
-
-```kotlin
-suspend fun sendSessionResetInit(userId: ServerUserId) {
-    val sriContent = "__session_reset_init_${UUID.randomUUID()}__"
-    val payload = outboundSessionService.encryptSessionControl(
-        plaintext = sriContent, messageId = UUID.randomUUID().toString(),
-        recipientId = userId
-    )
-    messagingServiceClient.sendMessage(/* ... */, contentType = ContentType.SESSION_RESET_INIT)
-}
-```
+Inbound `content_type = SESSION_RESET_INIT` (=24) is supported and routed into
+`ResponderInitUseCase`; its payload is a real X3DH first-ratchet carrier and must
+not be discarded. Android does not currently expose a separate outbound SRI
+producer in Kotlin. If CFE adds/plans that action, the bridge must send the real
+carrier with outer type 24 — never a `__session_reset_init_*` sentinel.
 
 ### Watchdog Timers
 
@@ -1921,6 +2036,28 @@ sealed class SessionError : Exception() {
 | Timer/timeout | `Task.sleep` + manual cancel | `withTimeoutOrNull` |
 | State management | `@MainActor` dictionaries | `Mutex` + `StateFlow` |
 | DI | Singletons everywhere | Hilt injection |
+
+## Background Delivery (No GMS)
+
+Android does not register an FCM token and must not depend on Google Play Services.
+The base delivery path is the existing authenticated `MessageStream`, hosted by
+`MessagingForegroundService` with a persistent, user-visible notification.
+
+- The service starts after session restore/registration and stops on logout or when no
+  identity can be restored.
+- `START_STICKY` recreation restores the identity before restarting `MessagingRuntime`;
+  the runtime mutex prevents a duplicate stream during concurrent startup.
+- Android 13+ requests `POST_NOTIFICATIONS`; Android 14+ supplies the
+  `remoteMessaging` service type. Android 11 uses the normal two-argument
+  `startForeground` and notification-channel path.
+- Cold start/reconnect still follows one pipeline: import CFE state → hydrate ACK store →
+  drain `GetPendingMessages` → open the stream.
+- UnifiedPush may be an optional accelerator in the future, but it must never become a
+  prerequisite or a second source of protocol truth.
+
+The remaining work is hardware validation: process death, reboot, network loss/reconnect,
+pending drain, Doze/battery behavior, and live iOS↔Android delivery. Call wake-up policy is
+deferred with the WebRTC/Telecom slice; do not introduce FCM as a shortcut.
 
 ---
 
@@ -2079,7 +2216,7 @@ fun loadSessionToken() {
    потребляет JWT refresh `jti`, возвращает **PASETO**-пару. Сессия теперь на PASETO.
 4. **Окно ротации**: до `refresh_token_ttl_days` (90 дней) для естественного перехода.
    После — stale JWT refresh истёк, оставшиеся клиенты re-auth via device signature (PoW).
-5. **Legacy JWT код удаляется** с серверра и iOS-клиента после завершения окна ротации
+5. **Legacy JWT код удаляется** с сервера и iOS-клиента после завершения окна ротации
    и нулевого объёма JWT verify в течение недели.
 
 **Android (этот репо) — greenfield, JWT не реализует.** Если Android-клиент получит

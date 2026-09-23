@@ -12,6 +12,7 @@ plugins {
 ext.protobufVersion = '3.25.5'
 ext.grpcVersion = '1.65.1'
 ext.grpcKotlinVersion = '1.4.1'
+ext.roomVersion = '2.8.5'
 
 android {
     namespace 'com.construct.messenger'
@@ -73,8 +74,12 @@ dependencies {
     implementation 'androidx.datastore:datastore-preferences:1.0.0'
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
     implementation 'androidx.work:work-runtime-ktx:2.9.0'
-    implementation 'com.google.dagger:hilt-android:2.51.1'
-    ksp 'com.google.dagger:hilt-compiler:2.51.1'
+    // Room — local message/session persistence (data/local/db).
+    implementation "androidx.room:room-runtime:${roomVersion}"
+    implementation "androidx.room:room-ktx:${roomVersion}"
+    ksp "androidx.room:room-compiler:${roomVersion}"
+    implementation 'com.google.dagger:hilt-android:2.60.1'
+    ksp 'com.google.dagger:hilt-compiler:2.60.1'
     implementation 'androidx.hilt:hilt-navigation-compose:1.2.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0'
@@ -133,3 +138,96 @@ protobuf {
         }
     }
 }
+
+// ── The core the app is paired with ──────────────────────────────────────────
+//
+// `libconstruct_core.so` is build output of another repository and is not in git, so nothing in
+// a checkout proves which core the Kotlin beside it was generated from. UniFFI does check — it
+// compares interface checksums when the library loads — but that check fires at start-up, on a
+// device, as a crash with no obvious cause. This one fires before compilation, on the machine
+// that can fix it.
+//
+// The stamp lives inside the library (`CONSTRUCT_CORE_VERSION` in construct-core/src/lib.rs),
+// which is what makes it survive being copied into jniLibs with nothing else.
+ext.coreAbis = ['arm64-v8a', 'armeabi-v7a', 'x86_64']
+
+/** The NUL-terminated `CONSTRUCT_CORE_VERSION=…` stamp, or null when the file carries none. */
+static String coreStampOf(File lib) {
+    // ISO-8859-1 maps every byte to the char of the same value, so this is the binary searched
+    // as text with nothing lost and nothing re-encoded.
+    String text = new String(lib.bytes, 'ISO-8859-1')
+    int at = text.indexOf('CONSTRUCT_CORE_VERSION=')
+    if (at < 0) return null
+    // The release profile packs .rodata literals with no separator, so the NUL the static carries
+    // is what makes the value self-delimiting. Reading to the next non-printable character is the
+    // same rule `strings` applies, written out.
+    int end = at
+    while (end < text.length() && text.charAt(end) >= 0x20 && text.charAt(end) < 0x7f) end++
+    return text.substring(at, end)
+}
+
+tasks.register('checkCoreLibrary') {
+    group = 'verification'
+    description = 'Refuses to build when jniLibs holds a core other than the one construct-core.lock names.'
+
+    File lock = rootProject.file('construct-core.lock')
+    File jniLibs = file('src/main/jniLibs')
+    List<File> libs = coreAbis.collect { new File(jniLibs, "$it/libconstruct_core.so") }
+
+    inputs.file(lock)
+    // Declared as files rather than as an existing collection: a *missing* library is the
+    // commonest failure of all (a fresh clone has none), and a task whose inputs skip it would
+    // be up-to-date on the one case it exists to catch.
+    inputs.files(libs).withPropertyName('coreLibraries').optional(true)
+    outputs.upToDateWhen { false }
+
+    doLast {
+        if (!lock.exists()) {
+            throw new GradleException("construct-core.lock is missing — nothing records which core this app needs.")
+        }
+        String expected = lock.readLines()
+                .find { it.trim().startsWith('CONSTRUCT_CORE_VERSION=') }
+                ?.trim()
+        if (!expected) {
+            throw new GradleException("construct-core.lock carries no CONSTRUCT_CORE_VERSION line.")
+        }
+
+        List<String> problems = []
+        coreAbis.eachWithIndex { abi, i ->
+            File lib = libs[i]
+            if (!lib.exists()) {
+                problems << "  $abi: missing"
+                return
+            }
+            String stamp = coreStampOf(lib)
+            if (stamp == null) {
+                problems << "  $abi: carries no CONSTRUCT_CORE_VERSION stamp — not a construct-core build, or built before 2026-09-04"
+            } else if (stamp != expected) {
+                // Equality, not a prefix: a stamp that ran into the neighbouring literal still
+                // starts with the right thing, and that is exactly what shipped on 2026-09-04.
+                problems << "  $abi: $stamp"
+            }
+        }
+
+        if (problems) {
+            throw new GradleException("""
+The native core in app/src/main/jniLibs is not the one this app is paired with.
+
+  construct-core.lock expects: $expected
+${problems.join('\n')}
+
+Fix it one of two ways:
+  • ./build_crypto_lib.sh          — builds from your local construct-core and rewrites the lock
+  • download the published build   — https://github.com/konstruct-msg/construct-core/releases/download/latest/construct-core-android.tar.gz
+                                     then copy jniLibs/ AND kotlin/uniffi/ from the same archive
+
+Take the .so and the Kotlin bindings from the same build. UniFFI verifies its interface
+checksums when the library loads, so a mismatched pair does not fail at the call — the app does
+not start, and the reason is not on the screen.
+""".stripIndent())
+        }
+        logger.lifecycle("construct-core: $expected")
+    }
+}
+
+tasks.named('preBuild').configure { dependsOn 'checkCoreLibrary' }

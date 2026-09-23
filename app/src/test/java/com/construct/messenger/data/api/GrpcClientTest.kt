@@ -35,6 +35,7 @@ class GrpcClientTest {
         assertNotNull(grpcClient.notification)
         assertNotNull(grpcClient.sentinel)
         assertNotNull(grpcClient.messaging)
+        assertNotNull(grpcClient.invite)
     }
 
     @Test

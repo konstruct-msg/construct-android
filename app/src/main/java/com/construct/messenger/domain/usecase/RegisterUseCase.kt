@@ -8,6 +8,7 @@ import shared.proto.services.v1.AuthServiceOuterClass.AuthTokensResponse
 import shared.proto.services.v1.AuthServiceOuterClass.DevicePublicKeys
 import shared.proto.services.v1.AuthServiceOuterClass.GetPowChallengeRequest
 import shared.proto.services.v1.AuthServiceOuterClass.RegisterDeviceRequest
+import shared.proto.services.v1.UserServiceOuterClass.SetDiscoverableRequest
 import shared.proto.services.v1.AuthServiceOuterClass.PowSolution as PowSolutionProto
 import javax.inject.Inject
 
@@ -89,6 +90,13 @@ class RegisterUseCase @Inject constructor(
 
         onStep(RegistrationStep.Complete)
         uploadInitialOneTimePrekeys(deviceId)
+        if (!username.isNullOrEmpty()) {
+            runCatching {
+                grpcClient.user.setDiscoverable(
+                    SetDiscoverableRequest.newBuilder().setDiscoverable(true).build(),
+                )
+            }
+        }
 
         return RegistrationResult(response.tokens, deviceId)
     }

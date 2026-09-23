@@ -1,10 +1,22 @@
 package com.construct.messenger.data.repository
 
+import android.content.Context
+import android.content.Intent
+import android.util.Log
+import androidx.core.content.ContextCompat
+import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.data.auth.AuthSessionManager
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.model.AuthState
+import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.domain.usecase.LoginUseCase
 import com.construct.messenger.domain.usecase.RegisterUseCase
 import com.construct.messenger.domain.usecase.RegistrationStep
+import com.construct.messenger.domain.usecase.SessionControlUseCase
+import com.construct.messenger.service.MessagingRuntime
+import com.construct.messenger.service.MessagingForegroundService
+import dagger.hilt.android.qualifiers.ApplicationContext
+import shared.proto.services.v1.AuthServiceOuterClass.LogoutRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,9 +30,15 @@ import javax.inject.Singleton
  */
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val registerUseCase: RegisterUseCase,
     private val loginUseCase: LoginUseCase,
     private val keystoreManager: KeystoreManager,
+    private val cryptoManager: CryptoManager,
+    private val authSession: AuthSessionManager,
+    private val messagingRuntime: MessagingRuntime,
+    private val sessionControl: SessionControlUseCase,
+    private val grpcClient: GrpcClient,
 ) : AuthRepository {
 
     private val mutableAuthState = MutableStateFlow(
@@ -44,10 +62,92 @@ class AuthRepositoryImpl @Inject constructor(
             resolvedUsername = username
         }
 
+        val userId = keystoreManager.getUserId()
+        if (userId != null) {
+            authSession.onAuthenticated(userId, resolvedDeviceId)
+        }
         mutableAuthState.value = AuthState(
             isInitialized = true,
             deviceId = resolvedDeviceId,
             username = resolvedUsername,
+        )
+        startMessagingService()
+    }
+
+    override suspend fun restoreSession(): Boolean {
+        val keys = keystoreManager.getPrivateKeys()
+        val deviceId = keystoreManager.getDeviceId()
+        if (keys == null || deviceId == null) {
+            mutableAuthState.value = AuthState(isInitialized = false)
+            return false
+        }
+
+        try {
+            val sessionOk = authSession.loadSession()
+            val userId = authSession.userId ?: keystoreManager.getUserId()
+            if (sessionOk && userId != null) {
+                ensureOrchestrator(keys)
+            } else {
+                loginUseCase(deviceId, keys)
+                val loggedInUserId = keystoreManager.getUserId()
+                    ?: error("LoginUseCase succeeded without persisting userId")
+                authSession.onAuthenticated(loggedInUserId, deviceId)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "restoreSession failed", e)
+            mutableAuthState.value = AuthState(isInitialized = false)
+            return false
+        }
+
+        mutableAuthState.value = AuthState(
+            isInitialized = true,
+            deviceId = deviceId,
+            username = null,
+        )
+        startMessagingService()
+        return true
+    }
+
+    /**
+     * Tokens were valid; the process is new so the UniFFI core is empty.
+     * The account id is needed by the app/session layer; CryptoManager derives the
+     * local CryptoDeviceId and passes only that device id into construct-core.
+     */
+    private fun ensureOrchestrator(savedPrivateKeys: ByteArray) {
+        if (cryptoManager.isMessagingReady) return
+        val userId = authSession.userId ?: keystoreManager.getUserId()
+            ?: error("session loaded but userId is missing")
+        cryptoManager.loadOrCreate(savedPrivateKeys)
+        cryptoManager.setLocalUserId(userId)
+    }
+
+    override suspend fun logout() {
+        runCatching { sessionControl.sendEndSessionToAll() }
+            .onFailure { Log.w(TAG, "END_SESSION broadcast on logout failed", it) }
+        val token = keystoreManager.getAccessToken()
+        if (token != null) {
+            runCatching {
+                grpcClient.auth.logout(
+                    LogoutRequest.newBuilder().setAccessToken(token).setAllDevices(false).build(),
+                )
+            }.onFailure { Log.w(TAG, "Logout RPC failed", it) }
+        }
+        messagingRuntime.stop()
+        context.stopService(Intent(context, MessagingForegroundService::class.java))
+        authSession.clearSession()
+        keystoreManager.clearTokens()
+        cryptoManager.close()
+        mutableAuthState.value = AuthState()
+    }
+
+    private companion object {
+        const val TAG = "AuthRepository"
+    }
+
+    private fun startMessagingService() {
+        ContextCompat.startForegroundService(
+            context,
+            Intent(context, MessagingForegroundService::class.java),
         )
     }
 }

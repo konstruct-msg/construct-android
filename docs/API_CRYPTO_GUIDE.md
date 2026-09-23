@@ -8,14 +8,22 @@
 > сгенерированных биндингов, а не по плану. Ссылки на Swift-файлы даны намеренно —
 > при сомнении смотри туда.
 >
+> **Актуальное состояние слоя (2026-09-18):** `docs/GRPC_LAYER.md` и
+> `docs/IMPLEMENTATION_PLAN.md`. Этот гайд — разбор iOS API, не трекер статусов.
+> Протосы vendored в `app/src/main/proto/` (`scripts/sync-protos.sh`); stubs
+> генерит Gradle plugin, не `generate_grpc_kotlin.sh`. Android-репо — не «только
+> UI»: runtime, send/receive и v5 invites уже в дереве.
+>
 > Связанные доки: `IMPLEMENTATION_PLAN.md` (Phases 1, 2.3, 5), `AGENTS.md`,
-> `ANDROID_ONBOARDING.md`, `CRYPTO_CORE.md`, `SESSION_INITIALIZATION.md`, `SESSTION_LIFECYCLE.md`
+> `ANDROID_ONBOARDING.md`, `CRYPTO_CORE.md`, `SESSION_INITIALIZATION.md`, `SESSTION_LIFECYCLE.md`,
+> `GRPC_LAYER.md`, `WIRE_FORMAT_RULES.md`
 
 ---
 
 ## Карта репозиториев
 
-Клиент собирается из **трёх** репозиториев. Android-репо — только UI + тонкие обёртки.
+Клиент собирается из **трёх** репозиториев. Kotlin — оболочка вокруг Rust core
+и gRPC; криптографию на Kotlin не пишем.
 
 | Репо | Что даёт | Где ожидается |
 |------|----------|---------------|
@@ -219,7 +227,7 @@ UniFFI даёт **два** артефакта, оба генерятся скр�
 | Класс | Когда | Что это |
 |-------|-------|---------|
 | `ClassicCryptoCore` | до логина (bootstrap) | низкоуровневое ядро: прямые `encryptMessage`/`decryptMessage`/`initSession`, генерация ключей |
-| `OrchestratorCore` | после `setLocalUserId(userId)` | высокоуровневая **event-driven CFE-машина** — основной рабочий объект |
+| `OrchestratorCore` | после `setLocalUserId(accountId)` | высокоуровневая **event-driven CFE-машина** — основной рабочий объект; внутрь передаётся только `CryptoDeviceId` |
 
 `OrchestratorCore` оборачивает `ClassicCryptoCore` и добавляет: ACK-стор, очередь
 session healing, отложенные PQ-контрибуции, автоматический выбор сессии по `contactId`.
@@ -231,10 +239,12 @@ session healing, отложенные PQ-контрибуции, автомат�
    хранилища (на iOS — Keychain, на Android — Keystore/EncryptedPrefs) и создаёт
    **`ClassicCryptoCore`** (`createCryptoCoreFromKeys(keys)`). Если ключей нет —
    ядро ещё не инициализировано (юзер не зарегистрирован).
-2. Когда становится известен серверный `userId` (после логина/регистрации) —
-   `setLocalUserId(userId)` создаёт **`OrchestratorCore`** из тех же ключей
-   (`createOrchestratorCoreFromKeys(keysData, myUserId)`), импортирует OTPK,
-   восстанавливает CFE-состояние, и `_bootstrapCore` обнуляется.
+2. Когда становится известен серверный account `userId` (после логина/регистрации) —
+   `setLocalUserId(userId)` выводит локальный `CryptoDeviceId` из identity key и
+   создаёт **`OrchestratorCore`** из тех же ключей
+   (`createOrchestratorCoreFromKeys(keysData, cryptoDeviceId)`), импортирует OTPK,
+   восстанавливает CFE-состояние, и `_bootstrapCore` обнуляется. Account→device
+   mapping для peers хранится в `PeerDeviceRegistry`.
 
 ```kotlin
 // Псевдокод по мотивам Swift CryptoManager
@@ -244,10 +254,11 @@ class CryptoManager {
 
     val isInitialized get() = orchestratorCore != null
 
-    fun setLocalUserId(userId: String) {
-        orchestratorCore?.let { it.setLocalUserId(userId); return }
+    fun setLocalUserId(accountId: String) {
+        val cryptoDeviceId = deriveDeviceId(identityPublic)
+        orchestratorCore?.let { it.setLocalUserId(cryptoDeviceId); return }
         val keys = keystore.loadPrivateKeys() ?: bootstrapCore?.exportPrivateKeys() ?: return
-        val core = createOrchestratorCoreFromKeys(keys, userId)
+        val core = createOrchestratorCoreFromKeys(keys, cryptoDeviceId)
         keystore.loadOtpks()?.let { core.importOneTimePrekeys(it) }
         // восстановить PQ-снапшот, ACK-стор, healing-очередь из CFE
         orchestratorCore = core
@@ -381,7 +392,8 @@ UI / ViewModel / Repository
 4. Загрузить стартовый батч OTPK: `KeyService.UploadOneTimePrekeys` — **минимум 20**
    (порог поднят с 10 до 20 под iOS-прод; ниже 20 сервер помечает девайс на дозаливку).
 5. Сохранить `auth_token` в Keystore.
-6. `CryptoManager.setLocalUserId(serverUserId)` → создаётся `OrchestratorCore`.
+6. `CryptoManager.setLocalUserId(serverUserId)` → выводится локальный
+   `CryptoDeviceId`, затем создаётся `OrchestratorCore` в device-space.
 7. (Опционально) recovery-фраза: `generateMnemonic` / `deriveRecoveryKeypair` (BIP39) →
    `SetRecoveryKey`.
 
@@ -394,7 +406,8 @@ UI / ViewModel / Repository
 
 Состояния: `NONE → INITIALIZING → ACTIVE → HEALING → NONE`.
 
-- `hasSession(contactId)`, `getAllSessionContactIds()`, `getSessionHealth(contactId)`.
+- `hasSession(deviceId)`, `getAllSessionContactIds()`, `getSessionHealth(deviceId)`;
+  account ids переводятся через `PeerDeviceRegistry` до входа в core.
 - Session healing — забота оркестратора (`SessionHealNeeded`/`HealSuppressed` actions,
   `RustHealingQueue`). **Не лечи сессию руками** — реагируй на CFE-действия.
 - Ротация SPK: `rotateSignedPrekey()` → `RotatedSpkBundle` (новый pubkey + подпись)

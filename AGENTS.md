@@ -17,16 +17,40 @@ Uses `construct-core` via UniFFI/JNI bindings (same direct path as iOS — NOT v
 app/src/main/
 ├── java/.../
 │   ├── crypto/         — CryptoManager (UniFFI wrapper around construct-core)
+│   ├── invite/         — device-minted v5 invites (CIv1 + konstruct://add)
+│   ├── stealth/        — sealed-sender policy / wallet / cert (fail-closed on send)
 │   ├── viewmodel/      — Hilt-injected ViewModels (@HiltViewModel)
 │   ├── ui/             — Compose screens and components
-│   ├── data/           — Repository layer, Room DB, DataStore
-│   ├── service/        — Background services (messaging, push)
+│   ├── data/           — repositories, Room, gRPC (UI must not import data/api)
+│   ├── domain/         — Register / Login / UploadPreKeys / SendMessage
+│   ├── service/        — MessagingRuntime, SessionManager, router / processor
 │   └── di/             — Hilt modules
-└── jniLibs/            — .so files from construct-core Rust build
+└── jniLibs/            — .so from construct-core; NOT in git, see below
     ├── arm64-v8a/
     ├── armeabi-v7a/
     └── x86_64/
 ```
+
+**The `.so` files are not in git** — `app/src/main/jniLibs/` is ignored, and a fresh clone has to
+build them before Gradle can assemble anything. Same rule as the iOS `*.xcframework` binaries, and
+for the same reason: they are build output of another repository, reproducible from it by one
+command, and committing them put 149.5 MB of binaries into a repository whose every other tracked
+file adds up to 2.6 MB. They were purged from history on 2026-09-22.
+
+They must be rebuilt whenever construct-core changes. UniFFI checks its interface checksums when
+the library loads, so a `.so` older than the bindings beside it does not fail at the call — the
+app does not start, and the reason is not on the screen.
+
+**`construct-core.lock` records which core, and `checkCoreLibrary` enforces it.** Taking the
+binaries out of git took the record with them, so the lock file puts it back as one line of text:
+the `CONSTRUCT_CORE_VERSION` stamp the library carries in its own `.rodata`. A Gradle task reads
+that stamp out of each ABI's `.so` before `preBuild` and fails with both values when they differ,
+so the mismatch is caught on the machine that can fix it rather than at start-up on a device.
+`./build_crypto_lib.sh` rewrites the lock from what it just built, which makes moving to a new
+core a diff someone approves instead of something that happens quietly.
+
+Take the `.so` and `construct_core.kt` from the **same** build — the published archive contains
+both, and the lock only pins the library.
 
 ### Rust core integration
 
@@ -40,7 +64,8 @@ cargo build --release --target x86_64-linux-android
 uniffi-bindgen generate   --library target/aarch64-linux-android/release/libconstruct_core.so   --language kotlin   --out-dir bindings/kotlin
 ```
 
-Copy resulting `.so` files to `app/src/main/jniLibs/<abi>/`.
+Copy resulting `.so` files to `app/src/main/jniLibs/<abi>/` — or just run `./build_crypto_lib.sh`,
+which does all of the above. Either way the files stay untracked.
 
 ---
 
@@ -60,9 +85,12 @@ Copy resulting `.so` files to `app/src/main/jniLibs/<abi>/`.
 
 - Use `@HiltViewModel` for all ViewModels — no manual ViewModel factories
 - All crypto operations go through `CryptoManager` — do not call UniFFI bindings directly from UI
+- UI / ViewModels talk to **repositories only** — no `data/api`, `crypto`, `stealth`, or proto envelopes
 - Compose UI only — no XML layouts
 - Room DB for local message persistence
-- gRPC channel lives in a singleton service (not recreated per-screen)
+- gRPC lives in the `GrpcClient` singleton (two channels: auth + sealed); `MessagingRuntime` owns cold start
+- Working slice (2026-09-18): 1:1 text over production gRPC with foreground
+  delivery and multi-device fan-out. Status: `docs/IMPLEMENTATION_PLAN.md`
 
 ---
 
@@ -97,8 +125,8 @@ hex avatars). **Never** sacrifice usability or clash with Material guidelines.
 - **`CTSymbol.*` / ASCII** for **decorative chrome only** — `> SECTION` headers, `-`/`=`
   separators, the `>` system-message prefix. Never ASCII for state/controls.
 - **Status**: `CTStatusBadge(status:)` with the `CTStatus` enum (`ok error warning on off busy
-  unknown`) — never a `"[ok]"` / `"[err]"` text token. (Compose impl in `ANDROID_ONBOARDING.md`
-  §3.3; not yet in code — add when the first status row appears.)
+  unknown`) — never a `"[ok]"` / `"[err]"` text token. Compose implementation:
+  `ui/components/CTStatusBadge.kt`; canon: `ANDROID_ONBOARDING.md` §3.3.
 - **Selection** → `Icons.Default.Check` in `accent`; **on/off** → Material3 `Switch`.
 - Tokens: `CTColor.*`, `ctRegular(size)` / `ctBold(size)` (JetBrains Mono), `CornerRadius.*`,
   `Spacing.*`, `CTLayout.*`. No inline magic numbers.
@@ -114,13 +142,57 @@ moved to native `TabView`; prefer Material3 `NavigationBar` (icon-only) over the
 
 ---
 
+## No Google Play Services — decided 2026-08-23, before any delivery code existed
+
+**Nothing in this app may require GMS on the device.** No FCM, no Play Integrity, no Play
+Location. Google *build-time* dependencies are fine and already present (Hilt, KSP, protobuf) —
+they ask nothing of the device.
+
+This is checkable right now and must stay that way: the manifest declares network permissions
+plus the Android foreground-service/notification permissions, one non-exported
+`MessagingForegroundService`, no `<receiver>`, and no push-provider client code. On Android 13+
+the app requests `POST_NOTIFICATIONS`; on Android 14+ it starts with the `remoteMessaging`
+foreground-service type. Older supported devices, including Android 11, use the ordinary
+two-argument `startForeground` path.
+
+- **Delivery is our own connection**: a persistent `MessageStream` in a foreground service. Not a
+  second notification channel.
+- **UnifiedPush is an option, never the base.** The default path must work with no distributor.
+- **One APK.** No GMS/FOSS flavours — two flavours are two delivery behaviours and a permanent
+  question about which one is real.
+- The battery cost and the persistent foreground notification are stated to the user, not hidden.
+
+Why it is an invariant and not a preference: FCM would hand a third party the fact and timing of
+every message you receive plus a stable device id — exactly the metadata sealed sender exists to
+keep from our *own* server. And a client that needs no GMS **is** the GrapheneOS client, so this
+is also why there will not be a separate one.
+
+Full reasoning and rejected alternatives: `~/Code/construct-docs/decisions/android-without-play-services.md`.
+Where Android sits among the platforms: `~/Code/construct-docs/decisions/client-platform-sequencing.md`.
+
+## Wire format — read before touching the send path
+
+**`docs/WIRE_FORMAT_RULES.md`** — what Android may and may not put on the envelope, and why.
+Not optional reading before `SendMessageUseCase`, stealth, or anything multi-device.
+
+iOS reached those rules through five defects that each lived for months and were found by reading
+device logs rather than code: SENDER_SYNC routed on a field the server blanks by design (so no copy
+ever arrived, since the feature shipped), the same unsealed envelope carrying `direct:me:partner`
+in the clear, two device-id fields nobody reads, a heartbeat announcing itself on the outer
+envelope, and a magic string with no reader that spent four months rendering as a visible bubble.
+Every one of them was a field written by the client, read by no one, and paid for in metadata.
+
+The one-line version: **an unsealed envelope must not carry anything beyond the sender/recipient
+pair already on it**, and before adding any field, answer in writing who reads it and what it tells
+the server about who talks to whom.
+
 ## Documentation
 
 All project documentation: `~/Code/construct-docs` (Obsidian vault).
 **Authoritative map + writing rules: `~/Code/construct-docs/AGENTS.md`** — read it before
 contributing docs. The vault is a flat domain-folder structure (`architecture/`, `backend/`,
 `client/`, `cryptocore/`, `security/`, `deployment/`, `sessions/`, `decisions/`, `_archive/`, …).
-There is no `raw/` or `wiki/` anymore. The Android design doc lives at
+The Android design doc lives at
 `~/Code/construct-docs/client/ANDROID_ONBOARDING.md` (kept in sync with this repo's
 `docs/ANDROID_ONBOARDING.md`).
 
@@ -128,10 +200,6 @@ There is no `raw/` or `wiki/` anymore. The Android design doc lives at
 
 The vault's own `~/Code/construct-docs/AGENTS.md` is **authoritative**. Summary below is the
 operational subset for coding agents.
-
-> **There is no pipeline anymore.** The old `raw/` → olw → `wiki/` synthesis workflow is gone.
-> Agents patch docs **directly** and write session/decision notes by hand. No olw, no
-> `wiki/.drafts/`. `raw/` and `wiki/` no longer exist — the corpus is the flat domain folders above.
 
 ### Where durable reasoning goes
 
@@ -156,4 +224,3 @@ Plain markdown, no YAML frontmatter. `[[wikilinks]]` to other sessions/decisions
 
 Append a one-line entry to `~/Code/construct-docs/log.md` after creating/updating a note.
 Format: `[YYYY-MM-DD HH:MM] note | <topic>`
-

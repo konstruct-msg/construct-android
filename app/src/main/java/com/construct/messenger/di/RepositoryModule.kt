@@ -1,9 +1,13 @@
 package com.construct.messenger.di
 
-import com.construct.messenger.data.mock.MockChatsRepository
 import com.construct.messenger.data.repository.AuthRepository
 import com.construct.messenger.data.repository.AuthRepositoryImpl
 import com.construct.messenger.data.repository.ChatsRepository
+import com.construct.messenger.data.repository.ChatsRepositoryImpl
+import com.construct.messenger.data.repository.ContactsRepository
+import com.construct.messenger.data.repository.ContactsRepositoryImpl
+import com.construct.messenger.data.repository.MessagesRepository
+import com.construct.messenger.data.repository.MessagesRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -22,6 +26,18 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindChatsRepository(
-        repository: MockChatsRepository
+        repository: ChatsRepositoryImpl
     ): ChatsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMessagesRepository(
+        repository: MessagesRepositoryImpl
+    ): MessagesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindContactsRepository(
+        repository: ContactsRepositoryImpl
+    ): ContactsRepository
 }

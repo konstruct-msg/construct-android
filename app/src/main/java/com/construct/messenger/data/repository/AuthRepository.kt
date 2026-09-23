@@ -13,4 +13,16 @@ interface AuthRepository {
      * registration progress — see [RegistrationStep]; re-authentication does not use it.
      */
     suspend fun initializeIdentity(username: String?, onStep: (RegistrationStep) -> Unit = {})
+
+    /**
+     * Cold-start restore: load private keys, apply the token format guard, re-auth
+     * via [com.construct.messenger.domain.usecase.LoginUseCase] if the session is
+     * gone, promote the orchestrator, and start [com.construct.messenger.service.MessagingRuntime].
+     *
+     * @return `true` if an identity is ready ([authState].isInitialized).
+     */
+    suspend fun restoreSession(): Boolean
+
+    /** END_SESSION every live peer, `Logout` RPC, drop tokens, stop runtime. */
+    suspend fun logout()
 }

@@ -289,6 +289,44 @@ if $BUILD_ARM64; then verify_lib "arm64-v8a"; fi
 if $BUILD_ARMV7; then verify_lib "armeabi-v7a"; fi
 if $BUILD_X86; then verify_lib "x86_64"; fi
 
+# ── Запись пары «этот APK — это ядро» ────────────────────────────────────────
+#
+# Библиотек в git нет, поэтому без этой строки репозиторий перестал бы помнить, какое именно
+# ядро ему нужно, — только то, что нужно какое-то. Штамп берётся из самой библиотеки, а не из
+# соседнего чекаута construct-core: собирали мы её только что, но скопировать в jniLibs могли и
+# чужую, и тогда верным ответом будет то, что лежит, а не то, что мы думали собрать.
+hdr "Пара с ядром"
+
+LOCK="$PROJECT_ROOT/construct-core.lock"
+STAMP_LIB="$JNI_LIBS/arm64-v8a/libconstruct_core.so"
+[ -f "$STAMP_LIB" ] || STAMP_LIB="$JNI_LIBS/x86_64/libconstruct_core.so"
+[ -f "$STAMP_LIB" ] || STAMP_LIB="$JNI_LIBS/armeabi-v7a/libconstruct_core.so"
+
+if [ -f "$STAMP_LIB" ]; then
+  # `grep -o`, а не обычный grep: профиль release пакует литералы в .rodata без разделителей,
+  # поэтому совпадение по целой строке печатает килобайты чужого текста со штампом внутри.
+  STAMP=$(strings -a "$STAMP_LIB" | grep -o -m1 'CONSTRUCT_CORE_VERSION=.*' || true)
+  if [ -n "$STAMP" ]; then
+    if [ -f "$LOCK" ]; then
+      OLD=$(grep -m1 '^CONSTRUCT_CORE_VERSION=' "$LOCK" || true)
+      # sed по месту, чтобы комментарии в файле пережили запись.
+      sed -i '' "s|^CONSTRUCT_CORE_VERSION=.*|$STAMP|" "$LOCK" 2>/dev/null \
+        || sed -i "s|^CONSTRUCT_CORE_VERSION=.*|$STAMP|" "$LOCK"
+      if [ "$OLD" != "$STAMP" ]; then
+        warn "Ядро сменилось: $OLD → $STAMP"
+        warn "construct-core.lock обновлён — это изменение нужно закоммитить."
+      else
+        ok "$STAMP"
+      fi
+    else
+      echo "$STAMP" > "$LOCK"
+      ok "construct-core.lock создан: $STAMP"
+    fi
+  else
+    warn "В библиотеке нет штампа CONSTRUCT_CORE_VERSION — construct-core старше 2026-09-04?"
+  fi
+fi
+
 # ── Готово ───────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}Готово! Следующие шаги:${NC}"

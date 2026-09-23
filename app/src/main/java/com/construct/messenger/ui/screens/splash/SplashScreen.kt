@@ -22,6 +22,7 @@ import com.construct.messenger.viewmodel.SplashViewModel
 @Composable
 fun SplashScreen(
     onNavigateToOnboarding: () -> Unit,
+    onNavigateToOrientation: () -> Unit,
     onNavigateToMain: () -> Unit,
     viewModel: SplashViewModel = hiltViewModel()
 ) {
@@ -34,6 +35,7 @@ fun SplashScreen(
     LaunchedEffect(uiState.route) {
         when (uiState.route) {
             SplashRoute.Onboarding -> onNavigateToOnboarding()
+            SplashRoute.Orientation -> onNavigateToOrientation()
             SplashRoute.Main -> onNavigateToMain()
             null -> Unit
         }

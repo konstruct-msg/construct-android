@@ -28,7 +28,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun initializeIdentityReachesCompleteStep_andContinueEmitsNavigateToMain() = runTest {
-        val viewModel = OnboardingViewModel(MockAuthRepository())
+        val viewModel = OnboardingViewModel(MockAuthRepository(), FakeOnboardingContacts())
         val event = async { viewModel.events.first() }
 
         viewModel.initializeIdentity("alice")
@@ -44,7 +44,7 @@ class OnboardingViewModelTest {
     @Test
     fun initializeIdentityFailureSetsErrorAndDoesNotEmitNavigation() = runTest {
         val errorMessage = "identity init failed"
-        val viewModel = OnboardingViewModel(ThrowingAuthRepository(errorMessage))
+        val viewModel = OnboardingViewModel(ThrowingAuthRepository(errorMessage), FakeOnboardingContacts())
         val event = async { withTimeoutOrNull(100) { viewModel.events.first() } }
 
         viewModel.initializeIdentity("alice")
@@ -58,7 +58,7 @@ class OnboardingViewModelTest {
     @Test
     fun initializeIdentityIgnoresRapidDuplicateCalls() = runTest {
         val repository = DelayedCountingAuthRepository()
-        val viewModel = OnboardingViewModel(repository)
+        val viewModel = OnboardingViewModel(repository, FakeOnboardingContacts())
 
         viewModel.initializeIdentity("alice")
         viewModel.initializeIdentity("alice")
@@ -78,6 +78,9 @@ class OnboardingViewModelTest {
         override suspend fun initializeIdentity(username: String?, onStep: (RegistrationStep) -> Unit) {
             throw IllegalStateException(errorMessage)
         }
+
+        override suspend fun restoreSession(): Boolean = false
+        override suspend fun logout() = Unit
     }
 
     private class DelayedCountingAuthRepository : AuthRepository {
@@ -93,5 +96,30 @@ class OnboardingViewModelTest {
             delay(250)
             mutableAuthState.value = AuthState(isInitialized = true, username = username)
         }
+
+        override suspend fun restoreSession(): Boolean = mutableAuthState.value.isInitialized
+        override suspend fun logout() = Unit
     }
+}
+
+private class FakeOnboardingContacts : com.construct.messenger.data.repository.ContactsRepository {
+    override val contacts = MutableStateFlow<List<com.construct.messenger.data.model.Contact>>(emptyList())
+    override suspend fun mintLink(includeUsername: Boolean) =
+        com.construct.messenger.invite.MintedInvite("j", 0, 300, "p", "l")
+    override suspend fun accept(raw: String) =
+        com.construct.messenger.data.repository.AcceptInviteResult.Failed("unused")
+    override suspend fun revoke(jti: String) = false
+    override val incomingRequests =
+        MutableStateFlow<List<com.construct.messenger.data.repository.IncomingContactRequest>>(emptyList())
+    override suspend fun findByUsername(username: String) =
+        com.construct.messenger.data.repository.FindUserResult.NotFound
+    override suspend fun sendContactRequest(userId: String) = false
+    override suspend fun refreshRequests() = Unit
+    override suspend fun acceptRequest(requestId: String, fromUserId: String) = false
+    override suspend fun checkUsername(username: String) =
+        com.construct.messenger.data.repository.UsernameAvailability(true)
+    override suspend fun setDiscoverable(enabled: Boolean) = true
+    override suspend fun getProfile(userId: String) = null
+    override val issuedInvites =
+        MutableStateFlow<List<com.construct.messenger.data.repository.IssuedInvite>>(emptyList())
 }

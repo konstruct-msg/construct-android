@@ -11,14 +11,14 @@ Android-клиент privacy-first E2EE-мессенджера Construct. Kotlin
 При любых расхождениях между кодом, документами и реальностью **каноном считается
 iOS-приложение** `construct-ios`. Документы могли устареть; iOS-исходники — нет.
 
-| Что | Где смотреть на iOS |
-|---|---|
+| Что                                | Где смотреть на iOS                                               |
+|------------------------------------|-------------------------------------------------------------------|
 | Дизайн-система, токены, компоненты | `construct-ios/ConstructMessenger/Utilities/ConstructTheme.swift` |
-| Аватары | `.../Views/Components/MainAvatarView.swift` |
-| Экраны | `.../Views/` |
-| ViewModels / бизнес-логика | `.../ViewModels/` |
-| Строки (i18n) | `.../en.lproj/`, `.../ru.lproj/`, `.../ja.lproj/` |
-| Сеть, gRPC | `.../Networking/` |
+| Аватары                            | `.../Views/Components/MainAvatarView.swift`                       |
+| Экраны                             | `.../Views/`                                                      |
+| ViewModels / бизнес-логика         | `.../ViewModels/`                                                 |
+| Строки (i18n)                      | `.../en.lproj/`, `.../ru.lproj/`, `.../ja.lproj/`                 |
+| Сеть, gRPC                         | `.../Networking/`                                                 |
 
 Подробный перенос iOS → Android (с примерами на Kotlin) описан в
 `[ANDROID_ONBOARDING.md]`. Используй его как карту, но значения
@@ -32,7 +32,7 @@ iOS-приложение** `construct-ios`. Документы могли уст
 
 - **JDK 21**
 - **Android SDK** (compileSdk 35), minSdk 26
-- **Gradle 9.3.1** (через `./gradlew`, скачивается автоматически)
+- **Gradle 9.5.0** (через `./gradlew`, скачивается автоматически)
 - Для пересборки криптоядра: Rust + Android NDK + `uniffi-bindgen`
 - Для генерации gRPC: `protoc`, `protoc-gen-grpc-kotlin`, `protoc-gen-java`
 
@@ -57,8 +57,7 @@ iOS-приложение** `construct-ios`. Документы могли уст
   Gradle запущен на JRE (например, bundled JRE расширения VSCode «Red Hat Java»),
   а сборке нужен полноценный **JDK 21** (в JRE нет `jlink`). Убедись, что
   `JAVA_HOME` указывает на полный JDK 21 (`/opt/homebrew/opt/openjdk@21` или JBR
-  из Android Studio), и сбрось залежавшийся демон: `./gradlew --stop`. Машинно-
-  специфичный путь намеренно **не** коммитим в `gradle.properties`.
+  из Android Studio), и сбрось залежавшийся демон: `./gradlew --stop`. Машинно-специфичный путь намеренно **не** коммитим в `gradle.properties`.
 - **`Unable to strip ... libconstruct_core.so` / `libjnidispatch.so`** — это
   предупреждение, не ошибка; сборка проходит.
 
@@ -66,8 +65,8 @@ iOS-приложение** `construct-ios`. Документы могли уст
 
 ## Криптоядро (construct-core)
 
-Нативная либа `libconstruct_core.so` лежит в `app/src/main/jniLibs/<abi>/`.
-Сейчас в репозитории собран только `arm64-v8a`; для эмулятора нужен `x86_64`.
+Нативная либа `libconstruct_core.so` лежит в `app/src/main/jniLibs/<abi>/`
+(`arm64-v8a`, `armeabi-v7a`, `x86_64`).
 
 Пересборка под все ABI и генерация Kotlin-биндингов локально:
 
@@ -83,12 +82,9 @@ iOS-приложение** `construct-ios`. Документы могли уст
 
 > Сейчас ядро автоматически собирается на CI/CD в GitHub Actions тут: https://github.com/konstruct-msg/construct-core
 
-Чтобы сгененрировать gRPC-клиент из `.proto` используй скрипт:
-
-```bash
-./generate_grpc_kotlin.sh
-```
-Protobuf-репозиторий тут: https://github.com/konstruct-msg/construct-protos.git
+`.proto` vendored в `app/src/main/proto/` (источник — `construct-protos`).
+Синхронизация: `scripts/sync-protos.sh`. Stubs генерирует Gradle protobuf plugin
+на сборке.
 
 ---
 
@@ -98,95 +94,72 @@ Protobuf-репозиторий тут: https://github.com/konstruct-msg/constru
 construct-android/
 ├── app/src/main/
 │   ├── java/com/construct/messenger/
-│   │   ├── MainActivity.kt
-│   │   ├── KonstructApp.kt
-│   │   ├── ui/
-│   │   │   ├── components/   — reusable UI-компоненты (см. список ниже)
-│   │   │   ├── navigation/   — NavHost, Screen
-│   │   │   ├── screens/      — splash, onboarding, main, chats, chat, synaps, calls, settings
-│   │   │   └── theme/        — дизайн-токены (Color, Type, Symbol, Theme, Layout)
-│   │   ├── data/
-│   │   │   ├── model/        — ChatSummary, Message, AuthState
-│   │   │   └── mock/         — MockChatsRepository, MockAuthRepository
-│   │   ├── viewmodel/        — MainViewModel, OnboardingViewModel, SplashViewModel
-│   │   └── crypto/           — CryptoManager (обёртка над UniFFI; заглушка/скелет)
-│   ├── jniLibs/<abi>/        — libconstruct_core.so
-│   └── res/values/           — strings.xml (en, ru), themes.xml
-├── build_crypto_lib.sh       — сборка Rust-ядра + UniFFI bindings
-├── generate_grpc_kotlin.sh   — генерация gRPC из .proto
-├── AGENTS.md                 — контекст для AI-агентов
-├── IMPLEMENTATION_PLAN.md    — план на 9 фаз (цель, не текущее состояние)
-├── GOOD_FIRST_ISSUES.md      — с чего начать новому разработчику
+│   │   ├── MainActivity.kt / KonstructApp.kt
+│   │   ├── ui/               — Compose (screens, components, theme)
+│   │   ├── viewmodel/        — Splash, Onboarding, Orientation, Main, Chat, Synaps
+│   │   ├── data/             — gRPC, Room, repositories (не моки)
+│   │   ├── domain/usecase/   — register, login, upload prekeys, send
+│   │   ├── service/          — MessagingRuntime, SessionManager, router/processor
+│   │   ├── crypto/           — CryptoManager (UniFFI; не вызывать из UI)
+│   │   ├── invite/           — device-minted v5
+│   │   └── stealth/          — sealed sender (fail-closed on send)
+│   ├── jniLibs/<abi>/        — libconstruct_core.so (arm64, armeabi-v7a, x86_64)
+│   └── res/values/           — strings.xml (en, ru)
+├── scripts/sync-protos.sh    — копия construct-protos → app/src/main/proto/
+├── AGENTS.md
+├── GOOD_FIRST_ISSUES.md      — UI-задачи после 1:1 slice
 └── docs/
-    └── ANDROID_ONBOARDING.md — подробный перенос iOS → Android
+    ├── IMPLEMENTATION_PLAN.md
+    ├── ANDROID_ONBOARDING.md
+    ├── GRPC_LAYER.md
+    └── WIRE_FORMAT_RULES.md
 ```
 
-> `IMPLEMENTATION_PLAN.md` описывает **целевую** архитектуру (крипто, gRPC, VEIL,
-> WebRTC, FCM). Сейчас активно наращивается **mock-UI**: навигация, дизайн-система и
-> экраны работают на тестовых данных без реального бэкенда.
+> `docs/IMPLEMENTATION_PLAN.md` — целевые фазы **и** актуальные статусы (обновлено
+> 2026-09-21). 1:1 текст по production gRPC, multi-device fan-out и собственная
+> foreground-доставка уже в дереве; VEIL / звонки / recovery — нет. FCM не
+> планируется: приложение не зависит от Google Play Services.
 
 ---
 
-## Текущее состояние
+## Текущее состояние (2026-09-21, `develop` @ `981f809`)
 
-### Реализовано (UI / mock-уровень)
+Рабочий срез — **1:1 текст по production gRPC**. UI ходит только в репозитории.
 
-**Дизайн-система:**
-- Токены: `CTColor`, `CTFont`, `CTSymbol`, `CTLayout`, `Spacing`, `CornerRadius`.
-- Тема Jetpack Compose (dark/light).
+### Протокол
 
-**Reusable UI-компоненты:**
-- `CTNavBar` — навигационная панель с заголовком и trailing action.
-- `CTTabBar` — кастомный таб-бар (устаревающий, предпочтителен Material3 `NavigationBar`).
-- `CTButton` — основная кнопка.
-- `CTTextField` — поле ввода.
-- `CTSearchBar` — строка поиска.
-- `CTSectionGroup` / `CTSettingsSectionHeader` / `CTSettingsRow` — секции настроек.
-- `CTSep` — ASCII-разделитель.
-- `CTSystemMessage` — системное сообщение (`> text`).
-- `CTStatusBadge` — Material-иконка статуса (ok/error/warning/on/off/busy/unknown).
-- `CTAvatar` — круглый аватар с детерминированным accent-цветом и identicon.
-- `CTLogoView` — логотип приложения (vector asset `ic_logo`).
-- `ConstructNavRow` — строка навигации с иконкой и chevron.
-- `ChatRow` — строка списка чатов.
+- Cold start: `AuthRepository.restoreSession` → `MessagingRuntime` (import CFE-сессий, hydrate ACK, drain pending, стрим).
+- Приём: `MessageRouter` → CFE `handleEvent` → `ProcessorEffectsImpl` → Room.
+- Отправка: `SendMessageUseCase` (MessageContent → KNST → CFE OutgoingMessage). Stealth fail-closed. Identified конверт без `conversation_id`.
+- Контакты: mint v5 (QR ttl=300, link=43200), paste/`konstruct://add`, `AcceptInvite` / `RevokeInvite`.
+- OTPK upload после регистрации. `GetPreKeyBundle` на verify инвайта — `consume_one_time_prekey=false`.
+- END_SESSION (type 21, 1024 pad), heal, RESPONDER init, E2E receipts (KNST 14), `GetIdentityKey` на входящих.
+- FindUser / contact requests (`UserService`).
+- Account→device registry, recipient/own-replica fan-out, SSR1 sender sync и
+  non-destructive bundle candidate walk.
+- `CfeTimerBridge` передаёт launch/reconnect/timer events обратно в core.
+- `MessagingForegroundService` держит persistent `MessageStream` без GMS и
+  восстанавливает runtime после пересоздания процесса.
 
-**Экраны (Compose + ViewModel):**
-- `SplashScreen` — заглушка запуска.
-- `OnboardingScreen` — онбординг с username-полем.
-- `MainTabView` — корневой таб-контейнер (Chats / Synaps / Calls / Settings) на Material3 `NavigationBar`.
-- `ChatsListScreen` — список чатов с `CTSearchBar` и `ChatRow`.
-- `ChatScreen` — скелет экрана чата.
-- `SynapsScreen` — заглушка контактов.
-- `CallsScreen` — заглушка звонков.
-- `SettingsScreen` — скелет настроек.
+### UI
 
-**Данные / ViewModels:**
-- `ChatSummary`, `Message`, `AuthState`.
-- `MockChatsRepository` с тестовыми чатами.
-- `MainViewModel`, `OnboardingViewModel`, `SplashViewModel`.
+- Онбординг + Orientation; табы Chats / Synaps / Calls / Settings.
+- Список чатов из Room; пустой CTA открывает Synaps.
+- Чат: пузыри + composer, `ChatViewModel` observe/send.
+- Synaps: share invite, paste accept, список контактов (не honeycomb).
+- Дизайн-токены и CT*-компоненты, включая `MessageBubble` / `MessageInputView`.
 
-**Локализация:**
-- `strings.xml` для `en` и `ru` (ключевые экраны).
+### Не сделано
 
-### Не реализовано
+- VEIL, WebRTC/звонки, BIP39 recovery, media, MLS.
+- QR-экран инвайта; honeycomb Synaps.
+- Экраны настроек (Account, Appearance, Network, Security).
+- Queued multi-carrier receive reconciliation.
+- `ja`. Live iOS↔Android interop и smoke на реальном Android 11 ещё не гоняли.
 
-- Реальная регистрация / сессии / PoW.
-- Полноценная обёртка `CryptoManager` и интеграция с `construct-core`.
-- gRPC-сервисы и сетевая подсистема.
-- Room-хранилище (сейчас только mock-репозитории).
-- Большинство экранов настроек (Account, Appearance, Network, Security).
-- `MessageBubble`, `MessageInputView`, отправка сообщений.
-- Push-уведомления (FCM), WebRTC/звонки, VEIL.
-- Полная локализация (`ja` и оставшиеся ключи).
+Моки (`data/mock/`) остались для тестов; Hilt биндит `*Impl`.
 
-### Известные расхождения
-
-- Hilt подключён, но `Application`-класс пока минимален.
-- Некоторые компоненты ещё не перенесены из iOS (`ConstructActionRow`,
-  `ConstructButtonRow`, `CTModeSelector`, `ConnectionStatusIndicator`).
-- До появления реального бэкенда все экраны работают на mock-данных.
-
-Последние изменения и задачи — в `GOOD_FIRST_ISSUES.md` и в истории коммитов.
+Дальше — `GOOD_FIRST_ISSUES.md` и `docs/IMPLEMENTATION_PLAN.md`.
 
 ---
 
@@ -198,6 +171,7 @@ construct-android/
 - Nav-заголовки: текст в ресурсе обычный, `.uppercase()` и `letterSpacing` — в коде.
 - **Все ViewModels** — `@HiltViewModel`, без ручных фабрик.
 - **Крипто** — только через `CryptoManager`. UniFFI-биндинги из UI напрямую не дёргать.
+- **UI / ViewModel** — только репозитории. Не импортировать `data/api`, `crypto`, `stealth`, proto envelopes.
 - Локальное хранилище сообщений — Room.
-- gRPC-канал — синглтон в сервисе, не пересоздаётся на каждый экран.
+- gRPC — `GrpcClient` (два канала). Cold start — `MessagingRuntime`.
 - Дизайн-токены и поведение **сверяются с iOS** — приложения должны выглядеть одинаково.

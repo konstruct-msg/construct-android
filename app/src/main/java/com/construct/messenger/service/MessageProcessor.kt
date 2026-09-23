@@ -1,6 +1,8 @@
 package com.construct.messenger.service
 
 import android.util.Log
+import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.data.local.KeystoreManager
 import javax.inject.Inject
 import javax.inject.Singleton
 import uniffi.construct_core.CfeAction
@@ -38,11 +40,30 @@ import uniffi.construct_core.CfeIncomingEvent
 class MessageProcessor @Inject constructor(
     private val orchestrator: OrchestratorGateway,
     private val effects: ProcessorEffects,
+    private val sessionManager: SessionManager,
+    private val timerBridge: CfeTimerBridge,
+    private val cryptoManager: CryptoManager,
+    private val keystoreManager: KeystoreManager,
 ) {
     suspend fun process(incoming: MessageRouter.IncomingMessage): ProcessingOutcome {
+        val copyRoute = resolveCopyRoute(incoming)
+        if (copyRoute is CopyRouteResolution.Foreign) {
+            effects.markProcessed(incoming.messageId, incoming.senderId)
+            return ProcessingOutcome.Acked
+        }
+        val preferredDeviceId = (copyRoute as? CopyRouteResolution.Local)?.deviceId
+        val contactId = preferredDeviceId
+            ?: sessionManager.resolveDeviceId(incoming.senderId)
+            ?: runCatching {
+                sessionManager.discoverPeerDevices(incoming.senderId).firstOrNull()?.deviceId
+            }.getOrNull()
+            ?: run {
+                Log.w(TAG, "cannot name incoming peer device ${incoming.senderId.take(8)}… — deferring")
+                return ProcessingOutcome.Deferred
+            }
         val event = CfeIncomingEvent.MessageReceived(
             messageId = incoming.messageId,
-            from = incoming.senderId,
+            from = contactId,
             data = incoming.encryptedPayload,
             // The core derives msgNum/kemCt from `data` via the canonical parser;
             // malformed payloads come back as a NotifyError action → ACKed below.
@@ -79,12 +100,55 @@ class MessageProcessor @Inject constructor(
         return route(actions, incoming)
     }
 
+    private suspend fun resolveCopyRoute(incoming: MessageRouter.IncomingMessage): CopyRouteResolution {
+        val route = DeviceCopyRoute.parse(incoming.messageId) ?: return CopyRouteResolution.NotADeviceCopy
+        val localDeviceId = cryptoManager.currentDeviceId() ?: return CopyRouteResolution.NotADeviceCopy
+        val localAccountId = keystoreManager.getUserId()
+        val candidates = runCatching {
+            if (route.audience == DeviceCopyRoute.Audience.OWN_REPLICA &&
+                incoming.senderId == localAccountId
+            ) {
+                sessionManager.discoverOwnDeviceBundles(incoming.senderId)
+            } else {
+                sessionManager.discoverPeerBundles(incoming.senderId)
+            }
+        }.getOrDefault(emptyList())
+
+        if (candidates.isEmpty()) return CopyRouteResolution.NotADeviceCopy
+        val matches = candidates.filter { candidate ->
+            candidate.deviceId != localDeviceId || route.audience == DeviceCopyRoute.Audience.RECIPIENT
+        }.any { candidate ->
+            cryptoManager.deviceCopyTagMatches(
+                tag = route.tag,
+                baseMessageId = route.baseMessageId,
+                ourDeviceId = localDeviceId,
+                peerIdentityPublic = candidate.identityPublic,
+            )
+        }
+        return if (matches) {
+            val matching = candidates.firstOrNull { candidate ->
+                cryptoManager.deviceCopyTagMatches(
+                    tag = route.tag,
+                    baseMessageId = route.baseMessageId,
+                    ourDeviceId = localDeviceId,
+                    peerIdentityPublic = candidate.identityPublic,
+                )
+            }
+            if (matching != null) CopyRouteResolution.Local(matching.deviceId)
+            else CopyRouteResolution.NotADeviceCopy
+        } else {
+            // A validly shaped copy for another device is not a decrypt failure. ACK it without
+            // starting a candidate walk or burning a pre-key on a ciphertext we cannot open.
+            CopyRouteResolution.Foreign
+        }
+    }
+
     /**
      * The routing decision, mirroring iOS's action switch. Pure w.r.t. the
      * orchestrator (all outward work goes through [effects]) so it is unit-tested
      * with a fake. First matching action wins; unmatched → ACK as delivered.
      */
-    internal fun route(
+    internal suspend fun route(
         actions: List<CfeAction>,
         incoming: MessageRouter.IncomingMessage,
     ): ProcessingOutcome {
@@ -103,10 +167,32 @@ class MessageProcessor @Inject constructor(
                     effects.requestHeal(action.contactId, action.role)
                     return ProcessingOutcome.Deferred
                 }
+                is CfeAction.HealSuppressed -> {
+                    Log.i(TAG, "heal suppressed ${action.contactId.take(8)}… retry ${action.retryAfterMs}ms — holding cursor")
+                    return ProcessingOutcome.Deferred
+                }
+                is CfeAction.EndSessionSuppressed -> {
+                    Log.i(TAG, "END_SESSION suppressed ${action.contactId.take(8)}… retry ${action.retryAfterMs}ms — holding cursor")
+                    return ProcessingOutcome.Deferred
+                }
+                is CfeAction.MessageQueuedPendingInit -> {
+                    Log.i(TAG, "message queued behind init ${action.contactId.take(8)}… count=${action.queuedCount} — holding cursor")
+                    return ProcessingOutcome.Deferred
+                }
                 is CfeAction.SendEndSession -> {
                     effects.sendReceipt(incoming.messageId, action.contactId, "failed")
                     effects.markProcessed(incoming.messageId, incoming.senderId)
                     effects.requestEndSession(action.contactId)
+                    return ProcessingOutcome.Acked
+                }
+                is CfeAction.SendHeartbeat -> {
+                    executeSideEffects(actions, incoming)
+                    effects.markProcessed(incoming.messageId, incoming.senderId)
+                    return ProcessingOutcome.Acked
+                }
+                is CfeAction.SessionTerminated -> {
+                    executeSideEffects(actions, incoming)
+                    effects.markProcessed(incoming.messageId, incoming.senderId)
                     return ProcessingOutcome.Acked
                 }
                 is CfeAction.FetchPublicKeyBundle -> {
@@ -130,27 +216,71 @@ class MessageProcessor @Inject constructor(
     /** Executes the stateless effect-actions (persist / receipt / notify / …).
      * Unknown actions are logged loudly, never silently dropped, so a new Rust
      * action surfaces here instead of vanishing. */
-    private fun executeSideEffects(actions: List<CfeAction>, incoming: MessageRouter.IncomingMessage) {
+    private suspend fun executeSideEffects(actions: List<CfeAction>, incoming: MessageRouter.IncomingMessage) {
         for (action in actions) {
             when (action) {
-                is CfeAction.MessageDecrypted ->
+                is CfeAction.MessageDecrypted -> if (
+                    incoming.contentType == shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_SENDER_SYNC
+                ) {
+                    effects.onSenderSync(
+                        action.contactId.ifEmpty { incoming.senderId },
+                        action.messageId,
+                        action.plaintext,
+                        incoming.timestampMs,
+                    )
+                } else {
                     effects.onDecrypted(action.contactId.ifEmpty { incoming.senderId }, action.messageId, action.plaintext)
+                }
                 is CfeAction.CallSignalDecrypted ->
                     effects.onCallSignal(action.contactId, action.messageId, action.protoBytes)
                 is CfeAction.PersistMessage -> effects.persistMessage(action.messageJson)
                 is CfeAction.SendReceipt -> effects.sendReceipt(action.messageId, incoming.senderId, action.status)
                 is CfeAction.NotifyNewMessage -> effects.notifyNewMessage(action.chatId, action.preview)
                 is CfeAction.MarkMessageDelivered -> effects.markDelivered(action.messageId)
-                is CfeAction.SaveSessionToSecureStore -> effects.saveSession(action.key, action.data)
+                is CfeAction.PersistAck -> effects.markProcessed(action.messageId, incoming.senderId)
+                is CfeAction.PruneAckStore -> effects.pruneAckStore(action.cutoffTs.toLong())
+                is CfeAction.ApplyPqContribution ->
+                    effects.applyPqContribution(action.contactId, action.kemSs)
+                is CfeAction.SaveToSecureStore ->
+                    effects.saveSecureStore(action.slot, action.data)
                 is CfeAction.ArchiveSession -> effects.archiveSession(action.contactId)
-                // Not yet wired — surface loudly rather than drop.
-                else -> Log.w(TAG, "unhandled CfeAction ${action::class.simpleName} — no-op (extend MessageProcessor)")
+                is CfeAction.SessionTerminated ->
+                    effects.sessionTerminated(action.contactId, action.archiveBytes)
+                is CfeAction.SendHeartbeat -> effects.sendHeartbeat(action.contactId)
+                is CfeAction.NotifySessionCreated ->
+                    Log.i(TAG, "session created ${action.contactId.take(8)}…")
+                is CfeAction.NotifyError ->
+                    Log.e(TAG, "CFE ${action.code}: ${action.message}")
+                is CfeAction.ScheduleTimer ->
+                    timerBridge.schedule(action.timerId, action.delayMs)
+                is CfeAction.CancelTimer ->
+                    timerBridge.cancel(action.timerId)
+                is CfeAction.NotifyLinkedDevicesOfSessionReset ->
+                    Log.i(TAG, "linked-device reset notification pending for ${action.contactId.take(8)}…")
+                is CfeAction.EndSessionSuppressed,
+                is CfeAction.MessageQueuedPendingInit,
+                is CfeAction.SessionHealNeeded,
+                is CfeAction.HealSuppressed,
+                is CfeAction.CheckAckInDb,
+                is CfeAction.DecryptMessage,
+                is CfeAction.EncryptMessage,
+                is CfeAction.InitSession,
+                is CfeAction.SendEncryptedMessage,
+                is CfeAction.SendEndSession,
+                is CfeAction.FetchPublicKeyBundle,
+                -> Log.d(TAG, "CFE action consumed by routing layer: ${action::class.simpleName}")
             }
         }
     }
 
     private companion object {
         const val TAG = "MessageProcessor"
+    }
+
+    private sealed interface CopyRouteResolution {
+        data object NotADeviceCopy : CopyRouteResolution
+        data class Local(val deviceId: String) : CopyRouteResolution
+        data object Foreign : CopyRouteResolution
     }
 }
 
@@ -176,18 +306,24 @@ interface OrchestratorGateway {
 /** Outward side effects the processor delegates to the repository/session layer.
  * Semantics ported from iOS `SessionActionExecutor` + `MessageRouter` delegate. */
 interface ProcessorEffects {
-    fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray)
-    fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray)
-    fun persistMessage(messageJson: String)
-    fun sendReceipt(messageId: String, toUserId: String, status: String)
-    fun notifyNewMessage(chatId: String, preview: String)
-    fun markDelivered(messageId: String)
-    fun markProcessed(messageId: String, senderId: String)
-    fun saveSession(key: String, data: ByteArray)
-    fun archiveSession(contactId: String)
-    fun requestHeal(contactId: String, role: String)
-    fun requestEndSession(contactId: String)
-    fun requestKeyBundle(userId: String, incoming: MessageRouter.IncomingMessage)
+    suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray)
+    suspend fun onSenderSync(contactId: String, messageId: String, plaintext: ByteArray, timestampMs: Long) = Unit
+    suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray)
+    suspend fun persistMessage(messageJson: String)
+    suspend fun sendReceipt(messageId: String, toUserId: String, status: String)
+    suspend fun notifyNewMessage(chatId: String, preview: String)
+    suspend fun markDelivered(messageId: String)
+    suspend fun markProcessed(messageId: String, senderId: String)
+    suspend fun saveSecureStore(slot: uniffi.construct_core.CfeSecureStoreSlot, data: ByteArray)
+    suspend fun applyPqContribution(contactId: String, kemSharedSecret: ByteArray)
+    suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray)
+    suspend fun pruneAckStore(cutoffTs: Long)
+    suspend fun sendHeartbeat(contactId: String)
+    suspend fun notifyLinkedDevicesOfSessionReset(contactId: String) = Unit
+    suspend fun archiveSession(contactId: String)
+    suspend fun requestHeal(contactId: String, role: String)
+    suspend fun requestEndSession(contactId: String)
+    suspend fun requestKeyBundle(userId: String, incoming: MessageRouter.IncomingMessage)
 
     /** Whether [messageId] is already recorded delivered in the local DB
      * (answers the CFE `checkAckInDb` round-trip after a restart). */

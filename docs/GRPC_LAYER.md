@@ -1,9 +1,8 @@
 # gRPC Layer — состояние, архитектура, как подключать UI
 
-**Обновлено:** 2026-07-03. Аудитория: следующая смена, задача которой —
-соединить UI (`ui/`, `viewmodel/`) с функциональными слоями через
-репозитории. Здесь: что уже работает, что каркас, что отсутствует, и в каком
-порядке подключать.
+**Обновлено:** 2026-09-18. Аудитория: UI и протокол. 1:1 text slice замкнут
+(runtime → receive → send → invites → Chat/Synaps). Здесь: что работает,
+что каркас, что отсутствует. UI ходит только в репозитории.
 
 Канон по фазам: `docs/IMPLEMENTATION_PLAN.md`. Крипто-пайплайн:
 `docs/CRYPTO_CORE.md`, `docs/FFI_BINARY_FORMAT.md`.
@@ -13,27 +12,43 @@
 ```
 data/api/
 ├── GrpcClient.kt            # 2 канала + все coroutine-стабы   [РАБОТАЕТ]
-├── MessagingService.kt      # унарные send/sendSealed/pending  [КАРКАС — см. §4]
-├── MessageStreamService.kt  # bidi-стрим приёма                [КАРКАС — см. §4]
+├── MessagingService.kt      # унарные send/sendSealed/pending  [РАБОТАЕТ]
+├── MessageStreamService.kt  # bidi-стрим приёма                [РАБОТАЕТ]
 data/auth/
 ├── AuthInterceptor.kt       # Bearer + x-user-id/x-device-id   [РАБОТАЕТ]
 ├── TokenRefreshCoordinator.kt                                  [РАБОТАЕТ]
+├── AuthSessionManager.kt    # format guard §13.5 + 401→refresh→ [ГОТОВ+тесты]
+│                            # retry (single), permanent→re-auth
+data/local/
+├── KeystoreManager.kt       # токены + private keys (CFE)      [РАБОТАЕТ]
+├── AckStore.kt              # durable dedup (Room + in-memory   [ГОТОВ+тесты]
+│                            # mirror, hydrate() до стрима!)
+├── SessionStateStore.kt     # typed CFE slots + establishedAt [ГОТОВ+тесты]
+├── PeerDeviceRegistry.kt    # durable account→device mapping [ГОТОВ]
+├── db/                      # Room: chats/messages/users/       [ГОТОВ]
+│                            # acked_messages/session_state/session_meta
 service/
 ├── SessionManager.kt        # DR-сессии поверх CryptoManager   [РАБОТАЕТ]
 ├── MessageRouter.kt         # стрим → домен-события: dedup,    [ГОТОВ+тесты]
 │                            # sealed-résolve, control/message
-├── MessageProcessor.kt      # CFE handleEvent → decrypt/persist [ГОТОВ+тесты]
-│                            # /ack; OrchestratorGateway+Effects
+├── MessageProcessor.kt      # CFE handleEvent → typed actions   [ГОТОВ+тесты]
+│                            # /decrypt/persist/ack; Gateway+Effects
+├── CfeTimerBridge.kt        # AppLaunched/reconnect/timers     [ГОТОВ]
 crypto/
 ├── CryptoManager.kt         # двухфазное ядро (Classic→Orchestr) [РАБОТАЕТ]
 │                            # + OrchestratorGateway (handleEvent)
+│                            # + orchestrator/PQ state snapshots
 │                            # wire-формат парсит ТОЛЬКО Rust core
 │                            # (wire_payload.rs; дублей на Kotlin нет)
 di/
 ├── CryptoModule.kt          # bind OrchestratorGateway→CryptoMgr [ГОТОВ]
-stealth/                     # sealed sender (см. §5)           [КАРКАС]
+├── DatabaseModule.kt        # Room DB + DAOs + AckStore         [ГОТОВ]
+invite/                      # v5 mint / verify / AcceptInvite  [РАБОТАЕТ]
+stealth/                     # sealed sender (см. §5)           [НА SEND]
 ├── StealthPolicy.kt  ServerKeysProvider.kt  TokenWalletService.kt
 ├── BlindTokenService.kt  StealthSenderService.kt
+service/MessagingRuntime.kt  # cold start → stream              [РАБОТАЕТ]
+domain/usecase/SendMessageUseCase.kt                            [РАБОТАЕТ]
 ```
 
 ## 2. Два канала — почему их два и что по какому ходит
@@ -51,26 +66,15 @@ stealth/                     # sealed sender (см. §5)           [КАРКАС
 
 Рекомендуемая последовательность (каждый шаг тестируем сам по себе):
 
-1. **Приём.** `MessageStreamService.start(scope)` + `MessageRouter.start(scope)`
-   после логина → collect `MessageRouter.routed` → на `RoutedEvent.Incoming`
-   вызвать `MessageProcessor.process(msg)`. Роутер (dedup/sealed-resolve/
-   классификация) и процессор (CFE `handleEvent` → decrypt/persist/ack) готовы и
-   покрыты юнит-тестами. `OrchestratorGateway` уже реализован —
-   `CryptoManager` держит двухфазное ядро (`ClassicCryptoCore` →
-   `OrchestratorCore` в `setLocalUserId`, single-thread `coreLock`) и забинжен
-   через `di/CryptoModule`; оба флоу логина уже зовут `setLocalUserId`.
-   **Осталась ОДНА зависимость процессора:**
-   - `ProcessorEffects` — реализовать в репозитории/session-слое (persist из
-     `messageJson`, отправка receipt, notify, heal/END_SESSION/keyBundle,
-     `isAckedInDb` из БД). Семантику действий брать из iOS
-     `SessionActionExecutor` + свитча `MessageRouter.swift`. После этого
-     `MessageProcessor` можно инжектить и подключать к `MessageRouter.routed`.
+1. **Приём.** `AuthRepository.restoreSession()` / `initializeIdentity()` поднимает
+   `MessagingRuntime`: restore orchestrator/PQ snapshots → import only `Session`
+   slots → hydrate ACK → drain `GetPendingMessages` → `MessageRouter` +
+   `MessageProcessor` + стрим. `ProcessorEffectsImpl` пишет в Room and applies
+   every typed secure-store action. Подписки `direct:<sorted ids>` из `ChatDao`.
    Решение по основе: `construct-docs/decisions/android-receive-path-cfe-not-component.md`.
-   Подписки: `updateSubscriptions(listOf("direct:<idA>:<idB>", …))` — id
-   отсортированы, как на iOS.
-2. **Отправка.** ViewModel → SendMessageUseCase (нет; создать) →
-   `SessionManager.encryptMessage` → ветвление из KDoc `MessagingService`
-   (identified / legacy-sealed / Phase-2-sealed) → статусы в UI из `SendResult`.
+2. **Отправка.** `ChatViewModel` → `MessagesRepository.send` →
+   `SendMessageUseCase` (KNST + CFE `OutgoingMessage` + fail-closed stealth).
+   Не `encryptMessage` на сыром UTF-8. Identified конверт без `conversation_id`.
 3. **Догон.** `MessagingService.getPendingMessages(cursor)` на холодном старте
    до открытия стрима; курсор стрима персистится самим `MessageStreamService`.
 4. **Stealth-бутстрап.** После логина: `ServerKeysProvider.prefetch()` +
@@ -81,13 +85,17 @@ stealth/                     # sealed sender (см. §5)           [КАРКАС
 `MessagingService`/`MessageStreamService` компилируются против свежих протосов
 и готовы к вызову, но:
 
-- **retry/backoff отправки** — на вызывающей стороне (iOS: bounded retry в
-  send-координаторе; здесь его ещё нет);
+- **retry/backoff отправки** — bounded retry уже в `SendMessageUseCase`;
 - **re-subscribe без реконнекта** — `updateSubscriptions` применяется со
   следующего коннекта;
 - **acks/errors/presence из стрима** — логируются, но не пробрасываются:
   расширить `StreamEvent`, когда появится потребитель;
 - **VEIL-фолбэк транспорта** — не подключён (оба канала direct TLS);
+- **multi-device account→device routing** — registry and device-only core
+  addressing are connected; send fan-out, SSR1 sender-sync and bundle candidate
+  walk use the core plans; queued multi-carrier receive reconciliation remains;
+- **CFE timers / AppLaunched / reconnect events** — wired through
+  `CfeTimerBridge`; production transport coverage remains;
 - **`SEALED_UNAUTHENTICATED_TRANSPORT = false`** — флип синхронно с iOS
   `FeatureFlags.sealedSenderUnauthenticatedTransport` (rollout-порядок в
   decision-доке §4).
@@ -102,8 +110,11 @@ Kotlin-обвязка зеркалит iOS: политика (always-on в relea
 well-known-ключи (24ч кэш), кошелёк (EncryptedSharedPreferences), issuance
 (лимит сервера 20/час), сертификат (кэш 24ч, verify bundle-ключом).
 
-**Интеграции в send/receive ещё нет** — это часть шагов 1–2 из §3.
-E2e-проверка iOS↔Android закроет пункт §5 decision-дока.
+Send path: fail-closed sealed inner (`SealedInner.content_type` unspecified).
+Receive: `MessageRouter` sealed-resolve. **Unauthenticated sealed transport
+flag still false** (lockstep with iOS). Wallet/cert prefetch after login is
+not yet a dedicated bootstrap step. Live iOS↔Android sealed round-trip has
+not run.
 
 ## 6. Gotchas (стоившие времени — не наступать повторно)
 
@@ -139,9 +150,20 @@ E2e-проверка iOS↔Android закроет пункт §5 decision-док
       (2026-07-04). Основа: `construct-docs/decisions/android-receive-path-cfe-not-component.md`
 - [x] OrchestratorGateway — двухфазный OrchestratorCore в CryptoManager +
       CryptoModule bind (2026-07-04)
-- [ ] ProcessorEffects в репозитории/session-слое → инжект MessageProcessor,
-      подключение к MessageRouter.routed (§3.1)
-- [ ] SendMessageUseCase с retry/backoff (§3.2)
-- [ ] Stealth в send/receive путях + e2e iOS↔Android
+- [x] ProcessorEffects в репозитории/session-слое → инжект MessageProcessor,
+      подключение к MessageRouter.routed (§3.1) — `ProcessorEffectsImpl` +
+      `MessagingRuntime` (2026-09-17). Typed secure-store, PQ contribution,
+      session archive/termination, persist+ACK and receipts are wired. The timer
+      bridge, account→device registry, recipient/replica fan-out, SSR1 routing,
+      and current-carrier bundle candidate walk are wired; queued multi-carrier
+      reconciliation and live interop remain open.
+- [x] SendMessageUseCase (§3.2) — KNST + CFE OutgoingMessage + fail-closed stealth.
+      Bounded retry still on the caller. Identified envelope без conversation_id.
+- [x] Contacts / invites — mint v5 + AcceptInvite + RevokeInvite (2026-08-19)
+- [x] Stealth на send (fail-closed) + sealed-resolve на приёме (2026-08-19)
+- [x] Heal / END_SESSION on the wire + RESPONDER init + E2E receipts + GetIdentityKey (2026-08-19)
+- [x] FindUser / contact requests (UserService)
+- [ ] Unauth sealed transport flag flip + e2e iOS↔Android
+- [ ] invite QR; honeycomb Synaps
 - [ ] Расширение StreamEvent (ack/error/presence) под нужды UI
 - [ ] VEIL-фолбэк каналов (после стабилизации direct-пути)
