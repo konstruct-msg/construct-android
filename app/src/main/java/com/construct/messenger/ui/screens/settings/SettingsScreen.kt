@@ -262,7 +262,7 @@ private fun SettingsProfileRow(
                 Text(
                     text = stringResource(R.string.settings_discoverable_on),
                     style = ctRegular(11),
-                    color = CTColor.accentDim,
+                    color = CTColor.accent,
                 )
             }
         }

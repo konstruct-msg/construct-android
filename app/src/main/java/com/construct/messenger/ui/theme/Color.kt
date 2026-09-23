@@ -18,9 +18,31 @@ object CTColor {
     val outMsgBg = Color(0xFF111111)    // outgoing bubble — dark 0x111111 / light 0xE9E9E9
     val outMsgBgLight = Color(0xFFE9E9E9)
 
-    // Accent (single value, not theme-dependent on iOS)
-    val accent = Color(0xFF0062FF)
-    val accentDim = Color(0xFF1E68DF)
+    // Accent
+    /**
+     * Primary accent — dark 0x008CFF / light 0x0057E0.
+     *
+     * Adaptive, and it has to be: a single hex cannot clear 4.5:1 as text in both themes, and
+     * accent *is* text here — `CTSettingsRow` action rows, `ConstructActionRow`, the onboarding
+     * copy. The value this replaced, 0x0062FF, read 3.97 on [bg]: below the bar everywhere it was
+     * used as text, and below it under `CTButton`'s own label, which draws in [bg] on this fill.
+     *
+     * 0x008CFF is 5.87 on [bg] and 4.81 on a [bgMsg] card; 0x0057E0 is 5.45 / 4.71 on the light
+     * pair. `CTColorContrastTest` measures all four — do not eyeball a replacement.
+     */
+    val accent = Color(0xFF008CFF)
+    val accentLight = Color(0xFF0057E0)
+
+    /**
+     * Pressed / hover partner of [accent] — dark 0x0077DB / light 0x0047B3.
+     *
+     * **Fill, hover and status dots only — never text.** No dim partner of this accent reaches
+     * 4.5:1 on [bg] (0x0077DB peaks at 4.42), so text that used to be `accentDim` is [accent]
+     * instead. `CTColorContrastTest` asserts the 4.42, so the rule has its evidence beside it
+     * rather than only in this comment.
+     */
+    val accentDim = Color(0xFF0077DB)
+    val accentDimLight = Color(0xFF0047B3)
 
     // Text
     val text = Color(0xFFE8E8E8)        // dark 0xE8E8E8 / light 0x111111

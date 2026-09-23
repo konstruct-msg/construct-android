@@ -17,8 +17,8 @@ import com.construct.messenger.ui.theme.ctRegular
  * System message rendered as terminal-style `> text`.
  *
  * **Canon:** iOS `ConstructTheme.swift` → `struct CTSystemMessage`.
- * - `>` prefix in `ctBold(12)` + `accentDim`.
- * - Body in `ctRegular(12)` + `accentDim`.
+ * - `>` prefix in `ctBold(12)` + `accent`.
+ * - Body in `ctRegular(12)` + `accent`.
  * - Padding: horizontal 12dp, vertical 2dp.
  *
  * The `>` prefix is decorative terminal chrome; it is not a functional control.
@@ -35,13 +35,13 @@ fun CTSystemMessage(
         Text(
             text = ">",
             style = ctBold(12),
-            color = CTColor.accentDim,
+            color = CTColor.accent,
         )
         Spacer(Modifier.width(6.dp))
         Text(
             text = text,
             style = ctRegular(12),
-            color = CTColor.accentDim,
+            color = CTColor.accent,
         )
     }
 }

@@ -22,8 +22,10 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = CTColor.accent,
-    secondary = CTColor.accentDim,
+    // The light halves, like every other token in this scheme. They were the dark ones while the
+    // accent had a single value; it does not any more.
+    primary = CTColor.accentLight,
+    secondary = CTColor.accentDimLight,
     tertiary = CTColor.danger,
     background = CTColor.bgLight,
     surface = CTColor.bgMsgLight,

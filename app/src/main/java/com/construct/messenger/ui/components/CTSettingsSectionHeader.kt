@@ -17,14 +17,14 @@ import com.construct.messenger.ui.theme.ctBold
  * Section header rendered as `> TITLE`.
  *
  * **Canon:** iOS `ConstructTheme.swift` → `struct CTSettingsSectionHeader`.
- * - `ctBold(11)`, [color] default `accentDim`, title uppercased.
+ * - `ctBold(11)`, [color] default `accent`, title uppercased.
  * - Padding: horizontal 12, top 16 (the inter-section gap), bottom 4.
  */
 @Composable
 fun CTSettingsSectionHeader(
     title: String,
     modifier: Modifier = Modifier,
-    color: Color = CTColor.accentDim,
+    color: Color = CTColor.accent,
 ) {
     Row(
         modifier = modifier
