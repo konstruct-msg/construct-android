@@ -912,6 +912,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_ack_mark_pro
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_apply_pq_contribution(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_awaits_acknowledgement(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_build_hybrid_identity_bind_message(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_build_x3dh_sign_message(
@@ -953,8 +955,6 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_get_signing_
 external fun uniffi_construct_core_checksum_method_orchestratorcore_handle_event(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_has_session(
-): Short
-external fun uniffi_construct_core_checksum_method_orchestratorcore_healing_can_heal(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_hybrid_signature_public_key(
 ): Short
@@ -1010,22 +1010,6 @@ external fun uniffi_construct_core_checksum_method_rustackstore_mark_processed(
 ): Short
 external fun uniffi_construct_core_checksum_method_rustackstore_prune_expired(
 ): Short
-external fun uniffi_construct_core_checksum_method_rusthealingqueue_can_heal(
-): Short
-external fun uniffi_construct_core_checksum_method_rusthealingqueue_enqueue(
-): Short
-external fun uniffi_construct_core_checksum_method_rusthealingqueue_export_state(
-): Short
-external fun uniffi_construct_core_checksum_method_rusthealingqueue_import_state(
-): Short
-external fun uniffi_construct_core_checksum_method_rusthealingqueue_len(
-): Short
-external fun uniffi_construct_core_checksum_method_rusthealingqueue_prune_expired(
-): Short
-external fun uniffi_construct_core_checksum_method_rusthealingqueue_record_attempt(
-): Short
-external fun uniffi_construct_core_checksum_method_rusthealingqueue_remove_record(
-): Short
 external fun uniffi_construct_core_checksum_method_rustpqcontributions_clear(
 ): Short
 external fun uniffi_construct_core_checksum_method_rustpqcontributions_has_pending(
@@ -1053,8 +1037,6 @@ external fun uniffi_construct_core_checksum_method_trafficprotectionmanager_upda
 external fun uniffi_construct_core_checksum_constructor_mlsstore_new(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_rustackstore_new(
-): Short
-external fun uniffi_construct_core_checksum_constructor_rusthealingqueue_new(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_rustpqcontributions_new(
 ): Short
@@ -1184,6 +1166,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_ack_mark_processed
 ): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_apply_pq_contribution(`ptr`: Long,`contactId`: RustBuffer.ByValue,`kemSharedSecret`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_method_orchestratorcore_awaits_acknowledgement(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_orchestratorcore_build_hybrid_identity_bind_message(`ptr`: Long,`hybridPublicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_build_x3dh_sign_message(`ptr`: Long,`suiteId`: Byte,`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1225,8 +1209,6 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_get_signing_key_by
 external fun uniffi_construct_core_fn_method_orchestratorcore_handle_event(`ptr`: Long,`event`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_has_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Byte
-external fun uniffi_construct_core_fn_method_orchestratorcore_healing_can_heal(`ptr`: Long,`msgNumber`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_orchestratorcore_hybrid_signature_public_key(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1288,28 +1270,6 @@ external fun uniffi_construct_core_fn_method_rustackstore_mark_processed(`ptr`: 
 ): Unit
 external fun uniffi_construct_core_fn_method_rustackstore_prune_expired(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_construct_core_fn_clone_rusthealingqueue(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_construct_core_fn_free_rusthealingqueue(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_construct_core_fn_constructor_rusthealingqueue_new(uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_construct_core_fn_method_rusthealingqueue_can_heal(`ptr`: Long,`msgNumber`: Int,uniffi_out_err: UniffiRustCallStatus, 
-): Byte
-external fun uniffi_construct_core_fn_method_rusthealingqueue_enqueue(`ptr`: Long,`contactId`: RustBuffer.ByValue,`messageJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_construct_core_fn_method_rusthealingqueue_export_state(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_method_rusthealingqueue_import_state(`ptr`: Long,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_construct_core_fn_method_rusthealingqueue_len(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_construct_core_fn_method_rusthealingqueue_prune_expired(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_construct_core_fn_method_rusthealingqueue_record_attempt(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_method_rusthealingqueue_remove_record(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Byte
 external fun uniffi_construct_core_fn_clone_rustpqcontributions(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_free_rustpqcontributions(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1916,6 +1876,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_apply_pq_contribution() != 43446.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_awaits_acknowledgement() != 35656.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_build_hybrid_identity_bind_message() != 61991.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1977,9 +1940,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_has_session() != 45817.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_healing_can_heal() != 20996.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_hybrid_signature_public_key() != 51840.toShort()) {
@@ -2063,30 +2023,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_rustackstore_prune_expired() != 19780.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_rusthealingqueue_can_heal() != 46759.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_rusthealingqueue_enqueue() != 5619.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_rusthealingqueue_export_state() != 8133.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_rusthealingqueue_import_state() != 52469.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_rusthealingqueue_len() != 8116.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_rusthealingqueue_prune_expired() != 54495.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_rusthealingqueue_record_attempt() != 50030.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_rusthealingqueue_remove_record() != 39701.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_construct_core_checksum_method_rustpqcontributions_clear() != 36635.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2127,9 +2063,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_constructor_rustackstore_new() != 64675.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_constructor_rusthealingqueue_new() != 42495.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_constructor_rustpqcontributions_new() != 4456.toShort()) {
@@ -3897,6 +3830,13 @@ public interface OrchestratorCoreInterface {
     
     fun `applyPqContribution`(`contactId`: kotlin.String, `kemSharedSecret`: List<kotlin.UByte>)
     
+    /**
+     * Whether the ratchet with this **device** was announced (SESSION_RESET_INIT sent) and the
+     * peer has not acknowledged it yet. The confirm gate; fold it over a peer's device set for
+     * the account-shaped question, since one message becomes a copy per device.
+     */
+    fun `awaitsAcknowledgement`(`contactId`: kotlin.String): kotlin.Boolean
+    
     fun `buildHybridIdentityBindMessage`(`hybridPublicKey`: List<kotlin.UByte>): List<kotlin.UByte>
     
     fun `buildX3dhSignMessage`(`suiteId`: kotlin.UByte, `publicKey`: List<kotlin.UByte>): List<kotlin.UByte>
@@ -3982,11 +3922,6 @@ public interface OrchestratorCoreInterface {
     fun `handleEvent`(`event`: CfeIncomingEvent): List<CfeAction>
     
     fun `hasSession`(`contactId`: kotlin.String): kotlin.Boolean
-    
-    /**
-     * `true` iff `msg_number == 0` (healing-eligible message).
-     */
-    fun `healingCanHeal`(`msgNumber`: kotlin.UInt): kotlin.Boolean
     
     fun `hybridSignaturePublicKey`(): List<kotlin.UByte>?
     
@@ -4205,6 +4140,24 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
 }
     }
     
+    
+
+    
+    /**
+     * Whether the ratchet with this **device** was announced (SESSION_RESET_INIT sent) and the
+     * peer has not acknowledged it yet. The confirm gate; fold it over a peer's device set for
+     * the account-shaped question, since one message becomes a copy per device.
+     */override fun `awaitsAcknowledgement`(`contactId`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_awaits_acknowledgement(
+        it,
+        FfiConverterString.lower(`contactId`),_status)
+}
+    }
+    )
+    }
     
 
     override fun `buildHybridIdentityBindMessage`(`hybridPublicKey`: List<kotlin.UByte>): List<kotlin.UByte> {
@@ -4530,22 +4483,6 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_has_session(
         it,
         FfiConverterString.lower(`contactId`),_status)
-}
-    }
-    )
-    }
-    
-
-    
-    /**
-     * `true` iff `msg_number == 0` (healing-eligible message).
-     */override fun `healingCanHeal`(`msgNumber`: kotlin.UInt): kotlin.Boolean {
-            return FfiConverterBoolean.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_healing_can_heal(
-        it,
-        FfiConverterUInt.lower(`msgNumber`),_status)
 }
     }
     )
@@ -5350,431 +5287,6 @@ public object FfiConverterTypeRustAckStore: FfiConverter<RustAckStore, Long> {
 
 //
 /**
- * Thread-safe session healing queue.
- *
- * Replaces Swift `SessionHealingService`.
- */
-public interface RustHealingQueueInterface {
-    
-    /**
-     * `true` iff `msg_number == 0` — the only case eligible for healing.
-     */
-    fun `canHeal`(`msgNumber`: kotlin.UInt): kotlin.Boolean
-    
-    /**
-     * Enqueue `message_json` for `contact_id` (idempotent).
-     * Persistence is handled by the orchestrator CFE state export.
-     */
-    fun `enqueue`(`contactId`: kotlin.String, `messageJson`: kotlin.String)
-    
-    /**
-     * Serialise the queue state to a CFE blob for Keychain persistence.
-     * Returns an empty sequence on serialisation failure.
-     */
-    fun `exportState`(): List<kotlin.UByte>
-    
-    /**
-     * Restore queue state from a CFE blob produced by `export_state`.
-     * Silently no-ops on decode failure.
-     */
-    fun `importState`(`data`: List<kotlin.UByte>)
-    
-    /**
-     * Number of pending healing records.
-     */
-    fun `len`(): kotlin.ULong
-    
-    /**
-     * Remove expired healing records. Persistence handled by orchestrator CFE.
-     */
-    fun `pruneExpired`()
-    
-    /**
-     * Increment attempt counter for `contact_id`.
-     */
-    fun `recordAttempt`(`contactId`: kotlin.String): HealingAttemptResult
-    
-    /**
-     * Remove the healing record after successful re-key.
-     */
-    fun `removeRecord`(`contactId`: kotlin.String): kotlin.Boolean
-    
-    companion object
-}
-
-/**
- * Thread-safe session healing queue.
- *
- * Replaces Swift `SessionHealingService`.
- */
-open class RustHealingQueue: Disposable, AutoCloseable, RustHealingQueueInterface
-{
-
-    @Suppress("UNUSED_PARAMETER")
-    /**
-     * @suppress
-     */
-    constructor(withHandle: UniffiWithHandle, handle: Long) {
-        this.handle = handle
-        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
-    }
-
-    /**
-     * @suppress
-     *
-     * This constructor can be used to instantiate a fake object. Only used for tests. Any
-     * attempt to actually use an object constructed this way will fail as there is no
-     * connected Rust object.
-     */
-    @Suppress("UNUSED_PARAMETER")
-    constructor(noHandle: NoHandle) {
-        this.handle = 0
-        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
-    }
-    constructor() :
-        this(UniffiWithHandle, 
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_constructor_rusthealingqueue_new(
-    
-        _status)
-}
-    )
-
-    protected val handle: Long
-    protected val cleanable: UniffiCleaner.Cleanable
-
-    private val wasDestroyed = AtomicBoolean(false)
-    private val callCounter = AtomicLong(1)
-
-    override fun destroy() {
-        // Only allow a single call to this method.
-        // TODO: maybe we should log a warning if called more than once?
-        if (this.wasDestroyed.compareAndSet(false, true)) {
-            // This decrement always matches the initial count of 1 given at creation time.
-            if (this.callCounter.decrementAndGet() == 0L) {
-                cleanable.clean()
-            }
-        }
-    }
-
-    @Synchronized
-    override fun close() {
-        this.destroy()
-    }
-
-    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
-        // Check and increment the call counter, to keep the object alive.
-        // This needs a compare-and-set retry loop in case of concurrent updates.
-        do {
-            val c = this.callCounter.get()
-            if (c == 0L) {
-                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
-            }
-            if (c == Long.MAX_VALUE) {
-                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
-            }
-        } while (! this.callCounter.compareAndSet(c, c + 1L))
-        // Now we can safely do the method call without the handle being freed concurrently.
-        try {
-            return block(this.uniffiCloneHandle())
-        } finally {
-            // This decrement always matches the increment we performed above.
-            if (this.callCounter.decrementAndGet() == 0L) {
-                cleanable.clean()
-            }
-        }
-    }
-
-    // Use a static inner class instead of a closure so as not to accidentally
-    // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(private val handle: Long) : Runnable {
-        override fun run() {
-            if (handle == 0.toLong()) {
-                // Fake object created with `NoHandle`, don't try to free.
-                return;
-            }
-            uniffiRustCall { status ->
-                UniffiLib.uniffi_construct_core_fn_free_rusthealingqueue(handle, status)
-            }
-        }
-    }
-
-    /**
-     * @suppress
-     */
-    fun uniffiCloneHandle(): Long {
-        if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object");
-        }
-        return uniffiRustCall() { status ->
-            UniffiLib.uniffi_construct_core_fn_clone_rusthealingqueue(handle, status)
-        }
-    }
-
-    
-    /**
-     * `true` iff `msg_number == 0` — the only case eligible for healing.
-     */override fun `canHeal`(`msgNumber`: kotlin.UInt): kotlin.Boolean {
-            return FfiConverterBoolean.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_rusthealingqueue_can_heal(
-        it,
-        FfiConverterUInt.lower(`msgNumber`),_status)
-}
-    }
-    )
-    }
-    
-
-    
-    /**
-     * Enqueue `message_json` for `contact_id` (idempotent).
-     * Persistence is handled by the orchestrator CFE state export.
-     */override fun `enqueue`(`contactId`: kotlin.String, `messageJson`: kotlin.String)
-        = 
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_rusthealingqueue_enqueue(
-        it,
-        FfiConverterString.lower(`contactId`),FfiConverterString.lower(`messageJson`),_status)
-}
-    }
-    
-    
-
-    
-    /**
-     * Serialise the queue state to a CFE blob for Keychain persistence.
-     * Returns an empty sequence on serialisation failure.
-     */override fun `exportState`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_rusthealingqueue_export_state(
-        it,
-        _status)
-}
-    }
-    )
-    }
-    
-
-    
-    /**
-     * Restore queue state from a CFE blob produced by `export_state`.
-     * Silently no-ops on decode failure.
-     */override fun `importState`(`data`: List<kotlin.UByte>)
-        = 
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_rusthealingqueue_import_state(
-        it,
-        FfiConverterSequenceUByte.lower(`data`),_status)
-}
-    }
-    
-    
-
-    
-    /**
-     * Number of pending healing records.
-     */override fun `len`(): kotlin.ULong {
-            return FfiConverterULong.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_rusthealingqueue_len(
-        it,
-        _status)
-}
-    }
-    )
-    }
-    
-
-    
-    /**
-     * Remove expired healing records. Persistence handled by orchestrator CFE.
-     */override fun `pruneExpired`()
-        = 
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_rusthealingqueue_prune_expired(
-        it,
-        _status)
-}
-    }
-    
-    
-
-    
-    /**
-     * Increment attempt counter for `contact_id`.
-     */override fun `recordAttempt`(`contactId`: kotlin.String): HealingAttemptResult {
-            return FfiConverterTypeHealingAttemptResult.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_rusthealingqueue_record_attempt(
-        it,
-        FfiConverterString.lower(`contactId`),_status)
-}
-    }
-    )
-    }
-    
-
-    
-    /**
-     * Remove the healing record after successful re-key.
-     */override fun `removeRecord`(`contactId`: kotlin.String): kotlin.Boolean {
-            return FfiConverterBoolean.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_rusthealingqueue_remove_record(
-        it,
-        FfiConverterString.lower(`contactId`),_status)
-}
-    }
-    )
-    }
-    
-
-    
-
-    
-
-
-    
-    
-    /**
-     * @suppress
-     */
-    companion object
-    
-}
-
-
-/**
- * @suppress
- */
-public object FfiConverterTypeRustHealingQueue: FfiConverter<RustHealingQueue, Long> {
-    override fun lower(value: RustHealingQueue): Long {
-        return value.uniffiCloneHandle()
-    }
-
-    override fun lift(value: Long): RustHealingQueue {
-        return RustHealingQueue(UniffiWithHandle, value)
-    }
-
-    override fun read(buf: ByteBuffer): RustHealingQueue {
-        return lift(buf.getLong())
-    }
-
-    override fun allocationSize(value: RustHealingQueue) = 8UL
-
-    override fun write(value: RustHealingQueue, buf: ByteBuffer) {
-        buf.putLong(lower(value))
-    }
-}
-
-
-// This template implements a class for working with a Rust struct via a handle
-// to the live Rust struct on the other side of the FFI.
-//
-// There's some subtlety here, because we have to be careful not to operate on a Rust
-// struct after it has been dropped, and because we must expose a public API for freeing
-// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
-//
-//   * Each instance holds an opaque handle to the underlying Rust struct.
-//     Method calls need to read this handle from the object's state and pass it in to
-//     the Rust FFI.
-//
-//   * When an instance is no longer needed, its handle should be passed to a
-//     special destructor function provided by the Rust FFI, which will drop the
-//     underlying Rust struct.
-//
-//   * Given an instance, calling code is expected to call the special
-//     `destroy` method in order to free it after use, either by calling it explicitly
-//     or by using a higher-level helper like the `use` method. Failing to do so risks
-//     leaking the underlying Rust struct.
-//
-//   * We can't assume that calling code will do the right thing, and must be prepared
-//     to handle Kotlin method calls executing concurrently with or even after a call to
-//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
-//
-//   * We must never allow Rust code to operate on the underlying Rust struct after
-//     the destructor has been called, and must never call the destructor more than once.
-//     Doing so may trigger memory unsafety.
-//
-//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
-//     is implemented to call the destructor when the Kotlin object becomes unreachable.
-//     This is done in a background thread. This is not a panacea, and client code should be aware that
-//      1. the thread may starve if some there are objects that have poorly performing
-//     `drop` methods or do significant work in their `drop` methods.
-//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
-//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
-//
-// If we try to implement this with mutual exclusion on access to the handle, there is the
-// possibility of a race between a method call and a concurrent call to `destroy`:
-//
-//    * Thread A starts a method call, reads the value of the handle, but is interrupted
-//      before it can pass the handle over the FFI to Rust.
-//    * Thread B calls `destroy` and frees the underlying Rust struct.
-//    * Thread A resumes, passing the already-read handle value to Rust and triggering
-//      a use-after-free.
-//
-// One possible solution would be to use a `ReadWriteLock`, with each method call taking
-// a read lock (and thus allowed to run concurrently) and the special `destroy` method
-// taking a write lock (and thus blocking on live method calls). However, we aim not to
-// generate methods with any hidden blocking semantics, and a `destroy` method that might
-// block if called incorrectly seems to meet that bar.
-//
-// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
-// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
-// has been called. These are updated according to the following rules:
-//
-//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
-//      The initial value for the flag is false.
-//
-//    * At the start of each method call, we atomically check the counter.
-//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
-//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
-//
-//    * At the end of each method call, we atomically decrement and check the counter.
-//      If it has reached zero then we destroy the underlying Rust struct.
-//
-//    * When `destroy` is called, we atomically flip the flag from false to true.
-//      If the flag was already true we silently fail.
-//      Otherwise we atomically decrement and check the counter.
-//      If it has reached zero then we destroy the underlying Rust struct.
-//
-// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
-// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
-//
-// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
-// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
-// of the underlying Rust code.
-//
-// This makes a cleaner a better alternative to _not_ calling `destroy()` as
-// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
-// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
-// thread may be starved, and the app will leak memory.
-//
-// In this case, `destroy`ing manually may be a better solution.
-//
-// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
-// with Rust peers are reclaimed:
-//
-// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
-// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
-// 3. The memory is reclaimed when the process terminates.
-//
-// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
-//
-
-
-//
-/**
  * Thread-safe store for deferred PQXDH shared secrets.
  *
  * Replaces `pendingPQContributions: [String: [UInt8]] + NSLock` in PQCKeyManager.
@@ -6385,67 +5897,6 @@ public object FfiConverterTypeTrafficProtectionManager: FfiConverter<TrafficProt
 
 
 /**
- * Токены аутентификации (JWT)
- */
-data class AuthTokens (
-    /**
-     * Access token (JWT, живёт 1 час)
-     */
-    var `accessToken`: kotlin.String
-    , 
-    /**
-     * Refresh token (JWT, живёт 30 дней)
-     */
-    var `refreshToken`: kotlin.String
-    , 
-    /**
-     * Unix timestamp когда истекает access token
-     */
-    var `expiresAt`: kotlin.Long
-    , 
-    /**
-     * User ID (UUID)
-     */
-    var `userId`: kotlin.String
-    
-){
-    
-
-    
-    companion object
-}
-
-/**
- * @suppress
- */
-public object FfiConverterTypeAuthTokens: FfiConverterRustBuffer<AuthTokens> {
-    override fun read(buf: ByteBuffer): AuthTokens {
-        return AuthTokens(
-            FfiConverterString.read(buf),
-            FfiConverterString.read(buf),
-            FfiConverterLong.read(buf),
-            FfiConverterString.read(buf),
-        )
-    }
-
-    override fun allocationSize(value: AuthTokens) = (
-            FfiConverterString.allocationSize(value.`accessToken`) +
-            FfiConverterString.allocationSize(value.`refreshToken`) +
-            FfiConverterLong.allocationSize(value.`expiresAt`) +
-            FfiConverterString.allocationSize(value.`userId`)
-    )
-
-    override fun write(value: AuthTokens, buf: ByteBuffer) {
-            FfiConverterString.write(value.`accessToken`, buf)
-            FfiConverterString.write(value.`refreshToken`, buf)
-            FfiConverterLong.write(value.`expiresAt`, buf)
-            FfiConverterString.write(value.`userId`, buf)
-    }
-}
-
-
-
-/**
  * Binary first-message bundle for init_receiving_session — no JSON encoding.
  */
 data class BinaryFirstMessage (
@@ -6885,59 +6336,6 @@ public object FfiConverterTypeEphemeralKeyPair: FfiConverterRustBuffer<Ephemeral
     override fun write(value: EphemeralKeyPair, buf: ByteBuffer) {
             FfiConverterSequenceUByte.write(value.`secretKey`, buf)
             FfiConverterSequenceUByte.write(value.`publicKey`, buf)
-    }
-}
-
-
-
-/**
- * Packed result of `RustHealingQueue.record_attempt`.
- */
-data class HealingAttemptResult (
-    /**
-     * "retry_allowed" | "max_attempts_reached" | "not_found"
-     */
-    var `decision`: kotlin.String
-    , 
-    /**
-     * 1-based attempt number (valid when decision == "retry_allowed").
-     */
-    var `attempt`: kotlin.UInt
-    , 
-    /**
-     * Minimum delay before the next retry in ms (exponential backoff: 2s/4s/8s).
-     */
-    var `retryAfterMs`: kotlin.ULong
-    
-){
-    
-
-    
-    companion object
-}
-
-/**
- * @suppress
- */
-public object FfiConverterTypeHealingAttemptResult: FfiConverterRustBuffer<HealingAttemptResult> {
-    override fun read(buf: ByteBuffer): HealingAttemptResult {
-        return HealingAttemptResult(
-            FfiConverterString.read(buf),
-            FfiConverterUInt.read(buf),
-            FfiConverterULong.read(buf),
-        )
-    }
-
-    override fun allocationSize(value: HealingAttemptResult) = (
-            FfiConverterString.allocationSize(value.`decision`) +
-            FfiConverterUInt.allocationSize(value.`attempt`) +
-            FfiConverterULong.allocationSize(value.`retryAfterMs`)
-    )
-
-    override fun write(value: HealingAttemptResult, buf: ByteBuffer) {
-            FfiConverterString.write(value.`decision`, buf)
-            FfiConverterUInt.write(value.`attempt`, buf)
-            FfiConverterULong.write(value.`retryAfterMs`, buf)
     }
 }
 
@@ -8313,12 +7711,128 @@ sealed class CfeAction {
     }
     
     /**
+     * Our own SESSION_RESET_INIT to this device is unacknowledged, so neither heal nor tear
+     * down on the message that provoked this: buffer it and replay it when the wait ends.
+     */
+    data class HeldPendingAck(
+        val `contactId`: kotlin.String) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The heal budget allows this attempt; `attempt` is its 1-based index.
+     */
+    data class HealAttemptAllowed(
+        val `contactId`: kotlin.String, 
+        val `attempt`: kotlin.UInt) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The heal budget for this device is spent, or nothing is queued to spend it from — give up
+     * on the carrier and tear the ratchet down instead.
+     */
+    data class HealExhausted(
+        val `contactId`: kotlin.String) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
      * END_SESSION suppressed by cooldown — the core owes it and sends it in retry_after_ms.
      * Platform must NOT ACK.
      */
     data class EndSessionSuppressed(
         val `contactId`: kotlin.String, 
         val `retryAfterMs`: kotlin.ULong) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * A teardown was asked for and will not be sent, now or later — the peer tore this ratchet
+     * down itself. Nothing is owed; do NOT schedule a retry.
+     */
+    data class EndSessionNotNeeded(
+        val `contactId`: kotlin.String) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Open a session with `contact_id` now, as INITIATOR, and announce it (X3DH +
+     * SESSION_RESET_INIT) — not a bare local init.
+     */
+    data class OpenSession(
+        val `contactId`: kotlin.String) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Too soon to open: the peer tore this ratchet down and its rebuild may be in the same
+     * flush. The core arms the retry itself; do NOT schedule one.
+     */
+    data class OpenDeferred(
+        val `contactId`: kotlin.String, 
+        val `retryAfterMs`: kotlin.ULong) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The quiet passed and the session is already back — nothing to open.
+     */
+    data class OpenNotNeeded(
+        val `contactId`: kotlin.String) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Re-send the SESSION_RESET_INIT — unacknowledged for a retry interval, window not out.
+     * The core arms the next alarm; do NOT schedule one.
+     */
+    data class ResendSri(
+        val `contactId`: kotlin.String) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The confirm window ran out. Release what was held behind the opening, both directions.
+     */
+    data class OpeningGaveUp(
+        val `contactId`: kotlin.String) : CfeAction()
         
     {
         
@@ -8583,80 +8097,109 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            9 -> CfeAction.EndSessionSuppressed(
+            9 -> CfeAction.HeldPendingAck(
                 FfiConverterString.read(buf),
-                FfiConverterULong.read(buf),
                 )
-            10 -> CfeAction.MessageQueuedPendingInit(
+            10 -> CfeAction.HealAttemptAllowed(
                 FfiConverterString.read(buf),
                 FfiConverterUInt.read(buf),
                 )
-            11 -> CfeAction.SaveToSecureStore(
+            11 -> CfeAction.HealExhausted(
+                FfiConverterString.read(buf),
+                )
+            12 -> CfeAction.EndSessionSuppressed(
+                FfiConverterString.read(buf),
+                FfiConverterULong.read(buf),
+                )
+            13 -> CfeAction.EndSessionNotNeeded(
+                FfiConverterString.read(buf),
+                )
+            14 -> CfeAction.OpenSession(
+                FfiConverterString.read(buf),
+                )
+            15 -> CfeAction.OpenDeferred(
+                FfiConverterString.read(buf),
+                FfiConverterULong.read(buf),
+                )
+            16 -> CfeAction.OpenNotNeeded(
+                FfiConverterString.read(buf),
+                )
+            17 -> CfeAction.ResendSri(
+                FfiConverterString.read(buf),
+                )
+            18 -> CfeAction.OpeningGaveUp(
+                FfiConverterString.read(buf),
+                )
+            19 -> CfeAction.MessageQueuedPendingInit(
+                FfiConverterString.read(buf),
+                FfiConverterUInt.read(buf),
+                )
+            20 -> CfeAction.SaveToSecureStore(
                 FfiConverterTypeCfeSecureStoreSlot.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            12 -> CfeAction.PersistMessage(
+            21 -> CfeAction.PersistMessage(
                 FfiConverterString.read(buf),
                 )
-            13 -> CfeAction.PersistAck(
+            22 -> CfeAction.PersistAck(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            14 -> CfeAction.PruneAckStore(
+            23 -> CfeAction.PruneAckStore(
                 FfiConverterULong.read(buf),
                 )
-            15 -> CfeAction.MarkMessageDelivered(
+            24 -> CfeAction.MarkMessageDelivered(
                 FfiConverterString.read(buf),
                 )
-            16 -> CfeAction.FetchPublicKeyBundle(
+            25 -> CfeAction.FetchPublicKeyBundle(
                 FfiConverterString.read(buf),
                 )
-            17 -> CfeAction.SendEncryptedMessage(
+            26 -> CfeAction.SendEncryptedMessage(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterUByte.read(buf),
                 )
-            18 -> CfeAction.SendReceipt(
+            27 -> CfeAction.SendReceipt(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            19 -> CfeAction.SendEndSession(
+            28 -> CfeAction.SendEndSession(
                 FfiConverterString.read(buf),
                 )
-            20 -> CfeAction.NotifyNewMessage(
-                FfiConverterString.read(buf),
-                FfiConverterString.read(buf),
-                )
-            21 -> CfeAction.NotifySessionCreated(
-                FfiConverterString.read(buf),
-                )
-            22 -> CfeAction.NotifyError(
+            29 -> CfeAction.NotifyNewMessage(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            23 -> CfeAction.ScheduleTimer(
+            30 -> CfeAction.NotifySessionCreated(
+                FfiConverterString.read(buf),
+                )
+            31 -> CfeAction.NotifyError(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                )
+            32 -> CfeAction.ScheduleTimer(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            24 -> CfeAction.CancelTimer(
+            33 -> CfeAction.CancelTimer(
                 FfiConverterString.read(buf),
                 )
-            25 -> CfeAction.CallSignalDecrypted(
+            34 -> CfeAction.CallSignalDecrypted(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            26 -> CfeAction.CheckAckInDb(
+            35 -> CfeAction.CheckAckInDb(
                 FfiConverterString.read(buf),
                 )
-            27 -> CfeAction.SendHeartbeat(
+            36 -> CfeAction.SendHeartbeat(
                 FfiConverterString.read(buf),
                 )
-            28 -> CfeAction.NotifyLinkedDevicesOfSessionReset(
+            37 -> CfeAction.NotifyLinkedDevicesOfSessionReset(
                 FfiConverterString.read(buf),
                 )
-            29 -> CfeAction.SessionTerminated(
+            38 -> CfeAction.SessionTerminated(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
@@ -8729,12 +8272,77 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 + FfiConverterULong.allocationSize(value.`retryAfterMs`)
             )
         }
+        is CfeAction.HeldPendingAck -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
+        is CfeAction.HealAttemptAllowed -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+                + FfiConverterUInt.allocationSize(value.`attempt`)
+            )
+        }
+        is CfeAction.HealExhausted -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
         is CfeAction.EndSessionSuppressed -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
                 + FfiConverterString.allocationSize(value.`contactId`)
                 + FfiConverterULong.allocationSize(value.`retryAfterMs`)
+            )
+        }
+        is CfeAction.EndSessionNotNeeded -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
+        is CfeAction.OpenSession -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
+        is CfeAction.OpenDeferred -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+                + FfiConverterULong.allocationSize(value.`retryAfterMs`)
+            )
+        }
+        is CfeAction.OpenNotNeeded -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
+        is CfeAction.ResendSri -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
+        is CfeAction.OpeningGaveUp -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
             )
         }
         is CfeAction.MessageQueuedPendingInit -> {
@@ -8942,52 +8550,99 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterULong.write(value.`retryAfterMs`, buf)
                 Unit
             }
-            is CfeAction.EndSessionSuppressed -> {
+            is CfeAction.HeldPendingAck -> {
                 buf.putInt(9)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeAction.HealAttemptAllowed -> {
+                buf.putInt(10)
+                FfiConverterString.write(value.`contactId`, buf)
+                FfiConverterUInt.write(value.`attempt`, buf)
+                Unit
+            }
+            is CfeAction.HealExhausted -> {
+                buf.putInt(11)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeAction.EndSessionSuppressed -> {
+                buf.putInt(12)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterULong.write(value.`retryAfterMs`, buf)
                 Unit
             }
+            is CfeAction.EndSessionNotNeeded -> {
+                buf.putInt(13)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeAction.OpenSession -> {
+                buf.putInt(14)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeAction.OpenDeferred -> {
+                buf.putInt(15)
+                FfiConverterString.write(value.`contactId`, buf)
+                FfiConverterULong.write(value.`retryAfterMs`, buf)
+                Unit
+            }
+            is CfeAction.OpenNotNeeded -> {
+                buf.putInt(16)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeAction.ResendSri -> {
+                buf.putInt(17)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeAction.OpeningGaveUp -> {
+                buf.putInt(18)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
             is CfeAction.MessageQueuedPendingInit -> {
-                buf.putInt(10)
+                buf.putInt(19)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterUInt.write(value.`queuedCount`, buf)
                 Unit
             }
             is CfeAction.SaveToSecureStore -> {
-                buf.putInt(11)
+                buf.putInt(20)
                 FfiConverterTypeCfeSecureStoreSlot.write(value.`slot`, buf)
                 FfiConverterByteArray.write(value.`data`, buf)
                 Unit
             }
             is CfeAction.PersistMessage -> {
-                buf.putInt(12)
+                buf.putInt(21)
                 FfiConverterString.write(value.`messageJson`, buf)
                 Unit
             }
             is CfeAction.PersistAck -> {
-                buf.putInt(13)
+                buf.putInt(22)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterULong.write(value.`timestamp`, buf)
                 Unit
             }
             is CfeAction.PruneAckStore -> {
-                buf.putInt(14)
+                buf.putInt(23)
                 FfiConverterULong.write(value.`cutoffTs`, buf)
                 Unit
             }
             is CfeAction.MarkMessageDelivered -> {
-                buf.putInt(15)
+                buf.putInt(24)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.FetchPublicKeyBundle -> {
-                buf.putInt(16)
+                buf.putInt(25)
                 FfiConverterString.write(value.`userId`, buf)
                 Unit
             }
             is CfeAction.SendEncryptedMessage -> {
-                buf.putInt(17)
+                buf.putInt(26)
                 FfiConverterString.write(value.`to`, buf)
                 FfiConverterByteArray.write(value.`payload`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
@@ -8995,68 +8650,68 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 Unit
             }
             is CfeAction.SendReceipt -> {
-                buf.putInt(18)
+                buf.putInt(27)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterString.write(value.`status`, buf)
                 Unit
             }
             is CfeAction.SendEndSession -> {
-                buf.putInt(19)
+                buf.putInt(28)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyNewMessage -> {
-                buf.putInt(20)
+                buf.putInt(29)
                 FfiConverterString.write(value.`chatId`, buf)
                 FfiConverterString.write(value.`preview`, buf)
                 Unit
             }
             is CfeAction.NotifySessionCreated -> {
-                buf.putInt(21)
+                buf.putInt(30)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyError -> {
-                buf.putInt(22)
+                buf.putInt(31)
                 FfiConverterString.write(value.`code`, buf)
                 FfiConverterString.write(value.`message`, buf)
                 Unit
             }
             is CfeAction.ScheduleTimer -> {
-                buf.putInt(23)
+                buf.putInt(32)
                 FfiConverterString.write(value.`timerId`, buf)
                 FfiConverterULong.write(value.`delayMs`, buf)
                 Unit
             }
             is CfeAction.CancelTimer -> {
-                buf.putInt(24)
+                buf.putInt(33)
                 FfiConverterString.write(value.`timerId`, buf)
                 Unit
             }
             is CfeAction.CallSignalDecrypted -> {
-                buf.putInt(25)
+                buf.putInt(34)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`protoBytes`, buf)
                 Unit
             }
             is CfeAction.CheckAckInDb -> {
-                buf.putInt(26)
+                buf.putInt(35)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.SendHeartbeat -> {
-                buf.putInt(27)
+                buf.putInt(36)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyLinkedDevicesOfSessionReset -> {
-                buf.putInt(28)
+                buf.putInt(37)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.SessionTerminated -> {
-                buf.putInt(29)
+                buf.putInt(38)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterByteArray.write(value.`archiveBytes`, buf)
                 Unit
@@ -9201,13 +8856,82 @@ sealed class CfeIncomingEvent {
     
     /**
      * The platform is about to tear down the ratchet with `contact_id` and asks whether it may.
-     * Answered with `SendEndSession` or `EndSessionSuppressed` + `ScheduleTimer`, from the same
-     * window the core's own teardowns use. `peer_on_dead_session` is the platform's evidence
-     * that the previous teardown never landed.
+     * Answered with `SendEndSession`, `EndSessionSuppressed` + `ScheduleTimer`, or
+     * `EndSessionNotNeeded` — from the same window the core's own teardowns use. `cause` says
+     * what this teardown knows, which decides how soon it may go and whether the peer's own
+     * teardown silences it.
      */
     data class TeardownRequested(
         val `contactId`: kotlin.String, 
-        val `peerOnDeadSession`: kotlin.Boolean) : CfeIncomingEvent()
+        val `cause`: CfeTearDownCause) : CfeIncomingEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The peer tore down the ratchet with `contact_id` and the platform has applied it. A
+     * report, not a request: it opens the window that keeps our own teardown quiet, and returns
+     * no actions.
+     */
+    data class PeerToreDown(
+        val `contactId`: kotlin.String) : CfeIncomingEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The platform needs a session with `contact_id` and there is none — today, the INITIATOR
+     * re-init an inbound teardown raises. Answered with `OpenSession`, or `OpenDeferred` +
+     * `ScheduleTimer` while the peer's own rebuild may still be in the same flush.
+     */
+    data class ReopenRequested(
+        val `contactId`: kotlin.String) : CfeIncomingEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The platform is about to attempt one heal of `contact_id` and asks whether the budget
+     * allows it. Answered with `HealAttemptAllowed` or `HealExhausted` — never an empty list,
+     * because silence read as permission is an unbounded heal loop.
+     */
+    data class HealAttempted(
+        val `contactId`: kotlin.String) : CfeIncomingEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * A SESSION_RESET_INIT has gone out to `contact_id`. A report, not a request: it starts the
+     * confirm window and arms the retry the core owns.
+     */
+    data class SriAnnounced(
+        val `contactId`: kotlin.String) : CfeIncomingEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The peer acknowledged the session we opened with `contact_id` — `session_ready`, a ping,
+     * or its own init carrier on the ratchet we announced. Ends the confirm window.
+     */
+    data class PeerAcked(
+        val `contactId`: kotlin.String) : CfeIncomingEvent()
         
     {
         
@@ -9279,7 +9003,22 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 )
             13 -> CfeIncomingEvent.TeardownRequested(
                 FfiConverterString.read(buf),
-                FfiConverterBoolean.read(buf),
+                FfiConverterTypeCfeTearDownCause.read(buf),
+                )
+            14 -> CfeIncomingEvent.PeerToreDown(
+                FfiConverterString.read(buf),
+                )
+            15 -> CfeIncomingEvent.ReopenRequested(
+                FfiConverterString.read(buf),
+                )
+            16 -> CfeIncomingEvent.HealAttempted(
+                FfiConverterString.read(buf),
+                )
+            17 -> CfeIncomingEvent.SriAnnounced(
+                FfiConverterString.read(buf),
+                )
+            18 -> CfeIncomingEvent.PeerAcked(
+                FfiConverterString.read(buf),
                 )
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
@@ -9392,7 +9131,42 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
             (
                 4UL
                 + FfiConverterString.allocationSize(value.`contactId`)
-                + FfiConverterBoolean.allocationSize(value.`peerOnDeadSession`)
+                + FfiConverterTypeCfeTearDownCause.allocationSize(value.`cause`)
+            )
+        }
+        is CfeIncomingEvent.PeerToreDown -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
+        is CfeIncomingEvent.ReopenRequested -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
+        is CfeIncomingEvent.HealAttempted -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
+        is CfeIncomingEvent.SriAnnounced -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
+        is CfeIncomingEvent.PeerAcked -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
             )
         }
     }
@@ -9479,7 +9253,32 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
             is CfeIncomingEvent.TeardownRequested -> {
                 buf.putInt(13)
                 FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterBoolean.write(value.`peerOnDeadSession`, buf)
+                FfiConverterTypeCfeTearDownCause.write(value.`cause`, buf)
+                Unit
+            }
+            is CfeIncomingEvent.PeerToreDown -> {
+                buf.putInt(14)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeIncomingEvent.ReopenRequested -> {
+                buf.putInt(15)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeIncomingEvent.HealAttempted -> {
+                buf.putInt(16)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeIncomingEvent.SriAnnounced -> {
+                buf.putInt(17)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeIncomingEvent.PeerAcked -> {
+                buf.putInt(18)
+                FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
@@ -9662,6 +9461,52 @@ public object FfiConverterTypeCfeSecureStoreSlot : FfiConverterRustBuffer<CfeSec
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * Why a teardown is being asked for.
+ */
+
+enum class CfeTearDownCause {
+    
+    /**
+     * Nothing is known beyond "this ratchet will not open". The only cause the peer's own
+     * teardown silences: a blind teardown back tells it what it just told us.
+     */
+    BLIND,
+    /**
+     * A message arrived on a ratchet we no longer hold — proof the last teardown never landed.
+     * Buys the short retry window while the budget lasts, and is never silenced.
+     */
+    UNACKNOWLEDGED,
+    /**
+     * The teardown carries a reason the peer cannot work out for itself (today: the one-time
+     * pre-key we could not reproduce). Ordinary window, never silenced.
+     */
+    EXPLAINED;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCfeTearDownCause: FfiConverterRustBuffer<CfeTearDownCause> {
+    override fun read(buf: ByteBuffer) = try {
+        CfeTearDownCause.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: CfeTearDownCause) = 4UL
+
+    override fun write(value: CfeTearDownCause, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 

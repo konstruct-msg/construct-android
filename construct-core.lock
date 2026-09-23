@@ -8,7 +8,7 @@
 # The value is the stamp the library carries in its own .rodata, readable after the file has been
 # copied anywhere and the README left behind:
 #
-#     strings -a libconstruct_core.so | grep -o 'CONSTRUCT_CORE_VERSION=.*'
+#     strings -a libconstruct_core.so | grep -o -m1 'CONSTRUCT_CORE_VERSION=.*'
 #
 # ./build_crypto_lib.sh rewrites this line from the libraries it just built, so moving to a new
 # core shows up here as a diff someone has to approve — which is the point. Take the .so and the
@@ -16,4 +16,4 @@
 # loads, and a mismatched pair does not fail at the call, it fails at start-up.
 #
 # Ready-made builds: https://github.com/konstruct-msg/construct-core/releases/download/latest/construct-core-android.tar.gz
-CONSTRUCT_CORE_VERSION=0.17.1+7ba8366ce6a1
+CONSTRUCT_CORE_VERSION=0.17.3+c943f55c44b5

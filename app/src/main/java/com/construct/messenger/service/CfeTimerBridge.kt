@@ -116,6 +116,12 @@ class CfeTimerBridge @Inject constructor(
                 is CfeAction.HealSuppressed,
                 is CfeAction.EndSessionSuppressed,
                 is CfeAction.MessageQueuedPendingInit,
+                is CfeAction.HeldPendingAck,
+                // Answers to `HealAttempted`, which this client does not ask yet — its heal path
+                // has no retry budget of its own to replace. Listed so the exhaustive `when`
+                // keeps compiling and so the omission is visible rather than silent.
+                is CfeAction.HealAttemptAllowed,
+                is CfeAction.HealExhausted,
                 -> Log.i(TAG, "CFE deferred action ${action::class.simpleName}")
                 is CfeAction.FetchPublicKeyBundle,
                 is CfeAction.CheckAckInDb,
