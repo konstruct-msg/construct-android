@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
@@ -99,6 +100,8 @@ private fun OnboardingContent(
         modifier = Modifier
             .fillMaxSize()
             .background(CTColor.bg)
+            // Edge-to-edge: the last line under CREATE IDENTITY was drawn under the navigation bar.
+            .systemBarsPadding()
             .padding(horizontal = 28.dp, vertical = 36.dp)
     ) {
         when (val step = uiState.step) {

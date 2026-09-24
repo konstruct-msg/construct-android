@@ -3,6 +3,7 @@ package com.construct.messenger.ui.screens.main
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Groups
@@ -79,6 +80,9 @@ fun MainTabView(
         Box(
             modifier = Modifier
                 .padding(padding)
+                // Marks the bars the Scaffold just padded as used, so a tab screen's own
+                // statusBarsPadding (needed when it is shown outside the tabs) adds nothing here.
+                .consumeWindowInsets(padding)
                 .background(CTColor.bg)
         ) {
             when (selectedTab) {

@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.ui.components.CTNavBar
@@ -41,12 +40,12 @@ fun ChatScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(CTColor.bg)
-            // Edge-to-edge (MainActivity): without this the composer is laid out under the
-            // opaque navigation bar and cannot be seen. Before imePadding, which then pads only
-            // what the keyboard adds beyond the bar.
+            // Edge-to-edge (MainActivity): without these the title sits under the status bar and
+            // the composer under the opaque navigation bar. navigationBars before imePadding,
+            // which then pads only what the keyboard adds beyond the bar.
+            .statusBarsPadding()
             .navigationBarsPadding()
             .imePadding()
-            .padding(top = 24.dp)
     ) {
         CTNavBar(
             title = uiState.title,
