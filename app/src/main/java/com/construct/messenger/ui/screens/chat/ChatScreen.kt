@@ -3,7 +3,9 @@ package com.construct.messenger.ui.screens.chat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -39,6 +41,10 @@ fun ChatScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(CTColor.bg)
+            // Edge-to-edge (MainActivity): without this the composer is laid out under the
+            // opaque navigation bar and cannot be seen. Before imePadding, which then pads only
+            // what the keyboard adds beyond the bar.
+            .navigationBarsPadding()
             .imePadding()
             .padding(top = 24.dp)
     ) {
@@ -50,8 +56,8 @@ fun ChatScreen(
 
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .weight(1f),
+                .weight(1f)
+                .fillMaxWidth(),
             state = listState,
         ) {
             items(uiState.messages, key = { it.id }) { message ->
