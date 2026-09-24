@@ -38,19 +38,29 @@ class ResponderInitUseCase @Inject constructor(
 
     data class Result(val contactId: String, val messageId: String, val plaintext: ByteArray)
 
+    sealed interface Outcome {
+        data class Established(val result: Result) : Outcome
+        /** Every candidate refused this init. Re-delivery cannot change that — the carrier is
+         * dead, and holding it keeps it first in line on every start. */
+        data object Failed : Outcome
+        /** Not tried (another init in flight, core not ready, bundles unreachable) — a later
+         * delivery may succeed. */
+        data object NotAttempted : Outcome
+    }
+
     suspend fun establish(
         incoming: MessageRouter.IncomingMessage,
         preferredDeviceId: String? = null,
-    ): Result? {
+    ): Outcome {
         val accountId = incoming.senderId
         if (!inFlight.add(accountId)) {
             Log.i(TAG, "init already in flight ${accountId.take(8)}…")
-            return null
+            return Outcome.NotAttempted
         }
         return try {
-            if (!cryptoManager.isMessagingReady) return null
+            if (!cryptoManager.isMessagingReady) return Outcome.NotAttempted
             val discovered = sessionManager.discoverPeerBundles(accountId)
-            if (discovered.isEmpty()) return null
+            if (discovered.isEmpty()) return Outcome.NotAttempted
             val candidates = if (preferredDeviceId != null && IdentityIds.isCryptoDeviceId(preferredDeviceId)) {
                 discovered.sortedBy { if (it.deviceId == preferredDeviceId) 0 else 1 }
             } else {
@@ -109,13 +119,24 @@ class ResponderInitUseCase @Inject constructor(
                         "attempt=${attempt.bundleIndex + 1u}/${candidates.size} " +
                         "knst=${IncomingPlaintext.isKnst(plaintext)}",
                 )
-                return Result(candidate.deviceId, incoming.messageId, plaintext)
+                return Outcome.Established(Result(candidate.deviceId, incoming.messageId, plaintext))
             }
             Log.w(TAG, "RESPONDER candidates exhausted for ${accountId.take(8)}…")
-            null
+            // Nothing else will move this init: the sender keeps its session and the messages
+            // queued behind it wait forever. END_SESSION makes the sender re-init against the
+            // bundle it fetches now. Canon: iOS SessionCoordinator init-failure path.
+            // Only to a device known to be the sender — a guess would reset the peer's other,
+            // healthy devices. The per-device cooldown in sendEndSession bounds repeats.
+            val sender = preferredDeviceId?.takeIf { id -> candidates.any { it.deviceId == id } }
+                ?: candidates.singleOrNull()?.deviceId
+            if (sender != null) {
+                runCatching { sessionControl.sendEndSession(sender) }
+                    .onFailure { Log.w(TAG, "END_SESSION after failed init ${sender.take(8)}…", it) }
+            }
+            Outcome.Failed
         } catch (e: Exception) {
             Log.e(TAG, "RESPONDER init failed ${accountId.take(8)}…", e)
-            null
+            Outcome.NotAttempted
         } finally {
             inFlight.remove(accountId)
         }

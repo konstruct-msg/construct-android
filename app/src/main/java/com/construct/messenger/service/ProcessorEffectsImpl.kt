@@ -175,8 +175,15 @@ class ProcessorEffectsImpl @Inject constructor(
 
     override suspend fun requestKeyBundle(userId: String, incoming: MessageRouter.IncomingMessage) {
         val preferredDeviceId = userId.takeIf { com.construct.messenger.data.model.IdentityIds.isCryptoDeviceId(it) }
-        val result = responderInit.establish(incoming, preferredDeviceId) ?: return
-        onDecrypted(result.contactId, result.messageId, result.plaintext)
+        when (val outcome = responderInit.establish(incoming, preferredDeviceId)) {
+            is ResponderInitUseCase.Outcome.Established ->
+                outcome.result.let { onDecrypted(it.contactId, it.messageId, it.plaintext) }
+            // Lost, as on iOS: marking it processed lets its next delivery be ACKed instead of
+            // failing again first in line and keeping everything behind it queued. The sender
+            // re-inits on the END_SESSION establish() has already sent.
+            ResponderInitUseCase.Outcome.Failed -> markProcessed(incoming.messageId, incoming.senderId)
+            ResponderInitUseCase.Outcome.NotAttempted -> Unit
+        }
     }
 
     override fun isAckedInDb(messageId: String): Boolean = ackStore.isProcessed(messageId)
