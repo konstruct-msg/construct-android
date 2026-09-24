@@ -1784,6 +1784,22 @@ ciphertext through the ordinary identified/sealed message path. No Kotlin routin
 no legacy string or dual-send are permitted. Inbound PING/READY are already non-renderable;
 their explicit confirmation/watchdog state transitions remain open work.
 
+### One-time prekey privates survive the process — MANDATORY
+
+The core holds OTPK privates in memory only, and `exportPrivateKeys()` does not include them.
+Android lost every one on each restart until 2026-09-24 (`construct-android@914892f`), and the
+next peer's X3DH failed with `OTPK id=… not found — sender used 4-DH but we cannot reproduce it`.
+Same rules as iOS (`crypto_otpks`, `OtpkReplenishmentService.persistOtpks`):
+
+1. **Persist before upload.** `exportOneTimePrekeys()` → `KeystoreManager.saveOneTimePrekeys`
+   (synchronous `commit()`) after generating and *before* `UploadPreKeys`. Once public, a key
+   may be used at any moment.
+2. **Import before `setLocalUserId`** on login and session restore — the bootstrap core's OTPKs
+   are carried into the orchestrator there. An undecodable blob is deleted, not ignored.
+3. **Nothing persisted → replace the server pool** (`replace_existing = true`), never append:
+   an append leaves the unanswerable keys in circulation.
+4. **Re-persist after a responder init consumes a key.**
+
 ### Control-plane storm hardening (END_SESSION / SESSION_RESET_INIT) — MANDATORY
 
 iOS shipped these protections 2026-07-16/17 after a production desync storm (one OTPK
