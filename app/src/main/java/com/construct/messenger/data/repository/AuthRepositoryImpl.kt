@@ -17,6 +17,8 @@ import com.construct.messenger.service.MessagingRuntime
 import com.construct.messenger.service.MessagingForegroundService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import shared.proto.services.v1.AuthServiceOuterClass.LogoutRequest
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,7 +48,17 @@ class AuthRepositoryImpl @Inject constructor(
     )
     override val authState: StateFlow<AuthState> = mutableAuthState.asStateFlow()
 
-    override suspend fun initializeIdentity(username: String?, onStep: (RegistrationStep) -> Unit) {
+    /**
+     * Runs to the end even if the caller is cancelled. [RegisterUseCase] reports
+     * [RegistrationStep.Complete] before its prekey upload finishes (iOS canon), so the user can
+     * leave onboarding — clearing the caller's viewModelScope — while this is still running.
+     * Cancelled there, the device was registered with no one-time prekeys and no
+     * [MessagingForegroundService] until the next cold start (seen on a device, 2026-09-24).
+     */
+    override suspend fun initializeIdentity(
+        username: String?,
+        onStep: (RegistrationStep) -> Unit,
+    ) = withContext(NonCancellable) {
         val existingDeviceId = keystoreManager.getDeviceId()
         val savedPrivateKeys = keystoreManager.getPrivateKeys()
 
