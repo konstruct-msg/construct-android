@@ -1,10 +1,7 @@
 package com.construct.messenger.data.api
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.os.SystemClock
 import android.util.Log
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.min
@@ -56,8 +53,8 @@ import shared.proto.signaling.v1.Presence.TypingIndicator
  */
 @Singleton
 class MessageStreamService @Inject constructor(
-    @ApplicationContext context: Context,
     private val grpcClient: GrpcClient,
+    private val cursorTracker: StreamCursorTracker,
 ) {
     sealed interface StreamEvent {
         data class Message(val envelope: Envelope) : StreamEvent
@@ -66,9 +63,6 @@ class MessageStreamService @Inject constructor(
         data class Connected(val attempt: Int) : StreamEvent
         data class Disconnected(val cause: Throwable?) : StreamEvent
     }
-
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
 
     private val _events = MutableSharedFlow<StreamEvent>(
         extraBufferCapacity = 256,
@@ -148,6 +142,9 @@ class MessageStreamService @Inject constructor(
         // NAT mapping swallows the traffic and no RST ever arrives. Without this the stream sat
         // on such a socket indefinitely (seen on a RU network, 2026-09-24). Canon: iOS
         // heartbeat watchdog, NetworkTiming.swift ("heartbeatInterval × multiplier = ~60s").
+        // A new connection replays from the committed cursor; whatever was tracked on the last one
+        // is re-tracked from that replay.
+        cursorTracker.reset()
         var lastInboundAt = SystemClock.elapsedRealtime()
         try {
             coroutineScope {
@@ -181,8 +178,15 @@ class MessageStreamService @Inject constructor(
             })
             .collect { response ->
                 onInbound()
-                if (response.hasStreamCursor()) {
-                    prefs.edit().putString(KEY_CURSOR, response.streamCursor).apply()
+                // Never committed here: the cursor tells the server what it may delete, so it
+                // moves only when the message reaches a durable end (StreamCursorTracker).
+                val cursor = response.streamCursor.takeIf { response.hasStreamCursor() && it.isNotEmpty() }
+                if (cursor != null) {
+                    if (response.hasMessage()) {
+                        cursorTracker.track(response.message.messageId, cursor)
+                    } else {
+                        cursorTracker.trackResolved(cursor)
+                    }
                 }
                 when {
                     response.hasMessage() -> _events.tryEmit(StreamEvent.Message(response.message))
@@ -201,7 +205,7 @@ class MessageStreamService @Inject constructor(
         val builder = SubscribeRequest.newBuilder()
             .addAllConversationIds(subscriptions.value)
             .setIncludePresence(true)
-        prefs.getString(KEY_CURSOR, null)?.let(builder::setSinceCursor)
+        cursorTracker.committedCursor()?.let(builder::setSinceCursor)
         return MessageStreamRequest.newBuilder().setSubscribe(builder).build()
     }
 
@@ -210,8 +214,6 @@ class MessageStreamService @Inject constructor(
 
     private companion object {
         const val TAG = "MessageStream"
-        const val PREFS_FILE_NAME = "message_stream_prefs"
-        const val KEY_CURSOR = "since_cursor"
         const val HEARTBEAT_INTERVAL_MS = 25_000L
         const val STALE_AFTER_MS = 60_000L
         const val WATCHDOG_CHECK_MS = 5_000L

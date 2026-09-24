@@ -4,6 +4,7 @@ import android.util.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.MessageStreamService
 import com.construct.messenger.data.api.MessagingService
+import com.construct.messenger.data.api.StreamCursorTracker
 import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
@@ -71,6 +72,7 @@ class MessagingRuntime @Inject constructor(
     private val blindTokens: BlindTokenService,
     private val rotateSignedPreKey: RotateSignedPreKeyUseCase,
     private val timerBridge: CfeTimerBridge,
+    private val cursorTracker: StreamCursorTracker,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val startMutex = Mutex()
@@ -167,7 +169,12 @@ class MessagingRuntime @Inject constructor(
 
     private suspend fun drainPending() {
         runCatching {
-            val response = messagingService.getPendingMessages()
+            // From the committed cursor, one page, and nothing committed from the answer: the
+            // server trims up to the cursor it is sent, and a page boundary says nothing about
+            // which of the page's messages reached a durable end. The stream's replay from the
+            // same cursor re-delivers these entries and advances over them properly.
+            // Canon: iOS BackgroundFetchManager.
+            val response = messagingService.getPendingMessages(sinceCursor = cursorTracker.committedCursor())
             for (pending in response.messagesList) {
                 router.ingest(pending.toEnvelope())
             }
@@ -180,11 +187,15 @@ class MessagingRuntime @Inject constructor(
     private suspend fun collectRouted() {
         router.routed.collect { event ->
             when (event) {
+                // A throw leaves the entry pending: the cursor stalls and the server re-delivers,
+                // which is safe. Advancing on a failure would be the loss the tracker prevents.
                 is MessageRouter.RoutedEvent.Incoming ->
                     runCatching { processor.process(event.message) }
+                        .onSuccess { reportCursor(event.message.messageId, it) }
                         .onFailure { Log.e(TAG, "process incoming failed", it) }
                 is MessageRouter.RoutedEvent.Control ->
                     runCatching { handleControl(event.message) }
+                        .onSuccess { reportCursor(event.message.messageId, it) }
                         .onFailure { Log.e(TAG, "process control failed", it) }
                 is MessageRouter.RoutedEvent.Receipt -> {
                     val ids = if (event.receipt.hasDirect()) {
@@ -205,11 +216,12 @@ class MessagingRuntime @Inject constructor(
         }
     }
 
-    private suspend fun handleControl(message: MessageRouter.IncomingMessage) {
+    private suspend fun handleControl(message: MessageRouter.IncomingMessage): ProcessingOutcome =
         when (message.contentType) {
             ContentType.CONTENT_TYPE_SESSION_RESET -> {
                 sessionControl.inboundEndSession(message.senderId)
                 ackStore.markProcessed(message.messageId, message.senderId)
+                ProcessingOutcome.Acked
             }
             ContentType.CONTENT_TYPE_SESSION_RESET_INIT,
             ContentType.CONTENT_TYPE_KEY_EXCHANGE,
@@ -218,7 +230,20 @@ class MessagingRuntime @Inject constructor(
             else -> {
                 Log.d(TAG, "control ${message.contentType} ${message.messageId.take(8)}… — acked, not rendered")
                 ackStore.markProcessed(message.messageId, message.senderId)
+                ProcessingOutcome.Acked
             }
+        }
+
+    private fun reportCursor(messageId: String, outcome: ProcessingOutcome) {
+        cursorTracker.report(
+            messageId,
+            when (outcome) {
+                ProcessingOutcome.Processed, ProcessingOutcome.Acked -> StreamCursorTracker.Outcome.Durable
+                ProcessingOutcome.Deferred -> StreamCursorTracker.Outcome.Deferred
+            },
+        )
+        if (outcome == ProcessingOutcome.Deferred) {
+            cursorTracker.headBlocker()?.let { Log.i(TAG, "cursor held by $it") }
         }
     }
 
