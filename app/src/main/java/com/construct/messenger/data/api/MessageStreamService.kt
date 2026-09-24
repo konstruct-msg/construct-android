@@ -2,6 +2,7 @@ package com.construct.messenger.data.api
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.SystemClock
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -10,7 +11,9 @@ import kotlin.math.min
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -140,30 +143,59 @@ class MessageStreamService @Inject constructor(
             }
         }
 
+        // Every heartbeat is answered, so a stream with no inbound frame for STALE_AFTER_MS is
+        // dead even though TCP still calls it established — a censoring middlebox or a dropped
+        // NAT mapping swallows the traffic and no RST ever arrives. Without this the stream sat
+        // on such a socket indefinitely (seen on a RU network, 2026-09-24). Canon: iOS
+        // heartbeat watchdog, NetworkTiming.swift ("heartbeatInterval × multiplier = ~60s").
+        var lastInboundAt = SystemClock.elapsedRealtime()
         try {
-            grpcClient.messaging
-                .messageStream(outbound.onSubscription {
-                    _isConnected.value = true
-                    _events.tryEmit(StreamEvent.Connected(attempt))
-                    Log.i(TAG, "stream connected (attempt $attempt)")
-                })
-                .collect { response ->
-                    if (response.hasStreamCursor()) {
-                        prefs.edit().putString(KEY_CURSOR, response.streamCursor).apply()
-                    }
-                    when {
-                        response.hasMessage() -> _events.tryEmit(StreamEvent.Message(response.message))
-                        response.hasReceipt() -> _events.tryEmit(StreamEvent.Receipt(response.receipt))
-                        response.hasTyping() -> _events.tryEmit(StreamEvent.Typing(response.typing))
-                        // acks/errors/presence: no consumer yet — extend StreamEvent when needed.
-                        else -> Log.d(TAG, "unhandled stream frame: ${response.responseCase}")
+            coroutineScope {
+                launch {
+                    while (isActive) {
+                        delay(WATCHDOG_CHECK_MS)
+                        val silentMs = SystemClock.elapsedRealtime() - lastInboundAt
+                        if (silentMs > STALE_AFTER_MS) throw StaleStreamException(silentMs)
                     }
                 }
+                collectStream(outbound, attempt) { lastInboundAt = SystemClock.elapsedRealtime() }
+                // The server ended the call cleanly; stop the watchdog so this scope can return.
+                coroutineContext.cancelChildren()
+            }
         } finally {
             heartbeatJob.cancel()
             _isConnected.value = false
         }
     }
+
+    private suspend fun collectStream(
+        outbound: MutableSharedFlow<MessageStreamRequest>,
+        attempt: Int,
+        onInbound: () -> Unit,
+    ) {
+        grpcClient.messaging
+            .messageStream(outbound.onSubscription {
+                _isConnected.value = true
+                _events.tryEmit(StreamEvent.Connected(attempt))
+                Log.i(TAG, "stream connected (attempt $attempt)")
+            })
+            .collect { response ->
+                onInbound()
+                if (response.hasStreamCursor()) {
+                    prefs.edit().putString(KEY_CURSOR, response.streamCursor).apply()
+                }
+                when {
+                    response.hasMessage() -> _events.tryEmit(StreamEvent.Message(response.message))
+                    response.hasReceipt() -> _events.tryEmit(StreamEvent.Receipt(response.receipt))
+                    response.hasTyping() -> _events.tryEmit(StreamEvent.Typing(response.typing))
+                    // acks/errors/presence: no consumer yet — extend StreamEvent when needed.
+                    else -> Log.d(TAG, "unhandled stream frame: ${response.responseCase}")
+                }
+            }
+    }
+
+    private class StaleStreamException(silentMs: Long) :
+        java.io.IOException("no inbound frame for ${silentMs / 1000}s — treating stream as dead")
 
     private fun subscribeFrame(): MessageStreamRequest {
         val builder = SubscribeRequest.newBuilder()
@@ -181,6 +213,8 @@ class MessageStreamService @Inject constructor(
         const val PREFS_FILE_NAME = "message_stream_prefs"
         const val KEY_CURSOR = "since_cursor"
         const val HEARTBEAT_INTERVAL_MS = 25_000L
+        const val STALE_AFTER_MS = 60_000L
+        const val WATCHDOG_CHECK_MS = 5_000L
         const val INITIAL_BACKOFF_MS = 1_000L
         const val MAX_BACKOFF_MS = 30_000L
     }
