@@ -13,6 +13,7 @@ import com.construct.messenger.domain.usecase.LoginUseCase
 import com.construct.messenger.domain.usecase.RegisterUseCase
 import com.construct.messenger.domain.usecase.RegistrationStep
 import com.construct.messenger.domain.usecase.SessionControlUseCase
+import com.construct.messenger.domain.usecase.restoreOneTimePrekeys
 import com.construct.messenger.service.MessagingRuntime
 import com.construct.messenger.service.MessagingForegroundService
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -130,6 +131,7 @@ class AuthRepositoryImpl @Inject constructor(
         val userId = authSession.userId ?: keystoreManager.getUserId()
             ?: error("session loaded but userId is missing")
         cryptoManager.loadOrCreate(savedPrivateKeys)
+        restoreOneTimePrekeys(cryptoManager, keystoreManager)
         cryptoManager.setLocalUserId(userId)
     }
 

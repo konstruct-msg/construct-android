@@ -27,6 +27,7 @@ class LoginUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(deviceId: String, savedPrivateKeys: ByteArray): AuthTokensResponse {
         cryptoManager.loadOrCreate(savedPrivateKeys)
+        restoreOneTimePrekeys(cryptoManager, keystoreManager)
 
         val timestamp = System.currentTimeMillis() / 1000
         val signature = cryptoManager.signWithDeviceKey("$deviceId$timestamp")

@@ -91,8 +91,27 @@ class KeystoreManager @Inject constructor(
     fun getPrivateKeys(): ByteArray? =
         prefs.getString(KEY_PRIVATE_KEYS, null)?.let { Base64.decode(it, Base64.NO_WRAP) }
 
+    /**
+     * Persists [CryptoManager.exportOneTimePrekeys][com.construct.messenger.crypto.CryptoManager.exportOneTimePrekeys]
+     * — the OTPK privates, which [savePrivateKeys] does not include. Same storage envelope.
+     * `commit()`, not `apply()`: callers upload the public halves right after, and a private
+     * lost to a crash after that upload is exactly the defect this storage exists to prevent.
+     */
+    fun saveOneTimePrekeys(bytes: ByteArray) {
+        prefs.edit().putString(KEY_OTPKS, Base64.encodeToString(bytes, Base64.NO_WRAP)).commit()
+    }
+
+    /** `null` = never persisted (fresh install, or a build before this storage existed). */
+    fun getOneTimePrekeys(): ByteArray? =
+        prefs.getString(KEY_OTPKS, null)?.let { Base64.decode(it, Base64.NO_WRAP) }
+
+    fun clearOneTimePrekeys() {
+        prefs.edit().remove(KEY_OTPKS).commit()
+    }
+
     private companion object {
         const val PREFS_FILE_NAME = "construct_auth_prefs"
+        const val KEY_OTPKS = "one_time_prekeys_cfe"
         const val KEY_ACCESS_TOKEN = "access_token"
         const val KEY_REFRESH_TOKEN = "refresh_token"
         const val KEY_USER_ID = "user_id"

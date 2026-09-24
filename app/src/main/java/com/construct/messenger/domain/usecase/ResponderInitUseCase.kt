@@ -94,6 +94,9 @@ class ResponderInitUseCase @Inject constructor(
                     )
                     sessionStateStore.saveCfeActions(completed)
                 }
+                // The init consumed an OTPK; drop its private from storage too.
+                runCatching { uploadPreKeys.persistLocal() }
+                    .onFailure { Log.w(TAG, "OTPK persist after init failed", it) }
                 keystoreManager.getDeviceId()?.let { deviceId ->
                     runCatching { uploadPreKeys.replenishIfNeeded(deviceId) }
                 }

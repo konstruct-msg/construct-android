@@ -153,6 +153,23 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
             ?: requireBootstrap().generateOneTimePrekeys(count.toUInt())
     }
 
+    /**
+     * Every OTPK private the core holds (CFE binary). Persisted after each generation and
+     * consumption — the core keeps them in memory only, and a restart without them leaves
+     * the server handing out public halves this device can no longer answer.
+     * **Canon:** iOS `OtpkReplenishmentService.persistOtpks`.
+     */
+    fun exportOneTimePrekeys(): ByteArray = synchronized(coreLock) {
+        (orchestrator?.exportOneTimePrekeys() ?: requireBootstrap().exportOneTimePrekeys()).toByteArray()
+    }
+
+    /** Restores [exportOneTimePrekeys] output. Call before [setLocalUserId] on a restored
+     * identity: the bootstrap core's OTPKs are carried into the orchestrator there. */
+    fun importOneTimePrekeys(bytes: ByteArray) = synchronized(coreLock) {
+        val list = bytes.toUByteList()
+        orchestrator?.importOneTimePrekeys(list) ?: requireBootstrap().importOneTimePrekeys(list)
+    }
+
     /** Whether this build supports SuiteID::PQ_RATCHET (suite 3) — declared on prekey upload. */
     fun supportsPqRatchet(): Boolean = uniffi.construct_core.supportsPqRatchet()
 

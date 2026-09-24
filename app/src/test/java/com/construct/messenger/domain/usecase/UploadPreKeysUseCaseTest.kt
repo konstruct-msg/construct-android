@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
+import com.construct.messenger.data.local.KeystoreManager
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 
@@ -13,6 +14,7 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -33,6 +35,7 @@ class UploadPreKeysUseCaseTest {
     private val context: Context = mock()
     private val prefs: SharedPreferences = mock()
     private val prefsEditor: SharedPreferences.Editor = mock()
+    private val keystoreManager: KeystoreManager = mock()
 
     private lateinit var useCase: UploadPreKeysUseCase
 
@@ -42,7 +45,10 @@ class UploadPreKeysUseCaseTest {
         whenever(context.getSharedPreferences(any(), any())).thenReturn(prefs)
         whenever(prefs.edit()).thenReturn(prefsEditor)
         whenever(prefsEditor.putBoolean(any(), any())).thenReturn(prefsEditor)
-        useCase = UploadPreKeysUseCase(context, cryptoManager, grpcClient)
+        // Default: privates are persisted, so replenishIfNeeded takes the count-check path.
+        whenever(keystoreManager.getOneTimePrekeys()).thenReturn(byteArrayOf(1))
+        whenever(cryptoManager.exportOneTimePrekeys()).thenReturn(byteArrayOf(2))
+        useCase = UploadPreKeysUseCase(context, cryptoManager, grpcClient, keystoreManager)
     }
 
     // ── invoke (direct upload) ─────────────────────────────────────────────
@@ -195,5 +201,42 @@ class UploadPreKeysUseCaseTest {
         val result = useCase.replenishIfNeeded("device-1")
 
         assertTrue(result is UploadPreKeysResult.Failed)
+    }
+
+    // ── OTPK persistence ──────────────────────────────────────────────────
+
+    @Test
+    fun invoke_persistsPrivatesBeforeUploadingPublics() = runTest {
+        whenever(cryptoManager.generateOneTimePrekeys(any())).thenReturn(
+            listOf(OtpkPair(keyId = 1u, publicKey = listOf(1u))),
+        )
+        whenever(keyStub.uploadPreKeys(any(), any())).thenReturn(
+            UploadPreKeysResponse.newBuilder().setSuccess(true).build(),
+        )
+
+        useCase("device-1", count = 1)
+
+        inOrder(keystoreManager, keyStub) {
+            verify(keystoreManager).saveOneTimePrekeys(any())
+            verify(keyStub).uploadPreKeys(any(), any())
+        }
+    }
+
+    @Test
+    fun replenishIfNeeded_replacesServerPool_whenNoPrivatesPersisted() = runTest {
+        whenever(keystoreManager.getOneTimePrekeys()).thenReturn(null)
+        whenever(cryptoManager.generateOneTimePrekeys(any())).thenReturn(
+            listOf(OtpkPair(keyId = 1u, publicKey = listOf(1u))),
+        )
+        whenever(keyStub.uploadPreKeys(any(), any())).thenReturn(
+            UploadPreKeysResponse.newBuilder().setSuccess(true).build(),
+        )
+
+        useCase.replenishIfNeeded("device-1")
+
+        val captor = argumentCaptor<UploadPreKeysRequest>()
+        verify(keyStub).uploadPreKeys(captor.capture(), any())
+        assertTrue(captor.firstValue.replaceExisting)
+        verify(keyStub, never()).getPreKeyCount(any(), any())
     }
 }

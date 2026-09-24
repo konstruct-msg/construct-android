@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.util.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
+import com.construct.messenger.data.local.KeystoreManager
 import com.google.protobuf.ByteString
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -38,6 +39,7 @@ class UploadPreKeysUseCase @Inject constructor(
     @ApplicationContext context: Context,
     private val cryptoManager: CryptoManager,
     private val grpcClient: GrpcClient,
+    private val keystoreManager: KeystoreManager,
 ) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
@@ -57,6 +59,9 @@ class UploadPreKeysUseCase @Inject constructor(
     ): UploadPreKeysResult {
         return try {
             val otpks = cryptoManager.generateOneTimePrekeys(count)
+            // Privates first: once the public halves are on the server, a peer may use one at
+            // any moment, and a restart must still find the private to answer it.
+            persistLocal()
             val supportsPqRatchet = cryptoManager.supportsPqRatchet()
             val request = UploadPreKeysRequest.newBuilder()
                 .setDeviceId(deviceId)
@@ -98,6 +103,14 @@ class UploadPreKeysUseCase @Inject constructor(
         minThreshold: Int = RECOMMENDED_MINIMUM,
         batchSize: Int = DEFAULT_BATCH_SIZE,
     ): UploadPreKeysResult {
+        // No persisted privates (install from before OTPK storage, or they were lost): the
+        // server may still be handing out keys nobody here can answer. Only a replace retires
+        // them — an append leaves them in the pool. Canon: iOS "fallback will replace server
+        // keys on startup".
+        if (keystoreManager.getOneTimePrekeys() == null) {
+            Log.w(TAG, "no persisted OTPKs — replacing the server pool")
+            return invoke(deviceId, batchSize, replaceExisting = true)
+        }
         return try {
             val countResponse = grpcClient.key.getPreKeyCount(
                 GetPreKeyCountRequest.newBuilder().setDeviceId(deviceId).build(),
@@ -128,6 +141,12 @@ class UploadPreKeysUseCase @Inject constructor(
         }
     }
 
+    /** Re-persist after the core consumed an OTPK (responder init), so a used private does
+     * not outlive its session in storage. */
+    fun persistLocal() {
+        keystoreManager.saveOneTimePrekeys(cryptoManager.exportOneTimePrekeys())
+    }
+
     private companion object {
         const val TAG = "UploadPreKeysUseCase"
         /** Default batch size for periodic replenishment. Matches iOS `OtpkReplenishmentService`. */
@@ -141,3 +160,17 @@ class UploadPreKeysUseCase @Inject constructor(
 }
 
 private fun List<UByte>.toByteString(): ByteString = ByteString.copyFrom(ByteArray(size) { this[it].toByte() })
+
+/**
+ * Loads persisted OTPK privates into a core just restored from saved keys — before
+ * `setLocalUserId`, which carries the bootstrap core's OTPKs into the orchestrator.
+ * A failed import leaves the core empty; logged, and [UploadPreKeysUseCase.replenishIfNeeded]
+ * cannot tell, so the blob is dropped to make it replace the server pool.
+ */
+fun restoreOneTimePrekeys(cryptoManager: CryptoManager, keystoreManager: KeystoreManager) {
+    val bytes = keystoreManager.getOneTimePrekeys() ?: return
+    runCatching { cryptoManager.importOneTimePrekeys(bytes) }.onFailure {
+        Log.e("UploadPreKeysUseCase", "persisted OTPK import failed — server pool will be replaced", it)
+        keystoreManager.clearOneTimePrekeys()
+    }
+}
