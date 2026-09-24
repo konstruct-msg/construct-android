@@ -20,6 +20,7 @@ import com.construct.messenger.ui.components.ConnectionStatus
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -98,11 +99,16 @@ class MessagingRuntime @Inject constructor(
 
         restoreSessions()
         ackStore.hydrate()
-        drainPending()
 
+        // The collector must be subscribed before drainPending(): MessageRouter.routed is a
+        // SharedFlow with no replay, and tryEmit with no subscriber drops the event. Drained
+        // first, every message queued while offline was fetched and discarded without a trace
+        // (seen on a device, 2026-09-24: "drained 2 pending message(s)", no chat). UNDISPATCHED
+        // runs the launch up to its first suspension — inside collect, after subscribing.
         if (processorJob?.isActive != true) {
-            processorJob = scope.launch { collectRouted() }
+            processorJob = scope.launch(start = CoroutineStart.UNDISPATCHED) { collectRouted() }
         }
+        drainPending()
         router.start(scope)
         stream.start(scope)
         timerBridge.start()
