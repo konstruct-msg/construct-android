@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import uniffi.construct_core.BinaryFirstMessage
+import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.CfeSecureStoreSlot
 import uniffi.construct_core.ReceivingInitCarrier
@@ -39,10 +40,14 @@ class ResponderInitUseCase @Inject constructor(
     data class Result(val contactId: String, val messageId: String, val plaintext: ByteArray)
 
     sealed interface Outcome {
-        data class Established(val result: Result) : Outcome
+        /** [drained] is what the core answered to `SessionInitCompleted`: the messages it held
+         * behind this init, now decrypted, plus their side effects. They must be executed — saving
+         * them is not enough, or every message that arrived during the init is lost. */
+        data class Established(val result: Result, val drained: List<CfeAction>) : Outcome
         /** Every candidate refused this init. Re-delivery cannot change that — the carrier is
-         * dead, and holding it keeps it first in line on every start. */
-        data object Failed : Outcome
+         * dead, and holding it keeps it first in line on every start. [sender] is the device the
+         * init came from when it can be named; the caller asks the core whether to tear it down. */
+        data class Failed(val sender: String?) : Outcome
         /** Not tried (another init in flight, core not ready, bundles unreachable) — a later
          * delivery may succeed. */
         data object NotAttempted : Outcome
@@ -98,12 +103,12 @@ class ResponderInitUseCase @Inject constructor(
                 if (sessionStateStore.getEstablishedAt(candidate.deviceId) == null) {
                     sessionStateStore.setEstablishedAt(candidate.deviceId, System.currentTimeMillis())
                 }
-                runCatching {
-                    val completed = orchestrator.handleEvent(
+                val drained = runCatching {
+                    orchestrator.handleEvent(
                         CfeIncomingEvent.SessionInitCompleted(candidate.deviceId, blob),
-                    )
-                    sessionStateStore.saveCfeActions(completed)
-                }
+                    ).also { sessionStateStore.saveCfeActions(it) }
+                }.onFailure { Log.e(TAG, "SessionInitCompleted failed ${candidate.deviceId.take(8)}…", it) }
+                    .getOrDefault(emptyList())
                 // The init consumed an OTPK; drop its private from storage too.
                 runCatching { uploadPreKeys.persistLocal() }
                     .onFailure { Log.w(TAG, "OTPK persist after init failed", it) }
@@ -119,21 +124,14 @@ class ResponderInitUseCase @Inject constructor(
                         "attempt=${attempt.bundleIndex + 1u}/${candidates.size} " +
                         "knst=${IncomingPlaintext.isKnst(plaintext)}",
                 )
-                return Outcome.Established(Result(candidate.deviceId, incoming.messageId, plaintext))
+                return Outcome.Established(Result(candidate.deviceId, incoming.messageId, plaintext), drained)
             }
             Log.w(TAG, "RESPONDER candidates exhausted for ${accountId.take(8)}…")
-            // Nothing else will move this init: the sender keeps its session and the messages
-            // queued behind it wait forever. END_SESSION makes the sender re-init against the
-            // bundle it fetches now. Canon: iOS SessionCoordinator init-failure path.
-            // Only to a device known to be the sender — a guess would reset the peer's other,
-            // healthy devices. The per-device cooldown in sendEndSession bounds repeats.
+            // Named only when certain — the preferred id, or the only candidate. A guess would
+            // tear down the peer's other, healthy devices.
             val sender = preferredDeviceId?.takeIf { id -> candidates.any { it.deviceId == id } }
                 ?: candidates.singleOrNull()?.deviceId
-            if (sender != null) {
-                runCatching { sessionControl.sendEndSession(sender) }
-                    .onFailure { Log.w(TAG, "END_SESSION after failed init ${sender.take(8)}…", it) }
-            }
-            Outcome.Failed
+            Outcome.Failed(sender)
         } catch (e: Exception) {
             Log.e(TAG, "RESPONDER init failed ${accountId.take(8)}…", e)
             Outcome.NotAttempted

@@ -85,7 +85,13 @@ class CfeTimerBridge @Inject constructor(
         }
     }
 
-    private suspend fun execute(actions: List<CfeAction>) {
+    /**
+     * Executes core actions that arrive off the message path — from an alarm, a reconnect, or a
+     * session the platform just finished opening (`SessionInitCompleted` drains what the core
+     * held behind it). One executor, so a drained message is persisted exactly as a timer-driven
+     * one is.
+     */
+    suspend fun execute(actions: List<CfeAction>) {
         for (action in actions) {
             when (action) {
                 is CfeAction.ScheduleTimer -> schedule(action.timerId, action.delayMs)

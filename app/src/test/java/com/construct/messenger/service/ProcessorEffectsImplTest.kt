@@ -12,17 +12,28 @@ import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.KnstFrame
+import com.construct.messenger.domain.usecase.ResponderInitUseCase
 import com.construct.messenger.util.SenderSyncRouting
+import uniffi.construct_core.CfeAction
+import uniffi.construct_core.CfeIncomingEvent
+import uniffi.construct_core.CfeTearDownCause
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.UUID
 import shared.proto.messaging.v1.Content.MessageContent
 import shared.proto.messaging.v1.Content.TextMessage
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyBlocking
+import org.mockito.kotlin.wheneverBlocking
 import org.mockito.kotlin.whenever
 
 class ProcessorEffectsImplTest {
@@ -52,6 +63,7 @@ class ProcessorEffectsImplTest {
             healSession = mock(),
             sendReceiptUseCase = mock(),
             responderInit = mock(),
+            actionExecutor = { mock<CfeTimerBridge>() },
         )
 
         effects.onDecrypted(peer, "msg-1", "hello".toByteArray())
@@ -86,6 +98,7 @@ class ProcessorEffectsImplTest {
             healSession = mock(),
             sendReceiptUseCase = mock(),
             responderInit = mock(),
+            actionExecutor = { mock<CfeTimerBridge>() },
         )
         val baseId = "550e8400-e29b-41d4-a716-446655440000"
         val content = MessageContent.newBuilder()
@@ -109,6 +122,96 @@ class ProcessorEffectsImplTest {
         assertEquals(chatId, messages.rows[baseId]?.chatId)
         assertEquals(0, chats.rows[chatId]?.unreadCount)
         assertTrue(acks.isProcessed("$baseId-ss-0123456789abcdef"))
+    }
+
+    // ── requestKeyBundle: what an init leaves behind ───────────────────────
+
+    private val incoming = MessageRouter.IncomingMessage(
+        messageId = "init-1",
+        senderId = peer,
+        contentType = shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_E2EE_SIGNAL,
+        encryptedPayload = ByteArray(0),
+        timestampMs = 0L,
+        viaSealedSender = false,
+    )
+
+    private fun effectsFor(
+        outcome: ResponderInitUseCase.Outcome,
+        crypto: CryptoManager,
+        bridge: CfeTimerBridge,
+        acks: FakeAckStore,
+    ): ProcessorEffectsImpl {
+        val keystore: KeystoreManager = mock()
+        whenever(keystore.getUserId()).thenReturn(myId)
+        val responder: ResponderInitUseCase = mock()
+        wheneverBlocking { responder.establish(any(), anyOrNull()) }.thenReturn(outcome)
+        return ProcessorEffectsImpl(
+            cryptoManager = crypto,
+            keystoreManager = keystore,
+            messageDao = FakeMessageDao(),
+            chatDao = FakeChatDao(),
+            userDao = FakeUserDao(),
+            ackStore = acks,
+            sessionStateStore = mock(),
+            sessionManager = mock(),
+            sessionControl = mock(),
+            healSession = mock(),
+            sendReceiptUseCase = mock(),
+            responderInit = responder,
+            actionExecutor = { bridge },
+        )
+    }
+
+    @Test
+    fun `established init executes what the core drained behind it`() = runTest {
+        val drained = listOf<CfeAction>(CfeAction.NotifySessionCreated(contactId = "dev"))
+        val bridge: CfeTimerBridge = mock()
+        val outcome = ResponderInitUseCase.Outcome.Established(
+            ResponderInitUseCase.Result("dev", "init-1", "hi".toByteArray()),
+            drained,
+        )
+
+        effectsFor(outcome, mock(), bridge, FakeAckStore()).requestKeyBundle(peer, incoming)
+
+        verifyBlocking(bridge) { execute(drained) }
+    }
+
+    @Test
+    fun `failed init is let go and the core is asked to tear the sender down`() = runTest {
+        val crypto: CryptoManager = mock()
+        val answer = listOf<CfeAction>(CfeAction.SendEndSession(contactId = "dev"))
+        whenever(crypto.handleEvent(any())).thenReturn(answer)
+        val bridge: CfeTimerBridge = mock()
+        val acks = FakeAckStore()
+
+        effectsFor(ResponderInitUseCase.Outcome.Failed("dev"), crypto, bridge, acks)
+            .requestKeyBundle(peer, incoming)
+
+        assertTrue(acks.isProcessed("init-1"))
+        verify(crypto).handleEvent(CfeIncomingEvent.TeardownRequested("dev", CfeTearDownCause.BLIND))
+        verifyBlocking(bridge) { execute(answer) }
+    }
+
+    @Test
+    fun `failed init without a named sender tears nothing down`() = runTest {
+        val crypto: CryptoManager = mock()
+        val acks = FakeAckStore()
+
+        effectsFor(ResponderInitUseCase.Outcome.Failed(null), crypto, mock(), acks)
+            .requestKeyBundle(peer, incoming)
+
+        assertTrue(acks.isProcessed("init-1"))
+        verify(crypto, never()).handleEvent(any())
+    }
+
+    @Test
+    fun `init not attempted leaves the carrier for a later delivery`() = runTest {
+        val acks = FakeAckStore()
+
+        effectsFor(ResponderInitUseCase.Outcome.NotAttempted, mock(), mock(), acks)
+            .requestKeyBundle(peer, incoming)
+
+        assertFalse(acks.isProcessed("init-1"))
     }
 }
 

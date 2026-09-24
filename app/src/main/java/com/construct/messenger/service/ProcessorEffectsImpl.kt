@@ -25,7 +25,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
+import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.CfeSecureStoreSlot
+import uniffi.construct_core.CfeTearDownCause
 import uniffi.construct_core.wirePayloadUnpack
 
 /**
@@ -47,6 +49,9 @@ class ProcessorEffectsImpl @Inject constructor(
     private val healSession: HealSessionUseCase,
     private val sendReceiptUseCase: SendReceiptUseCase,
     private val responderInit: ResponderInitUseCase,
+    // Lazy: CfeTimerBridge executes actions *through* these effects, so a direct dependency
+    // would be a cycle. Only its executor is used, and only after an init has finished.
+    private val actionExecutor: dagger.Lazy<CfeTimerBridge>,
 ) : ProcessorEffects {
 
     override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
@@ -176,14 +181,39 @@ class ProcessorEffectsImpl @Inject constructor(
     override suspend fun requestKeyBundle(userId: String, incoming: MessageRouter.IncomingMessage) {
         val preferredDeviceId = userId.takeIf { com.construct.messenger.data.model.IdentityIds.isCryptoDeviceId(it) }
         when (val outcome = responderInit.establish(incoming, preferredDeviceId)) {
-            is ResponderInitUseCase.Outcome.Established ->
+            is ResponderInitUseCase.Outcome.Established -> {
                 outcome.result.let { onDecrypted(it.contactId, it.messageId, it.plaintext) }
-            // Lost, as on iOS: marking it processed lets its next delivery be ACKed instead of
-            // failing again first in line and keeping everything behind it queued. The sender
-            // re-inits on the END_SESSION establish() has already sent.
-            ResponderInitUseCase.Outcome.Failed -> markProcessed(incoming.messageId, incoming.senderId)
+                // Whatever arrived while the init ran was held in the core and has just been
+                // decrypted by it. Unexecuted, those messages were lost (seen 2026-09-24).
+                runCatching { actionExecutor.get().execute(outcome.drained) }
+                    .onFailure { Log.e(TAG, "drained actions after init failed", it) }
+            }
+            is ResponderInitUseCase.Outcome.Failed -> {
+                // Lost, as on iOS: marking it processed lets its next delivery be ACKed instead of
+                // failing again first in line and keeping everything behind it queued.
+                markProcessed(incoming.messageId, incoming.senderId)
+                outcome.sender?.let { tearDownAfterFailedInit(it) }
+            }
             ResponderInitUseCase.Outcome.NotAttempted -> Unit
         }
+    }
+
+    /**
+     * The sender keeps a session we could not open; nothing else will move it. The core decides
+     * whether to tell it — the same gate iOS passes through (`SessionCoordinator`
+     * `recordEndSessionSendIfAllowed`) — and the ask also ends the `Opening` phase the failed init
+     * left, so the sender's next init is taken instead of queued behind a dead one.
+     *
+     * `BLIND`: the peer is not told why. `EXPLAINED` is for a teardown that carries the
+     * OTPK-unreproducible hint, and Android cannot seal one yet (no `sealToIdentity`).
+     */
+    private suspend fun tearDownAfterFailedInit(deviceId: String) {
+        val actions = runCatching {
+            cryptoManager.handleEvent(CfeIncomingEvent.TeardownRequested(deviceId, CfeTearDownCause.BLIND))
+        }.onFailure { Log.e(TAG, "teardown ask after failed init ${deviceId.take(8)}…", it) }
+            .getOrNull() ?: return
+        runCatching { actionExecutor.get().execute(actions) }
+            .onFailure { Log.e(TAG, "teardown actions after failed init ${deviceId.take(8)}…", it) }
     }
 
     override fun isAckedInDb(messageId: String): Boolean = ackStore.isProcessed(messageId)
