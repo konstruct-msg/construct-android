@@ -5,6 +5,7 @@ import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.local.KeystoreManager
 import javax.inject.Inject
 import javax.inject.Singleton
+import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
 
@@ -61,6 +62,12 @@ class MessageProcessor @Inject constructor(
                 Log.w(TAG, "cannot name incoming peer device ${incoming.senderId.take(8)}… — deferring")
                 return ProcessingOutcome.Deferred
             }
+        if (incoming.contentType == ContentType.CONTENT_TYPE_SESSION_RESET_INIT &&
+            resetInitSuperseded(contactId, incoming)
+        ) {
+            effects.markProcessed(incoming.messageId, incoming.senderId)
+            return ProcessingOutcome.Acked
+        }
         val event = CfeIncomingEvent.MessageReceived(
             messageId = incoming.messageId,
             from = contactId,
@@ -98,6 +105,46 @@ class MessageProcessor @Inject constructor(
         }
 
         return route(actions, incoming)
+    }
+
+    /**
+     * Whether a SESSION_RESET_INIT from [contactId] is one we must acknowledge and not apply —
+     * a redelivery of an init already applied, or a backlog replay older than the session held.
+     * The core decides and keeps the ledger of applied inits, per device (`ResetInitArrived`).
+     *
+     * Asked before `MessageReceived` because applying is what the rest of this path does: a copy
+     * of an init that reaches the RESPONDER init archives the session its first copy built. Until
+     * this was asked nothing on Android recognised a redelivery at all — `ResponderInitUseCase`'s
+     * `inFlight` guards only against two copies at the same moment.
+     *
+     * `false` — apply — when the init cannot be identified or the core cannot be asked: a
+     * redundant re-init is cheap, a dropped live one strands the peer on a dead ratchet.
+     */
+    private suspend fun resetInitSuperseded(
+        contactId: String,
+        incoming: MessageRouter.IncomingMessage,
+    ): Boolean {
+        val ephemeral = effects.initEphemeral(incoming.encryptedPayload) ?: return false
+        val actions = try {
+            orchestrator.handleEvent(
+                CfeIncomingEvent.ResetInitArrived(
+                    contactId = contactId,
+                    initEphemeral = ephemeral,
+                    sentAtS = (incoming.timestampMs / 1000).toULong(),
+                    establishedAtS = effects.sessionEstablishedAtMs(contactId)?.let { (it / 1000).toULong() },
+                ),
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "ResetInitArrived threw for ${contactId.take(8)}… — applying", e)
+            return false
+        }
+        val superseded = actions.firstNotNullOfOrNull { it as? CfeAction.ResetInitSuperseded } ?: return false
+        Log.i(
+            TAG,
+            "SESSION_RESET_INIT ${incoming.messageId.take(8)}… from ${contactId.take(8)}… " +
+                (if (superseded.redelivery) "already applied" else "pre-dates the session held") + " — ACK only",
+        )
+        return true
     }
 
     private suspend fun resolveCopyRoute(incoming: MessageRouter.IncomingMessage): CopyRouteResolution {
@@ -287,6 +334,11 @@ class MessageProcessor @Inject constructor(
                 is CfeAction.SendEndSession,
                 is CfeAction.FetchPublicKeyBundle,
                 -> Log.d(TAG, "CFE action consumed by routing layer: ${action::class.simpleName}")
+                // Answers to `ResetInitArrived`, read in `resetInitSuperseded` before the message is
+                // routed. Listed so the exhaustive `when` keeps a new answer from having no reader.
+                is CfeAction.ApplyResetInit,
+                is CfeAction.ResetInitSuperseded,
+                -> Log.d(TAG, "CFE reset-init verdict, read before routing: ${action::class.simpleName}")
                 // The machine's answers about *opening* a session. This client does not ask it —
                 // its session opening is still its own, so nothing here consumes these and the
                 // honest record is a warning, not a "consumed by" line that would read as wired.
@@ -354,6 +406,13 @@ interface ProcessorEffects {
     suspend fun requestHeal(contactId: String, role: String)
     suspend fun requestEndSession(contactId: String)
     suspend fun requestKeyBundle(userId: String, incoming: MessageRouter.IncomingMessage)
+
+    /** The X3DH ephemeral public key a SESSION_RESET_INIT carries — the init's identity — or
+     * null when the payload does not parse. */
+    fun initEphemeral(encryptedPayload: ByteArray): ByteArray?
+
+    /** When the session held with device [contactId] was established (epoch ms), or null. */
+    suspend fun sessionEstablishedAtMs(contactId: String): Long?
 
     /** Whether [messageId] is already recorded delivered in the local DB
      * (answers the CFE `checkAckInDb` round-trip after a restart). */

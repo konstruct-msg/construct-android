@@ -123,6 +123,11 @@ class CfeTimerBridge @Inject constructor(
                 is CfeAction.HealAttemptAllowed,
                 is CfeAction.HealExhausted,
                 -> Log.i(TAG, "CFE deferred action ${action::class.simpleName}")
+                // Answers to `ResetInitArrived`, which `MessageProcessor` asks and reads on the
+                // message path. No alarm produces them; listed so the `when` stays exhaustive.
+                is CfeAction.ApplyResetInit,
+                is CfeAction.ResetInitSuperseded,
+                -> Log.w(TAG, "CFE reset-init verdict on the timer path: ${action::class.simpleName}")
                 is CfeAction.FetchPublicKeyBundle,
                 is CfeAction.CheckAckInDb,
                 is CfeAction.DecryptMessage,

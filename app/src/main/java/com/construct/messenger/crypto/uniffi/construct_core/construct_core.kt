@@ -7777,6 +7777,33 @@ sealed class CfeAction {
     }
     
     /**
+     * Apply the SESSION_RESET_INIT that just arrived — archive and open the receiving side, even
+     * over an active session: the peer has ratcheted onto it.
+     */
+    data class ApplyResetInit(
+        val `contactId`: kotlin.String) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Acknowledge the SESSION_RESET_INIT that just arrived, and do not apply it. `redelivery`:
+     * this exact init was already applied (true), or it pre-dates the session held (false).
+     */
+    data class ResetInitSuperseded(
+        val `contactId`: kotlin.String, 
+        val `redelivery`: kotlin.Boolean) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
      * Open a session with `contact_id` now, as INITIATOR, and announce it (X3DH +
      * SESSION_RESET_INIT) — not a bare local init.
      */
@@ -8114,92 +8141,99 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
             13 -> CfeAction.EndSessionNotNeeded(
                 FfiConverterString.read(buf),
                 )
-            14 -> CfeAction.OpenSession(
+            14 -> CfeAction.ApplyResetInit(
                 FfiConverterString.read(buf),
                 )
-            15 -> CfeAction.OpenDeferred(
+            15 -> CfeAction.ResetInitSuperseded(
+                FfiConverterString.read(buf),
+                FfiConverterBoolean.read(buf),
+                )
+            16 -> CfeAction.OpenSession(
+                FfiConverterString.read(buf),
+                )
+            17 -> CfeAction.OpenDeferred(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            16 -> CfeAction.OpenNotNeeded(
+            18 -> CfeAction.OpenNotNeeded(
                 FfiConverterString.read(buf),
                 )
-            17 -> CfeAction.ResendSri(
+            19 -> CfeAction.ResendSri(
                 FfiConverterString.read(buf),
                 )
-            18 -> CfeAction.OpeningGaveUp(
+            20 -> CfeAction.OpeningGaveUp(
                 FfiConverterString.read(buf),
                 )
-            19 -> CfeAction.MessageQueuedPendingInit(
+            21 -> CfeAction.MessageQueuedPendingInit(
                 FfiConverterString.read(buf),
                 FfiConverterUInt.read(buf),
                 )
-            20 -> CfeAction.SaveToSecureStore(
+            22 -> CfeAction.SaveToSecureStore(
                 FfiConverterTypeCfeSecureStoreSlot.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            21 -> CfeAction.PersistMessage(
+            23 -> CfeAction.PersistMessage(
                 FfiConverterString.read(buf),
                 )
-            22 -> CfeAction.PersistAck(
+            24 -> CfeAction.PersistAck(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            23 -> CfeAction.PruneAckStore(
+            25 -> CfeAction.PruneAckStore(
                 FfiConverterULong.read(buf),
                 )
-            24 -> CfeAction.MarkMessageDelivered(
+            26 -> CfeAction.MarkMessageDelivered(
                 FfiConverterString.read(buf),
                 )
-            25 -> CfeAction.FetchPublicKeyBundle(
+            27 -> CfeAction.FetchPublicKeyBundle(
                 FfiConverterString.read(buf),
                 )
-            26 -> CfeAction.SendEncryptedMessage(
+            28 -> CfeAction.SendEncryptedMessage(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterUByte.read(buf),
                 )
-            27 -> CfeAction.SendReceipt(
+            29 -> CfeAction.SendReceipt(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            28 -> CfeAction.SendEndSession(
+            30 -> CfeAction.SendEndSession(
                 FfiConverterString.read(buf),
                 )
-            29 -> CfeAction.NotifyNewMessage(
-                FfiConverterString.read(buf),
-                FfiConverterString.read(buf),
-                )
-            30 -> CfeAction.NotifySessionCreated(
-                FfiConverterString.read(buf),
-                )
-            31 -> CfeAction.NotifyError(
+            31 -> CfeAction.NotifyNewMessage(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            32 -> CfeAction.ScheduleTimer(
+            32 -> CfeAction.NotifySessionCreated(
+                FfiConverterString.read(buf),
+                )
+            33 -> CfeAction.NotifyError(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                )
+            34 -> CfeAction.ScheduleTimer(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            33 -> CfeAction.CancelTimer(
+            35 -> CfeAction.CancelTimer(
                 FfiConverterString.read(buf),
                 )
-            34 -> CfeAction.CallSignalDecrypted(
+            36 -> CfeAction.CallSignalDecrypted(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            35 -> CfeAction.CheckAckInDb(
+            37 -> CfeAction.CheckAckInDb(
                 FfiConverterString.read(buf),
                 )
-            36 -> CfeAction.SendHeartbeat(
+            38 -> CfeAction.SendHeartbeat(
                 FfiConverterString.read(buf),
                 )
-            37 -> CfeAction.NotifyLinkedDevicesOfSessionReset(
+            39 -> CfeAction.NotifyLinkedDevicesOfSessionReset(
                 FfiConverterString.read(buf),
                 )
-            38 -> CfeAction.SessionTerminated(
+            40 -> CfeAction.SessionTerminated(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
@@ -8307,6 +8341,21 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
             (
                 4UL
                 + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
+        is CfeAction.ApplyResetInit -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+            )
+        }
+        is CfeAction.ResetInitSuperseded -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+                + FfiConverterBoolean.allocationSize(value.`redelivery`)
             )
         }
         is CfeAction.OpenSession -> {
@@ -8577,72 +8626,83 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
-            is CfeAction.OpenSession -> {
+            is CfeAction.ApplyResetInit -> {
                 buf.putInt(14)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
-            is CfeAction.OpenDeferred -> {
+            is CfeAction.ResetInitSuperseded -> {
                 buf.putInt(15)
+                FfiConverterString.write(value.`contactId`, buf)
+                FfiConverterBoolean.write(value.`redelivery`, buf)
+                Unit
+            }
+            is CfeAction.OpenSession -> {
+                buf.putInt(16)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeAction.OpenDeferred -> {
+                buf.putInt(17)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterULong.write(value.`retryAfterMs`, buf)
                 Unit
             }
             is CfeAction.OpenNotNeeded -> {
-                buf.putInt(16)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeAction.ResendSri -> {
-                buf.putInt(17)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeAction.OpeningGaveUp -> {
                 buf.putInt(18)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
-            is CfeAction.MessageQueuedPendingInit -> {
+            is CfeAction.ResendSri -> {
                 buf.putInt(19)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeAction.OpeningGaveUp -> {
+                buf.putInt(20)
+                FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeAction.MessageQueuedPendingInit -> {
+                buf.putInt(21)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterUInt.write(value.`queuedCount`, buf)
                 Unit
             }
             is CfeAction.SaveToSecureStore -> {
-                buf.putInt(20)
+                buf.putInt(22)
                 FfiConverterTypeCfeSecureStoreSlot.write(value.`slot`, buf)
                 FfiConverterByteArray.write(value.`data`, buf)
                 Unit
             }
             is CfeAction.PersistMessage -> {
-                buf.putInt(21)
+                buf.putInt(23)
                 FfiConverterString.write(value.`messageJson`, buf)
                 Unit
             }
             is CfeAction.PersistAck -> {
-                buf.putInt(22)
+                buf.putInt(24)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterULong.write(value.`timestamp`, buf)
                 Unit
             }
             is CfeAction.PruneAckStore -> {
-                buf.putInt(23)
+                buf.putInt(25)
                 FfiConverterULong.write(value.`cutoffTs`, buf)
                 Unit
             }
             is CfeAction.MarkMessageDelivered -> {
-                buf.putInt(24)
+                buf.putInt(26)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.FetchPublicKeyBundle -> {
-                buf.putInt(25)
+                buf.putInt(27)
                 FfiConverterString.write(value.`userId`, buf)
                 Unit
             }
             is CfeAction.SendEncryptedMessage -> {
-                buf.putInt(26)
+                buf.putInt(28)
                 FfiConverterString.write(value.`to`, buf)
                 FfiConverterByteArray.write(value.`payload`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
@@ -8650,68 +8710,68 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 Unit
             }
             is CfeAction.SendReceipt -> {
-                buf.putInt(27)
+                buf.putInt(29)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterString.write(value.`status`, buf)
                 Unit
             }
             is CfeAction.SendEndSession -> {
-                buf.putInt(28)
+                buf.putInt(30)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyNewMessage -> {
-                buf.putInt(29)
+                buf.putInt(31)
                 FfiConverterString.write(value.`chatId`, buf)
                 FfiConverterString.write(value.`preview`, buf)
                 Unit
             }
             is CfeAction.NotifySessionCreated -> {
-                buf.putInt(30)
+                buf.putInt(32)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyError -> {
-                buf.putInt(31)
+                buf.putInt(33)
                 FfiConverterString.write(value.`code`, buf)
                 FfiConverterString.write(value.`message`, buf)
                 Unit
             }
             is CfeAction.ScheduleTimer -> {
-                buf.putInt(32)
+                buf.putInt(34)
                 FfiConverterString.write(value.`timerId`, buf)
                 FfiConverterULong.write(value.`delayMs`, buf)
                 Unit
             }
             is CfeAction.CancelTimer -> {
-                buf.putInt(33)
+                buf.putInt(35)
                 FfiConverterString.write(value.`timerId`, buf)
                 Unit
             }
             is CfeAction.CallSignalDecrypted -> {
-                buf.putInt(34)
+                buf.putInt(36)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`protoBytes`, buf)
                 Unit
             }
             is CfeAction.CheckAckInDb -> {
-                buf.putInt(35)
+                buf.putInt(37)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.SendHeartbeat -> {
-                buf.putInt(36)
+                buf.putInt(38)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyLinkedDevicesOfSessionReset -> {
-                buf.putInt(37)
+                buf.putInt(39)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.SessionTerminated -> {
-                buf.putInt(38)
+                buf.putInt(40)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterByteArray.write(value.`archiveBytes`, buf)
                 Unit
@@ -8939,6 +8999,25 @@ sealed class CfeIncomingEvent {
         companion object
     }
     
+    /**
+     * A SESSION_RESET_INIT arrived from `contact_id` and the platform asks whether to apply it.
+     * Answered with `ApplyResetInit` or `ResetInitSuperseded`. `init_ephemeral` is the X3DH
+     * ephemeral public key from the envelope — the init's identity; `sent_at_s` the envelope
+     * timestamp; `established_at_s` the platform's record of when the session it holds with this
+     * device was established (Unix seconds, null when there is none).
+     */
+    data class ResetInitArrived(
+        val `contactId`: kotlin.String, 
+        val `initEphemeral`: kotlin.ByteArray, 
+        val `sentAtS`: kotlin.ULong, 
+        val `establishedAtS`: kotlin.ULong?) : CfeIncomingEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
 
     
     companion object
@@ -9019,6 +9098,12 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 )
             18 -> CfeIncomingEvent.PeerAcked(
                 FfiConverterString.read(buf),
+                )
+            19 -> CfeIncomingEvent.ResetInitArrived(
+                FfiConverterString.read(buf),
+                FfiConverterByteArray.read(buf),
+                FfiConverterULong.read(buf),
+                FfiConverterOptionalULong.read(buf),
                 )
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
@@ -9169,6 +9254,16 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 + FfiConverterString.allocationSize(value.`contactId`)
             )
         }
+        is CfeIncomingEvent.ResetInitArrived -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+                + FfiConverterByteArray.allocationSize(value.`initEphemeral`)
+                + FfiConverterULong.allocationSize(value.`sentAtS`)
+                + FfiConverterOptionalULong.allocationSize(value.`establishedAtS`)
+            )
+        }
     }
 
     override fun write(value: CfeIncomingEvent, buf: ByteBuffer) {
@@ -9279,6 +9374,14 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
             is CfeIncomingEvent.PeerAcked -> {
                 buf.putInt(18)
                 FfiConverterString.write(value.`contactId`, buf)
+                Unit
+            }
+            is CfeIncomingEvent.ResetInitArrived -> {
+                buf.putInt(19)
+                FfiConverterString.write(value.`contactId`, buf)
+                FfiConverterByteArray.write(value.`initEphemeral`, buf)
+                FfiConverterULong.write(value.`sentAtS`, buf)
+                FfiConverterOptionalULong.write(value.`establishedAtS`, buf)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
@@ -10117,6 +10220,38 @@ public object FfiConverterOptionalUInt: FfiConverterRustBuffer<kotlin.UInt?> {
         } else {
             buf.put(1)
             FfiConverterUInt.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalULong: FfiConverterRustBuffer<kotlin.ULong?> {
+    override fun read(buf: ByteBuffer): kotlin.ULong? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterULong.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.ULong?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterULong.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.ULong?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterULong.write(value, buf)
         }
     }
 }

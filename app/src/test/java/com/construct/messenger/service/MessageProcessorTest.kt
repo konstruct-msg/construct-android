@@ -33,6 +33,10 @@ class MessageProcessorTest {
     private class RecordingEffects : ProcessorEffects {
         val calls = mutableListOf<String>()
         var ackedInDb = false
+        var ephemeral: ByteArray? = ByteArray(32) { 7 }
+        var establishedAtMs: Long? = null
+        override fun initEphemeral(encryptedPayload: ByteArray): ByteArray? = ephemeral
+        override suspend fun sessionEstablishedAtMs(contactId: String): Long? = establishedAtMs
         override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
             calls += "onDecrypted:$contactId:$messageId"
         }
@@ -215,5 +219,83 @@ class MessageProcessorTest {
 
         assertEquals(ProcessingOutcome.Acked, outcome)
         assertTrue(effects.calls.contains("receipt:m1:delivered"))
+    }
+
+    // ── SESSION_RESET_INIT: the core decides whether it applies ─────────
+
+    private val device = "11111111111111111111111111111111"
+
+    private fun resetInit() = incoming().copy(
+        contentType = ContentType.CONTENT_TYPE_SESSION_RESET_INIT,
+        timestampMs = 1_785_943_323_500L,
+    )
+
+    /** Build 579 on iOS, and every redelivery on Android until now: the copy of an init already
+     * applied reached the RESPONDER init and archived the session the first copy built.
+     * Mutation that reddens it: drop the `resetInitSuperseded` check from `process`. */
+    @Test
+    fun `a superseded reset init is acked and never reaches the core as a message`() = runBlocking {
+        val effects = RecordingEffects()
+        whenever(sessionManager.resolveDeviceId("alice")).thenReturn(device)
+        val gateway = FakeGateway(mutableListOf(listOf(CfeAction.ResetInitSuperseded(device, true))))
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+
+        val outcome = processor.process(resetInit())
+
+        assertEquals(ProcessingOutcome.Acked, outcome)
+        assertTrue(effects.calls.contains("markProcessed:m1"))
+        assertTrue(gateway.events.none { it is CfeIncomingEvent.MessageReceived })
+    }
+
+    /** A live re-init goes on to the ordinary path. Mutation that reddens it: treat any answer
+     * as superseded. */
+    @Test
+    fun `an applied reset init goes on to the core as a message`() = runBlocking {
+        val effects = RecordingEffects()
+        whenever(sessionManager.resolveDeviceId("alice")).thenReturn(device)
+        val gateway = FakeGateway(mutableListOf(listOf(CfeAction.ApplyResetInit(device))))
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+
+        processor.process(resetInit())
+
+        assertTrue(gateway.events.any { it is CfeIncomingEvent.MessageReceived })
+    }
+
+    /** The question names the device, the init's key, and both times in seconds.
+     * Mutation that reddens it: pass milliseconds, or the account in place of the device. */
+    @Test
+    fun `the question carries the device, the key and seconds`() = runBlocking {
+        val effects = RecordingEffects().apply { establishedAtMs = 1_785_943_288_900L }
+        whenever(sessionManager.resolveDeviceId("alice")).thenReturn(device)
+        val gateway = FakeGateway(mutableListOf(listOf(CfeAction.ApplyResetInit(device))))
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+
+        processor.process(resetInit())
+
+        val asked = gateway.events.filterIsInstance<CfeIncomingEvent.ResetInitArrived>().single()
+        assertEquals(device, asked.contactId)
+        assertTrue(asked.initEphemeral.contentEquals(ByteArray(32) { 7 }))
+        assertEquals(1_785_943_323uL, asked.sentAtS)
+        assertEquals(1_785_943_288uL, asked.establishedAtS)
+    }
+
+    /** Only an SRI is asked about, and an init that cannot be identified is applied, never
+     * coalesced on a guess. Mutation that reddens it: ask for every content type, or treat a
+     * missing key as superseded. */
+    @Test
+    fun `only an identifiable reset init is asked about`() = runBlocking {
+        whenever(sessionManager.resolveDeviceId("alice")).thenReturn(device)
+
+        val plain = FakeGateway()
+        MessageProcessor(plain, RecordingEffects(), sessionManager, timerBridge, cryptoManager, keystoreManager)
+            .process(incoming())
+        assertTrue(plain.events.none { it is CfeIncomingEvent.ResetInitArrived })
+
+        val unidentified = FakeGateway()
+        val effects = RecordingEffects().apply { ephemeral = null }
+        MessageProcessor(unidentified, effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+            .process(resetInit())
+        assertTrue(unidentified.events.none { it is CfeIncomingEvent.ResetInitArrived })
+        assertTrue(unidentified.events.any { it is CfeIncomingEvent.MessageReceived })
     }
 }

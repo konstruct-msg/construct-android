@@ -26,6 +26,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import uniffi.construct_core.CfeSecureStoreSlot
+import uniffi.construct_core.wirePayloadUnpack
 
 /**
  * Room / Keystore / session-store implementation of [ProcessorEffects].
@@ -179,6 +180,15 @@ class ProcessorEffectsImpl @Inject constructor(
     }
 
     override fun isAckedInDb(messageId: String): Boolean = ackStore.isProcessed(messageId)
+
+    override fun initEphemeral(encryptedPayload: ByteArray): ByteArray? =
+        runCatching { wirePayloadUnpack(encryptedPayload.map { it.toUByte() }).dhPublicKey }
+            .getOrNull()
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { key -> ByteArray(key.size) { key[it].toByte() } }
+
+    override suspend fun sessionEstablishedAtMs(contactId: String): Long? =
+        sessionStateStore.getEstablishedAt(contactId)
 
     private suspend fun persistIncoming(contactId: String, messageId: String, text: String, timestampMs: Long) {
         val myId = keystoreManager.getUserId() ?: run {
