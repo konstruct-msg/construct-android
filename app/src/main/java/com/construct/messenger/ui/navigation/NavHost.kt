@@ -102,7 +102,6 @@ fun KonstructNavHost(
                     }
                 },
                 onScanQr = { navController.navigate(Screen.ScanQr.route) { launchSingleTop = true } },
-                onShowMyQr = { navController.navigate(Screen.InviteQr.route) { launchSingleTop = true } },
                 settingsNavigation = SettingsNavigation(
                     onAccount = { navController.navigate(Screen.Account.route) { launchSingleTop = true } },
                     onInvite = { navController.navigate(Screen.InviteQr.route) { launchSingleTop = true } },

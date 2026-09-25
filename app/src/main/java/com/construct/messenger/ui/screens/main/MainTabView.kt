@@ -40,7 +40,6 @@ import com.construct.messenger.ui.theme.CTColor
 fun MainTabView(
     onNavigateToChat: (String) -> Unit,
     onScanQr: () -> Unit = {},
-    onShowMyQr: () -> Unit = {},
     settingsNavigation: SettingsNavigation = SettingsNavigation(),
     startTab: Int = 0,
 ) {
@@ -93,12 +92,10 @@ fun MainTabView(
                     onNavigateToChat = onNavigateToChat,
                     onFindPeople = { selectedTab = 1 },
                     onScanQr = onScanQr,
-                    onShowMyQr = onShowMyQr,
                 )
                 1 -> SynapsScreen(
                     onNavigateToChat = onNavigateToChat,
                     onScanQr = onScanQr,
-                    onShowMyQr = onShowMyQr,
                 )
                 2 -> CallsScreen()
                 3 -> SettingsRoute(navigation = settingsNavigation)

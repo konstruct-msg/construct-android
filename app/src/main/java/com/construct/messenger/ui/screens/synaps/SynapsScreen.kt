@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,7 +43,6 @@ import com.construct.messenger.viewmodel.SynapsViewModel
 fun SynapsScreen(
     onNavigateToChat: (String) -> Unit,
     onScanQr: () -> Unit = {},
-    onShowMyQr: () -> Unit = {},
     viewModel: SynapsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,11 +58,9 @@ fun SynapsScreen(
     ) {
         CTNavBar(
             title = stringResource(R.string.nav_synaps),
-            // Inviting lives on one screen — QR plus copy link (iOS ContactQRCodeView).
-            trailingIcon = Icons.Default.QrCode,
-            onTrailingAction = onShowMyQr,
-            trailingSecondaryIcon = Icons.Default.QrCodeScanner,
-            onTrailingSecondaryAction = onScanQr,
+            // Scanning only: your own QR lives in Settings → Invite.
+            trailingIcon = Icons.Default.QrCodeScanner,
+            onTrailingAction = onScanQr,
         )
 
         CTSearchBar(

@@ -1,7 +1,6 @@
 package com.construct.messenger.ui.screens.chats
 
 import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -46,7 +45,6 @@ fun ChatsListScreen(
     onNavigateToChat: (String) -> Unit,
     onFindPeople: () -> Unit = {},
     onScanQr: () -> Unit = {},
-    onShowMyQr: () -> Unit = {},
     viewModel: MainViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -66,8 +64,6 @@ fun ChatsListScreen(
             title = stringResource(R.string.nav_streams),
             trailingIcon = Icons.Default.QrCodeScanner,
             onTrailingAction = onScanQr,
-            trailingSecondaryIcon = Icons.Default.QrCode,
-            onTrailingSecondaryAction = onShowMyQr,
         )
 
         CTSearchBar(
