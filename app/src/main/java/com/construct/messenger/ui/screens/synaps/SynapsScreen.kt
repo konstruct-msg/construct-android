@@ -1,8 +1,5 @@
 package com.construct.messenger.ui.screens.synaps
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -19,14 +16,13 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -47,16 +43,11 @@ import com.construct.messenger.viewmodel.SynapsViewModel
 @Composable
 fun SynapsScreen(
     onNavigateToChat: (String) -> Unit,
+    onScanQr: () -> Unit = {},
+    onShowMyQr: () -> Unit = {},
     viewModel: SynapsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-
-    LaunchedEffect(uiState.lastMintedLink) {
-        val link = uiState.lastMintedLink ?: return@LaunchedEffect
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("invite", link))
-    }
 
     Column(
         modifier = Modifier
@@ -69,8 +60,11 @@ fun SynapsScreen(
     ) {
         CTNavBar(
             title = stringResource(R.string.nav_synaps),
-            trailingIcon = Icons.Default.Share,
-            onTrailingAction = { viewModel.shareInvite() },
+            // Inviting lives on one screen — QR plus copy link (iOS ContactQRCodeView).
+            trailingIcon = Icons.Default.QrCode,
+            onTrailingAction = onShowMyQr,
+            trailingSecondaryIcon = Icons.Default.QrCodeScanner,
+            onTrailingSecondaryAction = onScanQr,
         )
 
         CTSearchBar(

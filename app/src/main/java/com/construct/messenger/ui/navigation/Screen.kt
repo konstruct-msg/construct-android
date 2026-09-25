@@ -19,4 +19,8 @@ sealed class Screen(val route: String) {
         fun createRoute(contactId: String) = "chat/${Uri.encode(contactId)}"
     }
     data object Settings : Screen("settings")
+    /** My invite: self-refreshing QR + copy link (iOS ContactQRCodeView). */
+    data object InviteQr : Screen("invite_qr")
+    /** Camera scanner; a scanned invite is redeemed on the Synaps tab. */
+    data object ScanQr : Screen("scan_qr")
 }

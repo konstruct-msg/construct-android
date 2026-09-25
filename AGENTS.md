@@ -149,7 +149,8 @@ Location. Google *build-time* dependencies are fine and already present (Hilt, K
 they ask nothing of the device.
 
 This is checkable right now and must stay that way: the manifest declares network permissions
-plus the Android foreground-service/notification permissions, one non-exported
+plus the Android foreground-service/notification permissions, `CAMERA` (asked for only when the
+invite scanner opens; the QR is read by CameraX + ZXing, not ML Kit), one non-exported
 `MessagingForegroundService`, no `<receiver>`, and no push-provider client code. On Android 13+
 the app requests `POST_NOTIFICATIONS`; on Android 14+ it starts with the `remoteMessaging`
 foreground-service type. Older supported devices, including Android 11, use the ordinary

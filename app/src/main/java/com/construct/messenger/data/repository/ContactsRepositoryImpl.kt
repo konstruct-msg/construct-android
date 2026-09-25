@@ -59,19 +59,26 @@ class ContactsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun mintLink(includeUsername: Boolean): MintedInvite {
+    override suspend fun mintLink(includeUsername: Boolean): MintedInvite =
+        mint(kind = "link", ttlSeconds = InviteConfig.TTL_SECONDS.toInt())
+
+    override suspend fun mintQr(): MintedInvite =
+        mint(kind = "qr", ttlSeconds = InviteConfig.QR_TTL_SECONDS)
+
+    /** Every invite is journalled, so it can be listed and revoked by its jti. */
+    private suspend fun mint(kind: String, ttlSeconds: Int): MintedInvite {
         val userId = keystoreManager.getUserId() ?: error("not authenticated")
         val deviceId = keystoreManager.getDeviceId() ?: error("no device id")
         val minted = generator.mintLink(
             userId = userId,
             deviceId = deviceId,
             username = null,
-            ttlSeconds = InviteConfig.TTL_SECONDS.toInt(),
+            ttlSeconds = ttlSeconds,
         )
         issuedInviteDao.upsert(
             IssuedInviteEntity(
                 jti = minted.jti,
-                kind = "link",
+                kind = kind,
                 issuedAtEpochSec = minted.issuedAtEpochSec,
                 ttlSeconds = minted.ttlSeconds,
             ),

@@ -68,6 +68,7 @@ private class FakeContactsRepository : ContactsRepository {
     override val contacts = MutableStateFlow<List<Contact>>(emptyList())
     override suspend fun mintLink(includeUsername: Boolean): MintedInvite =
         MintedInvite("j", 0, 300, "p", "konstruct://add?invite=p")
+    override suspend fun mintQr(): MintedInvite = mintLink(false)
     override suspend fun accept(raw: String): AcceptInviteResult =
         AcceptInviteResult.Failed("unused")
     override suspend fun revoke(jti: String): Boolean = false

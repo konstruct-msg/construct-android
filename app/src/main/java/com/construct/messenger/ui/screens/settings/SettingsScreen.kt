@@ -74,6 +74,7 @@ private val FakeProfile = FakeSettingsProfile()
 fun SettingsRoute(
     onSignedOut: () -> Unit,
     onNavigateBack: (() -> Unit)? = null,
+    onShareInvite: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
@@ -86,6 +87,7 @@ fun SettingsRoute(
         onNavigateBack = onNavigateBack,
         onSignOut = viewModel::signOut,
         onToggleDiscoverable = viewModel::toggleDiscoverable,
+        onShareInviteClick = onShareInvite,
         liveDisplayName = ui.profile?.displayName?.takeIf { it.isNotBlank() },
         liveUsername = ui.profile?.username?.takeIf { it.isNotBlank() },
         liveUserId = ui.profile?.userId?.takeIf { it.isNotBlank() },

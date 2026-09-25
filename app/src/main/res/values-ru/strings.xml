@@ -110,4 +110,20 @@
 
     <!-- Calls -->
     <string name="calls_empty_title">Пока нет звонков</string>
+    <!-- QR приглашения (канон: iOS ContactQRCodeView / QRScannerView) -->
+    <string name="invite_title">пригласить</string>
+    <string name="qr_caption_trust">этот код — приглашение связаться.</string>
+    <string name="qr_new_code">Новый код</string>
+    <string name="qr_failed">Не удалось создать код</string>
+    <string name="invite_copy_link">Скопировать ссылку</string>
+    <string name="share_copied">Скопировано</string>
+    <string name="invite_copied_nth">Скопировано · %1$d</string>
+    <string name="invite_share_rule">Каждое нажатие создаёт новую ссылку, код обновляется сам. Любое приглашение срабатывает один раз и живёт %1$d ч.</string>
+    <string name="show_my_qr">Мой QR-код</string>
+    <string name="scan_qr_code">Сканировать QR-код</string>
+    <string name="scan_hint">Наведите камеру на QR-код приглашения Konstruct</string>
+    <string name="invalid_qr_code">Это не QR-код приглашения Konstruct.</string>
+    <string name="camera_permission_needed">Для сканирования нужен доступ к камере. Ссылка-приглашение работает и без него.</string>
+    <string name="camera_permission_grant">Разрешить камеру</string>
+    <string name="camera_permission_settings">Открыть настройки</string>
 </resources>

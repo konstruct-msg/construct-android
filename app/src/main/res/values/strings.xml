@@ -113,4 +113,20 @@
 
     <!-- Calls -->
     <string name="calls_empty_title">No calls yet</string>
+    <!-- Invite QR (canon: iOS ContactQRCodeView / QRScannerView) -->
+    <string name="invite_title">invite</string>
+    <string name="qr_caption_trust">this code is an invitation to connect.</string>
+    <string name="qr_new_code">New code</string>
+    <string name="qr_failed">Could not make a code</string>
+    <string name="invite_copy_link">Copy link</string>
+    <string name="share_copied">Copied</string>
+    <string name="invite_copied_nth">Copied · %1$d</string>
+    <string name="invite_share_rule">Every tap makes a new link, and the code refreshes itself. Any invite works once and expires in %1$d h.</string>
+    <string name="show_my_qr">My QR code</string>
+    <string name="scan_qr_code">Scan QR code</string>
+    <string name="scan_hint">Point the camera at a Konstruct invite code</string>
+    <string name="invalid_qr_code">Not a Konstruct invite code.</string>
+    <string name="camera_permission_needed">Camera access is needed to scan a code. The invite link works without it.</string>
+    <string name="camera_permission_grant">Allow camera</string>
+    <string name="camera_permission_settings">Open settings</string>
 </resources>

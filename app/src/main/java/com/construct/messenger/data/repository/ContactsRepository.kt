@@ -32,6 +32,10 @@ interface ContactsRepository {
 
     suspend fun mintLink(includeUsername: Boolean = false): MintedInvite
 
+    /** A short-lived invite for a QR on screen: 300 s, no username in the signed body.
+     * Its `payload` (base64url CIv1) is what the code carries. Canon: iOS `generateQRBinary`. */
+    suspend fun mintQr(): MintedInvite
+
     /** Accept a `konstruct://add?invite=` URL or a raw base64url payload. */
     suspend fun accept(raw: String): AcceptInviteResult
 

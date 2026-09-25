@@ -39,6 +39,8 @@ import com.construct.messenger.ui.theme.CTColor
 fun MainTabView(
     onNavigateToChat: (String) -> Unit,
     onSignedOut: () -> Unit = {},
+    onScanQr: () -> Unit = {},
+    onShowMyQr: () -> Unit = {},
     startTab: Int = 0,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(startTab) }
@@ -89,10 +91,16 @@ fun MainTabView(
                 0 -> ChatsListScreen(
                     onNavigateToChat = onNavigateToChat,
                     onFindPeople = { selectedTab = 1 },
+                    onScanQr = onScanQr,
+                    onShowMyQr = onShowMyQr,
                 )
-                1 -> SynapsScreen(onNavigateToChat = onNavigateToChat)
+                1 -> SynapsScreen(
+                    onNavigateToChat = onNavigateToChat,
+                    onScanQr = onScanQr,
+                    onShowMyQr = onShowMyQr,
+                )
                 2 -> CallsScreen()
-                3 -> SettingsRoute(onSignedOut = onSignedOut)
+                3 -> SettingsRoute(onSignedOut = onSignedOut, onShareInvite = onShowMyQr)
             }
         }
     }
