@@ -49,6 +49,9 @@ class RegisterUseCase @Inject constructor(
         onStep: (RegistrationStep) -> Unit = {},
     ): RegistrationResult {
         onStep(RegistrationStep.GeneratingKeys)
+        // A new identity starts with no Kyber prekeys; the old identity's must not be imported
+        // into it. The publish record is keyed by device id, so it starts over by itself.
+        keystoreManager.deleteKyberPrekeys()
         val bundle = cryptoManager.loadOrCreate()
         val deviceId = cryptoManager.deriveDeviceId(bundle)
 

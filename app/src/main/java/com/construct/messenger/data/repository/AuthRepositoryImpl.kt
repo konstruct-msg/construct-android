@@ -118,7 +118,7 @@ class AuthRepositoryImpl @Inject constructor(
         val userId = authSession.userId ?: keystoreManager.getUserId()
             ?: error("session loaded but userId is missing")
         cryptoManager.loadOrCreate(savedPrivateKeys)
-        cryptoManager.setLocalUserId(userId)
+        cryptoManager.setLocalUserId(userId, keystoreManager.getKyberPrekeys())
     }
 
     override suspend fun logout() {

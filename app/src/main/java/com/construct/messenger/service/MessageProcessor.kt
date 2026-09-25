@@ -254,8 +254,6 @@ class MessageProcessor @Inject constructor(
                 is CfeAction.MarkMessageDelivered -> effects.markDelivered(action.messageId)
                 is CfeAction.PersistAck -> effects.markProcessed(action.messageId, incoming.senderId)
                 is CfeAction.PruneAckStore -> effects.pruneAckStore(action.cutoffTs.toLong())
-                is CfeAction.ApplyPqContribution ->
-                    effects.applyPqContribution(action.contactId, action.kemSs)
                 is CfeAction.SaveToSecureStore ->
                     effects.saveSecureStore(action.slot, action.data)
                 is CfeAction.ArchiveSession -> effects.archiveSession(action.contactId)
@@ -279,6 +277,15 @@ class MessageProcessor @Inject constructor(
                 is CfeAction.HeldPendingAck,
                 is CfeAction.HealAttemptAllowed,
                 is CfeAction.HealExhausted,
+                is CfeAction.ApplyResetInit,
+                is CfeAction.ResetInitSuperseded,
+                // No SESSION_RESET_INIT opener on this client yet — see CfeTimerBridge.
+                is CfeAction.OpenSession,
+                is CfeAction.OpenDeferred,
+                is CfeAction.OpenNotNeeded,
+                is CfeAction.OpeningGaveUp,
+                is CfeAction.ResendSri,
+                is CfeAction.EndSessionNotNeeded,
                 is CfeAction.CheckAckInDb,
                 is CfeAction.DecryptMessage,
                 is CfeAction.EncryptMessage,
@@ -333,7 +340,6 @@ interface ProcessorEffects {
     suspend fun markDelivered(messageId: String)
     suspend fun markProcessed(messageId: String, senderId: String)
     suspend fun saveSecureStore(slot: uniffi.construct_core.CfeSecureStoreSlot, data: ByteArray)
-    suspend fun applyPqContribution(contactId: String, kemSharedSecret: ByteArray)
     suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray)
     suspend fun pruneAckStore(cutoffTs: Long)
     suspend fun sendHeartbeat(contactId: String)

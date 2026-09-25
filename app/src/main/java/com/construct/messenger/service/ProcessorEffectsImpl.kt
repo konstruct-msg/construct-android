@@ -133,10 +133,6 @@ class ProcessorEffectsImpl @Inject constructor(
         sessionStateStore.saveSecureStore(slot, data)
     }
 
-    override suspend fun applyPqContribution(contactId: String, kemSharedSecret: ByteArray) {
-        cryptoManager.applyPqContribution(contactId, kemSharedSecret)
-    }
-
     override suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray) {
         if (archiveBytes.isNotEmpty()) {
             sessionStateStore.saveSecureStore(

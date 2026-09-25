@@ -302,9 +302,15 @@ fun handleEvent(event: CfeIncomingEvent): List<CfeAction>
 - UI/уведомления: `NotifyNewMessage`, `NotifySessionCreated`, `NotifyError`,
   `MarkMessageDelivered`, `MessageDecrypted`, `CallSignalDecrypted`;
 - крипто/жизненный цикл: `DecryptMessage`, `EncryptMessage`, `InitSession`,
-  `ApplyPqContribution`, `ArchiveSession`, `SessionHealNeeded`, `HealSuppressed`,
+  `ArchiveSession`, `SessionHealNeeded`, `HealSuppressed`,
   `ScheduleTimer`, `CancelTimer`, `SessionTerminated`,
-  `NotifyLinkedDevicesOfSessionReset`.
+  `NotifyLinkedDevicesOfSessionReset`;
+- машина сессии: `OpenSession`, `OpenDeferred`, `OpenNotNeeded`, `OpeningGaveUp`,
+  `ResendSri`, `EndSessionNotNeeded`, `ApplyResetInit`, `ResetInitSuperseded`. Android пока
+  только логирует их (своего отправителя SESSION_RESET_INIT у него нет) — см. `CfeTimerBridge`.
+
+`ApplyPqContribution` удалён вместе с ML-KEM-768 (PQXDH v2): ML-KEM-1024 входит в начальный
+ключ сессии, ядро декапсулирует само.
 
 Поэтому «отправить сообщение» выглядит так: отдаёшь `OutgoingMessage` →
 получаешь `SendEncryptedMessage` (+ возможно `ScheduleTimer`, `PersistMessage`) →
@@ -338,7 +344,10 @@ fun handleOrchestratorEvent(event: CfeIncomingEvent, tag: String? = null): List<
   Формат — **CFE** (16-байтовый заголовок + MessagePack через `rmp_serde`), не JSON.
 - OTPK: `exportOneTimePrekeys()` / `importOneTimePrekeys(data)`.
 - Приватные ключи: `exportPrivateKeys()` / `importPrivateKeys(data)`.
-- Состояние оркестратора/Kyber: `exportOrchestratorState()` / `exportKyberSessionState()`.
+- Состояние оркестратора: `exportOrchestratorState()`.
+- Kyber prekeys (ML-KEM-1024, сиды): `exportKyberPrekeys()` / `importKyberPrekeys(data)` —
+  хранятся в `KeystoreManager` рядом с приватными ключами, импортируются в
+  `CryptoManager.setLocalUserId` до того, как оркестратор становится доступен.
 
 Правило: **никаких `base64EncodedString`-стрингификаций в прикладном коде.** Байты
 ходят через границу UniFFI как `ByteArray`/`List<UByte>`. То же правило соблюдает iOS
@@ -410,10 +419,18 @@ UI / ViewModel / Repository
   account ids переводятся через `PeerDeviceRegistry` до входа в core.
 - Session healing — забота оркестратора (`SessionHealNeeded`/`HealSuppressed` actions,
   `RustHealingQueue`). **Не лечи сессию руками** — реагируй на CFE-действия.
-- Ротация SPK: `rotateSignedPrekey()` → `RotatedSpkBundle` (новый pubkey + подпись)
-  для атомарной заливки на key-server.
-- Post-quantum: `applyPqContribution(contactId, kemSharedSecret)` после init-сессии
-  с обеих сторон; ML-KEM-768 через `mlkem768_encapsulate`/`decapsulate`.
+- Ротация SPK: `rotateSignedPrekey()` → `RotatedSpkBundle` (новый pubkey + подпись) вместе с
+  `beginKyberSpkRotation()` → одна `RotateSignedPreKey` с обеими гибридными подписями;
+  `commitKyberSpkRotation()` после ответа сервера, `rollbackKyberSpkRotation()` если сервер
+  отверг Kyber-ключ (`RotateSignedPreKeyUseCase`).
+- Post-quantum — **PQXDH v2**, обязательный. ML-KEM-1024 входит в начальный ключ сессии:
+  инициатор (`initSession`) отказывает бандлу без Kyber-ключа с обеими подписями и гибридной
+  идентичности (`PQ_REQUIRED` в сообщении `CryptoException.SessionInitializationFailed` —
+  `CryptoManager.isPeerNotPostQuantum`); ответчик открывается из сырого payload
+  (`initReceivingSessionFromWirePayload`), ядро само декапсулирует своим Kyber-секретом.
+  Ключи генерирует и подписывает ядро, приложение хранит и публикует их — `KyberPrekeyService`.
+  Замена живой сессии (ответ на `OpenSession`, когда он появится) — `reopenSession` ядра, не
+  «remove, потом init».
 
 ---
 ---
