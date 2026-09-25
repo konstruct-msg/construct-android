@@ -736,6 +736,8 @@ external fun uniffi_construct_core_checksum_func_generate_intake_key(
 ): Short
 external fun uniffi_construct_core_checksum_func_generate_mnemonic(
 ): Short
+external fun uniffi_construct_core_checksum_func_generate_private_keys(
+): Short
 external fun uniffi_construct_core_checksum_func_heartbeat_interval_ms(
 ): Short
 external fun uniffi_construct_core_checksum_func_hybrid_public_key_from_private(
@@ -745,6 +747,8 @@ external fun uniffi_construct_core_checksum_func_hybrid_sign(
 external fun uniffi_construct_core_checksum_func_hybrid_signature_keygen(
 ): Short
 external fun uniffi_construct_core_checksum_func_hybrid_verify(
+): Short
+external fun uniffi_construct_core_checksum_func_identity_key_from_keys(
 ): Short
 external fun uniffi_construct_core_checksum_func_import_mls_store_cfe(
 ): Short
@@ -762,11 +766,7 @@ external fun uniffi_construct_core_checksum_func_mldsa65_sign(
 ): Short
 external fun uniffi_construct_core_checksum_func_mldsa65_verify(
 ): Short
-external fun uniffi_construct_core_checksum_func_mlkem768_decapsulate(
-): Short
-external fun uniffi_construct_core_checksum_func_mlkem768_encapsulate(
-): Short
-external fun uniffi_construct_core_checksum_func_mlkem768_keygen(
+external fun uniffi_construct_core_checksum_func_mlkem1024_encapsulate(
 ): Short
 external fun uniffi_construct_core_checksum_func_mnemonic_to_seed(
 ): Short
@@ -794,6 +794,8 @@ external fun uniffi_construct_core_checksum_func_receiving_init_kind(
 ): Short
 external fun uniffi_construct_core_checksum_func_recommended_send_delay_ms(
 ): Short
+external fun uniffi_construct_core_checksum_func_registration_bundle_fields_from_keys(
+): Short
 external fun uniffi_construct_core_checksum_func_seal_to_device_key(
 ): Short
 external fun uniffi_construct_core_checksum_func_sealed_seal_sender_cert(
@@ -802,9 +804,13 @@ external fun uniffi_construct_core_checksum_func_sealed_unseal_sender_cert(
 ): Short
 external fun uniffi_construct_core_checksum_func_sealed_verify_sender_cert(
 ): Short
+external fun uniffi_construct_core_checksum_func_sign_bundle_data_with_keys(
+): Short
 external fun uniffi_construct_core_checksum_func_sign_invite_data(
 ): Short
 external fun uniffi_construct_core_checksum_func_sign_recovery_challenge(
+): Short
+external fun uniffi_construct_core_checksum_func_signing_key_from_keys(
 ): Short
 external fun uniffi_construct_core_checksum_func_sr_create_recovery_shares(
 ): Short
@@ -815,8 +821,6 @@ external fun uniffi_construct_core_checksum_func_sr_open_recovery_bundle(
 external fun uniffi_construct_core_checksum_func_sr_reconstruct_vault_key(
 ): Short
 external fun uniffi_construct_core_checksum_func_sr_seal_recovery_bundle(
-): Short
-external fun uniffi_construct_core_checksum_func_supports_pq_ratchet(
 ): Short
 external fun uniffi_construct_core_checksum_func_test_platform_bridge_roundtrip(
 ): Short
@@ -833,8 +837,6 @@ external fun uniffi_construct_core_checksum_func_verify_recovery_signature(
 external fun uniffi_construct_core_checksum_func_wire_payload_pack(
 ): Short
 external fun uniffi_construct_core_checksum_func_wire_payload_unpack(
-): Short
-external fun uniffi_construct_core_checksum_method_classiccryptocore_apply_pq_contribution(
 ): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_decrypt_message(
 ): Short
@@ -910,13 +912,17 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_ack_is_proce
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_ack_mark_processed(
 ): Short
-external fun uniffi_construct_core_checksum_method_orchestratorcore_apply_pq_contribution(
-): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_awaits_acknowledgement(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_begin_kyber_spk_rotation(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_build_hybrid_identity_bind_message(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_build_x3dh_sign_message(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_commit_kyber_spk_rotation(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_current_kyber_spk_upload(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_decrypt_message(
 ): Short
@@ -926,7 +932,7 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_encrypt_mess
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_ensure_hybrid_signature_key(
 ): Short
-external fun uniffi_construct_core_checksum_method_orchestratorcore_export_kyber_session_state(
+external fun uniffi_construct_core_checksum_method_orchestratorcore_export_kyber_prekeys(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_export_one_time_prekeys(
 ): Short
@@ -937,6 +943,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_export_priva
 external fun uniffi_construct_core_checksum_method_orchestratorcore_export_session(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_forget_contact_state(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_generate_kyber_one_time_prekeys(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_generate_one_time_prekeys(
 ): Short
@@ -960,7 +968,7 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_hybrid_signa
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_import_hybrid_signature_private_key(
 ): Short
-external fun uniffi_construct_core_checksum_method_orchestratorcore_import_kyber_session_state(
+external fun uniffi_construct_core_checksum_method_orchestratorcore_import_kyber_prekeys(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_import_one_time_prekeys(
 ): Short
@@ -970,11 +978,15 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_import_sessi
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_init_receiving_session(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_init_receiving_session_from_wire_payload(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_init_session(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_init_session_allowing_stale(
 ): Short
-external fun uniffi_construct_core_checksum_method_orchestratorcore_kyber_spk(
+external fun uniffi_construct_core_checksum_method_orchestratorcore_kyber_one_time_prekey_count(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_kyber_prekey_decapsulate(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_one_time_prekey_count(
 ): Short
@@ -984,15 +996,17 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_plan_teardow
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_prekeys_available_count(
 ): Short
-external fun uniffi_construct_core_checksum_method_orchestratorcore_prune_one_time_prekeys_below(
+external fun uniffi_construct_core_checksum_method_orchestratorcore_prune_kyber_one_time_prekeys_below(
 ): Short
-external fun uniffi_construct_core_checksum_method_orchestratorcore_register_pq_deferred(
+external fun uniffi_construct_core_checksum_method_orchestratorcore_prune_one_time_prekeys_below(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_remove_session(
 ): Short
-external fun uniffi_construct_core_checksum_method_orchestratorcore_rotate_signed_prekey(
+external fun uniffi_construct_core_checksum_method_orchestratorcore_reopen_session(
 ): Short
-external fun uniffi_construct_core_checksum_method_orchestratorcore_set_kyber_spk(
+external fun uniffi_construct_core_checksum_method_orchestratorcore_rollback_kyber_spk_rotation(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_rotate_signed_prekey(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_set_local_user_id(
 ): Short
@@ -1009,14 +1023,6 @@ external fun uniffi_construct_core_checksum_method_rustackstore_is_processed(
 external fun uniffi_construct_core_checksum_method_rustackstore_mark_processed(
 ): Short
 external fun uniffi_construct_core_checksum_method_rustackstore_prune_expired(
-): Short
-external fun uniffi_construct_core_checksum_method_rustpqcontributions_clear(
-): Short
-external fun uniffi_construct_core_checksum_method_rustpqcontributions_has_pending(
-): Short
-external fun uniffi_construct_core_checksum_method_rustpqcontributions_store_deferred(
-): Short
-external fun uniffi_construct_core_checksum_method_rustpqcontributions_take_deferred(
 ): Short
 external fun uniffi_construct_core_checksum_method_trafficprotectionmanager_current_interval_ms(
 ): Short
@@ -1037,8 +1043,6 @@ external fun uniffi_construct_core_checksum_method_trafficprotectionmanager_upda
 external fun uniffi_construct_core_checksum_constructor_mlsstore_new(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_rustackstore_new(
-): Short
-external fun uniffi_construct_core_checksum_constructor_rustpqcontributions_new(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_trafficprotectionmanager_new(
 ): Short
@@ -1077,8 +1081,6 @@ internal object UniffiLib {
     external fun uniffi_construct_core_fn_clone_classiccryptocore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_free_classiccryptocore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_construct_core_fn_method_classiccryptocore_apply_pq_contribution(`ptr`: Long,`contactId`: RustBuffer.ByValue,`kemSharedSecret`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_classiccryptocore_decrypt_message(`ptr`: Long,`sessionId`: RustBuffer.ByValue,`ephemeralPublicKey`: RustBuffer.ByValue,`messageNumber`: Int,`content`: RustBuffer.ByValue,`suiteId`: Short,`pqMessageEpoch`: Int,`pqRatchetField`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1164,13 +1166,17 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_ack_is_processed(`
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_ack_mark_processed(`ptr`: Long,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_construct_core_fn_method_orchestratorcore_apply_pq_contribution(`ptr`: Long,`contactId`: RustBuffer.ByValue,`kemSharedSecret`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_awaits_acknowledgement(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_method_orchestratorcore_begin_kyber_spk_rotation(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_build_hybrid_identity_bind_message(`ptr`: Long,`hybridPublicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_build_x3dh_sign_message(`ptr`: Long,`suiteId`: Byte,`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_commit_kyber_spk_rotation(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_orchestratorcore_current_kyber_spk_upload(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_decrypt_message(`ptr`: Long,`contactId`: RustBuffer.ByValue,`ephemeralPublicKey`: RustBuffer.ByValue,`messageNumber`: Int,`content`: RustBuffer.ByValue,`suiteId`: Short,`pqMessageEpoch`: Int,`pqRatchetField`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1180,7 +1186,7 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_encrypt_message(`p
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_ensure_hybrid_signature_key(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_method_orchestratorcore_export_kyber_session_state(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_method_orchestratorcore_export_kyber_prekeys(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_export_one_time_prekeys(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1192,6 +1198,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_export_session(`pt
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_forget_contact_state(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_method_orchestratorcore_generate_kyber_one_time_prekeys(`ptr`: Long,`count`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_generate_one_time_prekeys(`ptr`: Long,`count`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_get_all_session_contact_ids(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1214,7 +1222,7 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_hybrid_signature_p
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_import_hybrid_signature_private_key(`ptr`: Long,`privBytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_construct_core_fn_method_orchestratorcore_import_kyber_session_state(`ptr`: Long,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_method_orchestratorcore_import_kyber_prekeys(`ptr`: Long,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_import_one_time_prekeys(`ptr`: Long,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1224,11 +1232,15 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_import_session(`pt
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_init_receiving_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,`firstMessage`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_init_receiving_session_from_wire_payload(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,`wirePayload`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_init_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_init_session_allowing_stale(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_method_orchestratorcore_kyber_spk(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_method_orchestratorcore_kyber_one_time_prekey_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Int
+external fun uniffi_construct_core_fn_method_orchestratorcore_kyber_prekey_decapsulate(`ptr`: Long,`keyId`: Int,`ciphertext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_one_time_prekey_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
@@ -1238,16 +1250,18 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_plan_teardown(`ptr
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_prekeys_available_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
+external fun uniffi_construct_core_fn_method_orchestratorcore_prune_kyber_one_time_prekeys_below(`ptr`: Long,`minKeepId`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): Int
 external fun uniffi_construct_core_fn_method_orchestratorcore_prune_one_time_prekeys_below(`ptr`: Long,`minKeepId`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
-external fun uniffi_construct_core_fn_method_orchestratorcore_register_pq_deferred(`ptr`: Long,`contactId`: RustBuffer.ByValue,`otpkId`: Int,`sharedSecret`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_remove_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_method_orchestratorcore_reopen_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_rollback_kyber_spk_rotation(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_rotate_signed_prekey(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_method_orchestratorcore_set_kyber_spk(`ptr`: Long,`keyId`: Int,`secretKey`: RustBuffer.ByValue,`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_set_local_user_id(`ptr`: Long,`userId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_sign_bundle_data(`ptr`: Long,`bundleDataJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1270,20 +1284,6 @@ external fun uniffi_construct_core_fn_method_rustackstore_mark_processed(`ptr`: 
 ): Unit
 external fun uniffi_construct_core_fn_method_rustackstore_prune_expired(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_construct_core_fn_clone_rustpqcontributions(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_construct_core_fn_free_rustpqcontributions(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_construct_core_fn_constructor_rustpqcontributions_new(uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_construct_core_fn_method_rustpqcontributions_clear(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_construct_core_fn_method_rustpqcontributions_has_pending(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Byte
-external fun uniffi_construct_core_fn_method_rustpqcontributions_store_deferred(`ptr`: Long,`contactId`: RustBuffer.ByValue,`sharedSecret`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_construct_core_fn_method_rustpqcontributions_take_deferred(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_clone_trafficprotectionmanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_free_trafficprotectionmanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1344,6 +1344,8 @@ external fun uniffi_construct_core_fn_func_generate_intake_key(uniffi_out_err: U
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_generate_mnemonic(`wordCount`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_generate_private_keys(uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_heartbeat_interval_ms(`baseIntervalSec`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_func_hybrid_public_key_from_private(`privateKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1354,6 +1356,8 @@ external fun uniffi_construct_core_fn_func_hybrid_signature_keygen(uniffi_out_er
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_hybrid_verify(`publicKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,`signature`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_func_identity_key_from_keys(`keys`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_import_mls_store_cfe(`data`: RustBuffer.ByValue,`signerPrivateKey`: RustBuffer.ByValue,`signerPublicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_func_intake_epoch(`unixSeconds`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1370,11 +1374,7 @@ external fun uniffi_construct_core_fn_func_mldsa65_sign(`secretKey`: RustBuffer.
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_mldsa65_verify(`publicKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,`signature`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
-external fun uniffi_construct_core_fn_func_mlkem768_decapsulate(`secretKey`: RustBuffer.ByValue,`ciphertext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_mlkem768_encapsulate(`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_mlkem768_keygen(uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_func_mlkem1024_encapsulate(`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_mnemonic_to_seed(`mnemonic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1402,6 +1402,8 @@ external fun uniffi_construct_core_fn_func_receiving_init_kind(`carrier`: RustBu
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_recommended_send_delay_ms(`isHighPriority`: Byte,`batteryLevel`: Float,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_construct_core_fn_func_registration_bundle_fields_from_keys(`keys`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_seal_to_device_key(`plaintext`: RustBuffer.ByValue,`deviceIdentityKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sealed_seal_sender_cert(`certBytes`: RustBuffer.ByValue,`recipientIdentityKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1410,9 +1412,13 @@ external fun uniffi_construct_core_fn_func_sealed_unseal_sender_cert(`sealedBox`
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sealed_verify_sender_cert(`userId`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,`identityKey`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,`issuedAt`: Long,`expiresAt`: Long,`signature`: RustBuffer.ByValue,`serverVerifyingKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_func_sign_bundle_data_with_keys(`keys`: RustBuffer.ByValue,`bundleDataJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sign_invite_data(`data`: RustBuffer.ByValue,`identitySecretKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sign_recovery_challenge(`privateKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_signing_key_from_keys(`keys`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sr_create_recovery_shares(`vaultKey`: RustBuffer.ByValue,`threshold`: Byte,`shareCount`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1424,8 +1430,6 @@ external fun uniffi_construct_core_fn_func_sr_reconstruct_vault_key(`mnemonics`:
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sr_seal_recovery_bundle(`vaultKey`: RustBuffer.ByValue,`bundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_supports_pq_ratchet(uniffi_out_err: UniffiRustCallStatus, 
-): Byte
 external fun uniffi_construct_core_fn_func_test_platform_bridge_roundtrip(`bridge`: Long,`key`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_func_tie_break_role(`myId`: RustBuffer.ByValue,`peerId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1612,6 +1616,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_generate_mnemonic() != 45721.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_generate_private_keys() != 4524.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_heartbeat_interval_ms() != 51594.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1625,6 +1632,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_hybrid_verify() != 56378.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_identity_key_from_keys() != 29768.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_import_mls_store_cfe() != 54998.toShort()) {
@@ -1651,13 +1661,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_mldsa65_verify() != 57408.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_mlkem768_decapsulate() != 25978.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_func_mlkem768_encapsulate() != 20667.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_func_mlkem768_keygen() != 2851.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_mlkem1024_encapsulate() != 55276.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_mnemonic_to_seed() != 53142.toShort()) {
@@ -1699,6 +1703,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_recommended_send_delay_ms() != 24315.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_registration_bundle_fields_from_keys() != 16104.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_seal_to_device_key() != 11700.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1711,10 +1718,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_sealed_verify_sender_cert() != 7421.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_sign_bundle_data_with_keys() != 50810.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_sign_invite_data() != 47259.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_sign_recovery_challenge() != 2630.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_signing_key_from_keys() != 26397.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_sr_create_recovery_shares() != 33586.toShort()) {
@@ -1730,9 +1743,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_sr_seal_recovery_bundle() != 62781.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_func_supports_pq_ratchet() != 5109.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_test_platform_bridge_roundtrip() != 58358.toShort()) {
@@ -1757,9 +1767,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_wire_payload_unpack() != 35590.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_apply_pq_contribution() != 13706.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_decrypt_message() != 12341.toShort()) {
@@ -1873,16 +1880,22 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_ack_mark_processed() != 13454.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_apply_pq_contribution() != 43446.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_awaits_acknowledgement() != 35656.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_awaits_acknowledgement() != 35656.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_begin_kyber_spk_rotation() != 57721.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_build_hybrid_identity_bind_message() != 61991.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_build_x3dh_sign_message() != 50237.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_commit_kyber_spk_rotation() != 27935.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_current_kyber_spk_upload() != 38528.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_decrypt_message() != 9863.toShort()) {
@@ -1897,7 +1910,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_ensure_hybrid_signature_key() != 6511.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_kyber_session_state() != 39459.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_kyber_prekeys() != 29105.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_one_time_prekeys() != 58452.toShort()) {
@@ -1913,6 +1926,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_forget_contact_state() != 50563.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_generate_kyber_one_time_prekeys() != 27977.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_generate_one_time_prekeys() != 33822.toShort()) {
@@ -1948,7 +1964,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_hybrid_signature_private_key() != 32195.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_kyber_session_state() != 41061.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_kyber_prekeys() != 7335.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_one_time_prekeys() != 21471.toShort()) {
@@ -1963,13 +1979,19 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_init_receiving_session() != 36112.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_init_receiving_session_from_wire_payload() != 56748.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_init_session() != 15049.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_init_session_allowing_stale() != 35577.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_kyber_spk() != 239.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_kyber_one_time_prekey_count() != 51317.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_kyber_prekey_decapsulate() != 12272.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_one_time_prekey_count() != 21478.toShort()) {
@@ -1984,19 +2006,22 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_prekeys_available_count() != 33104.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_prune_one_time_prekeys_below() != 26303.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_prune_kyber_one_time_prekeys_below() != 38459.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_register_pq_deferred() != 43713.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_prune_one_time_prekeys_below() != 26303.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_remove_session() != 15351.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_rotate_signed_prekey() != 11331.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_reopen_session() != 45402.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_set_kyber_spk() != 35729.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_rollback_kyber_spk_rotation() != 39610.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_rotate_signed_prekey() != 11331.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_set_local_user_id() != 22865.toShort()) {
@@ -2021,18 +2046,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_rustackstore_prune_expired() != 19780.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_rustpqcontributions_clear() != 36635.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_rustpqcontributions_has_pending() != 44477.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_rustpqcontributions_store_deferred() != 22265.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_rustpqcontributions_take_deferred() != 5516.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_trafficprotectionmanager_current_interval_ms() != 34869.toShort()) {
@@ -2063,9 +2076,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_constructor_rustackstore_new() != 64675.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_constructor_rustpqcontributions_new() != 4456.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_constructor_trafficprotectionmanager_new() != 21642.toShort()) {
@@ -2613,15 +2623,6 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
 //
 public interface ClassicCryptoCoreInterface {
     
-    /**
-     * Mix a ML-KEM-768 shared secret into an existing session's root key.
-     *
-     * Call after init_session (sender) with kem_ss from mlkem768_encapsulate,
-     * or after init_receiving_session (receiver) with kem_ss from mlkem768_decapsulate.
-     * Both sides must call this with the same shared secret to stay in sync.
-     */
-    fun `applyPqContribution`(`contactId`: kotlin.String, `kemSharedSecret`: List<kotlin.UByte>)
-    
     fun `decryptMessage`(`sessionId`: kotlin.String, `ephemeralPublicKey`: List<kotlin.UByte>, `messageNumber`: kotlin.UInt, `content`: List<kotlin.UByte>, `suiteId`: kotlin.UShort, `pqMessageEpoch`: kotlin.UInt, `pqRatchetField`: List<kotlin.UByte>): DecryptedMessageResult
     
     fun `encryptMessage`(`sessionId`: kotlin.String, `plaintext`: kotlin.String): EncryptedMessageComponents
@@ -2781,26 +2782,6 @@ open class ClassicCryptoCore: Disposable, AutoCloseable, ClassicCryptoCoreInterf
             UniffiLib.uniffi_construct_core_fn_clone_classiccryptocore(handle, status)
         }
     }
-
-    
-    /**
-     * Mix a ML-KEM-768 shared secret into an existing session's root key.
-     *
-     * Call after init_session (sender) with kem_ss from mlkem768_encapsulate,
-     * or after init_receiving_session (receiver) with kem_ss from mlkem768_decapsulate.
-     * Both sides must call this with the same shared secret to stay in sync.
-     */
-    @Throws(CryptoException::class)override fun `applyPqContribution`(`contactId`: kotlin.String, `kemSharedSecret`: List<kotlin.UByte>)
-        = 
-    callWithHandle {
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_classiccryptocore_apply_pq_contribution(
-        it,
-        FfiConverterString.lower(`contactId`),FfiConverterSequenceUByte.lower(`kemSharedSecret`),_status)
-}
-    }
-    
-    
 
     
     @Throws(CryptoException::class)override fun `decryptMessage`(`sessionId`: kotlin.String, `ephemeralPublicKey`: List<kotlin.UByte>, `messageNumber`: kotlin.UInt, `content`: List<kotlin.UByte>, `suiteId`: kotlin.UShort, `pqMessageEpoch`: kotlin.UInt, `pqRatchetField`: List<kotlin.UByte>): DecryptedMessageResult {
@@ -3828,8 +3809,6 @@ public interface OrchestratorCoreInterface {
      */
     fun `ackMarkProcessed`(`messageId`: kotlin.String)
     
-    fun `applyPqContribution`(`contactId`: kotlin.String, `kemSharedSecret`: List<kotlin.UByte>)
-    
     /**
      * Whether the ratchet with this **device** was announced (SESSION_RESET_INIT sent) and the
      * peer has not acknowledged it yet. The confirm gate; fold it over a peer's device set for
@@ -3837,9 +3816,25 @@ public interface OrchestratorCoreInterface {
      */
     fun `awaitsAcknowledgement`(`contactId`: kotlin.String): kotlin.Boolean
     
+    /**
+     * Start a Kyber SPK rotation (with the classic SPK): the key to upload. Calling it again
+     * before commit/rollback returns the same key, so a retried upload uploads the same key.
+     */
+    fun `beginKyberSpkRotation`(): KyberPrekeyUpload
+    
     fun `buildHybridIdentityBindMessage`(`hybridPublicKey`: List<kotlin.UByte>): List<kotlin.UByte>
     
     fun `buildX3dhSignMessage`(`suiteId`: kotlin.UByte, `publicKey`: List<kotlin.UByte>): List<kotlin.UByte>
+    
+    /**
+     * The server confirmed the upload. Returns false if nothing was pending.
+     */
+    fun `commitKyberSpkRotation`(): kotlin.Boolean
+    
+    /**
+     * The current Kyber SPK's upload record again, or null before the first commit.
+     */
+    fun `currentKyberSpkUpload`(): KyberPrekeyUpload?
     
     fun `decryptMessage`(`contactId`: kotlin.String, `ephemeralPublicKey`: List<kotlin.UByte>, `messageNumber`: kotlin.UInt, `content`: List<kotlin.UByte>, `suiteId`: kotlin.UShort, `pqMessageEpoch`: kotlin.UInt, `pqRatchetField`: List<kotlin.UByte>): DecryptedMessageResult
     
@@ -3853,11 +3848,7 @@ public interface OrchestratorCoreInterface {
     
     fun `ensureHybridSignatureKey`(): List<kotlin.UByte>
     
-    /**
-     * Export the PQContributionManager state as a CFE binary blob.
-     * Persist under CfeSecureStoreSlot::KyberSessionState.
-     */
-    fun `exportKyberSessionState`(): List<kotlin.UByte>
+    fun `exportKyberPrekeys`(): List<kotlin.UByte>
     
     fun `exportOneTimePrekeys`(): List<kotlin.UByte>
     
@@ -3888,6 +3879,8 @@ public interface OrchestratorCoreInterface {
      * `plan_teardown`, and forgets afterwards.
      */
     fun `forgetContactState`(`contactId`: kotlin.String)
+    
+    fun `generateKyberOneTimePrekeys`(`count`: kotlin.UInt): List<KyberPrekeyUpload>
     
     fun `generateOneTimePrekeys`(`count`: kotlin.UInt): List<OtpkPair>
     
@@ -3927,10 +3920,7 @@ public interface OrchestratorCoreInterface {
     
     fun `importHybridSignaturePrivateKey`(`privBytes`: List<kotlin.UByte>)
     
-    /**
-     * Restore the PQContributionManager state from a CFE blob.
-     */
-    fun `importKyberSessionState`(`data`: List<kotlin.UByte>)
+    fun `importKyberPrekeys`(`data`: List<kotlin.UByte>)
     
     fun `importOneTimePrekeys`(`data`: List<kotlin.UByte>)
     
@@ -3944,11 +3934,19 @@ public interface OrchestratorCoreInterface {
     
     fun `initReceivingSession`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle, `firstMessage`: BinaryFirstMessage): SessionInitResult
     
+    fun `initReceivingSessionFromWirePayload`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle, `wirePayload`: List<kotlin.UByte>): SessionInitResult
+    
     fun `initSession`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String
     
     fun `initSessionAllowingStale`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String
     
-    fun `kyberSpk`(): KyberSpkRecord?
+    fun `kyberOneTimePrekeyCount`(): kotlin.UInt
+    
+    /**
+     * Decapsulate with our Kyber prekey `key_id` (0 = current SPK). For history transfer; the
+     * handshake decapsulates inside the core.
+     */
+    fun `kyberPrekeyDecapsulate`(`keyId`: kotlin.UInt, `ciphertext`: List<kotlin.UByte>): List<kotlin.UByte>
     
     fun `oneTimePrekeyCount`(): kotlin.UInt
     
@@ -3968,18 +3966,23 @@ public interface OrchestratorCoreInterface {
     
     fun `prekeysAvailableCount`(): kotlin.UInt
     
-    fun `pruneOneTimePrekeysBelow`(`minKeepId`: kotlin.UInt): kotlin.UInt
-    
     /**
-     * Register a KEM shared secret as a deferred contribution.
+     * After a replace-all upload of Kyber one-time keys; returns how many were removed.
      */
-    fun `registerPqDeferred`(`contactId`: kotlin.String, `otpkId`: kotlin.UInt, `sharedSecret`: List<kotlin.UByte>)
+    fun `pruneKyberOneTimePrekeysBelow`(`minKeepId`: kotlin.UInt): kotlin.UInt
+    
+    fun `pruneOneTimePrekeysBelow`(`minKeepId`: kotlin.UInt): kotlin.UInt
     
     fun `removeSession`(`contactId`: kotlin.String): kotlin.Boolean
     
-    fun `rotateSignedPrekey`(): RotatedSpkBundle
+    fun `reopenSession`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String
     
-    fun `setKyberSpk`(`keyId`: kotlin.UInt, `secretKey`: List<kotlin.UByte>, `publicKey`: List<kotlin.UByte>)
+    /**
+     * The upload failed.
+     */
+    fun `rollbackKyberSpkRotation`()
+    
+    fun `rotateSignedPrekey`(): RotatedSpkBundle
     
     fun `setLocalUserId`(`userId`: kotlin.String)
     
@@ -4130,19 +4133,6 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
-    @Throws(CryptoException::class)override fun `applyPqContribution`(`contactId`: kotlin.String, `kemSharedSecret`: List<kotlin.UByte>)
-        = 
-    callWithHandle {
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_apply_pq_contribution(
-        it,
-        FfiConverterString.lower(`contactId`),FfiConverterSequenceUByte.lower(`kemSharedSecret`),_status)
-}
-    }
-    
-    
-
-    
     /**
      * Whether the ratchet with this **device** was announced (SESSION_RESET_INIT sent) and the
      * peer has not acknowledged it yet. The confirm gate; fold it over a peer's device set for
@@ -4154,6 +4144,24 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_awaits_acknowledgement(
         it,
         FfiConverterString.lower(`contactId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Start a Kyber SPK rotation (with the classic SPK): the key to upload. Calling it again
+     * before commit/rollback returns the same key, so a retried upload uploads the same key.
+     */
+    @Throws(CryptoException::class)override fun `beginKyberSpkRotation`(): KyberPrekeyUpload {
+            return FfiConverterTypeKyberPrekeyUpload.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_begin_kyber_spk_rotation(
+        it,
+        _status)
 }
     }
     )
@@ -4180,6 +4188,39 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_build_x3dh_sign_message(
         it,
         FfiConverterUByte.lower(`suiteId`),FfiConverterSequenceUByte.lower(`publicKey`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The server confirmed the upload. Returns false if nothing was pending.
+     */override fun `commitKyberSpkRotation`(): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_commit_kyber_spk_rotation(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The current Kyber SPK's upload record again, or null before the first commit.
+     */
+    @Throws(CryptoException::class)override fun `currentKyberSpkUpload`(): KyberPrekeyUpload? {
+            return FfiConverterOptionalTypeKyberPrekeyUpload.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_current_kyber_spk_upload(
+        it,
+        _status)
 }
     }
     )
@@ -4246,15 +4287,11 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
-    /**
-     * Export the PQContributionManager state as a CFE binary blob.
-     * Persist under CfeSecureStoreSlot::KyberSessionState.
-     */
-    @Throws(CryptoException::class)override fun `exportKyberSessionState`(): List<kotlin.UByte> {
+    @Throws(CryptoException::class)override fun `exportKyberPrekeys`(): List<kotlin.UByte> {
             return FfiConverterSequenceUByte.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_export_kyber_session_state(
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_export_kyber_prekeys(
         it,
         _status)
 }
@@ -4349,6 +4386,20 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
 }
     }
     
+    
+
+    
+    @Throws(CryptoException::class)override fun `generateKyberOneTimePrekeys`(`count`: kotlin.UInt): List<KyberPrekeyUpload> {
+            return FfiConverterSequenceTypeKyberPrekeyUpload.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_generate_kyber_one_time_prekeys(
+        it,
+        FfiConverterUInt.lower(`count`),_status)
+}
+    }
+    )
+    }
     
 
     
@@ -4516,14 +4567,11 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
-    /**
-     * Restore the PQContributionManager state from a CFE blob.
-     */
-    @Throws(CryptoException::class)override fun `importKyberSessionState`(`data`: List<kotlin.UByte>)
+    @Throws(CryptoException::class)override fun `importKyberPrekeys`(`data`: List<kotlin.UByte>)
         = 
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_import_kyber_session_state(
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_import_kyber_prekeys(
         it,
         FfiConverterSequenceUByte.lower(`data`),_status)
 }
@@ -4590,6 +4638,20 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
+    @Throws(CryptoException::class)override fun `initReceivingSessionFromWirePayload`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle, `wirePayload`: List<kotlin.UByte>): SessionInitResult {
+            return FfiConverterTypeSessionInitResult.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_init_receiving_session_from_wire_payload(
+        it,
+        FfiConverterString.lower(`contactId`),FfiConverterTypeBinaryKeyBundle.lower(`recipientBundle`),FfiConverterSequenceUByte.lower(`wirePayload`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(CryptoException::class)override fun `initSession`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String {
             return FfiConverterString.lift(
     callWithHandle {
@@ -4617,13 +4679,31 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     
 
-    override fun `kyberSpk`(): KyberSpkRecord? {
-            return FfiConverterOptionalTypeKyberSpkRecord.lift(
+    override fun `kyberOneTimePrekeyCount`(): kotlin.UInt {
+            return FfiConverterUInt.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_kyber_spk(
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_kyber_one_time_prekey_count(
         it,
         _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Decapsulate with our Kyber prekey `key_id` (0 = current SPK). For history transfer; the
+     * handshake decapsulates inside the core.
+     */
+    @Throws(CryptoException::class)override fun `kyberPrekeyDecapsulate`(`keyId`: kotlin.UInt, `ciphertext`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_kyber_prekey_decapsulate(
+        it,
+        FfiConverterUInt.lower(`keyId`),FfiConverterSequenceUByte.lower(`ciphertext`),_status)
 }
     }
     )
@@ -4692,6 +4772,22 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     
 
+    
+    /**
+     * After a replace-all upload of Kyber one-time keys; returns how many were removed.
+     */override fun `pruneKyberOneTimePrekeysBelow`(`minKeepId`: kotlin.UInt): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_prune_kyber_one_time_prekeys_below(
+        it,
+        FfiConverterUInt.lower(`minKeepId`),_status)
+}
+    }
+    )
+    }
+    
+
     override fun `pruneOneTimePrekeysBelow`(`minKeepId`: kotlin.UInt): kotlin.UInt {
             return FfiConverterUInt.lift(
     callWithHandle {
@@ -4703,21 +4799,6 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     )
     }
-    
-
-    
-    /**
-     * Register a KEM shared secret as a deferred contribution.
-     */override fun `registerPqDeferred`(`contactId`: kotlin.String, `otpkId`: kotlin.UInt, `sharedSecret`: List<kotlin.UByte>)
-        = 
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_register_pq_deferred(
-        it,
-        FfiConverterString.lower(`contactId`),FfiConverterUInt.lower(`otpkId`),FfiConverterSequenceUByte.lower(`sharedSecret`),_status)
-}
-    }
-    
     
 
     override fun `removeSession`(`contactId`: kotlin.String): kotlin.Boolean {
@@ -4734,6 +4815,35 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
+    @Throws(CryptoException::class)override fun `reopenSession`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String {
+            return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_reopen_session(
+        it,
+        FfiConverterString.lower(`contactId`),FfiConverterTypeBinaryKeyBundle.lower(`recipientBundle`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The upload failed.
+     */override fun `rollbackKyberSpkRotation`()
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_rollback_kyber_spk_rotation(
+        it,
+        _status)
+}
+    }
+    
+    
+
+    
     @Throws(CryptoException::class)override fun `rotateSignedPrekey`(): RotatedSpkBundle {
             return FfiConverterTypeRotatedSpkBundle.lift(
     callWithHandle {
@@ -4745,18 +4855,6 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     )
     }
-    
-
-    override fun `setKyberSpk`(`keyId`: kotlin.UInt, `secretKey`: List<kotlin.UByte>, `publicKey`: List<kotlin.UByte>)
-        = 
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_set_kyber_spk(
-        it,
-        FfiConverterUInt.lower(`keyId`),FfiConverterSequenceUByte.lower(`secretKey`),FfiConverterSequenceUByte.lower(`publicKey`),_status)
-}
-    }
-    
     
 
     override fun `setLocalUserId`(`userId`: kotlin.String)
@@ -5286,350 +5384,6 @@ public object FfiConverterTypeRustAckStore: FfiConverter<RustAckStore, Long> {
 
 
 //
-/**
- * Thread-safe store for deferred PQXDH shared secrets.
- *
- * Replaces `pendingPQContributions: [String: [UInt8]] + NSLock` in PQCKeyManager.
- *
- * Protocol: encapsulate (session init) → store SS here → encrypt msg0 with
- * classic-only DR state → consume SS here → applyPqContribution to DR session.
- * Both sides must apply PQ at the same moment; if consume returns null, skip PQ.
- */
-public interface RustPqContributionsInterface {
-    
-    /**
-     * Discard any pending contribution (e.g. on send failure).
-     */
-    fun `clear`(`contactId`: kotlin.String)
-    
-    /**
-     * `true` if a deferred contribution exists for `contact_id`.
-     */
-    fun `hasPending`(`contactId`: kotlin.String): kotlin.Boolean
-    
-    /**
-     * Store the KEM shared secret for `contact_id`.
-     */
-    fun `storeDeferred`(`contactId`: kotlin.String, `sharedSecret`: List<kotlin.UByte>)
-    
-    /**
-     * Remove and return the stored shared secret. Returns null if not found.
-     */
-    fun `takeDeferred`(`contactId`: kotlin.String): List<kotlin.UByte>?
-    
-    companion object
-}
-
-/**
- * Thread-safe store for deferred PQXDH shared secrets.
- *
- * Replaces `pendingPQContributions: [String: [UInt8]] + NSLock` in PQCKeyManager.
- *
- * Protocol: encapsulate (session init) → store SS here → encrypt msg0 with
- * classic-only DR state → consume SS here → applyPqContribution to DR session.
- * Both sides must apply PQ at the same moment; if consume returns null, skip PQ.
- */
-open class RustPqContributions: Disposable, AutoCloseable, RustPqContributionsInterface
-{
-
-    @Suppress("UNUSED_PARAMETER")
-    /**
-     * @suppress
-     */
-    constructor(withHandle: UniffiWithHandle, handle: Long) {
-        this.handle = handle
-        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
-    }
-
-    /**
-     * @suppress
-     *
-     * This constructor can be used to instantiate a fake object. Only used for tests. Any
-     * attempt to actually use an object constructed this way will fail as there is no
-     * connected Rust object.
-     */
-    @Suppress("UNUSED_PARAMETER")
-    constructor(noHandle: NoHandle) {
-        this.handle = 0
-        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
-    }
-    constructor() :
-        this(UniffiWithHandle, 
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_constructor_rustpqcontributions_new(
-    
-        _status)
-}
-    )
-
-    protected val handle: Long
-    protected val cleanable: UniffiCleaner.Cleanable
-
-    private val wasDestroyed = AtomicBoolean(false)
-    private val callCounter = AtomicLong(1)
-
-    override fun destroy() {
-        // Only allow a single call to this method.
-        // TODO: maybe we should log a warning if called more than once?
-        if (this.wasDestroyed.compareAndSet(false, true)) {
-            // This decrement always matches the initial count of 1 given at creation time.
-            if (this.callCounter.decrementAndGet() == 0L) {
-                cleanable.clean()
-            }
-        }
-    }
-
-    @Synchronized
-    override fun close() {
-        this.destroy()
-    }
-
-    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
-        // Check and increment the call counter, to keep the object alive.
-        // This needs a compare-and-set retry loop in case of concurrent updates.
-        do {
-            val c = this.callCounter.get()
-            if (c == 0L) {
-                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
-            }
-            if (c == Long.MAX_VALUE) {
-                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
-            }
-        } while (! this.callCounter.compareAndSet(c, c + 1L))
-        // Now we can safely do the method call without the handle being freed concurrently.
-        try {
-            return block(this.uniffiCloneHandle())
-        } finally {
-            // This decrement always matches the increment we performed above.
-            if (this.callCounter.decrementAndGet() == 0L) {
-                cleanable.clean()
-            }
-        }
-    }
-
-    // Use a static inner class instead of a closure so as not to accidentally
-    // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(private val handle: Long) : Runnable {
-        override fun run() {
-            if (handle == 0.toLong()) {
-                // Fake object created with `NoHandle`, don't try to free.
-                return;
-            }
-            uniffiRustCall { status ->
-                UniffiLib.uniffi_construct_core_fn_free_rustpqcontributions(handle, status)
-            }
-        }
-    }
-
-    /**
-     * @suppress
-     */
-    fun uniffiCloneHandle(): Long {
-        if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object");
-        }
-        return uniffiRustCall() { status ->
-            UniffiLib.uniffi_construct_core_fn_clone_rustpqcontributions(handle, status)
-        }
-    }
-
-    
-    /**
-     * Discard any pending contribution (e.g. on send failure).
-     */override fun `clear`(`contactId`: kotlin.String)
-        = 
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_rustpqcontributions_clear(
-        it,
-        FfiConverterString.lower(`contactId`),_status)
-}
-    }
-    
-    
-
-    
-    /**
-     * `true` if a deferred contribution exists for `contact_id`.
-     */override fun `hasPending`(`contactId`: kotlin.String): kotlin.Boolean {
-            return FfiConverterBoolean.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_rustpqcontributions_has_pending(
-        it,
-        FfiConverterString.lower(`contactId`),_status)
-}
-    }
-    )
-    }
-    
-
-    
-    /**
-     * Store the KEM shared secret for `contact_id`.
-     */override fun `storeDeferred`(`contactId`: kotlin.String, `sharedSecret`: List<kotlin.UByte>)
-        = 
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_rustpqcontributions_store_deferred(
-        it,
-        FfiConverterString.lower(`contactId`),FfiConverterSequenceUByte.lower(`sharedSecret`),_status)
-}
-    }
-    
-    
-
-    
-    /**
-     * Remove and return the stored shared secret. Returns null if not found.
-     */override fun `takeDeferred`(`contactId`: kotlin.String): List<kotlin.UByte>? {
-            return FfiConverterOptionalSequenceUByte.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_rustpqcontributions_take_deferred(
-        it,
-        FfiConverterString.lower(`contactId`),_status)
-}
-    }
-    )
-    }
-    
-
-    
-
-    
-
-
-    
-    
-    /**
-     * @suppress
-     */
-    companion object
-    
-}
-
-
-/**
- * @suppress
- */
-public object FfiConverterTypeRustPQContributions: FfiConverter<RustPqContributions, Long> {
-    override fun lower(value: RustPqContributions): Long {
-        return value.uniffiCloneHandle()
-    }
-
-    override fun lift(value: Long): RustPqContributions {
-        return RustPqContributions(UniffiWithHandle, value)
-    }
-
-    override fun read(buf: ByteBuffer): RustPqContributions {
-        return lift(buf.getLong())
-    }
-
-    override fun allocationSize(value: RustPqContributions) = 8UL
-
-    override fun write(value: RustPqContributions, buf: ByteBuffer) {
-        buf.putLong(lower(value))
-    }
-}
-
-
-// This template implements a class for working with a Rust struct via a handle
-// to the live Rust struct on the other side of the FFI.
-//
-// There's some subtlety here, because we have to be careful not to operate on a Rust
-// struct after it has been dropped, and because we must expose a public API for freeing
-// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
-//
-//   * Each instance holds an opaque handle to the underlying Rust struct.
-//     Method calls need to read this handle from the object's state and pass it in to
-//     the Rust FFI.
-//
-//   * When an instance is no longer needed, its handle should be passed to a
-//     special destructor function provided by the Rust FFI, which will drop the
-//     underlying Rust struct.
-//
-//   * Given an instance, calling code is expected to call the special
-//     `destroy` method in order to free it after use, either by calling it explicitly
-//     or by using a higher-level helper like the `use` method. Failing to do so risks
-//     leaking the underlying Rust struct.
-//
-//   * We can't assume that calling code will do the right thing, and must be prepared
-//     to handle Kotlin method calls executing concurrently with or even after a call to
-//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
-//
-//   * We must never allow Rust code to operate on the underlying Rust struct after
-//     the destructor has been called, and must never call the destructor more than once.
-//     Doing so may trigger memory unsafety.
-//
-//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
-//     is implemented to call the destructor when the Kotlin object becomes unreachable.
-//     This is done in a background thread. This is not a panacea, and client code should be aware that
-//      1. the thread may starve if some there are objects that have poorly performing
-//     `drop` methods or do significant work in their `drop` methods.
-//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
-//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
-//
-// If we try to implement this with mutual exclusion on access to the handle, there is the
-// possibility of a race between a method call and a concurrent call to `destroy`:
-//
-//    * Thread A starts a method call, reads the value of the handle, but is interrupted
-//      before it can pass the handle over the FFI to Rust.
-//    * Thread B calls `destroy` and frees the underlying Rust struct.
-//    * Thread A resumes, passing the already-read handle value to Rust and triggering
-//      a use-after-free.
-//
-// One possible solution would be to use a `ReadWriteLock`, with each method call taking
-// a read lock (and thus allowed to run concurrently) and the special `destroy` method
-// taking a write lock (and thus blocking on live method calls). However, we aim not to
-// generate methods with any hidden blocking semantics, and a `destroy` method that might
-// block if called incorrectly seems to meet that bar.
-//
-// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
-// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
-// has been called. These are updated according to the following rules:
-//
-//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
-//      The initial value for the flag is false.
-//
-//    * At the start of each method call, we atomically check the counter.
-//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
-//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
-//
-//    * At the end of each method call, we atomically decrement and check the counter.
-//      If it has reached zero then we destroy the underlying Rust struct.
-//
-//    * When `destroy` is called, we atomically flip the flag from false to true.
-//      If the flag was already true we silently fail.
-//      Otherwise we atomically decrement and check the counter.
-//      If it has reached zero then we destroy the underlying Rust struct.
-//
-// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
-// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
-//
-// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
-// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
-// of the underlying Rust code.
-//
-// This makes a cleaner a better alternative to _not_ calling `destroy()` as
-// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
-// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
-// thread may be starved, and the app will leak memory.
-//
-// In this case, `destroy`ing manually may be a better solution.
-//
-// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
-// with Rust peers are reclaimed:
-//
-// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
-// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
-// 3. The memory is reclaimed when the process terminates.
-//
-// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
-//
-
-
-//
 public interface TrafficProtectionManagerInterface {
     
     fun `currentIntervalMs`(): kotlin.ULong
@@ -5913,6 +5667,12 @@ data class BinaryFirstMessage (
     var `pqMessageEpoch`: kotlin.UInt
     , 
     var `pqRatchetField`: List<kotlin.UByte>
+    , 
+    var `pqxdhV2`: kotlin.Boolean
+    , 
+    var `kyberPrekeyId`: kotlin.UInt
+    , 
+    var `kemCiphertext`: List<kotlin.UByte>
     
 ){
     
@@ -5934,6 +5694,9 @@ public object FfiConverterTypeBinaryFirstMessage: FfiConverterRustBuffer<BinaryF
             FfiConverterUShort.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterSequenceUByte.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterSequenceUByte.read(buf),
         )
     }
 
@@ -5944,7 +5707,10 @@ public object FfiConverterTypeBinaryFirstMessage: FfiConverterRustBuffer<BinaryF
             FfiConverterUInt.allocationSize(value.`oneTimePrekeyId`) +
             FfiConverterUShort.allocationSize(value.`suiteId`) +
             FfiConverterUInt.allocationSize(value.`pqMessageEpoch`) +
-            FfiConverterSequenceUByte.allocationSize(value.`pqRatchetField`)
+            FfiConverterSequenceUByte.allocationSize(value.`pqRatchetField`) +
+            FfiConverterBoolean.allocationSize(value.`pqxdhV2`) +
+            FfiConverterUInt.allocationSize(value.`kyberPrekeyId`) +
+            FfiConverterSequenceUByte.allocationSize(value.`kemCiphertext`)
     )
 
     override fun write(value: BinaryFirstMessage, buf: ByteBuffer) {
@@ -5955,6 +5721,9 @@ public object FfiConverterTypeBinaryFirstMessage: FfiConverterRustBuffer<BinaryF
             FfiConverterUShort.write(value.`suiteId`, buf)
             FfiConverterUInt.write(value.`pqMessageEpoch`, buf)
             FfiConverterSequenceUByte.write(value.`pqRatchetField`, buf)
+            FfiConverterBoolean.write(value.`pqxdhV2`, buf)
+            FfiConverterUInt.write(value.`kyberPrekeyId`, buf)
+            FfiConverterSequenceUByte.write(value.`kemCiphertext`, buf)
     }
 }
 
@@ -5987,13 +5756,39 @@ data class BinaryKeyBundle (
     , 
     var `kyberSpkRotationEpoch`: kotlin.UInt
     , 
+    /**
+     * Kyber signed prekey (ML-KEM-1024, 1568 bytes), its id and signed creation time.
+     */
     var `kyberPreKeyPublic`: List<kotlin.UByte>?
     , 
+    var `kyberPreKeyId`: kotlin.UInt? = null 
+    , 
+    var `kyberPreKeyCreatedAt`: kotlin.ULong? = null 
+    , 
+    var `kyberPreKeySignature`: List<kotlin.UByte>? = null 
+    , 
+    var `kyberPreKeyHybridSignature`: List<kotlin.UByte>? = null 
+    , 
+    /**
+     * Kyber one-time prekey (id from 1 000 000), preferred when present and signed.
+     */
     var `kyberOneTimePrekeyPublic`: List<kotlin.UByte>?
     , 
     var `kyberOneTimePrekeyId`: kotlin.UInt?
     , 
-    var `supportsPqRatchet`: kotlin.Boolean
+    var `kyberOneTimePrekeyCreatedAt`: kotlin.ULong? = null 
+    , 
+    var `kyberOneTimePrekeySignature`: List<kotlin.UByte>? = null 
+    , 
+    var `kyberOneTimePrekeyHybridSignature`: List<kotlin.UByte>? = null 
+    , 
+    /**
+     * Hybrid identity key (Ed25519 + ML-DSA-65, 1984 bytes; field 20) and the Ed25519
+     * cross-signature binding it to `verifying_key` (field 21). Pinned per device on first use.
+     */
+    var `hybridIdentityKey`: List<kotlin.UByte>? = null 
+    , 
+    var `hybridIdentitySignature`: List<kotlin.UByte>? = null 
     
 ){
     
@@ -6020,9 +5815,17 @@ public object FfiConverterTypeBinaryKeyBundle: FfiConverterRustBuffer<BinaryKeyB
             FfiConverterULong.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterOptionalSequenceUByte.read(buf),
+            FfiConverterOptionalUInt.read(buf),
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterOptionalSequenceUByte.read(buf),
+            FfiConverterOptionalSequenceUByte.read(buf),
             FfiConverterOptionalSequenceUByte.read(buf),
             FfiConverterOptionalUInt.read(buf),
-            FfiConverterBoolean.read(buf),
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterOptionalSequenceUByte.read(buf),
+            FfiConverterOptionalSequenceUByte.read(buf),
+            FfiConverterOptionalSequenceUByte.read(buf),
+            FfiConverterOptionalSequenceUByte.read(buf),
         )
     }
 
@@ -6039,9 +5842,17 @@ public object FfiConverterTypeBinaryKeyBundle: FfiConverterRustBuffer<BinaryKeyB
             FfiConverterULong.allocationSize(value.`kyberSpkUploadedAt`) +
             FfiConverterUInt.allocationSize(value.`kyberSpkRotationEpoch`) +
             FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberPreKeyPublic`) +
+            FfiConverterOptionalUInt.allocationSize(value.`kyberPreKeyId`) +
+            FfiConverterOptionalULong.allocationSize(value.`kyberPreKeyCreatedAt`) +
+            FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberPreKeySignature`) +
+            FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberPreKeyHybridSignature`) +
             FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberOneTimePrekeyPublic`) +
             FfiConverterOptionalUInt.allocationSize(value.`kyberOneTimePrekeyId`) +
-            FfiConverterBoolean.allocationSize(value.`supportsPqRatchet`)
+            FfiConverterOptionalULong.allocationSize(value.`kyberOneTimePrekeyCreatedAt`) +
+            FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberOneTimePrekeySignature`) +
+            FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberOneTimePrekeyHybridSignature`) +
+            FfiConverterOptionalSequenceUByte.allocationSize(value.`hybridIdentityKey`) +
+            FfiConverterOptionalSequenceUByte.allocationSize(value.`hybridIdentitySignature`)
     )
 
     override fun write(value: BinaryKeyBundle, buf: ByteBuffer) {
@@ -6057,9 +5868,17 @@ public object FfiConverterTypeBinaryKeyBundle: FfiConverterRustBuffer<BinaryKeyB
             FfiConverterULong.write(value.`kyberSpkUploadedAt`, buf)
             FfiConverterUInt.write(value.`kyberSpkRotationEpoch`, buf)
             FfiConverterOptionalSequenceUByte.write(value.`kyberPreKeyPublic`, buf)
+            FfiConverterOptionalUInt.write(value.`kyberPreKeyId`, buf)
+            FfiConverterOptionalULong.write(value.`kyberPreKeyCreatedAt`, buf)
+            FfiConverterOptionalSequenceUByte.write(value.`kyberPreKeySignature`, buf)
+            FfiConverterOptionalSequenceUByte.write(value.`kyberPreKeyHybridSignature`, buf)
             FfiConverterOptionalSequenceUByte.write(value.`kyberOneTimePrekeyPublic`, buf)
             FfiConverterOptionalUInt.write(value.`kyberOneTimePrekeyId`, buf)
-            FfiConverterBoolean.write(value.`supportsPqRatchet`, buf)
+            FfiConverterOptionalULong.write(value.`kyberOneTimePrekeyCreatedAt`, buf)
+            FfiConverterOptionalSequenceUByte.write(value.`kyberOneTimePrekeySignature`, buf)
+            FfiConverterOptionalSequenceUByte.write(value.`kyberOneTimePrekeyHybridSignature`, buf)
+            FfiConverterOptionalSequenceUByte.write(value.`hybridIdentityKey`, buf)
+            FfiConverterOptionalSequenceUByte.write(value.`hybridIdentitySignature`, buf)
     }
 }
 
@@ -6214,6 +6033,10 @@ data class EncryptedMessageComponents (
     var `pqMessageEpoch`: kotlin.UInt
     , 
     var `pqRatchetField`: List<kotlin.UByte>
+    , 
+    var `kemCiphertext`: List<kotlin.UByte>
+    , 
+    var `kyberPrekeyId`: kotlin.UInt
     
 ){
     
@@ -6236,6 +6059,8 @@ public object FfiConverterTypeEncryptedMessageComponents: FfiConverterRustBuffer
             FfiConverterUShort.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterSequenceUByte.read(buf),
+            FfiConverterSequenceUByte.read(buf),
+            FfiConverterUInt.read(buf),
         )
     }
 
@@ -6247,7 +6072,9 @@ public object FfiConverterTypeEncryptedMessageComponents: FfiConverterRustBuffer
             FfiConverterSequenceUByte.allocationSize(value.`storageKey`) +
             FfiConverterUShort.allocationSize(value.`suiteId`) +
             FfiConverterUInt.allocationSize(value.`pqMessageEpoch`) +
-            FfiConverterSequenceUByte.allocationSize(value.`pqRatchetField`)
+            FfiConverterSequenceUByte.allocationSize(value.`pqRatchetField`) +
+            FfiConverterSequenceUByte.allocationSize(value.`kemCiphertext`) +
+            FfiConverterUInt.allocationSize(value.`kyberPrekeyId`)
     )
 
     override fun write(value: EncryptedMessageComponents, buf: ByteBuffer) {
@@ -6259,6 +6086,8 @@ public object FfiConverterTypeEncryptedMessageComponents: FfiConverterRustBuffer
             FfiConverterUShort.write(value.`suiteId`, buf)
             FfiConverterUInt.write(value.`pqMessageEpoch`, buf)
             FfiConverterSequenceUByte.write(value.`pqRatchetField`, buf)
+            FfiConverterSequenceUByte.write(value.`kemCiphertext`, buf)
+            FfiConverterUInt.write(value.`kyberPrekeyId`, buf)
     }
 }
 
@@ -6489,16 +6318,20 @@ public object FfiConverterTypeInviteSignature: FfiConverterRustBuffer<InviteSign
 
 
 /**
- * ML-KEM-768 signed prekey held in the core key-state (PQXDH KEM leg).
- * Persisted atomically inside the private-keys CFE blob — replaces the
- * standalone platform Keychain triple (key-store consolidation Phase 2).
+ * One ML-KEM-1024 Kyber prekey to upload (PQXDH v2). Both signatures are over
+ * `"KonstruktX3DH-v1" || 0x00 0x11 || created_at (u64 BE) || public_key`; upload `created_at`
+ * with the key — the signatures cover it.
  */
-data class KyberSpkRecord (
+data class KyberPrekeyUpload (
     var `keyId`: kotlin.UInt
     , 
     var `publicKey`: List<kotlin.UByte>
     , 
-    var `secretKey`: List<kotlin.UByte>
+    var `createdAt`: kotlin.ULong
+    , 
+    var `signature`: List<kotlin.UByte>
+    , 
+    var `hybridSignature`: List<kotlin.UByte>
     
 ){
     
@@ -6510,25 +6343,31 @@ data class KyberSpkRecord (
 /**
  * @suppress
  */
-public object FfiConverterTypeKyberSpkRecord: FfiConverterRustBuffer<KyberSpkRecord> {
-    override fun read(buf: ByteBuffer): KyberSpkRecord {
-        return KyberSpkRecord(
+public object FfiConverterTypeKyberPrekeyUpload: FfiConverterRustBuffer<KyberPrekeyUpload> {
+    override fun read(buf: ByteBuffer): KyberPrekeyUpload {
+        return KyberPrekeyUpload(
             FfiConverterUInt.read(buf),
+            FfiConverterSequenceUByte.read(buf),
+            FfiConverterULong.read(buf),
             FfiConverterSequenceUByte.read(buf),
             FfiConverterSequenceUByte.read(buf),
         )
     }
 
-    override fun allocationSize(value: KyberSpkRecord) = (
+    override fun allocationSize(value: KyberPrekeyUpload) = (
             FfiConverterUInt.allocationSize(value.`keyId`) +
             FfiConverterSequenceUByte.allocationSize(value.`publicKey`) +
-            FfiConverterSequenceUByte.allocationSize(value.`secretKey`)
+            FfiConverterULong.allocationSize(value.`createdAt`) +
+            FfiConverterSequenceUByte.allocationSize(value.`signature`) +
+            FfiConverterSequenceUByte.allocationSize(value.`hybridSignature`)
     )
 
-    override fun write(value: KyberSpkRecord, buf: ByteBuffer) {
+    override fun write(value: KyberPrekeyUpload, buf: ByteBuffer) {
             FfiConverterUInt.write(value.`keyId`, buf)
             FfiConverterSequenceUByte.write(value.`publicKey`, buf)
-            FfiConverterSequenceUByte.write(value.`secretKey`, buf)
+            FfiConverterULong.write(value.`createdAt`, buf)
+            FfiConverterSequenceUByte.write(value.`signature`, buf)
+            FfiConverterSequenceUByte.write(value.`hybridSignature`, buf)
     }
 }
 
@@ -6580,7 +6419,7 @@ public object FfiConverterTypeMLDSAKeyPair: FfiConverterRustBuffer<MldsaKeyPair>
 
 
 /**
- * Result of ML-KEM-768 encapsulation (sender side of PQXDH handshake).
+ * Result of an ML-KEM-1024 encapsulation (history transfer to a peer's Kyber SPK).
  */
 data class MlkemEncapsulation (
     var `ciphertext`: List<kotlin.UByte>
@@ -6613,45 +6452,6 @@ public object FfiConverterTypeMLKEMEncapsulation: FfiConverterRustBuffer<MlkemEn
     override fun write(value: MlkemEncapsulation, buf: ByteBuffer) {
             FfiConverterSequenceUByte.write(value.`ciphertext`, buf)
             FfiConverterSequenceUByte.write(value.`sharedSecret`, buf)
-    }
-}
-
-
-
-/**
- * Generated ML-KEM-768 keypair (for Kyber Signed Pre-Key or One-Time Pre-Key upload).
- */
-data class MlkemKeyPair (
-    var `publicKey`: List<kotlin.UByte>
-    , 
-    var `secretKey`: List<kotlin.UByte>
-    
-){
-    
-
-    
-    companion object
-}
-
-/**
- * @suppress
- */
-public object FfiConverterTypeMLKEMKeyPair: FfiConverterRustBuffer<MlkemKeyPair> {
-    override fun read(buf: ByteBuffer): MlkemKeyPair {
-        return MlkemKeyPair(
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
-        )
-    }
-
-    override fun allocationSize(value: MlkemKeyPair) = (
-            FfiConverterSequenceUByte.allocationSize(value.`publicKey`) +
-            FfiConverterSequenceUByte.allocationSize(value.`secretKey`)
-    )
-
-    override fun write(value: MlkemKeyPair, buf: ByteBuffer) {
-            FfiConverterSequenceUByte.write(value.`publicKey`, buf)
-            FfiConverterSequenceUByte.write(value.`secretKey`, buf)
     }
 }
 
@@ -7269,7 +7069,6 @@ public object FfiConverterTypeRotatedSpkBundle: FfiConverterRustBuffer<RotatedSp
 
 
 /**
- * Read-only health snapshot of a Double Ratchet session.
  * Returned by get_session_health(). Does not mutate session state.
  */
 data class SessionHealthReport (
@@ -7284,6 +7083,10 @@ data class SessionHealthReport (
     var `lastRatchetAt`: kotlin.ULong
     , 
     var `sessionId`: kotlin.String
+    , 
+    var `pqAuthentication`: PqAuthentication
+    , 
+    var `pqHandshake`: PqHandshake
     
 ){
     
@@ -7304,6 +7107,8 @@ public object FfiConverterTypeSessionHealthReport: FfiConverterRustBuffer<Sessio
             FfiConverterBoolean.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterString.read(buf),
+            FfiConverterTypePqAuthentication.read(buf),
+            FfiConverterTypePqHandshake.read(buf),
         )
     }
 
@@ -7313,7 +7118,9 @@ public object FfiConverterTypeSessionHealthReport: FfiConverterRustBuffer<Sessio
             FfiConverterUInt.allocationSize(value.`skippedKeysCount`) +
             FfiConverterBoolean.allocationSize(value.`isPqStrengthened`) +
             FfiConverterULong.allocationSize(value.`lastRatchetAt`) +
-            FfiConverterString.allocationSize(value.`sessionId`)
+            FfiConverterString.allocationSize(value.`sessionId`) +
+            FfiConverterTypePqAuthentication.allocationSize(value.`pqAuthentication`) +
+            FfiConverterTypePqHandshake.allocationSize(value.`pqHandshake`)
     )
 
     override fun write(value: SessionHealthReport, buf: ByteBuffer) {
@@ -7323,6 +7130,8 @@ public object FfiConverterTypeSessionHealthReport: FfiConverterRustBuffer<Sessio
             FfiConverterBoolean.write(value.`isPqStrengthened`, buf)
             FfiConverterULong.write(value.`lastRatchetAt`, buf)
             FfiConverterString.write(value.`sessionId`, buf)
+            FfiConverterTypePqAuthentication.write(value.`pqAuthentication`, buf)
+            FfiConverterTypePqHandshake.write(value.`pqHandshake`, buf)
     }
 }
 
@@ -7334,6 +7143,8 @@ data class SessionInitResult (
     var `decryptedMessage`: List<kotlin.UByte>
     , 
     var `storageKey`: List<kotlin.UByte>
+    , 
+    var `kyberPrekeys`: List<kotlin.UByte>?
     
 ){
     
@@ -7351,19 +7162,22 @@ public object FfiConverterTypeSessionInitResult: FfiConverterRustBuffer<SessionI
             FfiConverterString.read(buf),
             FfiConverterSequenceUByte.read(buf),
             FfiConverterSequenceUByte.read(buf),
+            FfiConverterOptionalSequenceUByte.read(buf),
         )
     }
 
     override fun allocationSize(value: SessionInitResult) = (
             FfiConverterString.allocationSize(value.`sessionId`) +
             FfiConverterSequenceUByte.allocationSize(value.`decryptedMessage`) +
-            FfiConverterSequenceUByte.allocationSize(value.`storageKey`)
+            FfiConverterSequenceUByte.allocationSize(value.`storageKey`) +
+            FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberPrekeys`)
     )
 
     override fun write(value: SessionInitResult, buf: ByteBuffer) {
             FfiConverterString.write(value.`sessionId`, buf)
             FfiConverterSequenceUByte.write(value.`decryptedMessage`, buf)
             FfiConverterSequenceUByte.write(value.`storageKey`, buf)
+            FfiConverterOptionalSequenceUByte.write(value.`kyberPrekeys`, buf)
     }
 }
 
@@ -7525,6 +7339,8 @@ data class WirePayload (
     var `pqMessageEpoch`: kotlin.UInt
     , 
     var `pqRatchetField`: List<kotlin.UByte>
+    , 
+    var `pqxdhV2`: kotlin.Boolean = false 
     
 ){
     
@@ -7549,6 +7365,7 @@ public object FfiConverterTypeWirePayload: FfiConverterRustBuffer<WirePayload> {
             FfiConverterSequenceUByte.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterSequenceUByte.read(buf),
+            FfiConverterBoolean.read(buf),
         )
     }
 
@@ -7562,7 +7379,8 @@ public object FfiConverterTypeWirePayload: FfiConverterRustBuffer<WirePayload> {
             FfiConverterOptionalSequenceUByte.allocationSize(value.`kemCiphertext`) +
             FfiConverterSequenceUByte.allocationSize(value.`sealedBox`) +
             FfiConverterUInt.allocationSize(value.`pqMessageEpoch`) +
-            FfiConverterSequenceUByte.allocationSize(value.`pqRatchetField`)
+            FfiConverterSequenceUByte.allocationSize(value.`pqRatchetField`) +
+            FfiConverterBoolean.allocationSize(value.`pqxdhV2`)
     )
 
     override fun write(value: WirePayload, buf: ByteBuffer) {
@@ -7576,6 +7394,7 @@ public object FfiConverterTypeWirePayload: FfiConverterRustBuffer<WirePayload> {
             FfiConverterSequenceUByte.write(value.`sealedBox`, buf)
             FfiConverterUInt.write(value.`pqMessageEpoch`, buf)
             FfiConverterSequenceUByte.write(value.`pqRatchetField`, buf)
+            FfiConverterBoolean.write(value.`pqxdhV2`, buf)
     }
 }
 
@@ -7650,16 +7469,6 @@ sealed class CfeAction {
     data class InitSession(
         val `contactId`: kotlin.String, 
         val `bundleJson`: kotlin.String) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    data class ApplyPqContribution(
-        val `contactId`: kotlin.String, 
-        val `kemSs`: kotlin.ByteArray) : CfeAction()
         
     {
         
@@ -7805,7 +7614,8 @@ sealed class CfeAction {
     
     /**
      * Open a session with `contact_id` now, as INITIATOR, and announce it (X3DH +
-     * SESSION_RESET_INIT) — not a bare local init.
+     * SESSION_RESET_INIT) — not a bare local init. Build it with `reopen_session`, which also
+     * covers a session still held: the PQXDH v2 upgrade sweep asks this for classical sessions.
      */
     data class OpenSession(
         val `contactId`: kotlin.String) : CfeAction()
@@ -8104,136 +7914,132 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            4 -> CfeAction.ApplyPqContribution(
-                FfiConverterString.read(buf),
-                FfiConverterByteArray.read(buf),
-                )
-            5 -> CfeAction.ArchiveSession(
+            4 -> CfeAction.ArchiveSession(
                 FfiConverterString.read(buf),
                 )
-            6 -> CfeAction.MessageDecrypted(
+            5 -> CfeAction.MessageDecrypted(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            7 -> CfeAction.SessionHealNeeded(
+            6 -> CfeAction.SessionHealNeeded(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            8 -> CfeAction.HealSuppressed(
+            7 -> CfeAction.HealSuppressed(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            9 -> CfeAction.HeldPendingAck(
+            8 -> CfeAction.HeldPendingAck(
                 FfiConverterString.read(buf),
                 )
-            10 -> CfeAction.HealAttemptAllowed(
+            9 -> CfeAction.HealAttemptAllowed(
                 FfiConverterString.read(buf),
                 FfiConverterUInt.read(buf),
                 )
-            11 -> CfeAction.HealExhausted(
+            10 -> CfeAction.HealExhausted(
                 FfiConverterString.read(buf),
                 )
-            12 -> CfeAction.EndSessionSuppressed(
+            11 -> CfeAction.EndSessionSuppressed(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            13 -> CfeAction.EndSessionNotNeeded(
+            12 -> CfeAction.EndSessionNotNeeded(
                 FfiConverterString.read(buf),
                 )
-            14 -> CfeAction.ApplyResetInit(
+            13 -> CfeAction.ApplyResetInit(
                 FfiConverterString.read(buf),
                 )
-            15 -> CfeAction.ResetInitSuperseded(
+            14 -> CfeAction.ResetInitSuperseded(
                 FfiConverterString.read(buf),
                 FfiConverterBoolean.read(buf),
                 )
-            16 -> CfeAction.OpenSession(
+            15 -> CfeAction.OpenSession(
                 FfiConverterString.read(buf),
                 )
-            17 -> CfeAction.OpenDeferred(
+            16 -> CfeAction.OpenDeferred(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            18 -> CfeAction.OpenNotNeeded(
+            17 -> CfeAction.OpenNotNeeded(
                 FfiConverterString.read(buf),
                 )
-            19 -> CfeAction.ResendSri(
+            18 -> CfeAction.ResendSri(
                 FfiConverterString.read(buf),
                 )
-            20 -> CfeAction.OpeningGaveUp(
+            19 -> CfeAction.OpeningGaveUp(
                 FfiConverterString.read(buf),
                 )
-            21 -> CfeAction.MessageQueuedPendingInit(
+            20 -> CfeAction.MessageQueuedPendingInit(
                 FfiConverterString.read(buf),
                 FfiConverterUInt.read(buf),
                 )
-            22 -> CfeAction.SaveToSecureStore(
+            21 -> CfeAction.SaveToSecureStore(
                 FfiConverterTypeCfeSecureStoreSlot.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            23 -> CfeAction.PersistMessage(
+            22 -> CfeAction.PersistMessage(
                 FfiConverterString.read(buf),
                 )
-            24 -> CfeAction.PersistAck(
+            23 -> CfeAction.PersistAck(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            25 -> CfeAction.PruneAckStore(
+            24 -> CfeAction.PruneAckStore(
                 FfiConverterULong.read(buf),
                 )
-            26 -> CfeAction.MarkMessageDelivered(
+            25 -> CfeAction.MarkMessageDelivered(
                 FfiConverterString.read(buf),
                 )
-            27 -> CfeAction.FetchPublicKeyBundle(
+            26 -> CfeAction.FetchPublicKeyBundle(
                 FfiConverterString.read(buf),
                 )
-            28 -> CfeAction.SendEncryptedMessage(
+            27 -> CfeAction.SendEncryptedMessage(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterUByte.read(buf),
                 )
-            29 -> CfeAction.SendReceipt(
+            28 -> CfeAction.SendReceipt(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            30 -> CfeAction.SendEndSession(
+            29 -> CfeAction.SendEndSession(
                 FfiConverterString.read(buf),
                 )
-            31 -> CfeAction.NotifyNewMessage(
-                FfiConverterString.read(buf),
-                FfiConverterString.read(buf),
-                )
-            32 -> CfeAction.NotifySessionCreated(
-                FfiConverterString.read(buf),
-                )
-            33 -> CfeAction.NotifyError(
+            30 -> CfeAction.NotifyNewMessage(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            34 -> CfeAction.ScheduleTimer(
+            31 -> CfeAction.NotifySessionCreated(
+                FfiConverterString.read(buf),
+                )
+            32 -> CfeAction.NotifyError(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                )
+            33 -> CfeAction.ScheduleTimer(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            35 -> CfeAction.CancelTimer(
+            34 -> CfeAction.CancelTimer(
                 FfiConverterString.read(buf),
                 )
-            36 -> CfeAction.CallSignalDecrypted(
+            35 -> CfeAction.CallSignalDecrypted(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            37 -> CfeAction.CheckAckInDb(
+            36 -> CfeAction.CheckAckInDb(
                 FfiConverterString.read(buf),
                 )
-            38 -> CfeAction.SendHeartbeat(
+            37 -> CfeAction.SendHeartbeat(
                 FfiConverterString.read(buf),
                 )
-            39 -> CfeAction.NotifyLinkedDevicesOfSessionReset(
+            38 -> CfeAction.NotifyLinkedDevicesOfSessionReset(
                 FfiConverterString.read(buf),
                 )
-            40 -> CfeAction.SessionTerminated(
+            39 -> CfeAction.SessionTerminated(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
@@ -8264,14 +8070,6 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 4UL
                 + FfiConverterString.allocationSize(value.`contactId`)
                 + FfiConverterString.allocationSize(value.`bundleJson`)
-            )
-        }
-        is CfeAction.ApplyPqContribution -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-                + FfiConverterByteArray.allocationSize(value.`kemSs`)
             )
         }
         is CfeAction.ArchiveSession -> {
@@ -8569,140 +8367,134 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterString.write(value.`bundleJson`, buf)
                 Unit
             }
-            is CfeAction.ApplyPqContribution -> {
-                buf.putInt(4)
-                FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterByteArray.write(value.`kemSs`, buf)
-                Unit
-            }
             is CfeAction.ArchiveSession -> {
-                buf.putInt(5)
+                buf.putInt(4)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.MessageDecrypted -> {
-                buf.putInt(6)
+                buf.putInt(5)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`plaintext`, buf)
                 Unit
             }
             is CfeAction.SessionHealNeeded -> {
-                buf.putInt(7)
+                buf.putInt(6)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`role`, buf)
                 Unit
             }
             is CfeAction.HealSuppressed -> {
-                buf.putInt(8)
+                buf.putInt(7)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterULong.write(value.`retryAfterMs`, buf)
                 Unit
             }
             is CfeAction.HeldPendingAck -> {
-                buf.putInt(9)
+                buf.putInt(8)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.HealAttemptAllowed -> {
-                buf.putInt(10)
+                buf.putInt(9)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterUInt.write(value.`attempt`, buf)
                 Unit
             }
             is CfeAction.HealExhausted -> {
-                buf.putInt(11)
+                buf.putInt(10)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.EndSessionSuppressed -> {
-                buf.putInt(12)
+                buf.putInt(11)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterULong.write(value.`retryAfterMs`, buf)
                 Unit
             }
             is CfeAction.EndSessionNotNeeded -> {
-                buf.putInt(13)
+                buf.putInt(12)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.ApplyResetInit -> {
-                buf.putInt(14)
+                buf.putInt(13)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.ResetInitSuperseded -> {
-                buf.putInt(15)
+                buf.putInt(14)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterBoolean.write(value.`redelivery`, buf)
                 Unit
             }
             is CfeAction.OpenSession -> {
-                buf.putInt(16)
+                buf.putInt(15)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.OpenDeferred -> {
-                buf.putInt(17)
+                buf.putInt(16)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterULong.write(value.`retryAfterMs`, buf)
                 Unit
             }
             is CfeAction.OpenNotNeeded -> {
-                buf.putInt(18)
+                buf.putInt(17)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.ResendSri -> {
-                buf.putInt(19)
+                buf.putInt(18)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.OpeningGaveUp -> {
-                buf.putInt(20)
+                buf.putInt(19)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.MessageQueuedPendingInit -> {
-                buf.putInt(21)
+                buf.putInt(20)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterUInt.write(value.`queuedCount`, buf)
                 Unit
             }
             is CfeAction.SaveToSecureStore -> {
-                buf.putInt(22)
+                buf.putInt(21)
                 FfiConverterTypeCfeSecureStoreSlot.write(value.`slot`, buf)
                 FfiConverterByteArray.write(value.`data`, buf)
                 Unit
             }
             is CfeAction.PersistMessage -> {
-                buf.putInt(23)
+                buf.putInt(22)
                 FfiConverterString.write(value.`messageJson`, buf)
                 Unit
             }
             is CfeAction.PersistAck -> {
-                buf.putInt(24)
+                buf.putInt(23)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterULong.write(value.`timestamp`, buf)
                 Unit
             }
             is CfeAction.PruneAckStore -> {
-                buf.putInt(25)
+                buf.putInt(24)
                 FfiConverterULong.write(value.`cutoffTs`, buf)
                 Unit
             }
             is CfeAction.MarkMessageDelivered -> {
-                buf.putInt(26)
+                buf.putInt(25)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.FetchPublicKeyBundle -> {
-                buf.putInt(27)
+                buf.putInt(26)
                 FfiConverterString.write(value.`userId`, buf)
                 Unit
             }
             is CfeAction.SendEncryptedMessage -> {
-                buf.putInt(28)
+                buf.putInt(27)
                 FfiConverterString.write(value.`to`, buf)
                 FfiConverterByteArray.write(value.`payload`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
@@ -8710,68 +8502,68 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 Unit
             }
             is CfeAction.SendReceipt -> {
-                buf.putInt(29)
+                buf.putInt(28)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterString.write(value.`status`, buf)
                 Unit
             }
             is CfeAction.SendEndSession -> {
-                buf.putInt(30)
+                buf.putInt(29)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyNewMessage -> {
-                buf.putInt(31)
+                buf.putInt(30)
                 FfiConverterString.write(value.`chatId`, buf)
                 FfiConverterString.write(value.`preview`, buf)
                 Unit
             }
             is CfeAction.NotifySessionCreated -> {
-                buf.putInt(32)
+                buf.putInt(31)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyError -> {
-                buf.putInt(33)
+                buf.putInt(32)
                 FfiConverterString.write(value.`code`, buf)
                 FfiConverterString.write(value.`message`, buf)
                 Unit
             }
             is CfeAction.ScheduleTimer -> {
-                buf.putInt(34)
+                buf.putInt(33)
                 FfiConverterString.write(value.`timerId`, buf)
                 FfiConverterULong.write(value.`delayMs`, buf)
                 Unit
             }
             is CfeAction.CancelTimer -> {
-                buf.putInt(35)
+                buf.putInt(34)
                 FfiConverterString.write(value.`timerId`, buf)
                 Unit
             }
             is CfeAction.CallSignalDecrypted -> {
-                buf.putInt(36)
+                buf.putInt(35)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`protoBytes`, buf)
                 Unit
             }
             is CfeAction.CheckAckInDb -> {
-                buf.putInt(37)
+                buf.putInt(36)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.SendHeartbeat -> {
-                buf.putInt(38)
+                buf.putInt(37)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyLinkedDevicesOfSessionReset -> {
-                buf.putInt(39)
+                buf.putInt(38)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.SessionTerminated -> {
-                buf.putInt(40)
+                buf.putInt(39)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterByteArray.write(value.`archiveBytes`, buf)
                 Unit
@@ -9426,36 +9218,6 @@ sealed class CfeSecureStoreSlot {
     }
     
     /**
-     * Deferred ML-KEM contribution for one contact. Empty payload means delete.
-     */
-    data class PqDeferred(
-        val `contactId`: kotlin.String) : CfeSecureStoreSlot()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * Whole PQContributionManager snapshot.
-     */
-    object KyberSessionState : CfeSecureStoreSlot()
-    
-    
-    /**
-     * Secret half of a committed ML-KEM signed prekey. No reachable emitter today.
-     */
-    data class KyberSignedPrekey(
-        val `keyId`: kotlin.UInt) : CfeSecureStoreSlot()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
      * Orchestrator coordination state.
      */
     object OrchestratorState : CfeSecureStoreSlot()
@@ -9478,14 +9240,7 @@ public object FfiConverterTypeCfeSecureStoreSlot : FfiConverterRustBuffer<CfeSec
             2 -> CfeSecureStoreSlot.SessionArchive(
                 FfiConverterString.read(buf),
                 )
-            3 -> CfeSecureStoreSlot.PqDeferred(
-                FfiConverterString.read(buf),
-                )
-            4 -> CfeSecureStoreSlot.KyberSessionState
-            5 -> CfeSecureStoreSlot.KyberSignedPrekey(
-                FfiConverterUInt.read(buf),
-                )
-            6 -> CfeSecureStoreSlot.OrchestratorState
+            3 -> CfeSecureStoreSlot.OrchestratorState
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
     }
@@ -9503,26 +9258,6 @@ public object FfiConverterTypeCfeSecureStoreSlot : FfiConverterRustBuffer<CfeSec
             (
                 4UL
                 + FfiConverterString.allocationSize(value.`contactId`)
-            )
-        }
-        is CfeSecureStoreSlot.PqDeferred -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-            )
-        }
-        is CfeSecureStoreSlot.KyberSessionState -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-            )
-        }
-        is CfeSecureStoreSlot.KyberSignedPrekey -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterUInt.allocationSize(value.`keyId`)
             )
         }
         is CfeSecureStoreSlot.OrchestratorState -> {
@@ -9545,22 +9280,8 @@ public object FfiConverterTypeCfeSecureStoreSlot : FfiConverterRustBuffer<CfeSec
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
-            is CfeSecureStoreSlot.PqDeferred -> {
-                buf.putInt(3)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeSecureStoreSlot.KyberSessionState -> {
-                buf.putInt(4)
-                Unit
-            }
-            is CfeSecureStoreSlot.KyberSignedPrekey -> {
-                buf.putInt(5)
-                FfiConverterUInt.write(value.`keyId`, buf)
-                Unit
-            }
             is CfeSecureStoreSlot.OrchestratorState -> {
-                buf.putInt(6)
+                buf.putInt(3)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
@@ -9892,6 +9613,78 @@ public object FfiConverterTypeMlsError : FfiConverterRustBuffer<MlsException> {
     }
 
 }
+
+
+
+/**
+ * Read-only health snapshot of a Double Ratchet session.
+ * Whose Kyber key a session's post-quantum layer came from. Anything a person sees about
+ * "PQ" reads this — `is_pq_strengthened` only says a KEM secret was mixed in.
+ */
+
+enum class PqAuthentication {
+    
+    UNKNOWN,
+    CLASSIC,
+    AUTHENTICATED,
+    UNAUTHENTICATED,
+    RECEIVED;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePqAuthentication: FfiConverterRustBuffer<PqAuthentication> {
+    override fun read(buf: ByteBuffer) = try {
+        PqAuthentication.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: PqAuthentication) = 4UL
+
+    override fun write(value: PqAuthentication, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * How a session's post-quantum layer started.
+ */
+
+enum class PqHandshake {
+    
+    NONE,
+    DEFERRED_V1,
+    INITIAL_V2;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePqHandshake: FfiConverterRustBuffer<PqHandshake> {
+    override fun read(buf: ByteBuffer) = try {
+        PqHandshake.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: PqHandshake) = 4UL
+
+    override fun write(value: PqHandshake, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
 
 
 
@@ -10326,28 +10119,28 @@ public object FfiConverterOptionalByteArray: FfiConverterRustBuffer<kotlin.ByteA
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeKyberSpkRecord: FfiConverterRustBuffer<KyberSpkRecord?> {
-    override fun read(buf: ByteBuffer): KyberSpkRecord? {
+public object FfiConverterOptionalTypeKyberPrekeyUpload: FfiConverterRustBuffer<KyberPrekeyUpload?> {
+    override fun read(buf: ByteBuffer): KyberPrekeyUpload? {
         if (buf.get().toInt() == 0) {
             return null
         }
-        return FfiConverterTypeKyberSpkRecord.read(buf)
+        return FfiConverterTypeKyberPrekeyUpload.read(buf)
     }
 
-    override fun allocationSize(value: KyberSpkRecord?): ULong {
+    override fun allocationSize(value: KyberPrekeyUpload?): ULong {
         if (value == null) {
             return 1UL
         } else {
-            return 1UL + FfiConverterTypeKyberSpkRecord.allocationSize(value)
+            return 1UL + FfiConverterTypeKyberPrekeyUpload.allocationSize(value)
         }
     }
 
-    override fun write(value: KyberSpkRecord?, buf: ByteBuffer) {
+    override fun write(value: KyberPrekeyUpload?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
             buf.put(1)
-            FfiConverterTypeKyberSpkRecord.write(value, buf)
+            FfiConverterTypeKyberPrekeyUpload.write(value, buf)
         }
     }
 }
@@ -10528,6 +10321,34 @@ public object FfiConverterSequenceTypeDeliveryTarget: FfiConverterRustBuffer<Lis
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeDeliveryTarget.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeKyberPrekeyUpload: FfiConverterRustBuffer<List<KyberPrekeyUpload>> {
+    override fun read(buf: ByteBuffer): List<KyberPrekeyUpload> {
+        val len = buf.getInt()
+        return List<KyberPrekeyUpload>(len) {
+            FfiConverterTypeKyberPrekeyUpload.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<KyberPrekeyUpload>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeKyberPrekeyUpload.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<KyberPrekeyUpload>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeKyberPrekeyUpload.write(it, buf)
         }
     }
 }
@@ -10948,6 +10769,20 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     )
     }
     
+
+        /**
+         * Fresh device keys (identity, signing, signed prekey) as a key record.
+         */
+    @Throws(CryptoException::class) fun `generatePrivateKeys`(): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_generate_private_keys(
+    
+        _status)
+}
+    )
+    }
+    
  fun `heartbeatIntervalMs`(`baseIntervalSec`: kotlin.ULong): kotlin.ULong {
             return FfiConverterULong.lift(
     uniffiRustCall() { _status ->
@@ -11012,6 +10847,20 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     UniffiLib.uniffi_construct_core_fn_func_hybrid_verify(
     
         FfiConverterSequenceUByte.lower(`publicKey`),FfiConverterSequenceUByte.lower(`message`),FfiConverterSequenceUByte.lower(`signature`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The X25519 identity secret of a key record.
+         */
+    @Throws(CryptoException::class) fun `identityKeyFromKeys`(`keys`: List<kotlin.UByte>): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_identity_key_from_keys(
+    
+        FfiConverterSequenceUByte.lower(`keys`),_status)
 }
     )
     }
@@ -11117,45 +10966,14 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     
 
         /**
-         * Decapsulate a received ML-KEM-768 ciphertext (receiver side PQXDH).
-         * Returns shared_secret to pass to ClassicCryptoCore.apply_pq_contribution.
+         * Encapsulate to an ML-KEM-1024 public key (1568 bytes).
          */
-    @Throws(CryptoException::class) fun `mlkem768Decapsulate`(`secretKey`: List<kotlin.UByte>, `ciphertext`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_mlkem768_decapsulate(
-    
-        FfiConverterSequenceUByte.lower(`secretKey`),FfiConverterSequenceUByte.lower(`ciphertext`),_status)
-}
-    )
-    }
-    
-
-        /**
-         * Encapsulate to a recipient's ML-KEM-768 public key (sender side PQXDH).
-         * Returns ciphertext (to include in proto PreKeySignalMessage.kem_ciphertext)
-         * and shared_secret (to pass to ClassicCryptoCore.apply_pq_contribution).
-         */
-    @Throws(CryptoException::class) fun `mlkem768Encapsulate`(`publicKey`: List<kotlin.UByte>): MlkemEncapsulation {
+    @Throws(CryptoException::class) fun `mlkem1024Encapsulate`(`publicKey`: List<kotlin.UByte>): MlkemEncapsulation {
             return FfiConverterTypeMLKEMEncapsulation.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_mlkem768_encapsulate(
+    UniffiLib.uniffi_construct_core_fn_func_mlkem1024_encapsulate(
     
         FfiConverterSequenceUByte.lower(`publicKey`),_status)
-}
-    )
-    }
-    
-
-        /**
-         * Generate an ML-KEM-768 keypair for PQC key registration.
-         */
-    @Throws(CryptoException::class) fun `mlkem768Keygen`(): MlkemKeyPair {
-            return FfiConverterTypeMLKEMKeyPair.lift(
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_mlkem768_keygen(
-    
-        _status)
 }
     )
     }
@@ -11353,6 +11171,20 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     
 
         /**
+         * The public registration bundle of a key record.
+         */
+    @Throws(CryptoException::class) fun `registrationBundleFieldsFromKeys`(`keys`: List<kotlin.UByte>): RegistrationBundleFields {
+            return FfiConverterTypeRegistrationBundleFields.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_registration_bundle_fields_from_keys(
+    
+        FfiConverterSequenceUByte.lower(`keys`),_status)
+}
+    )
+    }
+    
+
+        /**
          * Seal a device's own metadata to one of its account's devices.
          *
          * Same box as `sealed_seal_sender_cert` and the same implementation — two names because
@@ -11425,6 +11257,20 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     }
     
 
+        /**
+         * Ed25519 signature over bundle_data_json with the key record's signing key.
+         */
+    @Throws(CryptoException::class) fun `signBundleDataWithKeys`(`keys`: List<kotlin.UByte>, `bundleDataJson`: List<kotlin.UByte>): List<kotlin.UByte> {
+            return FfiConverterSequenceUByte.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_sign_bundle_data_with_keys(
+    
+        FfiConverterSequenceUByte.lower(`keys`),FfiConverterSequenceUByte.lower(`bundleDataJson`),_status)
+}
+    )
+    }
+    
+
     @Throws(CryptoException::class) fun `signInviteData`(`data`: kotlin.String, `identitySecretKey`: List<kotlin.UByte>): InviteSignature {
             return FfiConverterTypeInviteSignature.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
@@ -11442,6 +11288,20 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     UniffiLib.uniffi_construct_core_fn_func_sign_recovery_challenge(
     
         FfiConverterSequenceUByte.lower(`privateKey`),FfiConverterString.lower(`message`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The Ed25519 signing secret of a key record.
+         */
+    @Throws(CryptoException::class) fun `signingKeyFromKeys`(`keys`: List<kotlin.UByte>): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_signing_key_from_keys(
+    
+        FfiConverterSequenceUByte.lower(`keys`),_status)
 }
     )
     }
@@ -11514,16 +11374,6 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     UniffiLib.uniffi_construct_core_fn_func_sr_seal_recovery_bundle(
     
         FfiConverterSequenceUByte.lower(`vaultKey`),FfiConverterTypeSrRecoveryBundle.lower(`bundle`),_status)
-}
-    )
-    }
-    
- fun `supportsPqRatchet`(): kotlin.Boolean {
-            return FfiConverterBoolean.lift(
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_supports_pq_ratchet(
-    
-        _status)
 }
     )
     }

@@ -15,7 +15,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.navigation.compose.rememberNavController
+import com.construct.messenger.data.local.PendingChatStore
 import com.construct.messenger.data.local.PendingInviteStore
+import com.construct.messenger.service.MessageNotifier
 import com.construct.messenger.ui.navigation.KonstructNavHost
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.KonstructMessengerTheme
@@ -37,10 +39,14 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var pendingInvites: PendingInviteStore
 
+    @Inject
+    lateinit var pendingChats: PendingChatStore
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestNotificationPermissionIfNeeded()
         captureInvite(intent)
+        captureChat(intent)
         val barScrim = CTColor.bg.toArgb()
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(barScrim),
@@ -63,6 +69,13 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         captureInvite(intent)
+        captureChat(intent)
+    }
+
+    /** A tapped message notification: open that chat once the tabs are up. */
+    private fun captureChat(intent: Intent?) {
+        if (intent?.action != MessageNotifier.ACTION_OPEN_CHAT) return
+        intent.getStringExtra(MessageNotifier.EXTRA_CONTACT_ID)?.let(pendingChats::offer)
     }
 
     private fun captureInvite(intent: Intent?) {

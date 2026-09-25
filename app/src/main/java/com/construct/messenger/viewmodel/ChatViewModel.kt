@@ -66,6 +66,16 @@ class ChatViewModel @Inject constructor(
 
     val draftText: StateFlow<String> = draft.asStateFlow()
 
+    /** The screen is visible (ON_START): unread goes to zero, arrivals are read as they land. */
+    fun onShown() {
+        viewModelScope.launch { messagesRepository.chatShown(contactId) }
+    }
+
+    /** ON_STOP — navigated away or the app went to the background. */
+    fun onHidden() = messagesRepository.chatHidden(contactId)
+
+    override fun onCleared() = messagesRepository.chatHidden(contactId)
+
     fun onDraftChange(value: String) {
         draft.value = value
     }

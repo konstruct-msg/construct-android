@@ -40,6 +40,60 @@ class ProcessorEffectsImplTest {
 
     private val myId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
     private val peer = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+    private val alerts = FakeAlerts()
+
+    /** Just enough to receive text messages: Room fakes and a known local account. */
+    private class Inbox(alerts: IncomingAlerts, myId: String) {
+        val messages = FakeMessageDao()
+        val chats = FakeChatDao()
+        val effects = ProcessorEffectsImpl(
+            cryptoManager = mock<CryptoManager>(),
+            keystoreManager = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) },
+            messageDao = messages,
+            chatDao = chats,
+            userDao = FakeUserDao(),
+            ackStore = FakeAckStore(),
+            sessionStateStore = mock(),
+            sessionManager = mock(),
+            sessionControl = mock(),
+            healSession = mock(),
+            sendReceiptUseCase = mock(),
+            responderInit = mock(),
+            actionExecutor = { mock<CfeTimerBridge>() },
+            alerts = alerts,
+        )
+    }
+
+    @Test
+    fun `an unseen message counts as unread and raises one notification`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.effects.onDecrypted(peer, "m1", "hi".toByteArray())
+        inbox.effects.onDecrypted(peer, "m2", "again".toByteArray())
+
+        assertEquals(2, inbox.chats.rows[ConversationId.direct(myId, peer)]?.unreadCount)
+        assertEquals(listOf(peer, peer), alerts.raised)
+    }
+
+    @Test
+    fun `a redelivered message is neither counted nor announced twice`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.effects.onDecrypted(peer, "m1", "hi".toByteArray())
+        inbox.effects.onDecrypted(peer, "m1", "hi".toByteArray())
+
+        assertEquals(1, inbox.chats.rows[ConversationId.direct(myId, peer)]?.unreadCount)
+        assertEquals(1, alerts.raised.size)
+    }
+
+    @Test
+    fun `a message into the chat on screen is read as it lands`() = runTest {
+        alerts.visible = peer
+        val inbox = Inbox(alerts, myId)
+        inbox.effects.onDecrypted(peer, "m1", "hi".toByteArray())
+
+        assertEquals("hi", inbox.messages.rows["m1"]?.text)
+        assertEquals(0, inbox.chats.rows[ConversationId.direct(myId, peer)]?.unreadCount)
+        assertTrue(alerts.raised.isEmpty())
+    }
 
     @Test
     fun `onDecrypted persists message chat and contact`() = runTest {
@@ -64,6 +118,7 @@ class ProcessorEffectsImplTest {
             sendReceiptUseCase = mock(),
             responderInit = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
+            alerts = alerts,
         )
 
         effects.onDecrypted(peer, "msg-1", "hello".toByteArray())
@@ -99,6 +154,7 @@ class ProcessorEffectsImplTest {
             sendReceiptUseCase = mock(),
             responderInit = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
+            alerts = alerts,
         )
         val baseId = "550e8400-e29b-41d4-a716-446655440000"
         val content = MessageContent.newBuilder()
@@ -159,6 +215,7 @@ class ProcessorEffectsImplTest {
             sendReceiptUseCase = mock(),
             responderInit = responder,
             actionExecutor = { bridge },
+            alerts = alerts,
         )
     }
 
@@ -259,4 +316,12 @@ private class FakeAckStore : AckStore {
     override fun isProcessed(messageId: String) = messageId in ids
     override suspend fun markProcessed(messageId: String, senderId: String) { ids += messageId }
     override suspend fun prune(olderThanMs: Long) = 0
+}
+
+private class FakeAlerts : IncomingAlerts {
+    var visible: String? = null
+    val raised = mutableListOf<String>()
+    override fun isChatVisible(contactId: String) = contactId == visible
+    override fun onUnseenMessage(contactId: String) { raised += contactId }
+    override fun clear(contactId: String) = Unit
 }

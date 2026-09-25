@@ -62,6 +62,8 @@ private class FakeMessagesRepository : MessagesRepository {
         )
         return SendOutcome.Sent(flow.value.last().id)
     }
+    override suspend fun chatShown(contactId: String) = Unit
+    override fun chatHidden(contactId: String) = Unit
 }
 
 private class FakeContactsRepository : ContactsRepository {

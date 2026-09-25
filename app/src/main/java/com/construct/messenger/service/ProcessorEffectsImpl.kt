@@ -52,6 +52,7 @@ class ProcessorEffectsImpl @Inject constructor(
     // Lazy: CfeTimerBridge executes actions *through* these effects, so a direct dependency
     // would be a cycle. Only its executor is used, and only after an init has finished.
     private val actionExecutor: dagger.Lazy<CfeTimerBridge>,
+    private val alerts: IncomingAlerts,
 ) : ProcessorEffects {
 
     override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
@@ -123,7 +124,8 @@ class ProcessorEffectsImpl @Inject constructor(
     }
 
     override suspend fun notifyNewMessage(chatId: String, preview: String) {
-        // No push-provider notification path; unread is incremented in persistIncoming.
+        // persistIncoming is the one place that knows whether a message is new and unseen,
+        // so it raises the notification; this CFE hook only logs.
         Log.d(TAG, "notify $chatId preview=${preview.take(40)}")
     }
 
@@ -233,6 +235,9 @@ class ProcessorEffectsImpl @Inject constructor(
             return
         }
         val chatId = ConversationId.direct(myId, contactId)
+        // A redelivered message (the ACK was lost, or the queue was replayed) is already here:
+        // counting it again would inflate unread, and alerting again would ring for nothing.
+        val firstSight = messageDao.getById(messageId) == null
         messageDao.insert(
             MessageEntity(
                 id = messageId,
@@ -243,6 +248,8 @@ class ProcessorEffectsImpl @Inject constructor(
                 deliveryStatus = DeliveryStatus.DELIVERED.name,
             ),
         )
+        // On screen, it is read as it lands.
+        val unseen = firstSight && !alerts.isChatVisible(contactId)
         val existing = chatDao.getById(chatId)
         if (existing == null) {
             chatDao.upsert(
@@ -251,12 +258,12 @@ class ProcessorEffectsImpl @Inject constructor(
                     otherUserId = contactId,
                     lastMessageText = text,
                     lastMessageTime = timestampMs,
-                    unreadCount = 1,
+                    unreadCount = if (unseen) 1 else 0,
                 ),
             )
         } else {
             chatDao.updateLastMessage(chatId, text, timestampMs)
-            chatDao.incrementUnreadCount(chatId)
+            if (unseen) chatDao.incrementUnreadCount(chatId)
         }
         if (userDao.getById(contactId) == null) {
             userDao.upsert(
@@ -266,6 +273,10 @@ class ProcessorEffectsImpl @Inject constructor(
                     isContact = true,
                 ),
             )
+        }
+        if (unseen) {
+            runCatching { alerts.onUnseenMessage(contactId) }
+                .onFailure { Log.w(TAG, "message notification failed", it) }
         }
     }
 

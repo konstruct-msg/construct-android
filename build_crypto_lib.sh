@@ -83,33 +83,46 @@ command -v uniffi-bindgen &>/dev/null || {
 }
 ok "cargo $(cargo --version | cut -d' ' -f2)"
 
-# Проверка Android NDK
-if [ -z "$ANDROID_NDK_ROOT" ] && [ -z "$NDK_ROOT" ]; then
-  # Пробуем стандартные пути (Android Studio устанавливает в ~/Library/Android/sdk/ndk)
-  for p in \
-    "$HOME/Library/Android/sdk/ndk/30.0.14904198" \
-    "$HOME/Library/Android/sdk/ndk/26.1.10909117" \
-    "$ANDROID_HOME/ndk/30.0.14904198" \
-    "$ANDROID_HOME/ndk/26.1.10909117" \
-    "$ANDROID_SDK_ROOT/ndk/30.0.14904198" \
-    "$ANDROID_SDK_ROOT/ndk/26.1.10909117"; do
-    if [ -d "$p" ]; then
-      ANDROID_NDK_ROOT="$p"
-      break
+# Проверка Android NDK.
+# Версию не пиним: SDK Manager заменяет side-by-side NDK, и путь из
+# construct-core/.cargo/config.toml после этого указывает в пустоту.
+# rustc берёт linker оттуда, пока скрипт не перебьёт его через
+# CARGO_TARGET_<TRIPLE>_LINKER (env важнее config.toml).
+if [ -z "$ANDROID_NDK_ROOT" ] && [ -n "$NDK_ROOT" ]; then
+  ANDROID_NDK_ROOT="$NDK_ROOT"
+fi
+
+if [ -z "$ANDROID_NDK_ROOT" ] || [ ! -d "$ANDROID_NDK_ROOT" ]; then
+  ANDROID_NDK_ROOT=""
+  for parent in \
+    "$HOME/Library/Android/sdk/ndk" \
+    "${ANDROID_HOME:+$ANDROID_HOME/ndk}" \
+    "${ANDROID_SDK_ROOT:+$ANDROID_SDK_ROOT/ndk}"; do
+    [ -n "$parent" ] && [ -d "$parent" ] || continue
+    candidate=$(ls -d "$parent"/*/ 2>/dev/null | sort -V | tail -1)
+    candidate="${candidate%/}"
+    [ -n "$candidate" ] || continue
+    if [ -z "$ANDROID_NDK_ROOT" ] || [[ "$(printf '%s\n%s\n' "$ANDROID_NDK_ROOT" "$candidate" | sort -V | tail -1)" == "$candidate" ]]; then
+      ANDROID_NDK_ROOT="$candidate"
     fi
   done
-  # Если нашли неточный путь, попробуем любую версию
-  if [ -z "$ANDROID_NDK_ROOT" ] && [ -d "$HOME/Library/Android/sdk/ndk" ]; then
-    ANDROID_NDK_ROOT=$(ls -d "$HOME/Library/Android/sdk/ndk"/*/ 2>/dev/null | sort -V | tail -1)
-    ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT%/}"  # убрать trailing slash
-  fi
 fi
 
 if [ -n "$ANDROID_NDK_ROOT" ] && [ -d "$ANDROID_NDK_ROOT" ]; then
   ok "Android NDK: $ANDROID_NDK_ROOT"
-  NDK_TOOLCHAIN="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/darwin-x86_64/bin"
+  NDK_HOST_PREBUILT=""
+  for tag in darwin-arm64 darwin-x86_64 linux-aarch64 linux-x86_64; do
+    if [ -d "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$tag/bin" ]; then
+      NDK_HOST_PREBUILT="$tag"
+      break
+    fi
+  done
+  [ -n "$NDK_HOST_PREBUILT" ] || fail "В NDK нет host toolchain (toolchains/llvm/prebuilt/*/bin): $ANDROID_NDK_ROOT"
+  NDK_TOOLCHAIN="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$NDK_HOST_PREBUILT/bin"
   AR="$NDK_TOOLCHAIN/llvm-ar"
   export AR
+  export ANDROID_NDK_ROOT
+  ok "Toolchain: $NDK_HOST_PREBUILT"
 else
   fail "Android NDK не найден. Установи через Android Studio → SDK Manager → SDK Tools → NDK (Side by side)"
 fi
@@ -151,12 +164,19 @@ build_target() {
   # "stdio.h not found". Имена env vars: dashes в target triple → underscores.
   # cc-rs читает оба варианта; берём underscore-вариант как канонический.
   local target_u="${target//-/_}"
+  local target_env
+  target_env=$(printf '%s' "$target_u" | tr '[:lower:]' '[:upper:]')
   local cc_var="CC_${target_u}"
   local cxx_var="CXX_${target_u}"
   local ar_var="AR_${target_u}"
+  # rustc игнорирует CC_* и читает linker из .cargo/config.toml.
+  # Эти две переменные перебивают устаревший абсолютный путь в том файле.
+  local linker_var="CARGO_TARGET_${target_env}_LINKER"
+  local ar_cargo_var="CARGO_TARGET_${target_env}_AR"
   local rc
   set +e
   env "$cc_var=$cc" "$cxx_var=$cxx" "$ar_var=$NDK_TOOLCHAIN/llvm-ar" \
+    "$linker_var=$cc" "$ar_cargo_var=$NDK_TOOLCHAIN/llvm-ar" \
     cargo build --lib --target "$target" --features "$FEATURES" $CARGO_FLAGS 2>&1 \
     | grep -E "^error|^warning\[|Compiling|Finished"
   rc=${PIPESTATUS[0]}

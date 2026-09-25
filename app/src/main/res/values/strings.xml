@@ -154,4 +154,10 @@
     <string name="searchable_confirm_message">Your username will be findable by anyone who types it exactly. Disable at any time in Security settings.</string>
     <string name="searchable_confirm_action">Enable</string>
     <string name="searchable_failed">could not change — check the connection</string>
+
+    <!-- Message notifications — canon: iOS LocalNotificationManager (generic text only) -->
+    <string name="notification_app_name">Konstruct</string>
+    <string name="notification_new_message">New message</string>
+    <string name="notification_channel_messages">Messages</string>
+    <string name="notification_channel_messages_description">New messages. Shows only “New message” — never the sender or the text.</string>
 </resources>

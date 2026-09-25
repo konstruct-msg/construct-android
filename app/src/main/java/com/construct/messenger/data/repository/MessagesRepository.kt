@@ -12,4 +12,13 @@ interface MessagesRepository {
     fun observeContact(contactId: String): Flow<List<Message>>
 
     suspend fun send(contactId: String, text: String): SendOutcome
+
+    /**
+     * The chat is on screen: what arrives is read as it lands, so unread goes to zero and its
+     * notification is withdrawn. Call on every appearance, not once.
+     */
+    suspend fun chatShown(contactId: String)
+
+    /** Off screen (navigated away, or the app went to the background). */
+    fun chatHidden(contactId: String)
 }
