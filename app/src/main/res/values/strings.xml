@@ -72,26 +72,11 @@
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
-    <string name="settings_section_profile">Profile</string>
-    <string name="settings_section_share">Share</string>
-    <string name="settings_section_settings">Settings</string>
-    <string name="settings_section_about">About</string>
-    <string name="settings_section_developer">Developer</string>
-    <string name="settings_row_share_invite">Share invite link</string>
-    <string name="settings_row_appearance">Appearance</string>
     <string name="settings_row_network">Network</string>
     <string name="settings_row_security">Security</string>
     <string name="settings_row_version">Version</string>
-    <string name="settings_row_licenses">Licenses</string>
-    <string name="settings_row_diagnostics">Diagnostics</string>
-    <string name="settings_recovery_banner">Social recovery is not set up. Tap to configure.</string>
-    <string name="settings_discoverable_on">Discoverable</string>
-    <string name="settings_discoverable_off">Hidden</string>
-    <string name="settings_row_discoverable">Username search</string>
-    <string name="settings_row_sign_out">Sign out</string>
     <string name="onboarding_username_taken">alias taken</string>
     <string name="onboarding_username_invalid">invalid alias</string>
-    <string name="settings_username_format">@%1$s</string>
 
     <!-- Tabs -->
     <string name="nav_chats">Chats</string>
@@ -129,4 +114,44 @@
     <string name="camera_permission_needed">Camera access is needed to scan a code. The invite link works without it.</string>
     <string name="camera_permission_grant">Allow camera</string>
     <string name="camera_permission_settings">Open settings</string>
+
+    <!-- Settings: account / security — canon: iOS AccountSettingsView, SecurityView -->
+    <string name="settings_row_invite">invite</string>
+    <string name="settings_row_notifications">notifications</string>
+    <string name="settings_row_account_fallback">account</string>
+    <string name="username_not_set">no username</string>
+    <string name="searchable_indicator">searchable</string>
+    <string name="searchable_indicator_off">not searchable</string>
+    <string name="account_title">identity</string>
+    <string name="account_editing_title">edit identity</string>
+    <string name="account_section_identity">identity</string>
+    <string name="account_section_account">account</string>
+    <string name="account_username">username</string>
+    <string name="account_username_hint">your unique public identifier. tap edit to change.</string>
+    <string name="account_display_name">display name</string>
+    <string name="identity_fingerprint">fingerprint</string>
+    <string name="identity_fingerprint_copied">copied</string>
+    <string name="identity_fingerprint_unknown">not loaded yet</string>
+    <string name="account_user_id">user id</string>
+    <string name="account_user_id_copied">copied</string>
+    <string name="account_sign_out">sign out</string>
+    <string name="logout_confirm_title">Sign out?</string>
+    <string name="logout_confirm_message">You will be signed out on this device.</string>
+    <string name="logout_confirm_action">Sign out</string>
+    <string name="changes_encrypted_footer">&gt; changes are end-to-end encrypted</string>
+    <string name="username_length_error">username must be 3–20 characters</string>
+    <string name="username_unavailable">username is already taken</string>
+    <string name="username_save_failed">could not save — check the connection</string>
+    <string name="action_edit">edit</string>
+    <string name="action_save">save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="security_title">security</string>
+    <string name="security_section_discovery">discovery</string>
+    <string name="searchable_toggle_title">searchable by username</string>
+    <string name="searchable_toggle_footer">When enabled, anyone who knows your exact username can find you. This cannot be used to guess or enumerate usernames — only 100% exact matches work. Off by default.</string>
+    <string name="searchable_no_username_hint">set a username first to enable search</string>
+    <string name="searchable_confirm_title">Enable search?</string>
+    <string name="searchable_confirm_message">Your username will be findable by anyone who types it exactly. Disable at any time in Security settings.</string>
+    <string name="searchable_confirm_action">Enable</string>
+    <string name="searchable_failed">could not change — check the connection</string>
 </resources>

@@ -1,30 +1,31 @@
 package com.construct.messenger.ui.screens.settings
 
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,93 +33,63 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.construct.messenger.BuildConfig
 import com.construct.messenger.R
+import com.construct.messenger.data.repository.OwnAccount
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
 import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.CTSettingsRow
-import com.construct.messenger.ui.components.CTSettingsSectionHeader
+import com.construct.messenger.ui.components.CTStatus
+import com.construct.messenger.ui.components.CTStatusBadge
+import com.construct.messenger.ui.components.ConnectionStatus
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.CornerRadius
-import com.construct.messenger.ui.theme.HairlineBorder
+import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.ctBold
 import com.construct.messenger.ui.theme.ctRegular
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.construct.messenger.viewmodel.SettingsEvent
 import com.construct.messenger.viewmodel.SettingsViewModel
 
-/**
- * Settings hub on fake profile data.
- *
- * **Canon:** iOS SettingsView / `ANDROID_ONBOARDING.md` §5.5.
- * Sub-screen navigation is stubbed (no-op callbacks). No ViewModel — see #23.
- */
-private data class FakeSettingsProfile(
-    val userId: String = "14f28d31-aaaa-bbbb-cccc-000000000099",
-    val displayName: String = "Silent Fox",
-    val username: String = "silent_fox",
-    val discoverable: Boolean = true,
-    val recoveryConfigured: Boolean = false,
-    val appVersion: String = "0.1.0-dev",
+/** Callbacks for the rows that open another app screen. */
+data class SettingsNavigation(
+    val onAccount: () -> Unit = {},
+    val onInvite: () -> Unit = {},
+    val onSecurity: () -> Unit = {},
+    val onOrientation: () -> Unit = {},
 )
-
-private val FakeProfile = FakeSettingsProfile()
 
 @Composable
 fun SettingsRoute(
-    onSignedOut: () -> Unit,
-    onNavigateBack: (() -> Unit)? = null,
-    onShareInvite: () -> Unit = {},
+    navigation: SettingsNavigation,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
-    LaunchedEffect(viewModel) {
-        viewModel.eventsFlow.collect { event ->
-            if (event is SettingsEvent.SignedOut) onSignedOut()
-        }
-    }
-    SettingsScreen(
-        onNavigateBack = onNavigateBack,
-        onSignOut = viewModel::signOut,
-        onToggleDiscoverable = viewModel::toggleDiscoverable,
-        onShareInviteClick = onShareInvite,
-        liveDisplayName = ui.profile?.displayName?.takeIf { it.isNotBlank() },
-        liveUsername = ui.profile?.username?.takeIf { it.isNotBlank() },
-        liveUserId = ui.profile?.userId?.takeIf { it.isNotBlank() },
-        liveDiscoverable = ui.discoverable,
-    )
+    // Each time the tab is shown: an alias changed on the Account screen appears on return.
+    LaunchedEffect(Unit) { viewModel.refresh() }
+    SettingsScreen(account = ui.account, connection = ui.connection, navigation = navigation)
 }
 
+/**
+ * Settings root: identity, invite, the settings that exist, about.
+ *
+ * **Canon:** iOS `SettingsView` (compact layout) — cards separated by space, no section headers,
+ * uppercase row labels. Rows appear only for what Android actually has: a row that opens
+ * nothing reads as broken. Missing against iOS: linked devices, appearance, data & storage,
+ * transcription, drafts, recovery (and its banner), diagnostics.
+ */
 @Composable
 fun SettingsScreen(
-    onNavigateBack: (() -> Unit)? = null,
-    onProfileClick: () -> Unit = {},
-    onShareInviteClick: () -> Unit = {},
-    onAppearanceClick: () -> Unit = {},
-    onNetworkClick: () -> Unit = {},
-    onSecurityClick: () -> Unit = {},
-    onLicensesClick: () -> Unit = {},
-    onDiagnosticsClick: () -> Unit = {},
-    onSignOut: () -> Unit = {},
-    onToggleDiscoverable: () -> Unit = {},
-    liveDisplayName: String? = null,
-    liveUsername: String? = null,
-    liveUserId: String? = null,
-    liveDiscoverable: Boolean? = null,
+    account: OwnAccount?,
+    connection: ConnectionStatus,
+    navigation: SettingsNavigation,
 ) {
-    val profile = FakeProfile.copy(
-        userId = liveUserId ?: FakeProfile.userId,
-        displayName = liveDisplayName ?: FakeProfile.displayName,
-        username = liveUsername ?: FakeProfile.username,
-        discoverable = liveDiscoverable ?: FakeProfile.discoverable,
-    )
-
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -128,108 +99,67 @@ fun SettingsScreen(
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
-        CTNavBar(
-            title = stringResource(R.string.settings_title),
-            showBack = onNavigateBack != null,
-            onBack = { onNavigateBack?.invoke() },
-        )
+        CTNavBar(title = stringResource(R.string.settings_title))
 
         Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 24.dp),
+                .padding(vertical = LIST_SPACING / 2),
+            verticalArrangement = Arrangement.spacedBy(LIST_SPACING),
         ) {
-            if (!profile.recoveryConfigured) {
-                RecoveryBanner()
-            }
-
-            CTSettingsSectionHeader(title = stringResource(R.string.settings_section_profile))
             CTSectionGroup {
-                SettingsProfileRow(
-                    profile = profile,
-                    onClick = onProfileClick,
-                )
+                ProfileRow(account = account, onClick = navigation.onAccount)
             }
 
-            CTSettingsSectionHeader(title = stringResource(R.string.settings_section_share))
             CTSectionGroup {
                 CTSettingsRow(
-                    label = stringResource(R.string.settings_row_share_invite),
-                    icon = Icons.Default.Share,
-                    isAction = true,
-                    modifier = Modifier.clickable(onClick = onShareInviteClick),
+                    label = stringResource(R.string.settings_row_invite).uppercase(),
+                    icon = Icons.Default.QrCode,
+                    disclosure = true,
+                    modifier = Modifier.clickable(onClick = navigation.onInvite),
                 )
             }
 
-            CTSettingsSectionHeader(title = stringResource(R.string.settings_section_settings))
             CTSectionGroup {
                 CTSettingsRow(
-                    label = stringResource(R.string.settings_row_appearance),
-                    icon = Icons.Default.Palette,
-                    isAction = true,
-                    modifier = Modifier.clickable(onClick = onAppearanceClick),
-                )
-                CTSep()
-                CTSettingsRow(
-                    label = stringResource(R.string.settings_row_network),
-                    icon = Icons.Default.Wifi,
-                    isAction = true,
-                    modifier = Modifier.clickable(onClick = onNetworkClick),
-                )
-                CTSep()
-                CTSettingsRow(
-                    label = stringResource(R.string.settings_row_security),
+                    label = stringResource(R.string.settings_row_security).uppercase(),
                     icon = Icons.Default.Lock,
-                    isAction = true,
-                    modifier = Modifier.clickable(onClick = onSecurityClick),
+                    disclosure = true,
+                    modifier = Modifier.clickable(onClick = navigation.onSecurity),
+                )
+                CTSep()
+                // Android owns notification settings (channels, lock screen, sound); a copy of
+                // them here would drift from the real ones.
+                CTSettingsRow(
+                    label = stringResource(R.string.settings_row_notifications).uppercase(),
+                    icon = Icons.Default.Notifications,
+                    disclosure = true,
+                    modifier = Modifier.clickable { context.openNotificationSettings() },
+                )
+                CTSep()
+                // Status only: iOS's Network screen is VEIL, which Android does not have yet.
+                CTSettingsRow(
+                    label = stringResource(R.string.settings_row_network).uppercase(),
+                    icon = Icons.Default.Public,
+                    status = connection.toStatus(),
                 )
             }
 
-            CTSettingsSectionHeader(title = stringResource(R.string.settings_section_about))
             CTSectionGroup {
                 CTSettingsRow(
-                    label = stringResource(R.string.settings_row_version),
-                    value = profile.appVersion,
+                    label = stringResource(R.string.orientation_settings_replay).uppercase(),
+                    icon = Icons.AutoMirrored.Filled.MenuBook,
+                    disclosure = true,
+                    modifier = Modifier.clickable(onClick = navigation.onOrientation),
+                )
+                CTSep()
+                CTSettingsRow(
+                    label = stringResource(R.string.settings_row_version).uppercase(),
+                    value = BuildConfig.VERSION_NAME,
+                    valueColor = CTColor.textDim,
                     icon = Icons.Default.Info,
-                )
-                CTSep()
-                CTSettingsRow(
-                    label = stringResource(R.string.settings_row_licenses),
-                    icon = Icons.Default.Description,
-                    isAction = true,
-                    modifier = Modifier.clickable(onClick = onLicensesClick),
-                )
-            }
-
-            CTSettingsSectionHeader(title = stringResource(R.string.settings_section_developer))
-            CTSectionGroup {
-                CTSettingsRow(
-                    label = stringResource(R.string.settings_row_diagnostics),
-                    icon = Icons.Default.BugReport,
-                    isAction = true,
-                    modifier = Modifier.clickable(onClick = onDiagnosticsClick),
-                )
-            }
-
-            CTSectionGroup {
-                CTSettingsRow(
-                    label = stringResource(R.string.settings_row_discoverable),
-                    value = if (profile.discoverable) {
-                        stringResource(R.string.settings_discoverable_on)
-                    } else {
-                        stringResource(R.string.settings_discoverable_off)
-                    },
-                    isAction = true,
-                    modifier = Modifier.clickable(onClick = onToggleDiscoverable),
-                )
-                CTSep()
-                CTSettingsRow(
-                    label = stringResource(R.string.settings_row_sign_out),
-                    isDestructive = true,
-                    isAction = true,
-                    modifier = Modifier.clickable(onClick = onSignOut),
                 )
             }
         }
@@ -237,71 +167,84 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SettingsProfileRow(
-    profile: FakeSettingsProfile,
-    onClick: () -> Unit,
-) {
+private fun ProfileRow(account: OwnAccount?, onClick: () -> Unit) {
+    val searchable = account?.discoverable == true
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 9.dp),
+            .padding(CTLayout.edgePad),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CTAvatar(
-            userId = profile.userId,
-            displayName = profile.displayName,
-            size = 44.dp,
+            userId = account?.userId.orEmpty(),
+            displayName = account?.displayName.orEmpty(),
+            size = 56.dp,
         )
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
+        Spacer(Modifier.width(CTLayout.edgePad))
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(
-                text = profile.displayName,
-                style = ctBold(13),
+                text = (account?.displayName ?: stringResource(R.string.settings_row_account_fallback)).uppercase(),
+                style = ctBold(15),
                 color = CTColor.text,
             )
             Text(
-                text = stringResource(R.string.settings_username_format, profile.username),
+                text = account?.username?.takeIf { it.isNotEmpty() }?.let { "@$it" }
+                    ?: stringResource(R.string.username_not_set),
                 style = ctRegular(12),
                 color = CTColor.textDim,
             )
-            if (profile.discoverable) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CTStatusBadge(status = if (searchable) CTStatus.ON else CTStatus.OFF, size = 11.dp)
+                Spacer(Modifier.width(5.dp))
                 Text(
-                    text = stringResource(R.string.settings_discoverable_on),
+                    text = stringResource(
+                        if (searchable) R.string.searchable_indicator else R.string.searchable_indicator_off,
+                    ),
                     style = ctRegular(11),
-                    color = CTColor.accent,
+                    color = if (searchable) CTColor.accent else CTColor.textDim,
                 )
             }
         }
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
-            tint = CTColor.textDim,
+            tint = CTColor.accent,
             modifier = Modifier.size(20.dp),
         )
     }
 }
 
-@Composable
-private fun RecoveryBanner() {
-    val shape = RoundedCornerShape(CornerRadius.small)
-    Text(
-        text = stringResource(R.string.settings_recovery_banner),
-        style = ctRegular(13),
-        color = CTColor.danger,
-        modifier = Modifier
-            .padding(horizontal = 12.dp)
-            .padding(top = 16.dp)
-            .fillMaxWidth()
-            .clip(shape)
-            .background(CTColor.danger.copy(alpha = 0.12f))
-            .border(HairlineBorder, CTColor.danger.copy(alpha = 0.4f), shape)
-            .padding(12.dp),
+private fun ConnectionStatus.toStatus(): CTStatus = when (this) {
+    ConnectionStatus.CONNECTED -> CTStatus.OK
+    ConnectionStatus.CONNECTING -> CTStatus.BUSY
+    ConnectionStatus.DISCONNECTED -> CTStatus.ERROR
+    ConnectionStatus.UNKNOWN -> CTStatus.UNKNOWN
+}
+
+private fun Context.openNotificationSettings() {
+    startActivity(
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
 }
+
+/** iOS `SettingsRootLayout.listSpacing`. */
+private val LIST_SPACING = 30.dp
 
 @Preview(backgroundColor = 0xFF090909, showBackground = true, heightDp = 800, widthDp = 360)
 @Composable
 private fun SettingsScreenPreview() {
-    SettingsScreen()
+    SettingsScreen(
+        account = OwnAccount(
+            userId = "14f28d31-aaaa-bbbb-cccc-000000000099",
+            displayName = "soft lion",
+            username = "",
+            discoverable = false,
+            fingerprint = "A1B2 C3D4 E5F6 0718",
+        ),
+        connection = ConnectionStatus.CONNECTED,
+        navigation = SettingsNavigation(),
+    )
 }

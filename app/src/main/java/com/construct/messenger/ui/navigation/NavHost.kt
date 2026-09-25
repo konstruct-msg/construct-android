@@ -12,7 +12,9 @@ import com.construct.messenger.ui.screens.invite.QrScannerScreen
 import com.construct.messenger.ui.screens.main.MainTabView
 import com.construct.messenger.ui.screens.onboarding.OnboardingScreen
 import com.construct.messenger.ui.screens.orientation.OrientationScreen
-import com.construct.messenger.ui.screens.settings.SettingsScreen
+import com.construct.messenger.ui.screens.settings.AccountScreen
+import com.construct.messenger.ui.screens.settings.SecurityScreen
+import com.construct.messenger.ui.screens.settings.SettingsNavigation
 import com.construct.messenger.ui.screens.splash.SplashScreen
 
 /** Tab index Orientation lands on when finished (Synaps — "start in Synaps"). */
@@ -99,14 +101,18 @@ fun KonstructNavHost(
                         launchSingleTop = true
                     }
                 },
-                onSignedOut = {
-                    navController.navigate(Screen.Onboarding.route) {
-                        popUpTo(Screen.Main.route) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                },
                 onScanQr = { navController.navigate(Screen.ScanQr.route) { launchSingleTop = true } },
                 onShowMyQr = { navController.navigate(Screen.InviteQr.route) { launchSingleTop = true } },
+                settingsNavigation = SettingsNavigation(
+                    onAccount = { navController.navigate(Screen.Account.route) { launchSingleTop = true } },
+                    onInvite = { navController.navigate(Screen.InviteQr.route) { launchSingleTop = true } },
+                    onSecurity = { navController.navigate(Screen.Security.route) { launchSingleTop = true } },
+                    onOrientation = {
+                        navController.navigate(Screen.Orientation.createRoute(fromSettings = true)) {
+                            launchSingleTop = true
+                        }
+                    },
+                ),
             )
         }
         composable(Screen.InviteQr.route) {
@@ -133,10 +139,19 @@ fun KonstructNavHost(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        composable(Screen.Settings.route) {
-            SettingsScreen(
-                onNavigateBack = { navController.popBackStack() }
+        composable(Screen.Account.route) {
+            AccountScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onSignedOut = {
+                    navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(Screen.Main.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
             )
+        }
+        composable(Screen.Security.route) {
+            SecurityScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

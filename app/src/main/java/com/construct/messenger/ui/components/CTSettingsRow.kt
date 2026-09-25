@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
@@ -32,7 +33,8 @@ import com.construct.messenger.ui.theme.ctRegular
  * - Optional leading [icon] in a 28dp centered column.
  * - `ctRegular(13)` label; value is `ctBold(13)` + `accent` when [isAction].
  * - [isDestructive] paints label, icon and value in `danger`.
- * - Optional [status] renders a [CTStatusBadge] instead of the textual value.
+ * - Optional [status] renders a [CTStatusBadge] after the value.
+ * - [disclosure] adds a trailing chevron: the row opens another screen.
  * - Padding: horizontal 12, vertical 9. Presentational — wrap with a clickable
  *   [modifier] for tappable rows.
  */
@@ -47,6 +49,7 @@ fun CTSettingsRow(
     isAction: Boolean = false,
     isDestructive: Boolean = false,
     status: CTStatus? = null,
+    disclosure: Boolean = false,
 ) {
     val primaryColor = if (isDestructive) CTColor.danger else labelColor
     val resolvedValueColor = when {
@@ -82,14 +85,29 @@ fun CTSettingsRow(
             modifier = Modifier.weight(1f),
         )
         Spacer(Modifier.width(8.dp))
-        if (status != null) {
-            CTStatusBadge(status = status)
-        } else {
+        if (value.isNotEmpty()) {
             Text(
                 text = value,
                 style = if (isAction) ctBold(13) else ctRegular(13),
                 color = resolvedValueColor,
                 textAlign = TextAlign.End,
+                maxLines = 1,
+            )
+        }
+        if (status != null) {
+            CTStatusBadge(
+                status = status,
+                modifier = Modifier.padding(start = if (value.isEmpty()) 0.dp else 6.dp),
+            )
+        }
+        if (disclosure) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = if (isDestructive) CTColor.danger else CTColor.textDim,
+                modifier = Modifier
+                    .padding(start = if (value.isEmpty() && status == null) 0.dp else 6.dp)
+                    .size(16.dp),
             )
         }
     }

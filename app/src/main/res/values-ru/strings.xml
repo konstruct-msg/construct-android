@@ -69,26 +69,11 @@
 
     <!-- Settings -->
     <string name="settings_title">Настройки</string>
-    <string name="settings_section_profile">Профиль</string>
-    <string name="settings_section_share">Поделиться</string>
-    <string name="settings_section_settings">Настройки</string>
-    <string name="settings_section_about">О приложении</string>
-    <string name="settings_section_developer">Разработка</string>
-    <string name="settings_row_share_invite">Ссылка-приглашение</string>
-    <string name="settings_row_appearance">Оформление</string>
     <string name="settings_row_network">Сеть</string>
     <string name="settings_row_security">Безопасность</string>
     <string name="settings_row_version">Версия</string>
-    <string name="settings_row_licenses">Лицензии</string>
-    <string name="settings_row_diagnostics">Диагностика</string>
-    <string name="settings_recovery_banner">Социальное восстановление не настроено. Нажмите, чтобы настроить.</string>
-    <string name="settings_discoverable_on">Обнаруживаемый</string>
-    <string name="settings_discoverable_off">Скрыт</string>
-    <string name="settings_row_discoverable">Поиск по псевдониму</string>
-    <string name="settings_row_sign_out">Выйти</string>
     <string name="onboarding_username_taken">псевдоним занят</string>
     <string name="onboarding_username_invalid">некорректный псевдоним</string>
-    <string name="settings_username_format">@%1$s</string>
 
     <!-- Tabs -->
     <string name="nav_chats">Чаты</string>
@@ -126,4 +111,44 @@
     <string name="camera_permission_needed">Для сканирования нужен доступ к камере. Ссылка-приглашение работает и без него.</string>
     <string name="camera_permission_grant">Разрешить камеру</string>
     <string name="camera_permission_settings">Открыть настройки</string>
+
+    <!-- Settings: account / security — canon: iOS AccountSettingsView, SecurityView -->
+    <string name="settings_row_invite">пригласить</string>
+    <string name="settings_row_notifications">уведомления</string>
+    <string name="settings_row_account_fallback">аккаунт</string>
+    <string name="username_not_set">username не задан</string>
+    <string name="searchable_indicator">в поиске</string>
+    <string name="searchable_indicator_off">не в поиске</string>
+    <string name="account_title">идентичность</string>
+    <string name="account_editing_title">редактирование</string>
+    <string name="account_section_identity">идентичность</string>
+    <string name="account_section_account">аккаунт</string>
+    <string name="account_username">username</string>
+    <string name="account_username_hint">ваш уникальный публичный идентификатор. нажмите «изменить», чтобы сменить.</string>
+    <string name="account_display_name">отображаемое имя</string>
+    <string name="identity_fingerprint">отпечаток</string>
+    <string name="identity_fingerprint_copied">скопировано</string>
+    <string name="identity_fingerprint_unknown">ещё не загружен</string>
+    <string name="account_user_id">id пользователя</string>
+    <string name="account_user_id_copied">скопировано</string>
+    <string name="account_sign_out">выйти</string>
+    <string name="logout_confirm_title">Выйти?</string>
+    <string name="logout_confirm_message">Вы выйдете из аккаунта на этом устройстве.</string>
+    <string name="logout_confirm_action">Выйти</string>
+    <string name="changes_encrypted_footer">&gt; изменения защищены сквозным шифрованием</string>
+    <string name="username_length_error">username должен быть от 3 до 20 символов</string>
+    <string name="username_unavailable">этот username уже занят</string>
+    <string name="username_save_failed">не удалось сохранить — проверьте соединение</string>
+    <string name="action_edit">изменить</string>
+    <string name="action_save">сохранить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="security_title">безопасность</string>
+    <string name="security_section_discovery">обнаружение</string>
+    <string name="searchable_toggle_title">видимость в поиске</string>
+    <string name="searchable_toggle_footer">Когда включено, любой, кто знает ваш точный username, может вас найти. Угадать или перебрать username невозможно — срабатывает только 100% совпадение. По умолчанию выключено.</string>
+    <string name="searchable_no_username_hint">сначала задайте username</string>
+    <string name="searchable_confirm_title">Включить поиск?</string>
+    <string name="searchable_confirm_message">Ваш username станет доступен для поиска всем, кто введёт его точно. Отключить можно в любой момент в настройках безопасности.</string>
+    <string name="searchable_confirm_action">Включить</string>
+    <string name="searchable_failed">не удалось изменить — проверьте соединение</string>
 </resources>

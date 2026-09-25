@@ -2,70 +2,35 @@ package com.construct.messenger.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.construct.messenger.data.local.KeystoreManager
-import com.construct.messenger.data.repository.AuthRepository
-import com.construct.messenger.data.repository.ContactsRepository
-import com.construct.messenger.data.repository.UserProfile
+import com.construct.messenger.data.repository.AccountRepository
+import com.construct.messenger.data.repository.ConnectionRepository
+import com.construct.messenger.data.repository.OwnAccount
+import com.construct.messenger.ui.components.ConnectionStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class SettingsUiState(
-    val profile: UserProfile? = null,
-    val discoverable: Boolean = false,
-    val busy: Boolean = false,
+    val account: OwnAccount? = null,
+    val connection: ConnectionStatus = ConnectionStatus.UNKNOWN,
 )
 
-sealed interface SettingsEvent {
-    data object SignedOut : SettingsEvent
-}
-
+/** Settings root: who you are and whether the stream is up. Actions live on the sub-screens. */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val authRepository: AuthRepository,
-    private val contactsRepository: ContactsRepository,
-    private val keystoreManager: KeystoreManager,
+    private val accountRepository: AccountRepository,
+    connectionRepository: ConnectionRepository,
 ) : ViewModel() {
-    private val state = MutableStateFlow(SettingsUiState())
-    private val events = MutableSharedFlow<SettingsEvent>()
-    val uiState: StateFlow<SettingsUiState> = state.asStateFlow()
-    val eventsFlow: SharedFlow<SettingsEvent> = events.asSharedFlow()
+    val uiState: StateFlow<SettingsUiState> =
+        combine(accountRepository.account, connectionRepository.status, ::SettingsUiState)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
-    init {
-        viewModelScope.launch { refresh() }
-    }
-
-    private suspend fun refresh() {
-        val id = keystoreManager.getUserId() ?: return
-        val profile = contactsRepository.getProfile(id)
-        state.update {
-            it.copy(profile = profile, discoverable = profile?.discoverable ?: false)
-        }
-    }
-
-    fun toggleDiscoverable() {
-        if (state.value.busy) return
-        val next = !state.value.discoverable
-        state.update { it.copy(busy = true) }
-        viewModelScope.launch {
-            val applied = contactsRepository.setDiscoverable(next)
-            state.update { it.copy(busy = false, discoverable = applied && next) }
-        }
-    }
-
-    fun signOut() {
-        if (state.value.busy) return
-        state.update { it.copy(busy = true) }
-        viewModelScope.launch {
-            authRepository.logout()
-            events.emit(SettingsEvent.SignedOut)
-        }
+    /** On every appearance: an alias changed on the Account screen shows on return. */
+    fun refresh() {
+        viewModelScope.launch { accountRepository.refresh() }
     }
 }

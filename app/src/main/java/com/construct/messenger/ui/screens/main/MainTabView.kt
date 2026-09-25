@@ -25,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import com.construct.messenger.R
 import com.construct.messenger.ui.screens.calls.CallsScreen
 import com.construct.messenger.ui.screens.chats.ChatsListScreen
+import com.construct.messenger.ui.screens.settings.SettingsNavigation
 import com.construct.messenger.ui.screens.settings.SettingsRoute
 import com.construct.messenger.ui.screens.synaps.SynapsScreen
 import com.construct.messenger.ui.theme.CTColor
@@ -38,9 +39,9 @@ import com.construct.messenger.ui.theme.CTColor
 @Composable
 fun MainTabView(
     onNavigateToChat: (String) -> Unit,
-    onSignedOut: () -> Unit = {},
     onScanQr: () -> Unit = {},
     onShowMyQr: () -> Unit = {},
+    settingsNavigation: SettingsNavigation = SettingsNavigation(),
     startTab: Int = 0,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(startTab) }
@@ -100,7 +101,7 @@ fun MainTabView(
                     onShowMyQr = onShowMyQr,
                 )
                 2 -> CallsScreen()
-                3 -> SettingsRoute(onSignedOut = onSignedOut, onShareInvite = onShowMyQr)
+                3 -> SettingsRoute(navigation = settingsNavigation)
             }
         }
     }
