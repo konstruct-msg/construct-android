@@ -13,7 +13,6 @@ import shared.proto.services.v1.KeyServiceOuterClass.GetIdentityKeyRequest
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundleRequest
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundlesRequest
 import shared.proto.services.v1.KeyServiceOuterClass.PreKeyBundle
-import uniffi.construct_core.BinaryFirstMessage
 import uniffi.construct_core.BinaryKeyBundle
 import uniffi.construct_core.DecryptedMessageResult
 import uniffi.construct_core.EncryptedMessageComponents
@@ -68,7 +67,7 @@ class SessionManager @Inject constructor(
             )
         }
         val fetched = fetchPeerBundleData(contactId, consumeOtpk = true, deviceId = deviceId)
-        cryptoManager.initSession(fetched.deviceId, fetched.bundle)
+        openSession(fetched)
         return SessionPeer(fetched.accountId, fetched.deviceId, fetched.identityPublic)
     }
 
@@ -81,7 +80,7 @@ class SessionManager @Inject constructor(
             return SessionPeer(accountId, deviceId, identity)
         }
         val fetched = fetchPeerBundleData(accountId, consumeOtpk = true, deviceId = deviceId)
-        cryptoManager.initSession(fetched.deviceId, fetched.bundle)
+        openSession(fetched)
         return SessionPeer(fetched.accountId, fetched.deviceId, fetched.identityPublic)
     }
 
@@ -246,7 +245,22 @@ class SessionManager @Inject constructor(
     /** INITIATOR path: fetch [contactId]'s pre-key bundle and start a new session. */
     suspend fun initSession(contactId: String): String {
         val fetched = fetchPeerBundleData(contactId, consumeOtpk = true)
-        return cryptoManager.initSession(fetched.deviceId, fetched.bundle)
+        return openSession(fetched)
+    }
+
+    /**
+     * `initSession`, with the one refusal that is not a fault said as such: a peer whose bundle
+     * has no PQXDH v2 keys (a build before ML-KEM-1024, or keys not published yet) is refused with
+     * `PQ_REQUIRED`. PQ is mandatory — there is no classical session to fall back to — so the error
+     * still propagates; the log line is what tells it apart from a broken bundle.
+     */
+    private fun openSession(fetched: PeerBundle): String = try {
+        cryptoManager.initSession(fetched.deviceId, fetched.bundle)
+    } catch (e: Exception) {
+        if (CryptoManager.isPeerNotPostQuantum(e)) {
+            Log.w(TAG, "peer device ${fetched.deviceId.take(8)}… has no PQXDH v2 keys — session refused (${e.message})")
+        }
+        throw e
     }
 
     private suspend fun rememberIdentity(contactId: String, identity: ByteArray) {
@@ -259,12 +273,13 @@ class SessionManager @Inject constructor(
         userDao.upsert(base.copy(identityPublic = identity))
     }
 
-    /** RESPONDER path: establish a session from an inbound first message + sender's bundle. */
+    /** RESPONDER path: establish a session from the sender's bundle and the first message's
+     * `encrypted_payload` exactly as it arrived (the core reads the PQXDH v2 header itself). */
     fun initReceivingSession(
         contactId: String,
         senderBundle: BinaryKeyBundle,
-        firstMessage: BinaryFirstMessage,
-    ) = cryptoManager.initReceivingSession(contactId, senderBundle, firstMessage)
+        wirePayload: ByteArray,
+    ) = cryptoManager.initReceivingSessionFromWirePayload(contactId, senderBundle, wirePayload)
 
     fun encryptMessage(contactId: String, plaintext: String): EncryptedMessageComponents =
         cryptoManager.encryptMessage(contactId, plaintext)
@@ -309,12 +324,10 @@ class SessionManager @Inject constructor(
 }
 
 /// Proto `CryptoSuite` enum → the core's SuiteID (`suite_id.rs`): 1 = CLASSIC
-/// (X25519+ChaCha20), 2 = PQ_HYBRID (X25519+ML-KEM-768, ML-DSA-65). Mirrors iOS
-/// `KeyServiceClient.parseSuiteId` — see construct-docs decision
-/// `crypto-suite-extensibility.md`. The raw proto value is NOT the core id
-/// (proto classic = 10 → core would reject it as InvalidSuiteId). Suite 3
-/// (PQ_RATCHET) is not a bundle field: the core negotiates it for every
-/// platform build, and the unsigned `supports_pq_ratchet` flag is gone.
+/// (X25519+ChaCha20), 2 = PQ_HYBRID. Mirrors iOS `KeyServiceClient.parseSuiteId` — see
+/// construct-docs decision `crypto-suite-extensibility.md`. The raw proto value is NOT the core id
+/// (proto classic = 10 → core would reject it as InvalidSuiteId). Suite 3 (PQ_RATCHET) is never
+/// produced from a bundle: PQXDH v2 cores open every session on it.
 private fun PreKeyBundle.coreSuiteId(): UShort = when (cryptoSuite) {
     CryptoSuite.CRYPTO_SUITE_CLASSIC_X25519_CHACHA20 -> 1u
     // The core has no AES-256 provider — classic, not the ML-KEM hybrid (2).
@@ -325,7 +338,14 @@ private fun PreKeyBundle.coreSuiteId(): UShort = when (cryptoSuite) {
     else -> 1u
 }
 
-private fun PreKeyBundle.toBinaryKeyBundle(verifyingKey: ByteArray): BinaryKeyBundle = BinaryKeyBundle(
+/**
+ * The served bundle as the core reads it. Under PQXDH v2 the initiator refuses (`PQ_REQUIRED`)
+ * unless every Kyber field it checks arrives: the key, its id, its signed `created_at`, both
+ * signatures, and the hybrid identity with its binding. A field dropped here does not show up as
+ * a wrong value — it shows up as "peer not post-quantum" for every peer — so an absent proto field
+ * maps to null, never to an empty or zero value the core would try to verify.
+ */
+internal fun PreKeyBundle.toBinaryKeyBundle(verifyingKey: ByteArray): BinaryKeyBundle = BinaryKeyBundle(
     identityPublic = identityKey.toByteArray().toUByteList(),
     signedPrekeyPublic = signedPreKey.toByteArray().toUByteList(),
     signature = signedPreKeySignature.toByteArray().toUByteList(),
@@ -338,8 +358,22 @@ private fun PreKeyBundle.toBinaryKeyBundle(verifyingKey: ByteArray): BinaryKeyBu
     kyberSpkUploadedAt = if (hasKyberSpkUploadedAt()) kyberSpkUploadedAt.toULong() else 0uL,
     kyberSpkRotationEpoch = if (hasKyberSpkRotationEpoch()) kyberSpkRotationEpoch.toUInt() else 0u,
     kyberPreKeyPublic = if (hasKyberPreKey()) kyberPreKey.toByteArray().toUByteList() else null,
+    kyberPreKeyId = if (hasKyberPreKeyId()) kyberPreKeyId.toUInt() else null,
+    kyberPreKeyCreatedAt = if (hasKyberPreKeyCreatedAt()) kyberPreKeyCreatedAt.toULong() else null,
+    kyberPreKeySignature = if (hasKyberPreKeySignature()) kyberPreKeySignature.toByteArray().toUByteList() else null,
+    kyberPreKeyHybridSignature =
+        if (hasKyberPreKeyHybridSignature()) kyberPreKeyHybridSignature.toByteArray().toUByteList() else null,
     kyberOneTimePrekeyPublic = if (hasKyberOneTimePreKey()) kyberOneTimePreKey.toByteArray().toUByteList() else null,
     kyberOneTimePrekeyId = if (hasKyberOneTimePreKeyId()) kyberOneTimePreKeyId.toUInt() else null,
+    kyberOneTimePrekeyCreatedAt =
+        if (hasKyberOneTimePreKeyCreatedAt()) kyberOneTimePreKeyCreatedAt.toULong() else null,
+    kyberOneTimePrekeySignature =
+        if (hasKyberOneTimePreKeySignature()) kyberOneTimePreKeySignature.toByteArray().toUByteList() else null,
+    kyberOneTimePrekeyHybridSignature =
+        if (hasKyberOneTimePreKeyHybridSignature()) kyberOneTimePreKeyHybridSignature.toByteArray().toUByteList() else null,
+    hybridIdentityKey = if (hasHybridIdentityKey()) hybridIdentityKey.toByteArray().toUByteList() else null,
+    hybridIdentitySignature =
+        if (hasHybridIdentitySignature()) hybridIdentitySignature.toByteArray().toUByteList() else null,
 )
 
 private fun ByteArray.toUByteList(): List<UByte> = map { it.toUByte() }

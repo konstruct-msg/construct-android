@@ -132,7 +132,7 @@ class AuthRepositoryImpl @Inject constructor(
             ?: error("session loaded but userId is missing")
         cryptoManager.loadOrCreate(savedPrivateKeys)
         restoreOneTimePrekeys(cryptoManager, keystoreManager)
-        cryptoManager.setLocalUserId(userId)
+        cryptoManager.setLocalUserId(userId, keystoreManager.getKyberPrekeys())
     }
 
     override suspend fun logout() {

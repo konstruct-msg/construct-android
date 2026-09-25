@@ -100,8 +100,10 @@ class SessionStateStore @Inject constructor(
     companion object {
         const val SESSION_KEY_PREFIX = "session:"
         const val ARCHIVE_KEY_PREFIX = "archive:"
-        const val PQ_DEFERRED_KEY_PREFIX = "pq-deferred:"
-        const val KYBER_SESSION_STATE_KEY = "core:kyber-session-state"
         const val ORCHESTRATOR_STATE_KEY = "core:orchestrator-state"
+
+        /** Keys of the slots the ML-KEM-768 layer had before PQXDH v2 — deleted on restore. */
+        fun isLegacyPqKey(key: String): Boolean =
+            key == "core:kyber-session-state" || key.startsWith("pq-deferred:") || key.startsWith("kyber-spk:")
     }
 }

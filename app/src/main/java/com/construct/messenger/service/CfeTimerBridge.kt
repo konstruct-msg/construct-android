@@ -126,6 +126,20 @@ class CfeTimerBridge @Inject constructor(
                 // keeps compiling and so the omission is visible rather than silent.
                 is CfeAction.HealAttemptAllowed,
                 is CfeAction.HealExhausted,
+                // Answers to `ResetInitArrived`, which this client does not ask yet: it applies
+                // every SESSION_RESET_INIT through the responder path. Same reason as above.
+                is CfeAction.ApplyResetInit,
+                is CfeAction.ResetInitSuperseded,
+                // The session machine's open/teardown answers. This client has no opener that
+                // sends SESSION_RESET_INIT yet, so an `OpenSession` (a heal, or the PQXDH v2
+                // upgrade of a classical session) is not carried out here — the peer's side, when
+                // it is the tie-break initiator, does it. Listed so the omission is visible.
+                is CfeAction.OpenSession,
+                is CfeAction.OpenDeferred,
+                is CfeAction.OpenNotNeeded,
+                is CfeAction.OpeningGaveUp,
+                is CfeAction.ResendSri,
+                is CfeAction.EndSessionNotNeeded,
                 -> Log.i(TAG, "CFE deferred action ${action::class.simpleName}")
                 // Answers to `ResetInitArrived`, which `MessageProcessor` asks and reads on the
                 // message path. No alarm produces them; listed so the `when` stays exhaustive.

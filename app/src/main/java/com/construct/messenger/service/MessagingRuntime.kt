@@ -2,6 +2,7 @@ package com.construct.messenger.service
 
 import android.util.Log
 import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.crypto.KyberPrekeyService
 import com.construct.messenger.data.api.MessageStreamService
 import com.construct.messenger.data.api.MessagingService
 import com.construct.messenger.data.api.StreamCursorTracker
@@ -73,6 +74,7 @@ class MessagingRuntime @Inject constructor(
     private val rotateSignedPreKey: RotateSignedPreKeyUseCase,
     private val timerBridge: CfeTimerBridge,
     private val cursorTracker: StreamCursorTracker,
+    private val kyberPrekeys: KyberPrekeyService,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val startMutex = Mutex()
@@ -149,9 +151,12 @@ class MessagingRuntime @Inject constructor(
             runCatching { cryptoManager.importOrchestratorState(bytes) }
                 .onFailure { Log.e(TAG, "orchestrator state restore failed", it) }
         }
-        // Kyber session bytes used to be their own slot. The core folded that into the
-        // session blob and dropped the import, so an old `core:kyber-session-state` row
-        // stays in Room and is not fed to the ratchet.
+        // Rows builds before PQXDH v2 wrote for the ML-KEM-768 layer (Kyber session state, a
+        // Kyber SPK slot, deferred PQ contributions). Nothing reads them: the Kyber prekeys are
+        // the core's own store now, restored with the orchestrator.
+        blobs.keys.filter { SessionStateStore.isLegacyPqKey(it) }.forEach { key ->
+            runCatching { sessionStateStore.removeSession(key) }
+        }
 
         val sessions = blobs
             .filterKeys {
@@ -260,6 +265,9 @@ class MessagingRuntime @Inject constructor(
                 .onFailure { Log.w(TAG, "privacy-pass bootstrap failed", it) }
             val deviceId = keystoreManager.getDeviceId()
             if (deviceId != null) {
+                // Before the replenishment: one-time Kyber keys ride on the classic upload only
+                // once this has published the hybrid identity.
+                kyberPrekeys.publishIfNeeded(deviceId)
                 runCatching { uploadPreKeys.replenishIfNeeded(deviceId) }
                     .onFailure { Log.w(TAG, "OTPK replenish failed", it) }
             }

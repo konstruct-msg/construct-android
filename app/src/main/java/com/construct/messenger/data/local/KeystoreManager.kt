@@ -84,9 +84,10 @@ class KeystoreManager @Inject constructor(
      * is purely a storage-transport envelope. The bytes themselves are never parsed/re-encoded;
      * they round-trip through `loadOrCreate()` exactly as `exportPrivateKeys()` produced them.
      */
-    fun savePrivateKeys(bytes: ByteArray) {
-        prefs.edit().putString(KEY_PRIVATE_KEYS, Base64.encodeToString(bytes, Base64.NO_WRAP)).apply()
-    }
+    fun savePrivateKeys(bytes: ByteArray): Boolean =
+        // commit(): the record also holds the hybrid identity key once it exists, and what that key
+        // signs goes to the server right after it is saved.
+        prefs.edit().putString(KEY_PRIVATE_KEYS, Base64.encodeToString(bytes, Base64.NO_WRAP)).commit()
 
     fun getPrivateKeys(): ByteArray? =
         prefs.getString(KEY_PRIVATE_KEYS, null)?.let { Base64.decode(it, Base64.NO_WRAP) }
@@ -109,6 +110,24 @@ class KeystoreManager @Inject constructor(
         prefs.edit().remove(KEY_OTPKS).commit()
     }
 
+    /**
+     * Persists the core's Kyber prekey store ([CryptoManager.exportKyberPrekeys]
+     * [com.construct.messenger.crypto.CryptoManager.exportKyberPrekeys]) — ML-KEM-1024 seeds, as
+     * secret as the private keys beside them. Written with `commit()`, not `apply()`: the caller
+     * uploads the public halves right after, and a key the server may serve must never exist only
+     * in memory. Returns whether the write reached disk.
+     */
+    fun saveKyberPrekeys(bytes: ByteArray): Boolean =
+        prefs.edit().putString(KEY_KYBER_PREKEYS, Base64.encodeToString(bytes, Base64.NO_WRAP)).commit()
+
+    fun getKyberPrekeys(): ByteArray? =
+        prefs.getString(KEY_KYBER_PREKEYS, null)?.let { Base64.decode(it, Base64.NO_WRAP) }
+
+    /** With the identity it belongs to: a new identity must not inherit the old one's Kyber keys. */
+    fun deleteKyberPrekeys() {
+        prefs.edit().remove(KEY_KYBER_PREKEYS).commit()
+    }
+
     private companion object {
         const val PREFS_FILE_NAME = "construct_auth_prefs"
         const val KEY_OTPKS = "one_time_prekeys_cfe"
@@ -117,5 +136,6 @@ class KeystoreManager @Inject constructor(
         const val KEY_USER_ID = "user_id"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_PRIVATE_KEYS = "private_keys_cfe"
+        const val KEY_KYBER_PREKEYS = "kyber_prekeys_cfe"
     }
 }

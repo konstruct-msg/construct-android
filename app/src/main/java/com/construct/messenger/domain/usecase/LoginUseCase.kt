@@ -39,7 +39,7 @@ class LoginUseCase @Inject constructor(
             .build()
 
         val tokens = grpcClient.auth.authenticateDevice(request).tokens
-        cryptoManager.setLocalUserId(tokens.userId)
+        cryptoManager.setLocalUserId(tokens.userId, keystoreManager.getKyberPrekeys())
         keystoreManager.saveTokens(tokens, deviceId)
         return tokens
     }

@@ -3,6 +3,11 @@
 **Источник**: `SessionInitializationService.swift`, `CryptoSessionInitializationService.swift`, `PublicKeyBundleHandler.swift`, `SessionCoordinator.swift` (tie-break, ping, ready)
 **Протокол**: X3DH → Double Ratchet → PQXDH (Kyber-768)
 
+> **PQ below is superseded.** The Kyber-768 steps (a Swift/Kotlin `pqcKeyManager`, a deferred
+> KEM contribution after the handshake) are gone: PQXDH v2 puts ML-KEM-1024 in the initial key,
+> the core owns the Kyber keys and decapsulates itself. Current: `API_CRYPTO_GUIDE.md` §2.9,
+> `KyberPrekeyService`, construct-docs `cryptocore/PQXDH_V2_DESIGN.md`.
+>
 > **Historical design reference, not current implementation guidance.** This file
 > predates the CFE action executor and still contains pre-CFE pseudocode and legacy
 > `__session_*` examples. Current Android behavior is specified in
