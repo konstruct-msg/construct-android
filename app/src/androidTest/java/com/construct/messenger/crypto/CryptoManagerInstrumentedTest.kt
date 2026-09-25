@@ -117,7 +117,6 @@ class CryptoManagerInstrumentedTest {
             kyberPreKeyPublic = null,
             kyberOneTimePrekeyPublic = null,
             kyberOneTimePrekeyId = null,
-            supportsPqRatchet = false,
         )
 
         val aliceSessionId = alice.initSession("bob", bobBinaryBundle)
@@ -138,7 +137,6 @@ class CryptoManagerInstrumentedTest {
             kyberPreKeyPublic = null,
             kyberOneTimePrekeyPublic = null,
             kyberOneTimePrekeyId = null,
-            supportsPqRatchet = false,
         )
         val firstMessageForBob = BinaryFirstMessage(
             ephemeralPublicKey = firstMessage.ephemeralPublicKey,
@@ -148,6 +146,9 @@ class CryptoManagerInstrumentedTest {
             suiteId = firstMessage.suiteId,
             pqMessageEpoch = firstMessage.pqMessageEpoch,
             pqRatchetField = firstMessage.pqRatchetField,
+            pqxdhV2 = firstMessage.kemCiphertext.isNotEmpty(),
+            kyberPrekeyId = firstMessage.kyberPrekeyId,
+            kemCiphertext = firstMessage.kemCiphertext,
         )
 
         val initResult = bob.initReceivingSession("alice", aliceBinaryBundle, firstMessageForBob)

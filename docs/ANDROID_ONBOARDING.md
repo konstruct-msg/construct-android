@@ -885,8 +885,11 @@ Tab bar скрывается когда `isInChat || isInSettings == true`.
 ### 5.4 ChatView — экран чата
 
 > **Android сейчас:** `ChatScreen` + `ChatViewModel` — `LazyColumn` пузырей и
-> `MessageInputView`, observe/send через `MessagesRepository`. Нет поиска,
-> пагинации, звонка, swipe-to-dismiss.
+> `MessageInputView`, observe/send через `MessagesRepository`. Ответ на сообщение
+> едет как iOS: `QuotedMessage` внутри зашифрованного `TextMessage` (id, превью
+> ≤200, media type для фото/голоса/файла), полоска в пузыре, долгое нажатие →
+> ответить / копировать, тап по полоске прокручивает к исходному. Нет поиска,
+> пагинации, звонка, правки, реакций, удаления, swipe-to-reply.
 
 - `CTNavBar` с именем контакта, статусом соединения, кнопками поиска/звонка
 - `LazyColumn` с сообщениями
@@ -1161,6 +1164,8 @@ data class Message(
     val timestamp: Long,
     val deliveryStatus: DeliveryStatus, // sending, sent, delivered, read, failed
     val replyToId: String? = null,
+    val replyPreview: String? = null, // wire text_preview, ≤200 chars
+    val replyMediaType: String? = null, // proto MediaType name when the quote is media
     val mediaType: MediaType? = null, // image, video, audio, file, voice
     val mediaUrl: String? = null,
     val contentType: Int = 0          // 0 = regular; control types are never persisted as visible rows

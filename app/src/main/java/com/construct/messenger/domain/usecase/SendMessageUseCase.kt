@@ -12,6 +12,7 @@ import com.construct.messenger.data.local.db.MessageEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.data.model.DeliveryStatus
+import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
@@ -19,14 +20,13 @@ import com.construct.messenger.stealth.StealthSenderService
 import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.KnstFrame
+import com.construct.messenger.util.TextWire
 import com.construct.messenger.util.SenderSyncRouting
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
-import shared.proto.messaging.v1.Content.MessageContent
-import shared.proto.messaging.v1.Content.TextMessage
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.DeliveryAudience
@@ -42,7 +42,8 @@ sealed interface SendOutcome {
  * **Canon:** iOS `OutboundMessagePipeline.sendToRecipientDevices` (`construct-messenger@4a74c013`).
  *
  * 1. Optimistic Room row (SENDING).
- * 2. `MessageContent` proto → KNST frame (type in byte 5).
+ * 2. `MessageContent` proto → KNST frame (type in byte 5). A reply is a `QuotedMessage`
+ *    on that text — id and a 200-character preview — and is not a field of the envelope.
  * 3. Ensure a Double-Ratchet session with the pinned device (prekey fetch is destructive — only
  *    if missing). This is establishment, not addressing: the set below is what the send reaches.
  * 4. The recipient's device set — the registry, corrected by the directory — handed to the core's
@@ -66,7 +67,7 @@ class SendMessageUseCase @Inject constructor(
     private val userDao: UserDao,
     private val sessionStateStore: SessionStateStore,
 ) {
-    suspend operator fun invoke(contactId: String, text: String): SendOutcome {
+    suspend operator fun invoke(contactId: String, text: String, reply: ReplyRef? = null): SendOutcome {
         val body = text.trim()
         require(body.isNotEmpty()) { "empty message" }
 
@@ -78,10 +79,10 @@ class SendMessageUseCase @Inject constructor(
         val timestampMs = System.currentTimeMillis()
         val chatId = ConversationId.direct(myId, contactId)
 
-        persistOutgoing(chatId, contactId, messageId, body, timestampMs, DeliveryStatus.SENDING)
+        persistOutgoing(chatId, contactId, messageId, body, timestampMs, DeliveryStatus.SENDING, reply)
 
         return try {
-            val plaintext = knstText(body, messageId)
+            val plaintext = knstText(body, messageId, reply)
             // Establishment is deliberately unchanged by this: the first send to a peer we hold
             // nothing with still opens a session with the device the registry pins, and that
             // device is also the offline answer for the set below when the key server cannot be
@@ -389,6 +390,7 @@ class SendMessageUseCase @Inject constructor(
         text: String,
         timestampMs: Long,
         status: DeliveryStatus,
+        reply: ReplyRef?,
     ) {
         messageDao.insert(
             MessageEntity(
@@ -398,6 +400,9 @@ class SendMessageUseCase @Inject constructor(
                 isSentByMe = true,
                 timestamp = timestampMs,
                 deliveryStatus = status.name,
+                replyToId = reply?.messageId,
+                replyPreview = reply?.preview?.ifEmpty { null },
+                replyMediaType = reply?.mediaType,
             ),
         )
         val existing = chatDao.getById(chatId)
@@ -467,11 +472,8 @@ class SendMessageUseCase @Inject constructor(
         }
     }
 
-    private fun knstText(text: String, messageId: String): ByteArray {
-        val payload = MessageContent.newBuilder()
-            .setText(TextMessage.newBuilder().setText(text))
-            .build()
-            .toByteArray()
+    private fun knstText(text: String, messageId: String, reply: ReplyRef?): ByteArray {
+        val payload = TextWire.encode(text, reply)
         val uuid = runCatching { UUID.fromString(messageId) }.getOrElse { UUID.randomUUID() }
         return KnstFrame.pack(payload, KnstFrame.TYPE_E2EE_SIGNAL, uuid)
     }

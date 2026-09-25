@@ -7,6 +7,7 @@ import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.MessageEntity
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.Message
+import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.domain.usecase.SendMessageUseCase
 import com.construct.messenger.domain.usecase.SendOutcome
 import com.construct.messenger.service.IncomingAlerts
@@ -33,7 +34,8 @@ class MessagesRepositoryImpl @Inject constructor(
         return messageDao.observeChat(chatId).map { rows -> rows.map { it.toModel() } }
     }
 
-    override suspend fun send(contactId: String, text: String): SendOutcome = sendMessage(contactId, text)
+    override suspend fun send(contactId: String, text: String, reply: ReplyRef?): SendOutcome =
+        sendMessage(contactId, text, reply)
 
     override suspend fun chatShown(contactId: String) {
         // Presence first: a message landing between these two lines is then not counted.
@@ -55,4 +57,7 @@ private fun MessageEntity.toModel(): Message = Message(
     timestamp = timestamp,
     deliveryStatus = runCatching { DeliveryStatus.valueOf(deliveryStatus) }
         .getOrDefault(DeliveryStatus.SENT),
+    replyToId = replyToId,
+    replyPreview = replyPreview,
+    replyMediaType = replyMediaType,
 )

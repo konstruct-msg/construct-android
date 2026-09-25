@@ -92,6 +92,17 @@
     <!-- Chat -->
     <string name="chat_input_placeholder">Сообщение</string>
     <string name="chat_send">Отправить</string>
+    <string name="reply">Ответить</string>
+    <string name="copy">Копировать</string>
+    <string name="reply_to_colon">Ответ на:</string>
+    <string name="jump_to_replied_message">Перейти к исходному сообщению</string>
+    <string name="message_unavailable">Сообщение недоступно</string>
+    <string name="close">Закрыть</string>
+    <string name="photo">Фото</string>
+    <string name="video">Видео</string>
+    <string name="voice_message">Голосовое сообщение</string>
+    <string name="file_attachment">Файл</string>
+    <string name="sticker">Стикер</string>
 
     <!-- Calls -->
     <string name="calls_empty_title">Пока нет звонков</string>

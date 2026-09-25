@@ -3,6 +3,7 @@ package com.construct.messenger.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import com.construct.messenger.data.model.Contact
 import com.construct.messenger.data.model.Message
+import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.data.repository.AcceptInviteResult
 import com.construct.messenger.data.repository.ContactsRepository
 import com.construct.messenger.data.repository.FindUserResult
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -43,25 +45,53 @@ class ChatViewModelTest {
 
         assertEquals("", viewModel.uiState.value.draft)
         assertEquals(1, messages.sent.size)
-        assertEquals("hello", messages.sent.single().second)
+        assertEquals("hello", messages.sent.single().text)
+        assertNull(messages.sent.single().reply)
         assertTrue(viewModel.uiState.value.messages.single().isOutgoing)
+    }
+
+    @Test
+    fun sendCarriesTheReplyAndClearsTheBar() = runTest {
+        val messages = FakeMessagesRepository()
+        val handle = SavedStateHandle()
+        handle["contactId"] = "peer-1"
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository())
+
+        viewModel.startReply(
+            Message(id = "ABC", chatId = "peer-1", body = "  original  ", isOutgoing = false),
+        )
+        advanceUntilIdle()
+        assertEquals("abc", viewModel.uiState.value.replyingTo?.messageId)
+        assertEquals("original", viewModel.uiState.value.replyingTo?.preview)
+
+        viewModel.onDraftChange("answer")
+        viewModel.send()
+        advanceUntilIdle()
+
+        assertEquals("", viewModel.uiState.value.draft)
+        assertNull(viewModel.uiState.value.replyingTo)
+        assertEquals(ReplyRef.of("abc", "original"), messages.sent.single().reply)
     }
 }
 
 private class FakeMessagesRepository : MessagesRepository {
-    val sent = mutableListOf<Pair<String, String>>()
+    val sent = mutableListOf<Sent>()
     private val flow = MutableStateFlow<List<Message>>(emptyList())
     override fun observeContact(contactId: String): Flow<List<Message>> = flow.asStateFlow()
-    override suspend fun send(contactId: String, text: String): SendOutcome {
-        sent += contactId to text
+    override suspend fun send(contactId: String, text: String, reply: ReplyRef?): SendOutcome {
+        sent += Sent(contactId, text, reply)
         flow.value = flow.value + Message(
             id = "m-${sent.size}",
             chatId = contactId,
             body = text,
             isOutgoing = true,
+            replyToId = reply?.messageId,
+            replyPreview = reply?.preview,
         )
         return SendOutcome.Sent(flow.value.last().id)
     }
+
+    data class Sent(val contactId: String, val text: String, val reply: ReplyRef?)
     override suspend fun chatShown(contactId: String) = Unit
     override fun chatHidden(contactId: String) = Unit
 }

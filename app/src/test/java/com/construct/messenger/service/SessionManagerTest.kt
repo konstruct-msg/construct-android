@@ -7,9 +7,7 @@ import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.argumentCaptor
@@ -86,7 +84,6 @@ class SessionManagerTest {
         assertNull(mapped.kyberOneTimePrekeyId)
         assertEquals(0UL, mapped.kyberSpkUploadedAt)
         assertEquals(0u, mapped.kyberSpkRotationEpoch)
-        assertFalse(mapped.supportsPqRatchet)
     }
 
     @Test
@@ -128,7 +125,6 @@ class SessionManagerTest {
         assertEquals(7u, mapped.kyberOneTimePrekeyId)
         assertEquals(2_000UL, mapped.kyberSpkUploadedAt)
         assertEquals(4u, mapped.kyberSpkRotationEpoch)
-        assertTrue(mapped.supportsPqRatchet)
         // Proto CRYPTO_SUITE_HYBRID_KYBER768_X25519 (=2) → core SuiteID 2 (PQ_HYBRID).
         // NEVER 3: PQ_RATCHET is negotiated per-session, not declared by a bundle.
         assertEquals(2, mapped.suiteId.toInt())

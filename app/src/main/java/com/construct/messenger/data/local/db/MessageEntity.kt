@@ -12,7 +12,10 @@ import kotlinx.coroutines.flow.Flow
  *
  * **Canon:** `docs/ANDROID_ONBOARDING.md` §8.3 —
  * `Message(id, chatId, text, isSentByMe, timestamp, deliveryStatus, replyToId?,
- * mediaType?, mediaUrl?, contentType: Int = 0)`.
+ * replyPreview?, replyMediaType?, mediaType?, mediaUrl?, contentType: Int = 0)`.
+ *
+ * [replyToId] / [replyPreview] / [replyMediaType] are the encrypted `QuotedMessage`
+ * (iOS `replyToMessageId` + `ReplyPreviewPayload`), never an envelope field.
  *
  * **Control-message guard (layer 2 of 3, §8.3):** control signals (session
  * ping/ready/reset/end) are normally consumed before persisting (layer 1 —
@@ -36,6 +39,10 @@ data class MessageEntity(
     val timestamp: Long,
     val deliveryStatus: String,
     val replyToId: String? = null,
+    /** Wire `text_preview`, already capped at 200 characters. Null when there is no quote. */
+    val replyPreview: String? = null,
+    /** Proto `MediaType` name (`MEDIA_TYPE_IMAGE`, …). Null for a plain-text quote. */
+    val replyMediaType: String? = null,
     val mediaType: String? = null,
     val mediaUrl: String? = null,
     /** 0 = regular message; control types (21/24/25/26) are never user-visible. */

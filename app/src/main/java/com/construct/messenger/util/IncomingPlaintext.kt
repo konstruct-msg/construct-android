@@ -1,7 +1,11 @@
 package com.construct.messenger.util
 
+import com.construct.messenger.data.model.ReplyRef
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
+import shared.proto.messaging.v1.Content.MediaType
 import shared.proto.messaging.v1.Content.MessageContent
+import shared.proto.messaging.v1.Content.QuotedMessage
+import shared.proto.messaging.v1.Content.TextMessage
 
 /**
  * Turns a decrypted Double-Ratchet plaintext into display text.
@@ -18,6 +22,8 @@ object IncomingPlaintext {
         val text: String,
         val knstContentType: Int,
         val isUserVisible: Boolean,
+        /** Set when the plaintext text message quotes another. Absent for legacy UTF-8. */
+        val reply: ReplyRef? = null,
     )
 
     fun decode(plaintext: ByteArray): Decoded {
@@ -27,12 +33,17 @@ object IncomingPlaintext {
                 return Decoded(text = "", knstContentType = type, isUserVisible = false)
             }
             val payload = knstPayload(plaintext) ?: return Decoded("", type, isUserVisible = false)
-            val text = decodeInner(payload)
-            return Decoded(text = text, knstContentType = type, isUserVisible = text.isNotEmpty())
+            val inner = decodeInner(payload)
+            return Decoded(
+                text = inner.text,
+                knstContentType = type,
+                isUserVisible = inner.text.isNotEmpty(),
+                reply = inner.reply,
+            )
         }
         val asProto = decodeInner(plaintext)
-        if (asProto.isNotEmpty()) {
-            return Decoded(asProto, knstContentType = 0, isUserVisible = true)
+        if (asProto.text.isNotEmpty()) {
+            return Decoded(asProto.text, knstContentType = 0, isUserVisible = true, reply = asProto.reply)
         }
         val utf8 = plaintext.toString(Charsets.UTF_8)
         return Decoded(utf8, knstContentType = 0, isUserVisible = utf8.isNotEmpty())
@@ -58,11 +69,35 @@ object IncomingPlaintext {
         return bytes.copyOfRange(HEADER_SIZE, end)
     }
 
-    private fun decodeInner(payload: ByteArray): String = try {
+    private data class Inner(val text: String, val reply: ReplyRef?)
+
+    private fun decodeInner(payload: ByteArray): Inner = try {
         val content = MessageContent.parseFrom(payload)
-        if (content.hasText()) content.text.text else ""
+        if (!content.hasText()) Inner("", null) else Inner(content.text.text, replyOf(content.text))
     } catch (_: Exception) {
-        ""
+        Inner("", null)
+    }
+
+    /**
+     * The quote iOS put on the text. An empty message id is not a reply. The preview
+     * is capped here as well: a peer is not trusted to have honoured the 200-character
+     * limit, and the stored row is what the bubble renders.
+     */
+    private fun replyOf(text: TextMessage): ReplyRef? {
+        if (!text.hasQuoted()) return null
+        return replyOf(text.quoted)
+    }
+
+    private fun replyOf(quoted: QuotedMessage): ReplyRef? {
+        val media = if (quoted.hasMediaType()) {
+            quoted.mediaType
+                .takeIf { it != MediaType.MEDIA_TYPE_UNSPECIFIED && it != MediaType.UNRECOGNIZED }
+                ?.name
+        } else {
+            null
+        }
+        val preview = if (quoted.hasTextPreview()) quoted.textPreview else ""
+        return ReplyRef.of(quoted.messageId, preview, media)
     }
 
     private fun Int.isControlType(): Boolean = when (this) {

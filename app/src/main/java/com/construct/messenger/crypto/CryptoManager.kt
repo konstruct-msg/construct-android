@@ -170,8 +170,12 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         orchestrator?.importOneTimePrekeys(list) ?: requireBootstrap().importOneTimePrekeys(list)
     }
 
-    /** Whether this build supports SuiteID::PQ_RATCHET (suite 3) — declared on prekey upload. */
-    fun supportsPqRatchet(): Boolean = uniffi.construct_core.supportsPqRatchet()
+    /**
+     * Whether prekey upload should declare suite 3. The core no longer exports
+     * `supports_pq_ratchet()`: every platform build negotiates PQ_RATCHET, and the
+     * unsigned bundle flag was the downgrade the cutover removed.
+     */
+    fun supportsPqRatchet(): Boolean = true
 
     /** X25519 identity **secret** key bytes — needed by
      * [com.construct.messenger.stealth.StealthSenderService] to unseal inbound
@@ -302,12 +306,6 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         )
     }
 
-    /** Apply a post-quantum contribution exactly where the core's CFE action says. */
-    fun applyPqContribution(contactId: String, kemSharedSecret: ByteArray) = synchronized(coreLock) {
-        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
-            .applyPqContribution(contactId, kemSharedSecret.toUByteList())
-    }
-
     /** CFE coordination snapshots; callers persist the returned bytes in typed slots. */
     fun exportOrchestratorState(): ByteArray = synchronized(coreLock) {
         (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
@@ -318,17 +316,6 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     fun importOrchestratorState(bytes: ByteArray) = synchronized(coreLock) {
         (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
             .importOrchestratorState(bytes.toUByteList())
-    }
-
-    fun exportKyberSessionState(): ByteArray = synchronized(coreLock) {
-        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
-            .exportKyberSessionState()
-            .toByteArray()
-    }
-
-    fun importKyberSessionState(bytes: ByteArray) = synchronized(coreLock) {
-        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
-            .importKyberSessionState(bytes.toUByteList())
     }
 
     /** Drop all Rust-owned state for a contact, not only its hot ratchet blob. */

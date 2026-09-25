@@ -312,9 +312,9 @@ class SessionManager @Inject constructor(
 /// (X25519+ChaCha20), 2 = PQ_HYBRID (X25519+ML-KEM-768, ML-DSA-65). Mirrors iOS
 /// `KeyServiceClient.parseSuiteId` — see construct-docs decision
 /// `crypto-suite-extensibility.md`. The raw proto value is NOT the core id
-/// (proto classic = 10 → core would reject it as InvalidSuiteId), and suite 3
-/// (PQ_RATCHET) is never produced from a bundle: it is negotiated per-session
-/// from `supports_pq_ratchet`.
+/// (proto classic = 10 → core would reject it as InvalidSuiteId). Suite 3
+/// (PQ_RATCHET) is not a bundle field: the core negotiates it for every
+/// platform build, and the unsigned `supports_pq_ratchet` flag is gone.
 private fun PreKeyBundle.coreSuiteId(): UShort = when (cryptoSuite) {
     CryptoSuite.CRYPTO_SUITE_CLASSIC_X25519_CHACHA20 -> 1u
     // The core has no AES-256 provider — classic, not the ML-KEM hybrid (2).
@@ -340,7 +340,6 @@ private fun PreKeyBundle.toBinaryKeyBundle(verifyingKey: ByteArray): BinaryKeyBu
     kyberPreKeyPublic = if (hasKyberPreKey()) kyberPreKey.toByteArray().toUByteList() else null,
     kyberOneTimePrekeyPublic = if (hasKyberOneTimePreKey()) kyberOneTimePreKey.toByteArray().toUByteList() else null,
     kyberOneTimePrekeyId = if (hasKyberOneTimePreKeyId()) kyberOneTimePreKeyId.toUInt() else null,
-    supportsPqRatchet = supportsPqRatchet,
 )
 
 private fun ByteArray.toUByteList(): List<UByte> = map { it.toUByte() }

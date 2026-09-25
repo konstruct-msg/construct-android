@@ -14,12 +14,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.construct.messenger.R
+import com.construct.messenger.data.model.Message
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.MessageBubble
 import com.construct.messenger.ui.components.MessageInputView
@@ -33,6 +41,9 @@ fun ChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+    val clipboard = LocalClipboardManager.current
+    var menuMessageId by remember { mutableStateOf<String?>(null) }
+    var jumpToId by remember { mutableStateOf<String?>(null) }
 
     // Visible means started, not merely composed: a chat left open behind the home screen is
     // not being read (iOS learned this the hard way — see ChatPresence).
@@ -53,9 +64,16 @@ fun ChatScreen(
     }
 
     LaunchedEffect(uiState.messages.size) {
-        if (uiState.messages.isNotEmpty()) {
+        if (uiState.messages.isNotEmpty() && jumpToId == null) {
             listState.scrollToItem(uiState.messages.lastIndex)
         }
+    }
+
+    LaunchedEffect(jumpToId) {
+        val id = jumpToId ?: return@LaunchedEffect
+        val index = uiState.messages.indexOfFirst { it.id.equals(id, ignoreCase = true) }
+        if (index >= 0) listState.animateScrollToItem(index)
+        jumpToId = null
     }
 
     Column(
@@ -82,7 +100,22 @@ fun ChatScreen(
             state = listState,
         ) {
             items(uiState.messages, key = { it.id }) { message ->
-                MessageBubble(message = message)
+                MessageBubble(
+                    message = message,
+                    replyLabel = replyLabel(message, uiState.messages),
+                    onLongPress = { menuMessageId = message.id },
+                    menuExpanded = menuMessageId == message.id,
+                    onDismissMenu = { menuMessageId = null },
+                    onReply = {
+                        viewModel.startReply(message)
+                        menuMessageId = null
+                    },
+                    onCopy = {
+                        clipboard.setText(AnnotatedString(message.body))
+                        menuMessageId = null
+                    },
+                    onJumpToReply = { jumpToId = message.replyToId },
+                )
             }
         }
 
@@ -91,6 +124,34 @@ fun ChatScreen(
             onValueChange = viewModel::onDraftChange,
             onSend = viewModel::send,
             enabled = !uiState.sending,
+            replyPreview = uiState.replyingTo?.let { reply ->
+                reply.preview.ifBlank { quoteFallback(reply.mediaType) }
+            },
+            onCancelReply = viewModel::cancelReply,
         )
     }
+}
+
+/**
+ * What the quote strip says. The stored preview wins; otherwise the quoted row's own
+ * text, if it is in this transcript; otherwise the media kind iOS sent with the quote.
+ */
+@Composable
+private fun replyLabel(message: Message, transcript: List<Message>): String? {
+    val quotedId = message.replyToId ?: return null
+    val preview = message.replyPreview?.takeIf { it.isNotBlank() }
+    if (preview != null) return preview
+    val local = transcript.firstOrNull { it.id.equals(quotedId, ignoreCase = true) }?.body
+    if (!local.isNullOrBlank()) return local
+    return quoteFallback(message.replyMediaType)
+}
+
+@Composable
+private fun quoteFallback(mediaType: String?): String = when (mediaType) {
+    "MEDIA_TYPE_IMAGE", "MEDIA_TYPE_ANIMATED" -> stringResource(R.string.photo)
+    "MEDIA_TYPE_VIDEO" -> stringResource(R.string.video)
+    "MEDIA_TYPE_AUDIO" -> stringResource(R.string.voice_message)
+    "MEDIA_TYPE_FILE" -> stringResource(R.string.file_attachment)
+    "MEDIA_TYPE_STICKER" -> stringResource(R.string.sticker)
+    else -> stringResource(R.string.message_unavailable)
 }

@@ -1,7 +1,9 @@
 package com.construct.messenger.util
 
+import com.construct.messenger.data.model.ReplyRef
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
@@ -38,6 +40,42 @@ class IncomingPlaintextTest {
         assertEquals("roundtrip", decoded.text)
         assertTrue(decoded.isUserVisible)
         assertEquals(KnstFrame.TYPE_E2EE_SIGNAL, decoded.knstContentType)
+    }
+
+    @Test
+    fun `quoted text roundtrips inside the knst frame`() {
+        val reply = ReplyRef.of("ABCDEF", "hello there")!!
+        val payload = TextWire.encode("the answer", reply)
+        val content = MessageContent.parseFrom(payload)
+        assertEquals("abcdef", content.text.quoted.messageId)
+        assertEquals("hello there", content.text.quoted.textPreview)
+        assertEquals("", content.text.quoted.senderId)
+
+        val decoded = IncomingPlaintext.decode(
+            KnstFrame.pack(payload, KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID()),
+        )
+        assertEquals("the answer", decoded.text)
+        assertEquals("abcdef", decoded.reply?.messageId)
+        assertEquals("hello there", decoded.reply?.preview)
+        assertNull(decoded.reply?.mediaType)
+        assertTrue(decoded.isUserVisible)
+    }
+
+    @Test
+    fun `a quote of a photo keeps the media type and caps the preview`() {
+        val reply = ReplyRef.of("id-1", "x".repeat(250), "MEDIA_TYPE_IMAGE")!!
+        assertEquals(ReplyRef.MAX_CHARS, reply.preview.length)
+        val decoded = IncomingPlaintext.decode(
+            KnstFrame.pack(TextWire.encode("nice", reply), KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID()),
+        )
+        assertEquals("id-1", decoded.reply?.messageId)
+        assertEquals(ReplyRef.MAX_CHARS, decoded.reply?.preview?.length)
+        assertEquals("MEDIA_TYPE_IMAGE", decoded.reply?.mediaType)
+    }
+
+    @Test
+    fun `an empty quote id is not a reply`() {
+        assertNull(ReplyRef.of("  ", "hi"))
     }
 
     @Test

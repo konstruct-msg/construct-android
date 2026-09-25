@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.model.Message
+import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.data.repository.ContactsRepository
 import com.construct.messenger.data.repository.MessagesRepository
 import com.construct.messenger.util.DisplayNameGenerator
@@ -23,6 +24,8 @@ data class ChatUiState(
     val messages: List<Message> = emptyList(),
     val draft: String = "",
     val sending: Boolean = false,
+    /** The message the composer is quoting. Null when the next send is not a reply. */
+    val replyingTo: ReplyRef? = null,
 )
 
 @HiltViewModel
@@ -35,13 +38,15 @@ class ChatViewModel @Inject constructor(
 
     private val draft = MutableStateFlow("")
     private val sending = MutableStateFlow(false)
+    private val replying = MutableStateFlow<ReplyRef?>(null)
 
     val uiState: StateFlow<ChatUiState> = combine(
         messagesRepository.observeContact(contactId),
         contactsRepository.contacts,
         draft,
         sending,
-    ) { messages, contacts, draftText, isSending ->
+        replying,
+    ) { messages, contacts, draftText, isSending, reply ->
         val contact = contacts.find { it.userId == contactId }
         val title = when {
             contact == null -> DisplayNameGenerator.generate(contactId).uppercase()
@@ -54,6 +59,7 @@ class ChatViewModel @Inject constructor(
             messages = messages,
             draft = draftText,
             sending = isSending,
+            replyingTo = reply,
         )
     }.stateIn(
         viewModelScope,
@@ -80,14 +86,25 @@ class ChatViewModel @Inject constructor(
         draft.value = value
     }
 
+    /** Quote [message] on the next send. The id is lowercased to match iOS, and the preview is its text. */
+    fun startReply(message: Message) {
+        replying.value = ReplyRef.of(message.id, message.body)
+    }
+
+    fun cancelReply() {
+        replying.value = null
+    }
+
     fun send() {
         val text = draft.value.trim()
         if (text.isEmpty() || sending.value) return
+        val reply = replying.value
         sending.value = true
         viewModelScope.launch {
             try {
-                messagesRepository.send(contactId, text)
+                messagesRepository.send(contactId, text, reply)
                 draft.value = ""
+                replying.value = null
             } finally {
                 sending.value = false
             }

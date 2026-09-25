@@ -1,6 +1,7 @@
 package com.construct.messenger.data.repository
 
 import com.construct.messenger.data.model.Message
+import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.domain.usecase.SendOutcome
 import kotlinx.coroutines.flow.Flow
 
@@ -11,7 +12,11 @@ interface MessagesRepository {
     /** Messages in the `direct:<me>:<contact>` conversation, oldest first. */
     fun observeContact(contactId: String): Flow<List<Message>>
 
-    suspend fun send(contactId: String, text: String): SendOutcome
+    /**
+     * Send [text] to [contactId]. [reply] quotes one message in this chat; the quote
+     * travels inside the ciphertext and is stored on the outgoing row.
+     */
+    suspend fun send(contactId: String, text: String, reply: ReplyRef? = null): SendOutcome
 
     /**
      * The chat is on screen: what arrives is read as it lands, so unread goes to zero and its

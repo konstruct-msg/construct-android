@@ -47,7 +47,6 @@ class MessageProcessorTest {
         override suspend fun markDelivered(messageId: String) { calls += "markDelivered:$messageId" }
         override suspend fun markProcessed(messageId: String, senderId: String) { calls += "markProcessed:$messageId" }
         override suspend fun saveSecureStore(slot: CfeSecureStoreSlot, data: ByteArray) { calls += "saveSecureStore:$slot" }
-        override suspend fun applyPqContribution(contactId: String, kemSharedSecret: ByteArray) { calls += "applyPq:$contactId" }
         override suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray) { calls += "terminated:$contactId" }
         override suspend fun pruneAckStore(cutoffTs: Long) { calls += "prune:$cutoffTs" }
         override suspend fun sendHeartbeat(contactId: String) { calls += "heartbeat:$contactId" }

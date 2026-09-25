@@ -28,8 +28,11 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): ConstructDatabase =
         Room.databaseBuilder(context, ConstructDatabase::class.java, ConstructDatabase.NAME)
-            // Greenfield: identityPublic added in v2. No production installs yet.
-            .fallbackToDestructiveMigration()
+            // A phone already holds chats (first device run, 2026-09-24). A version we
+            // know upgrades in place. Versions 1–3 predate that phone; anything newer
+            // with no migration fails the open instead of deleting the history.
+            .addMigrations(ConstructDatabase.MIGRATION_4_5)
+            .fallbackToDestructiveMigrationFrom(1, 2, 3)
             .build()
 
     @Provides

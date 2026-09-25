@@ -12,6 +12,7 @@ import com.construct.messenger.data.local.db.MessageEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.data.model.DeliveryStatus
+import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.domain.usecase.HealSessionUseCase
 import com.construct.messenger.domain.usecase.ResponderInitUseCase
 import com.construct.messenger.domain.usecase.SendReceiptUseCase
@@ -68,7 +69,7 @@ class ProcessorEffectsImpl @Inject constructor(
             ackStore.markProcessed(messageId, accountId)
             return
         }
-        persistIncoming(accountId, messageId, decoded.text, System.currentTimeMillis())
+        persistIncoming(accountId, messageId, decoded.text, System.currentTimeMillis(), decoded.reply)
         ackStore.markProcessed(messageId, accountId)
         runCatching { sendReceiptUseCase.delivered(accountId, listOf(messageId)) }
             .onFailure { Log.w(TAG, "e2e receipt send failed", it) }
@@ -102,6 +103,7 @@ class ProcessorEffectsImpl @Inject constructor(
             messageId = baseMessageId,
             text = decoded.text,
             timestampMs = timestampMs,
+            reply = decoded.reply,
         )
         ackStore.markProcessed(messageId, accountId)
     }
@@ -139,10 +141,6 @@ class ProcessorEffectsImpl @Inject constructor(
 
     override suspend fun saveSecureStore(slot: CfeSecureStoreSlot, data: ByteArray) {
         sessionStateStore.saveSecureStore(slot, data)
-    }
-
-    override suspend fun applyPqContribution(contactId: String, kemSharedSecret: ByteArray) {
-        cryptoManager.applyPqContribution(contactId, kemSharedSecret)
     }
 
     override suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray) {
@@ -229,7 +227,13 @@ class ProcessorEffectsImpl @Inject constructor(
     override suspend fun sessionEstablishedAtMs(contactId: String): Long? =
         sessionStateStore.getEstablishedAt(contactId)
 
-    private suspend fun persistIncoming(contactId: String, messageId: String, text: String, timestampMs: Long) {
+    private suspend fun persistIncoming(
+        contactId: String,
+        messageId: String,
+        text: String,
+        timestampMs: Long,
+        reply: ReplyRef?,
+    ) {
         val myId = keystoreManager.getUserId() ?: run {
             Log.e(TAG, "persistIncoming: no local user id — dropping ${messageId.take(8)}…")
             return
@@ -246,6 +250,9 @@ class ProcessorEffectsImpl @Inject constructor(
                 isSentByMe = false,
                 timestamp = timestampMs,
                 deliveryStatus = DeliveryStatus.DELIVERED.name,
+                replyToId = reply?.messageId,
+                replyPreview = reply?.preview?.ifEmpty { null },
+                replyMediaType = reply?.mediaType,
             ),
         )
         // On screen, it is read as it lands.
@@ -285,6 +292,7 @@ class ProcessorEffectsImpl @Inject constructor(
         messageId: String,
         text: String,
         timestampMs: Long,
+        reply: ReplyRef?,
     ) {
         val myId = keystoreManager.getUserId() ?: run {
             Log.e(TAG, "persistOutgoingCopy: no local user id — dropping ${messageId.take(8)}…")
@@ -299,6 +307,9 @@ class ProcessorEffectsImpl @Inject constructor(
                 isSentByMe = true,
                 timestamp = timestampMs,
                 deliveryStatus = DeliveryStatus.SENT.name,
+                replyToId = reply?.messageId,
+                replyPreview = reply?.preview?.ifEmpty { null },
+                replyMediaType = reply?.mediaType,
             ),
         )
         val existing = chatDao.getById(chatId)

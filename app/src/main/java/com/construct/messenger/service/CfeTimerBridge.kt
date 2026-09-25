@@ -100,8 +100,6 @@ class CfeTimerBridge @Inject constructor(
                 is CfeAction.SendEndSession -> effects.requestEndSession(action.contactId)
                 is CfeAction.NotifyLinkedDevicesOfSessionReset ->
                     effects.notifyLinkedDevicesOfSessionReset(action.contactId)
-                is CfeAction.ApplyPqContribution ->
-                    effects.applyPqContribution(action.contactId, action.kemSs)
                 is CfeAction.SaveToSecureStore -> effects.saveSecureStore(action.slot, action.data)
                 is CfeAction.SessionTerminated ->
                     effects.sessionTerminated(action.contactId, action.archiveBytes)

@@ -80,9 +80,6 @@ class SessionStateStore @Inject constructor(
     private fun keyFor(slot: CfeSecureStoreSlot): String = when (slot) {
         is CfeSecureStoreSlot.Session -> "session:${slot.contactId}"
         is CfeSecureStoreSlot.SessionArchive -> "archive:${slot.contactId}"
-        is CfeSecureStoreSlot.PqDeferred -> "pq-deferred:${slot.contactId}"
-        CfeSecureStoreSlot.KyberSessionState -> KYBER_SESSION_STATE_KEY
-        is CfeSecureStoreSlot.KyberSignedPrekey -> "kyber-spk:${slot.keyId}"
         CfeSecureStoreSlot.OrchestratorState -> ORCHESTRATOR_STATE_KEY
     }
 

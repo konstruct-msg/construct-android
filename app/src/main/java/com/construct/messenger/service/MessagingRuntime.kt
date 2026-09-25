@@ -149,10 +149,9 @@ class MessagingRuntime @Inject constructor(
             runCatching { cryptoManager.importOrchestratorState(bytes) }
                 .onFailure { Log.e(TAG, "orchestrator state restore failed", it) }
         }
-        blobs[SessionStateStore.KYBER_SESSION_STATE_KEY]?.let { bytes ->
-            runCatching { cryptoManager.importKyberSessionState(bytes) }
-                .onFailure { Log.e(TAG, "Kyber state restore failed", it) }
-        }
+        // Kyber session bytes used to be their own slot. The core folded that into the
+        // session blob and dropped the import, so an old `core:kyber-session-state` row
+        // stays in Room and is not fed to the ratchet.
 
         val sessions = blobs
             .filterKeys {

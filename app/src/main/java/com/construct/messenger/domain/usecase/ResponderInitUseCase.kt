@@ -88,6 +88,11 @@ class ResponderInitUseCase @Inject constructor(
                 suiteId = wire.suiteId,
                 pqMessageEpoch = wire.pqMessageEpoch,
                 pqRatchetField = wire.pqRatchetField,
+                // `wire_payload_unpack` is the only reading of these. kyber_prekey_id on the
+                // first message is the wire's kyber_otpk_id (0 when the handshake used the SPK).
+                pqxdhV2 = wire.pqxdhV2,
+                kyberPrekeyId = wire.kyberOtpkId,
+                kemCiphertext = wire.kemCiphertext ?: emptyList(),
             )
             val attempts = cryptoManager.planReceivingInit(listOf(carrier), candidates.size)
             for (attempt in attempts) {
