@@ -7,9 +7,7 @@ import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.argumentCaptor
@@ -81,12 +79,21 @@ class SessionManagerTest {
 
         assertNull(mapped.oneTimePrekeyPublic)
         assertNull(mapped.oneTimePrekeyId)
+        // An absent proto field reads as absent — never an empty value the core would verify.
         assertNull(mapped.kyberPreKeyPublic)
+        assertNull(mapped.kyberPreKeyId)
+        assertNull(mapped.kyberPreKeyCreatedAt)
+        assertNull(mapped.kyberPreKeySignature)
+        assertNull(mapped.kyberPreKeyHybridSignature)
         assertNull(mapped.kyberOneTimePrekeyPublic)
         assertNull(mapped.kyberOneTimePrekeyId)
+        assertNull(mapped.kyberOneTimePrekeyCreatedAt)
+        assertNull(mapped.kyberOneTimePrekeySignature)
+        assertNull(mapped.kyberOneTimePrekeyHybridSignature)
+        assertNull(mapped.hybridIdentityKey)
+        assertNull(mapped.hybridIdentitySignature)
         assertEquals(0UL, mapped.kyberSpkUploadedAt)
         assertEquals(0u, mapped.kyberSpkRotationEpoch)
-        assertFalse(mapped.supportsPqRatchet)
     }
 
     @Test
@@ -101,11 +108,19 @@ class SessionManagerTest {
             .setSpkUploadedAt(1L)
             .setSpkRotationEpoch(1)
             .setKyberPreKey(ByteString.copyFrom(byteArrayOf(5)))
+            .setKyberPreKeyId(11)
+            .setKyberPreKeyCreatedAt(1_800_000_000L)
+            .setKyberPreKeySignature(ByteString.copyFrom(byteArrayOf(12)))
+            .setKyberPreKeyHybridSignature(ByteString.copyFrom(byteArrayOf(13)))
             .setKyberOneTimePreKey(ByteString.copyFrom(byteArrayOf(6)))
             .setKyberOneTimePreKeyId(7)
+            .setKyberOneTimePreKeyCreatedAt(1_800_000_060L)
+            .setKyberOneTimePreKeySignature(ByteString.copyFrom(byteArrayOf(14)))
+            .setKyberOneTimePreKeyHybridSignature(ByteString.copyFrom(byteArrayOf(15)))
+            .setHybridIdentityKey(ByteString.copyFrom(byteArrayOf(16)))
+            .setHybridIdentitySignature(ByteString.copyFrom(byteArrayOf(17)))
             .setKyberSpkUploadedAt(2_000L)
             .setKyberSpkRotationEpoch(4)
-            .setSupportsPqRatchet(true)
             .build()
         val response = GetPreKeyBundleResponse.newBuilder()
             .setBundle(bundle)
@@ -123,14 +138,24 @@ class SessionManagerTest {
 
         assertEquals(listOf<UByte>(4u), mapped.oneTimePrekeyPublic)
         assertEquals(42u, mapped.oneTimePrekeyId)
+        // Every field the PQXDH v2 initiator checks survives the conversion: a dropped one would
+        // read as "peer not post-quantum" for every peer.
         assertEquals(listOf<UByte>(5u), mapped.kyberPreKeyPublic)
+        assertEquals(11u, mapped.kyberPreKeyId)
+        assertEquals(1_800_000_000UL, mapped.kyberPreKeyCreatedAt)
+        assertEquals(listOf<UByte>(12u), mapped.kyberPreKeySignature)
+        assertEquals(listOf<UByte>(13u), mapped.kyberPreKeyHybridSignature)
         assertEquals(listOf<UByte>(6u), mapped.kyberOneTimePrekeyPublic)
         assertEquals(7u, mapped.kyberOneTimePrekeyId)
+        assertEquals(1_800_000_060UL, mapped.kyberOneTimePrekeyCreatedAt)
+        assertEquals(listOf<UByte>(14u), mapped.kyberOneTimePrekeySignature)
+        assertEquals(listOf<UByte>(15u), mapped.kyberOneTimePrekeyHybridSignature)
+        assertEquals(listOf<UByte>(16u), mapped.hybridIdentityKey)
+        assertEquals(listOf<UByte>(17u), mapped.hybridIdentitySignature)
         assertEquals(2_000UL, mapped.kyberSpkUploadedAt)
         assertEquals(4u, mapped.kyberSpkRotationEpoch)
-        assertTrue(mapped.supportsPqRatchet)
         // Proto CRYPTO_SUITE_HYBRID_KYBER768_X25519 (=2) → core SuiteID 2 (PQ_HYBRID).
-        // NEVER 3: PQ_RATCHET is negotiated per-session, not declared by a bundle.
+        // NEVER 3: PQ_RATCHET is the core's choice for every session, not declared by a bundle.
         assertEquals(2, mapped.suiteId.toInt())
     }
 }

@@ -1,8 +1,8 @@
 package com.construct.messenger.domain.usecase
 
-import android.content.Context
-import android.content.SharedPreferences
 import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.crypto.KyberPrekeyService
+import com.google.protobuf.ByteString
 import com.construct.messenger.data.api.GrpcClient
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -20,6 +20,7 @@ import org.mockito.kotlin.whenever
 import shared.proto.services.v1.KeyServiceGrpcKt.KeyServiceCoroutineStub
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyCountRequest
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyCountResponse
+import shared.proto.services.v1.KeyServiceOuterClass.KyberOneTimePreKey
 import shared.proto.services.v1.KeyServiceOuterClass.OneTimePreKey
 import shared.proto.services.v1.KeyServiceOuterClass.UploadPreKeysRequest
 import shared.proto.services.v1.KeyServiceOuterClass.UploadPreKeysResponse
@@ -30,19 +31,15 @@ class UploadPreKeysUseCaseTest {
     private val cryptoManager: CryptoManager = mock()
     private val grpcClient: GrpcClient = mock()
     private val keyStub: KeyServiceCoroutineStub = mock()
-    private val context: Context = mock()
-    private val prefs: SharedPreferences = mock()
-    private val prefsEditor: SharedPreferences.Editor = mock()
+    private val kyberPrekeys: KyberPrekeyService = mock()
 
     private lateinit var useCase: UploadPreKeysUseCase
 
     @Before
     fun setUp() {
         whenever(grpcClient.key).thenReturn(keyStub)
-        whenever(context.getSharedPreferences(any(), any())).thenReturn(prefs)
-        whenever(prefs.edit()).thenReturn(prefsEditor)
-        whenever(prefsEditor.putBoolean(any(), any())).thenReturn(prefsEditor)
-        useCase = UploadPreKeysUseCase(context, cryptoManager, grpcClient)
+        whenever(kyberPrekeys.oneTimeKeysForUpload(any(), any())).thenReturn(emptyList())
+        useCase = UploadPreKeysUseCase(cryptoManager, grpcClient, kyberPrekeys)
     }
 
     // ── invoke (direct upload) ─────────────────────────────────────────────
@@ -52,7 +49,6 @@ class UploadPreKeysUseCaseTest {
         whenever(cryptoManager.generateOneTimePrekeys(any())).thenReturn(
             listOf(OtpkPair(keyId = 1u, publicKey = listOf(10u, 20u))),
         )
-        whenever(cryptoManager.supportsPqRatchet()).thenReturn(true)
         whenever(keyStub.uploadPreKeys(any(), any())).thenReturn(
             UploadPreKeysResponse.newBuilder().setSuccess(true).build(),
         )
@@ -68,7 +64,33 @@ class UploadPreKeysUseCaseTest {
         assertEquals(1, request.preKeysCount)
         assertEquals(1u, request.preKeysList.first().keyId.toUInt())
         assertTrue(request.replaceExisting)
-        assertTrue(request.supportsPqRatchet)
+        assertEquals(0, request.kyberPreKeysCount)
+    }
+
+    /** The Kyber one-time keys ride on the same request, as many as the classic ones. */
+    @Test
+    fun invoke_carriesKyberOneTimeKeysWithTheClassicOnes() = runTest {
+        whenever(cryptoManager.generateOneTimePrekeys(eq(2))).thenReturn(
+            listOf(OtpkPair(keyId = 1u, publicKey = listOf(1u)), OtpkPair(keyId = 2u, publicKey = listOf(2u))),
+        )
+        val kyber = (1..2).map { i ->
+            KyberOneTimePreKey.newBuilder()
+                .setKeyId(i)
+                .setPublicKey(ByteString.copyFrom(ByteArray(1568) { i.toByte() }))
+                .setCreatedAt(1_800_000_000L)
+                .build()
+        }
+        whenever(kyberPrekeys.oneTimeKeysForUpload(eq("device-1"), eq(2))).thenReturn(kyber)
+        whenever(keyStub.uploadPreKeys(any(), any())).thenReturn(
+            UploadPreKeysResponse.newBuilder().setSuccess(true).build(),
+        )
+
+        useCase("device-1", count = 2)
+
+        val captor = argumentCaptor<UploadPreKeysRequest>()
+        verify(keyStub).uploadPreKeys(captor.capture(), any())
+        assertEquals(2, captor.firstValue.preKeysCount)
+        assertEquals(kyber, captor.firstValue.kyberPreKeysList)
     }
 
     @Test
@@ -76,7 +98,6 @@ class UploadPreKeysUseCaseTest {
         whenever(cryptoManager.generateOneTimePrekeys(eq(100))).thenReturn(
             (1..100).map { i -> OtpkPair(keyId = i.toUInt(), publicKey = listOf(i.toUByte())) },
         )
-        whenever(cryptoManager.supportsPqRatchet()).thenReturn(false)
         whenever(keyStub.uploadPreKeys(any(), any())).thenReturn(
             UploadPreKeysResponse.newBuilder().setSuccess(true).build(),
         )
@@ -121,39 +142,11 @@ class UploadPreKeysUseCaseTest {
         whenever(keyStub.getPreKeyCount(any(), any())).thenReturn(
             GetPreKeyCountResponse.newBuilder().setCount(50).build(),
         )
-        // Advertised capability matches what the server already holds.
-        whenever(cryptoManager.supportsPqRatchet()).thenReturn(false)
-        whenever(prefs.contains(any())).thenReturn(true)
-        whenever(prefs.getBoolean(any(), any())).thenReturn(false)
 
         val result = useCase.replenishIfNeeded("device-1", minThreshold = 20)
 
         assertEquals(UploadPreKeysResult.Skipped, result)
         verify(keyStub, never()).uploadPreKeys(any(), any())
-    }
-
-    @Test
-    fun replenishIfNeeded_uploads_whenCapabilityChanged_despiteSufficientCount() = runTest {
-        whenever(keyStub.getPreKeyCount(any(), any())).thenReturn(
-            GetPreKeyCountResponse.newBuilder().setCount(50).build(),
-        )
-        // Server holds supports_pq_ratchet=false, this build now supports it.
-        whenever(prefs.contains(any())).thenReturn(true)
-        whenever(prefs.getBoolean(any(), any())).thenReturn(false)
-        whenever(cryptoManager.supportsPqRatchet()).thenReturn(true)
-        whenever(cryptoManager.generateOneTimePrekeys(any())).thenReturn(
-            listOf(OtpkPair(keyId = 1u, publicKey = listOf(1u))),
-        )
-        whenever(keyStub.uploadPreKeys(any(), any())).thenReturn(
-            UploadPreKeysResponse.newBuilder().setSuccess(true).build(),
-        )
-
-        val result = useCase.replenishIfNeeded("device-1", minThreshold = 20)
-
-        assertTrue(result is UploadPreKeysResult.Uploaded)
-        val captor = argumentCaptor<UploadPreKeysRequest>()
-        verify(keyStub).uploadPreKeys(captor.capture(), any())
-        assertTrue(captor.firstValue.supportsPqRatchet)
     }
 
     @Test

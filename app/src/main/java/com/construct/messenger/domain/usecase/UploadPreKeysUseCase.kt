@@ -1,12 +1,10 @@
 package com.construct.messenger.domain.usecase
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.util.Log
 import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.crypto.KyberPrekeyService
 import com.construct.messenger.data.api.GrpcClient
 import com.google.protobuf.ByteString
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyCountRequest
 import shared.proto.services.v1.KeyServiceOuterClass.OneTimePreKey
@@ -32,22 +30,23 @@ sealed interface UploadPreKeysResult {
  *
  * OTPK upload is **never fatal** — failures are logged and returned in [UploadPreKeysResult],
  * never thrown. The caller decides whether to retry or swallow.
+ *
+ * Every upload carries as many one-time Kyber keys (ML-KEM-1024) as classic ones, once the hybrid
+ * identity is published ([KyberPrekeyService.oneTimeKeysForUpload]): the server serves one of each
+ * together and expires both pools together, so the classic count is the count for both.
  */
 @Singleton
 class UploadPreKeysUseCase @Inject constructor(
-    @ApplicationContext context: Context,
     private val cryptoManager: CryptoManager,
     private val grpcClient: GrpcClient,
+    private val kyberPrekeys: KyberPrekeyService,
 ) {
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
     /**
      * Upload [count] freshly-generated one-time pre-keys unconditionally.
      *
      * @param deviceId The device id to upload keys for.
      * @param count Number of OTPKs to generate and upload.
-     * @param replaceExisting If true, atomically replace all existing OTPKs on the server.
-     * @param supportsPqRatchet Whether to declare PQ_RATCHET capability.
+     * @param replaceExisting If true, atomically replace all existing OTPKs (both pools) on the server.
      * @return [UploadPreKeysResult.Uploaded] on success, [UploadPreKeysResult.Failed] on error.
      */
     suspend operator fun invoke(
@@ -57,7 +56,8 @@ class UploadPreKeysUseCase @Inject constructor(
     ): UploadPreKeysResult {
         return try {
             val otpks = cryptoManager.generateOneTimePrekeys(count)
-            val supportsPqRatchet = cryptoManager.supportsPqRatchet()
+            // Persisted by the service before they are returned, like the classic ones must be.
+            val kyber = kyberPrekeys.oneTimeKeysForUpload(deviceId, count)
             val request = UploadPreKeysRequest.newBuilder()
                 .setDeviceId(deviceId)
                 .addAllPreKeys(
@@ -68,14 +68,10 @@ class UploadPreKeysUseCase @Inject constructor(
                             .build()
                     },
                 )
+                .addAllKyberPreKeys(kyber)
                 .setReplaceExisting(replaceExisting)
-                .setSupportsPqRatchet(supportsPqRatchet)
                 .build()
             grpcClient.key.uploadPreKeys(request)
-            // Remember what capability the server now holds — replenishIfNeeded
-            // compares against this to force a re-upload when a build flips
-            // supportsPqRatchet() while the server OTPK count is healthy.
-            prefs.edit().putBoolean(KEY_ADVERTISED_PQ_RATCHET, supportsPqRatchet).apply()
             UploadPreKeysResult.Uploaded(count)
         } catch (error: CancellationException) {
             throw error
@@ -102,22 +98,9 @@ class UploadPreKeysUseCase @Inject constructor(
             val countResponse = grpcClient.key.getPreKeyCount(
                 GetPreKeyCountRequest.newBuilder().setDeviceId(deviceId).build(),
             )
-            // Capability re-advertisement: supports_pq_ratchet reaches the server
-            // ONLY inside uploadPreKeys. When a build flips the capability (suite-3
-            // rollout), a device with a healthy server count would otherwise never
-            // re-upload — peers keep fetching the stale flag and negotiate classic.
-            val advertised = cryptoManager.supportsPqRatchet()
-            val lastAdvertised = if (prefs.contains(KEY_ADVERTISED_PQ_RATCHET)) {
-                prefs.getBoolean(KEY_ADVERTISED_PQ_RATCHET, false)
-            } else {
-                null
-            }
-            if (countResponse.count >= minThreshold && lastAdvertised == advertised) {
+            if (countResponse.count >= minThreshold) {
                 UploadPreKeysResult.Skipped
             } else {
-                if (lastAdvertised != advertised) {
-                    Log.i(TAG, "supportsPqRatchet changed ($lastAdvertised → $advertised) — forcing upload to re-advertise")
-                }
                 invoke(deviceId, batchSize, replaceExisting = false)
             }
         } catch (error: CancellationException) {
@@ -134,9 +117,6 @@ class UploadPreKeysUseCase @Inject constructor(
         const val DEFAULT_BATCH_SIZE = 100
         /** Server's recommended minimum OTPK count (from `GetPreKeyCountResponse`). */
         const val RECOMMENDED_MINIMUM = 20
-        const val PREFS_FILE_NAME = "prekey_upload_state"
-        /** Last supports_pq_ratchet value successfully uploaded (absent = never/unknown). */
-        const val KEY_ADVERTISED_PQ_RATCHET = "advertised_pq_ratchet"
     }
 }
 

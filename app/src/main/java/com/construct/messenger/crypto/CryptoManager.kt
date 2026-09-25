@@ -1,7 +1,6 @@
 package com.construct.messenger.crypto
 
 import com.construct.messenger.service.OrchestratorGateway
-import uniffi.construct_core.BinaryFirstMessage
 import uniffi.construct_core.BinaryKeyBundle
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
@@ -9,6 +8,7 @@ import uniffi.construct_core.ClassicCryptoCore
 import uniffi.construct_core.DecryptedMessageResult
 import uniffi.construct_core.DeliveryTarget
 import uniffi.construct_core.EncryptedMessageComponents
+import uniffi.construct_core.KyberPrekeyUpload
 import uniffi.construct_core.OrchestratorCore
 import uniffi.construct_core.OtpkPair
 import uniffi.construct_core.PowSolution
@@ -76,6 +76,12 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     @Volatile
     private var localIdentityPublic: ByteArray? = null
 
+    /** Set when the persisted Kyber prekeys would not import into the orchestrator. Cleared by
+     * [KyberPrekeyService][com.construct.messenger.crypto.KyberPrekeyService] once a replace-all
+     * has reached the server. */
+    @Volatile
+    var kyberPrekeysLost: Boolean = false
+
     /** True once [setLocalUserId] has built the orchestrator — the receive path
      * (CFE `handleEvent`) is only available after this. */
     val isMessagingReady: Boolean
@@ -107,8 +113,14 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
      * The account is retained by the app; only this device's derived CryptoDeviceId crosses
      * into the session core. Both sides of the ratchet AD therefore name devices.
      * Idempotent: updates the id on an existing orchestrator.
+     *
+     * [savedKyberPrekeys] is the core's Kyber prekey store as last persisted
+     * ([exportKyberPrekeys], kept by `KeystoreManager`). It is imported before the orchestrator
+     * is published, so no responder init can run against a core that has not got its Kyber
+     * secrets back. When it will not import, [kyberPrekeysLost] is set: the server still serves
+     * keys whose secrets are gone, and the next publish has to replace them all.
      */
-    fun setLocalUserId(userId: String) = synchronized(coreLock) {
+    fun setLocalUserId(userId: String, savedKyberPrekeys: ByteArray? = null) = synchronized(coreLock) {
         require(userId.isNotEmpty()) { "server account id must not be empty" }
         val deviceId = localDeviceId ?: run {
             val current = bootstrapCore?.getRegistrationBundleFields()
@@ -125,6 +137,9 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         // Carry OTPKs generated this session (registration) into the orchestrator;
         // no-op when the bootstrap core generated none (returning-user login).
         runCatching { orch.importOneTimePrekeys(boot.exportOneTimePrekeys()) }
+        if (savedKyberPrekeys != null && savedKyberPrekeys.isNotEmpty()) {
+            kyberPrekeysLost = runCatching { orch.importKyberPrekeys(savedKyberPrekeys.toUByteList()) }.isFailure
+        }
         orchestrator = orch
         bootstrapCore = null
         boot.close()
@@ -153,9 +168,6 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
             ?: requireBootstrap().generateOneTimePrekeys(count.toUInt())
     }
 
-    /** Whether this build supports SuiteID::PQ_RATCHET (suite 3) — declared on prekey upload. */
-    fun supportsPqRatchet(): Boolean = uniffi.construct_core.supportsPqRatchet()
-
     /** X25519 identity **secret** key bytes — needed by
      * [com.construct.messenger.stealth.StealthSenderService] to unseal inbound
      * sender certificates. Never persist or log. */
@@ -165,18 +177,37 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
 
     // ── Sessions / messages (orchestrator once logged in) ───────────────────
 
+    /**
+     * Open a PQXDH v2 session to [contactId]. The core refuses a bundle without a Kyber key it can
+     * verify, a hybrid identity and its binding: PQ is mandatory, there is no classical fallback.
+     * That refusal is a [uniffi.construct_core.CryptoException.SessionInitializationFailed] whose
+     * message contains `PQ_REQUIRED` — see [isPeerNotPostQuantum].
+     */
     fun initSession(contactId: String, recipientBundle: BinaryKeyBundle): String = synchronized(coreLock) {
         orchestrator?.initSession(contactId, recipientBundle)
             ?: requireBootstrap().initSession(contactId, recipientBundle)
     }
 
-    fun initReceivingSession(
+    /**
+     * RESPONDER: open the session from the envelope's `encrypted_payload` exactly as received.
+     * The core unpacks it, reads the PQXDH v2 header and decapsulates with its own Kyber secret;
+     * nothing here reassembles the first message field by field.
+     *
+     * When the init used a Kyber one-time key, [SessionInitResult.kyberPrekeys] carries the
+     * store without it: persist it (`KyberPrekeyService.persist(blob)`) before anything else, or
+     * a restart brings the burned key back.
+     */
+    fun initReceivingSessionFromWirePayload(
         contactId: String,
         recipientBundle: BinaryKeyBundle,
-        firstMessage: BinaryFirstMessage,
+        wirePayload: ByteArray,
     ): SessionInitResult = synchronized(coreLock) {
-        orchestrator?.initReceivingSession(contactId, recipientBundle, firstMessage)
-            ?: requireBootstrap().initReceivingSession(contactId, recipientBundle, firstMessage)
+        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
+            .initReceivingSessionFromWirePayload(contactId, recipientBundle, wirePayload.toUByteList())
+    }
+
+    fun sessionHealth(contactId: String): uniffi.construct_core.SessionHealthReport? = synchronized(coreLock) {
+        orchestrator?.getSessionHealth(contactId)
     }
 
     fun encryptMessage(contactId: String, plaintext: String): EncryptedMessageComponents = synchronized(coreLock) {
@@ -285,12 +316,6 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         )
     }
 
-    /** Apply a post-quantum contribution exactly where the core's CFE action says. */
-    fun applyPqContribution(contactId: String, kemSharedSecret: ByteArray) = synchronized(coreLock) {
-        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
-            .applyPqContribution(contactId, kemSharedSecret.toUByteList())
-    }
-
     /** CFE coordination snapshots; callers persist the returned bytes in typed slots. */
     fun exportOrchestratorState(): ByteArray = synchronized(coreLock) {
         (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
@@ -303,15 +328,76 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
             .importOrchestratorState(bytes.toUByteList())
     }
 
-    fun exportKyberSessionState(): ByteArray = synchronized(coreLock) {
-        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
-            .exportKyberSessionState()
-            .toByteArray()
+    // ── Kyber prekeys (ML-KEM-1024, PQXDH v2) ───────────────────────────────
+    //
+    // The core generates, signs and holds every Kyber key; the seeds never leave it, and the
+    // responder init decapsulates inside it. The app persists the store and carries the public
+    // halves to the server — `KyberPrekeyService`.
+
+    private fun requireOrchestrator(): OrchestratorCore =
+        orchestrator ?: error("orchestrator not ready — setLocalUserId first")
+
+    /** The store as one CFE blob (seeds included) — for `KeystoreManager`, never for a log. */
+    fun exportKyberPrekeys(): ByteArray = synchronized(coreLock) {
+        requireOrchestrator().exportKyberPrekeys().toByteArray()
     }
 
-    fun importKyberSessionState(bytes: ByteArray) = synchronized(coreLock) {
-        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
-            .importKyberSessionState(bytes.toUByteList())
+    /** One-time Kyber keys, each signed by the core over its `created_at` (Ed25519 and hybrid).
+     * The hybrid identity must exist ([ensureHybridIdentityPublicKey]). */
+    fun generateKyberOneTimePrekeys(count: Int): List<KyberPrekeyUpload> = synchronized(coreLock) {
+        requireOrchestrator().generateKyberOneTimePrekeys(count.toUInt())
+    }
+
+    fun kyberOneTimePrekeyCount(): Int = synchronized(coreLock) {
+        orchestrator?.kyberOneTimePrekeyCount()?.toInt() ?: 0
+    }
+
+    /** The committed Kyber SPK as the server should hold it, or null before the first commit. */
+    fun currentKyberSpkUpload(): KyberPrekeyUpload? = synchronized(coreLock) {
+        requireOrchestrator().currentKyberSpkUpload()
+    }
+
+    /** Start a Kyber SPK rotation: a new pending key, signed. Calling it again while one is
+     * pending returns the same key, so a retried upload sends what the server may already hold. */
+    fun beginKyberSpkRotation(): KyberPrekeyUpload = synchronized(coreLock) {
+        requireOrchestrator().beginKyberSpkRotation()
+    }
+
+    /** The server confirmed the pending key: it becomes current, the old one is kept 14 days. */
+    fun commitKyberSpkRotation(): Boolean = synchronized(coreLock) {
+        requireOrchestrator().commitKyberSpkRotation()
+    }
+
+    /** The server refused the pending key (it stored nothing): forget it. */
+    fun rollbackKyberSpkRotation() = synchronized(coreLock) {
+        requireOrchestrator().rollbackKyberSpkRotation()
+    }
+
+    /**
+     * The hybrid identity key (Ed25519 + ML-DSA-65) that signs every Kyber key, created on first
+     * use. It lives in the private-key record: after the first call the caller must persist
+     * [exportPrivateKeys] before anything the key signed reaches the server, or a restart comes
+     * back with a different key than the one peers pinned.
+     */
+    fun ensureHybridIdentityPublicKey(): ByteArray = synchronized(coreLock) {
+        requireOrchestrator().ensureHybridSignatureKey().toByteArray()
+    }
+
+    /** Ed25519 signature binding [hybridPublic] to this device's identity (bundle field 21). */
+    fun signHybridIdentityBinding(hybridPublic: ByteArray): ByteArray = synchronized(coreLock) {
+        val orch = requireOrchestrator()
+        orch.signBundleData(orch.buildHybridIdentityBindMessage(hybridPublic.toUByteList())).toByteArray()
+    }
+
+    /** Hybrid signature over the classic SPK's X3DH sign-message (suite 0x01). */
+    fun signClassicSpkHybrid(spkPublic: ByteArray): ByteArray = synchronized(coreLock) {
+        requireOrchestrator().signHybridPrekey(CLASSIC_SUITE, spkPublic.toUByteList()).toByteArray()
+    }
+
+    /** The classic SPK the core currently holds (public half). */
+    fun currentSignedPrekeyPublic(): ByteArray = synchronized(coreLock) {
+        (orchestrator?.getRegistrationBundleFields() ?: requireBootstrap().getRegistrationBundleFields())
+            .signedPrekeyPublic.toByteArray()
     }
 
     /** Drop all Rust-owned state for a contact, not only its hot ratchet blob. */
@@ -322,6 +408,19 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
 
     fun rotateSignedPrekey(): uniffi.construct_core.RotatedSpkBundle = synchronized(coreLock) {
         (orchestrator ?: error("orchestrator not ready — setLocalUserId first")).rotateSignedPrekey()
+    }
+
+    companion object {
+        private const val CLASSIC_SUITE: UByte = 0x01u
+
+        /**
+         * True for the initiator's refusal to open a session without PQXDH v2 keys. The core's
+         * error is flat: the whole Display text is the message — `Session initialization failed:
+         * PQ_REQUIRED: …` — so the code is matched anywhere in it, not as a prefix.
+         */
+        fun isPeerNotPostQuantum(error: Throwable): Boolean =
+            error is uniffi.construct_core.CryptoException.SessionInitializationFailed &&
+                error.message.orEmpty().contains("PQ_REQUIRED")
     }
 
     // ── Stateless helpers (free functions / no core state) ──────────────────
@@ -385,6 +484,7 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         bootstrapCore = null
         localDeviceId = null
         localIdentityPublic = null
+        kyberPrekeysLost = false
     }
 }
 

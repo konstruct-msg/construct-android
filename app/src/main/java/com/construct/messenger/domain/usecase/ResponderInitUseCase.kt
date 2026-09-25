@@ -2,6 +2,7 @@ package com.construct.messenger.domain.usecase
 
 import android.util.Log
 import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.crypto.KyberPrekeyService
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.model.IdentityIds
@@ -12,7 +13,6 @@ import com.construct.messenger.util.IncomingPlaintext
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
-import uniffi.construct_core.BinaryFirstMessage
 import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.CfeSecureStoreSlot
 import uniffi.construct_core.ReceivingInitCarrier
@@ -33,6 +33,7 @@ class ResponderInitUseCase @Inject constructor(
     private val keystoreManager: KeystoreManager,
     private val uploadPreKeys: UploadPreKeysUseCase,
     private val sessionControl: SessionControlUseCase,
+    private val kyberPrekeys: KyberPrekeyService,
 ) {
     private val inFlight = ConcurrentHashMap.newKeySet<String>()
 
@@ -65,23 +66,20 @@ class ResponderInitUseCase @Inject constructor(
                 isSessionResetInit = incoming.contentType ==
                     shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_SESSION_RESET_INIT,
             )
-            val first = BinaryFirstMessage(
-                ephemeralPublicKey = wire.dhPublicKey,
-                messageNumber = wire.messageNumber,
-                content = wire.sealedBox,
-                oneTimePrekeyId = wire.oneTimePrekeyId,
-                suiteId = wire.suiteId,
-                pqMessageEpoch = wire.pqMessageEpoch,
-                pqRatchetField = wire.pqRatchetField,
-            )
             val attempts = cryptoManager.planReceivingInit(listOf(carrier), candidates.size)
             for (attempt in attempts) {
                 val candidate = candidates.getOrNull(attempt.bundleIndex.toInt()) ?: continue
                 val init = runCatching {
-                    sessionManager.initReceivingSession(candidate.deviceId, candidate.bundle, first)
+                    // The payload as received: the core reads the PQXDH v2 header (Kyber key id,
+                    // ML-KEM-1024 ciphertext) and decapsulates itself.
+                    sessionManager.initReceivingSession(candidate.deviceId, candidate.bundle, incoming.encryptedPayload)
                 }.onFailure {
                     Log.d(TAG, "candidate failed ${candidate.deviceId.take(8)}…", it)
                 }.getOrNull() ?: continue
+
+                // First: the init burned a Kyber one-time key. Until this blob is stored, a
+                // restart brings the key back and a replay of this message would open again.
+                init.kyberPrekeys?.let { kyberPrekeys.persist(it.map { b -> b.toByte() }.toByteArray()) }
 
                 val blob = cryptoManager.exportSessionBytes(candidate.deviceId)
                 sessionStateStore.saveSecureStore(CfeSecureStoreSlot.Session(candidate.deviceId), blob)
