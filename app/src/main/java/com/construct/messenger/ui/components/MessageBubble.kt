@@ -23,7 +23,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.DropdownMenu
@@ -57,8 +59,9 @@ import java.util.Locale
  * - Outgoing: `CTColor.accent` background.
  * - 10dp rounded corners.
  *
- * Long-press opens Reply and Copy. [replyLabel] is the quoted message's one or two
- * lines; null means this message is not a reply. The quote strip jumps to the original.
+ * Long-press opens Reply, Edit (our own text), Copy, and Delete. Delete removes the
+ * row on this phone. [replyLabel] is the quoted message's one or two lines; null
+ * means this message is not a reply. The quote strip jumps to the original.
  *
  * @param message Message to display.
  * @param isLastInGroup Whether this bubble is the last one in a consecutive group.
@@ -74,6 +77,8 @@ fun MessageBubble(
     onDismissMenu: () -> Unit = {},
     onReply: () -> Unit = {},
     onCopy: () -> Unit = {},
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {},
     onJumpToReply: () -> Unit = {},
 ) {
     val isOutgoing = message.isOutgoing
@@ -129,6 +134,14 @@ fun MessageBubble(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (message.isEdited) {
+                    Text(
+                        text = stringResource(R.string.edited),
+                        style = ctRegular(11),
+                        color = metaColor,
+                    )
+                    Spacer(Modifier.width(4.dp))
+                }
                 Text(
                     text = formatMessageTime(message.timestamp),
                     style = ctRegular(11),
@@ -152,6 +165,15 @@ fun MessageBubble(
                     },
                     onClick = onReply,
                 )
+                if (message.isOutgoing && message.body.isNotBlank()) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.edit_message), style = ctRegular(14), color = CTColor.text) },
+                        leadingIcon = {
+                            Icon(Icons.Filled.Edit, contentDescription = null, tint = CTColor.text)
+                        },
+                        onClick = onEdit,
+                    )
+                }
                 if (message.body.isNotBlank()) {
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.copy), style = ctRegular(14), color = CTColor.text) },
@@ -161,6 +183,13 @@ fun MessageBubble(
                         onClick = onCopy,
                     )
                 }
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.delete), style = ctRegular(14), color = CTColor.danger) },
+                    leadingIcon = {
+                        Icon(Icons.Filled.Delete, contentDescription = null, tint = CTColor.danger)
+                    },
+                    onClick = onDelete,
+                )
             }
         }
     }

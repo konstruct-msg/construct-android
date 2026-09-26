@@ -317,10 +317,18 @@ private class FakeMessageDao : MessageDao {
     val rows = linkedMapOf<String, MessageEntity>()
     override fun observeChat(chatId: String) = MutableStateFlow(rows.values.filter { it.chatId == chatId })
     override suspend fun getById(messageId: String) = rows[messageId]
+    override suspend fun getByIdIgnoreCase(messageId: String) =
+        rows.entries.firstOrNull { it.key.equals(messageId, ignoreCase = true) }?.value
     override suspend fun insert(message: MessageEntity) { rows[message.id] = message }
     override suspend fun updateDeliveryStatus(messageId: String, status: String) {
         rows[messageId]?.let { rows[messageId] = it.copy(deliveryStatus = status) }
     }
+    override suspend fun markEdited(id: String, text: String) {
+        rows[id]?.let { rows[id] = it.copy(text = text, isEdited = true) }
+    }
+    override suspend fun deleteById(id: String) { rows.remove(id) }
+    override suspend fun latestVisible(chatId: String) =
+        rows.values.filter { it.chatId == chatId && it.contentType == 0 }.maxByOrNull { it.timestamp }
     override suspend fun deleteChat(chatId: String) { rows.values.removeAll { it.chatId == chatId } }
 }
 

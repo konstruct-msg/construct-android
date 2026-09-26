@@ -31,7 +31,7 @@ object DatabaseModule {
             // A phone already holds chats (first device run, 2026-09-24). A version we
             // know upgrades in place. Versions 1–3 predate that phone; anything newer
             // with no migration fails the open instead of deleting the history.
-            .addMigrations(ConstructDatabase.MIGRATION_4_5)
+            .addMigrations(ConstructDatabase.MIGRATION_4_5, ConstructDatabase.MIGRATION_5_6)
             .fallbackToDestructiveMigrationFrom(1, 2, 3)
             .build()
 

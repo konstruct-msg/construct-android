@@ -114,6 +114,14 @@ fun ChatScreen(
                         clipboard.setText(AnnotatedString(message.body))
                         menuMessageId = null
                     },
+                    onEdit = {
+                        viewModel.startEdit(message)
+                        menuMessageId = null
+                    },
+                    onDelete = {
+                        viewModel.delete(message)
+                        menuMessageId = null
+                    },
                     onJumpToReply = { jumpToId = message.replyToId },
                 )
             }
@@ -128,6 +136,8 @@ fun ChatScreen(
                 reply.preview.ifBlank { quoteFallback(reply.mediaType) }
             },
             onCancelReply = viewModel::cancelReply,
+            editingPreview = uiState.editingOriginal,
+            onCancelEdit = viewModel::cancelEdit,
         )
     }
 }

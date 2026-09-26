@@ -19,6 +19,8 @@ import com.construct.messenger.stealth.StealthPolicy
 import com.construct.messenger.stealth.StealthSenderService
 import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.DisplayNameGenerator
+import com.construct.messenger.data.local.db.refreshChatPreview
+import com.construct.messenger.util.EditWire
 import com.construct.messenger.util.KnstFrame
 import com.construct.messenger.util.TextWire
 import com.construct.messenger.util.SenderSyncRouting
@@ -109,6 +111,49 @@ class SendMessageUseCase @Inject constructor(
             Log.e(TAG, "send failed ${messageId.take(8)}…", e)
             messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
             SendOutcome.Failed(messageId, e.message ?: "send failed")
+        }
+    }
+
+    /**
+     * Edit one of our own text messages. Same fan-out as a send, different payload:
+     * `MessageContent.edit` names the row, and no new row is written. The local
+     * text changes only after a recipient copy is accepted — a failure leaves the
+     * original in place, as on iOS.
+     */
+    suspend fun edit(contactId: String, targetMessageId: String, newText: String): SendOutcome {
+        val body = newText.trim()
+        if (body.isEmpty()) return SendOutcome.Failed(targetMessageId, "empty message")
+        val myId = keystoreManager.getUserId()
+            ?: return SendOutcome.Failed(targetMessageId, "not authenticated")
+        if (!cryptoManager.isMessagingReady) {
+            return SendOutcome.Failed(targetMessageId, "orchestrator not ready")
+        }
+        val row = messageDao.getByIdIgnoreCase(targetMessageId)
+            ?: return SendOutcome.Failed(targetMessageId, "missing")
+        if (!row.isSentByMe) return SendOutcome.Failed(targetMessageId, "not author")
+
+        val editId = UUID.randomUUID().toString().lowercase()
+        val timestampMs = System.currentTimeMillis()
+        return try {
+            val plaintext = knst(EditWire.encode(row.id, body), editId)
+            val pinned = sessionManager.ensureSession(contactId)
+            if (contactId == myId) {
+                val note = sendNoteToSelf(myId, editId, timestampMs, plaintext, pinned)
+                if (note is SendOutcome.Failed) return SendOutcome.Failed(targetMessageId, note.reason)
+            } else {
+                val tally = deliverCopies(myId, contactId, editId, timestampMs, plaintext, pinned)
+                if (tally.recipientAccepted == 0) {
+                    return SendOutcome.Failed(targetMessageId, tally.lastError)
+                }
+            }
+            messageDao.markEdited(row.id, body)
+            refreshChatPreview(chatDao, messageDao, row.chatId)
+            SendOutcome.Sent(editId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "edit failed ${targetMessageId.take(8)}…", e)
+            SendOutcome.Failed(targetMessageId, e.message ?: "edit failed")
         }
     }
 
@@ -472,8 +517,10 @@ class SendMessageUseCase @Inject constructor(
         }
     }
 
-    private fun knstText(text: String, messageId: String, reply: ReplyRef?): ByteArray {
-        val payload = TextWire.encode(text, reply)
+    private fun knstText(text: String, messageId: String, reply: ReplyRef?): ByteArray =
+        knst(TextWire.encode(text, reply), messageId)
+
+    private fun knst(payload: ByteArray, messageId: String): ByteArray {
         val uuid = runCatching { UUID.fromString(messageId) }.getOrElse { UUID.randomUUID() }
         return KnstFrame.pack(payload, KnstFrame.TYPE_E2EE_SIGNAL, uuid)
     }

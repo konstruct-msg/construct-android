@@ -19,6 +19,19 @@ interface MessagesRepository {
     suspend fun send(contactId: String, text: String, reply: ReplyRef? = null): SendOutcome
 
     /**
+     * Replace the text of a message this account sent. The edit travels as
+     * `MessageContent.edit` inside the ciphertext. The row changes only after a
+     * recipient device accepts a copy.
+     */
+    suspend fun edit(contactId: String, messageId: String, newText: String): SendOutcome
+
+    /**
+     * Remove [messageId] from this phone's transcript. iOS delete does not tell
+     * the peer, and a `DeleteMessage` Android sent would have no consumer there.
+     */
+    suspend fun delete(contactId: String, messageId: String)
+
+    /**
      * The chat is on screen: what arrives is read as it lands, so unread goes to zero and its
      * notification is withdrawn. Call on every appearance, not once.
      */

@@ -41,7 +41,6 @@ class MessageProcessorTest {
             calls += "onDecrypted:$contactId:$messageId"
         }
         override suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray) { calls += "onCallSignal:$messageId" }
-        override suspend fun persistMessage(messageJson: String) { calls += "persist:$messageJson" }
         override suspend fun sendReceipt(messageId: String, toUserId: String, status: String) { calls += "receipt:$messageId:$status" }
         override suspend fun notifyNewMessage(chatId: String, preview: String) { calls += "notify:$chatId" }
         override suspend fun markDelivered(messageId: String) { calls += "markDelivered:$messageId" }
@@ -49,7 +48,6 @@ class MessageProcessorTest {
         override suspend fun saveSecureStore(slot: CfeSecureStoreSlot, data: ByteArray) { calls += "saveSecureStore:$slot" }
         override suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray) { calls += "terminated:$contactId" }
         override suspend fun pruneAckStore(cutoffTs: Long) { calls += "prune:$cutoffTs" }
-        override suspend fun sendHeartbeat(contactId: String) { calls += "heartbeat:$contactId" }
         override suspend fun archiveSession(contactId: String) { calls += "archive:$contactId" }
         override suspend fun requestHeal(contactId: String, role: String) { calls += "heal:$contactId:$role" }
         override suspend fun requestEndSession(contactId: String) { calls += "endSession:$contactId" }
@@ -76,7 +74,6 @@ class MessageProcessorTest {
         val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
         val actions = listOf(
             CfeAction.MessageDecrypted("alice", "m1", byteArrayOf(7)),
-            CfeAction.PersistMessage("{json}"),
             CfeAction.SendReceipt("m1", "delivered"),
             CfeAction.NotifyNewMessage("chat1", "hi"),
         )
@@ -85,9 +82,45 @@ class MessageProcessorTest {
 
         assertEquals(ProcessingOutcome.Processed, outcome)
         assertTrue(effects.calls.contains("onDecrypted:alice:m1"))
-        assertTrue(effects.calls.contains("persist:{json}"))
         assertTrue(effects.calls.contains("receipt:m1:delivered"))
         assertTrue(effects.calls.contains("notify:chat1"))
+    }
+
+    @Test
+    fun `duplicateDropped records the message and does not receipt it`() = runBlocking {
+        val effects = RecordingEffects()
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+
+        val outcome = processor.route(
+            listOf(CfeAction.DuplicateDropped("m1"), CfeAction.ScheduleTimer("cooldown", 5_000uL)),
+            incoming(),
+        )
+
+        assertEquals(ProcessingOutcome.Acked, outcome)
+        assertTrue(effects.calls.contains("markProcessed:m1"))
+        assertTrue(effects.calls.none { it.startsWith("receipt:") })
+        assertTrue(effects.calls.none { it.startsWith("onDecrypted:") })
+        org.mockito.kotlin.verify(timerBridge).schedule("cooldown", 5_000uL)
+    }
+
+    @Test
+    fun `an empty ack follow-up replaces the check instead of keeping it`() = runBlocking {
+        val effects = RecordingEffects().apply { ackedInDb = true }
+        whenever(sessionManager.resolveDeviceId("alice")).thenReturn("11111111111111111111111111111111")
+        val gateway = FakeGateway(
+            mutableListOf(
+                listOf(CfeAction.CheckAckInDb("m1")),
+                emptyList(),
+            ),
+        )
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+
+        val outcome = processor.process(incoming())
+
+        assertEquals(ProcessingOutcome.Acked, outcome)
+        assertEquals(2, gateway.events.size)
+        assertTrue(gateway.events[1] is CfeIncomingEvent.AckDbResult)
+        assertTrue(effects.calls.none { it.startsWith("onDecrypted:") })
     }
 
     @Test

@@ -24,7 +24,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         IssuedInviteEntity::class,
         PeerDeviceEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -49,6 +49,18 @@ abstract class ConstructDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE messages ADD COLUMN replyPreview TEXT")
                 db.execSQL("ALTER TABLE messages ADD COLUMN replyMediaType TEXT")
+            }
+        }
+
+        /**
+         * "edited" on a text row. Existing messages were not edited. A missing migration
+         * must not wipe the phone: versions 4 and 5 already hold chats.
+         */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE messages ADD COLUMN isEdited INTEGER NOT NULL DEFAULT 0",
+                )
             }
         }
     }

@@ -7,7 +7,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
+import shared.proto.messaging.v1.Content.DeleteMessage
+import shared.proto.messaging.v1.Content.DeleteScope
 import shared.proto.messaging.v1.Content.MessageContent
+import shared.proto.messaging.v1.Content.ReactionAction
+import shared.proto.messaging.v1.Content.ReactionMessage
 import shared.proto.messaging.v1.Content.TextMessage
 import java.util.UUID
 
@@ -76,6 +80,83 @@ class IncomingPlaintextTest {
     @Test
     fun `an empty quote id is not a reply`() {
         assertNull(ReplyRef.of("  ", "hi"))
+    }
+
+    @Test
+    fun `knst text keeps the header id`() {
+        val id = UUID.fromString("11111111-1111-4111-8111-111111111111")
+        val decoded = IncomingPlaintext.decode(
+            KnstFrame.pack(TextWire.encode("hi"), KnstFrame.TYPE_E2EE_SIGNAL, id),
+        )
+        assertEquals(id.toString(), decoded.e2eMessageId)
+        assertTrue(decoded.isUserVisible)
+        assertNull(decoded.edit)
+    }
+
+    @Test
+    fun `an edit is not a bubble and names its target`() {
+        val frame = KnstFrame.pack(
+            EditWire.encode("ABCDEF", "rewritten"),
+            KnstFrame.TYPE_E2EE_SIGNAL,
+            UUID.randomUUID(),
+        )
+        val decoded = IncomingPlaintext.decode(frame)
+        assertFalse(decoded.isUserVisible)
+        assertEquals("", decoded.text)
+        assertEquals("ABCDEF", decoded.edit?.targetMessageId)
+        assertEquals("rewritten", decoded.edit?.newText)
+        assertNull(decoded.delete)
+    }
+
+    @Test
+    fun `delete for everyone is applied, delete for self is not`() {
+        val everyone = MessageContent.newBuilder()
+            .setDelete(
+                DeleteMessage.newBuilder()
+                    .setTargetMessageId("m-1")
+                    .setScope(DeleteScope.DELETE_SCOPE_EVERYONE),
+            )
+            .build()
+            .toByteArray()
+        val decoded = IncomingPlaintext.decode(
+            KnstFrame.pack(everyone, KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID()),
+        )
+        assertFalse(decoded.isUserVisible)
+        assertEquals("m-1", decoded.delete?.targetMessageId)
+
+        val forSelf = MessageContent.newBuilder()
+            .setDelete(
+                DeleteMessage.newBuilder()
+                    .setTargetMessageId("m-1")
+                    .setScope(DeleteScope.DELETE_SCOPE_FOR_SELF),
+            )
+            .build()
+            .toByteArray()
+        val ignored = IncomingPlaintext.decode(
+            KnstFrame.pack(forSelf, KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID()),
+        )
+        assertNull(ignored.delete)
+        assertFalse(ignored.isUserVisible)
+    }
+
+    @Test
+    fun `a reaction is not a bubble`() {
+        val reaction = MessageContent.newBuilder()
+            .setReaction(
+                ReactionMessage.newBuilder()
+                    .setTargetMessageId("m-1")
+                    .setEmoji("❤")
+                    .setAction(ReactionAction.REACTION_ACTION_ADD),
+            )
+            .build()
+            .toByteArray()
+        val decoded = IncomingPlaintext.decode(
+            KnstFrame.pack(reaction, KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID()),
+        )
+        assertFalse(decoded.isUserVisible)
+        assertEquals("", decoded.text)
+        assertNull(decoded.edit)
+        assertNull(decoded.delete)
     }
 
     @Test

@@ -354,7 +354,7 @@ pub fn handle_event(&self, event: CfeIncomingEvent) -> Result<Vec<CfeAction>, Cr
 1. конструируешь типизированное событие, напр. `CfeIncomingEvent.MessageReceived(...)`;
 2. зовёшь `orchestratorCore.handleEvent(event)`;
 3. получаешь `List<CfeAction>` (типизированные `SendEncryptedMessage`,
-   `PersistMessage`, `NotifyNewMessage`, …) и исполняешь их.
+   `MessageDecrypted`, `DuplicateDropped`, `NotifyNewMessage`, …) и исполняешь их.
 
 Никаких CFE-байтов на этом пути нет. Подробный список событий/действий и поток —
 в Android-гайде (`construct-android/ANDROID_API_CRYPTO_GUIDE.md`, §2.4 «CFE: общение
@@ -847,7 +847,7 @@ val actions: List<CfeAction> = core.handleEvent(
 for (action in actions) when (action) {
     is CfeAction.MessageDecrypted   -> showInUi(action)
     is CfeAction.SendReceipt        -> messaging.sendAck(action)
-    is CfeAction.PersistMessage     -> db.insert(action)
+    is CfeAction.DuplicateDropped   -> markProcessed(action)
     is CfeAction.NotifyNewMessage   -> notify(action)
     // … остальные варианты
     else -> Unit

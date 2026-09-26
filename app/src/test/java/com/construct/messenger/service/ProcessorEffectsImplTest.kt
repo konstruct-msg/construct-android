@@ -10,10 +10,15 @@ import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.MessageEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.util.ConversationId
+import com.construct.messenger.util.EditWire
 import com.construct.messenger.util.KnstFrame
+import com.construct.messenger.util.TextWire
 import com.construct.messenger.domain.usecase.ResponderInitUseCase
 import com.construct.messenger.util.SenderSyncRouting
+import shared.proto.messaging.v1.Content.DeleteMessage
+import shared.proto.messaging.v1.Content.DeleteScope
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.CfeTearDownCause
@@ -22,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.UUID
@@ -180,6 +186,114 @@ class ProcessorEffectsImplTest {
         assertTrue(acks.isProcessed("$baseId-ss-0123456789abcdef"))
     }
 
+    @Test
+    fun `incoming text is stored under the knst id, not the envelope id`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        val id = UUID.fromString("11111111-1111-4111-8111-111111111111")
+        val frame = KnstFrame.pack(TextWire.encode("hi"), KnstFrame.TYPE_E2EE_SIGNAL, id)
+        inbox.effects.onDecrypted(peer, "envelope-rewritten", frame)
+
+        assertEquals("hi", inbox.messages.rows[id.toString()]?.text)
+        assertNull(inbox.messages.rows["envelope-rewritten"])
+    }
+
+    @Test
+    fun `an edit replaces the authors text and adds no bubble`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        val id = UUID.fromString("22222222-2222-4222-8222-222222222222")
+        inbox.effects.onDecrypted(
+            peer,
+            "env",
+            KnstFrame.pack(TextWire.encode("before"), KnstFrame.TYPE_E2EE_SIGNAL, id),
+        )
+        val chatId = ConversationId.direct(myId, peer)
+        inbox.effects.onDecrypted(
+            peer,
+            "env-edit",
+            KnstFrame.pack(EditWire.encode(id.toString(), "after"), KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID()),
+        )
+
+        assertEquals("after", inbox.messages.rows[id.toString()]?.text)
+        assertTrue(inbox.messages.rows[id.toString()]!!.isEdited)
+        assertEquals(1, inbox.messages.rows.size)
+        assertEquals(1, inbox.chats.rows[chatId]?.unreadCount)
+        assertEquals("after", inbox.chats.rows[chatId]?.lastMessageText)
+    }
+
+    @Test
+    fun `a peer cannot edit a message we sent`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        val id = "33333333-3333-4333-8333-333333333333"
+        val chatId = ConversationId.direct(myId, peer)
+        inbox.messages.rows[id] = MessageEntity(
+            id = id,
+            chatId = chatId,
+            text = "mine",
+            isSentByMe = true,
+            timestamp = 1L,
+            deliveryStatus = DeliveryStatus.SENT.name,
+        )
+        inbox.effects.onDecrypted(
+            peer,
+            "env-edit",
+            KnstFrame.pack(EditWire.encode(id, "hijack"), KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID()),
+        )
+
+        assertEquals("mine", inbox.messages.rows[id]?.text)
+        assertFalse(inbox.messages.rows[id]!!.isEdited)
+    }
+
+    @Test
+    fun `sender sync applies our own edit`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        val id = "44444444-4444-4444-8444-444444444444"
+        val chatId = ConversationId.direct(myId, peer)
+        inbox.messages.rows[id] = MessageEntity(
+            id = id,
+            chatId = chatId,
+            text = "before",
+            isSentByMe = true,
+            timestamp = 1L,
+            deliveryStatus = DeliveryStatus.SENT.name,
+        )
+        inbox.chats.rows[chatId] = ChatEntity(id = chatId, otherUserId = peer, lastMessageText = "before", lastMessageTime = 1L)
+        val edit = KnstFrame.pack(EditWire.encode(id, "after"), KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID())
+        inbox.effects.onSenderSync(peer, "edit-ss-0123456789abcdef", SenderSyncRouting.encode(peer, edit), 50L)
+
+        assertEquals("after", inbox.messages.rows[id]?.text)
+        assertTrue(inbox.messages.rows[id]!!.isEdited)
+        assertEquals(1, inbox.messages.rows.size)
+        assertEquals("after", inbox.chats.rows[chatId]?.lastMessageText)
+    }
+
+    @Test
+    fun `delete for everyone removes the authors row`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        val id = UUID.fromString("55555555-5555-4555-8555-555555555555")
+        inbox.effects.onDecrypted(
+            peer,
+            "env",
+            KnstFrame.pack(TextWire.encode("gone"), KnstFrame.TYPE_E2EE_SIGNAL, id),
+        )
+        val deletion = shared.proto.messaging.v1.Content.MessageContent.newBuilder()
+            .setDelete(
+                DeleteMessage.newBuilder()
+                    .setTargetMessageId(id.toString())
+                    .setScope(DeleteScope.DELETE_SCOPE_EVERYONE),
+            )
+            .build()
+            .toByteArray()
+        inbox.effects.onDecrypted(
+            peer,
+            "env-del",
+            KnstFrame.pack(deletion, KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID()),
+        )
+
+        assertNull(inbox.messages.rows[id.toString()])
+        val chatId = ConversationId.direct(myId, peer)
+        assertNull(inbox.chats.rows[chatId]?.lastMessageText)
+    }
+
     // ── requestKeyBundle: what an init leaves behind ───────────────────────
 
     private val incoming = MessageRouter.IncomingMessage(
@@ -276,10 +390,18 @@ private class FakeMessageDao : MessageDao {
     val rows = linkedMapOf<String, MessageEntity>()
     override fun observeChat(chatId: String) = MutableStateFlow(rows.values.filter { it.chatId == chatId })
     override suspend fun getById(messageId: String) = rows[messageId]
+    override suspend fun getByIdIgnoreCase(messageId: String) =
+        rows.entries.firstOrNull { it.key.equals(messageId, ignoreCase = true) }?.value
     override suspend fun insert(message: MessageEntity) { rows[message.id] = message }
     override suspend fun updateDeliveryStatus(messageId: String, status: String) {
         rows[messageId]?.let { rows[messageId] = it.copy(deliveryStatus = status) }
     }
+    override suspend fun markEdited(id: String, text: String) {
+        rows[id]?.let { rows[id] = it.copy(text = text, isEdited = true) }
+    }
+    override suspend fun deleteById(id: String) { rows.remove(id) }
+    override suspend fun latestVisible(chatId: String) =
+        rows.values.filter { it.chatId == chatId && it.contentType == 0 }.maxByOrNull { it.timestamp }
     override suspend fun deleteChat(chatId: String) { rows.values.removeAll { it.chatId == chatId } }
 }
 

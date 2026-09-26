@@ -94,6 +94,10 @@
     <string name="chat_send">Отправить</string>
     <string name="reply">Ответить</string>
     <string name="copy">Копировать</string>
+    <string name="edit_message">Изменить</string>
+    <string name="edited">изменено</string>
+    <string name="editing_message">Редактирование сообщения</string>
+    <string name="delete">Удалить</string>
     <string name="reply_to_colon">Ответ на:</string>
     <string name="jump_to_replied_message">Перейти к исходному сообщению</string>
     <string name="message_unavailable">Сообщение недоступно</string>

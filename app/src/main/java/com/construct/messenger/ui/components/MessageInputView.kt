@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,6 +41,7 @@ import com.construct.messenger.ui.theme.ctRegular
  * **Canon:** iOS `MessageInputView` + `MessageReplyBar` / `ANDROID_ONBOARDING.md` §5.4.
  *
  * @param replyPreview One line of the message being quoted. Null hides the bar.
+ * @param editingPreview One line of the message being edited. Takes the bar over a reply.
  */
 @Composable
 fun MessageInputView(
@@ -50,14 +52,17 @@ fun MessageInputView(
     enabled: Boolean = true,
     replyPreview: String? = null,
     onCancelReply: () -> Unit = {},
+    editingPreview: String? = null,
+    onCancelEdit: () -> Unit = {},
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(CTColor.bg),
     ) {
-        if (replyPreview != null) {
-            ReplyComposerBar(preview = replyPreview, onCancel = onCancelReply)
+        when {
+            editingPreview != null -> EditComposerBar(preview = editingPreview, onCancel = onCancelEdit)
+            replyPreview != null -> ReplyComposerBar(preview = replyPreview, onCancel = onCancelReply)
         }
         Row(
             modifier = Modifier
@@ -86,9 +91,35 @@ fun MessageInputView(
     }
 }
 
+/** Canon: iOS `MessageEditBar` — accent label, one line of the original, a cancel glyph. */
+@Composable
+private fun EditComposerBar(preview: String, onCancel: () -> Unit) {
+    ComposerAuxBar(
+        title = stringResource(R.string.editing_message),
+        titleColor = CTColor.accent,
+        preview = preview,
+        onCancel = onCancel,
+    )
+}
+
 /** Canon: iOS `MessageReplyBar` — accent rule, "Reply to:", one line, a cancel glyph. */
 @Composable
 private fun ReplyComposerBar(preview: String, onCancel: () -> Unit) {
+    ComposerAuxBar(
+        title = stringResource(R.string.reply_to_colon),
+        titleColor = CTColor.textDim,
+        preview = preview,
+        onCancel = onCancel,
+    )
+}
+
+@Composable
+private fun ComposerAuxBar(
+    title: String,
+    titleColor: Color,
+    preview: String,
+    onCancel: () -> Unit,
+) {
     val shape = RoundedCornerShape(CornerRadius.small)
     Row(
         modifier = Modifier
@@ -113,9 +144,9 @@ private fun ReplyComposerBar(preview: String, onCancel: () -> Unit) {
                 .padding(horizontal = Spacing.small),
         ) {
             Text(
-                text = stringResource(R.string.reply_to_colon),
+                text = title,
                 style = ctRegular(11),
-                color = CTColor.textDim,
+                color = titleColor,
             )
             Text(
                 text = preview,

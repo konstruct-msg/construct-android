@@ -97,6 +97,10 @@
     <string name="chat_send">Send</string>
     <string name="reply">Reply</string>
     <string name="copy">Copy</string>
+    <string name="edit_message">Edit</string>
+    <string name="edited">edited</string>
+    <string name="editing_message">Editing message</string>
+    <string name="delete">Delete</string>
     <string name="reply_to_colon">Reply to:</string>
     <string name="jump_to_replied_message">Jump to replied message</string>
     <string name="message_unavailable">Message not available</string>

@@ -11,6 +11,7 @@ import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.MessageEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.data.local.db.refreshChatPreview
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.domain.usecase.HealSessionUseCase
@@ -64,14 +65,27 @@ class ProcessorEffectsImpl @Inject constructor(
             ackStore.markProcessed(messageId, accountId)
             return
         }
+        decoded.edit?.let { edit ->
+            applyEdit(edit, sentByMe = false)
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
+        decoded.delete?.let { deletion ->
+            applyDelete(deletion.targetMessageId, sentByMe = false)
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
         if (!decoded.isUserVisible) {
             Log.d(TAG, "decrypted non-visible ${messageId.take(8)}… type=${decoded.knstContentType}")
             ackStore.markProcessed(messageId, accountId)
             return
         }
-        persistIncoming(accountId, messageId, decoded.text, System.currentTimeMillis(), decoded.reply)
+        // The receipt and the row name the sender's KNST id. The envelope id is what
+        // the server redelivers, so the ACK stays on that.
+        val rowId = storageId(decoded.e2eMessageId, messageId, sentByMe = false)
+        persistIncoming(accountId, rowId, decoded.text, System.currentTimeMillis(), decoded.reply)
         ackStore.markProcessed(messageId, accountId)
-        runCatching { sendReceiptUseCase.delivered(accountId, listOf(messageId)) }
+        runCatching { sendReceiptUseCase.delivered(accountId, listOf(rowId)) }
             .onFailure { Log.w(TAG, "e2e receipt send failed", it) }
         runCatching { sessionManager.fetchIdentityKey(contactId) }
     }
@@ -92,15 +106,25 @@ class ProcessorEffectsImpl @Inject constructor(
             return
         }
         val decoded = IncomingPlaintext.decode(routed.payload)
+        decoded.edit?.let { edit ->
+            applyEdit(edit, sentByMe = true)
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
+        decoded.delete?.let { deletion ->
+            applyDelete(deletion.targetMessageId, sentByMe = true)
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
         if (!decoded.isUserVisible) {
             Log.d(TAG, "sender-sync non-visible ${messageId.take(8)}… type=${decoded.knstContentType}")
             ackStore.markProcessed(messageId, accountId)
             return
         }
-        val baseMessageId = DeviceCopyRoute.parse(messageId)?.baseMessageId ?: messageId
+        val rowId = storageId(decoded.e2eMessageId, messageId, sentByMe = true)
         persistOutgoingCopy(
             partnerUserId = routed.partnerUserId,
-            messageId = baseMessageId,
+            messageId = rowId,
             text = decoded.text,
             timestampMs = timestampMs,
             reply = decoded.reply,
@@ -112,12 +136,6 @@ class ProcessorEffectsImpl @Inject constructor(
         val accountId = sessionManager.accountIdForDevice(contactId) ?: contactId
         Log.i(TAG, "call signal from ${accountId.take(8)}… ${messageId.take(8)}… (${protoBytes.size}B) — not wired")
         ackStore.markProcessed(messageId, accountId)
-    }
-
-    override suspend fun persistMessage(messageJson: String) {
-        // CFE's persist payload is a JSON snapshot; onDecrypted is the canonical
-        // write. Duplicate REPLACE is harmless if both fire for the same id.
-        Log.d(TAG, "persistMessage json=${messageJson.take(80)}")
     }
 
     override suspend fun sendReceipt(messageId: String, toUserId: String, status: String) {
@@ -158,10 +176,6 @@ class ProcessorEffectsImpl @Inject constructor(
 
     override suspend fun pruneAckStore(cutoffTs: Long) {
         ackStore.prune(cutoffTs)
-    }
-
-    override suspend fun sendHeartbeat(contactId: String) {
-        sessionControl.sendPing(contactId)
     }
 
     override suspend fun archiveSession(contactId: String) {
@@ -239,9 +253,13 @@ class ProcessorEffectsImpl @Inject constructor(
             return
         }
         val chatId = ConversationId.direct(myId, contactId)
+        val prior = messageDao.getByIdIgnoreCase(messageId)
+        // A later edit already replaced this text. Putting the original back is how a
+        // redelivery undoes the peer's correction. A row we sent is not this incoming one.
+        if (prior != null && (prior.isSentByMe || prior.isEdited)) return
         // A redelivered message (the ACK was lost, or the queue was replayed) is already here:
         // counting it again would inflate unread, and alerting again would ring for nothing.
-        val firstSight = messageDao.getById(messageId) == null
+        val firstSight = prior == null
         messageDao.insert(
             MessageEntity(
                 id = messageId,
@@ -299,6 +317,8 @@ class ProcessorEffectsImpl @Inject constructor(
             return
         }
         val chatId = ConversationId.direct(myId, partnerUserId)
+        val prior = messageDao.getByIdIgnoreCase(messageId)
+        if (prior != null && (!prior.isSentByMe || prior.isEdited)) return
         messageDao.insert(
             MessageEntity(
                 id = messageId,
@@ -335,6 +355,44 @@ class ProcessorEffectsImpl @Inject constructor(
                 ),
             )
         }
+    }
+
+    /**
+     * Prefer the sender's KNST id. Fall back to the envelope id when that id already
+     * belongs to the other author — the same collision guard iOS uses — so a rewrite
+     * of the envelope id does not fork the row edits and quotes look up.
+     */
+    private suspend fun storageId(e2eMessageId: String?, envelopeMessageId: String, sentByMe: Boolean): String {
+        val preferred = (
+            e2eMessageId
+                ?: DeviceCopyRoute.parse(envelopeMessageId)?.baseMessageId
+                ?: envelopeMessageId
+            ).lowercase()
+        val existing = messageDao.getByIdIgnoreCase(preferred)
+        if (existing == null || existing.isSentByMe == sentByMe) return existing?.id ?: preferred
+        return envelopeMessageId.lowercase()
+    }
+
+    /** A peer may only edit what they sent. A sender-sync copy may only edit what we sent. */
+    private suspend fun applyEdit(edit: IncomingPlaintext.Edit, sentByMe: Boolean) {
+        val row = messageDao.getByIdIgnoreCase(edit.targetMessageId) ?: run {
+            Log.w(TAG, "edit target missing ${edit.targetMessageId.take(8)}…")
+            return
+        }
+        if (row.isSentByMe != sentByMe) {
+            Log.w(TAG, "edit rejected ${edit.targetMessageId.take(8)}… author mismatch")
+            return
+        }
+        val text = edit.newText.ifEmpty { row.text }
+        messageDao.markEdited(row.id, text)
+        refreshChatPreview(chatDao, messageDao, row.chatId)
+    }
+
+    private suspend fun applyDelete(targetMessageId: String, sentByMe: Boolean) {
+        val row = messageDao.getByIdIgnoreCase(targetMessageId) ?: return
+        if (row.isSentByMe != sentByMe) return
+        messageDao.deleteById(row.id)
+        refreshChatPreview(chatDao, messageDao, row.chatId)
     }
 
     private companion object {

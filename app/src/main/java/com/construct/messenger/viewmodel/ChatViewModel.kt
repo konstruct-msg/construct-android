@@ -7,6 +7,7 @@ import com.construct.messenger.data.model.Message
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.data.repository.ContactsRepository
 import com.construct.messenger.data.repository.MessagesRepository
+import com.construct.messenger.domain.usecase.SendOutcome
 import com.construct.messenger.util.DisplayNameGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -26,7 +27,11 @@ data class ChatUiState(
     val sending: Boolean = false,
     /** The message the composer is quoting. Null when the next send is not a reply. */
     val replyingTo: ReplyRef? = null,
+    /** Text of the message being edited, shown in the bar. Null when the next send is a new message. */
+    val editingOriginal: String? = null,
 )
+
+private data class EditTarget(val messageId: String, val original: String)
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -39,14 +44,16 @@ class ChatViewModel @Inject constructor(
     private val draft = MutableStateFlow("")
     private val sending = MutableStateFlow(false)
     private val replying = MutableStateFlow<ReplyRef?>(null)
+    private val editing = MutableStateFlow<EditTarget?>(null)
 
     val uiState: StateFlow<ChatUiState> = combine(
         messagesRepository.observeContact(contactId),
         contactsRepository.contacts,
         draft,
         sending,
-        replying,
-    ) { messages, contacts, draftText, isSending, reply ->
+        combine(replying, editing) { reply, edit -> reply to edit },
+    ) { messages, contacts, draftText, isSending, composer ->
+        val (reply, edit) = composer
         val contact = contacts.find { it.userId == contactId }
         val title = when {
             contact == null -> DisplayNameGenerator.generate(contactId).uppercase()
@@ -60,6 +67,7 @@ class ChatViewModel @Inject constructor(
             draft = draftText,
             sending = isSending,
             replyingTo = reply,
+            editingOriginal = edit?.original,
         )
     }.stateIn(
         viewModelScope,
@@ -88,6 +96,10 @@ class ChatViewModel @Inject constructor(
 
     /** Quote [message] on the next send. The id is lowercased to match iOS, and the preview is its text. */
     fun startReply(message: Message) {
+        if (editing.value != null) {
+            editing.value = null
+            draft.value = ""
+        }
         replying.value = ReplyRef.of(message.id, message.body)
     }
 
@@ -95,16 +107,44 @@ class ChatViewModel @Inject constructor(
         replying.value = null
     }
 
+    /** Edit [message], which has to be one we sent. The field is filled with its current text. */
+    fun startEdit(message: Message) {
+        if (!message.isOutgoing || message.body.isBlank()) return
+        replying.value = null
+        editing.value = EditTarget(message.id, message.body)
+        draft.value = message.body
+    }
+
+    fun cancelEdit() {
+        editing.value = null
+        draft.value = ""
+    }
+
+    /** Drop [message] from this phone. The peer is not told. */
+    fun delete(message: Message) {
+        if (editing.value?.messageId == message.id) cancelEdit()
+        if (replying.value?.messageId.equals(message.id, ignoreCase = true)) cancelReply()
+        viewModelScope.launch { messagesRepository.delete(contactId, message.id) }
+    }
+
     fun send() {
         val text = draft.value.trim()
         if (text.isEmpty() || sending.value) return
         val reply = replying.value
+        val edit = editing.value
         sending.value = true
         viewModelScope.launch {
             try {
-                messagesRepository.send(contactId, text, reply)
-                draft.value = ""
-                replying.value = null
+                val outcome = if (edit != null) {
+                    messagesRepository.edit(contactId, edit.messageId, text)
+                } else {
+                    messagesRepository.send(contactId, text, reply)
+                }
+                if (outcome is SendOutcome.Sent) {
+                    draft.value = ""
+                    replying.value = null
+                    editing.value = null
+                }
             } finally {
                 sending.value = false
             }

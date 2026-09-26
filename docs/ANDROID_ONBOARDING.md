@@ -888,8 +888,12 @@ Tab bar скрывается когда `isInChat || isInSettings == true`.
 > `MessageInputView`, observe/send через `MessagesRepository`. Ответ на сообщение
 > едет как iOS: `QuotedMessage` внутри зашифрованного `TextMessage` (id, превью
 > ≤200, media type для фото/голоса/файла), полоска в пузыре, долгое нажатие →
-> ответить / копировать, тап по полоске прокручивает к исходному. Нет поиска,
-> пагинации, звонка, правки, реакций, удаления, swipe-to-reply.
+> ответить / копировать / изменить своё / удалить у себя, тап по полоске
+> прокручивает к исходному. Правка — `MessageContent.edit` внутри того же
+> шифротекста; строка хранится под UUID заголовка KNST, на который правка
+> ссылается. Удаление из меню локальное, как на iOS. Входящий
+> `DELETE_SCOPE_EVERYONE` снимает строку автора и пузырём не становится.
+> Нет поиска, пагинации, звонка, реакций, swipe-to-reply.
 
 - `CTNavBar` с именем контакта, статусом соединения, кнопками поиска/звонка
 - `LazyColumn` с сообщениями
@@ -1166,6 +1170,7 @@ data class Message(
     val replyToId: String? = null,
     val replyPreview: String? = null, // wire text_preview, ≤200 chars
     val replyMediaType: String? = null, // proto MediaType name when the quote is media
+    val isEdited: Boolean = false, // MessageContent.edit replaced text; timestamp stays
     val mediaType: MediaType? = null, // image, video, audio, file, voice
     val mediaUrl: String? = null,
     val contentType: Int = 0          // 0 = regular; control types are never persisted as visible rows

@@ -290,15 +290,18 @@ fun handleEvent(event: CfeIncomingEvent): List<CfeAction>
 **Входящие события** (`CfeIncomingEvent`):
 
 `MessageReceived`, `OutgoingMessage`, `OutgoingCallSignal`, `SessionInitCompleted`,
-`AckReceived`, `SessionLoaded`, `KeyBundleFetched`, `TimerFired`, `AckDbResult`,
-`ActiveChatChanged`, `HeartbeatReceived`.
+`AckReceived`, `KeyBundleFetched`, `TimerFired`, `AckDbResult`, `HeartbeatReceived`,
+`NetworkReconnected`, `AppLaunched`. `ActiveChatChanged` ядро больше не принимает,
+и Android его не слал.
 
 **Действия** (`CfeAction`) — что Kotlin обязан выполнить в ответ:
 
-- сетевые: `SendEncryptedMessage`, `SendReceipt`, `SendEndSession`, `SendHeartbeat`,
+- сетевые: `SendEncryptedMessage`, `SendReceipt`, `SendEndSession`,
   `FetchPublicKeyBundle`;
-- хранилище: `SaveSessionToSecureStore`, `LoadSessionFromSecureStore`, `PersistMessage`,
-  `PersistAck`, `PruneAckStore`, `CheckAckInDb`;
+- хранилище: `SaveToSecureStore`, `PersistAck`, `PruneAckStore`, `CheckAckInDb`.
+  `PersistMessage` ядро убрало: расшифрованный текст пишет `onDecrypted`;
+- маршрутизация: `DuplicateDropped` — сообщение уже обработано, пометить и сдвинуть
+  курсор, квитанцию `delivered` не слать;
 - UI/уведомления: `NotifyNewMessage`, `NotifySessionCreated`, `NotifyError`,
   `MarkMessageDelivered`, `MessageDecrypted`, `CallSignalDecrypted`;
 - крипто/жизненный цикл: `DecryptMessage`, `EncryptMessage`, `InitSession`,
@@ -313,9 +316,9 @@ fun handleEvent(event: CfeIncomingEvent): List<CfeAction>
 ключ сессии, ядро декапсулирует само.
 
 Поэтому «отправить сообщение» выглядит так: отдаёшь `OutgoingMessage` →
-получаешь `SendEncryptedMessage` (+ возможно `ScheduleTimer`, `PersistMessage`) →
+получаешь `SendEncryptedMessage` (+ возможно `ScheduleTimer`) →
 исполняешь их. «Пришло сообщение»: `MessageReceived` → `MessageDecrypted` +
-`SendReceipt` + `PersistMessage` + `NotifyNewMessage`.
+`SendReceipt` + `NotifyNewMessage`. Повтор уже обработанного — `DuplicateDropped`.
 
 Образец обёртки — `CryptoManager.handleOrchestratorEvent` в Swift:
 

@@ -1,22 +1,37 @@
 package com.construct.messenger.util
 
 import com.construct.messenger.data.model.ReplyRef
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.util.UUID
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
+import shared.proto.messaging.v1.Content.DeleteScope
 import shared.proto.messaging.v1.Content.MediaType
 import shared.proto.messaging.v1.Content.MessageContent
+import shared.proto.messaging.v1.Content.MessageContent.ContentCase
 import shared.proto.messaging.v1.Content.QuotedMessage
 import shared.proto.messaging.v1.Content.TextMessage
 
 /**
- * Turns a decrypted Double-Ratchet plaintext into display text.
+ * Turns a decrypted Double-Ratchet plaintext into display text, or into an
+ * edit / delete of a message already in the transcript.
  *
  * After decrypt the blob is untyped. Recipients sniff four formats
  * (`architecture/WIRE_FORMAT.md`): KNST frame, bare `MessageContent` proto,
  * binary profile-share, legacy UTF-8. Magic `"KNST"` answers the first
  * question. Chunk reassembly (total_chunks > 1) is a later phase — a partial
  * first chunk is not rendered as a bubble.
+ *
+ * An edit or a delete-for-everyone is not a bubble. The row they name is the
+ * UUID in the original message's KNST header (`e2eMessageId`), never the
+ * envelope id the server may rewrite.
  */
 object IncomingPlaintext {
+
+    data class Edit(val targetMessageId: String, val newText: String)
+
+    /** Delete-for-everyone. Delete-for-self is not applied: it never leaves the sender's phone. */
+    data class Delete(val targetMessageId: String)
 
     data class Decoded(
         val text: String,
@@ -24,27 +39,23 @@ object IncomingPlaintext {
         val isUserVisible: Boolean,
         /** Set when the plaintext text message quotes another. Absent for legacy UTF-8. */
         val reply: ReplyRef? = null,
+        /** Sender's id from KNST bytes 6..21. Null for a legacy blob or the nil UUID. */
+        val e2eMessageId: String? = null,
+        val edit: Edit? = null,
+        val delete: Delete? = null,
     )
 
     fun decode(plaintext: ByteArray): Decoded {
         if (isKnst(plaintext)) {
             val type = plaintext[5].toInt() and 0xFF
+            val e2e = readMessageId(plaintext)
             if (type.isControlType() || !isSingleCompleteChunk(plaintext)) {
-                return Decoded(text = "", knstContentType = type, isUserVisible = false)
+                return hidden(type, e2e)
             }
-            val payload = knstPayload(plaintext) ?: return Decoded("", type, isUserVisible = false)
-            val inner = decodeInner(payload)
-            return Decoded(
-                text = inner.text,
-                knstContentType = type,
-                isUserVisible = inner.text.isNotEmpty(),
-                reply = inner.reply,
-            )
+            val payload = knstPayload(plaintext) ?: return hidden(type, e2e)
+            return decodePayload(payload, type, e2e) ?: hidden(type, e2e)
         }
-        val asProto = decodeInner(plaintext)
-        if (asProto.text.isNotEmpty()) {
-            return Decoded(asProto.text, knstContentType = 0, isUserVisible = true, reply = asProto.reply)
-        }
+        decodePayload(plaintext, knstContentType = 0, e2eMessageId = null)?.let { return it }
         val utf8 = plaintext.toString(Charsets.UTF_8)
         return Decoded(utf8, knstContentType = 0, isUserVisible = utf8.isNotEmpty())
     }
@@ -55,6 +66,53 @@ object IncomingPlaintext {
             bytes[1] == 'N'.code.toByte() &&
             bytes[2] == 'S'.code.toByte() &&
             bytes[3] == 'T'.code.toByte()
+
+    private fun hidden(type: Int, e2e: String?) =
+        Decoded(text = "", knstContentType = type, isUserVisible = false, e2eMessageId = e2e)
+
+    /**
+     * Null when these bytes are not a `MessageContent` we recognise, so a bare
+     * legacy string can still be tried. A recognised non-text payload (edit,
+     * reaction, media) returns a non-visible [Decoded] instead, so it is never
+     * shown as mojibake.
+     */
+    private fun decodePayload(payload: ByteArray, knstContentType: Int, e2eMessageId: String?): Decoded? =
+        try {
+            val content = MessageContent.parseFrom(payload)
+            when {
+                content.hasEdit() -> {
+                    val target = content.edit.targetMessageId.trim()
+                    if (target.isEmpty()) {
+                        hidden(knstContentType, e2eMessageId)
+                    } else {
+                        val newText = if (content.edit.hasNewText()) content.edit.newText.text else ""
+                        hidden(knstContentType, e2eMessageId).copy(edit = Edit(target, newText))
+                    }
+                }
+                content.hasDelete() -> {
+                    val target = content.delete.targetMessageId.trim()
+                    val everyone = content.delete.scope == DeleteScope.DELETE_SCOPE_EVERYONE
+                    if (target.isEmpty() || !everyone) {
+                        hidden(knstContentType, e2eMessageId)
+                    } else {
+                        hidden(knstContentType, e2eMessageId).copy(delete = Delete(target))
+                    }
+                }
+                content.hasText() && content.text.text.isNotEmpty() -> Decoded(
+                    text = content.text.text,
+                    knstContentType = knstContentType,
+                    isUserVisible = true,
+                    reply = replyOf(content.text),
+                    e2eMessageId = e2eMessageId,
+                )
+                // Empty text is not a message. Unknown fields on a legacy string are not one either:
+                // protobuf will parse "hi" and report a size, and that must stay the word hi.
+                content.hasText() || content.contentCase == ContentCase.CONTENT_NOT_SET -> null
+                else -> hidden(knstContentType, e2eMessageId)
+            }
+        } catch (_: Exception) {
+            null
+        }
 
     private fun isSingleCompleteChunk(bytes: ByteArray): Boolean {
         val chunkIndex = u16(bytes, 22)
@@ -69,20 +127,7 @@ object IncomingPlaintext {
         return bytes.copyOfRange(HEADER_SIZE, end)
     }
 
-    private data class Inner(val text: String, val reply: ReplyRef?)
-
-    private fun decodeInner(payload: ByteArray): Inner = try {
-        val content = MessageContent.parseFrom(payload)
-        if (!content.hasText()) Inner("", null) else Inner(content.text.text, replyOf(content.text))
-    } catch (_: Exception) {
-        Inner("", null)
-    }
-
-    /**
-     * The quote iOS put on the text. An empty message id is not a reply. The preview
-     * is capped here as well: a peer is not trusted to have honoured the 200-character
-     * limit, and the stored row is what the bubble renders.
-     */
+    /** The quote iOS put on the text. An empty message id is not a reply. */
     private fun replyOf(text: TextMessage): ReplyRef? {
         if (!text.hasQuoted()) return null
         return replyOf(text.quoted)
@@ -98,6 +143,17 @@ object IncomingPlaintext {
         }
         val preview = if (quoted.hasTextPreview()) quoted.textPreview else ""
         return ReplyRef.of(quoted.messageId, preview, media)
+    }
+
+    /**
+     * KNST bytes 6..21, big-endian UUID, lowercase. The nil id is not an identity:
+     * a frame that never set one must fall back to the envelope id.
+     */
+    private fun readMessageId(bytes: ByteArray): String? {
+        if (bytes.size < 22) return null
+        val buf = ByteBuffer.wrap(bytes, 6, 16).order(ByteOrder.BIG_ENDIAN)
+        val id = UUID(buf.long, buf.long).toString()
+        return id.takeUnless { it == NIL_MESSAGE_ID }
     }
 
     private fun Int.isControlType(): Boolean = when (this) {
@@ -125,4 +181,5 @@ object IncomingPlaintext {
             (bytes[offset + 3].toInt() and 0xFF)
 
     const val HEADER_SIZE = 30
+    private const val NIL_MESSAGE_ID = "00000000-0000-0000-0000-000000000000"
 }

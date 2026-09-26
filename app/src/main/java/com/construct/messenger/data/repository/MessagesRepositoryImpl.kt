@@ -5,6 +5,7 @@ import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.MessageEntity
+import com.construct.messenger.data.local.db.refreshChatPreview
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.Message
 import com.construct.messenger.data.model.ReplyRef
@@ -37,6 +38,18 @@ class MessagesRepositoryImpl @Inject constructor(
     override suspend fun send(contactId: String, text: String, reply: ReplyRef?): SendOutcome =
         sendMessage(contactId, text, reply)
 
+    override suspend fun edit(contactId: String, messageId: String, newText: String): SendOutcome =
+        sendMessage.edit(contactId, messageId, newText)
+
+    override suspend fun delete(contactId: String, messageId: String) {
+        val myId = keystoreManager.getUserId() ?: return
+        val chatId = ConversationId.direct(myId, contactId)
+        val row = messageDao.getByIdIgnoreCase(messageId) ?: return
+        if (row.chatId != chatId) return
+        messageDao.deleteById(row.id)
+        refreshChatPreview(chatDao, messageDao, chatId)
+    }
+
     override suspend fun chatShown(contactId: String) {
         // Presence first: a message landing between these two lines is then not counted.
         presence.shown(contactId)
@@ -60,4 +73,5 @@ private fun MessageEntity.toModel(): Message = Message(
     replyToId = replyToId,
     replyPreview = replyPreview,
     replyMediaType = replyMediaType,
+    isEdited = isEdited,
 )

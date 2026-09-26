@@ -1,7 +1,7 @@
 #!/bin/bash
 # build_crypto_lib.sh
 # Собирает Rust-библиотеку construct-core для Android,
-# мёрджит ICE-символы и генерирует UniFFI Kotlin bindings.
+# копирует .so (VEIL уже внутри) и генерирует UniFFI Kotlin bindings.
 #
 # ИСПОЛЬЗОВАНИЕ:
 #   ./build_crypto_lib.sh          # все таргеты (по умолчанию)
@@ -186,34 +186,18 @@ build_target() {
   ok "Собрано: $target"
 }
 
-# ── Функция: мёрдж ICE ────────────────────────────────────────────────────────
-merge_ice() {
+# ── Функция: копирование .so в jniLibs ───────────────────────────────────────
+# VEIL в .so уже есть: ядро собирается с фичей `android`, а `lib.rs` реэкспортирует
+# C-символы construct-veil (`veil_start` и др.). Мёржить отдельно нечего.
+install_so() {
   local target="$1"
   local arch="$2"
   local core_lib="$CORE_PATH/target/$target/$BUILD_DIR/libconstruct_core.so"
 
   [ -f "$core_lib" ] || fail "libconstruct_core.so не найден: $core_lib"
 
-  # Ищем libconstruct_ice*.a в deps/
-  local ice_lib
-  ice_lib=$(find "$CORE_PATH/target/$target/$BUILD_DIR/deps" \
-            -name "libconstruct_ice*.a" 2>/dev/null | xargs ls -t 2>/dev/null | head -1)
-
-  if [ -n "$ice_lib" ] && [ -f "$ice_lib" ]; then
-    # Мёрдрим статические библиотеки
-    local tmp_obj="/tmp/construct_android_$$_$target.o"
-    local final_lib="$JNI_LIBS/$arch/libconstruct_core.so"
-
-    mkdir -p "$JNI_LIBS/$arch"
-
-    # Просто копируем .so (ICE уже вкомпилен в crate зависимость)
-    cp "$core_lib" "$final_lib"
-    info "Скопировано: $arch → libconstruct_core.so"
-  else
-    mkdir -p "$JNI_LIBS/$arch"
-    cp "$core_lib" "$JNI_LIBS/$arch/libconstruct_core.so"
-    warn "ICE не найден для $target — используем без ICE"
-  fi
+  mkdir -p "$JNI_LIBS/$arch"
+  cp "$core_lib" "$JNI_LIBS/$arch/libconstruct_core.so"
 
   local size
   size=$(du -sh "$JNI_LIBS/$arch/libconstruct_core.so" | cut -f1)
@@ -261,14 +245,14 @@ hdr "Копирование в jniLibs"
 mkdir -p "$JNI_LIBS"
 
 if $BUILD_ARM64; then
-  merge_ice "aarch64-linux-android" "arm64-v8a"
+  install_so "aarch64-linux-android" "arm64-v8a"
   generate_uniffi_bindings "aarch64-linux-android"
 fi
 if $BUILD_ARMV7; then
-  merge_ice "armv7-linux-androideabi" "armeabi-v7a"
+  install_so "armv7-linux-androideabi" "armeabi-v7a"
 fi
 if $BUILD_X86; then
-  merge_ice "x86_64-linux-android" "x86_64"
+  install_so "x86_64-linux-android" "x86_64"
 fi
 
 # ── Добавление в build.gradle ───────────────────────────────────────────

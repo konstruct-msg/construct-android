@@ -72,6 +72,62 @@ class ChatViewModelTest {
         assertNull(viewModel.uiState.value.replyingTo)
         assertEquals(ReplyRef.of("abc", "original"), messages.sent.single().reply)
     }
+
+    @Test
+    fun sendEditsTheTargetAndClearsTheBar() = runTest {
+        val messages = FakeMessagesRepository()
+        val handle = SavedStateHandle()
+        handle["contactId"] = "peer-1"
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository())
+        val original = Message(id = "mine", chatId = "peer-1", body = "hello", isOutgoing = true)
+
+        viewModel.startEdit(original)
+        advanceUntilIdle()
+        assertEquals("hello", viewModel.uiState.value.draft)
+        assertEquals("hello", viewModel.uiState.value.editingOriginal)
+        assertNull(viewModel.uiState.value.replyingTo)
+
+        viewModel.onDraftChange("hello there")
+        viewModel.send()
+        advanceUntilIdle()
+
+        assertEquals("", viewModel.uiState.value.draft)
+        assertNull(viewModel.uiState.value.editingOriginal)
+        assertTrue(messages.sent.isEmpty())
+        assertEquals("mine", messages.edits.single().messageId)
+        assertEquals("hello there", messages.edits.single().text)
+    }
+
+    @Test
+    fun aFailedEditKeepsTheDraft() = runTest {
+        val messages = FakeMessagesRepository().also { it.failEdit = true }
+        val handle = SavedStateHandle()
+        handle["contactId"] = "peer-1"
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository())
+        viewModel.startEdit(Message(id = "mine", chatId = "peer-1", body = "hello", isOutgoing = true))
+        viewModel.onDraftChange("hello there")
+        viewModel.send()
+        advanceUntilIdle()
+
+        assertEquals("hello there", viewModel.uiState.value.draft)
+        assertEquals("hello", viewModel.uiState.value.editingOriginal)
+    }
+
+    @Test
+    fun deleteDropsTheRowAndAnOpenEditOfIt() = runTest {
+        val messages = FakeMessagesRepository()
+        val handle = SavedStateHandle()
+        handle["contactId"] = "peer-1"
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository())
+        val original = Message(id = "mine", chatId = "peer-1", body = "hello", isOutgoing = true)
+        viewModel.startEdit(original)
+        viewModel.delete(original)
+        advanceUntilIdle()
+
+        assertEquals(listOf("mine"), messages.deleted)
+        assertNull(viewModel.uiState.value.editingOriginal)
+        assertEquals("", viewModel.uiState.value.draft)
+    }
 }
 
 private class FakeMessagesRepository : MessagesRepository {
@@ -92,6 +148,22 @@ private class FakeMessagesRepository : MessagesRepository {
     }
 
     data class Sent(val contactId: String, val text: String, val reply: ReplyRef?)
+    val edits = mutableListOf<Edit>()
+    val deleted = mutableListOf<String>()
+    var failEdit = false
+    data class Edit(val messageId: String, val text: String)
+    override suspend fun edit(contactId: String, messageId: String, newText: String): SendOutcome {
+        edits += Edit(messageId, newText)
+        if (failEdit) return SendOutcome.Failed(messageId, "no")
+        flow.value = flow.value.map { row ->
+            if (row.id == messageId) row.copy(body = newText, isEdited = true) else row
+        }
+        return SendOutcome.Sent(messageId)
+    }
+    override suspend fun delete(contactId: String, messageId: String) {
+        deleted += messageId
+        flow.value = flow.value.filter { it.id != messageId }
+    }
     override suspend fun chatShown(contactId: String) = Unit
     override fun chatHidden(contactId: String) = Unit
 }

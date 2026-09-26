@@ -7703,15 +7703,6 @@ sealed class CfeAction {
         companion object
     }
     
-    data class PersistMessage(
-        val `messageJson`: kotlin.String) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
     data class PersistAck(
         val `messageId`: kotlin.String, 
         val `timestamp`: kotlin.ULong) : CfeAction()
@@ -7732,6 +7723,19 @@ sealed class CfeAction {
     }
     
     data class MarkMessageDelivered(
+        val `messageId`: kotlin.String) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * A message already handled (ACK cache, platform DB, or its ratchet key already used).
+     * Terminal: record it as processed and advance the stream cursor past it.
+     */
+    data class DuplicateDropped(
         val `messageId`: kotlin.String) : CfeAction()
         
     {
@@ -7844,19 +7848,6 @@ sealed class CfeAction {
      */
     data class CheckAckInDb(
         val `messageId`: kotlin.String) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * Encrypt and send a heartbeat to `contact_id` using the current DR session.
-     * If no session exists, treat as a desync signal and trigger heal.
-     */
-    data class SendHeartbeat(
-        val `contactId`: kotlin.String) : CfeAction()
         
     {
         
@@ -7978,17 +7969,17 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterTypeCfeSecureStoreSlot.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            22 -> CfeAction.PersistMessage(
-                FfiConverterString.read(buf),
-                )
-            23 -> CfeAction.PersistAck(
+            22 -> CfeAction.PersistAck(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            24 -> CfeAction.PruneAckStore(
+            23 -> CfeAction.PruneAckStore(
                 FfiConverterULong.read(buf),
                 )
-            25 -> CfeAction.MarkMessageDelivered(
+            24 -> CfeAction.MarkMessageDelivered(
+                FfiConverterString.read(buf),
+                )
+            25 -> CfeAction.DuplicateDropped(
                 FfiConverterString.read(buf),
                 )
             26 -> CfeAction.FetchPublicKeyBundle(
@@ -8033,13 +8024,10 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
             36 -> CfeAction.CheckAckInDb(
                 FfiConverterString.read(buf),
                 )
-            37 -> CfeAction.SendHeartbeat(
+            37 -> CfeAction.NotifyLinkedDevicesOfSessionReset(
                 FfiConverterString.read(buf),
                 )
-            38 -> CfeAction.NotifyLinkedDevicesOfSessionReset(
-                FfiConverterString.read(buf),
-                )
-            39 -> CfeAction.SessionTerminated(
+            38 -> CfeAction.SessionTerminated(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
@@ -8208,13 +8196,6 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 + FfiConverterByteArray.allocationSize(value.`data`)
             )
         }
-        is CfeAction.PersistMessage -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`messageJson`)
-            )
-        }
         is CfeAction.PersistAck -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
@@ -8231,6 +8212,13 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
             )
         }
         is CfeAction.MarkMessageDelivered -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`messageId`)
+            )
+        }
+        is CfeAction.DuplicateDropped -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
@@ -8321,13 +8309,6 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
             (
                 4UL
                 + FfiConverterString.allocationSize(value.`messageId`)
-            )
-        }
-        is CfeAction.SendHeartbeat -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
             )
         }
         is CfeAction.NotifyLinkedDevicesOfSessionReset -> {
@@ -8467,23 +8448,23 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterByteArray.write(value.`data`, buf)
                 Unit
             }
-            is CfeAction.PersistMessage -> {
-                buf.putInt(22)
-                FfiConverterString.write(value.`messageJson`, buf)
-                Unit
-            }
             is CfeAction.PersistAck -> {
-                buf.putInt(23)
+                buf.putInt(22)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterULong.write(value.`timestamp`, buf)
                 Unit
             }
             is CfeAction.PruneAckStore -> {
-                buf.putInt(24)
+                buf.putInt(23)
                 FfiConverterULong.write(value.`cutoffTs`, buf)
                 Unit
             }
             is CfeAction.MarkMessageDelivered -> {
+                buf.putInt(24)
+                FfiConverterString.write(value.`messageId`, buf)
+                Unit
+            }
+            is CfeAction.DuplicateDropped -> {
                 buf.putInt(25)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
@@ -8552,18 +8533,13 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
-            is CfeAction.SendHeartbeat -> {
+            is CfeAction.NotifyLinkedDevicesOfSessionReset -> {
                 buf.putInt(37)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
-            is CfeAction.NotifyLinkedDevicesOfSessionReset -> {
-                buf.putInt(38)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
             is CfeAction.SessionTerminated -> {
-                buf.putInt(39)
+                buf.putInt(38)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterByteArray.write(value.`archiveBytes`, buf)
                 Unit
@@ -8671,19 +8647,6 @@ sealed class CfeIncomingEvent {
     data class AckDbResult(
         val `messageId`: kotlin.String, 
         val `isProcessed`: kotlin.Boolean) : CfeIncomingEvent()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * Signal that the user opened or closed a chat — controls heartbeat scheduling.
-     */
-    data class ActiveChatChanged(
-        val `contactId`: kotlin.String, 
-        val `isActive`: kotlin.Boolean) : CfeIncomingEvent()
         
     {
         
@@ -8862,36 +8825,32 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterString.read(buf),
                 FfiConverterBoolean.read(buf),
                 )
-            11 -> CfeIncomingEvent.ActiveChatChanged(
-                FfiConverterString.read(buf),
-                FfiConverterBoolean.read(buf),
-                )
-            12 -> CfeIncomingEvent.HeartbeatReceived(
+            11 -> CfeIncomingEvent.HeartbeatReceived(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterUInt.read(buf),
                 )
-            13 -> CfeIncomingEvent.TeardownRequested(
+            12 -> CfeIncomingEvent.TeardownRequested(
                 FfiConverterString.read(buf),
                 FfiConverterTypeCfeTearDownCause.read(buf),
                 )
-            14 -> CfeIncomingEvent.PeerToreDown(
+            13 -> CfeIncomingEvent.PeerToreDown(
                 FfiConverterString.read(buf),
                 )
-            15 -> CfeIncomingEvent.ReopenRequested(
+            14 -> CfeIncomingEvent.ReopenRequested(
                 FfiConverterString.read(buf),
                 )
-            16 -> CfeIncomingEvent.HealAttempted(
+            15 -> CfeIncomingEvent.HealAttempted(
                 FfiConverterString.read(buf),
                 )
-            17 -> CfeIncomingEvent.SriAnnounced(
+            16 -> CfeIncomingEvent.SriAnnounced(
                 FfiConverterString.read(buf),
                 )
-            18 -> CfeIncomingEvent.PeerAcked(
+            17 -> CfeIncomingEvent.PeerAcked(
                 FfiConverterString.read(buf),
                 )
-            19 -> CfeIncomingEvent.ResetInitArrived(
+            18 -> CfeIncomingEvent.ResetInitArrived(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterULong.read(buf),
@@ -8983,14 +8942,6 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 4UL
                 + FfiConverterString.allocationSize(value.`messageId`)
                 + FfiConverterBoolean.allocationSize(value.`isProcessed`)
-            )
-        }
-        is CfeIncomingEvent.ActiveChatChanged -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-                + FfiConverterBoolean.allocationSize(value.`isActive`)
             )
         }
         is CfeIncomingEvent.HeartbeatReceived -> {
@@ -9123,14 +9074,8 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterBoolean.write(value.`isProcessed`, buf)
                 Unit
             }
-            is CfeIncomingEvent.ActiveChatChanged -> {
-                buf.putInt(11)
-                FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterBoolean.write(value.`isActive`, buf)
-                Unit
-            }
             is CfeIncomingEvent.HeartbeatReceived -> {
-                buf.putInt(12)
+                buf.putInt(11)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`data`, buf)
@@ -9138,38 +9083,38 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 Unit
             }
             is CfeIncomingEvent.TeardownRequested -> {
-                buf.putInt(13)
+                buf.putInt(12)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterTypeCfeTearDownCause.write(value.`cause`, buf)
                 Unit
             }
             is CfeIncomingEvent.PeerToreDown -> {
-                buf.putInt(14)
+                buf.putInt(13)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeIncomingEvent.ReopenRequested -> {
-                buf.putInt(15)
+                buf.putInt(14)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeIncomingEvent.HealAttempted -> {
-                buf.putInt(16)
+                buf.putInt(15)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeIncomingEvent.SriAnnounced -> {
-                buf.putInt(17)
+                buf.putInt(16)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeIncomingEvent.PeerAcked -> {
-                buf.putInt(18)
+                buf.putInt(17)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeIncomingEvent.ResetInitArrived -> {
-                buf.putInt(19)
+                buf.putInt(18)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterByteArray.write(value.`initEphemeral`, buf)
                 FfiConverterULong.write(value.`sentAtS`, buf)

@@ -13,5 +13,7 @@ data class Message(
     val replyPreview: String? = null,
     /** Proto `MediaType` name when the quote is a photo, voice note, file, or sticker. */
     val replyMediaType: String? = null,
+    /** Set when a later `MessageContent.edit` replaced [body]. The timestamp stays the original. */
+    val isEdited: Boolean = false,
 )
 

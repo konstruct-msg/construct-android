@@ -94,10 +94,14 @@ class MessageProcessor @Inject constructor(
         val single = actions.singleOrNull()
         if (single is CfeAction.CheckAckInDb) {
             val isProcessed = effects.isAckedInDb(single.messageId)
+            // An empty follow-up is the answer, not a missing one. Putting `[CheckAckInDb]`
+            // back is what turned a dropped duplicate into "no routing decision" (iOS,
+            // 2026-08-04). The core now names a duplicate `DuplicateDropped`; emptiness must
+            // still not be rewritten into the question it just answered.
             actions = try {
                 orchestrator.handleEvent(
                     CfeIncomingEvent.AckDbResult(single.messageId, isProcessed),
-                ).ifEmpty { actions }
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "ackDbResult follow-up failed for ${single.messageId.take(8)}…", e)
                 return ProcessingOutcome.Deferred
@@ -247,7 +251,10 @@ class MessageProcessor @Inject constructor(
                     effects.requestEndSession(action.contactId)
                     return ProcessingOutcome.Acked
                 }
-                is CfeAction.SendHeartbeat -> {
+                is CfeAction.DuplicateDropped -> {
+                    // Already in the ACK cache, our DB, or a ratchet position whose key was used.
+                    // Record it so the next copy stops here, and move the cursor past it. A
+                    // delivered receipt per copy is the storm a redelivery used to raise.
                     executeSideEffects(actions, incoming)
                     effects.markProcessed(incoming.messageId, incoming.senderId)
                     return ProcessingOutcome.Acked
@@ -265,10 +272,12 @@ class MessageProcessor @Inject constructor(
             }
         }
 
-        // No actionable routing decision (duplicate / cooldown / msgNum=0 race) — ACK.
+        // No actionable routing decision. A duplicate is `DuplicateDropped` above, not this
+        // branch — the parenthetical that used to list it here is what made healthy drops look
+        // like a missing decision, and then sent a delivered receipt for each one.
         Log.i(
             TAG,
-            "no routing decision for ${incoming.messageId.take(8)}… msgNum-derived; " +
+            "no routing decision for ${incoming.messageId.take(8)}… " +
                 "actions=[${actions.joinToString(",") { it::class.simpleName ?: "?" }}] — ACKing delivered",
         )
         effects.sendReceipt(incoming.messageId, incoming.senderId, "delivered")
@@ -295,7 +304,6 @@ class MessageProcessor @Inject constructor(
                 }
                 is CfeAction.CallSignalDecrypted ->
                     effects.onCallSignal(action.contactId, action.messageId, action.protoBytes)
-                is CfeAction.PersistMessage -> effects.persistMessage(action.messageJson)
                 is CfeAction.SendReceipt -> effects.sendReceipt(action.messageId, incoming.senderId, action.status)
                 is CfeAction.NotifyNewMessage -> effects.notifyNewMessage(action.chatId, action.preview)
                 is CfeAction.MarkMessageDelivered -> effects.markDelivered(action.messageId)
@@ -306,7 +314,8 @@ class MessageProcessor @Inject constructor(
                 is CfeAction.ArchiveSession -> effects.archiveSession(action.contactId)
                 is CfeAction.SessionTerminated ->
                     effects.sessionTerminated(action.contactId, action.archiveBytes)
-                is CfeAction.SendHeartbeat -> effects.sendHeartbeat(action.contactId)
+                is CfeAction.DuplicateDropped ->
+                    Log.d(TAG, "duplicate ${action.messageId.take(8)}… — routing records it")
                 is CfeAction.NotifySessionCreated ->
                     Log.i(TAG, "session created ${action.contactId.take(8)}…")
                 is CfeAction.NotifyError ->
@@ -324,15 +333,6 @@ class MessageProcessor @Inject constructor(
                 is CfeAction.HeldPendingAck,
                 is CfeAction.HealAttemptAllowed,
                 is CfeAction.HealExhausted,
-                is CfeAction.ApplyResetInit,
-                is CfeAction.ResetInitSuperseded,
-                // No SESSION_RESET_INIT opener on this client yet — see CfeTimerBridge.
-                is CfeAction.OpenSession,
-                is CfeAction.OpenDeferred,
-                is CfeAction.OpenNotNeeded,
-                is CfeAction.OpeningGaveUp,
-                is CfeAction.ResendSri,
-                is CfeAction.EndSessionNotNeeded,
                 is CfeAction.CheckAckInDb,
                 is CfeAction.DecryptMessage,
                 is CfeAction.EncryptMessage,
@@ -398,7 +398,6 @@ interface ProcessorEffects {
     suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray)
     suspend fun onSenderSync(contactId: String, messageId: String, plaintext: ByteArray, timestampMs: Long) = Unit
     suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray)
-    suspend fun persistMessage(messageJson: String)
     suspend fun sendReceipt(messageId: String, toUserId: String, status: String)
     suspend fun notifyNewMessage(chatId: String, preview: String)
     suspend fun markDelivered(messageId: String)
@@ -406,7 +405,6 @@ interface ProcessorEffects {
     suspend fun saveSecureStore(slot: uniffi.construct_core.CfeSecureStoreSlot, data: ByteArray)
     suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray)
     suspend fun pruneAckStore(cutoffTs: Long)
-    suspend fun sendHeartbeat(contactId: String)
     suspend fun notifyLinkedDevicesOfSessionReset(contactId: String) = Unit
     suspend fun archiveSession(contactId: String)
     suspend fun requestHeal(contactId: String, role: String)
