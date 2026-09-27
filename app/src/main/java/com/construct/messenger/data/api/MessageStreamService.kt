@@ -11,6 +11,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -98,7 +99,11 @@ class MessageStreamService @Inject constructor(
 
     private suspend fun connectLoop() {
         var attempt = 0
-        while (currentCoroutineIsActive()) {
+        // The loop's own coroutine, not `connectJob`: on `Dispatchers.IO` the launched coroutine can
+        // start before `start` has assigned the field, read null, and leave the loop before its
+        // first attempt — the stream then never opens and nothing logs why. Seen on the emulator
+        // 2026-09-27, every launch, once the pool had free threads at start-up.
+        while (currentCoroutineContext().isActive) {
             try {
                 runStreamOnce(attempt)
                 attempt = 0 // clean close → reset backoff
@@ -208,9 +213,6 @@ class MessageStreamService @Inject constructor(
         cursorTracker.committedCursor()?.let(builder::setSinceCursor)
         return MessageStreamRequest.newBuilder().setSubscribe(builder).build()
     }
-
-    private fun currentCoroutineIsActive(): Boolean =
-        connectJob?.isActive == true
 
     private companion object {
         const val TAG = "MessageStream"
