@@ -14,7 +14,6 @@ import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.domain.usecase.RotateSignedPreKeyUseCase
-import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.domain.usecase.UploadPreKeysUseCase
 import com.construct.messenger.stealth.BlindTokenService
 import com.construct.messenger.stealth.ServerKeysProvider
@@ -38,6 +37,7 @@ import shared.proto.core.v1.EnvelopeOuterClass.Envelope
 import shared.proto.core.v1.EnvelopeOuterClass.SealedSenderEnvelope
 import shared.proto.core.v1.Identity.UserId
 import shared.proto.services.v1.MessagingServiceOuterClass.PendingMessage
+import uniffi.construct_core.CfeIncomingEvent
 
 /**
  * Process-scoped messaging lifecycle. Owns session restore, the receive pipeline,
@@ -67,7 +67,6 @@ class MessagingRuntime @Inject constructor(
     private val messagingService: MessagingService,
     private val chatDao: ChatDao,
     private val messageDao: MessageDao,
-    private val sessionControl: SessionControlUseCase,
     private val uploadPreKeys: UploadPreKeysUseCase,
     private val serverKeys: ServerKeysProvider,
     private val blindTokens: BlindTokenService,
@@ -222,19 +221,33 @@ class MessagingRuntime @Inject constructor(
 
     private suspend fun handleControl(message: MessageRouter.IncomingMessage): ProcessingOutcome =
         when (message.contentType) {
+            // END_SESSION (21) from a build before 2026-09-27: acknowledged and nothing else. It
+            // named no state, so nothing here could tell whether it was about the one we hold —
+            // which is what archived the session opened after it, on every start, on the stand
+            // that day (the redelivery fix `5c24a06` was the half-measure).
             ContentType.CONTENT_TYPE_SESSION_RESET -> {
-                val device = teardownDevice(message) { sessionManager.resolveDeviceId(it) }
-                // A redelivered teardown was already applied: acting on it again archives whatever
-                // session opened since. The server replays everything behind a held cursor on each
-                // connection, and on the stand 2026-09-27 two old END_SESSIONs archived the session
-                // opened after them on every start. iOS answers the same question by timestamp
-                // (`end_session_stale_check`).
-                if (ackStore.isProcessed(message.messageId)) {
-                    Log.i(TAG, "END_SESSION ${message.messageId.take(8)}… already applied — not again")
-                } else if (device != null) {
-                    sessionControl.inboundEndSession(device)
+                Log.i(TAG, "END_SESSION ${message.messageId.take(8)}… — retired type, acknowledged and ignored")
+                ackStore.markProcessed(message.messageId, message.senderId)
+                ProcessingOutcome.Acked
+            }
+            // DECRYPTION_ERROR (28): the peer could not read something we sent it. The core opens
+            // it and answers — retire our current state when the error names it, resend the named
+            // message once, or nothing when it is stale. Canon: iOS
+            // `SessionCoordinator.messageRouter(_:receivedDecryptionError:payload:)`.
+            ContentType.CONTENT_TYPE_DECRYPTION_ERROR -> {
+                val device = message.senderDeviceId
+                if (device.isEmpty()) {
+                    // Unsealed: nothing names the device, and a record is per device.
+                    Log.i(TAG, "DECRYPTION_ERROR ${message.messageId.take(8)}… names no device — ignored")
                 } else {
-                    Log.w(TAG, "END_SESSION ${message.messageId.take(8)}… names no device we know — nothing to tear down")
+                    runCatching {
+                        cryptoManager.handleEvent(
+                            CfeIncomingEvent.DecryptionErrorReceived(device, message.encryptedPayload),
+                        )
+                    }.onSuccess { actions ->
+                        Log.i(TAG, "DECRYPTION_ERROR from ${device.take(8)}… — ${if (actions.isEmpty()) "stale, nothing to do" else "${actions.size} action(s)"}")
+                        timerBridge.execute(actions)
+                    }.onFailure { Log.e(TAG, "DECRYPTION_ERROR from ${device.take(8)}… not delivered to the core", it) }
                 }
                 ackStore.markProcessed(message.messageId, message.senderId)
                 ProcessingOutcome.Acked
@@ -306,13 +319,3 @@ private fun PendingMessage.toEnvelope(): Envelope = Envelope.newBuilder().apply 
         setEncryptedPayload(encryptedPayload)
     }
 }.build()
-
-/**
- * The ratchet an inbound END_SESSION is about: the device its certificate names, or — for an
- * unsealed one — the account's pinned device, the only session it can be about. Never the account:
- * sessions are keyed by device, and a teardown filed under the account removed nothing.
- */
-internal suspend fun teardownDevice(
-    message: MessageRouter.IncomingMessage,
-    pinnedDevice: suspend (String) -> String?,
-): String? = message.senderDeviceId.ifEmpty { null } ?: pinnedDevice(message.senderId)

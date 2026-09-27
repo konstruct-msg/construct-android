@@ -73,6 +73,15 @@ class SessionManager @Inject constructor(
     }
 
     /** Ensure a session with one explicitly selected device from a multi-device account. */
+    /** Devices whose next open must go without a one-time prekey (`SessionRetired`). */
+    private val openWithoutOneTimePrekey = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+    /** The core retired our state with [deviceId] and the peer does not hold the one-time
+     * prekey it would be given: the next open with it goes without one. */
+    fun openNextWithoutOneTimePrekey(deviceId: String) {
+        openWithoutOneTimePrekey.add(deviceId)
+    }
+
     suspend fun ensureSessionForDevice(accountOrDeviceId: String, deviceId: String): SessionPeer {
         require(IdentityIds.isCryptoDeviceId(deviceId)) { "invalid peer CryptoDeviceId" }
         val accountId = accountFor(accountOrDeviceId)
@@ -80,7 +89,11 @@ class SessionManager @Inject constructor(
         if (cryptoManager.hasSession(deviceId) && identity != null) {
             return SessionPeer(accountId, deviceId, identity)
         }
-        val fetched = fetchPeerBundleData(accountId, consumeOtpk = true, deviceId = deviceId)
+        // Consumed once: the peer said it did not hold the one-time prekey our last handshake
+        // named, so this open asks for a bundle without one (3-DH), which it can always
+        // reproduce. A later open uses one again. Canon: iOS `SessionReinitHintStore`.
+        val withoutOtpk = openWithoutOneTimePrekey.remove(deviceId)
+        val fetched = fetchPeerBundleData(accountId, consumeOtpk = !withoutOtpk, deviceId = deviceId)
         openSession(fetched)
         return SessionPeer(fetched.accountId, fetched.deviceId, fetched.identityPublic)
     }

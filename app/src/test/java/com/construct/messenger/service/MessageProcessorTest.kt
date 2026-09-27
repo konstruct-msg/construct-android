@@ -42,13 +42,20 @@ class MessageProcessorTest {
         override suspend fun markDelivered(messageId: String) { calls += "markDelivered:$messageId" }
         override suspend fun markProcessed(messageId: String, senderId: String) { calls += "markProcessed:$messageId" }
         override suspend fun saveSecureStore(slot: CfeSecureStoreSlot, data: ByteArray) { calls += "saveSecureStore:$slot" }
-        override suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray) { calls += "terminated:$contactId" }
         override suspend fun pruneAckStore(cutoffTs: Long) { calls += "prune:$cutoffTs" }
         override suspend fun archiveSession(contactId: String) { calls += "archive:$contactId" }
         override suspend fun onSenderSync(contactId: String, messageId: String, plaintext: ByteArray, timestampMs: Long) {
             calls += "onSenderSync:$contactId:$messageId"
         }
-        override suspend fun requestEndSession(contactId: String) { calls += "endSession:$contactId" }
+        override suspend fun sendDecryptionError(contactId: String, messageId: String, payload: ByteArray) {
+            calls += "decryptionError:$contactId:$messageId"
+        }
+        override suspend fun sessionRetired(contactId: String, withoutOneTimePrekey: Boolean) {
+            calls += "retired:$contactId:$withoutOneTimePrekey"
+        }
+        override suspend fun resendMessage(contactId: String, messageId: String) {
+            calls += "resend:$contactId:$messageId"
+        }
         var openOutcome = ProcessingOutcome.Processed
         override suspend fun openReceiving(
             device: String,
@@ -129,17 +136,44 @@ class MessageProcessorTest {
         assertTrue(effects.calls.none { it.startsWith("onDecrypted:") })
     }
 
+    /** Nothing held reads it: the core built a decryption error to its writer. It is sent, the
+     * message recorded, and the cursor moves on — no delivered receipt, it was not delivered.
+     * Mutation that reddens it: drop the `SendDecryptionError` arm (the fallthrough receipts it). */
     @Test
-    fun `sendEndSession acks, marks processed and requests end session`() = runBlocking {
+    fun `an unread message sends the core's decryption error and is acked`() = runBlocking {
         val effects = RecordingEffects()
         val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
 
-        val outcome = processor.route(listOf(CfeAction.SendEndSession("bob")), incoming())
+        val outcome = processor.route(
+            listOf(
+                CfeAction.PersistAck("m1", 1uL),
+                CfeAction.SendDecryptionError("bob", "m1", byteArrayOf(9)),
+                CfeAction.NotifyError("decrypt_failed", "AEAD decryption failed"),
+            ),
+            incoming(),
+        )
 
         assertEquals(ProcessingOutcome.Acked, outcome)
-        assertTrue(effects.calls.contains("receipt:m1:failed"))
+        assertTrue(effects.calls.contains("decryptionError:bob:m1"))
         assertTrue(effects.calls.contains("markProcessed:m1"))
-        assertTrue(effects.calls.contains("endSession:bob"))
+        assertTrue(effects.calls.none { it.startsWith("receipt:") })
+    }
+
+    /** The same verdict with no error to send (an unsealed message): recorded, acked, and — the
+     * point — not receipted as delivered. Mutation that reddens it: drop the `decrypt_failed` arm. */
+    @Test
+    fun `an unread message with no error to send is acked without a receipt`() = runBlocking {
+        val effects = RecordingEffects()
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
+
+        val outcome = processor.route(
+            listOf(CfeAction.NotifyError("decrypt_failed", "AEAD decryption failed")),
+            incoming(),
+        )
+
+        assertEquals(ProcessingOutcome.Acked, outcome)
+        assertTrue(effects.calls.contains("markProcessed:m1"))
+        assertTrue(effects.calls.none { it.startsWith("receipt:") })
     }
 
     /** A handshake header the held session (if any) cannot read: the core queued the message and
@@ -205,7 +239,7 @@ class MessageProcessorTest {
     }
 
     @Test
-    fun `process on handleEvent throw ends session and acks`() = runBlocking {
+    fun `process on handleEvent throw records the message and tells nobody`() = runBlocking {
         val effects = RecordingEffects()
         whenever(sessionManager.resolveDeviceId("alice")).thenReturn("11111111111111111111111111111111")
         val gateway = object : OrchestratorGateway {
@@ -217,7 +251,9 @@ class MessageProcessorTest {
 
         assertEquals(ProcessingOutcome.Acked, outcome)
         assertTrue(effects.calls.contains("markProcessed:m1"))
-        assertTrue(effects.calls.contains("endSession:alice"))
+        // A throw is the core refusing the event, not a session failing to read it: there is no
+        // state to name in a decryption error. It used to send END_SESSION to the account.
+        assertTrue(effects.calls.none { it.startsWith("decryptionError:") })
     }
 
     @Test
@@ -345,23 +381,6 @@ class MessageProcessorTest {
 
         assertTrue(effects.calls.contains("onSenderSync:$senderDevice:sync-1"))
         assertTrue(effects.calls.none { it.startsWith("onDecrypted:") })
-    }
-
-    /** A queue the core gave up is released, not left to hold the cursor. Mutation that reddens
-     * it: log `PendingDropped` without acknowledging the ids. */
-    @Test
-    fun `a dropped queue is released`() = runBlocking {
-        val effects = RecordingEffects()
-        held.hold(incoming(id = "q-1"))
-        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
-
-        processor.route(
-            listOf(CfeAction.PendingDropped(senderDevice, listOf("q-1", "q-2")), CfeAction.DuplicateDropped("m1")),
-            incoming(),
-        )
-
-        assertTrue(effects.calls.contains("release:q-1,q-2"))
-        assertEquals(null, held.take("q-1"))
     }
 
     /** An init opened by the core comes back as an ordinary decrypt; its plaintext is a nonce,

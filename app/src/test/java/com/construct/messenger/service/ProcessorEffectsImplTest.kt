@@ -16,13 +16,13 @@ import com.construct.messenger.util.EditWire
 import com.construct.messenger.util.KnstFrame
 import com.construct.messenger.util.TextWire
 import com.construct.messenger.domain.usecase.ReceivingOpenUseCase
+import com.construct.messenger.domain.usecase.SendMessageUseCase
 import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.util.SenderSyncRouting
 import shared.proto.messaging.v1.Content.DeleteMessage
 import shared.proto.messaging.v1.Content.DeleteScope
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
-import uniffi.construct_core.CfeTearDownCause
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
@@ -66,6 +66,7 @@ class ProcessorEffectsImplTest {
             sendReceiptUseCase = mock(),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
+            sendMessage = { mock<SendMessageUseCase>() },
             held = HeldEnvelopes(),
             alerts = alerts,
         )
@@ -124,6 +125,7 @@ class ProcessorEffectsImplTest {
             sendReceiptUseCase = mock(),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
+            sendMessage = { mock<SendMessageUseCase>() },
             held = HeldEnvelopes(),
             alerts = alerts,
         )
@@ -160,6 +162,7 @@ class ProcessorEffectsImplTest {
             sendReceiptUseCase = mock(),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
+            sendMessage = { mock<SendMessageUseCase>() },
             held = HeldEnvelopes(),
             alerts = alerts,
         )
@@ -331,6 +334,7 @@ class ProcessorEffectsImplTest {
             sendReceiptUseCase = mock(),
             receivingOpen = opener,
             actionExecutor = { bridge },
+            sendMessage = { mock<SendMessageUseCase>() },
             held = HeldEnvelopes(),
             alerts = alerts,
         )
@@ -353,14 +357,18 @@ class ProcessorEffectsImplTest {
         verifyBlocking(bridge) { execute(actions) }
     }
 
+    /** A failed open is let go, and its writer is told by the core: the decryption errors are
+     * among the open's own actions, executed here. Nothing further is asked — until 2026-09-27
+     * this asked the core for a teardown. Mutation that reddens it: skip `execute` on failure. */
     @Test
-    fun `a failed open is let go and the core is asked to tear the sender down`() = runTest {
+    fun `a failed open is let go and its actions tell the writer`() = runTest {
         val crypto: CryptoManager = mock()
-        val answer = listOf<CfeAction>(CfeAction.SendEndSession(contactId = "dev"))
-        whenever(crypto.handleEvent(any())).thenReturn(answer)
         val bridge: CfeTimerBridge = mock()
         val acks = FakeAckStore()
-        val failed = ReceivingOpenUseCase.Outcome.Failed(listOf("q-1"), listOf("q-2"), "AEAD", emptyList())
+        val errors = listOf<CfeAction>(
+            CfeAction.SendDecryptionError(contactId = "dev", messageId = "q-1", payload = byteArrayOf(1)),
+        )
+        val failed = ReceivingOpenUseCase.Outcome.Failed(listOf("q-1"), listOf("q-2"), "AEAD", errors)
 
         val outcome = effectsFor(failed, crypto, bridge, acks).openReceiving("dev", incoming)
 
@@ -368,14 +376,14 @@ class ProcessorEffectsImplTest {
         assertTrue(acks.isProcessed("init-1"))
         assertTrue(acks.isProcessed("q-1"))
         assertTrue(acks.isProcessed("q-2"))
-        verify(crypto).handleEvent(CfeIncomingEvent.TeardownRequested("dev", CfeTearDownCause.BLIND))
-        verifyBlocking(bridge) { execute(answer) }
+        verifyBlocking(bridge) { execute(errors) }
+        verify(crypto, never()).handleEvent(any())
     }
 
-    /** A refused certificate says nothing about who sent the message; the device it names is not
-     * told to tear anything down. Mutation that reddens it: tear down on every failure. */
+    /** A refused certificate says nothing about who sent the message; nothing here asks the core
+     * anything more about it (the core itself sends no error to a writer it could not vouch for). */
     @Test
-    fun `a refused certificate tears nothing down`() = runTest {
+    fun `a refused certificate asks nothing more`() = runTest {
         val crypto: CryptoManager = mock()
         val acks = FakeAckStore()
         val refused = ReceivingOpenUseCase.Outcome.Failed(listOf("init-1"), emptyList(), "SENDER_CERTIFICATE_REFUSED: BadSignature", emptyList())

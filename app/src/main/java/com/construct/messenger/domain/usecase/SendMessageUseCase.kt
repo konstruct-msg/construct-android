@@ -116,6 +116,53 @@ class SendMessageUseCase @Inject constructor(
     }
 
     /**
+     * Send one of our own messages again, to one device of [contactId] — the answer to the core's
+     * `ResendMessage`: that device could not read [messageId] (a DECRYPTION_ERROR named it). If
+     * the core retired our state with the device, the copy opens a new one on the way.
+     *
+     * The same per-device path as a send, and only to [deviceId]: the account's other devices
+     * read their copies. Text only, as on iOS — a media message's plaintext is not kept. Until
+     * 2026-09-27 nothing on Android resent anything; a message lost to a broken session stayed
+     * lost (`decisions/sessions-renew-by-sending.md`). Canon: iOS
+     * `SessionCoordinator.resendAfterDecryptionError`.
+     */
+    suspend fun resend(contactId: String, deviceId: String, messageId: String): Boolean {
+        val myId = keystoreManager.getUserId() ?: return false
+        val row = messageDao.getById(messageId)
+        if (row == null || !row.isSentByMe || row.contentType != 0 || row.text.isEmpty() ||
+            row.chatId != ConversationId.direct(myId, contactId)
+        ) {
+            Log.i(TAG, "resend ${messageId.take(8)}… for ${deviceId.take(8)}… — no text message of ours here")
+            return false
+        }
+        val reply = row.replyToId?.let { ReplyRef(it, row.replyPreview.orEmpty(), row.replyMediaType) }
+        return try {
+            val peer = sessionManager.ensureSessionForDevice(contactId, deviceId)
+            val tag = cryptoManager.deviceCopyTag(messageId, deviceId, peer.identityPublic)
+            val wireMessageId = "$messageId-fd-$tag"
+            val encrypted = encryptFor(deviceId, wireMessageId, knstText(row.text, messageId, reply))
+                ?: return false
+            val result = sendOneCopy(
+                myId = myId,
+                accountId = contactId,
+                wireMessageId = wireMessageId,
+                timestampMs = row.timestamp,
+                encrypted = encrypted,
+                identityPublic = peer.identityPublic,
+                isOwnReplica = false,
+            )
+            val sent = result?.success == true
+            Log.i(TAG, "resend ${messageId.take(8)}… to ${deviceId.take(8)}… — ${if (sent) "sent" else "failed"}")
+            sent
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "resend ${messageId.take(8)}… to ${deviceId.take(8)}… threw", e)
+            false
+        }
+    }
+
+    /**
      * Edit one of our own text messages. Same fan-out as a send, different payload:
      * `MessageContent.edit` names the row, and no new row is written. The local
      * text changes only after a recipient copy is accepted — a failure leaves the

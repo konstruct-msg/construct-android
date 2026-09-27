@@ -71,7 +71,6 @@ class MessageProcessor @Inject constructor(
             msgNum = 0u,
             kemCt = ByteArray(0),
             otpkId = 0u,
-            isControl = false,
             contentType = incoming.contentType.number.toUByte(),
             // What a first message opens its session from; the core checks it when it does.
             senderCertificate = incoming.senderCertificate,
@@ -80,9 +79,11 @@ class MessageProcessor @Inject constructor(
         var actions = try {
             orchestrator.handleEvent(event)
         } catch (e: Exception) {
-            Log.e(TAG, "handleEvent threw for ${incoming.messageId.take(8)}… — END_SESSION", e)
+            // A throw is the core refusing the event, not a session failing to read the message,
+            // so there is no state to name in a decryption error. Recorded, so background fetch
+            // does not re-process it forever. It used to send END_SESSION to the *account*.
+            Log.e(TAG, "handleEvent threw for ${incoming.messageId.take(8)}… — dropped", e)
             effects.markProcessed(incoming.messageId, incoming.senderId)
-            effects.requestEndSession(incoming.senderId)
             return ProcessingOutcome.Acked
         }
 
@@ -154,10 +155,6 @@ class MessageProcessor @Inject constructor(
                     effects.sendReceipt(incoming.messageId, incoming.senderId, "delivered")
                     return ProcessingOutcome.Processed
                 }
-                is CfeAction.EndSessionSuppressed -> {
-                    Log.i(TAG, "END_SESSION suppressed ${action.contactId.take(8)}… retry ${action.retryAfterMs}ms — holding cursor")
-                    return ProcessingOutcome.Deferred
-                }
                 is CfeAction.MessageQueuedPendingInit -> {
                     // The core queued it behind an open already under way; the open's drain
                     // decrypts it, and routes it by the envelope kept here.
@@ -165,21 +162,27 @@ class MessageProcessor @Inject constructor(
                     Log.i(TAG, "message queued behind init ${action.contactId.take(8)}… count=${action.queuedCount} — holding cursor")
                     return ProcessingOutcome.Deferred
                 }
-                is CfeAction.SendEndSession -> {
-                    effects.sendReceipt(incoming.messageId, action.contactId, "failed")
+                // Nothing held reads it and it carries no handshake: the core built a decryption
+                // error to its writer (sealed messages) and recorded the message; the writer resends
+                // it on the state it opens next. Acked — the cursor moves past this copy. Until
+                // 2026-09-27 this was END_SESSION, and its cooldown held the cursor until the next
+                // reconnect (`decisions/sessions-renew-by-sending.md`).
+                is CfeAction.SendDecryptionError -> {
+                    executeSideEffects(actions, incoming)
                     effects.markProcessed(incoming.messageId, incoming.senderId)
-                    effects.requestEndSession(action.contactId)
+                    return ProcessingOutcome.Acked
+                }
+                // The same verdict with no error to send: an unsealed message names no writer to
+                // seal one to. No delivered receipt — it was not delivered.
+                is CfeAction.NotifyError -> if (action.code == DECRYPT_FAILED) {
+                    Log.i(TAG, "unreadable ${incoming.messageId.take(8)}… — ${action.message}")
+                    effects.markProcessed(incoming.messageId, incoming.senderId)
                     return ProcessingOutcome.Acked
                 }
                 is CfeAction.DuplicateDropped -> {
                     // Already in the ACK cache, our DB, or a ratchet position whose key was used.
                     // Record it so the next copy stops here, and move the cursor past it. A
                     // delivered receipt per copy is the storm a redelivery used to raise.
-                    executeSideEffects(actions, incoming)
-                    effects.markProcessed(incoming.messageId, incoming.senderId)
-                    return ProcessingOutcome.Acked
-                }
-                is CfeAction.SessionTerminated -> {
                     executeSideEffects(actions, incoming)
                     effects.markProcessed(incoming.messageId, incoming.senderId)
                     return ProcessingOutcome.Acked
@@ -229,8 +232,12 @@ class MessageProcessor @Inject constructor(
                 is CfeAction.SaveToSecureStore ->
                     effects.saveSecureStore(action.slot, action.data)
                 is CfeAction.ArchiveSession -> effects.archiveSession(action.contactId)
-                is CfeAction.SessionTerminated ->
-                    effects.sessionTerminated(action.contactId, action.archiveBytes)
+                is CfeAction.SendDecryptionError ->
+                    effects.sendDecryptionError(action.contactId, action.messageId, action.payload)
+                is CfeAction.SessionRetired ->
+                    effects.sessionRetired(action.contactId, action.withoutOneTimePrekey)
+                is CfeAction.ResendMessage ->
+                    effects.resendMessage(action.contactId, action.messageId)
                 is CfeAction.DuplicateDropped ->
                     Log.d(TAG, "duplicate ${action.messageId.take(8)}… — routing records it")
                 is CfeAction.NotifySessionCreated ->
@@ -241,20 +248,12 @@ class MessageProcessor @Inject constructor(
                     timerBridge.schedule(action.timerId, action.delayMs)
                 is CfeAction.CancelTimer ->
                     timerBridge.cancel(action.timerId)
-                is CfeAction.NotifyLinkedDevicesOfSessionReset ->
-                    Log.i(TAG, "linked-device reset notification pending for ${action.contactId.take(8)}…")
-                is CfeAction.PendingDropped -> {
-                    action.messageIds.forEach { held.take(it) }
-                    effects.release(action.messageIds)
-                }
-                is CfeAction.EndSessionSuppressed,
                 is CfeAction.MessageQueuedPendingInit,
                 is CfeAction.CheckAckInDb,
                 is CfeAction.DecryptMessage,
                 is CfeAction.EncryptMessage,
                 is CfeAction.InitSession,
                 is CfeAction.SendEncryptedMessage,
-                is CfeAction.SendEndSession,
                 is CfeAction.OpenReceiving,
                 -> Log.d(TAG, "CFE action consumed by routing layer: ${action::class.simpleName}")
                 // The machine's answers about *opening* a session. This client does not ask it —
@@ -262,7 +261,6 @@ class MessageProcessor @Inject constructor(
                 // honest record is a warning, not a "consumed by" line that would read as wired.
                 // iOS acts on `OpenSession` (`SessionActionExecutor`, the PQXDH v2 upgrade sweep).
                 is CfeAction.OpenSession,
-                is CfeAction.EndSessionNotNeeded,
                 -> Log.w(TAG, "CFE session-open action not acted on by this client: ${action::class.simpleName}")
             }
         }
@@ -270,6 +268,9 @@ class MessageProcessor @Inject constructor(
 
     private companion object {
         const val TAG = "MessageProcessor"
+
+        /** The core's `DECRYPT_FAILED` code (`orchestrator.rs`), attached to every refused decrypt. */
+        const val DECRYPT_FAILED = "decrypt_failed"
     }
 
     private sealed interface CopyRouteResolution {
@@ -309,12 +310,19 @@ interface ProcessorEffects {
     suspend fun markDelivered(messageId: String)
     suspend fun markProcessed(messageId: String, senderId: String)
     suspend fun saveSecureStore(slot: uniffi.construct_core.CfeSecureStoreSlot, data: ByteArray)
-    suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray)
     suspend fun pruneAckStore(cutoffTs: Long)
-    suspend fun notifyLinkedDevicesOfSessionReset(contactId: String) = Unit
     suspend fun archiveSession(contactId: String)
 
-    suspend fun requestEndSession(contactId: String)
+    /** We could not read [messageId] from [contactId]: send the core's sealed [payload] to that
+     * device as a DECRYPTION_ERROR. */
+    suspend fun sendDecryptionError(contactId: String, messageId: String, payload: ByteArray)
+
+    /** The peer could not read our current state with [contactId] and the core retired it; the
+     * next send opens a new one — without a one-time prekey when [withoutOneTimePrekey]. */
+    suspend fun sessionRetired(contactId: String, withoutOneTimePrekey: Boolean)
+
+    /** The peer could not read [messageId]: send it again to [contactId]. */
+    suspend fun resendMessage(contactId: String, messageId: String)
 
     /** Open a receiving session with [device] from what the core holds for it, execute what the
      * open produced, and say what became of [trigger]. Nothing is announced: the peer learns the
@@ -324,7 +332,7 @@ interface ProcessorEffects {
         trigger: MessageRouter.IncomingMessage?,
     ): ProcessingOutcome
 
-    /** The core gave these up (a dropped queue): acknowledge them so their redelivery is not
+    /** The core gave these up (a failed open): acknowledge them so their redelivery is not
      * processed again and the cursor moves past them. */
     suspend fun release(messageIds: List<String>)
 

@@ -16,7 +16,6 @@ import uniffi.construct_core.RecoveryKeypair
 import uniffi.construct_core.ReceivingOpenResult
 import uniffi.construct_core.RegistrationBundleFields
 import uniffi.construct_core.SenderCertificate
-import uniffi.construct_core.TeardownDecision
 import uniffi.construct_core.PowProgressCallback
 import uniffi.construct_core.computePow
 import uniffi.construct_core.computePowWithProgress
@@ -287,12 +286,15 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         recipientIsSelf,
     )
 
-    /** Core-owned teardown plan over a client-supplied account→device set. */
-    fun planTeardown(candidateDeviceIds: List<String>, peerOnDeadSession: Boolean): List<TeardownDecision> =
-        synchronized(coreLock) {
-            (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
-                .planTeardown(candidateDeviceIds, peerOnDeadSession)
-        }
+    /**
+     * Retire our current state with [deviceId] — the person reset the session. The core keeps it
+     * as a previous state (what the peer still sends on it decrypts) and the next send opens a
+     * new one; nothing is sent now. Returns the save to execute, empty when nothing was current.
+     * Replaced END_SESSION's `planTeardown` on 2026-09-27.
+     */
+    fun retireSession(deviceId: String): List<CfeAction> = synchronized(coreLock) {
+        orchestrator?.retireSession(deviceId) ?: emptyList()
+    }
 
     fun deviceCopyTag(
         baseMessageId: String,

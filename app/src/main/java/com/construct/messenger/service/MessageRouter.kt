@@ -200,6 +200,7 @@ internal fun normalizeEnvelope(
 internal fun ContentType.isControl(): Boolean = when (this) {
     ContentType.CONTENT_TYPE_KEY_EXCHANGE,
     ContentType.CONTENT_TYPE_SESSION_RESET,
+    ContentType.CONTENT_TYPE_DECRYPTION_ERROR,
     ContentType.CONTENT_TYPE_KEY_SYNC,
     ContentType.CONTENT_TYPE_SENDER_SYNC,
     ContentType.CONTENT_TYPE_SESSION_RESET_INIT,

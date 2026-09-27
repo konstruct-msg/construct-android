@@ -988,8 +988,6 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_peer_handsha
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_pending_message_count(
 ): Short
-external fun uniffi_construct_core_checksum_method_orchestratorcore_plan_teardown(
-): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_prekeys_available_count(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_prune_kyber_one_time_prekeys_below(
@@ -999,6 +997,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_prune_one_ti
 external fun uniffi_construct_core_checksum_method_orchestratorcore_remove_session(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_reopen_session(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_retire_session(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_rollback_kyber_spk_rotation(
 ): Short
@@ -1242,8 +1242,6 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_peer_handshake_hel
 ): Byte
 external fun uniffi_construct_core_fn_method_orchestratorcore_pending_message_count(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
-external fun uniffi_construct_core_fn_method_orchestratorcore_plan_teardown(`ptr`: Long,`candidateDeviceIds`: RustBuffer.ByValue,`peerOnDeadSession`: Byte,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_prekeys_available_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
 external fun uniffi_construct_core_fn_method_orchestratorcore_prune_kyber_one_time_prekeys_below(`ptr`: Long,`minKeepId`: Int,uniffi_out_err: UniffiRustCallStatus, 
@@ -1253,6 +1251,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_prune_one_time_pre
 external fun uniffi_construct_core_fn_method_orchestratorcore_remove_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_orchestratorcore_reopen_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_retire_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_rollback_kyber_spk_rotation(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1990,9 +1990,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_pending_message_count() != 2235.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_plan_teardown() != 62343.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_prekeys_available_count() != 33104.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2006,6 +2003,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_reopen_session() != 45402.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_retire_session() != 42727.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_rollback_kyber_spk_rotation() != 39610.toShort()) {
@@ -3823,8 +3823,8 @@ public interface OrchestratorCoreInterface {
     fun `exportOneTimePrekeys`(): List<kotlin.UByte>
     
     /**
-     * Export the full orchestrator coordination state (init locks, archive index,
-     * prekey tracker) as a CFE binary blob.
+     * Export the full orchestrator coordination state (init locks, prekey tracker, pins) as a
+     * CFE binary blob.
      * Persist under CfeSecureStoreSlot::OrchestratorState.
      */
     fun `exportOrchestratorState`(): List<kotlin.UByte>
@@ -3835,18 +3835,15 @@ public interface OrchestratorCoreInterface {
     
     /**
      * Drop every piece of local orchestration state this core holds about `contact_id`:
-     * the ratchet and its previous states, the archive and its timestamp, the prekey counter, the PQ
-     * contribution, the init lock, the cooldown, the pending END_SESSION, the prewarm mark and
-     * the active-chat mark.
+     * the ratchet and its previous states, the prekey counter, the PQ contribution, the init lock,
+     * the queue, the prewarm mark and the active-chat mark.
      *
      * `remove_session` removes the ratchet **and nothing else**, so all of the above outlive it
      * and steer the next add for the same device — a contact the platform has already forgotten.
      * None of them is reachable from outside this crate, which is why "the platform deleted this
      * contact" had no expression here until now.
      *
-     * Silent on the wire on purpose: a local deletion boundary, not a protocol reset. It archives
-     * nothing and emits no END_SESSION. A caller that wants the peer told does that first, with
-     * `plan_teardown`, and forgets afterwards.
+     * Silent on the wire on purpose: a local deletion boundary, not a protocol reset.
      */
     fun `forgetContactState`(`contactId`: kotlin.String)
     
@@ -3924,13 +3921,6 @@ public interface OrchestratorCoreInterface {
     
     fun `pendingMessageCount`(`contactId`: kotlin.String): kotlin.UInt
     
-    /**
-     * Which of `candidate_device_ids` a teardown goes to, and what to do with each.
-     * The caller passes the device set (it owns the account→devices translation, which this
-     * crate deliberately cannot do); the decision over the set is made here.
-     */
-    fun `planTeardown`(`candidateDeviceIds`: List<kotlin.String>, `peerOnDeadSession`: kotlin.Boolean): List<TeardownDecision>
-    
     fun `prekeysAvailableCount`(): kotlin.UInt
     
     /**
@@ -3943,6 +3933,12 @@ public interface OrchestratorCoreInterface {
     fun `removeSession`(`contactId`: kotlin.String): kotlin.Boolean
     
     fun `reopenSession`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String
+    
+    /**
+     * The person reset the session with `contact_id`: the current state is retired locally and
+     * the next send opens a new one. Nothing is sent. Execute the returned save.
+     */
+    fun `retireSession`(`contactId`: kotlin.String): List<CfeAction>
     
     /**
      * The upload failed.
@@ -4267,8 +4263,8 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
 
     
     /**
-     * Export the full orchestrator coordination state (init locks, archive index,
-     * prekey tracker) as a CFE binary blob.
+     * Export the full orchestrator coordination state (init locks, prekey tracker, pins) as a
+     * CFE binary blob.
      * Persist under CfeSecureStoreSlot::OrchestratorState.
      */
     @Throws(CryptoException::class)override fun `exportOrchestratorState`(): List<kotlin.UByte> {
@@ -4315,18 +4311,15 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
     /**
      * Drop every piece of local orchestration state this core holds about `contact_id`:
-     * the ratchet and its previous states, the archive and its timestamp, the prekey counter, the PQ
-     * contribution, the init lock, the cooldown, the pending END_SESSION, the prewarm mark and
-     * the active-chat mark.
+     * the ratchet and its previous states, the prekey counter, the PQ contribution, the init lock,
+     * the queue, the prewarm mark and the active-chat mark.
      *
      * `remove_session` removes the ratchet **and nothing else**, so all of the above outlive it
      * and steer the next add for the same device — a contact the platform has already forgotten.
      * None of them is reachable from outside this crate, which is why "the platform deleted this
      * contact" had no expression here until now.
      *
-     * Silent on the wire on purpose: a local deletion boundary, not a protocol reset. It archives
-     * nothing and emits no END_SESSION. A caller that wants the peer told does that first, with
-     * `plan_teardown`, and forgets afterwards.
+     * Silent on the wire on purpose: a local deletion boundary, not a protocol reset.
      */override fun `forgetContactState`(`contactId`: kotlin.String)
         = 
     callWithHandle {
@@ -4699,24 +4692,6 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     
 
-    
-    /**
-     * Which of `candidate_device_ids` a teardown goes to, and what to do with each.
-     * The caller passes the device set (it owns the account→devices translation, which this
-     * crate deliberately cannot do); the decision over the set is made here.
-     */override fun `planTeardown`(`candidateDeviceIds`: List<kotlin.String>, `peerOnDeadSession`: kotlin.Boolean): List<TeardownDecision> {
-            return FfiConverterSequenceTypeTeardownDecision.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_plan_teardown(
-        it,
-        FfiConverterSequenceString.lower(`candidateDeviceIds`),FfiConverterBoolean.lower(`peerOnDeadSession`),_status)
-}
-    }
-    )
-    }
-    
-
     override fun `prekeysAvailableCount`(): kotlin.UInt {
             return FfiConverterUInt.lift(
     callWithHandle {
@@ -4780,6 +4755,23 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_reopen_session(
         it,
         FfiConverterString.lower(`contactId`),FfiConverterTypeBinaryKeyBundle.lower(`recipientBundle`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The person reset the session with `contact_id`: the current state is retired locally and
+     * the next send opens a new one. Nothing is sent. Execute the returned save.
+     */override fun `retireSession`(`contactId`: kotlin.String): List<CfeAction> {
+            return FfiConverterSequenceTypeCfeAction.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_retire_session(
+        it,
+        FfiConverterString.lower(`contactId`),_status)
 }
     }
     )
@@ -7204,42 +7196,6 @@ public object FfiConverterTypeSrRecoveryBundle: FfiConverterRustBuffer<SrRecover
 
 
 
-data class TeardownDecision (
-    var `deviceId`: kotlin.String
-    , 
-    var `action`: TeardownAction
-    
-){
-    
-
-    
-    companion object
-}
-
-/**
- * @suppress
- */
-public object FfiConverterTypeTeardownDecision: FfiConverterRustBuffer<TeardownDecision> {
-    override fun read(buf: ByteBuffer): TeardownDecision {
-        return TeardownDecision(
-            FfiConverterString.read(buf),
-            FfiConverterTypeTeardownAction.read(buf),
-        )
-    }
-
-    override fun allocationSize(value: TeardownDecision) = (
-            FfiConverterString.allocationSize(value.`deviceId`) +
-            FfiConverterTypeTeardownAction.allocationSize(value.`action`)
-    )
-
-    override fun write(value: TeardownDecision, buf: ByteBuffer) {
-            FfiConverterString.write(value.`deviceId`, buf)
-            FfiConverterTypeTeardownAction.write(value.`action`, buf)
-    }
-}
-
-
-
 data class TimingConfig (
     var `heartbeatIntervalSec`: kotlin.ULong
     , 
@@ -7468,43 +7424,6 @@ sealed class CfeAction {
         companion object
     }
     
-    data class PendingDropped(
-        val `contactId`: kotlin.String, 
-        val `messageIds`: List<kotlin.String>) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * END_SESSION suppressed by cooldown — the core owes it and sends it in retry_after_ms.
-     * Platform must NOT ACK.
-     */
-    data class EndSessionSuppressed(
-        val `contactId`: kotlin.String, 
-        val `retryAfterMs`: kotlin.ULong) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * A teardown was asked for and will not be sent, now or later — the peer tore this ratchet
-     * down itself. Nothing is owed; do NOT schedule a retry.
-     */
-    data class EndSessionNotNeeded(
-        val `contactId`: kotlin.String) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
     /**
      * Open a new session with `contact_id` as INITIATOR over the one held: build it with
      * `reopen_session`, which keeps the held state as a previous one. Nothing is sent for it —
@@ -7617,8 +7536,42 @@ sealed class CfeAction {
         companion object
     }
     
-    data class SendEndSession(
-        val `contactId`: kotlin.String) : CfeAction()
+    /**
+     * We could not read `message_id` from `contact_id`: send `payload` to that device as a
+     * DECRYPTION_ERROR (content type 28) envelope, sealed-sender, and acknowledge the message.
+     * The core built and sealed `payload`; one per unread message.
+     */
+    data class SendDecryptionError(
+        val `contactId`: kotlin.String, 
+        val `messageId`: kotlin.String, 
+        val `payload`: kotlin.ByteArray) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The peer could not read our current state with `contact_id`; it is retired and the next
+     * send opens a new one — without a one-time prekey when `without_one_time_prekey`.
+     */
+    data class SessionRetired(
+        val `contactId`: kotlin.String, 
+        val `withoutOneTimePrekey`: kotlin.Boolean) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The peer could not read `message_id`: send it again to `contact_id` as a new message.
+     */
+    data class ResendMessage(
+        val `contactId`: kotlin.String, 
+        val `messageId`: kotlin.String) : CfeAction()
         
     {
         
@@ -7697,33 +7650,6 @@ sealed class CfeAction {
         companion object
     }
     
-    /**
-     * Broadcast to all linked devices that the session with `contact_id` was reset.
-     */
-    data class NotifyLinkedDevicesOfSessionReset(
-        val `contactId`: kotlin.String) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * Rust archived and removed the session for `contact_id`.
-     * Platform MUST: (1) store `archive_bytes` in the archive store, (2) delete the
-     * hot session Keychain/Keystore entry for `contact_id`.
-     */
-    data class SessionTerminated(
-        val `contactId`: kotlin.String, 
-        val `archiveBytes`: kotlin.ByteArray) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
 
     
     companion object
@@ -7755,89 +7681,81 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            6 -> CfeAction.PendingDropped(
-                FfiConverterString.read(buf),
-                FfiConverterSequenceString.read(buf),
-                )
-            7 -> CfeAction.EndSessionSuppressed(
-                FfiConverterString.read(buf),
-                FfiConverterULong.read(buf),
-                )
-            8 -> CfeAction.EndSessionNotNeeded(
+            6 -> CfeAction.OpenSession(
                 FfiConverterString.read(buf),
                 )
-            9 -> CfeAction.OpenSession(
-                FfiConverterString.read(buf),
-                )
-            10 -> CfeAction.MessageQueuedPendingInit(
+            7 -> CfeAction.MessageQueuedPendingInit(
                 FfiConverterString.read(buf),
                 FfiConverterUInt.read(buf),
                 )
-            11 -> CfeAction.SaveToSecureStore(
+            8 -> CfeAction.SaveToSecureStore(
                 FfiConverterTypeCfeSecureStoreSlot.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            12 -> CfeAction.PersistAck(
+            9 -> CfeAction.PersistAck(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            13 -> CfeAction.PruneAckStore(
+            10 -> CfeAction.PruneAckStore(
                 FfiConverterULong.read(buf),
                 )
-            14 -> CfeAction.MarkMessageDelivered(
+            11 -> CfeAction.MarkMessageDelivered(
                 FfiConverterString.read(buf),
                 )
-            15 -> CfeAction.DuplicateDropped(
+            12 -> CfeAction.DuplicateDropped(
                 FfiConverterString.read(buf),
                 )
-            16 -> CfeAction.OpenReceiving(
+            13 -> CfeAction.OpenReceiving(
                 FfiConverterString.read(buf),
                 )
-            17 -> CfeAction.SendEncryptedMessage(
+            14 -> CfeAction.SendEncryptedMessage(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterUByte.read(buf),
                 )
-            18 -> CfeAction.SendReceipt(
+            15 -> CfeAction.SendReceipt(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            19 -> CfeAction.SendEndSession(
+            16 -> CfeAction.SendDecryptionError(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterByteArray.read(buf),
+                )
+            17 -> CfeAction.SessionRetired(
+                FfiConverterString.read(buf),
+                FfiConverterBoolean.read(buf),
+                )
+            18 -> CfeAction.ResendMessage(
+                FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            20 -> CfeAction.NotifyNewMessage(
+            19 -> CfeAction.NotifyNewMessage(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            21 -> CfeAction.NotifySessionCreated(
+            20 -> CfeAction.NotifySessionCreated(
                 FfiConverterString.read(buf),
                 )
-            22 -> CfeAction.NotifyError(
+            21 -> CfeAction.NotifyError(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            23 -> CfeAction.ScheduleTimer(
+            22 -> CfeAction.ScheduleTimer(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            24 -> CfeAction.CancelTimer(
+            23 -> CfeAction.CancelTimer(
                 FfiConverterString.read(buf),
                 )
-            25 -> CfeAction.CallSignalDecrypted(
+            24 -> CfeAction.CallSignalDecrypted(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            26 -> CfeAction.CheckAckInDb(
+            25 -> CfeAction.CheckAckInDb(
                 FfiConverterString.read(buf),
-                )
-            27 -> CfeAction.NotifyLinkedDevicesOfSessionReset(
-                FfiConverterString.read(buf),
-                )
-            28 -> CfeAction.SessionTerminated(
-                FfiConverterString.read(buf),
-                FfiConverterByteArray.read(buf),
                 )
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
@@ -7882,29 +7800,6 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 + FfiConverterString.allocationSize(value.`contactId`)
                 + FfiConverterString.allocationSize(value.`messageId`)
                 + FfiConverterByteArray.allocationSize(value.`plaintext`)
-            )
-        }
-        is CfeAction.PendingDropped -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-                + FfiConverterSequenceString.allocationSize(value.`messageIds`)
-            )
-        }
-        is CfeAction.EndSessionSuppressed -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-                + FfiConverterULong.allocationSize(value.`retryAfterMs`)
-            )
-        }
-        is CfeAction.EndSessionNotNeeded -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
             )
         }
         is CfeAction.OpenSession -> {
@@ -7984,11 +7879,29 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 + FfiConverterString.allocationSize(value.`status`)
             )
         }
-        is CfeAction.SendEndSession -> {
+        is CfeAction.SendDecryptionError -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
                 + FfiConverterString.allocationSize(value.`contactId`)
+                + FfiConverterString.allocationSize(value.`messageId`)
+                + FfiConverterByteArray.allocationSize(value.`payload`)
+            )
+        }
+        is CfeAction.SessionRetired -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+                + FfiConverterBoolean.allocationSize(value.`withoutOneTimePrekey`)
+            )
+        }
+        is CfeAction.ResendMessage -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+                + FfiConverterString.allocationSize(value.`messageId`)
             )
         }
         is CfeAction.NotifyNewMessage -> {
@@ -8045,21 +7958,6 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 + FfiConverterString.allocationSize(value.`messageId`)
             )
         }
-        is CfeAction.NotifyLinkedDevicesOfSessionReset -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-            )
-        }
-        is CfeAction.SessionTerminated -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-                + FfiConverterByteArray.allocationSize(value.`archiveBytes`)
-            )
-        }
     }
 
     override fun write(value: CfeAction, buf: ByteBuffer) {
@@ -8094,68 +7992,51 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterByteArray.write(value.`plaintext`, buf)
                 Unit
             }
-            is CfeAction.PendingDropped -> {
-                buf.putInt(6)
-                FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterSequenceString.write(value.`messageIds`, buf)
-                Unit
-            }
-            is CfeAction.EndSessionSuppressed -> {
-                buf.putInt(7)
-                FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterULong.write(value.`retryAfterMs`, buf)
-                Unit
-            }
-            is CfeAction.EndSessionNotNeeded -> {
-                buf.putInt(8)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
             is CfeAction.OpenSession -> {
-                buf.putInt(9)
+                buf.putInt(6)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.MessageQueuedPendingInit -> {
-                buf.putInt(10)
+                buf.putInt(7)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterUInt.write(value.`queuedCount`, buf)
                 Unit
             }
             is CfeAction.SaveToSecureStore -> {
-                buf.putInt(11)
+                buf.putInt(8)
                 FfiConverterTypeCfeSecureStoreSlot.write(value.`slot`, buf)
                 FfiConverterByteArray.write(value.`data`, buf)
                 Unit
             }
             is CfeAction.PersistAck -> {
-                buf.putInt(12)
+                buf.putInt(9)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterULong.write(value.`timestamp`, buf)
                 Unit
             }
             is CfeAction.PruneAckStore -> {
-                buf.putInt(13)
+                buf.putInt(10)
                 FfiConverterULong.write(value.`cutoffTs`, buf)
                 Unit
             }
             is CfeAction.MarkMessageDelivered -> {
-                buf.putInt(14)
+                buf.putInt(11)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.DuplicateDropped -> {
-                buf.putInt(15)
+                buf.putInt(12)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.OpenReceiving -> {
-                buf.putInt(16)
+                buf.putInt(13)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.SendEncryptedMessage -> {
-                buf.putInt(17)
+                buf.putInt(14)
                 FfiConverterString.write(value.`to`, buf)
                 FfiConverterByteArray.write(value.`payload`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
@@ -8163,65 +8044,68 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 Unit
             }
             is CfeAction.SendReceipt -> {
-                buf.putInt(18)
+                buf.putInt(15)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterString.write(value.`status`, buf)
                 Unit
             }
-            is CfeAction.SendEndSession -> {
-                buf.putInt(19)
+            is CfeAction.SendDecryptionError -> {
+                buf.putInt(16)
                 FfiConverterString.write(value.`contactId`, buf)
+                FfiConverterString.write(value.`messageId`, buf)
+                FfiConverterByteArray.write(value.`payload`, buf)
+                Unit
+            }
+            is CfeAction.SessionRetired -> {
+                buf.putInt(17)
+                FfiConverterString.write(value.`contactId`, buf)
+                FfiConverterBoolean.write(value.`withoutOneTimePrekey`, buf)
+                Unit
+            }
+            is CfeAction.ResendMessage -> {
+                buf.putInt(18)
+                FfiConverterString.write(value.`contactId`, buf)
+                FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.NotifyNewMessage -> {
-                buf.putInt(20)
+                buf.putInt(19)
                 FfiConverterString.write(value.`chatId`, buf)
                 FfiConverterString.write(value.`preview`, buf)
                 Unit
             }
             is CfeAction.NotifySessionCreated -> {
-                buf.putInt(21)
+                buf.putInt(20)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyError -> {
-                buf.putInt(22)
+                buf.putInt(21)
                 FfiConverterString.write(value.`code`, buf)
                 FfiConverterString.write(value.`message`, buf)
                 Unit
             }
             is CfeAction.ScheduleTimer -> {
-                buf.putInt(23)
+                buf.putInt(22)
                 FfiConverterString.write(value.`timerId`, buf)
                 FfiConverterULong.write(value.`delayMs`, buf)
                 Unit
             }
             is CfeAction.CancelTimer -> {
-                buf.putInt(24)
+                buf.putInt(23)
                 FfiConverterString.write(value.`timerId`, buf)
                 Unit
             }
             is CfeAction.CallSignalDecrypted -> {
-                buf.putInt(25)
+                buf.putInt(24)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`protoBytes`, buf)
                 Unit
             }
             is CfeAction.CheckAckInDb -> {
-                buf.putInt(26)
+                buf.putInt(25)
                 FfiConverterString.write(value.`messageId`, buf)
-                Unit
-            }
-            is CfeAction.NotifyLinkedDevicesOfSessionReset -> {
-                buf.putInt(27)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeAction.SessionTerminated -> {
-                buf.putInt(28)
-                FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterByteArray.write(value.`archiveBytes`, buf)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
@@ -8245,7 +8129,6 @@ sealed class CfeIncomingEvent {
         val `msgNum`: kotlin.UInt, 
         val `kemCt`: kotlin.ByteArray, 
         val `otpkId`: kotlin.UInt, 
-        val `isControl`: kotlin.Boolean, 
         val `contentType`: kotlin.UByte, 
         val `senderCertificate`: SenderCertificate?) : CfeIncomingEvent()
         
@@ -8351,29 +8234,13 @@ sealed class CfeIncomingEvent {
     }
     
     /**
-     * The platform is about to tear down the ratchet with `contact_id` and asks whether it may.
-     * Answered with `SendEndSession`, `EndSessionSuppressed` + `ScheduleTimer`, or
-     * `EndSessionNotNeeded` — from the same window the core's own teardowns use. `cause` says
-     * what this teardown knows, which decides how soon it may go and whether the peer's own
-     * teardown silences it.
+     * A DECRYPTION_ERROR (content type 28) arrived from `contact_id` — the device its sender
+     * certificate names; `payload` is the envelope's sealed box. Answered with `SessionRetired` +
+     * `ResendMessage`, `ResendMessage` alone, or nothing when the error is stale.
      */
-    data class TeardownRequested(
+    data class DecryptionErrorReceived(
         val `contactId`: kotlin.String, 
-        val `cause`: CfeTearDownCause) : CfeIncomingEvent()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * The peer tore down the ratchet with `contact_id` and the platform has applied it. A
-     * report, not a request: it opens the window that keeps our own teardown quiet, and returns
-     * no actions.
-     */
-    data class PeerToreDown(
-        val `contactId`: kotlin.String) : CfeIncomingEvent()
+        val `payload`: kotlin.ByteArray) : CfeIncomingEvent()
         
     {
         
@@ -8399,7 +8266,6 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterUInt.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterUInt.read(buf),
-                FfiConverterBoolean.read(buf),
                 FfiConverterUByte.read(buf),
                 FfiConverterOptionalTypeSenderCertificate.read(buf),
                 )
@@ -8440,12 +8306,9 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterByteArray.read(buf),
                 FfiConverterUInt.read(buf),
                 )
-            12 -> CfeIncomingEvent.TeardownRequested(
+            12 -> CfeIncomingEvent.DecryptionErrorReceived(
                 FfiConverterString.read(buf),
-                FfiConverterTypeCfeTearDownCause.read(buf),
-                )
-            13 -> CfeIncomingEvent.PeerToreDown(
-                FfiConverterString.read(buf),
+                FfiConverterByteArray.read(buf),
                 )
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
@@ -8462,7 +8325,6 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 + FfiConverterUInt.allocationSize(value.`msgNum`)
                 + FfiConverterByteArray.allocationSize(value.`kemCt`)
                 + FfiConverterUInt.allocationSize(value.`otpkId`)
-                + FfiConverterBoolean.allocationSize(value.`isControl`)
                 + FfiConverterUByte.allocationSize(value.`contentType`)
                 + FfiConverterOptionalTypeSenderCertificate.allocationSize(value.`senderCertificate`)
             )
@@ -8546,19 +8408,12 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 + FfiConverterUInt.allocationSize(value.`msgNum`)
             )
         }
-        is CfeIncomingEvent.TeardownRequested -> {
+        is CfeIncomingEvent.DecryptionErrorReceived -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
                 + FfiConverterString.allocationSize(value.`contactId`)
-                + FfiConverterTypeCfeTearDownCause.allocationSize(value.`cause`)
-            )
-        }
-        is CfeIncomingEvent.PeerToreDown -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
+                + FfiConverterByteArray.allocationSize(value.`payload`)
             )
         }
     }
@@ -8573,7 +8428,6 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterUInt.write(value.`msgNum`, buf)
                 FfiConverterByteArray.write(value.`kemCt`, buf)
                 FfiConverterUInt.write(value.`otpkId`, buf)
-                FfiConverterBoolean.write(value.`isControl`, buf)
                 FfiConverterUByte.write(value.`contentType`, buf)
                 FfiConverterOptionalTypeSenderCertificate.write(value.`senderCertificate`, buf)
                 Unit
@@ -8637,15 +8491,10 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterUInt.write(value.`msgNum`, buf)
                 Unit
             }
-            is CfeIncomingEvent.TeardownRequested -> {
+            is CfeIncomingEvent.DecryptionErrorReceived -> {
                 buf.putInt(12)
                 FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterTypeCfeTearDownCause.write(value.`cause`, buf)
-                Unit
-            }
-            is CfeIncomingEvent.PeerToreDown -> {
-                buf.putInt(13)
-                FfiConverterString.write(value.`contactId`, buf)
+                FfiConverterByteArray.write(value.`payload`, buf)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
@@ -8678,18 +8527,6 @@ sealed class CfeSecureStoreSlot {
     }
     
     /**
-     * A terminated session, kept for late-arriving messages. Empty payload means delete.
-     */
-    data class SessionArchive(
-        val `contactId`: kotlin.String) : CfeSecureStoreSlot()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
      * Orchestrator coordination state.
      */
     object OrchestratorState : CfeSecureStoreSlot()
@@ -8709,23 +8546,13 @@ public object FfiConverterTypeCfeSecureStoreSlot : FfiConverterRustBuffer<CfeSec
             1 -> CfeSecureStoreSlot.Session(
                 FfiConverterString.read(buf),
                 )
-            2 -> CfeSecureStoreSlot.SessionArchive(
-                FfiConverterString.read(buf),
-                )
-            3 -> CfeSecureStoreSlot.OrchestratorState
+            2 -> CfeSecureStoreSlot.OrchestratorState
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
     }
 
     override fun allocationSize(value: CfeSecureStoreSlot) = when(value) {
         is CfeSecureStoreSlot.Session -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-            )
-        }
-        is CfeSecureStoreSlot.SessionArchive -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
@@ -8747,62 +8574,11 @@ public object FfiConverterTypeCfeSecureStoreSlot : FfiConverterRustBuffer<CfeSec
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
-            is CfeSecureStoreSlot.SessionArchive -> {
-                buf.putInt(2)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
             is CfeSecureStoreSlot.OrchestratorState -> {
-                buf.putInt(3)
+                buf.putInt(2)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
-    }
-}
-
-
-
-
-
-/**
- * Why a teardown is being asked for.
- */
-
-enum class CfeTearDownCause {
-    
-    /**
-     * Nothing is known beyond "this ratchet will not open". The only cause the peer's own
-     * teardown silences: a blind teardown back tells it what it just told us.
-     */
-    BLIND,
-    /**
-     * A message arrived on a ratchet we no longer hold — proof the last teardown never landed.
-     * Buys the short retry window while the budget lasts, and is never silenced.
-     */
-    UNACKNOWLEDGED,
-    /**
-     * The teardown carries a reason the peer cannot work out for itself (today: the one-time
-     * pre-key we could not reproduce). Ordinary window, never silenced.
-     */
-    EXPLAINED;
-    companion object
-}
-
-
-/**
- * @suppress
- */
-public object FfiConverterTypeCfeTearDownCause: FfiConverterRustBuffer<CfeTearDownCause> {
-    override fun read(buf: ByteBuffer) = try {
-        CfeTearDownCause.values()[buf.getInt() - 1]
-    } catch (e: IndexOutOfBoundsException) {
-        throw RuntimeException("invalid enum value, something is very wrong!!", e)
-    }
-
-    override fun allocationSize(value: CfeTearDownCause) = 4UL
-
-    override fun write(value: CfeTearDownCause, buf: ByteBuffer) {
-        buf.putInt(value.ordinal + 1)
     }
 }
 
@@ -9189,51 +8965,6 @@ public object FfiConverterTypeReceivingInitKind: FfiConverterRustBuffer<Receivin
     override fun allocationSize(value: ReceivingInitKind) = 4UL
 
     override fun write(value: ReceivingInitKind, buf: ByteBuffer) {
-        buf.putInt(value.ordinal + 1)
-    }
-}
-
-
-
-
-
-/**
- * What to do about one device when tearing down a session with a peer.
- * See orchestration::teardown_plan — the decision lives in the core because it is a plan,
- * and a plan is protocol.
- */
-
-enum class TeardownAction {
-    
-    /**
-     * We hold a session with this device: send, then archive ours.
-     */
-    SEND_AND_ARCHIVE,
-    /**
-     * No session of ours, but the peer is demonstrably still on one — send, archive nothing.
-     */
-    SEND_ONLY,
-    /**
-     * Nothing to condemn, no evidence anyone is on a dead session — say nothing.
-     */
-    SKIP;
-    companion object
-}
-
-
-/**
- * @suppress
- */
-public object FfiConverterTypeTeardownAction: FfiConverterRustBuffer<TeardownAction> {
-    override fun read(buf: ByteBuffer) = try {
-        TeardownAction.values()[buf.getInt() - 1]
-    } catch (e: IndexOutOfBoundsException) {
-        throw RuntimeException("invalid enum value, something is very wrong!!", e)
-    }
-
-    override fun allocationSize(value: TeardownAction) = 4UL
-
-    override fun write(value: TeardownAction, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
@@ -9959,34 +9690,6 @@ public object FfiConverterSequenceTypeOtpkPair: FfiConverterRustBuffer<List<Otpk
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeOtpkPair.write(it, buf)
-        }
-    }
-}
-
-
-
-
-/**
- * @suppress
- */
-public object FfiConverterSequenceTypeTeardownDecision: FfiConverterRustBuffer<List<TeardownDecision>> {
-    override fun read(buf: ByteBuffer): List<TeardownDecision> {
-        val len = buf.getInt()
-        return List<TeardownDecision>(len) {
-            FfiConverterTypeTeardownDecision.read(buf)
-        }
-    }
-
-    override fun allocationSize(value: List<TeardownDecision>): ULong {
-        val sizeForLength = 4UL
-        val sizeForItems = value.map { FfiConverterTypeTeardownDecision.allocationSize(it) }.sum()
-        return sizeForLength + sizeForItems
-    }
-
-    override fun write(value: List<TeardownDecision>, buf: ByteBuffer) {
-        buf.putInt(value.size)
-        value.iterator().forEach {
-            FfiConverterTypeTeardownDecision.write(it, buf)
         }
     }
 }

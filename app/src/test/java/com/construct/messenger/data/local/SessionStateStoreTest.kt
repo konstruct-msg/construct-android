@@ -93,15 +93,13 @@ class SessionStateStoreTest {
 
         store.saveSecureStore(CfeSecureStoreSlot.Session("peer-1"), byteArrayOf(1))
         store.saveSecureStore(CfeSecureStoreSlot.OrchestratorState, byteArrayOf(2))
-        store.saveSecureStore(CfeSecureStoreSlot.SessionArchive("peer-1"), byteArrayOf(3))
 
         val all = store.loadAllSessions()
-        assertEquals(setOf("session:peer-1", "core:orchestrator-state", "archive:peer-1"), all.keys)
+        assertEquals(setOf("session:peer-1", "core:orchestrator-state"), all.keys)
         assertNotNull(store.getEstablishedAt("peer-1"))
 
         store.saveSecureStore(CfeSecureStoreSlot.Session("peer-1"), ByteArray(0))
         assertNull(store.loadSession("session:peer-1"))
-        assertArrayEquals(byteArrayOf(3), store.loadSession("archive:peer-1"))
     }
 
     @Test

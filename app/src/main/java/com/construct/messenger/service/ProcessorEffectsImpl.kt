@@ -15,6 +15,7 @@ import com.construct.messenger.data.local.db.refreshChatPreview
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.domain.usecase.ReceivingOpenUseCase
+import com.construct.messenger.domain.usecase.SendMessageUseCase
 import com.construct.messenger.domain.usecase.SendReceiptUseCase
 import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.util.ConversationId
@@ -26,14 +27,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
-import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.CfeSecureStoreSlot
-import uniffi.construct_core.CfeTearDownCause
 
 /**
  * Room / Keystore / session-store implementation of [ProcessorEffects].
  *
- * END_SESSION / receipts / receiving opens go to dedicated use cases.
+ * Decryption errors / receipts / receiving opens / resends go to dedicated use cases.
  */
 @Singleton
 class ProcessorEffectsImpl @Inject constructor(
@@ -51,6 +50,8 @@ class ProcessorEffectsImpl @Inject constructor(
     // Lazy: CfeTimerBridge executes actions *through* these effects, so a direct dependency
     // would be a cycle. Only its executor is used, and only after an open has finished.
     private val actionExecutor: dagger.Lazy<CfeTimerBridge>,
+    // Lazy for the same reason: a resend encrypts through the core, which answers through here.
+    private val sendMessage: dagger.Lazy<SendMessageUseCase>,
     private val held: HeldEnvelopes,
     private val alerts: IncomingAlerts,
 ) : ProcessorEffects {
@@ -159,19 +160,6 @@ class ProcessorEffectsImpl @Inject constructor(
         sessionStateStore.saveSecureStore(slot, data)
     }
 
-    override suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray) {
-        if (archiveBytes.isNotEmpty()) {
-            sessionStateStore.saveSecureStore(
-                CfeSecureStoreSlot.SessionArchive(contactId),
-                archiveBytes,
-            )
-        }
-        sessionManager.removeSession(contactId)
-        sessionStateStore.saveSecureStore(CfeSecureStoreSlot.Session(contactId), ByteArray(0))
-        sessionStateStore.removeMeta(contactId)
-        Log.i(TAG, "session terminated ${contactId.take(8)}…; archive=${archiveBytes.size}B")
-    }
-
     override suspend fun pruneAckStore(cutoffTs: Long) {
         ackStore.prune(cutoffTs)
     }
@@ -182,8 +170,23 @@ class ProcessorEffectsImpl @Inject constructor(
         sessionStateStore.removeMeta(contactId)
     }
 
-    override suspend fun requestEndSession(contactId: String) {
-        sessionControl.sendEndSession(contactId)
+    override suspend fun sendDecryptionError(contactId: String, messageId: String, payload: ByteArray) {
+        Log.i(TAG, "could not read ${messageId.take(8)}… from ${contactId.take(8)}… — telling its writer")
+        sessionControl.sendDecryptionError(contactId, payload)
+    }
+
+    override suspend fun sessionRetired(contactId: String, withoutOneTimePrekey: Boolean) {
+        Log.i(TAG, "state with ${contactId.take(8)}… retired — the next send opens a new one" +
+            if (withoutOneTimePrekey) ", without a one-time prekey" else "")
+        if (withoutOneTimePrekey) sessionManager.openNextWithoutOneTimePrekey(contactId)
+    }
+
+    override suspend fun resendMessage(contactId: String, messageId: String) {
+        val account = sessionManager.accountIdForDevice(contactId) ?: run {
+            Log.i(TAG, "resend ${messageId.take(8)}… — device ${contactId.take(8)}… of no known contact")
+            return
+        }
+        sendMessage.get().resend(account, contactId, messageId)
     }
 
     override suspend fun openReceiving(
@@ -207,9 +210,8 @@ class ProcessorEffectsImpl @Inject constructor(
                 val given = (outcome.tried + outcome.dropped + listOfNotNull(trigger?.messageId)).distinct()
                 given.forEach { held.take(it) }
                 release(given)
-                // A certificate the core refused says nothing about who sent the message, so the
-                // device it names is told nothing either.
-                if (outcome.lastError?.startsWith("SENDER_") != true) tearDownAfterFailedOpen(device)
+                // The writer of each message given up is told by the core, with a decryption
+                // error among the actions above — and only a writer the server vouched for.
                 ProcessingOutcome.Acked
             }
             ReceivingOpenUseCase.Outcome.Unreachable -> ProcessingOutcome.Deferred
@@ -218,24 +220,6 @@ class ProcessorEffectsImpl @Inject constructor(
 
     override suspend fun release(messageIds: List<String>) {
         messageIds.forEach { ackStore.markProcessed(it, "") }
-    }
-
-    /**
-     * The sender keeps a session we could not open; nothing else will move it. The core decides
-     * whether to tell it — the same gate iOS passes through (`SessionCoordinator`
-     * `recordEndSessionSendIfAllowed`) — and the ask also ends the `Opening` phase the failed open
-     * left, so the sender's next init is taken instead of queued behind a dead one.
-     *
-     * `BLIND`: the peer is not told why. `EXPLAINED` is for a teardown that carries the
-     * OTPK-unreproducible hint, and Android cannot seal one yet (no `sealToIdentity`).
-     */
-    private suspend fun tearDownAfterFailedOpen(deviceId: String) {
-        val actions = runCatching {
-            cryptoManager.handleEvent(CfeIncomingEvent.TeardownRequested(deviceId, CfeTearDownCause.BLIND))
-        }.onFailure { Log.e(TAG, "teardown ask after failed open ${deviceId.take(8)}…", it) }
-            .getOrNull() ?: return
-        runCatching { actionExecutor.get().execute(actions) }
-            .onFailure { Log.e(TAG, "teardown actions after failed open ${deviceId.take(8)}…", it) }
     }
 
     override fun isAckedInDb(messageId: String): Boolean = ackStore.isProcessed(messageId)

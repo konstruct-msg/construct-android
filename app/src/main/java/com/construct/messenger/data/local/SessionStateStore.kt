@@ -79,7 +79,6 @@ class SessionStateStore @Inject constructor(
 
     private fun keyFor(slot: CfeSecureStoreSlot): String = when (slot) {
         is CfeSecureStoreSlot.Session -> "session:${slot.contactId}"
-        is CfeSecureStoreSlot.SessionArchive -> "archive:${slot.contactId}"
         CfeSecureStoreSlot.OrchestratorState -> ORCHESTRATOR_STATE_KEY
     }
 

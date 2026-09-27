@@ -96,22 +96,20 @@ class CfeTimerBridge @Inject constructor(
             when (action) {
                 is CfeAction.ScheduleTimer -> schedule(action.timerId, action.delayMs)
                 is CfeAction.CancelTimer -> cancel(action.timerId)
-                is CfeAction.SendEndSession -> effects.requestEndSession(action.contactId)
-                is CfeAction.NotifyLinkedDevicesOfSessionReset ->
-                    effects.notifyLinkedDevicesOfSessionReset(action.contactId)
                 is CfeAction.SaveToSecureStore -> effects.saveSecureStore(action.slot, action.data)
-                is CfeAction.SessionTerminated ->
-                    effects.sessionTerminated(action.contactId, action.archiveBytes)
+                // A failed open answers the messages it gave up, and a decryption error received
+                // is answered with a retire and a resend: all three can reach this executor.
+                is CfeAction.SendDecryptionError ->
+                    effects.sendDecryptionError(action.contactId, action.messageId, action.payload)
+                is CfeAction.SessionRetired ->
+                    effects.sessionRetired(action.contactId, action.withoutOneTimePrekey)
+                is CfeAction.ResendMessage -> effects.resendMessage(action.contactId, action.messageId)
                 is CfeAction.ArchiveSession -> effects.archiveSession(action.contactId)
                 is CfeAction.PersistAck -> effects.markProcessed(action.messageId, "")
                 is CfeAction.PruneAckStore -> effects.pruneAckStore(action.cutoffTs.toLong())
                 // Routed by the envelope kept while it waited: a drained SENDER_SYNC is our own
                 // copy, and `MessageDecrypted` does not say so.
                 is CfeAction.MessageDecrypted -> effects.deliverDecrypted(action, held.take(action.messageId))
-                is CfeAction.PendingDropped -> {
-                    action.messageIds.forEach { held.take(it) }
-                    effects.release(action.messageIds)
-                }
                 is CfeAction.CallSignalDecrypted ->
                     effects.onCallSignal(action.contactId, action.messageId, action.protoBytes)
                 is CfeAction.DuplicateDropped -> effects.markProcessed(action.messageId, "")
@@ -120,7 +118,6 @@ class CfeTimerBridge @Inject constructor(
                 is CfeAction.SendReceipt -> effects.sendReceipt(action.messageId, "", action.status)
                 is CfeAction.NotifySessionCreated -> Log.i(TAG, "session created ${action.contactId.take(8)}…")
                 is CfeAction.NotifyError -> Log.e(TAG, "CFE ${action.code}: ${action.message}")
-                is CfeAction.EndSessionSuppressed,
                 is CfeAction.MessageQueuedPendingInit,
                 -> Log.i(TAG, "CFE deferred action ${action::class.simpleName}")
                 // Granted in answer to a message, which is where it is acted on; no alarm pays it.
@@ -136,7 +133,6 @@ class CfeTimerBridge @Inject constructor(
                 // opening is still Android's own. Warned rather than folded into the line above,
                 // which would read as wired. iOS acts on `OpenSession`; see `MessageProcessor`.
                 is CfeAction.OpenSession,
-                is CfeAction.EndSessionNotNeeded,
                 -> Log.w(TAG, "CFE session-open action not acted on by this client: ${action::class.simpleName}")
             }
         }

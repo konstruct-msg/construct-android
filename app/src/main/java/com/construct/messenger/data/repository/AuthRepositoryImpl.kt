@@ -12,7 +12,6 @@ import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.domain.usecase.LoginUseCase
 import com.construct.messenger.domain.usecase.RegisterUseCase
 import com.construct.messenger.domain.usecase.RegistrationStep
-import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.domain.usecase.restoreOneTimePrekeys
 import com.construct.messenger.service.MessagingRuntime
 import com.construct.messenger.service.MessagingForegroundService
@@ -40,7 +39,6 @@ class AuthRepositoryImpl @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val authSession: AuthSessionManager,
     private val messagingRuntime: MessagingRuntime,
-    private val sessionControl: SessionControlUseCase,
     private val grpcClient: GrpcClient,
 ) : AuthRepository {
 
@@ -136,8 +134,8 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout() {
-        runCatching { sessionControl.sendEndSessionToAll() }
-            .onFailure { Log.w(TAG, "END_SESSION broadcast on logout failed", it) }
+        // Nothing is announced to contacts: the device leaves the account's directory. Until
+        // 2026-09-27 an END_SESSION went to every contact here.
         val token = keystoreManager.getAccessToken()
         if (token != null) {
             runCatching {
