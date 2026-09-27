@@ -14,6 +14,7 @@ import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.service.OrchestratorGateway
+import com.construct.messenger.service.ServerMessageIds
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.OwnDeviceCopy
 import com.construct.messenger.stealth.StealthPolicy
@@ -128,7 +129,9 @@ class SendMessageUseCase @Inject constructor(
      */
     suspend fun resend(contactId: String, deviceId: String, messageId: String): Boolean {
         val myId = keystoreManager.getUserId() ?: return false
-        val row = messageDao.getById(messageId)
+        // The peer names the id it received, which for a sealed copy is the server's.
+        val localId = ServerMessageIds.localId(messageId)
+        val row = messageDao.getById(localId) ?: messageDao.getByIdIgnoreCase(localId)
         if (row == null || !row.isSentByMe || row.contentType != 0 || row.text.isEmpty() ||
             row.chatId != ConversationId.direct(myId, contactId)
         ) {
@@ -138,9 +141,9 @@ class SendMessageUseCase @Inject constructor(
         val reply = row.replyToId?.let { ReplyRef(it, row.replyPreview.orEmpty(), row.replyMediaType) }
         return try {
             val peer = sessionManager.ensureSessionForDevice(contactId, deviceId)
-            val tag = cryptoManager.deviceCopyTag(messageId, deviceId, peer.identityPublic)
-            val wireMessageId = "$messageId-fd-$tag"
-            val encrypted = encryptFor(deviceId, wireMessageId, knstText(row.text, messageId, reply))
+            val tag = cryptoManager.deviceCopyTag(row.id, deviceId, peer.identityPublic)
+            val wireMessageId = "${row.id}-fd-$tag"
+            val encrypted = encryptFor(deviceId, wireMessageId, knstText(row.text, row.id, reply))
                 ?: return false
             val result = sendOneCopy(
                 myId = myId,
@@ -349,6 +352,8 @@ class SendMessageUseCase @Inject constructor(
                 isOwnReplica = isOwnReplica,
             )
             if (result?.success == true) {
+                // Sealed, the server gives the copy its own id; a decryption error names that one.
+                if (!isOwnReplica) ServerMessageIds.record(result.messageId, baseMessageId)
                 if (isOwnReplica) replicaAccepted++ else recipientAccepted++
             } else {
                 lastError = result?.errorCode?.ifEmpty { "send failed" } ?: "send failed"
