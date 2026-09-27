@@ -222,22 +222,6 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
             core.openReceiving(device)
         }
 
-    /**
-     * Queue a SESSION_RESET_INIT to open a session from, superseding what its sender queued
-     * before it. It does not go through `MessageReceived`: over a live session its decrypt fails,
-     * and the answer to that is a heal, not the re-init the peer asked for.
-     */
-    fun queueForOpen(
-        deviceId: String,
-        messageId: String,
-        wirePayload: ByteArray,
-        contentType: UByte,
-        senderCertificate: SenderCertificate?,
-    ): List<CfeAction> = synchronized(coreLock) {
-        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
-            .queueForOpen(deviceId, messageId, wirePayload.toUByteList(), contentType, senderCertificate)
-    }
-
     fun sessionHealth(contactId: String): uniffi.construct_core.SessionHealthReport? = synchronized(coreLock) {
         orchestrator?.getSessionHealth(contactId)
     }

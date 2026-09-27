@@ -22,8 +22,7 @@ import uniffi.construct_core.CfeIncomingEvent
  *  1. Build `CfeIncomingEvent.MessageReceived` with the full wire blob and the
  *     sender certificate — the Rust core parses the header itself (canonical
  *     `wire_payload::unpack`), so Kotlin carries no wire-format knowledge;
- *     `msgNum`/`kemCt`/`otpkId` are legacy event fields and stay zeroed. A
- *     SESSION_RESET_INIT is queued with `queue_for_open` instead.
+ *     `msgNum`/`kemCt`/`otpkId` are legacy event fields and stay zeroed.
  *  2. `handleEvent(event)`. On throw → END_SESSION recovery + mark processed
  *     (so background fetch never re-processes an undecryptable message forever —
  *     the iOS ghost-contact bug).
@@ -32,7 +31,7 @@ import uniffi.construct_core.CfeIncomingEvent
  *     re-run to get the real action list.
  *  4. Route on the resulting actions (see [route]).
  *
- * Side effects (persist, receipt, notify, heal, END_SESSION, receiving open,
+ * Side effects (persist, receipt, notify, END_SESSION, receiving open,
  * DB ack check) are delegated to [ProcessorEffects] — the repository/session
  * layer implements it. The orchestrator call goes through [OrchestratorGateway],
  * implemented by `CryptoManager` (single-threaded core access lives there).
@@ -63,13 +62,6 @@ class MessageProcessor @Inject constructor(
                 effects.markProcessed(incoming.messageId, incoming.senderId)
                 return ProcessingOutcome.Acked
             }
-        if (incoming.contentType == ContentType.CONTENT_TYPE_SESSION_RESET_INIT) {
-            if (resetInitSuperseded(contactId, incoming)) {
-                effects.markProcessed(incoming.messageId, incoming.senderId)
-                return ProcessingOutcome.Acked
-            }
-            return openFromResetInit(contactId, incoming)
-        }
         val event = CfeIncomingEvent.MessageReceived(
             messageId = incoming.messageId,
             from = contactId,
@@ -113,76 +105,6 @@ class MessageProcessor @Inject constructor(
         }
 
         return route(actions, incoming)
-    }
-
-    /**
-     * Whether a SESSION_RESET_INIT from [contactId] is one we must acknowledge and not apply —
-     * a redelivery of an init already applied, or a backlog replay older than the session held.
-     * The core decides and keeps the ledger of applied inits, per device (`ResetInitArrived`).
-     *
-     * Asked before `MessageReceived` because applying is what the rest of this path does: a copy
-     * of an init that reaches the RESPONDER init archives the session its first copy built. Until
-     * this was asked nothing on Android recognised a redelivery at all — `ReceivingOpenUseCase`'s
-     * `inFlight` guards only against two copies at the same moment.
-     *
-     * `false` — apply — when the init cannot be identified or the core cannot be asked: a
-     * redundant re-init is cheap, a dropped live one strands the peer on a dead ratchet.
-     */
-    private suspend fun resetInitSuperseded(
-        contactId: String,
-        incoming: MessageRouter.IncomingMessage,
-    ): Boolean {
-        val ephemeral = effects.initEphemeral(incoming.encryptedPayload) ?: return false
-        val actions = try {
-            orchestrator.handleEvent(
-                CfeIncomingEvent.ResetInitArrived(
-                    contactId = contactId,
-                    initEphemeral = ephemeral,
-                    sentAtS = (incoming.timestampMs / 1000).toULong(),
-                    establishedAtS = effects.sessionEstablishedAtMs(contactId)?.let { (it / 1000).toULong() },
-                ),
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "ResetInitArrived threw for ${contactId.take(8)}… — applying", e)
-            return false
-        }
-        val superseded = actions.firstNotNullOfOrNull { it as? CfeAction.ResetInitSuperseded } ?: return false
-        Log.i(
-            TAG,
-            "SESSION_RESET_INIT ${incoming.messageId.take(8)}… from ${contactId.take(8)}… " +
-                (if (superseded.redelivery) "already applied" else "pre-dates the session held") + " — ACK only",
-        )
-        return true
-    }
-
-    /**
-     * A peer's SESSION_RESET_INIT opens a new session from itself. It never goes through
-     * `MessageReceived`: over a live session its decrypt fails, and the core's answer to that is a
-     * heal — which, for the initiator by tie-break, tears the peer's fresh session down again.
-     * Queued, it supersedes what the device queued before it; the core takes the old session aside
-     * for the attempt and archives it only if the new one opens.
-     *
-     * **Canon:** iOS `handleSessionResetInit` → `queueForOpen` → `openReceiving`.
-     */
-    private suspend fun openFromResetInit(
-        contactId: String,
-        incoming: MessageRouter.IncomingMessage,
-    ): ProcessingOutcome {
-        val queued = try {
-            cryptoManager.queueForOpen(
-                deviceId = contactId,
-                messageId = incoming.messageId,
-                wirePayload = incoming.encryptedPayload,
-                contentType = incoming.contentType.number.toUByte(),
-                senderCertificate = incoming.senderCertificate,
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "queue_for_open threw for ${incoming.messageId.take(8)}… — holding cursor", e)
-            return ProcessingOutcome.Deferred
-        }
-        executeSideEffects(queued, incoming)
-        held.hold(incoming)
-        return effects.openReceiving(contactId, incoming, announceReady = true)
     }
 
     /**
@@ -232,28 +154,6 @@ class MessageProcessor @Inject constructor(
                     effects.sendReceipt(incoming.messageId, incoming.senderId, "delivered")
                     return ProcessingOutcome.Processed
                 }
-                is CfeAction.SessionHealNeeded -> {
-                    // A granted heal of the RESPONDER queued this message in the core; the heal
-                    // opens from it, so it is held here for the drain to route.
-                    held.hold(incoming)
-                    return effects.requestHeal(action.contactId, action.role, incoming)
-                }
-                is CfeAction.HealSuppressed -> {
-                    Log.i(TAG, "heal suppressed ${action.contactId.take(8)}… retry ${action.retryAfterMs}ms — holding cursor")
-                    return ProcessingOutcome.Deferred
-                }
-                is CfeAction.HeldPendingAck -> {
-                    // Our own SESSION_RESET_INIT to this device is unanswered, so this failure is
-                    // our re-init's own consequence and neither a heal nor a teardown answers it.
-                    // The core holds it and says when the wait ends: `ReplayHeld` sends the
-                    // envelope kept here back through processing, `HeldSuperseded` releases it.
-                    //
-                    // What it must not do is fall to the `else` below: that ACKs the message as
-                    // delivered, which is the drop this action exists to prevent.
-                    held.hold(incoming)
-                    Log.i(TAG, "held behind our unacked SESSION_RESET_INIT to ${action.contactId.take(8)}… — holding cursor")
-                    return ProcessingOutcome.Deferred
-                }
                 is CfeAction.EndSessionSuppressed -> {
                     Log.i(TAG, "END_SESSION suppressed ${action.contactId.take(8)}… retry ${action.retryAfterMs}ms — holding cursor")
                     return ProcessingOutcome.Deferred
@@ -285,11 +185,13 @@ class MessageProcessor @Inject constructor(
                     return ProcessingOutcome.Acked
                 }
                 is CfeAction.OpenReceiving -> {
-                    // No session with this device: the core queued the message and asks for an
-                    // open. Nothing is fetched — the queued messages open with the keys their
-                    // certificates name.
+                    // The message carries a handshake header the held session (if any) cannot
+                    // read: the core queued it and asks for an open. Nothing is fetched — the
+                    // queued messages open with the keys their certificates name, and a session
+                    // held meanwhile is kept as a previous state
+                    // (`decisions/sessions-renew-by-sending.md`).
                     held.hold(incoming)
-                    return effects.openReceiving(action.contactId, incoming, announceReady = true)
+                    return effects.openReceiving(action.contactId, incoming)
                 }
                 else -> Unit // keep scanning
             }
@@ -345,19 +247,8 @@ class MessageProcessor @Inject constructor(
                     action.messageIds.forEach { held.take(it) }
                     effects.release(action.messageIds)
                 }
-                is CfeAction.ReplayHeld ->
-                    if (!held.replay(action.messageId)) Log.w(TAG, "ReplayHeld ${action.messageId.take(8)}… — no envelope held")
-                is CfeAction.HeldSuperseded -> {
-                    held.take(action.messageId)
-                    effects.release(listOf(action.messageId))
-                }
                 is CfeAction.EndSessionSuppressed,
                 is CfeAction.MessageQueuedPendingInit,
-                is CfeAction.SessionHealNeeded,
-                is CfeAction.HealSuppressed,
-                is CfeAction.HeldPendingAck,
-                is CfeAction.HealAttemptAllowed,
-                is CfeAction.HealExhausted,
                 is CfeAction.CheckAckInDb,
                 is CfeAction.DecryptMessage,
                 is CfeAction.EncryptMessage,
@@ -366,21 +257,11 @@ class MessageProcessor @Inject constructor(
                 is CfeAction.SendEndSession,
                 is CfeAction.OpenReceiving,
                 -> Log.d(TAG, "CFE action consumed by routing layer: ${action::class.simpleName}")
-                // Answers to `ResetInitArrived`, read in `resetInitSuperseded` before the message is
-                // routed. Listed so the exhaustive `when` keeps a new answer from having no reader.
-                is CfeAction.ApplyResetInit,
-                is CfeAction.ResetInitSuperseded,
-                -> Log.d(TAG, "CFE reset-init verdict, read before routing: ${action::class.simpleName}")
                 // The machine's answers about *opening* a session. This client does not ask it —
                 // its session opening is still its own, so nothing here consumes these and the
                 // honest record is a warning, not a "consumed by" line that would read as wired.
-                // iOS acts on all six (`SessionActionExecutor`); the Android half is step 2 of
-                // `decisions/session-is-one-state-machine.md`, not yet started here.
+                // iOS acts on `OpenSession` (`SessionActionExecutor`, the PQXDH v2 upgrade sweep).
                 is CfeAction.OpenSession,
-                is CfeAction.OpenDeferred,
-                is CfeAction.OpenNotNeeded,
-                is CfeAction.OpeningGaveUp,
-                is CfeAction.ResendSri,
                 is CfeAction.EndSessionNotNeeded,
                 -> Log.w(TAG, "CFE session-open action not acted on by this client: ${action::class.simpleName}")
             }
@@ -406,7 +287,7 @@ enum class ProcessingOutcome {
     /** Acked as delivered without a user-visible message — advance cursor. */
     Acked,
 
-    /** Queued for heal / re-establish — hold the cursor until it drains. */
+    /** Queued for a session to open — hold the cursor until it drains. */
     Deferred,
 }
 
@@ -433,30 +314,19 @@ interface ProcessorEffects {
     suspend fun notifyLinkedDevicesOfSessionReset(contactId: String) = Unit
     suspend fun archiveSession(contactId: String)
 
-    /** A granted heal. The INITIATOR by tie-break announces a teardown; the RESPONDER opens from
-     * the carrier the core queued. [trigger] is the message that failed, when there is one. */
-    suspend fun requestHeal(contactId: String, role: String, trigger: MessageRouter.IncomingMessage? = null): ProcessingOutcome
     suspend fun requestEndSession(contactId: String)
 
     /** Open a receiving session with [device] from what the core holds for it, execute what the
-     * open produced, and say what became of [trigger]. [announceReady] sends `session_ready` — a
-     * first contact or a peer's re-init; a heal does not. */
+     * open produced, and say what became of [trigger]. Nothing is announced: the peer learns the
+     * session opened from our next message, as it does on iOS since 2026-09-27. */
     suspend fun openReceiving(
         device: String,
         trigger: MessageRouter.IncomingMessage?,
-        announceReady: Boolean,
     ): ProcessingOutcome
 
-    /** The core gave these up (a dropped queue, a superseded hold): acknowledge them so their
-     * redelivery is not processed again and the cursor moves past them. */
+    /** The core gave these up (a dropped queue): acknowledge them so their redelivery is not
+     * processed again and the cursor moves past them. */
     suspend fun release(messageIds: List<String>)
-
-    /** The X3DH ephemeral public key a SESSION_RESET_INIT carries — the init's identity — or
-     * null when the payload does not parse. */
-    fun initEphemeral(encryptedPayload: ByteArray): ByteArray?
-
-    /** When the session held with device [contactId] was established (epoch ms), or null. */
-    suspend fun sessionEstablishedAtMs(contactId: String): Long?
 
     /** Whether [messageId] is already recorded delivered in the local DB
      * (answers the CFE `checkAckInDb` round-trip after a restart). */
@@ -466,7 +336,8 @@ interface ProcessorEffects {
 /**
  * A message the core decrypted, routed by the envelope it came in: a SENDER_SYNC is our own
  * outgoing copy, a SESSION_RESET_INIT is a handshake with nothing to show, anything else an
- * incoming message. [envelope] is null only when nothing is kept for the id (a restart dropped
+ * incoming message. Nothing sends SESSION_RESET_INIT since 2026-09-27; the arm stays for one
+ * from a client that predates it, which must not become a bubble. [envelope] is null only when nothing is kept for the id (a restart dropped
  * the core's queue with it); the message is then taken as incoming.
  *
  * The SESSION_RESET_INIT arm is the one iOS needed on 2026-09-26: an init opened by

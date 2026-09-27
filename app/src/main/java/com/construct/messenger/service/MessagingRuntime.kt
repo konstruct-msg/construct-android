@@ -29,7 +29,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -76,7 +75,6 @@ class MessagingRuntime @Inject constructor(
     private val timerBridge: CfeTimerBridge,
     private val cursorTracker: StreamCursorTracker,
     private val kyberPrekeys: KyberPrekeyService,
-    private val held: HeldEnvelopes,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val startMutex = Mutex()
@@ -191,10 +189,7 @@ class MessagingRuntime @Inject constructor(
     }
 
     private suspend fun collectRouted() {
-        // A held message the core releases (`ReplayHeld`) is processed on the same collector as
-        // everything else, so it cannot run alongside the message whose answer released it.
-        val replays = held.replays.map { MessageRouter.RoutedEvent.Incoming(it) }
-        merge(router.routed, replays).collect { event ->
+        router.routed.collect { event ->
             when (event) {
                 // A throw leaves the entry pending: the cursor stalls and the server re-delivers,
                 // which is safe. Advancing on a failure would be the loss the tracker prevents.

@@ -9,15 +9,11 @@ import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
 import com.construct.messenger.stealth.StealthSenderService
-import com.construct.messenger.util.KnstFrame
 import java.security.SecureRandom
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
-import shared.proto.messaging.v1.Content.SessionControl
-import shared.proto.messaging.v1.Content.SessionOp
-import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.TeardownAction
 
@@ -69,15 +65,6 @@ class SessionControlUseCase @Inject constructor(
                 }
             }
         }
-    }
-
-    /** RESPONDER → INITIATOR after successful receiving-session init. Type in KNST byte 5. */
-    suspend fun sendReady(contactId: String) {
-        sendEncryptedControl(contactId, SessionOp.SESSION_OP_READY, ContentType.CONTENT_TYPE_SESSION_READY_VALUE)
-    }
-
-    suspend fun sendPing(contactId: String) {
-        sendEncryptedControl(contactId, SessionOp.SESSION_OP_PING, ContentType.CONTENT_TYPE_SESSION_PING_VALUE)
     }
 
     suspend fun sendEndSession(contactId: String, force: Boolean = false): Boolean {
@@ -169,62 +156,6 @@ class SessionControlUseCase @Inject constructor(
         archiveLocal(deviceId)
         runCatching { orchestrator.handleEvent(CfeIncomingEvent.PeerToreDown(deviceId)) }
             .onFailure { Log.w(TAG, "PeerToreDown ${deviceId.take(8)}… not reported", it) }
-    }
-
-    private suspend fun sendEncryptedControl(contactId: String, op: SessionOp, knstType: Int) {
-        val target = sessionManager.resolveTarget(contactId) ?: return
-        val deviceId = target.deviceId
-        val accountId = target.accountId
-        val myId = keystoreManager.getUserId() ?: return
-        if (!cryptoManager.isMessagingReady || !sessionManager.hasSession(deviceId)) return
-        val messageId = UUID.randomUUID().toString().lowercase()
-        val payload = SessionControl.newBuilder()
-            .setOp(op)
-            .setNonce(messageId)
-            .build()
-            .toByteArray()
-        val uuid = runCatching { UUID.fromString(messageId) }.getOrElse { UUID.randomUUID() }
-        val plaintext = KnstFrame.pack(payload, knstType, uuid)
-        val actions = orchestrator.handleEvent(
-            CfeIncomingEvent.OutgoingMessage(deviceId, messageId, plaintext, 0u),
-        )
-        if (!sessionStateStore.saveCfeActions(actions)) return
-        val wire = actions.filterIsInstance<CfeAction.SendEncryptedMessage>()
-            .firstOrNull { it.to == deviceId }
-            ?.payload
-            ?: return
-        val timestampMs = System.currentTimeMillis()
-        val stealthOn = stealthPolicy.shouldUseSealedSender()
-        runCatching {
-            if (stealthOn) {
-                val sealed = stealthSender.buildSealedInner(
-                    recipientUserId = accountId,
-                    recipientIdentityKey = target.identityPublic,
-                    encryptedPayload = wire,
-                    contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
-                )
-                messagingService.sendMessage(
-                    messageId = messageId,
-                    senderId = myId,
-                    recipientId = accountId,
-                    conversationId = "",
-                    encryptedPayload = ByteArray(0),
-                    timestampMs = timestampMs,
-                    contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
-                    sealedInner = sealed,
-                )
-            } else {
-                messagingService.sendMessage(
-                    messageId = messageId,
-                    senderId = myId,
-                    recipientId = accountId,
-                    conversationId = "",
-                    encryptedPayload = wire,
-                    timestampMs = timestampMs,
-                    contentType = ContentType.CONTENT_TYPE_E2EE_SIGNAL,
-                )
-            }
-        }.onFailure { Log.w(TAG, "control $op failed ${deviceId.take(8)}…", it) }
     }
 
     private suspend fun archiveLocal(contactId: String) {

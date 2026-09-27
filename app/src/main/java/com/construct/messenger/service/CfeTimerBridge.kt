@@ -112,12 +112,6 @@ class CfeTimerBridge @Inject constructor(
                     action.messageIds.forEach { held.take(it) }
                     effects.release(action.messageIds)
                 }
-                is CfeAction.ReplayHeld ->
-                    if (!held.replay(action.messageId)) Log.w(TAG, "ReplayHeld ${action.messageId.take(8)}… — no envelope held")
-                is CfeAction.HeldSuperseded -> {
-                    held.take(action.messageId)
-                    effects.release(listOf(action.messageId))
-                }
                 is CfeAction.CallSignalDecrypted ->
                     effects.onCallSignal(action.contactId, action.messageId, action.protoBytes)
                 is CfeAction.DuplicateDropped -> effects.markProcessed(action.messageId, "")
@@ -126,22 +120,9 @@ class CfeTimerBridge @Inject constructor(
                 is CfeAction.SendReceipt -> effects.sendReceipt(action.messageId, "", action.status)
                 is CfeAction.NotifySessionCreated -> Log.i(TAG, "session created ${action.contactId.take(8)}…")
                 is CfeAction.NotifyError -> Log.e(TAG, "CFE ${action.code}: ${action.message}")
-                is CfeAction.SessionHealNeeded -> effects.requestHeal(action.contactId, action.role)
-                is CfeAction.HealSuppressed,
                 is CfeAction.EndSessionSuppressed,
                 is CfeAction.MessageQueuedPendingInit,
-                is CfeAction.HeldPendingAck,
-                // Answers to `HealAttempted`, which this client does not ask yet — its heal path
-                // has no retry budget of its own to replace. Listed so the exhaustive `when`
-                // keeps compiling and so the omission is visible rather than silent.
-                is CfeAction.HealAttemptAllowed,
-                is CfeAction.HealExhausted,
                 -> Log.i(TAG, "CFE deferred action ${action::class.simpleName}")
-                // Answers to `ResetInitArrived`, which `MessageProcessor` asks and reads on the
-                // message path. No alarm produces them; listed so the `when` stays exhaustive.
-                is CfeAction.ApplyResetInit,
-                is CfeAction.ResetInitSuperseded,
-                -> Log.w(TAG, "CFE reset-init verdict on the timer path: ${action::class.simpleName}")
                 // Granted in answer to a message, which is where it is acted on; no alarm pays it.
                 is CfeAction.OpenReceiving,
                 is CfeAction.CheckAckInDb,
@@ -153,12 +134,8 @@ class CfeTimerBridge @Inject constructor(
                 // The machine's answers about opening a session. Reached from here whenever an
                 // alarm it armed fires, and nothing on this client acts on them yet — session
                 // opening is still Android's own. Warned rather than folded into the line above,
-                // which would read as wired. iOS acts on all six; see `MessageProcessor`.
+                // which would read as wired. iOS acts on `OpenSession`; see `MessageProcessor`.
                 is CfeAction.OpenSession,
-                is CfeAction.OpenDeferred,
-                is CfeAction.OpenNotNeeded,
-                is CfeAction.OpeningGaveUp,
-                is CfeAction.ResendSri,
                 is CfeAction.EndSessionNotNeeded,
                 -> Log.w(TAG, "CFE session-open action not acted on by this client: ${action::class.simpleName}")
             }

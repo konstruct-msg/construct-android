@@ -16,11 +16,15 @@ import uniffi.construct_core.SenderCertificate
 /**
  * Opens a receiving session from what the core holds queued for one device.
  *
- * First contact, a peer's SESSION_RESET_INIT and a heal alike, and nothing is fetched: each queued
+ * A first contact or a new state over a session held, and nothing is fetched: each queued
  * message opens with the key its sender certificate names, once the core has checked the server's
  * signature (`decisions/first-message-opens-without-the-server.md`). Until 2026-09-27 this fetched
  * the sender account's bundles and walked them — which also told the server whom the sealed
  * message was from, and guessed the device when the message did not name one.
+ *
+ * Nothing is announced after the open: until 2026-09-27 a `session_ready` closed the initiator's
+ * confirm window; the window is gone, and the peer's first reply is what tells it the session
+ * opened (`decisions/sessions-renew-by-sending.md`).
  *
  * **Canon:** iOS `SessionCoordinator.openReceiving(_:site:certificate:)`.
  */
@@ -32,7 +36,6 @@ class ReceivingOpenUseCase @Inject constructor(
     private val sessionStateStore: SessionStateStore,
     private val keystoreManager: KeystoreManager,
     private val uploadPreKeys: UploadPreKeysUseCase,
-    private val sessionControl: SessionControlUseCase,
     private val kyberPrekeys: KyberPrekeyService,
 ) {
     private val inFlight = ConcurrentHashMap.newKeySet<String>()
@@ -58,10 +61,9 @@ class ReceivingOpenUseCase @Inject constructor(
 
     /**
      * [certificate] is the triggering message's: on success it records the device and key, which
-     * the sealed replies need at once. [announceReady] sends `session_ready` — a first contact or a
-     * peer's re-init closes the initiator's confirm window on it; a heal does not.
+     * the sealed replies need at once.
      */
-    suspend fun open(device: String, certificate: SenderCertificate?, announceReady: Boolean): Outcome {
+    suspend fun open(device: String, certificate: SenderCertificate?): Outcome {
         if (!inFlight.add(device)) {
             Log.i(TAG, "receiving open already in flight ${device.take(8)}…")
             return Outcome.Unreachable
@@ -89,9 +91,7 @@ class ReceivingOpenUseCase @Inject constructor(
                 return Outcome.Failed(result.triedMessageIds, result.droppedMessageIds, result.lastError, result.actions)
             }
 
-            if (sessionStateStore.getEstablishedAt(opened) == null || announceReady) {
-                sessionStateStore.setEstablishedAt(opened, System.currentTimeMillis())
-            }
+            sessionStateStore.setEstablishedAt(opened, System.currentTimeMillis())
             certificate?.takeIf { it.deviceId == opened }?.let { sessionManager.recordOpenedDevice(it) }
             // The open consumed an OTPK; drop its private from storage too.
             runCatching { uploadPreKeys.persistLocal() }
@@ -107,13 +107,6 @@ class ReceivingOpenUseCase @Inject constructor(
         } finally {
             inFlight.remove(device)
         }
-    }
-
-    /** `session_ready` to the device that just opened — after its actions ran, so the session
-     * the ready is encrypted on has been saved. */
-    suspend fun announceReady(device: String) {
-        runCatching { sessionControl.sendReady(device) }
-            .onFailure { Log.w(TAG, "session_ready failed ${device.take(8)}…", it) }
     }
 
     private companion object {

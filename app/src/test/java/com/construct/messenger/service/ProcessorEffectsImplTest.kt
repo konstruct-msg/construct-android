@@ -317,7 +317,7 @@ class ProcessorEffectsImplTest {
     ): ProcessorEffectsImpl {
         val keystore: KeystoreManager = mock()
         whenever(keystore.getUserId()).thenReturn(myId)
-        wheneverBlocking { opener.open(any(), anyOrNull(), any()) }.thenReturn(outcome)
+        wheneverBlocking { opener.open(any(), anyOrNull()) }.thenReturn(outcome)
         return ProcessorEffectsImpl(
             cryptoManager = crypto,
             keystoreManager = keystore,
@@ -337,45 +337,20 @@ class ProcessorEffectsImplTest {
     }
 
     /** The open's actions carry the opener's decrypt and everything that waited behind it;
-     * unexecuted, those messages are lost. `session_ready` goes after them, on the saved session.
-     * Mutation that reddens it: skip `execute`, or announce before it. */
+     * unexecuted, those messages are lost. Nothing is announced after them: the peer learns the
+     * session opened from our next message. Mutation that reddens it: skip `execute`. */
     @Test
-    fun `an open executes what it produced, then announces ready`() = runTest {
+    fun `an open executes what it produced`() = runTest {
         val actions = listOf<CfeAction>(CfeAction.NotifySessionCreated(contactId = "dev"))
         val bridge: CfeTimerBridge = mock()
         val opener: ReceivingOpenUseCase = mock()
         val acks = FakeAckStore().apply { markProcessed("init-1", peer) }
 
         val outcome = effectsFor(ReceivingOpenUseCase.Outcome.Opened("dev", "init-1", actions), mock(), bridge, acks, opener)
-            .openReceiving("dev", incoming, announceReady = true)
+            .openReceiving("dev", incoming)
 
         assertEquals(ProcessingOutcome.Processed, outcome)
-        val order = org.mockito.kotlin.inOrder(bridge, opener)
-        order.verifyBlocking(bridge) { execute(actions) }
-        order.verifyBlocking(opener) { announceReady("dev") }
-    }
-
-    /** A heal does not announce; a first contact and a re-init do. */
-    @Test
-    fun `a heal opens without announcing ready`() = runTest {
-        val opener: ReceivingOpenUseCase = mock()
-        effectsFor(ReceivingOpenUseCase.Outcome.Opened("dev", "init-1", emptyList()), mock(), mock(), FakeAckStore(), opener)
-            .requestHeal("dev", "Responder", incoming)
-
-        verifyBlocking(opener) { open("dev", null, false) }
-        verifyBlocking(opener, never()) { announceReady(any()) }
-    }
-
-    /** The INITIATOR by tie-break does not open from the peer's carrier; it asks for a re-init. */
-    @Test
-    fun `a heal as initiator announces a teardown and opens nothing`() = runTest {
-        val opener: ReceivingOpenUseCase = mock()
-        val outcome = effectsFor(ReceivingOpenUseCase.Outcome.Unreachable, mock(), mock(), FakeAckStore(), opener)
-            .requestHeal("dev", "Initiator", incoming)
-
-        assertEquals(ProcessingOutcome.Deferred, outcome)
-        verifyBlocking(control) { sendEndSession("dev") }
-        verifyBlocking(opener, never()) { open(any(), anyOrNull(), any()) }
+        verifyBlocking(bridge) { execute(actions) }
     }
 
     @Test
@@ -387,7 +362,7 @@ class ProcessorEffectsImplTest {
         val acks = FakeAckStore()
         val failed = ReceivingOpenUseCase.Outcome.Failed(listOf("q-1"), listOf("q-2"), "AEAD", emptyList())
 
-        val outcome = effectsFor(failed, crypto, bridge, acks).openReceiving("dev", incoming, announceReady = true)
+        val outcome = effectsFor(failed, crypto, bridge, acks).openReceiving("dev", incoming)
 
         assertEquals(ProcessingOutcome.Acked, outcome)
         assertTrue(acks.isProcessed("init-1"))
@@ -405,7 +380,7 @@ class ProcessorEffectsImplTest {
         val acks = FakeAckStore()
         val refused = ReceivingOpenUseCase.Outcome.Failed(listOf("init-1"), emptyList(), "SENDER_CERTIFICATE_REFUSED: BadSignature", emptyList())
 
-        effectsFor(refused, crypto, mock(), acks).openReceiving("dev", incoming, announceReady = true)
+        effectsFor(refused, crypto, mock(), acks).openReceiving("dev", incoming)
 
         assertTrue(acks.isProcessed("init-1"))
         verify(crypto, never()).handleEvent(any())
@@ -416,7 +391,7 @@ class ProcessorEffectsImplTest {
         val acks = FakeAckStore()
 
         val outcome = effectsFor(ReceivingOpenUseCase.Outcome.Unreachable, mock(), mock(), acks)
-            .openReceiving("dev", incoming, announceReady = true)
+            .openReceiving("dev", incoming)
 
         assertEquals(ProcessingOutcome.Deferred, outcome)
         assertFalse(acks.isProcessed("init-1"))

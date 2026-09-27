@@ -29,7 +29,6 @@ import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.CfeSecureStoreSlot
 import uniffi.construct_core.CfeTearDownCause
-import uniffi.construct_core.wirePayloadUnpack
 
 /**
  * Room / Keystore / session-store implementation of [ProcessorEffects].
@@ -183,25 +182,6 @@ class ProcessorEffectsImpl @Inject constructor(
         sessionStateStore.removeMeta(contactId)
     }
 
-    /**
-     * The INITIATOR by tie-break tells the peer to re-init and waits for it. The RESPONDER opens
-     * from the carrier the core queued when it granted the heal — one attempt, nothing fetched;
-     * until 2026-09-27 it archived the session and waited for the peer instead.
-     */
-    override suspend fun requestHeal(
-        contactId: String,
-        role: String,
-        trigger: MessageRouter.IncomingMessage?,
-    ): ProcessingOutcome {
-        if (role.equals("Initiator", ignoreCase = true)) {
-            Log.i(TAG, "heal ${contactId.take(8)}… as INITIATOR — END_SESSION")
-            sessionControl.sendEndSession(contactId)
-            return ProcessingOutcome.Deferred
-        }
-        Log.i(TAG, "heal ${contactId.take(8)}… as RESPONDER — opening from the queued carrier")
-        return openReceiving(contactId, trigger, announceReady = false)
-    }
-
     override suspend fun requestEndSession(contactId: String) {
         sessionControl.sendEndSession(contactId)
     }
@@ -209,16 +189,13 @@ class ProcessorEffectsImpl @Inject constructor(
     override suspend fun openReceiving(
         device: String,
         trigger: MessageRouter.IncomingMessage?,
-        announceReady: Boolean,
     ): ProcessingOutcome {
-        return when (val outcome = receivingOpen.open(device, trigger?.senderCertificate, announceReady)) {
+        return when (val outcome = receivingOpen.open(device, trigger?.senderCertificate)) {
             is ReceivingOpenUseCase.Outcome.Opened -> {
                 // The save, the opener's decrypt, what drained behind it, an archived session.
                 // Unexecuted, the messages that waited for this session are lost (seen 2026-09-24).
                 runCatching { actionExecutor.get().execute(outcome.actions) }
                     .onFailure { Log.e(TAG, "actions after open ${device.take(8)}… failed", it) }
-                // After the actions: the ready is encrypted on the session they saved.
-                if (announceReady) receivingOpen.announceReady(outcome.device)
                 val handled = trigger == null || ackStore.isProcessed(trigger.messageId)
                 if (handled) ProcessingOutcome.Processed else ProcessingOutcome.Deferred
             }
@@ -262,15 +239,6 @@ class ProcessorEffectsImpl @Inject constructor(
     }
 
     override fun isAckedInDb(messageId: String): Boolean = ackStore.isProcessed(messageId)
-
-    override fun initEphemeral(encryptedPayload: ByteArray): ByteArray? =
-        runCatching { wirePayloadUnpack(encryptedPayload.map { it.toUByte() }).dhPublicKey }
-            .getOrNull()
-            ?.takeIf { it.isNotEmpty() }
-            ?.let { key -> ByteArray(key.size) { key[it].toByte() } }
-
-    override suspend fun sessionEstablishedAtMs(contactId: String): Long? =
-        sessionStateStore.getEstablishedAt(contactId)
 
     private suspend fun persistIncoming(
         contactId: String,

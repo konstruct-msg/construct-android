@@ -824,8 +824,6 @@ external fun uniffi_construct_core_checksum_func_sr_seal_recovery_bundle(
 ): Short
 external fun uniffi_construct_core_checksum_func_test_platform_bridge_roundtrip(
 ): Short
-external fun uniffi_construct_core_checksum_func_tie_break_role(
-): Short
 external fun uniffi_construct_core_checksum_func_validate_mnemonic(
 ): Short
 external fun uniffi_construct_core_checksum_func_verify_invite_signature(
@@ -909,8 +907,6 @@ external fun uniffi_construct_core_checksum_method_mlsstore_remove_member(
 external fun uniffi_construct_core_checksum_method_orchestratorcore_ack_is_processed(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_ack_mark_processed(
-): Short
-external fun uniffi_construct_core_checksum_method_orchestratorcore_awaits_acknowledgement(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_begin_kyber_spk_rotation(
 ): Short
@@ -999,8 +995,6 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_prekeys_avai
 external fun uniffi_construct_core_checksum_method_orchestratorcore_prune_kyber_one_time_prekeys_below(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_prune_one_time_prekeys_below(
-): Short
-external fun uniffi_construct_core_checksum_method_orchestratorcore_queue_for_open(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_remove_session(
 ): Short
@@ -1168,8 +1162,6 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_ack_is_processed(`
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_ack_mark_processed(`ptr`: Long,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_construct_core_fn_method_orchestratorcore_awaits_acknowledgement(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Byte
 external fun uniffi_construct_core_fn_method_orchestratorcore_begin_kyber_spk_rotation(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_build_hybrid_identity_bind_message(`ptr`: Long,`hybridPublicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1258,8 +1250,6 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_prune_kyber_one_ti
 ): Int
 external fun uniffi_construct_core_fn_method_orchestratorcore_prune_one_time_prekeys_below(`ptr`: Long,`minKeepId`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
-external fun uniffi_construct_core_fn_method_orchestratorcore_queue_for_open(`ptr`: Long,`deviceId`: RustBuffer.ByValue,`messageId`: RustBuffer.ByValue,`wirePayload`: RustBuffer.ByValue,`contentType`: Byte,`senderCertificate`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_remove_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_orchestratorcore_reopen_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1440,8 +1430,6 @@ external fun uniffi_construct_core_fn_func_sr_seal_recovery_bundle(`vaultKey`: R
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_test_platform_bridge_roundtrip(`bridge`: Long,`key`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
-external fun uniffi_construct_core_fn_func_tie_break_role(`myId`: RustBuffer.ByValue,`peerId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_validate_mnemonic(`mnemonic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_func_verify_invite_signature(`data`: RustBuffer.ByValue,`signature`: RustBuffer.ByValue,`verifyingKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1756,9 +1744,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_test_platform_bridge_roundtrip() != 58358.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_tie_break_role() != 31131.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_construct_core_checksum_func_validate_mnemonic() != 51524.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1883,9 +1868,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_ack_mark_processed() != 13454.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_awaits_acknowledgement() != 35656.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_begin_kyber_spk_rotation() != 57721.toShort()) {
@@ -2018,9 +2000,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_prune_one_time_prekeys_below() != 26303.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_queue_for_open() != 58160.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_remove_session() != 15351.toShort()) {
@@ -3808,13 +3787,6 @@ public interface OrchestratorCoreInterface {
     fun `ackMarkProcessed`(`messageId`: kotlin.String)
     
     /**
-     * Whether the ratchet with this **device** was announced (SESSION_RESET_INIT sent) and the
-     * peer has not acknowledged it yet. The confirm gate; fold it over a peer's device set for
-     * the account-shaped question, since one message becomes a copy per device.
-     */
-    fun `awaitsAcknowledgement`(`contactId`: kotlin.String): kotlin.Boolean
-    
-    /**
      * Start a Kyber SPK rotation (with the classic SPK): the key to upload. Calling it again
      * before commit/rollback returns the same key, so a retried upload uploads the same key.
      */
@@ -3851,8 +3823,8 @@ public interface OrchestratorCoreInterface {
     fun `exportOneTimePrekeys`(): List<kotlin.UByte>
     
     /**
-     * Export the full orchestrator coordination state (ACK cache, healing queue,
-     * init locks, archive index, prekey tracker) as a CFE binary blob.
+     * Export the full orchestrator coordination state (init locks, archive index,
+     * prekey tracker) as a CFE binary blob.
      * Persist under CfeSecureStoreSlot::OrchestratorState.
      */
     fun `exportOrchestratorState`(): List<kotlin.UByte>
@@ -3863,7 +3835,7 @@ public interface OrchestratorCoreInterface {
     
     /**
      * Drop every piece of local orchestration state this core holds about `contact_id`:
-     * the ratchet, the archive and its timestamp, the prekey counter, the heal record, the PQ
+     * the ratchet and its previous states, the archive and its timestamp, the prekey counter, the PQ
      * contribution, the init lock, the cooldown, the pending END_SESSION, the prewarm mark and
      * the active-chat mark.
      *
@@ -3967,8 +3939,6 @@ public interface OrchestratorCoreInterface {
     fun `pruneKyberOneTimePrekeysBelow`(`minKeepId`: kotlin.UInt): kotlin.UInt
     
     fun `pruneOneTimePrekeysBelow`(`minKeepId`: kotlin.UInt): kotlin.UInt
-    
-    fun `queueForOpen`(`deviceId`: kotlin.String, `messageId`: kotlin.String, `wirePayload`: List<kotlin.UByte>, `contentType`: kotlin.UByte, `senderCertificate`: SenderCertificate?): List<CfeAction>
     
     fun `removeSession`(`contactId`: kotlin.String): kotlin.Boolean
     
@@ -4129,24 +4099,6 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
 }
     }
     
-    
-
-    
-    /**
-     * Whether the ratchet with this **device** was announced (SESSION_RESET_INIT sent) and the
-     * peer has not acknowledged it yet. The confirm gate; fold it over a peer's device set for
-     * the account-shaped question, since one message becomes a copy per device.
-     */override fun `awaitsAcknowledgement`(`contactId`: kotlin.String): kotlin.Boolean {
-            return FfiConverterBoolean.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_awaits_acknowledgement(
-        it,
-        FfiConverterString.lower(`contactId`),_status)
-}
-    }
-    )
-    }
     
 
     
@@ -4315,8 +4267,8 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
 
     
     /**
-     * Export the full orchestrator coordination state (ACK cache, healing queue,
-     * init locks, archive index, prekey tracker) as a CFE binary blob.
+     * Export the full orchestrator coordination state (init locks, archive index,
+     * prekey tracker) as a CFE binary blob.
      * Persist under CfeSecureStoreSlot::OrchestratorState.
      */
     @Throws(CryptoException::class)override fun `exportOrchestratorState`(): List<kotlin.UByte> {
@@ -4363,7 +4315,7 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
     /**
      * Drop every piece of local orchestration state this core holds about `contact_id`:
-     * the ratchet, the archive and its timestamp, the prekey counter, the heal record, the PQ
+     * the ratchet and its previous states, the archive and its timestamp, the prekey counter, the PQ
      * contribution, the init lock, the cooldown, the pending END_SESSION, the prewarm mark and
      * the active-chat mark.
      *
@@ -4801,19 +4753,6 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_prune_one_time_prekeys_below(
         it,
         FfiConverterUInt.lower(`minKeepId`),_status)
-}
-    }
-    )
-    }
-    
-
-    override fun `queueForOpen`(`deviceId`: kotlin.String, `messageId`: kotlin.String, `wirePayload`: List<kotlin.UByte>, `contentType`: kotlin.UByte, `senderCertificate`: SenderCertificate?): List<CfeAction> {
-            return FfiConverterSequenceTypeCfeAction.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_queue_for_open(
-        it,
-        FfiConverterString.lower(`deviceId`),FfiConverterString.lower(`messageId`),FfiConverterSequenceUByte.lower(`wirePayload`),FfiConverterUByte.lower(`contentType`),FfiConverterOptionalTypeSenderCertificate.lower(`senderCertificate`),_status)
 }
     }
     )
@@ -6176,15 +6115,14 @@ public object FfiConverterTypeHybridSignatureKeyPair: FfiConverterRustBuffer<Hyb
  */
 data class InitiationContext (
     /**
-     * Ours and theirs in the space the session is addressed by. Anything else ranks a
-     * different pair — see tie_break_role.
+     * Ours and theirs in the space the session is addressed by.
      */
     var `myDeviceId`: kotlin.String
     , 
     var `peerDeviceId`: kotlin.String
     , 
     /**
-     * We sent a SESSION_RESET_INIT to this device; it is neither acknowledged nor expired.
+     * We are opening a session with this device right now (bundle fetch and init).
      */
     var `ourInitInFlight`: kotlin.Boolean
     , 
@@ -6806,8 +6744,6 @@ data class ReceivingInitCarrier (
     var `kemCiphertextBytes`: kotlin.UInt
     , 
     var `pqMessageEpoch`: kotlin.UInt
-    , 
-    var `isSessionResetInit`: kotlin.Boolean
     
 ){
     
@@ -6826,7 +6762,6 @@ public object FfiConverterTypeReceivingInitCarrier: FfiConverterRustBuffer<Recei
             FfiConverterUInt.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterUInt.read(buf),
-            FfiConverterBoolean.read(buf),
         )
     }
 
@@ -6834,8 +6769,7 @@ public object FfiConverterTypeReceivingInitCarrier: FfiConverterRustBuffer<Recei
             FfiConverterUInt.allocationSize(value.`messageNumber`) +
             FfiConverterUInt.allocationSize(value.`oneTimePrekeyId`) +
             FfiConverterUInt.allocationSize(value.`kemCiphertextBytes`) +
-            FfiConverterUInt.allocationSize(value.`pqMessageEpoch`) +
-            FfiConverterBoolean.allocationSize(value.`isSessionResetInit`)
+            FfiConverterUInt.allocationSize(value.`pqMessageEpoch`)
     )
 
     override fun write(value: ReceivingInitCarrier, buf: ByteBuffer) {
@@ -6843,7 +6777,6 @@ public object FfiConverterTypeReceivingInitCarrier: FfiConverterRustBuffer<Recei
             FfiConverterUInt.write(value.`oneTimePrekeyId`, buf)
             FfiConverterUInt.write(value.`kemCiphertextBytes`, buf)
             FfiConverterUInt.write(value.`pqMessageEpoch`, buf)
-            FfiConverterBoolean.write(value.`isSessionResetInit`, buf)
     }
 }
 
@@ -7535,89 +7468,9 @@ sealed class CfeAction {
         companion object
     }
     
-    data class SessionHealNeeded(
-        val `contactId`: kotlin.String, 
-        val `role`: kotlin.String) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * Heal suppressed by cooldown — platform must NOT ACK; server will re-deliver.
-     */
-    data class HealSuppressed(
-        val `contactId`: kotlin.String, 
-        val `retryAfterMs`: kotlin.ULong) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * Our own SESSION_RESET_INIT to this device is unacknowledged, so neither heal nor tear
-     * down on the message that provoked this: buffer it and replay it when the wait ends.
-     */
-    data class HeldPendingAck(
-        val `contactId`: kotlin.String) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
     data class PendingDropped(
         val `contactId`: kotlin.String, 
         val `messageIds`: List<kotlin.String>) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    data class ReplayHeld(
-        val `messageId`: kotlin.String) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    data class HeldSuperseded(
-        val `messageId`: kotlin.String) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * The heal budget allows this attempt; `attempt` is its 1-based index.
-     */
-    data class HealAttemptAllowed(
-        val `contactId`: kotlin.String, 
-        val `attempt`: kotlin.UInt) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * The heal budget for this device is spent, or nothing is queued to spend it from — give up
-     * on the carrier and tear the ratchet down instead.
-     */
-    data class HealExhausted(
-        val `contactId`: kotlin.String) : CfeAction()
         
     {
         
@@ -7653,89 +7506,11 @@ sealed class CfeAction {
     }
     
     /**
-     * Apply the SESSION_RESET_INIT that just arrived — archive and open the receiving side, even
-     * over an active session: the peer has ratcheted onto it.
-     */
-    data class ApplyResetInit(
-        val `contactId`: kotlin.String) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * Acknowledge the SESSION_RESET_INIT that just arrived, and do not apply it. `redelivery`:
-     * this exact init was already applied (true), or it pre-dates the session held (false).
-     */
-    data class ResetInitSuperseded(
-        val `contactId`: kotlin.String, 
-        val `redelivery`: kotlin.Boolean) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * Open a session with `contact_id` now, as INITIATOR, and announce it (X3DH +
-     * SESSION_RESET_INIT) — not a bare local init. Build it with `reopen_session`, which also
-     * covers a session still held: the PQXDH v2 upgrade sweep asks this for classical sessions.
+     * Open a new session with `contact_id` as INITIATOR over the one held: build it with
+     * `reopen_session`, which keeps the held state as a previous one. Nothing is sent for it —
+     * the handshake header rides on the next message. Raised by the PQXDH v2 upgrade sweep.
      */
     data class OpenSession(
-        val `contactId`: kotlin.String) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * Too soon to open: the peer tore this ratchet down and its rebuild may be in the same
-     * flush. The core arms the retry itself; do NOT schedule one.
-     */
-    data class OpenDeferred(
-        val `contactId`: kotlin.String, 
-        val `retryAfterMs`: kotlin.ULong) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * The quiet passed and the session is already back — nothing to open.
-     */
-    data class OpenNotNeeded(
-        val `contactId`: kotlin.String) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * Re-send the SESSION_RESET_INIT — unacknowledged for a retry interval, window not out.
-     * The core arms the next alarm; do NOT schedule one.
-     */
-    data class ResendSri(
-        val `contactId`: kotlin.String) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * The confirm window ran out. Release what was held behind the opening, both directions.
-     */
-    data class OpeningGaveUp(
         val `contactId`: kotlin.String) : CfeAction()
         
     {
@@ -7980,131 +7755,87 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            6 -> CfeAction.SessionHealNeeded(
-                FfiConverterString.read(buf),
-                FfiConverterString.read(buf),
-                )
-            7 -> CfeAction.HealSuppressed(
-                FfiConverterString.read(buf),
-                FfiConverterULong.read(buf),
-                )
-            8 -> CfeAction.HeldPendingAck(
-                FfiConverterString.read(buf),
-                )
-            9 -> CfeAction.PendingDropped(
+            6 -> CfeAction.PendingDropped(
                 FfiConverterString.read(buf),
                 FfiConverterSequenceString.read(buf),
                 )
-            10 -> CfeAction.ReplayHeld(
-                FfiConverterString.read(buf),
-                )
-            11 -> CfeAction.HeldSuperseded(
-                FfiConverterString.read(buf),
-                )
-            12 -> CfeAction.HealAttemptAllowed(
-                FfiConverterString.read(buf),
-                FfiConverterUInt.read(buf),
-                )
-            13 -> CfeAction.HealExhausted(
-                FfiConverterString.read(buf),
-                )
-            14 -> CfeAction.EndSessionSuppressed(
+            7 -> CfeAction.EndSessionSuppressed(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            15 -> CfeAction.EndSessionNotNeeded(
+            8 -> CfeAction.EndSessionNotNeeded(
                 FfiConverterString.read(buf),
                 )
-            16 -> CfeAction.ApplyResetInit(
+            9 -> CfeAction.OpenSession(
                 FfiConverterString.read(buf),
                 )
-            17 -> CfeAction.ResetInitSuperseded(
-                FfiConverterString.read(buf),
-                FfiConverterBoolean.read(buf),
-                )
-            18 -> CfeAction.OpenSession(
-                FfiConverterString.read(buf),
-                )
-            19 -> CfeAction.OpenDeferred(
-                FfiConverterString.read(buf),
-                FfiConverterULong.read(buf),
-                )
-            20 -> CfeAction.OpenNotNeeded(
-                FfiConverterString.read(buf),
-                )
-            21 -> CfeAction.ResendSri(
-                FfiConverterString.read(buf),
-                )
-            22 -> CfeAction.OpeningGaveUp(
-                FfiConverterString.read(buf),
-                )
-            23 -> CfeAction.MessageQueuedPendingInit(
+            10 -> CfeAction.MessageQueuedPendingInit(
                 FfiConverterString.read(buf),
                 FfiConverterUInt.read(buf),
                 )
-            24 -> CfeAction.SaveToSecureStore(
+            11 -> CfeAction.SaveToSecureStore(
                 FfiConverterTypeCfeSecureStoreSlot.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            25 -> CfeAction.PersistAck(
+            12 -> CfeAction.PersistAck(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            26 -> CfeAction.PruneAckStore(
+            13 -> CfeAction.PruneAckStore(
                 FfiConverterULong.read(buf),
                 )
-            27 -> CfeAction.MarkMessageDelivered(
+            14 -> CfeAction.MarkMessageDelivered(
                 FfiConverterString.read(buf),
                 )
-            28 -> CfeAction.DuplicateDropped(
+            15 -> CfeAction.DuplicateDropped(
                 FfiConverterString.read(buf),
                 )
-            29 -> CfeAction.OpenReceiving(
+            16 -> CfeAction.OpenReceiving(
                 FfiConverterString.read(buf),
                 )
-            30 -> CfeAction.SendEncryptedMessage(
+            17 -> CfeAction.SendEncryptedMessage(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterUByte.read(buf),
                 )
-            31 -> CfeAction.SendReceipt(
+            18 -> CfeAction.SendReceipt(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            32 -> CfeAction.SendEndSession(
+            19 -> CfeAction.SendEndSession(
                 FfiConverterString.read(buf),
                 )
-            33 -> CfeAction.NotifyNewMessage(
-                FfiConverterString.read(buf),
-                FfiConverterString.read(buf),
-                )
-            34 -> CfeAction.NotifySessionCreated(
-                FfiConverterString.read(buf),
-                )
-            35 -> CfeAction.NotifyError(
+            20 -> CfeAction.NotifyNewMessage(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            36 -> CfeAction.ScheduleTimer(
+            21 -> CfeAction.NotifySessionCreated(
+                FfiConverterString.read(buf),
+                )
+            22 -> CfeAction.NotifyError(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                )
+            23 -> CfeAction.ScheduleTimer(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            37 -> CfeAction.CancelTimer(
+            24 -> CfeAction.CancelTimer(
                 FfiConverterString.read(buf),
                 )
-            38 -> CfeAction.CallSignalDecrypted(
+            25 -> CfeAction.CallSignalDecrypted(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            39 -> CfeAction.CheckAckInDb(
+            26 -> CfeAction.CheckAckInDb(
                 FfiConverterString.read(buf),
                 )
-            40 -> CfeAction.NotifyLinkedDevicesOfSessionReset(
+            27 -> CfeAction.NotifyLinkedDevicesOfSessionReset(
                 FfiConverterString.read(buf),
                 )
-            41 -> CfeAction.SessionTerminated(
+            28 -> CfeAction.SessionTerminated(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
@@ -8153,64 +7884,12 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 + FfiConverterByteArray.allocationSize(value.`plaintext`)
             )
         }
-        is CfeAction.SessionHealNeeded -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-                + FfiConverterString.allocationSize(value.`role`)
-            )
-        }
-        is CfeAction.HealSuppressed -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-                + FfiConverterULong.allocationSize(value.`retryAfterMs`)
-            )
-        }
-        is CfeAction.HeldPendingAck -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-            )
-        }
         is CfeAction.PendingDropped -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
                 + FfiConverterString.allocationSize(value.`contactId`)
                 + FfiConverterSequenceString.allocationSize(value.`messageIds`)
-            )
-        }
-        is CfeAction.ReplayHeld -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`messageId`)
-            )
-        }
-        is CfeAction.HeldSuperseded -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`messageId`)
-            )
-        }
-        is CfeAction.HealAttemptAllowed -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-                + FfiConverterUInt.allocationSize(value.`attempt`)
-            )
-        }
-        is CfeAction.HealExhausted -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
             )
         }
         is CfeAction.EndSessionSuppressed -> {
@@ -8228,51 +7907,7 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 + FfiConverterString.allocationSize(value.`contactId`)
             )
         }
-        is CfeAction.ApplyResetInit -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-            )
-        }
-        is CfeAction.ResetInitSuperseded -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-                + FfiConverterBoolean.allocationSize(value.`redelivery`)
-            )
-        }
         is CfeAction.OpenSession -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-            )
-        }
-        is CfeAction.OpenDeferred -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-                + FfiConverterULong.allocationSize(value.`retryAfterMs`)
-            )
-        }
-        is CfeAction.OpenNotNeeded -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-            )
-        }
-        is CfeAction.ResendSri -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-            )
-        }
-        is CfeAction.OpeningGaveUp -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
@@ -8459,138 +8094,68 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterByteArray.write(value.`plaintext`, buf)
                 Unit
             }
-            is CfeAction.SessionHealNeeded -> {
+            is CfeAction.PendingDropped -> {
                 buf.putInt(6)
                 FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterString.write(value.`role`, buf)
+                FfiConverterSequenceString.write(value.`messageIds`, buf)
                 Unit
             }
-            is CfeAction.HealSuppressed -> {
+            is CfeAction.EndSessionSuppressed -> {
                 buf.putInt(7)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterULong.write(value.`retryAfterMs`, buf)
                 Unit
             }
-            is CfeAction.HeldPendingAck -> {
+            is CfeAction.EndSessionNotNeeded -> {
                 buf.putInt(8)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
-            is CfeAction.PendingDropped -> {
-                buf.putInt(9)
-                FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterSequenceString.write(value.`messageIds`, buf)
-                Unit
-            }
-            is CfeAction.ReplayHeld -> {
-                buf.putInt(10)
-                FfiConverterString.write(value.`messageId`, buf)
-                Unit
-            }
-            is CfeAction.HeldSuperseded -> {
-                buf.putInt(11)
-                FfiConverterString.write(value.`messageId`, buf)
-                Unit
-            }
-            is CfeAction.HealAttemptAllowed -> {
-                buf.putInt(12)
-                FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterUInt.write(value.`attempt`, buf)
-                Unit
-            }
-            is CfeAction.HealExhausted -> {
-                buf.putInt(13)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeAction.EndSessionSuppressed -> {
-                buf.putInt(14)
-                FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterULong.write(value.`retryAfterMs`, buf)
-                Unit
-            }
-            is CfeAction.EndSessionNotNeeded -> {
-                buf.putInt(15)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeAction.ApplyResetInit -> {
-                buf.putInt(16)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeAction.ResetInitSuperseded -> {
-                buf.putInt(17)
-                FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterBoolean.write(value.`redelivery`, buf)
-                Unit
-            }
             is CfeAction.OpenSession -> {
-                buf.putInt(18)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeAction.OpenDeferred -> {
-                buf.putInt(19)
-                FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterULong.write(value.`retryAfterMs`, buf)
-                Unit
-            }
-            is CfeAction.OpenNotNeeded -> {
-                buf.putInt(20)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeAction.ResendSri -> {
-                buf.putInt(21)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeAction.OpeningGaveUp -> {
-                buf.putInt(22)
+                buf.putInt(9)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.MessageQueuedPendingInit -> {
-                buf.putInt(23)
+                buf.putInt(10)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterUInt.write(value.`queuedCount`, buf)
                 Unit
             }
             is CfeAction.SaveToSecureStore -> {
-                buf.putInt(24)
+                buf.putInt(11)
                 FfiConverterTypeCfeSecureStoreSlot.write(value.`slot`, buf)
                 FfiConverterByteArray.write(value.`data`, buf)
                 Unit
             }
             is CfeAction.PersistAck -> {
-                buf.putInt(25)
+                buf.putInt(12)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterULong.write(value.`timestamp`, buf)
                 Unit
             }
             is CfeAction.PruneAckStore -> {
-                buf.putInt(26)
+                buf.putInt(13)
                 FfiConverterULong.write(value.`cutoffTs`, buf)
                 Unit
             }
             is CfeAction.MarkMessageDelivered -> {
-                buf.putInt(27)
+                buf.putInt(14)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.DuplicateDropped -> {
-                buf.putInt(28)
+                buf.putInt(15)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.OpenReceiving -> {
-                buf.putInt(29)
+                buf.putInt(16)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.SendEncryptedMessage -> {
-                buf.putInt(30)
+                buf.putInt(17)
                 FfiConverterString.write(value.`to`, buf)
                 FfiConverterByteArray.write(value.`payload`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
@@ -8598,63 +8163,63 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 Unit
             }
             is CfeAction.SendReceipt -> {
-                buf.putInt(31)
+                buf.putInt(18)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterString.write(value.`status`, buf)
                 Unit
             }
             is CfeAction.SendEndSession -> {
-                buf.putInt(32)
+                buf.putInt(19)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyNewMessage -> {
-                buf.putInt(33)
+                buf.putInt(20)
                 FfiConverterString.write(value.`chatId`, buf)
                 FfiConverterString.write(value.`preview`, buf)
                 Unit
             }
             is CfeAction.NotifySessionCreated -> {
-                buf.putInt(34)
+                buf.putInt(21)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyError -> {
-                buf.putInt(35)
+                buf.putInt(22)
                 FfiConverterString.write(value.`code`, buf)
                 FfiConverterString.write(value.`message`, buf)
                 Unit
             }
             is CfeAction.ScheduleTimer -> {
-                buf.putInt(36)
+                buf.putInt(23)
                 FfiConverterString.write(value.`timerId`, buf)
                 FfiConverterULong.write(value.`delayMs`, buf)
                 Unit
             }
             is CfeAction.CancelTimer -> {
-                buf.putInt(37)
+                buf.putInt(24)
                 FfiConverterString.write(value.`timerId`, buf)
                 Unit
             }
             is CfeAction.CallSignalDecrypted -> {
-                buf.putInt(38)
+                buf.putInt(25)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`protoBytes`, buf)
                 Unit
             }
             is CfeAction.CheckAckInDb -> {
-                buf.putInt(39)
+                buf.putInt(26)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.NotifyLinkedDevicesOfSessionReset -> {
-                buf.putInt(40)
+                buf.putInt(27)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.SessionTerminated -> {
-                buf.putInt(41)
+                buf.putInt(28)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterByteArray.write(value.`archiveBytes`, buf)
                 Unit
@@ -8816,79 +8381,6 @@ sealed class CfeIncomingEvent {
         companion object
     }
     
-    /**
-     * The platform needs a session with `contact_id` and there is none — today, the INITIATOR
-     * re-init an inbound teardown raises. Answered with `OpenSession`, or `OpenDeferred` +
-     * `ScheduleTimer` while the peer's own rebuild may still be in the same flush.
-     */
-    data class ReopenRequested(
-        val `contactId`: kotlin.String) : CfeIncomingEvent()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * The platform is about to attempt one heal of `contact_id` and asks whether the budget
-     * allows it. Answered with `HealAttemptAllowed` or `HealExhausted` — never an empty list,
-     * because silence read as permission is an unbounded heal loop.
-     */
-    data class HealAttempted(
-        val `contactId`: kotlin.String) : CfeIncomingEvent()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * A SESSION_RESET_INIT has gone out to `contact_id`. A report, not a request: it starts the
-     * confirm window and arms the retry the core owns.
-     */
-    data class SriAnnounced(
-        val `contactId`: kotlin.String) : CfeIncomingEvent()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * The peer acknowledged the session we opened with `contact_id` — `session_ready`, a ping,
-     * or its own init carrier on the ratchet we announced. Ends the confirm window.
-     */
-    data class PeerAcked(
-        val `contactId`: kotlin.String) : CfeIncomingEvent()
-        
-    {
-        
-
-        companion object
-    }
-    
-    /**
-     * A SESSION_RESET_INIT arrived from `contact_id` and the platform asks whether to apply it.
-     * Answered with `ApplyResetInit` or `ResetInitSuperseded`. `init_ephemeral` is the X3DH
-     * ephemeral public key from the envelope — the init's identity; `sent_at_s` the envelope
-     * timestamp; `established_at_s` the platform's record of when the session it holds with this
-     * device was established (Unix seconds, null when there is none).
-     */
-    data class ResetInitArrived(
-        val `contactId`: kotlin.String, 
-        val `initEphemeral`: kotlin.ByteArray, 
-        val `sentAtS`: kotlin.ULong, 
-        val `establishedAtS`: kotlin.ULong?) : CfeIncomingEvent()
-        
-    {
-        
-
-        companion object
-    }
-    
 
     
     companion object
@@ -8954,24 +8446,6 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 )
             13 -> CfeIncomingEvent.PeerToreDown(
                 FfiConverterString.read(buf),
-                )
-            14 -> CfeIncomingEvent.ReopenRequested(
-                FfiConverterString.read(buf),
-                )
-            15 -> CfeIncomingEvent.HealAttempted(
-                FfiConverterString.read(buf),
-                )
-            16 -> CfeIncomingEvent.SriAnnounced(
-                FfiConverterString.read(buf),
-                )
-            17 -> CfeIncomingEvent.PeerAcked(
-                FfiConverterString.read(buf),
-                )
-            18 -> CfeIncomingEvent.ResetInitArrived(
-                FfiConverterString.read(buf),
-                FfiConverterByteArray.read(buf),
-                FfiConverterULong.read(buf),
-                FfiConverterOptionalULong.read(buf),
                 )
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
@@ -9087,44 +8561,6 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 + FfiConverterString.allocationSize(value.`contactId`)
             )
         }
-        is CfeIncomingEvent.ReopenRequested -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-            )
-        }
-        is CfeIncomingEvent.HealAttempted -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-            )
-        }
-        is CfeIncomingEvent.SriAnnounced -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-            )
-        }
-        is CfeIncomingEvent.PeerAcked -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-            )
-        }
-        is CfeIncomingEvent.ResetInitArrived -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-                + FfiConverterByteArray.allocationSize(value.`initEphemeral`)
-                + FfiConverterULong.allocationSize(value.`sentAtS`)
-                + FfiConverterOptionalULong.allocationSize(value.`establishedAtS`)
-            )
-        }
     }
 
     override fun write(value: CfeIncomingEvent, buf: ByteBuffer) {
@@ -9210,34 +8646,6 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
             is CfeIncomingEvent.PeerToreDown -> {
                 buf.putInt(13)
                 FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeIncomingEvent.ReopenRequested -> {
-                buf.putInt(14)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeIncomingEvent.HealAttempted -> {
-                buf.putInt(15)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeIncomingEvent.SriAnnounced -> {
-                buf.putInt(16)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeIncomingEvent.PeerAcked -> {
-                buf.putInt(17)
-                FfiConverterString.write(value.`contactId`, buf)
-                Unit
-            }
-            is CfeIncomingEvent.ResetInitArrived -> {
-                buf.putInt(18)
-                FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterByteArray.write(value.`initEphemeral`, buf)
-                FfiConverterULong.write(value.`sentAtS`, buf)
-                FfiConverterOptionalULong.write(value.`establishedAtS`, buf)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
@@ -9543,9 +8951,7 @@ public object FfiConverterTypeDeliveryAudience: FfiConverterRustBuffer<DeliveryA
 
 
 /**
- * Whether to open a session with a device right now, and as which side.
- * See orchestration::initiation_plan. `tie_break_role` settles a collision that has happened;
- * this settles whether to walk into one, and both peers must answer it compatibly.
+ * Whether to open a session with a device right now. See orchestration::initiation_plan.
  */
 
 enum class InitiationDecision {
@@ -9555,12 +8961,12 @@ enum class InitiationDecision {
      */
     INITIATE,
     /**
-     * One of ours is already in flight — join it. A second init derives a new root key, spends
-     * another one-time prekey, and orphans the first SESSION_RESET_INIT.
+     * One of ours is already in flight — join it. A second init spends another one-time prekey
+     * for a state that will not be used.
      */
     JOIN_IN_FLIGHT,
     /**
-     * The peer's init is arriving and outranks ours. Take the responder side.
+     * The peer's handshake is in hand: open from it rather than build a second state.
      */
     YIELD_TO_PEER,
     /**
@@ -9753,23 +9159,19 @@ public object FfiConverterTypePqHandshake: FfiConverterRustBuffer<PqHandshake> {
 
 
 /**
- * What a queued message is, for the purpose of opening a receiving session.
+ * What a message is, for the purpose of opening a receiving session.
  */
 
 enum class ReceivingInitKind {
     
     /**
-     * Carries an X3DH init: this message can open a session.
+     * Carries the initiator's handshake header: this message can open a session.
      */
     HANDSHAKE,
     /**
-     * Already inside a ratchet. Initialising from it fails and destroys the queue behind it.
+     * Carries none: it decrypts on a state already held or not at all.
      */
-    MID_RATCHET,
-    /**
-     * `message_number == 0` but a PQ epoch has advanced — a re-keyed continuation, not an opener.
-     */
-    MID_SESSION_LEFTOVER;
+    MID_RATCHET;
     companion object
 }
 
@@ -11075,7 +10477,7 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     
 
         /**
-         * Whether to open a session with a device now, and as which side.
+         * Whether to open a session with a device now.
          *
          * Called at the moment a client wants a session and has none it can use. Answering this
          * locally is what produced 2026-09-04: both sides opened an INITIATOR session thirty-three
@@ -11213,10 +10615,9 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     
 
         /**
-         * Classify a queued message: can it open a receiving session?
-         * One rule, one implementation — every client asks rather than reimplements. A
-         * `message_number == 0` with an advanced PQ epoch is shaped like an opener and is not one,
-         * which is why this is a named function and not an inline check.
+         * Classify a message: can it open a receiving session? One rule, one implementation —
+         * every client asks rather than reimplements. A handshake header (the KEM ciphertext) opens
+         * at any message number.
          */ fun `receivingInitKind`(`carrier`: ReceivingInitCarrier): ReceivingInitKind {
             return FfiConverterTypeReceivingInitKind.lift(
     uniffiRustCall() { _status ->
@@ -11458,24 +10859,6 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     UniffiLib.uniffi_construct_core_fn_func_test_platform_bridge_roundtrip(
     
         FfiConverterTypePlatformBridge.lower(`bridge`),FfiConverterString.lower(`key`),FfiConverterByteArray.lower(`data`),_status)
-}
-    )
-    }
-    
-
-        /**
-         * Which side opens the session when both try at once: "Initiator" or "Responder".
-         *
-         * Higher id wins, by plain byte comparison — no normalisation, no parsing. Both peers
-         * compute it over the same pair, so a disagreement is a permanent deadlock rather than a
-         * retryable error. Pass the ids the session is addressed by; anything else ranks a
-         * different pair.
-         */ fun `tieBreakRole`(`myId`: kotlin.String, `peerId`: kotlin.String): kotlin.String {
-            return FfiConverterString.lift(
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_tie_break_role(
-    
-        FfiConverterString.lower(`myId`),FfiConverterString.lower(`peerId`),_status)
 }
     )
     }
