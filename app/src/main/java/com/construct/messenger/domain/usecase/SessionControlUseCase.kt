@@ -153,9 +153,22 @@ class SessionControlUseCase @Inject constructor(
         return result.success
     }
 
-    suspend fun inboundEndSession(contactId: String) {
-        Log.i(TAG, "inbound END_SESSION from ${contactId.take(8)}… — archive local, no bounce")
-        archiveLocal(contactId)
+    /**
+     * The peer tore down the ratchet with [deviceId]: drop it here, and tell the core, which keeps
+     * the quiet that follows — our own teardown of the same ratchet is suppressed for its window,
+     * so the heal a stale carrier raises next does not bounce an END_SESSION back.
+     *
+     * A device, never an account. Until 2026-09-27 this took the envelope's account id, and
+     * `removeSession(account)` removed nothing: the core keys sessions by device. The dead ratchet
+     * outlived every teardown, and the peer's re-init then failed on it and raised a heal — seen
+     * on the Android↔iOS stand as an END_SESSION that destroyed the session the peer had just
+     * opened. **Canon:** iOS `SessionCoordinator.messageRouter(_:receivedEndSession:)`.
+     */
+    suspend fun inboundEndSession(deviceId: String) {
+        Log.i(TAG, "inbound END_SESSION from ${deviceId.take(8)}… — archive local, no bounce")
+        archiveLocal(deviceId)
+        runCatching { orchestrator.handleEvent(CfeIncomingEvent.PeerToreDown(deviceId)) }
+            .onFailure { Log.w(TAG, "PeerToreDown ${deviceId.take(8)}… not reported", it) }
     }
 
     private suspend fun sendEncryptedControl(contactId: String, op: SessionOp, knstType: Int) {

@@ -15,6 +15,7 @@ import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.SessionManager
+import com.construct.messenger.stealth.OwnDeviceCopy
 import com.construct.messenger.stealth.StealthPolicy
 import com.construct.messenger.stealth.StealthSenderService
 import com.construct.messenger.util.ConversationId
@@ -381,16 +382,27 @@ class SendMessageUseCase @Inject constructor(
         identityPublic: ByteArray,
         isOwnReplica: Boolean,
     ): MessagingService.SendResult? {
+        // A copy to a sibling carries our certificate beside the wire payload: it goes unsealed,
+        // and a sibling's first copy opens its session from nothing else. Every copy, not only
+        // the first — whether the sibling still holds this session is its knowledge, not ours.
+        val ownCopy = if (isOwnReplica) {
+            val certificate = runCatching { stealthSender.getSenderCertificate() }
+                .onFailure { Log.w(TAG, "no sender certificate for ${wireMessageId.takeLast(16)} — a first copy will not open", it) }
+                .getOrNull()
+            OwnDeviceCopy.wrap(certificate, encrypted)
+        } else {
+            null
+        }
         var last: MessagingService.SendResult? = null
         repeat(MAX_ATTEMPTS) { attempt ->
             val result = try {
-                if (isOwnReplica) {
+                if (ownCopy != null) {
                     messagingService.sendMessage(
                         messageId = wireMessageId,
                         senderId = myId,
                         recipientId = myId,
                         conversationId = "",
-                        encryptedPayload = encrypted,
+                        encryptedPayload = ownCopy,
                         timestampMs = timestampMs,
                         contentType = ContentType.CONTENT_TYPE_SENDER_SYNC,
                     )

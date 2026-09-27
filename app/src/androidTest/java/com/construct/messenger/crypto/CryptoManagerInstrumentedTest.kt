@@ -8,8 +8,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import uniffi.construct_core.BinaryKeyBundle
+import uniffi.construct_core.CfeAction
+import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.PqHandshake
 import uniffi.construct_core.RegistrationBundleFields
+import uniffi.construct_core.SenderCertificate
 import uniffi.construct_core.WirePayload
 import uniffi.construct_core.wirePayloadPack
 import uniffi.construct_core.verifyPow
@@ -96,8 +99,10 @@ class CryptoManagerInstrumentedTest {
     /**
      * A PQXDH v2 handshake between two real cores, both directions. Each side is shown the other
      * the way the key service serves it after PQXDH v2 — classic prekeys, a Kyber SPK signed over
-     * its `created_at`, a Kyber one-time key, the hybrid identity and its binding — and the
-     * responder opens from the packed wire payload, as [ResponderInitUseCase] does.
+     * its `created_at`, a Kyber one-time key, the hybrid identity and its binding. The responder
+     * opens the way the app does: the message goes to the core with the sender certificate a
+     * server signed, the core asks for `OpenReceiving`, and the open checks that signature —
+     * nothing is fetched (`decisions/first-message-opens-without-the-server.md`).
      */
     @Test
     fun pqxdhV2_handshakeRoundtripsBothDirections() {
@@ -132,9 +137,32 @@ class CryptoManagerInstrumentedTest {
                 pqRatchetField = first.pqRatchetField,
             ),
         ).toByteArray()
-        val init = bob.initReceivingSessionFromWirePayload(aliceId, alice.pqxdhTestBundle(aliceFields), wire)
-        assertEquals("hello from alice", init.decryptedMessage.toUtf8String())
-        assertNotNull("the used one-time key was burned: the blob to persist comes back", init.kyberPrekeys)
+        val server = TestCertificateServer()
+        val certificate = server.certify(aliceId, aliceFields.identityPublic.let { key -> ByteArray(key.size) { key[it].toByte() } })
+        val received = bob.handleEvent(
+            CfeIncomingEvent.MessageReceived(
+                messageId = "first-1",
+                from = aliceId,
+                data = wire,
+                msgNum = 0u,
+                kemCt = ByteArray(0),
+                otpkId = 0u,
+                isControl = false,
+                contentType = 1u,
+                senderCertificate = certificate,
+            ),
+        )
+        // A fresh core has no ACK cache and asks the database first, as after any restart.
+        val asked = (received.singleOrNull() as? CfeAction.CheckAckInDb)
+            ?.let { bob.handleEvent(CfeIncomingEvent.AckDbResult(it.messageId, false)) }
+            ?: received
+        assertTrue("no session: the core asks for an open", asked.any { it is CfeAction.OpenReceiving && it.contactId == aliceId })
+
+        val opened = bob.openReceiving(aliceId, listOf(server.verifyingKey))
+        assertEquals(aliceId, opened.openedDevice)
+        val decrypted = opened.actions.filterIsInstance<CfeAction.MessageDecrypted>().single()
+        assertEquals("first-1", decrypted.messageId)
+        assertNotNull("the used one-time key was burned: the blob to persist comes back", opened.kyberPrekeys)
         assertEquals(PqHandshake.INITIAL_V2, alice.sessionHealth(bobId)?.pqHandshake)
         assertEquals(PqHandshake.INITIAL_V2, bob.sessionHealth(aliceId)?.pqHandshake)
 
@@ -224,3 +252,31 @@ private fun CryptoManager.pqxdhTestBundle(
 private fun List<UByte>.toByteArray(): ByteArray = ByteArray(size) { this[it].toByte() }
 private fun ByteArray.toUByteList(): List<UByte> = map { it.toUByte() }
 private fun List<UByte>.toUtf8String(): String = String(toByteArray(), Charsets.UTF_8)
+
+/**
+ * Signs sender certificates the way `identity-service` does: Ed25519 over `user_id ‖ domain ‖
+ * identity_key ‖ device_id ‖ BE64(issued_at) ‖ BE64(expires_at)`, no separators. A core of its
+ * own stands in for the server — its device signing key signs the bytes as they are — because the
+ * platform ships no software Ed25519 key generator (only AndroidKeyStore's, which wants a keystore
+ * spec). The open checks the signature against [verifyingKey] as it checks the real server's.
+ */
+private class TestCertificateServer {
+    private val core = uniffi.construct_core.createCryptoCore()
+
+    val verifyingKey: ByteArray = core.getRegistrationBundleFields().verifyingKey.toByteArray()
+
+    fun certify(deviceId: String, identityKey: ByteArray, account: String = "test-account"): SenderCertificate {
+        val domain = "konstruct.test"
+        val issued = System.currentTimeMillis() / 1000
+        val expires = issued + 86_400
+        val payload = java.io.ByteArrayOutputStream().apply {
+            write(account.toByteArray())
+            write(domain.toByteArray())
+            write(identityKey)
+            write(deviceId.toByteArray())
+            write(java.nio.ByteBuffer.allocate(16).putLong(issued).putLong(expires).array())
+        }.toByteArray()
+        val signature = core.signBundleData(payload.toUByteList()).toByteArray()
+        return SenderCertificate(account, domain, identityKey, deviceId, issued, expires, signature)
+    }
+}

@@ -13,10 +13,9 @@ import uniffi.construct_core.OrchestratorCore
 import uniffi.construct_core.OtpkPair
 import uniffi.construct_core.PowSolution
 import uniffi.construct_core.RecoveryKeypair
-import uniffi.construct_core.ReceivingInitAttempt
-import uniffi.construct_core.ReceivingInitCarrier
+import uniffi.construct_core.ReceivingOpenResult
 import uniffi.construct_core.RegistrationBundleFields
-import uniffi.construct_core.SessionInitResult
+import uniffi.construct_core.SenderCertificate
 import uniffi.construct_core.TeardownDecision
 import uniffi.construct_core.PowProgressCallback
 import uniffi.construct_core.computePow
@@ -206,21 +205,37 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     }
 
     /**
-     * RESPONDER: open the session from the envelope's `encrypted_payload` exactly as received.
-     * The core unpacks it, reads the PQXDH v2 header and decapsulates with its own Kyber secret;
-     * nothing here reassembles the first message field by field.
+     * Open a receiving session from what the core holds queued for [device]: each queued message
+     * opens with the key its sender certificate names, once the core has checked the server's
+     * signature against [trustedServerKeys]. Nothing is fetched
+     * (`decisions/first-message-opens-without-the-server.md`).
      *
-     * When the init used a Kyber one-time key, [SessionInitResult.kyberPrekeys] carries the
-     * store without it: persist it (`KyberPrekeyService.persist(blob)`) before anything else, or
-     * a restart brings the burned key back.
+     * The keys are handed over before every open rather than once: the fetched key can arrive or
+     * rotate while the app runs, and a stale copy in the core would refuse certificates the app
+     * accepts. When the open burned a Kyber one-time key, [ReceivingOpenResult.kyberPrekeys]
+     * carries the store without it — persist it before anything else.
      */
-    fun initReceivingSessionFromWirePayload(
-        contactId: String,
-        recipientBundle: BinaryKeyBundle,
+    fun openReceiving(device: String, trustedServerKeys: List<ByteArray>): ReceivingOpenResult =
+        synchronized(coreLock) {
+            val core = orchestrator ?: error("orchestrator not ready — setLocalUserId first")
+            core.setTrustedServerKeys(trustedServerKeys)
+            core.openReceiving(device)
+        }
+
+    /**
+     * Queue a SESSION_RESET_INIT to open a session from, superseding what its sender queued
+     * before it. It does not go through `MessageReceived`: over a live session its decrypt fails,
+     * and the answer to that is a heal, not the re-init the peer asked for.
+     */
+    fun queueForOpen(
+        deviceId: String,
+        messageId: String,
         wirePayload: ByteArray,
-    ): SessionInitResult = synchronized(coreLock) {
+        contentType: UByte,
+        senderCertificate: SenderCertificate?,
+    ): List<CfeAction> = synchronized(coreLock) {
         (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
-            .initReceivingSessionFromWirePayload(contactId, recipientBundle, wirePayload.toUByteList())
+            .queueForOpen(deviceId, messageId, wirePayload.toUByteList(), contentType, senderCertificate)
     }
 
     fun sessionHealth(contactId: String): uniffi.construct_core.SessionHealthReport? = synchronized(coreLock) {
@@ -294,16 +309,6 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
             (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
                 .planTeardown(candidateDeviceIds, peerOnDeadSession)
         }
-
-    /** Core-owned two-dimensional receive-init plan: carriers × candidate bundles. */
-    fun planReceivingInit(
-        carriers: List<ReceivingInitCarrier>,
-        bundleCount: Int,
-    ): List<ReceivingInitAttempt> = synchronized(coreLock) {
-        require(bundleCount >= 0) { "bundleCount must not be negative" }
-        (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
-            .planReceivingInit(carriers, bundleCount.toUInt())
-    }
 
     fun deviceCopyTag(
         baseMessageId: String,

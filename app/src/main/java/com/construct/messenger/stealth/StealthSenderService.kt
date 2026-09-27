@@ -18,7 +18,6 @@ import shared.proto.services.v1.AuthServiceOuterClass.GetSenderCertificateReques
 import uniffi.construct_core.ppSealTokenBytes
 import uniffi.construct_core.sealedSealSenderCert
 import uniffi.construct_core.sealedUnsealSenderCert
-import uniffi.construct_core.sealedVerifySenderCert
 
 /**
  * ConstructSEALED — sealed sender (hides sender identity from the server).
@@ -28,8 +27,9 @@ import uniffi.construct_core.sealedVerifySenderCert
  *  - send: [buildSealedInner] — seal our SenderCertificate to the recipient's
  *    X25519 identity key, attach the real content type and (per policy) a
  *    Privacy Pass token sealed to the server key;
- *  - receive: [resolveSender] — unseal, reject expired certs, verify the
- *    server signature against the bundle key from well-known.
+ *  - receive: [resolveSender] — unseal and hand the certificate on, unchecked. The core checks
+ *    the server signature where it matters — when the certificate opens a session — and the
+ *    ratchet authenticates every message on a session that already exists.
  */
 @Singleton
 class StealthSenderService @Inject constructor(
@@ -45,12 +45,17 @@ class StealthSenderService @Inject constructor(
     private val random = SecureRandom()
 
     /** Resolved sender identity + the real content type and E2EE payload carried
-     * inside SealedInner (the outer envelope's payload is empty for sealed sends). */
+     * inside SealedInner (the outer envelope's payload is empty for sealed sends).
+     * [senderCertificate] is what a first message opens its session from. */
     data class ResolvedSender(
         val senderId: String,
         val contentType: ContentType,
         val encryptedPayload: ByteArray,
-    )
+        val senderCertificate: uniffi.construct_core.SenderCertificate? = null,
+    ) {
+        /** The device that wrote the message, as its certificate names it; empty without one. */
+        val senderDeviceId: String get() = senderCertificate?.deviceId.orEmpty()
+    }
 
     // ── Sender certificate (from identity-service, 24h TTL) ────────────────
 
@@ -133,9 +138,15 @@ class StealthSenderService @Inject constructor(
     // ── Receive path ────────────────────────────────────────────────────────
 
     /**
-     * Unseals SealedInner bytes and returns the verified sender + real content
-     * type, or null on any failure (caller drops the message with a log —
-     * unseal failures are non-fatal by design).
+     * Unseals SealedInner bytes and returns the sender, the real content type and the
+     * certificate, or null when the box does not open (caller drops the message with a log).
+     *
+     * Nothing here refuses a certificate. Until 2026-09-27 this dropped every message whose
+     * certificate had expired — issued for 24 h, while the mailbox keeps a message for 7 days, so
+     * anything that waited more than a day was lost — and every message it could not verify. iOS
+     * never gated delivery on either. The one decision a certificate carries, whether it may open
+     * a session, is the core's (`SenderCertificate::identity_for_opening`), with one rule on both
+     * platforms: `decisions/first-message-opens-without-the-server.md`.
      */
     fun resolveSender(sealedInnerBytes: ByteArray): ResolvedSender? {
         return try {
@@ -149,37 +160,21 @@ class StealthSenderService @Inject constructor(
             ).toByteArray()
             val cert = SenderCertificate.parseFrom(certBytes)
 
-            val now = System.currentTimeMillis() / 1000
-            if (cert.expiresAt <= now) {
-                Log.i(TAG, "expired sender cert (expired ${now - cert.expiresAt}s ago)")
-                return null
-            }
-
-            val bundleKey = serverKeys.bundleVerificationKey() ?: run {
-                Log.e(TAG, "no bundle verification key cached — cannot verify sender cert")
-                return null
-            }
-            val valid = sealedVerifySenderCert(
-                cert.senderUserId,
-                cert.senderDomain,
-                cert.senderIdentityKey.toByteArray().toUByteList(),
-                cert.senderDeviceId,
-                cert.issuedAt,
-                cert.expiresAt,
-                cert.serverSignature.toByteArray().toUByteList(),
-                bundleKey.toUByteList(),
+            ResolvedSender(
+                senderId = cert.senderUserId,
+                contentType = inner.contentType,
+                encryptedPayload = inner.encryptedPayload.toByteArray(),
+                senderCertificate = cert.toCore(),
             )
-            if (!valid) {
-                Log.e(TAG, "sender cert signature invalid for ${cert.senderUserId.take(8)}…")
-                return null
-            }
-
-            ResolvedSender(cert.senderUserId, inner.contentType, inner.encryptedPayload.toByteArray())
         } catch (e: Exception) {
             Log.e(TAG, "unseal failed", e)
             null
         }
     }
+
+    /** The server keys a sender certificate is checked against — handed to the core before each
+     * open, since the fetched key can arrive or rotate while the app runs. */
+    fun trustedServerKeys(): List<ByteArray> = listOfNotNull(serverKeys.bundleVerificationKey())
 
     private companion object {
         const val TAG = "StealthSender"

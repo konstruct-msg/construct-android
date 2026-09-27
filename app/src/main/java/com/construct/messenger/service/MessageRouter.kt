@@ -3,6 +3,7 @@ package com.construct.messenger.service
 import android.util.Log
 import com.construct.messenger.data.api.MessageStreamService
 import com.construct.messenger.data.api.MessageStreamService.StreamEvent
+import com.construct.messenger.stealth.OwnDeviceCopy
 import com.construct.messenger.stealth.StealthSenderService
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,6 +18,7 @@ import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import shared.proto.core.v1.EnvelopeOuterClass.Envelope
 import shared.proto.signaling.v1.Presence.DeliveryReceipt
 import shared.proto.signaling.v1.Presence.TypingIndicator
+import uniffi.construct_core.SenderCertificate
 
 /**
  * Normalizes raw stream frames into domain events — the Android mirror of iOS
@@ -58,7 +60,12 @@ class MessageRouter @Inject constructor(
         data class ConnectionChanged(val connected: Boolean) : RoutedEvent
     }
 
-    /** Envelope normalized to one shape regardless of sealed/identified arrival. */
+    /** Envelope normalized to one shape regardless of sealed/identified arrival.
+     *
+     * [senderCertificate] is the certificate the message came with — unsealed from a sealed
+     * envelope, or carried in the clear by a SENDER_SYNC (`OwnDeviceCopy`) — unchecked. It names
+     * the device that wrote the message ([senderDeviceId]) and is the only thing a first message
+     * opens a session from; the core checks its signature when it does. */
     data class IncomingMessage(
         val messageId: String,
         val senderId: String,
@@ -66,7 +73,10 @@ class MessageRouter @Inject constructor(
         val encryptedPayload: ByteArray,
         val timestampMs: Long,
         val viaSealedSender: Boolean,
-    )
+        val senderCertificate: SenderCertificate? = null,
+    ) {
+        val senderDeviceId: String get() = senderCertificate?.deviceId.orEmpty()
+    }
 
     private val _routed = MutableSharedFlow<RoutedEvent>(
         extraBufferCapacity = 256,
@@ -151,6 +161,7 @@ internal fun normalizeEnvelope(
             encryptedPayload = resolved.encryptedPayload,
             timestampMs = envelope.timestamp,
             viaSealedSender = true,
+            senderCertificate = resolved.senderCertificate,
         )
     }
 
@@ -158,6 +169,22 @@ internal fun normalizeEnvelope(
     if (senderId.isEmpty()) {
         Log.w("MessageRouter", "identified message ${envelope.messageId.take(8)}… without sender — dropped")
         return null
+    }
+    if (envelope.contentType == ContentType.CONTENT_TYPE_SENDER_SYNC) {
+        // A copy from a sibling, unsealed by design: its certificate rides beside the wire payload.
+        val copy = OwnDeviceCopy.unwrap(envelope.encryptedPayload.toByteArray()) ?: run {
+            Log.w("MessageRouter", "sender-sync ${envelope.messageId.take(8)}… is not an OwnDeviceCopy — dropped")
+            return null
+        }
+        return MessageRouter.IncomingMessage(
+            messageId = envelope.messageId,
+            senderId = senderId,
+            contentType = envelope.contentType,
+            encryptedPayload = copy.wirePayload,
+            timestampMs = envelope.timestamp,
+            viaSealedSender = false,
+            senderCertificate = copy.certificate,
+        )
     }
     return MessageRouter.IncomingMessage(
         messageId = envelope.messageId,

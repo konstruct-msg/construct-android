@@ -16,6 +16,7 @@ import shared.proto.services.v1.KeyServiceOuterClass.PreKeyBundle
 import uniffi.construct_core.BinaryKeyBundle
 import uniffi.construct_core.DecryptedMessageResult
 import uniffi.construct_core.EncryptedMessageComponents
+import uniffi.construct_core.SenderCertificate
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -273,13 +274,16 @@ class SessionManager @Inject constructor(
         userDao.upsert(base.copy(identityPublic = identity))
     }
 
-    /** RESPONDER path: establish a session from the sender's bundle and the first message's
-     * `encrypted_payload` exactly as it arrived (the core reads the PQXDH v2 header itself). */
-    fun initReceivingSession(
-        contactId: String,
-        senderBundle: BinaryKeyBundle,
-        wirePayload: ByteArray,
-    ) = cryptoManager.initReceivingSessionFromWirePayload(contactId, senderBundle, wirePayload)
+    /**
+     * Record the device a receiving session just opened with, and its key, from the certificate
+     * it opened from. The sealed replies need them at once (`session_ready` right after a first
+     * contact), and the bundle fetch that used to record them on the way no longer happens — iOS
+     * found the gap on the stand as `IK_MISS[no_row]` (2026-09-27). Sound only after the open:
+     * the core opened with this key because the server's signature on it checked out.
+     */
+    suspend fun recordOpenedDevice(certificate: SenderCertificate) {
+        peerDeviceRegistry.record(certificate.userId, certificate.deviceId, certificate.identityKey)
+    }
 
     fun encryptMessage(contactId: String, plaintext: String): EncryptedMessageComponents =
         cryptoManager.encryptMessage(contactId, plaintext)

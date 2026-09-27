@@ -1,5 +1,6 @@
 package com.construct.messenger.service
 
+import com.construct.messenger.stealth.OwnDeviceCopy
 import com.construct.messenger.stealth.StealthSenderService
 import com.google.protobuf.ByteString
 import org.junit.Assert.assertEquals
@@ -10,6 +11,7 @@ import org.junit.Test
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import shared.proto.core.v1.EnvelopeOuterClass.Envelope
 import shared.proto.core.v1.EnvelopeOuterClass.SealedSenderEnvelope
+import shared.proto.core.v1.EnvelopeOuterClass.SenderCertificate
 import shared.proto.core.v1.Identity.UserId
 
 class MessageRouterTest {
@@ -92,5 +94,61 @@ class MessageRouterTest {
             ContentType.CONTENT_TYPE_DELIVERY_RECEIPT,
             ContentType.CONTENT_TYPE_CALL_SIGNAL,
         ).forEach { assertFalse("$it must not be control", it.isControl()) }
+    }
+
+    // ── SENDER_SYNC carries its sender certificate (OwnDeviceCopy) ────────
+
+    private val certificate = SenderCertificate.newBuilder()
+        .setSenderUserId("alice")
+        .setSenderDomain("konstruct.cc")
+        .setSenderIdentityKey(ByteString.copyFrom(ByteArray(32) { 5 }))
+        .setSenderDeviceId("22222222222222222222222222222222")
+        .setIssuedAt(1_000L)
+        .setExpiresAt(2_000L)
+        .setServerSignature(ByteString.copyFrom(ByteArray(64)))
+        .build()
+
+    private fun syncEnvelope(payload: ByteArray): Envelope = identifiedEnvelope(contentType = ContentType.CONTENT_TYPE_SENDER_SYNC)
+        .toBuilder()
+        .setEncryptedPayload(ByteString.copyFrom(payload))
+        .build()
+
+    /** From the sender's wrap to the message the processor gets: the wire payload unwrapped and
+     * the certificate beside it — the only thing a sibling's first copy opens from. iOS shipped
+     * the opposite for a day: its tests handed the router a copy that already had a certificate,
+     * while a real one had none (stand, 2026-09-27). Mutation that reddens it: pass the payload
+     * through unwrapped, or drop the certificate. */
+    @Test
+    fun `a sender sync is unwrapped with its certificate`() {
+        val wire = byteArrayOf(4, 4, 4)
+        val msg = normalizeEnvelope(syncEnvelope(OwnDeviceCopy.wrap(certificate.toByteArray(), wire))) {
+            error("no sealed resolution expected")
+        }
+
+        requireNotNull(msg)
+        assertTrue(wire.contentEquals(msg.encryptedPayload))
+        assertEquals("22222222222222222222222222222222", msg.senderDeviceId)
+        assertTrue(ByteArray(32) { 5 }.contentEquals(msg.senderCertificate?.identityKey))
+    }
+
+    /** A sender without a certificate still sends; the copy parses and opens on a session the
+     * sibling already holds. */
+    @Test
+    fun `a sender sync without a certificate still parses`() {
+        val wire = byteArrayOf(4, 4, 4)
+        val msg = normalizeEnvelope(syncEnvelope(OwnDeviceCopy.wrap(null, wire))) { null }
+
+        requireNotNull(msg)
+        assertTrue(wire.contentEquals(msg.encryptedPayload))
+        assertNull(msg.senderCertificate)
+        assertEquals("", msg.senderDeviceId)
+    }
+
+    /** The format before 2026-09-27 — a bare wire payload — is not a copy (early alpha, no
+     * compatibility kept). */
+    @Test
+    fun `a bare wire payload is not a sender sync`() {
+        assertNull(OwnDeviceCopy.unwrap(byteArrayOf()))
+        assertNull(normalizeEnvelope(syncEnvelope(byteArrayOf())) { null })
     }
 }

@@ -15,7 +15,8 @@ import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.EditWire
 import com.construct.messenger.util.KnstFrame
 import com.construct.messenger.util.TextWire
-import com.construct.messenger.domain.usecase.ResponderInitUseCase
+import com.construct.messenger.domain.usecase.ReceivingOpenUseCase
+import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.util.SenderSyncRouting
 import shared.proto.messaging.v1.Content.DeleteMessage
 import shared.proto.messaging.v1.Content.DeleteScope
@@ -62,10 +63,10 @@ class ProcessorEffectsImplTest {
             sessionStateStore = mock(),
             sessionManager = mock(),
             sessionControl = mock(),
-            healSession = mock(),
             sendReceiptUseCase = mock(),
-            responderInit = mock(),
+            receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
+            held = HeldEnvelopes(),
             alerts = alerts,
         )
     }
@@ -120,10 +121,10 @@ class ProcessorEffectsImplTest {
             sessionStateStore = mock(),
             sessionManager = mock(),
             sessionControl = mock(),
-            healSession = mock(),
             sendReceiptUseCase = mock(),
-            responderInit = mock(),
+            receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
+            held = HeldEnvelopes(),
             alerts = alerts,
         )
 
@@ -156,10 +157,10 @@ class ProcessorEffectsImplTest {
             sessionStateStore = mock(),
             sessionManager = mock(),
             sessionControl = mock(),
-            healSession = mock(),
             sendReceiptUseCase = mock(),
-            responderInit = mock(),
+            receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
+            held = HeldEnvelopes(),
             alerts = alerts,
         )
         val baseId = "550e8400-e29b-41d4-a716-446655440000"
@@ -294,7 +295,7 @@ class ProcessorEffectsImplTest {
         assertNull(inbox.chats.rows[chatId]?.lastMessageText)
     }
 
-    // ── requestKeyBundle: what an init leaves behind ───────────────────────
+    // ── openReceiving: what an open leaves behind ─────────────────────────
 
     private val incoming = MessageRouter.IncomingMessage(
         messageId = "init-1",
@@ -302,19 +303,21 @@ class ProcessorEffectsImplTest {
         contentType = shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_E2EE_SIGNAL,
         encryptedPayload = ByteArray(0),
         timestampMs = 0L,
-        viaSealedSender = false,
+        viaSealedSender = true,
     )
 
+    private val control: SessionControlUseCase = mock()
+
     private fun effectsFor(
-        outcome: ResponderInitUseCase.Outcome,
+        outcome: ReceivingOpenUseCase.Outcome,
         crypto: CryptoManager,
         bridge: CfeTimerBridge,
         acks: FakeAckStore,
+        opener: ReceivingOpenUseCase = mock(),
     ): ProcessorEffectsImpl {
         val keystore: KeystoreManager = mock()
         whenever(keystore.getUserId()).thenReturn(myId)
-        val responder: ResponderInitUseCase = mock()
-        wheneverBlocking { responder.establish(any(), anyOrNull()) }.thenReturn(outcome)
+        wheneverBlocking { opener.open(any(), anyOrNull(), any()) }.thenReturn(outcome)
         return ProcessorEffectsImpl(
             cryptoManager = crypto,
             keystoreManager = keystore,
@@ -324,64 +327,98 @@ class ProcessorEffectsImplTest {
             ackStore = acks,
             sessionStateStore = mock(),
             sessionManager = mock(),
-            sessionControl = mock(),
-            healSession = mock(),
+            sessionControl = control,
             sendReceiptUseCase = mock(),
-            responderInit = responder,
+            receivingOpen = opener,
             actionExecutor = { bridge },
+            held = HeldEnvelopes(),
             alerts = alerts,
         )
     }
 
+    /** The open's actions carry the opener's decrypt and everything that waited behind it;
+     * unexecuted, those messages are lost. `session_ready` goes after them, on the saved session.
+     * Mutation that reddens it: skip `execute`, or announce before it. */
     @Test
-    fun `established init executes what the core drained behind it`() = runTest {
-        val drained = listOf<CfeAction>(CfeAction.NotifySessionCreated(contactId = "dev"))
+    fun `an open executes what it produced, then announces ready`() = runTest {
+        val actions = listOf<CfeAction>(CfeAction.NotifySessionCreated(contactId = "dev"))
         val bridge: CfeTimerBridge = mock()
-        val outcome = ResponderInitUseCase.Outcome.Established(
-            ResponderInitUseCase.Result("dev", "init-1", "hi".toByteArray()),
-            drained,
-        )
+        val opener: ReceivingOpenUseCase = mock()
+        val acks = FakeAckStore().apply { markProcessed("init-1", peer) }
 
-        effectsFor(outcome, mock(), bridge, FakeAckStore()).requestKeyBundle(peer, incoming)
+        val outcome = effectsFor(ReceivingOpenUseCase.Outcome.Opened("dev", "init-1", actions), mock(), bridge, acks, opener)
+            .openReceiving("dev", incoming, announceReady = true)
 
-        verifyBlocking(bridge) { execute(drained) }
+        assertEquals(ProcessingOutcome.Processed, outcome)
+        val order = org.mockito.kotlin.inOrder(bridge, opener)
+        order.verifyBlocking(bridge) { execute(actions) }
+        order.verifyBlocking(opener) { announceReady("dev") }
+    }
+
+    /** A heal does not announce; a first contact and a re-init do. */
+    @Test
+    fun `a heal opens without announcing ready`() = runTest {
+        val opener: ReceivingOpenUseCase = mock()
+        effectsFor(ReceivingOpenUseCase.Outcome.Opened("dev", "init-1", emptyList()), mock(), mock(), FakeAckStore(), opener)
+            .requestHeal("dev", "Responder", incoming)
+
+        verifyBlocking(opener) { open("dev", null, false) }
+        verifyBlocking(opener, never()) { announceReady(any()) }
+    }
+
+    /** The INITIATOR by tie-break does not open from the peer's carrier; it asks for a re-init. */
+    @Test
+    fun `a heal as initiator announces a teardown and opens nothing`() = runTest {
+        val opener: ReceivingOpenUseCase = mock()
+        val outcome = effectsFor(ReceivingOpenUseCase.Outcome.Unreachable, mock(), mock(), FakeAckStore(), opener)
+            .requestHeal("dev", "Initiator", incoming)
+
+        assertEquals(ProcessingOutcome.Deferred, outcome)
+        verifyBlocking(control) { sendEndSession("dev") }
+        verifyBlocking(opener, never()) { open(any(), anyOrNull(), any()) }
     }
 
     @Test
-    fun `failed init is let go and the core is asked to tear the sender down`() = runTest {
+    fun `a failed open is let go and the core is asked to tear the sender down`() = runTest {
         val crypto: CryptoManager = mock()
         val answer = listOf<CfeAction>(CfeAction.SendEndSession(contactId = "dev"))
         whenever(crypto.handleEvent(any())).thenReturn(answer)
         val bridge: CfeTimerBridge = mock()
         val acks = FakeAckStore()
+        val failed = ReceivingOpenUseCase.Outcome.Failed(listOf("q-1"), listOf("q-2"), "AEAD", emptyList())
 
-        effectsFor(ResponderInitUseCase.Outcome.Failed("dev"), crypto, bridge, acks)
-            .requestKeyBundle(peer, incoming)
+        val outcome = effectsFor(failed, crypto, bridge, acks).openReceiving("dev", incoming, announceReady = true)
 
+        assertEquals(ProcessingOutcome.Acked, outcome)
         assertTrue(acks.isProcessed("init-1"))
+        assertTrue(acks.isProcessed("q-1"))
+        assertTrue(acks.isProcessed("q-2"))
         verify(crypto).handleEvent(CfeIncomingEvent.TeardownRequested("dev", CfeTearDownCause.BLIND))
         verifyBlocking(bridge) { execute(answer) }
     }
 
+    /** A refused certificate says nothing about who sent the message; the device it names is not
+     * told to tear anything down. Mutation that reddens it: tear down on every failure. */
     @Test
-    fun `failed init without a named sender tears nothing down`() = runTest {
+    fun `a refused certificate tears nothing down`() = runTest {
         val crypto: CryptoManager = mock()
         val acks = FakeAckStore()
+        val refused = ReceivingOpenUseCase.Outcome.Failed(listOf("init-1"), emptyList(), "SENDER_CERTIFICATE_REFUSED: BadSignature", emptyList())
 
-        effectsFor(ResponderInitUseCase.Outcome.Failed(null), crypto, mock(), acks)
-            .requestKeyBundle(peer, incoming)
+        effectsFor(refused, crypto, mock(), acks).openReceiving("dev", incoming, announceReady = true)
 
         assertTrue(acks.isProcessed("init-1"))
         verify(crypto, never()).handleEvent(any())
     }
 
     @Test
-    fun `init not attempted leaves the carrier for a later delivery`() = runTest {
+    fun `an unreachable open leaves the carrier for a later delivery`() = runTest {
         val acks = FakeAckStore()
 
-        effectsFor(ResponderInitUseCase.Outcome.NotAttempted, mock(), mock(), acks)
-            .requestKeyBundle(peer, incoming)
+        val outcome = effectsFor(ReceivingOpenUseCase.Outcome.Unreachable, mock(), mock(), acks)
+            .openReceiving("dev", incoming, announceReady = true)
 
+        assertEquals(ProcessingOutcome.Deferred, outcome)
         assertFalse(acks.isProcessed("init-1"))
     }
 }

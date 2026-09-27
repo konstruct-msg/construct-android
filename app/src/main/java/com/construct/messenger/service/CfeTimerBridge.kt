@@ -25,6 +25,7 @@ import uniffi.construct_core.CfeIncomingEvent
 class CfeTimerBridge @Inject constructor(
     private val orchestrator: OrchestratorGateway,
     private val effects: ProcessorEffects,
+    private val held: HeldEnvelopes,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val eventMutex = Mutex()
@@ -87,9 +88,8 @@ class CfeTimerBridge @Inject constructor(
 
     /**
      * Executes core actions that arrive off the message path — from an alarm, a reconnect, or a
-     * session the platform just finished opening (`SessionInitCompleted` drains what the core
-     * held behind it). One executor, so a drained message is persisted exactly as a timer-driven
-     * one is.
+     * receiving open (`open_receiving` returns the opener's decrypt and whatever drained behind
+     * it). One executor, so a drained message is persisted exactly as a timer-driven one is.
      */
     suspend fun execute(actions: List<CfeAction>) {
         for (action in actions) {
@@ -105,8 +105,19 @@ class CfeTimerBridge @Inject constructor(
                 is CfeAction.ArchiveSession -> effects.archiveSession(action.contactId)
                 is CfeAction.PersistAck -> effects.markProcessed(action.messageId, "")
                 is CfeAction.PruneAckStore -> effects.pruneAckStore(action.cutoffTs.toLong())
-                is CfeAction.MessageDecrypted ->
-                    effects.onDecrypted(action.contactId, action.messageId, action.plaintext)
+                // Routed by the envelope kept while it waited: a drained SENDER_SYNC is our own
+                // copy, and `MessageDecrypted` does not say so.
+                is CfeAction.MessageDecrypted -> effects.deliverDecrypted(action, held.take(action.messageId))
+                is CfeAction.PendingDropped -> {
+                    action.messageIds.forEach { held.take(it) }
+                    effects.release(action.messageIds)
+                }
+                is CfeAction.ReplayHeld ->
+                    if (!held.replay(action.messageId)) Log.w(TAG, "ReplayHeld ${action.messageId.take(8)}… — no envelope held")
+                is CfeAction.HeldSuperseded -> {
+                    held.take(action.messageId)
+                    effects.release(listOf(action.messageId))
+                }
                 is CfeAction.CallSignalDecrypted ->
                     effects.onCallSignal(action.contactId, action.messageId, action.protoBytes)
                 is CfeAction.DuplicateDropped -> effects.markProcessed(action.messageId, "")
@@ -131,7 +142,8 @@ class CfeTimerBridge @Inject constructor(
                 is CfeAction.ApplyResetInit,
                 is CfeAction.ResetInitSuperseded,
                 -> Log.w(TAG, "CFE reset-init verdict on the timer path: ${action::class.simpleName}")
-                is CfeAction.FetchPublicKeyBundle,
+                // Granted in answer to a message, which is where it is acted on; no alarm pays it.
+                is CfeAction.OpenReceiving,
                 is CfeAction.CheckAckInDb,
                 is CfeAction.DecryptMessage,
                 is CfeAction.EncryptMessage,

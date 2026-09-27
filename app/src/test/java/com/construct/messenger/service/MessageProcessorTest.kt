@@ -1,7 +1,6 @@
 package com.construct.messenger.service
 
 import com.construct.messenger.crypto.CryptoManager
-import com.construct.messenger.data.local.KeystoreManager
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -12,13 +11,14 @@ import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.CfeSecureStoreSlot
+import uniffi.construct_core.SenderCertificate
 
 class MessageProcessorTest {
 
     private val sessionManager: SessionManager = mock()
     private val timerBridge: CfeTimerBridge = mock()
     private val cryptoManager: CryptoManager = mock()
-    private val keystoreManager: KeystoreManager = mock()
+    private val held = HeldEnvelopes()
 
     private class FakeGateway(
         var responses: MutableList<List<CfeAction>> = mutableListOf(),
@@ -49,9 +49,28 @@ class MessageProcessorTest {
         override suspend fun sessionTerminated(contactId: String, archiveBytes: ByteArray) { calls += "terminated:$contactId" }
         override suspend fun pruneAckStore(cutoffTs: Long) { calls += "prune:$cutoffTs" }
         override suspend fun archiveSession(contactId: String) { calls += "archive:$contactId" }
-        override suspend fun requestHeal(contactId: String, role: String) { calls += "heal:$contactId:$role" }
+        override suspend fun onSenderSync(contactId: String, messageId: String, plaintext: ByteArray, timestampMs: Long) {
+            calls += "onSenderSync:$contactId:$messageId"
+        }
+        override suspend fun requestHeal(
+            contactId: String,
+            role: String,
+            trigger: MessageRouter.IncomingMessage?,
+        ): ProcessingOutcome {
+            calls += "heal:$contactId:$role"
+            return ProcessingOutcome.Deferred
+        }
         override suspend fun requestEndSession(contactId: String) { calls += "endSession:$contactId" }
-        override suspend fun requestKeyBundle(userId: String, incoming: MessageRouter.IncomingMessage) { calls += "keyBundle:$userId" }
+        var openOutcome = ProcessingOutcome.Processed
+        override suspend fun openReceiving(
+            device: String,
+            trigger: MessageRouter.IncomingMessage?,
+            announceReady: Boolean,
+        ): ProcessingOutcome {
+            calls += "open:$device:$announceReady"
+            return openOutcome
+        }
+        override suspend fun release(messageIds: List<String>) { calls += "release:${messageIds.joinToString(",")}" }
         override fun isAckedInDb(messageId: String): Boolean = ackedInDb
     }
 
@@ -71,7 +90,7 @@ class MessageProcessorTest {
     @Test
     fun `messageDecrypted executes side effects and reports Processed`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
         val actions = listOf(
             CfeAction.MessageDecrypted("alice", "m1", byteArrayOf(7)),
             CfeAction.SendReceipt("m1", "delivered"),
@@ -89,7 +108,7 @@ class MessageProcessorTest {
     @Test
     fun `duplicateDropped records the message and does not receipt it`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
 
         val outcome = processor.route(
             listOf(CfeAction.DuplicateDropped("m1"), CfeAction.ScheduleTimer("cooldown", 5_000uL)),
@@ -113,7 +132,7 @@ class MessageProcessorTest {
                 emptyList(),
             ),
         )
-        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
 
         val outcome = processor.process(incoming())
 
@@ -126,7 +145,7 @@ class MessageProcessorTest {
     @Test
     fun `sessionHealNeeded defers and requests heal`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
 
         val outcome = processor.route(listOf(CfeAction.SessionHealNeeded("bob", "initiator")), incoming())
 
@@ -137,7 +156,7 @@ class MessageProcessorTest {
     @Test
     fun `healSuppressed defers without ack`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
 
         val outcome = processor.route(
             listOf(CfeAction.HealSuppressed("bob", 5_000uL)),
@@ -151,7 +170,7 @@ class MessageProcessorTest {
     @Test
     fun `sendEndSession acks, marks processed and requests end session`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
 
         val outcome = processor.route(listOf(CfeAction.SendEndSession("bob")), incoming())
 
@@ -161,21 +180,25 @@ class MessageProcessorTest {
         assertTrue(effects.calls.contains("endSession:bob"))
     }
 
+    /** No session with the device: the core queued the message and asks for an open, which
+     * fetches nothing. Mutation that reddens it: return Deferred without opening, or skip holding
+     * the envelope (the drain could not route it). */
     @Test
-    fun `fetchPublicKeyBundle defers and requests bundle`() = runBlocking {
+    fun `openReceiving opens the named device and holds the envelope`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
 
-        val outcome = processor.route(listOf(CfeAction.FetchPublicKeyBundle("carol")), incoming())
+        val outcome = processor.route(listOf(CfeAction.OpenReceiving(device)), incoming())
 
-        assertEquals(ProcessingOutcome.Deferred, outcome)
-        assertTrue(effects.calls.contains("keyBundle:carol"))
+        assertEquals(ProcessingOutcome.Processed, outcome)
+        assertTrue(effects.calls.contains("open:$device:true"))
+        assertEquals("m1", held.take("m1")?.messageId)
     }
 
     @Test
     fun `no actionable decision acks as delivered`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
 
         val outcome = processor.route(listOf(CfeAction.PruneAckStore(0uL)), incoming())
 
@@ -190,7 +213,7 @@ class MessageProcessorTest {
         val effects = RecordingEffects()
         whenever(sessionManager.resolveDeviceId("alice")).thenReturn("11111111111111111111111111111111")
         val gateway = FakeGateway(mutableListOf(listOf(CfeAction.MessageDecrypted("alice", "m1", byteArrayOf(9)))))
-        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
 
         val outcome = processor.process(incoming())
 
@@ -209,7 +232,7 @@ class MessageProcessorTest {
                 listOf(CfeAction.MessageDecrypted("alice", "m1", byteArrayOf(1))), // after AckDbResult
             ),
         )
-        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
 
         val outcome = processor.process(incoming())
 
@@ -226,7 +249,7 @@ class MessageProcessorTest {
         val gateway = object : OrchestratorGateway {
             override fun handleEvent(event: CfeIncomingEvent): List<CfeAction> = throw RuntimeException("boom")
         }
-        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
 
         val outcome = processor.process(incoming())
 
@@ -245,7 +268,7 @@ class MessageProcessorTest {
         val gateway = FakeGateway(
             mutableListOf(listOf(CfeAction.NotifyError("MALFORMED_WIRE_PAYLOAD", "too short"))),
         )
-        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
 
         val outcome = processor.process(incoming().copy(encryptedPayload = ByteArray(4)))
 
@@ -270,7 +293,7 @@ class MessageProcessorTest {
         val effects = RecordingEffects()
         whenever(sessionManager.resolveDeviceId("alice")).thenReturn(device)
         val gateway = FakeGateway(mutableListOf(listOf(CfeAction.ResetInitSuperseded(device, true))))
-        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
 
         val outcome = processor.process(resetInit())
 
@@ -279,18 +302,28 @@ class MessageProcessorTest {
         assertTrue(gateway.events.none { it is CfeIncomingEvent.MessageReceived })
     }
 
-    /** A live re-init goes on to the ordinary path. Mutation that reddens it: treat any answer
-     * as superseded. */
+    /** A live re-init opens a session from itself — queued for the open, never routed as a
+     * message: over a live session its decrypt would fail and the core would answer with a heal.
+     * Mutation that reddens it: send it through `MessageReceived`. */
     @Test
-    fun `an applied reset init goes on to the core as a message`() = runBlocking {
+    fun `an applied reset init is queued for an open, not routed as a message`() = runBlocking {
         val effects = RecordingEffects()
         whenever(sessionManager.resolveDeviceId("alice")).thenReturn(device)
         val gateway = FakeGateway(mutableListOf(listOf(CfeAction.ApplyResetInit(device))))
-        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
 
         processor.process(resetInit())
 
-        assertTrue(gateway.events.any { it is CfeIncomingEvent.MessageReceived })
+        assertTrue(gateway.events.none { it is CfeIncomingEvent.MessageReceived })
+        org.mockito.kotlin.verify(cryptoManager).queueForOpen(
+            org.mockito.kotlin.eq(device),
+            org.mockito.kotlin.eq("m1"),
+            org.mockito.kotlin.any(),
+            // UByte is a value class; Mockito cannot match it by value.
+            org.mockito.kotlin.any(),
+            org.mockito.kotlin.isNull(),
+        )
+        assertTrue(effects.calls.contains("open:$device:true"))
     }
 
     /** The question names the device, the init's key, and both times in seconds.
@@ -300,7 +333,7 @@ class MessageProcessorTest {
         val effects = RecordingEffects().apply { establishedAtMs = 1_785_943_288_900L }
         whenever(sessionManager.resolveDeviceId("alice")).thenReturn(device)
         val gateway = FakeGateway(mutableListOf(listOf(CfeAction.ApplyResetInit(device))))
-        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
 
         processor.process(resetInit())
 
@@ -319,15 +352,137 @@ class MessageProcessorTest {
         whenever(sessionManager.resolveDeviceId("alice")).thenReturn(device)
 
         val plain = FakeGateway()
-        MessageProcessor(plain, RecordingEffects(), sessionManager, timerBridge, cryptoManager, keystoreManager)
+        MessageProcessor(plain, RecordingEffects(), sessionManager, timerBridge, cryptoManager, held)
             .process(incoming())
         assertTrue(plain.events.none { it is CfeIncomingEvent.ResetInitArrived })
 
         val unidentified = FakeGateway()
         val effects = RecordingEffects().apply { ephemeral = null }
-        MessageProcessor(unidentified, effects, sessionManager, timerBridge, cryptoManager, keystoreManager)
+        MessageProcessor(unidentified, effects, sessionManager, timerBridge, cryptoManager, held)
             .process(resetInit())
         assertTrue(unidentified.events.none { it is CfeIncomingEvent.ResetInitArrived })
-        assertTrue(unidentified.events.any { it is CfeIncomingEvent.MessageReceived })
+        assertTrue(effects.calls.contains("open:$device:true"))
+    }
+
+    // ── The device comes from the certificate, never from a guess ────────
+
+    private val senderDevice = "22222222222222222222222222222222"
+
+    private fun certificate(deviceId: String = senderDevice) = SenderCertificate(
+        userId = "alice",
+        domain = "konstruct.cc",
+        identityKey = ByteArray(32) { 5 },
+        deviceId = deviceId,
+        issuedAt = 1_000L,
+        expiresAt = 2_000L,
+        signature = ByteArray(64),
+    )
+
+    /** The certificate names the ratchet, and it travels to the core with the message — the only
+     * thing a first message opens from. Mutation that reddens it: take the pinned device first,
+     * or drop the certificate from the event. */
+    @Test
+    fun `the certificate names the device and goes to the core with the message`() = runBlocking {
+        whenever(sessionManager.resolveDeviceId("alice")).thenReturn(device)
+        val gateway = FakeGateway()
+        val cert = certificate()
+        MessageProcessor(gateway, RecordingEffects(), sessionManager, timerBridge, cryptoManager, held)
+            .process(incoming().copy(senderCertificate = cert))
+
+        val event = gateway.events.filterIsInstance<CfeIncomingEvent.MessageReceived>().single()
+        assertEquals(senderDevice, event.from)
+        assertEquals(cert, event.senderCertificate)
+    }
+
+    /** No certificate and no session with the account: nothing names the device, and the message
+     * is refused rather than filed under a guess. Mutation that reddens it: defer it, or ask the
+     * directory for a device. */
+    @Test
+    fun `a message nothing names a device for is refused`() = runBlocking {
+        whenever(sessionManager.resolveDeviceId("alice")).thenReturn(null)
+        val gateway = FakeGateway()
+        val effects = RecordingEffects()
+
+        val outcome = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
+            .process(incoming())
+
+        assertEquals(ProcessingOutcome.Acked, outcome)
+        assertTrue(effects.calls.contains("markProcessed:m1"))
+        assertTrue(gateway.events.isEmpty())
+    }
+
+    /** A per-device copy for another device is recognised from the certificate's key alone —
+     * no bundle fetch, which would tell the server whom the sealed message was from. Mutation
+     * that reddens it: treat every copy as ours. */
+    @Test
+    fun `a copy for another device is acked from the certificate key`() = runBlocking {
+        whenever(cryptoManager.currentDeviceId()).thenReturn(device)
+        whenever(
+            cryptoManager.deviceCopyTagMatches(
+                org.mockito.kotlin.any(),
+                org.mockito.kotlin.any(),
+                org.mockito.kotlin.any(),
+                org.mockito.kotlin.any(),
+            ),
+        ).thenReturn(false)
+        val gateway = FakeGateway()
+        val effects = RecordingEffects()
+        val copy = incoming(id = "base-1-fd-0123456789abcdef").copy(senderCertificate = certificate())
+
+        val outcome = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
+            .process(copy)
+
+        assertEquals(ProcessingOutcome.Acked, outcome)
+        assertTrue(gateway.events.isEmpty())
+        org.mockito.kotlin.verifyNoInteractions(sessionManager)
+    }
+
+    // ── What the core holds is answered by id ───────────────────────────
+
+    /** A SENDER_SYNC that waited in the core's queue comes back as a bare `MessageDecrypted`;
+     * the kept envelope is what makes it our own copy rather than an incoming bubble. Mutation
+     * that reddens it: route drained messages with `onDecrypted` unconditionally. */
+    @Test
+    fun `a drained sender sync is routed as our own copy`() = runBlocking {
+        val effects = RecordingEffects()
+        held.hold(incoming(id = "sync-1").copy(contentType = ContentType.CONTENT_TYPE_SENDER_SYNC))
+        val bridge = CfeTimerBridge(FakeGateway(), effects, held)
+
+        bridge.execute(listOf(CfeAction.MessageDecrypted(senderDevice, "sync-1", byteArrayOf(1))))
+
+        assertTrue(effects.calls.contains("onSenderSync:$senderDevice:sync-1"))
+        assertTrue(effects.calls.none { it.startsWith("onDecrypted:") })
+    }
+
+    /** A queue the core gave up is released, not left to hold the cursor. Mutation that reddens
+     * it: log `PendingDropped` without acknowledging the ids. */
+    @Test
+    fun `a dropped queue is released`() = runBlocking {
+        val effects = RecordingEffects()
+        held.hold(incoming(id = "q-1"))
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
+
+        processor.route(
+            listOf(CfeAction.PendingDropped(senderDevice, listOf("q-1", "q-2")), CfeAction.DuplicateDropped("m1")),
+            incoming(),
+        )
+
+        assertTrue(effects.calls.contains("release:q-1,q-2"))
+        assertEquals(null, held.take("q-1"))
+    }
+
+    /** An init opened by the core comes back as an ordinary decrypt; its plaintext is a nonce,
+     * not a message. Mutation that reddens it: drop the SESSION_RESET_INIT arm of
+     * `deliverDecrypted` — the nonce becomes a `$<uuid>` bubble, as it did on the stand. */
+    @Test
+    fun `an opened reset init never reaches the transcript`() = runBlocking {
+        val effects = RecordingEffects()
+        held.hold(incoming(id = "sri-1").copy(contentType = ContentType.CONTENT_TYPE_SESSION_RESET_INIT))
+        val bridge = CfeTimerBridge(FakeGateway(), effects, held)
+
+        bridge.execute(listOf(CfeAction.MessageDecrypted(senderDevice, "sri-1", "\$CEABF9BC".toByteArray())))
+
+        assertTrue(effects.calls.contains("markProcessed:sri-1"))
+        assertTrue(effects.calls.none { it.startsWith("onDecrypted:") || it.startsWith("onSenderSync:") })
     }
 }

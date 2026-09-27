@@ -14,8 +14,7 @@ import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.data.local.db.refreshChatPreview
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ReplyRef
-import com.construct.messenger.domain.usecase.HealSessionUseCase
-import com.construct.messenger.domain.usecase.ResponderInitUseCase
+import com.construct.messenger.domain.usecase.ReceivingOpenUseCase
 import com.construct.messenger.domain.usecase.SendReceiptUseCase
 import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.util.ConversationId
@@ -35,7 +34,7 @@ import uniffi.construct_core.wirePayloadUnpack
 /**
  * Room / Keystore / session-store implementation of [ProcessorEffects].
  *
- * Heal / END_SESSION / receipts / responder-init go to dedicated use cases.
+ * END_SESSION / receipts / receiving opens go to dedicated use cases.
  */
 @Singleton
 class ProcessorEffectsImpl @Inject constructor(
@@ -48,12 +47,12 @@ class ProcessorEffectsImpl @Inject constructor(
     private val sessionStateStore: SessionStateStore,
     private val sessionManager: SessionManager,
     private val sessionControl: SessionControlUseCase,
-    private val healSession: HealSessionUseCase,
     private val sendReceiptUseCase: SendReceiptUseCase,
-    private val responderInit: ResponderInitUseCase,
+    private val receivingOpen: ReceivingOpenUseCase,
     // Lazy: CfeTimerBridge executes actions *through* these effects, so a direct dependency
-    // would be a cycle. Only its executor is used, and only after an init has finished.
+    // would be a cycle. Only its executor is used, and only after an open has finished.
     private val actionExecutor: dagger.Lazy<CfeTimerBridge>,
+    private val held: HeldEnvelopes,
     private val alerts: IncomingAlerts,
 ) : ProcessorEffects {
 
@@ -184,50 +183,82 @@ class ProcessorEffectsImpl @Inject constructor(
         sessionStateStore.removeMeta(contactId)
     }
 
-    override suspend fun requestHeal(contactId: String, role: String) {
-        healSession.heal(contactId, role)
+    /**
+     * The INITIATOR by tie-break tells the peer to re-init and waits for it. The RESPONDER opens
+     * from the carrier the core queued when it granted the heal — one attempt, nothing fetched;
+     * until 2026-09-27 it archived the session and waited for the peer instead.
+     */
+    override suspend fun requestHeal(
+        contactId: String,
+        role: String,
+        trigger: MessageRouter.IncomingMessage?,
+    ): ProcessingOutcome {
+        if (role.equals("Initiator", ignoreCase = true)) {
+            Log.i(TAG, "heal ${contactId.take(8)}… as INITIATOR — END_SESSION")
+            sessionControl.sendEndSession(contactId)
+            return ProcessingOutcome.Deferred
+        }
+        Log.i(TAG, "heal ${contactId.take(8)}… as RESPONDER — opening from the queued carrier")
+        return openReceiving(contactId, trigger, announceReady = false)
     }
 
     override suspend fun requestEndSession(contactId: String) {
         sessionControl.sendEndSession(contactId)
     }
 
-    override suspend fun requestKeyBundle(userId: String, incoming: MessageRouter.IncomingMessage) {
-        val preferredDeviceId = userId.takeIf { com.construct.messenger.data.model.IdentityIds.isCryptoDeviceId(it) }
-        when (val outcome = responderInit.establish(incoming, preferredDeviceId)) {
-            is ResponderInitUseCase.Outcome.Established -> {
-                outcome.result.let { onDecrypted(it.contactId, it.messageId, it.plaintext) }
-                // Whatever arrived while the init ran was held in the core and has just been
-                // decrypted by it. Unexecuted, those messages were lost (seen 2026-09-24).
-                runCatching { actionExecutor.get().execute(outcome.drained) }
-                    .onFailure { Log.e(TAG, "drained actions after init failed", it) }
+    override suspend fun openReceiving(
+        device: String,
+        trigger: MessageRouter.IncomingMessage?,
+        announceReady: Boolean,
+    ): ProcessingOutcome {
+        return when (val outcome = receivingOpen.open(device, trigger?.senderCertificate, announceReady)) {
+            is ReceivingOpenUseCase.Outcome.Opened -> {
+                // The save, the opener's decrypt, what drained behind it, an archived session.
+                // Unexecuted, the messages that waited for this session are lost (seen 2026-09-24).
+                runCatching { actionExecutor.get().execute(outcome.actions) }
+                    .onFailure { Log.e(TAG, "actions after open ${device.take(8)}… failed", it) }
+                // After the actions: the ready is encrypted on the session they saved.
+                if (announceReady) receivingOpen.announceReady(outcome.device)
+                val handled = trigger == null || ackStore.isProcessed(trigger.messageId)
+                if (handled) ProcessingOutcome.Processed else ProcessingOutcome.Deferred
             }
-            is ResponderInitUseCase.Outcome.Failed -> {
-                // Lost, as on iOS: marking it processed lets its next delivery be ACKed instead of
-                // failing again first in line and keeping everything behind it queued.
-                markProcessed(incoming.messageId, incoming.senderId)
-                outcome.sender?.let { tearDownAfterFailedInit(it) }
+            is ReceivingOpenUseCase.Outcome.Failed -> {
+                runCatching { actionExecutor.get().execute(outcome.actions) }
+                    .onFailure { Log.e(TAG, "actions after failed open ${device.take(8)}… failed", it) }
+                // Lost, as on iOS: acknowledged so a redelivery does not fail first in line again
+                // and keep everything behind it queued.
+                val given = (outcome.tried + outcome.dropped + listOfNotNull(trigger?.messageId)).distinct()
+                given.forEach { held.take(it) }
+                release(given)
+                // A certificate the core refused says nothing about who sent the message, so the
+                // device it names is told nothing either.
+                if (outcome.lastError?.startsWith("SENDER_") != true) tearDownAfterFailedOpen(device)
+                ProcessingOutcome.Acked
             }
-            ResponderInitUseCase.Outcome.NotAttempted -> Unit
+            ReceivingOpenUseCase.Outcome.Unreachable -> ProcessingOutcome.Deferred
         }
+    }
+
+    override suspend fun release(messageIds: List<String>) {
+        messageIds.forEach { ackStore.markProcessed(it, "") }
     }
 
     /**
      * The sender keeps a session we could not open; nothing else will move it. The core decides
      * whether to tell it — the same gate iOS passes through (`SessionCoordinator`
-     * `recordEndSessionSendIfAllowed`) — and the ask also ends the `Opening` phase the failed init
+     * `recordEndSessionSendIfAllowed`) — and the ask also ends the `Opening` phase the failed open
      * left, so the sender's next init is taken instead of queued behind a dead one.
      *
      * `BLIND`: the peer is not told why. `EXPLAINED` is for a teardown that carries the
      * OTPK-unreproducible hint, and Android cannot seal one yet (no `sealToIdentity`).
      */
-    private suspend fun tearDownAfterFailedInit(deviceId: String) {
+    private suspend fun tearDownAfterFailedOpen(deviceId: String) {
         val actions = runCatching {
             cryptoManager.handleEvent(CfeIncomingEvent.TeardownRequested(deviceId, CfeTearDownCause.BLIND))
-        }.onFailure { Log.e(TAG, "teardown ask after failed init ${deviceId.take(8)}…", it) }
+        }.onFailure { Log.e(TAG, "teardown ask after failed open ${deviceId.take(8)}…", it) }
             .getOrNull() ?: return
         runCatching { actionExecutor.get().execute(actions) }
-            .onFailure { Log.e(TAG, "teardown actions after failed init ${deviceId.take(8)}…", it) }
+            .onFailure { Log.e(TAG, "teardown actions after failed open ${deviceId.take(8)}…", it) }
     }
 
     override fun isAckedInDb(messageId: String): Boolean = ackStore.isProcessed(messageId)

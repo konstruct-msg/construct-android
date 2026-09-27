@@ -29,6 +29,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -75,6 +76,7 @@ class MessagingRuntime @Inject constructor(
     private val timerBridge: CfeTimerBridge,
     private val cursorTracker: StreamCursorTracker,
     private val kyberPrekeys: KyberPrekeyService,
+    private val held: HeldEnvelopes,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val startMutex = Mutex()
@@ -189,7 +191,10 @@ class MessagingRuntime @Inject constructor(
     }
 
     private suspend fun collectRouted() {
-        router.routed.collect { event ->
+        // A held message the core releases (`ReplayHeld`) is processed on the same collector as
+        // everything else, so it cannot run alongside the message whose answer released it.
+        val replays = held.replays.map { MessageRouter.RoutedEvent.Incoming(it) }
+        merge(router.routed, replays).collect { event ->
             when (event) {
                 // A throw leaves the entry pending: the cursor stalls and the server re-delivers,
                 // which is safe. Advancing on a failure would be the loss the tracker prevents.
@@ -223,7 +228,12 @@ class MessagingRuntime @Inject constructor(
     private suspend fun handleControl(message: MessageRouter.IncomingMessage): ProcessingOutcome =
         when (message.contentType) {
             ContentType.CONTENT_TYPE_SESSION_RESET -> {
-                sessionControl.inboundEndSession(message.senderId)
+                val device = teardownDevice(message) { sessionManager.resolveDeviceId(it) }
+                if (device != null) {
+                    sessionControl.inboundEndSession(device)
+                } else {
+                    Log.w(TAG, "END_SESSION ${message.messageId.take(8)}… names no device we know — nothing to tear down")
+                }
                 ackStore.markProcessed(message.messageId, message.senderId)
                 ProcessingOutcome.Acked
             }
@@ -294,3 +304,13 @@ private fun PendingMessage.toEnvelope(): Envelope = Envelope.newBuilder().apply 
         setEncryptedPayload(encryptedPayload)
     }
 }.build()
+
+/**
+ * The ratchet an inbound END_SESSION is about: the device its certificate names, or — for an
+ * unsealed one — the account's pinned device, the only session it can be about. Never the account:
+ * sessions are keyed by device, and a teardown filed under the account removed nothing.
+ */
+internal suspend fun teardownDevice(
+    message: MessageRouter.IncomingMessage,
+    pinnedDevice: suspend (String) -> String?,
+): String? = message.senderDeviceId.ifEmpty { null } ?: pinnedDevice(message.senderId)
