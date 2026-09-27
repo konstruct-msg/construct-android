@@ -224,7 +224,14 @@ class MessagingRuntime @Inject constructor(
         when (message.contentType) {
             ContentType.CONTENT_TYPE_SESSION_RESET -> {
                 val device = teardownDevice(message) { sessionManager.resolveDeviceId(it) }
-                if (device != null) {
+                // A redelivered teardown was already applied: acting on it again archives whatever
+                // session opened since. The server replays everything behind a held cursor on each
+                // connection, and on the stand 2026-09-27 two old END_SESSIONs archived the session
+                // opened after them on every start. iOS answers the same question by timestamp
+                // (`end_session_stale_check`).
+                if (ackStore.isProcessed(message.messageId)) {
+                    Log.i(TAG, "END_SESSION ${message.messageId.take(8)}… already applied — not again")
+                } else if (device != null) {
                     sessionControl.inboundEndSession(device)
                 } else {
                     Log.w(TAG, "END_SESSION ${message.messageId.take(8)}… names no device we know — nothing to tear down")
