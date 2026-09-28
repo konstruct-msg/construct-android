@@ -76,6 +76,12 @@ interface UserDao {
     @Query("SELECT * FROM users")
     fun observeAll(): Flow<List<UserEntity>>
 
+    @Query("SELECT * FROM users WHERE isBlocked = 1 ORDER BY displayName ASC")
+    fun observeBlocked(): Flow<List<UserEntity>>
+
+    @Query("SELECT * FROM users WHERE id = :userId")
+    fun observeById(userId: String): Flow<UserEntity?>
+
     @Query("SELECT * FROM users WHERE id = :userId")
     suspend fun getById(userId: String): UserEntity?
 

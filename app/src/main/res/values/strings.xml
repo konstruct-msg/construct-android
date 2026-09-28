@@ -212,4 +212,26 @@
     <string name="key_change_toast_open">Open</string>
     <string name="key_change_verify">Verify</string>
     <string name="security_notice_acknowledge">I\'ve checked</string>
+    <!-- Contact profile (iOS UserProfileView) -->
+    <string name="contact_username">username</string>
+    <string name="contact_fingerprint">fingerprint</string>
+    <string name="contact_address">address</string>
+    <string name="contact_address_unknown">not known yet</string>
+    <string name="contact_open_chat">Open chat</string>
+    <string name="contact_danger_zone">danger zone</string>
+    <string name="contact_block">Block</string>
+    <string name="contact_block_title">Block this person?</string>
+    <string name="contact_block_message">%1$s will not be able to write to you. They are not told.</string>
+    <string name="contact_unblock">Unblock</string>
+    <string name="contact_unblock_title">Unblock this person?</string>
+    <string name="contact_unblock_message">%1$s will be able to write to you again.</string>
+    <string name="contact_report">Report spam</string>
+    <string name="contact_report_title">Report as spam?</string>
+    <string name="contact_report_message">%1$s is reported and blocked. The report names their device and nothing you exchanged.</string>
+    <string name="contact_report_sent">Reported and blocked.</string>
+    <string name="contact_report_failed">Blocked. The report could not be sent.</string>
+    <string name="contact_delete">Remove contact</string>
+    <string name="contact_delete_title">Remove this contact?</string>
+    <string name="contact_delete_message">%1$s, your chat and its messages are removed from this device. Nothing is sent to them. If they write again, they reappear — to stop that, block them.</string>
+    <string name="synaps_blocked">blocked</string>
 </resources>

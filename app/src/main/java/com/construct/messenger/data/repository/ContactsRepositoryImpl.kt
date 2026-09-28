@@ -65,6 +65,16 @@ class ContactsRepositoryImpl @Inject constructor(
         }
     }
 
+    override val blocked: Flow<List<Contact>> = userDao.observeBlocked().map { rows ->
+        rows.map {
+            Contact(
+                userId = it.id,
+                displayName = it.displayName.ifBlank { DisplayNameGenerator.generate(it.id) },
+                username = it.username,
+            )
+        }
+    }
+
     override suspend fun mintLink(includeUsername: Boolean): MintedInvite =
         mint(kind = "link", ttlSeconds = InviteConfig.TTL_SECONDS.toInt())
 

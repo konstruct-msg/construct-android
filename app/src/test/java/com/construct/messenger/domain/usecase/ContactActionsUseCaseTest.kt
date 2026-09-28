@@ -1,0 +1,63 @@
+package com.construct.messenger.domain.usecase
+
+import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.data.local.KeystoreManager
+import com.construct.messenger.data.local.PeerDeviceRegistry
+import com.construct.messenger.data.local.SessionStateStore
+import com.construct.messenger.data.local.db.ChatDao
+import com.construct.messenger.data.local.db.MessageDao
+import com.construct.messenger.data.local.db.PeerDeviceEntity
+import com.construct.messenger.data.local.db.UserDao
+import com.construct.messenger.util.ConversationId
+import kotlinx.coroutines.test.runTest
+import org.junit.Test
+import org.mockito.kotlin.argThat
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
+import uniffi.construct_core.CfeSecureStoreSlot
+
+class ContactActionsUseCaseTest {
+
+    private val me = "00000000-0000-0000-0000-000000000001"
+    private val peer = "00000000-0000-0000-0000-000000000002"
+    private val devices = listOf("a".repeat(32), "b".repeat(32))
+
+    private val keystore = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(me) }
+    private val users = mock<UserDao>()
+    private val chats = mock<ChatDao>()
+    private val messages = mock<MessageDao>()
+    private val registry = mock<PeerDeviceRegistry>()
+    private val crypto = mock<CryptoManager>()
+    private val sessions = mock<SessionStateStore>()
+
+    private val actions = ContactActionsUseCase(keystore, users, chats, messages, registry, crypto, sessions, mock())
+
+    /**
+     * Every device of theirs is forgotten in the core and its stored blob removed — the blob alone
+     * would restore the session on the next launch. Devices are read before the row goes.
+     * Mutation: skip the blob delete — this reddens.
+     */
+    @Test
+    fun `removing a contact forgets every device session and deletes its rows`() = runTest {
+        whenever(registry.knownDevices(peer)).thenReturn(
+            devices.map { PeerDeviceEntity(peer, it, ByteArray(32), firstSeenAtMs = 0, lastSeenAtMs = 0) },
+        )
+
+        actions.delete(peer)
+
+        val chatId = ConversationId.direct(me, peer)
+        verify(messages).deleteChat(chatId)
+        verify(chats).delete(chatId)
+        inOrder(registry, users) {
+            verify(registry).knownDevices(peer)
+            verify(users).delete(peer)
+        }
+        devices.forEach { device ->
+            verify(crypto).forgetContactState(device)
+            verify(sessions).saveSecureStore(eq(CfeSecureStoreSlot.Session(device)), argThat { isEmpty() })
+        }
+    }
+}

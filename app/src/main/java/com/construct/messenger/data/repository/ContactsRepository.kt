@@ -30,6 +30,9 @@ data class IncomingContactRequest(
 interface ContactsRepository {
     val contacts: Flow<List<Contact>>
 
+    /** Blocked people: out of [contacts], listed apart so they can be unblocked. */
+    val blocked: Flow<List<Contact>> get() = kotlinx.coroutines.flow.emptyFlow()
+
     suspend fun mintLink(includeUsername: Boolean = false): MintedInvite
 
     /** A short-lived invite for a QR on screen: 300 s, no username in the signed body.

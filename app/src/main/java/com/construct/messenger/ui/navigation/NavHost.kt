@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.construct.messenger.ui.screens.chat.ChatScreen
 import com.construct.messenger.ui.screens.chat.SafetyNumberScreen
+import com.construct.messenger.ui.screens.synaps.ContactProfileScreen
 import com.construct.messenger.ui.screens.invite.ContactQrScreen
 import com.construct.messenger.ui.screens.invite.QrScannerScreen
 import com.construct.messenger.ui.screens.recovery.RecoveryGated
@@ -106,6 +107,9 @@ fun KonstructNavHost(
                         launchSingleTop = true
                     }
                 },
+                onOpenContact = { contactId ->
+                    navController.navigate(Screen.Contact.createRoute(contactId)) { launchSingleTop = true }
+                },
                 onScanQr = { navController.navigate(Screen.ScanQr.route) { launchSingleTop = true } },
                 settingsNavigation = SettingsNavigation(
                     onAccount = { navController.navigate(Screen.Account.route) { launchSingleTop = true } },
@@ -161,6 +165,25 @@ fun KonstructNavHost(
                     backStackEntry.arguments?.getString("contactId")?.let {
                         navController.navigate(Screen.SafetyNumbers.createRoute(it))
                     }
+                },
+                onOpenProfile = {
+                    backStackEntry.arguments?.getString("contactId")?.let {
+                        navController.navigate(Screen.Contact.createRoute(it)) { launchSingleTop = true }
+                    }
+                },
+            )
+        }
+        composable(
+            route = Screen.Contact.route,
+            arguments = listOf(navArgument("contactId") { type = NavType.StringType }),
+        ) {
+            ContactProfileScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onOpenChat = { contactId ->
+                    navController.navigate(Screen.Chat.createRoute(contactId)) { launchSingleTop = true }
+                },
+                onOpenSafetyNumbers = { contactId ->
+                    navController.navigate(Screen.SafetyNumbers.createRoute(contactId))
                 },
             )
         }

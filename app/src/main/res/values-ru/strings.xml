@@ -209,4 +209,26 @@
     <string name="key_change_toast_open">Открыть</string>
     <string name="key_change_verify">Проверить</string>
     <string name="security_notice_acknowledge">Проверено</string>
+    <!-- Профиль контакта (iOS UserProfileView) -->
+    <string name="contact_username">имя пользователя</string>
+    <string name="contact_fingerprint">отпечаток</string>
+    <string name="contact_address">адрес</string>
+    <string name="contact_address_unknown">пока неизвестен</string>
+    <string name="contact_open_chat">Открыть чат</string>
+    <string name="contact_danger_zone">опасная зона</string>
+    <string name="contact_block">Заблокировать</string>
+    <string name="contact_block_title">Заблокировать?</string>
+    <string name="contact_block_message">%1$s не сможет вам писать. Об этом не сообщается.</string>
+    <string name="contact_unblock">Разблокировать</string>
+    <string name="contact_unblock_title">Разблокировать?</string>
+    <string name="contact_unblock_message">%1$s снова сможет вам писать.</string>
+    <string name="contact_report">Пожаловаться на спам</string>
+    <string name="contact_report_title">Пожаловаться на спам?</string>
+    <string name="contact_report_message">На %1$s будет отправлена жалоба, контакт будет заблокирован. В жалобе только устройство — ничего из переписки.</string>
+    <string name="contact_report_sent">Жалоба отправлена, контакт заблокирован.</string>
+    <string name="contact_report_failed">Контакт заблокирован. Жалобу отправить не удалось.</string>
+    <string name="contact_delete">Удалить контакт</string>
+    <string name="contact_delete_title">Удалить контакт?</string>
+    <string name="contact_delete_message">%1$s, чат и сообщения будут удалены с этого устройства. Собеседнику ничего не отправляется. Если собеседник напишет снова, контакт появится опять — чтобы этого не было, заблокируйте.</string>
+    <string name="synaps_blocked">заблокированные</string>
 </resources>

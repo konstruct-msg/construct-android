@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,6 +27,7 @@ data class SynapsUiState(
     val status: String? = null,
     val lastMintedLink: String? = null,
     val busy: Boolean = false,
+    val blocked: List<Contact> = emptyList(),
 ) {
     val filtered: List<Contact>
         get() {
@@ -48,9 +50,10 @@ class SynapsViewModel @Inject constructor(
     val uiState: StateFlow<SynapsUiState> = combine(
         contactsRepository.contacts,
         contactsRepository.incomingRequests,
+        contactsRepository.blocked.onStart { emit(emptyList()) },
         form,
-    ) { contacts, incoming, rest ->
-        rest.copy(contacts = contacts, incomingRequests = incoming)
+    ) { contacts, incoming, blocked, rest ->
+        rest.copy(contacts = contacts, incomingRequests = incoming, blocked = blocked)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SynapsUiState())
 
     init {

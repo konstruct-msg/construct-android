@@ -85,6 +85,8 @@ class AccountAddressBookTest {
         val rows = linkedMapOf<String, UserEntity>()
         override fun observeContacts(): Flow<List<UserEntity>> = MutableStateFlow(rows.values.toList())
         override fun observeAll(): Flow<List<UserEntity>> = MutableStateFlow(rows.values.toList())
+        override fun observeBlocked(): Flow<List<UserEntity>> = MutableStateFlow(rows.values.filter { it.isBlocked })
+        override fun observeById(userId: String): Flow<UserEntity?> = MutableStateFlow(rows[userId])
         override suspend fun getById(userId: String) = rows[userId]
         override suspend fun upsert(user: UserEntity) { rows[user.id] = user }
         override suspend fun delete(userId: String) { rows.remove(userId) }

@@ -43,6 +43,7 @@ import com.construct.messenger.viewmodel.PendingChatViewModel
 @Composable
 fun MainTabView(
     onNavigateToChat: (String) -> Unit,
+    onOpenContact: (String) -> Unit = {},
     onScanQr: () -> Unit = {},
     settingsNavigation: SettingsNavigation = SettingsNavigation(),
     pendingChatViewModel: PendingChatViewModel = hiltViewModel(),
@@ -105,7 +106,7 @@ fun MainTabView(
                     onScanQr = onScanQr,
                 )
                 1 -> SynapsScreen(
-                    onNavigateToChat = onNavigateToChat,
+                    onOpenContact = onOpenContact,
                     onScanQr = onScanQr,
                 )
                 2 -> CallsScreen()

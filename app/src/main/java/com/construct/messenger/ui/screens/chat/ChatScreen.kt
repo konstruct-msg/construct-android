@@ -11,7 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -40,6 +40,7 @@ import com.construct.messenger.viewmodel.ChatViewModel
 fun ChatScreen(
     onNavigateBack: () -> Unit,
     onOpenSafetyNumbers: () -> Unit,
+    onOpenProfile: () -> Unit,
     viewModel: ChatViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -94,9 +95,9 @@ fun ChatScreen(
             title = uiState.title,
             showBack = true,
             onBack = onNavigateBack,
-            trailingIcon = Icons.Default.Shield,
+            trailingIcon = Icons.Default.Person,
             trailingColor = CTColor.textDim,
-            onTrailingAction = onOpenSafetyNumbers,
+            onTrailingAction = onOpenProfile,
         )
 
         SecurityNoticeBanner(

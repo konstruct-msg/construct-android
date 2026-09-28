@@ -31,6 +31,7 @@ import com.construct.messenger.data.model.Contact
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.components.CTButton
 import com.construct.messenger.ui.components.CTNavBar
+import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.CTSearchBar
 import com.construct.messenger.ui.components.CTTextField
 import com.construct.messenger.ui.theme.CTColor
@@ -41,7 +42,7 @@ import com.construct.messenger.viewmodel.SynapsViewModel
 
 @Composable
 fun SynapsScreen(
-    onNavigateToChat: (String) -> Unit,
+    onOpenContact: (String) -> Unit,
     onScanQr: () -> Unit = {},
     viewModel: SynapsViewModel = hiltViewModel(),
 ) {
@@ -120,7 +121,7 @@ fun SynapsScreen(
             }
         }
 
-        if (uiState.filtered.isEmpty()) {
+        if (uiState.filtered.isEmpty() && uiState.blocked.isEmpty()) {
             Text(
                 text = stringResource(R.string.synaps_empty_title),
                 style = ctRegular(14),
@@ -134,7 +135,18 @@ fun SynapsScreen(
                     .weight(1f)
             ) {
                 items(uiState.filtered, key = { it.userId }) { contact ->
-                    ContactRow(contact = contact, onClick = { onNavigateToChat(contact.userId) })
+                    ContactRow(contact = contact, onClick = { onOpenContact(contact.userId) })
+                }
+                if (uiState.blocked.isNotEmpty()) {
+                    item(key = "blocked-header") {
+                        CTSettingsSectionHeader(
+                            title = stringResource(R.string.synaps_blocked),
+                            color = CTColor.textDim,
+                        )
+                    }
+                    items(uiState.blocked, key = { "blocked-" + it.userId }) { contact ->
+                        ContactRow(contact = contact, onClick = { onOpenContact(contact.userId) })
+                    }
                 }
             }
         }
