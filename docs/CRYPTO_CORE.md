@@ -21,8 +21,8 @@
 │  │ coreLock     │  │ OrchestratorCore (Rust via FFI) │  │
 │  │ (Mutex)      │  │ ┌─────────────────────────────┐ │  │
 │  └──────┬───────┘  │ │ X3DH · Double Ratchet       │ │  │
-│         │          │ │ Kyber-768 · PQXDH           │ │  │
-│  ┌──────▼───────┐  │ │ Session heal · Archive      │ │  │
+│         │          │ │ ML-KEM-1024 · PQXDH v2      │ │  │
+│  ┌──────▼───────┐  │ │ Previous states · Retire    │ │  │
 │  │ KeyManager   │  │ │ Orchestrator state          │ │  │
 │  │ (Encrypted   │  │ └─────────────────────────────┘ │  │
 │  │  Keystore)   │  └─────────────────────────────────┘  │

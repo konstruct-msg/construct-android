@@ -1,6 +1,10 @@
 # Konstruct Messenger — Android
 
-Android-клиент privacy-first E2EE-мессенджера Construct. Kotlin + Jetpack Compose + Hilt.
+Android-клиент privacy-first E2EE-мессенджера Konstruct. Kotlin + Jetpack Compose + Hilt.
+
+**Новый здесь?** Порядок чтения — `AGENTS.md` → `docs/IMPLEMENTATION_PLAN.md` (единственный план:
+что сделано, что брать) → этот файл → документ своей области. Первая задача —
+`GOOD_FIRST_ISSUES.md`.
 Криптоядро — общий `construct-core` (Rust), подключается напрямую через UniFFI/JNI
 (тот же путь, что и на iOS).
 
@@ -9,11 +13,11 @@ Android-клиент privacy-first E2EE-мессенджера Construct. Kotlin
 ## Источник правды
 
 При любых расхождениях между кодом, документами и реальностью **каноном считается
-iOS-приложение** `construct-ios`. Документы могли устареть; iOS-исходники — нет.
+iOS-приложение** `construct-messenger`. Документы могли устареть; iOS-исходники — нет.
 
 | Что                                | Где смотреть на iOS                                               |
 |------------------------------------|-------------------------------------------------------------------|
-| Дизайн-система, токены, компоненты | `construct-ios/ConstructMessenger/Utilities/ConstructTheme.swift` |
+| Дизайн-система, токены, компоненты | `construct-messenger/ConstructMessenger/Utilities/ConstructTheme.swift` |
 | Аватары                            | `.../Views/Components/MainAvatarView.swift`                       |
 | Экраны                             | `.../Views/`                                                      |
 | ViewModels / бизнес-логика         | `.../ViewModels/`                                                 |
@@ -21,7 +25,7 @@ iOS-приложение** `construct-ios`. Документы могли уст
 | Сеть, gRPC                         | `.../Networking/`                                                 |
 
 Подробный перенос iOS → Android (с примерами на Kotlin) описан в
-`[ANDROID_ONBOARDING.md]`. Используй его как карту, но значения
+`docs/ANDROID_ONBOARDING.md`. Используй его как карту, но значения
 токенов и поведение периодически сверяй с iOS-исходником.
 
 > Пакет приложения — **`com.construct.messenger`** (namespace + applicationId),
@@ -34,7 +38,9 @@ iOS-приложение** `construct-ios`. Документы могли уст
 - **Android SDK** (compileSdk 35), minSdk 26
 - **Gradle 9.5.0** (через `./gradlew`, скачивается автоматически)
 - Для пересборки криптоядра: Rust + Android NDK + `uniffi-bindgen`
-- Для генерации gRPC: `protoc`, `protoc-gen-grpc-kotlin`, `protoc-gen-java`
+- gRPC-стабы генерирует Gradle-плагин сам. На Apple Silicon нужен **Rosetta**
+  (`softwareupdate --install-rosetta`): плагин grpc-java с меткой `osx-aarch_64` на деле x86_64,
+  и смена версии этого не меняет. Не запускай Gradle с `--rerun-tasks`.
 
 `local.properties` должен указывать `sdk.dir` (генерируется Android Studio).
 
@@ -66,7 +72,15 @@ iOS-приложение** `construct-ios`. Документы могли уст
 ## Криптоядро (construct-core)
 
 Нативная либа `libconstruct_core.so` лежит в `app/src/main/jniLibs/<abi>/`
-(`arm64-v8a`, `armeabi-v7a`, `x86_64`).
+(`arm64-v8a`, `armeabi-v7a`, `x86_64`) и **не хранится в git**: после клона её нет, и сборка
+остановится на `checkCoreLibrary`. Два способа получить её:
+
+- без Rust: скачать готовый архив по ссылке из `construct-core.lock` и разложить `.so` и
+  `construct_core.kt` из **одного** архива;
+- из исходников: `construct-core` рядом (`~/Code/construct-core`), Rust + NDK, затем скрипт ниже.
+
+`construct-core.lock` называет версию ядра, с которой собирается приложение; `checkCoreLibrary`
+сверяет её со штампом внутри каждой `.so`.
 
 Пересборка под все ABI и генерация Kotlin-биндингов локально:
 
@@ -80,7 +94,8 @@ iOS-приложение** `construct-ios`. Документы могли уст
 **Сгенерированный биндинг-файл не редактируется руками** — всё через обёртку
 `CryptoManager` (см. конвенции ниже).
 
-> Сейчас ядро автоматически собирается на CI/CD в GitHub Actions тут: https://github.com/konstruct-msg/construct-core
+Если NDK на машине новее того, что прописан в `construct-core/.cargo/config.toml`, укажи
+линкер через `CARGO_TARGET_<TRIPLE>_LINKER` / `_AR` вместо правки конфига ядра.
 
 `.proto` vendored в `app/src/main/proto/` (источник — `construct-protos`).
 Синхронизация: `scripts/sync-protos.sh`. Stubs генерирует Gradle protobuf plugin
@@ -96,70 +111,37 @@ construct-android/
 │   ├── java/com/construct/messenger/
 │   │   ├── MainActivity.kt / KonstructApp.kt
 │   │   ├── ui/               — Compose (screens, components, theme)
-│   │   ├── viewmodel/        — Splash, Onboarding, Orientation, Main, Chat, Synaps
+│   │   ├── viewmodel/        — по одному на экран (@HiltViewModel)
 │   │   ├── data/             — gRPC, Room, repositories (не моки)
-│   │   ├── domain/usecase/   — register, login, upload prekeys, send
+│   │   ├── domain/usecase/   — register, login, prekeys, send/resend, receiving open
 │   │   ├── service/          — MessagingRuntime, SessionManager, router/processor
 │   │   ├── crypto/           — CryptoManager (UniFFI; не вызывать из UI)
 │   │   ├── invite/           — device-minted v5
 │   │   └── stealth/          — sealed sender (fail-closed on send)
-│   ├── jniLibs/<abi>/        — libconstruct_core.so (arm64, armeabi-v7a, x86_64)
+│   ├── jniLibs/<abi>/        — libconstruct_core.so (не в git, см. выше)
 │   └── res/values/           — strings.xml (en, ru)
 ├── scripts/sync-protos.sh    — копия construct-protos → app/src/main/proto/
 ├── AGENTS.md
-├── GOOD_FIRST_ISSUES.md      — UI-задачи после 1:1 slice
+├── construct-core.lock       — версия ядра, с которой собирается приложение
+├── GOOD_FIRST_ISSUES.md      — первые задачи
 └── docs/
-    ├── IMPLEMENTATION_PLAN.md
-    ├── ANDROID_ONBOARDING.md
-    ├── GRPC_LAYER.md
-    └── WIRE_FORMAT_RULES.md
+    ├── IMPLEMENTATION_PLAN.md — единственный план и статус
+    ├── SESSIONS.md           — сессии: что делает ядро, что Android
+    ├── STAND.md              — живой стенд Android↔iOS
+    ├── ANDROID_ONBOARDING.md — канон дизайна и справочник
+    ├── API_CRYPTO_GUIDE.md / CRYPTO_CORE.md / FFI_BINARY_FORMAT.md
+    ├── GRPC_LAYER.md / TOKEN_AUTH.md
+    └── WIRE_FORMAT_RULES.md  — что можно класть на провод
 ```
-
-> `docs/IMPLEMENTATION_PLAN.md` — целевые фазы **и** актуальные статусы (обновлено
-> 2026-09-21). 1:1 текст по production gRPC, multi-device fan-out и собственная
-> foreground-доставка уже в дереве; VEIL / звонки / recovery — нет. FCM не
-> планируется: приложение не зависит от Google Play Services.
 
 ---
 
-## Текущее состояние (2026-09-21, `develop` @ `981f809`)
+## Текущее состояние
 
-Рабочий срез — **1:1 текст по production gRPC**. UI ходит только в репозитории.
-
-### Протокол
-
-- Cold start: `AuthRepository.restoreSession` → `MessagingRuntime` (import CFE-сессий, hydrate ACK, drain pending, стрим).
-- Приём: `MessageRouter` → CFE `handleEvent` → `ProcessorEffectsImpl` → Room.
-- Отправка: `SendMessageUseCase` (MessageContent → KNST → CFE OutgoingMessage). Stealth fail-closed. Identified конверт без `conversation_id`.
-- Контакты: mint v5 (QR ttl=300, link=43200), paste/`konstruct://add`, `AcceptInvite` / `RevokeInvite`.
-- OTPK upload после регистрации. `GetPreKeyBundle` на verify инвайта — `consume_one_time_prekey=false`.
-- END_SESSION (type 21, 1024 pad), heal, RESPONDER init, E2E receipts (KNST 14), `GetIdentityKey` на входящих.
-- FindUser / contact requests (`UserService`).
-- Account→device registry, recipient/own-replica fan-out, SSR1 sender sync и
-  non-destructive bundle candidate walk.
-- `CfeTimerBridge` передаёт launch/reconnect/timer events обратно в core.
-- `MessagingForegroundService` держит persistent `MessageStream` без GMS и
-  восстанавливает runtime после пересоздания процесса.
-
-### UI
-
-- Онбординг + Orientation; табы Chats / Synaps / Calls / Settings.
-- Список чатов из Room; пустой CTA открывает Synaps.
-- Чат: пузыри + composer, `ChatViewModel` observe/send.
-- Synaps: share invite, paste accept, список контактов (не honeycomb).
-- Дизайн-токены и CT*-компоненты, включая `MessageBubble` / `MessageInputView`.
-
-### Не сделано
-
-- VEIL, WebRTC/звонки, BIP39 recovery, media, MLS.
-- QR-экран инвайта; honeycomb Synaps.
-- Экраны настроек (Account, Appearance, Network, Security).
-- Queued multi-carrier receive reconciliation.
-- `ja`. Live iOS↔Android interop и smoke на реальном Android 11 ещё не гоняли.
-
-Моки (`data/mock/`) остались для тестов; Hilt биндит `*Impl`.
-
-Дальше — `GOOD_FIRST_ISSUES.md` и `docs/IMPLEMENTATION_PLAN.md`.
+Не ведётся здесь, чтобы не расходиться с планом: **`docs/IMPLEMENTATION_PLAN.md` §2–§3.**
+Одной строкой (2026-09-28, версия 0.2.0): 1:1 текст по production gRPC, мультидевайс, sealed
+sender, PQXDH v2, доставка без GMS; сессии обновляются отправкой, нечитаемое сообщение получает
+DECRYPTION_ERROR (END_SESSION больше нет). Нет VEIL, звонков, медиа, групп, восстановления.
 
 ---
 

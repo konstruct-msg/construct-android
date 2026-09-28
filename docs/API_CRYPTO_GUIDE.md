@@ -15,7 +15,7 @@
 > UI»: runtime, send/receive и v5 invites уже в дереве.
 >
 > Связанные доки: `IMPLEMENTATION_PLAN.md` (Phases 1, 2.3, 5), `AGENTS.md`,
-> `ANDROID_ONBOARDING.md`, `CRYPTO_CORE.md`, `SESSION_INITIALIZATION.md`, `SESSTION_LIFECYCLE.md`,
+> `ANDROID_ONBOARDING.md`, `CRYPTO_CORE.md`, `SESSIONS.md`,
 > `GRPC_LAYER.md`, `WIRE_FORMAT_RULES.md`
 
 ---
@@ -230,7 +230,8 @@ UniFFI даёт **два** артефакта, оба генерятся скр�
 | `OrchestratorCore` | после `setLocalUserId(accountId)` | высокоуровневая **event-driven CFE-машина** — основной рабочий объект; внутрь передаётся только `CryptoDeviceId` |
 
 `OrchestratorCore` оборачивает `ClassicCryptoCore` и добавляет: ACK-стор, очередь
-session healing, отложенные PQ-контрибуции, автоматический выбор сессии по `contactId`.
+сообщений, ждущих открытия сессии, прежние состояния сессии и решение, какое из них
+расшифровывает, ответ на нечитаемое сообщение (DECRYPTION_ERROR).
 Именно через него идёт вся боевая работа после авторизации.
 
 **Двухфазная инициализация** (канон — `CryptoManager.swift`):
@@ -260,7 +261,7 @@ class CryptoManager {
         val keys = keystore.loadPrivateKeys() ?: bootstrapCore?.exportPrivateKeys() ?: return
         val core = createOrchestratorCoreFromKeys(keys, cryptoDeviceId)
         keystore.loadOtpks()?.let { core.importOneTimePrekeys(it) }
-        // восстановить PQ-снапшот, ACK-стор, healing-очередь из CFE
+        // восстановить PQ-снапшот, ACK-стор, очередь ожидания из CFE
         orchestratorCore = core
         bootstrapCore = null
     }
@@ -291,13 +292,13 @@ fun handleEvent(event: CfeIncomingEvent): List<CfeAction>
 
 `MessageReceived`, `OutgoingMessage`, `OutgoingCallSignal`, `SessionInitCompleted`,
 `AckReceived`, `KeyBundleFetched`, `TimerFired`, `AckDbResult`, `HeartbeatReceived`,
-`NetworkReconnected`, `AppLaunched`. `ActiveChatChanged` ядро больше не принимает,
+`NetworkReconnected`, `AppLaunched`, `DecryptionErrorReceived`. `ActiveChatChanged` ядро больше не принимает,
 и Android его не слал.
 
-**Действия** (`CfeAction`) — что Kotlin обязан выполнить в ответ:
+**Действия** (`CfeAction`) — что Kotlin обязан выполнить в ответ (ядро `0.20.0`):
 
-- сетевые: `SendEncryptedMessage`, `SendReceipt`, `SendEndSession`,
-  `FetchPublicKeyBundle`;
+- сетевые: `SendEncryptedMessage`, `SendReceipt`, `SendDecryptionError` (готовый
+  запечатанный payload типа 28 — отправить как есть);
 - хранилище: `SaveToSecureStore`, `PersistAck`, `PruneAckStore`, `CheckAckInDb`.
   `PersistMessage` ядро убрало: расшифрованный текст пишет `onDecrypted`;
 - маршрутизация: `DuplicateDropped` — сообщение уже обработано, пометить и сдвинуть
@@ -305,12 +306,14 @@ fun handleEvent(event: CfeIncomingEvent): List<CfeAction>
 - UI/уведомления: `NotifyNewMessage`, `NotifySessionCreated`, `NotifyError`,
   `MarkMessageDelivered`, `MessageDecrypted`, `CallSignalDecrypted`;
 - крипто/жизненный цикл: `DecryptMessage`, `EncryptMessage`, `InitSession`,
-  `ArchiveSession`, `SessionHealNeeded`, `HealSuppressed`,
-  `ScheduleTimer`, `CancelTimer`, `SessionTerminated`,
-  `NotifyLinkedDevicesOfSessionReset`;
-- машина сессии: `OpenSession`, `OpenDeferred`, `OpenNotNeeded`, `OpeningGaveUp`,
-  `ResendSri`, `EndSessionNotNeeded`, `ApplyResetInit`, `ResetInitSuperseded`. Android пока
-  только логирует их (своего отправителя SESSION_RESET_INIT у него нет) — см. `CfeTimerBridge`.
+  `ArchiveSession`, `OpenReceiving`, `MessageQueuedPendingInit`, `SessionRetired`
+  (текущее состояние выведено — следующая отправка откроет новое), `ResendMessage`
+  (переотправить названное сообщение один раз), `ScheduleTimer`, `CancelTimer`;
+- `OpenSession` — просьба ядра открыть сессию (апгрейд до PQXDH v2). Android пока
+  только логирует её — главный открытый пробел, см. `SESSIONS.md` §8.
+
+Heal, END_SESSION, SESSION_RESET_INIT, ping/ready и их действия удалены из ядра
+27–28.09.2026 (`decisions/sessions-renew-by-sending.md`).
 
 `ApplyPqContribution` удалён вместе с ML-KEM-768 (PQXDH v2): ML-KEM-1024 входит в начальный
 ключ сессии, ядро декапсулирует само.
@@ -416,12 +419,13 @@ UI / ViewModel / Repository
 
 ## 2.9 Жизненный цикл сессии
 
-Состояния: `NONE → INITIALIZING → ACTIVE → HEALING → NONE`.
+Полное описание — `SESSIONS.md`. Коротко: сессия обновляется отправкой, запись хранит
+прежние состояния, нечитаемое сообщение получает DECRYPTION_ERROR (тип 28).
 
-- `hasSession(deviceId)`, `getAllSessionContactIds()`, `getSessionHealth(deviceId)`;
+- `hasSession(deviceId)`, `getAllSessionContactIds()`, `retireSession(deviceId)`;
   account ids переводятся через `PeerDeviceRegistry` до входа в core.
-- Session healing — забота оркестратора (`SessionHealNeeded`/`HealSuppressed` actions,
-  `RustHealingQueue`). **Не лечи сессию руками** — реагируй на CFE-действия.
+- **Не чини сессию руками** — реагируй на CFE-действия. Никаких окон, кулдаунов и
+  повторов по времени: ошибка расшифровки называет состояние, ядро решает само.
 - Ротация SPK: `rotateSignedPrekey()` → `RotatedSpkBundle` (новый pubkey + подпись) вместе с
   `beginKyberSpkRotation()` → одна `RotateSignedPreKey` с обеими гибридными подписями;
   `commitKyberSpkRotation()` после ответа сервера, `rollbackKyberSpkRotation()` если сервер
@@ -429,8 +433,9 @@ UI / ViewModel / Repository
 - Post-quantum — **PQXDH v2**, обязательный. ML-KEM-1024 входит в начальный ключ сессии:
   инициатор (`initSession`) отказывает бандлу без Kyber-ключа с обеими подписями и гибридной
   идентичности (`PQ_REQUIRED` в сообщении `CryptoException.SessionInitializationFailed` —
-  `CryptoManager.isPeerNotPostQuantum`); ответчик открывается из сырого payload
-  (`initReceivingSessionFromWirePayload`), ядро само декапсулирует своим Kyber-секретом.
+  `CryptoManager.isPeerNotPostQuantum`); ответчик открывается по сертификату отправителя
+  (`OpenReceiving`, `ReceivingOpenUseCase`) без запроса к серверу, ядро само декапсулирует
+  своим Kyber-секретом.
   Ключи генерирует и подписывает ядро, приложение хранит и публикует их — `KyberPrekeyService`.
   Замена живой сессии (ответ на `OpenSession`, когда он появится) — `reopenSession` ядра, не
   «remove, потом init».

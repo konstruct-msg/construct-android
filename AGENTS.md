@@ -1,6 +1,11 @@
 # AGENTS.md — construct-android
 
-Context for AI agents working in this repository.
+Context for AI agents working in this repository — and the invariants a person needs too.
+
+**Start here, in this order:** this file → `docs/IMPLEMENTATION_PLAN.md` (the one plan: what is
+done, what is next, priorities and "done when") → `README.md` (build; the `.so` is not in git) →
+the document for your area, listed in the plan's §1. First tasks for a new person:
+`GOOD_FIRST_ISSUES.md`.
 
 ---
 
@@ -89,8 +94,9 @@ which does all of the above. Either way the files stay untracked.
 - Compose UI only — no XML layouts
 - Room DB for local message persistence
 - gRPC lives in the `GrpcClient` singleton (two channels: auth + sealed); `MessagingRuntime` owns cold start
-- Working slice (2026-09-18): 1:1 text over production gRPC with foreground
-  delivery and multi-device fan-out. Status: `docs/IMPLEMENTATION_PLAN.md`
+- Status lives only in `docs/IMPLEMENTATION_PLAN.md`. Do not add a status line anywhere else —
+  that is how this file, the README and the plan came to disagree.
+- Closing a task from the plan means updating the plan in the same commit.
 
 ---
 
@@ -99,7 +105,7 @@ which does all of the above. Either way the files stay untracked.
 The iOS app is the **design canon**. Android mirrors it — every CT* component carries a
 `**Canon:** iOS ConstructTheme.swift → …` reference. Full token tables, the SF Symbol →
 Material Icon map, and the `CTStatus`/`CTStatusBadge` pattern live in
-`docs/ANDROID_ONBOARDING.md` §3 (kept in sync with `~/Code/construct-docs/client/ANDROID_ONBOARDING.md`).
+`docs/ANDROID_ONBOARDING.md` §3 — the only copy since 2026-09-28; the vault links here.
 Read §3 before changing any UI.
 
 ### Design philosophy: CT + Material fusion
@@ -141,6 +147,41 @@ moved to native `TabView`; prefer Material3 `NavigationBar` (icon-only) over the
 `[ BUTTON ]` → `CTButton`, ASCII row icons → Material icons, contact-request action glyphs.
 
 ---
+
+## Sessions — the core decides, Android executes
+
+**Read `docs/SESSIONS.md` before touching `SessionManager`, `MessageProcessor`,
+`ProcessorEffectsImpl`, `CfeTimerBridge` or anything that sends a control message.**
+
+- **A session renews by sending** (since 2026-09-27). Any message carrying the handshake header
+  opens a new state beside the one held; the core keeps previous states and promotes the one that
+  decrypts. There is no SESSION_RESET_INIT, ping/ready, confirm window, tie-break or heal.
+- **There is no END_SESSION** (since 2026-09-28). A message nothing reads is answered by the core
+  with a DECRYPTION_ERROR (content type 28) naming the state it was written on; the writer's core
+  retires that state only if it is current and resends the named message once. Manual reset, chat
+  and contact deletion and logout are **local** — nothing is sent.
+- Do not add a teardown message, a cooldown, a retry budget, a stale-by-timestamp check or an
+  "announce the reset" path. A message that names no state is the thing this replaced.
+- **Everything passed to the core is a `CryptoDeviceId`**, never an account id. Mixing them does
+  not throw; the message simply never opens.
+- Before writing a session or crypto decision in Kotlin, open `construct-core/src/construct_core.udl`:
+  the core probably already does it. Both `when`s over `CfeAction` are exhaustive — never add
+  `else ->`; a new core action must fail to compile until it is handled.
+- Older docs, iOS code at older revisions and your own memory all describe the removed mechanisms.
+  Do not port them.
+
+## Changes on the delivery or crypto path
+
+A commit that touches sending, receiving, sessions, sealed sender or the envelope answers three
+questions in its message — not "this is safe", but the answers:
+
+1. What does the server (or any relay) learn that it did not learn before?
+2. What can a party — server, sender, a sibling device — withhold or substitute that it could not
+   before?
+3. Which trust boundary moves, and in which direction?
+
+An honest "something" to 1 or 2 is a design decision and goes through `construct-docs/decisions/`
+before it is merged.
 
 ## No Google Play Services — decided 2026-08-23, before any delivery code existed
 
@@ -193,9 +234,8 @@ All project documentation: `~/Code/construct-docs` (Obsidian vault).
 **Authoritative map + writing rules: `~/Code/construct-docs/AGENTS.md`** — read it before
 contributing docs. The vault is a flat domain-folder structure (`architecture/`, `backend/`,
 `client/`, `cryptocore/`, `security/`, `deployment/`, `sessions/`, `decisions/`, `_archive/`, …).
-The Android design doc lives at
-`~/Code/construct-docs/client/ANDROID_ONBOARDING.md` (kept in sync with this repo's
-`docs/ANDROID_ONBOARDING.md`).
+The Android design doc is this repo's `docs/ANDROID_ONBOARDING.md`; the vault keeps a pointer to
+it, not a copy (two copies "kept in sync" had already diverged).
 
 ## Shared Construct Docs Workflow
 
