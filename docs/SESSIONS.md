@@ -114,11 +114,10 @@ every one on each restart until 2026-09-24.
 
 ## 8. What is not done here
 
-- **`CfeAction.OpenSession` is not acted on.** Android opens sessions itself
-  (`SessionManager.ensureSession`) instead of asking the core's machine, so the core's requests to
-  open — the PQXDH v2 upgrade of a classic session 15 s after `AppLaunched` — are logged with a
-  warning and dropped. iOS acts on them (`SessionActionExecutor`). This is the largest remaining
-  session gap; see `IMPLEMENTATION_PLAN.md`.
+- **`CfeAction.OpenSession` is executed.** The timer and receive action executors fetch a fresh
+  bundle for the named `CryptoDeviceId` and call `reopen_session`; the core keeps the existing
+  state as a previous state and leaves it intact if PQXDH v2 cannot be opened. The next ordinary
+  message carries the handshake header. See `IMPLEMENTATION_PLAN.md` for the remaining stand check.
 - The server-id map (§4) is in memory only.
 - `session_meta.establishedAtMs` is written and never read (it fed the stale-END_SESSION filter);
   removing it needs a Room migration.

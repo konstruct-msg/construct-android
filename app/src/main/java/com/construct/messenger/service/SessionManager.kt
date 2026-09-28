@@ -262,6 +262,23 @@ class SessionManager @Inject constructor(
         return openSession(fetched)
     }
 
+    /** Execute the core's PQXDH upgrade request for one known peer device. */
+    suspend fun reopenSessionForDevice(deviceId: String): String {
+        require(IdentityIds.isCryptoDeviceId(deviceId)) { "invalid peer CryptoDeviceId" }
+        val accountId = peerDeviceRegistry.accountIdForDevice(deviceId)
+            ?: error("no account mapping for peer device ${deviceId.take(8)}…")
+        val fetched = fetchPeerBundleData(accountId, consumeOtpk = true, deviceId = deviceId)
+        check(fetched.deviceId == deviceId) { "pre-key bundle resolved to a different peer device" }
+        return try {
+            cryptoManager.reopenSession(deviceId, fetched.bundle)
+        } catch (e: Exception) {
+            if (CryptoManager.isPeerNotPostQuantum(e)) {
+                Log.w(TAG, "peer device ${deviceId.take(8)}… has no PQXDH v2 keys — upgrade deferred (${e.message})")
+            }
+            throw e
+        }
+    }
+
     /**
      * `initSession`, with the one refusal that is not a fault said as such: a peer whose bundle
      * has no PQXDH v2 keys (a build before ML-KEM-1024, or keys not published yet) is refused with

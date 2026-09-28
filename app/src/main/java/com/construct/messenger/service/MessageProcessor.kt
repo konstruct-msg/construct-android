@@ -256,12 +256,11 @@ class MessageProcessor @Inject constructor(
                 is CfeAction.SendEncryptedMessage,
                 is CfeAction.OpenReceiving,
                 -> Log.d(TAG, "CFE action consumed by routing layer: ${action::class.simpleName}")
-                // The machine's answers about *opening* a session. This client does not ask it —
-                // its session opening is still its own, so nothing here consumes these and the
-                // honest record is a warning, not a "consumed by" line that would read as wired.
-                // iOS acts on `OpenSession` (`SessionActionExecutor`, the PQXDH v2 upgrade sweep).
-                is CfeAction.OpenSession,
-                -> Log.w(TAG, "CFE session-open action not acted on by this client: ${action::class.simpleName}")
+                is CfeAction.OpenSession -> runCatching {
+                    sessionManager.reopenSessionForDevice(action.contactId)
+                }.onFailure { error ->
+                    Log.e(TAG, "CFE requested session reopen for ${action.contactId.take(8)}… failed", error)
+                }
             }
         }
     }

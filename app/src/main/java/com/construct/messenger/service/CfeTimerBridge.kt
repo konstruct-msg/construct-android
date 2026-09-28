@@ -26,6 +26,7 @@ class CfeTimerBridge @Inject constructor(
     private val orchestrator: OrchestratorGateway,
     private val effects: ProcessorEffects,
     private val held: HeldEnvelopes,
+    private val sessionManager: SessionManager,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val eventMutex = Mutex()
@@ -128,12 +129,11 @@ class CfeTimerBridge @Inject constructor(
                 is CfeAction.InitSession,
                 is CfeAction.SendEncryptedMessage,
                 -> Log.d(TAG, "CFE routing action on timer path: ${action::class.simpleName}")
-                // The machine's answers about opening a session. Reached from here whenever an
-                // alarm it armed fires, and nothing on this client acts on them yet — session
-                // opening is still Android's own. Warned rather than folded into the line above,
-                // which would read as wired. iOS acts on `OpenSession`; see `MessageProcessor`.
-                is CfeAction.OpenSession,
-                -> Log.w(TAG, "CFE session-open action not acted on by this client: ${action::class.simpleName}")
+                is CfeAction.OpenSession -> runCatching {
+                    sessionManager.reopenSessionForDevice(action.contactId)
+                }.onFailure { error ->
+                    Log.e(TAG, "CFE requested session reopen for ${action.contactId.take(8)}… failed", error)
+                }
             }
         }
     }
