@@ -6,6 +6,8 @@ import android.util.Base64
 import android.util.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
+import com.construct.messenger.invite.AccountAddress
+import com.construct.messenger.invite.AccountAddressBook
 import com.google.protobuf.ByteString
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.security.SecureRandom
@@ -39,6 +41,7 @@ class StealthSenderService @Inject constructor(
     private val serverKeys: ServerKeysProvider,
     private val policy: StealthPolicy,
     private val wallet: TokenWalletService,
+    private val addressBook: AccountAddressBook,
 ) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
@@ -105,7 +108,12 @@ class StealthSenderService @Inject constructor(
 
         val deliveryTag = ByteArray(32).also(random::nextBytes)
         val builder = SealedInner.newBuilder()
-            .setRecipientUserId(recipientUserId)
+            // By their address when this device knows it, by the server's id otherwise. Only this
+            // field: the token below stays keyed by the account id, because the server resolves
+            // the address to that id before it checks anything else.
+            .setRecipientUserId(
+                AccountAddress.recipientField(recipientUserId, addressBook.of(recipientUserId)),
+            )
             .setSenderCertCiphertext(ByteString.copyFrom(sealedCert))
             .setEncryptedPayload(ByteString.copyFrom(encryptedPayload))
             .setContentType(contentType)

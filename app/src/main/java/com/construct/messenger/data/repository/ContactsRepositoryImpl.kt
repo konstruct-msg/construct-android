@@ -14,6 +14,7 @@ import com.construct.messenger.invite.InviteGenerator
 import com.construct.messenger.invite.InviteObject
 import com.construct.messenger.invite.InviteVerifier
 import com.construct.messenger.invite.MintedInvite
+import com.google.protobuf.ByteString
 import com.construct.messenger.util.DisplayNameGenerator
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -88,6 +89,9 @@ class ContactsRepositoryImpl @Inject constructor(
 
     override suspend fun accept(raw: String): AcceptInviteResult {
         return try {
+            // Contacts are made only by an account whose address this device knows — the gate on
+            // the scan and link surfaces says why; this is the backstop for a link opened directly.
+            if (keystoreManager.getOwnAccountAddress() == null) throw InviteException.NoAccountAddress
             val invite = verifier.decode(raw)
             val verified = verifier.verify(invite)
             val request = AcceptInviteRequest.newBuilder()
@@ -268,6 +272,9 @@ class ContactsRepositoryImpl @Inject constructor(
                 displayName = display,
                 isContact = true,
                 identityPublic = identityPublic,
+                // From the signed invite, already checked by the server against the account's
+                // recovery key. An account's address cannot change.
+                accountAddress = invite.addr,
             ),
         )
     }
@@ -277,17 +284,24 @@ class ContactsRepositoryImpl @Inject constructor(
     }
 }
 
-private fun InviteObject.toProto(): InviteToken {
+/**
+ * The decoded invite as the wire message `AcceptInvite` carries. The server rebuilds the
+ * canonical string from exactly these fields, so a field dropped here reads as a bad signature on
+ * the server for an invite that verified here — `internal` so a test can reach the mapping.
+ */
+internal fun InviteObject.toProto(): InviteToken {
     val b = InviteToken.newBuilder()
         .setV(v)
         .setJti(jti)
         .setUuid(uuid)
         .setServer(server)
         .setTs(ts)
-        .setEphPub(ephKey)
         .setSig(sig)
-    if (deviceId.isNotEmpty()) b.deviceId = deviceId
+        .setDeviceId(deviceId)
+        .setTtl(ttl)
+        // The last field of the canonical string, and the one the server checks against the
+        // account's recovery key. `eph_pub` (v1–v3) stays empty: the server refuses a v5 with one.
+        .setAddr(ByteString.copyFrom(addr))
     if (!un.isNullOrEmpty()) b.un = un
-    ttl?.let { b.setTtl(it) }
     return b.build()
 }

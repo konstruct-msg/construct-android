@@ -65,14 +65,31 @@ class KeystoreManager @Inject constructor(
     }
 
     /** Clears tokens on logout. Device id and private keys are kept — they identify the
-     * device's identity, not a session. */
+     * device's identity, not a session. The account's address goes with the account id: the next
+     * account on this device has another, and a stale one would go into every invite it mints. */
     fun clearTokens() {
         prefs.edit()
             .remove(KEY_ACCESS_TOKEN)
             .remove(KEY_REFRESH_TOKEN)
             .remove(KEY_USER_ID)
+            .remove(KEY_ACCOUNT_ADDRESS)
             .apply()
     }
+
+    /**
+     * This account's address — its Ed25519 recovery public key, derived from the phrase on this
+     * device ([com.construct.messenger.invite.AccountAddress]). Never taken from the server.
+     * Same storage envelope as [savePrivateKeys].
+     */
+    fun saveOwnAccountAddress(key: ByteArray) {
+        prefs.edit().putString(KEY_ACCOUNT_ADDRESS, Base64.encodeToString(key, Base64.NO_WRAP)).commit()
+    }
+
+    /** `null` until this device has seen the recovery phrase. */
+    fun getOwnAccountAddress(): ByteArray? =
+        prefs.getString(KEY_ACCOUNT_ADDRESS, null)
+            ?.let { Base64.decode(it, Base64.NO_WRAP) }
+            ?.takeIf { it.size == com.construct.messenger.invite.AccountAddress.LENGTH }
 
     /**
      * Persists [CryptoManager.exportPrivateKeys][com.construct.messenger.crypto.CryptoManager.exportPrivateKeys]
@@ -137,5 +154,6 @@ class KeystoreManager @Inject constructor(
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_PRIVATE_KEYS = "private_keys_cfe"
         const val KEY_KYBER_PREKEYS = "kyber_prekeys_cfe"
+        const val KEY_ACCOUNT_ADDRESS = "account_address"
     }
 }

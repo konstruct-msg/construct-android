@@ -32,7 +32,7 @@ class InviteVerifier @Inject constructor(
             val req = GetPreKeyBundleRequest.newBuilder()
                 .setUserId(invite.uuid)
                 .setConsumeOneTimePrekey(false)
-            if (invite.deviceId.isNotEmpty()) req.deviceId = invite.deviceId
+                .setDeviceId(invite.deviceId)
             grpcClient.key.getPreKeyBundle(req.build())
         } catch (e: Exception) {
             usedJtis.remove(invite.jti)
@@ -47,14 +47,13 @@ class InviteVerifier @Inject constructor(
             throw InviteException.PublicKeyFetchFailed
         }
 
-        if (invite.deviceId.isNotEmpty()) {
-            val expected = cryptoManager.deriveDeviceIdFromIdentity(identityPublic)
-            if (invite.deviceId.lowercase() != expected.lowercase()) {
-                usedJtis.remove(invite.jti)
-                throw InviteException.DeviceIdMismatch
-            }
+        val expected = cryptoManager.deriveDeviceIdFromIdentity(identityPublic)
+        if (invite.deviceId.lowercase() != expected.lowercase()) {
+            usedJtis.remove(invite.jti)
+            throw InviteException.DeviceIdMismatch
         }
 
+        // The canonical string covers `addr`: an address changed in transit fails here.
         val sig = b64decode(invite.sig)
         val ok = cryptoManager.verifyInvite(invite.canonicalString(), sig, verifyingKey)
         if (!ok) {

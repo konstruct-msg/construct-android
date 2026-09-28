@@ -172,4 +172,25 @@
     <string name="notification_new_message">Новое сообщение</string>
     <string name="notification_channel_messages">Сообщения</string>
     <string name="notification_channel_messages_description">Новые сообщения. Показывается только «Новое сообщение» — без отправителя и текста.</string>
+
+    <!-- Recovery phrase gate: decisions/invite-carries-the-account-address.md -->
+    <string name="recovery_gate_nav_title">Фраза восстановления</string>
+    <string name="recovery_gate_title">Контакты начинаются с фразы восстановления</string>
+    <string name="recovery_gate_why">Контакты пишут вам на адрес, который принадлежит вам, а не нашему серверу. Этот адрес выводится из фразы восстановления, и каждое приглашение его несёт. Те же 12 слов вернут аккаунт, если пропадут все устройства. Восстановить их за вас не сможет никто, включая нас.</string>
+    <string name="recovery_gate_setup_note">Это займёт около минуты: вы запишете 12 слов и подтвердите три из них.</string>
+    <string name="recovery_gate_setup_action">Настроить фразу восстановления</string>
+    <string name="recovery_gate_confirm_note">У аккаунта уже есть фраза восстановления, но это устройство её не знает. Введите её один раз. Фраза остаётся на этом устройстве и никуда не отправляется.</string>
+    <string name="recovery_gate_later">Позже</string>
+    <string name="recovery_write_down">Запишите эти 12 слов по порядку.</string>
+    <string name="recovery_never_share">Никому их не показывайте. Тот, у кого есть эти слова, может забрать аккаунт.</string>
+    <string name="recovery_words_written">Слова записаны</string>
+    <string name="recovery_quiz_prompt">Введите три слова, чтобы подтвердить, что они у вас есть.</string>
+    <string name="recovery_quiz_word_n">Слово №%1$d</string>
+    <string name="recovery_quiz_failed">Слова не совпадают. Проверьте, что вы записали.</string>
+    <string name="recovery_setup_failed">Не удалось сохранить фразу восстановления. Проверьте соединение и попробуйте ещё раз.</string>
+    <string name="recovery_confirm_placeholder">12 слов через пробел</string>
+    <string name="recovery_confirm_action">Подтвердить</string>
+    <string name="recovery_confirm_invalid_phrase">Это не фраза из 12 слов. Проверьте написание каждого слова.</string>
+    <string name="recovery_confirm_other_account">Эта фраза от другого аккаунта.</string>
+    <string name="recovery_confirm_failed">Не удалось проверить фразу на сервере. Попробуйте ещё раз.</string>
 </resources>

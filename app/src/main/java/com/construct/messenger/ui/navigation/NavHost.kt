@@ -9,6 +9,8 @@ import androidx.navigation.navArgument
 import com.construct.messenger.ui.screens.chat.ChatScreen
 import com.construct.messenger.ui.screens.invite.ContactQrScreen
 import com.construct.messenger.ui.screens.invite.QrScannerScreen
+import com.construct.messenger.ui.screens.recovery.RecoveryGated
+import com.construct.messenger.ui.screens.recovery.RecoveryPromptScreen
 import com.construct.messenger.ui.screens.main.MainTabView
 import com.construct.messenger.ui.screens.onboarding.OnboardingScreen
 import com.construct.messenger.ui.screens.orientation.OrientationScreen
@@ -77,7 +79,9 @@ fun KonstructNavHost(
                     if (fromSettings) {
                         navController.popBackStack()
                     } else {
-                        navController.navigate(Screen.Main.createRoute(startTab = TAB_SYNAPS)) {
+                        // Registration stays one step; the recovery phrase is asked for here,
+                        // before anyone reaches for an invite (which waits on it).
+                        navController.navigate(Screen.RecoveryPrompt.route) {
                             popUpTo(Screen.Orientation.route) { inclusive = true }
                             launchSingleTop = true
                         }
@@ -114,21 +118,37 @@ fun KonstructNavHost(
                 ),
             )
         }
-        composable(Screen.InviteQr.route) {
-            ContactQrScreen(onNavigateBack = { navController.popBackStack() })
-        }
-        composable(Screen.ScanQr.route) {
-            QrScannerScreen(
-                onNavigateBack = { navController.popBackStack() },
-                // The invite is waiting in PendingInviteStore; the Synaps tab redeems it and
-                // shows the result, as for a tapped konstruct://add link.
-                onScanned = {
+        composable(Screen.RecoveryPrompt.route) {
+            RecoveryPromptScreen(
+                onDone = {
                     navController.navigate(Screen.Main.createRoute(startTab = TAB_SYNAPS)) {
-                        popUpTo(Screen.Main.route) { inclusive = true }
+                        popUpTo(Screen.RecoveryPrompt.route) { inclusive = true }
                         launchSingleTop = true
                     }
                 },
             )
+        }
+        // Both invite surfaces wait on the recovery phrase: an invite names the account's
+        // address, and this device learns it only from the phrase.
+        composable(Screen.InviteQr.route) {
+            RecoveryGated(onBack = { navController.popBackStack() }) {
+                ContactQrScreen(onNavigateBack = { navController.popBackStack() })
+            }
+        }
+        composable(Screen.ScanQr.route) {
+            RecoveryGated(onBack = { navController.popBackStack() }) {
+                QrScannerScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    // The invite is waiting in PendingInviteStore; the Synaps tab redeems it and
+                    // shows the result, as for a tapped konstruct://add link.
+                    onScanned = {
+                        navController.navigate(Screen.Main.createRoute(startTab = TAB_SYNAPS)) {
+                            popUpTo(Screen.Main.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
         }
         composable(
             route = Screen.Chat.route,

@@ -28,6 +28,7 @@ import uniffi.construct_core.mnemonicToSeed
 import uniffi.construct_core.planSend as planSendTargets
 import uniffi.construct_core.signInviteData
 import uniffi.construct_core.signRecoveryChallenge
+import uniffi.construct_core.validateMnemonic
 import uniffi.construct_core.verifyInviteSignature
 import com.construct.messenger.data.model.IdentityIds
 import javax.inject.Inject
@@ -408,6 +409,12 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
 
     fun deriveRecoveryKeypair(mnemonic: String): RecoveryKeypair =
         deriveRecoveryKeypair(mnemonicToSeed(mnemonic))
+
+    fun isValidMnemonic(mnemonic: String): Boolean = validateMnemonic(mnemonic)
+
+    /** Signs [message] with a recovery private key — the `SetRecoveryKey` proof of possession. */
+    fun signWithRecoveryKey(keypair: RecoveryKeypair, message: String): ByteArray =
+        signRecoveryChallenge(keypair.privateKey, message).toByteArray()
 
     fun computePow(challenge: String, difficulty: Int): PowSolution =
         computePow(challenge, difficulty.toUInt())

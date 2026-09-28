@@ -1,6 +1,7 @@
 package com.construct.messenger.invite
 
 import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.data.local.KeystoreManager
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -16,6 +17,7 @@ data class MintedInvite(
 @Singleton
 class InviteGenerator @Inject constructor(
     private val cryptoManager: CryptoManager,
+    private val keystoreManager: KeystoreManager,
 ) {
     fun mintLink(
         userId: String,
@@ -29,12 +31,17 @@ class InviteGenerator @Inject constructor(
         return MintedInvite(
             jti = invite.jti,
             issuedAtEpochSec = invite.ts,
-            ttlSeconds = invite.ttl ?: ttlSeconds,
+            ttlSeconds = invite.ttl,
             payload = payload,
             deepLink = "${InviteConfig.DEEP_LINK_SCHEME}?invite=$payload",
         )
     }
 
+    /**
+     * Refuses without this account's address ([InviteException.NoAccountAddress]): an invite
+     * naming none would leave the redeemer writing to the server-assigned id. The UI gates on the
+     * recovery phrase before it gets here.
+     */
     fun generate(
         userId: String,
         deviceId: String,
@@ -49,20 +56,19 @@ class InviteGenerator @Inject constructor(
         ) {
             throw InviteException.InvalidDeviceId
         }
-        val version = InviteConfig.CURRENT_VERSION
-        val statedTtl = if (InviteConfig.carriesTtl(version)) ttlSeconds else null
+        val addr = keystoreManager.getOwnAccountAddress() ?: throw InviteException.NoAccountAddress
         val un = username?.trim()?.takeIf { it.isNotEmpty() }
         val unsigned = InviteObject(
-            v = version,
+            v = InviteConfig.VERSION,
             jti = UUID.randomUUID().toString().lowercase(),
             uuid = userId.lowercase(),
             deviceId = device,
             server = InviteConfig.normalizeServer(server),
-            ephKey = "",
             ts = System.currentTimeMillis() / 1000,
             sig = "",
             un = un,
-            ttl = statedTtl,
+            ttl = ttlSeconds,
+            addr = addr,
         )
         val canonical = unsigned.canonicalString()
         val signature = try {

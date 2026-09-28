@@ -28,6 +28,9 @@ data class UserEntity(
     val isSharingWithMe: Boolean = false,
     /** Peer's X25519 identity public key — sealed-sender input. Remembered at session init. */
     val identityPublic: ByteArray? = null,
+    /** Their account address (Ed25519 recovery public key), from their signed invite. Sealed
+     * sends name the recipient by it; `null` for a contact added before invites carried it. */
+    val accountAddress: ByteArray? = null,
 ) {
     // ByteArray field: structural equality must be explicit.
     override fun equals(other: Any?): Boolean {
@@ -40,7 +43,8 @@ data class UserEntity(
             isContact == other.isContact &&
             isBlocked == other.isBlocked &&
             isSharingWithMe == other.isSharingWithMe &&
-            identityPublic.contentEquals(other.identityPublic)
+            identityPublic.contentEquals(other.identityPublic) &&
+            accountAddress.contentEquals(other.accountAddress)
     }
 
     override fun hashCode(): Int {
@@ -52,6 +56,7 @@ data class UserEntity(
         result = 31 * result + isBlocked.hashCode()
         result = 31 * result + isSharingWithMe.hashCode()
         result = 31 * result + identityPublic.contentHashCode()
+        result = 31 * result + accountAddress.contentHashCode()
         return result
     }
 }

@@ -82,21 +82,22 @@ class WireContractTest {
     }
 
     @Test
-    fun inviteV5CanonicalIncludesTtl() {
+    fun inviteV5CanonicalEndsWithTtlThenAddress() {
         val invite = InviteObject(
             v = 5,
             jti = "11111111-1111-1111-1111-111111111111",
             uuid = "22222222-2222-2222-2222-222222222222",
             deviceId = "0123456789abcdef0123456789abcdef",
             server = "konstruct.cc",
-            ephKey = "",
             ts = 1_700_000_000L,
             sig = "AA",
             un = null,
             ttl = 300,
+            addr = ByteArray(32) { 0xAB.toByte() },
         )
         assertEquals(
-            "5|11111111-1111-1111-1111-111111111111|22222222-2222-2222-2222-222222222222|0123456789abcdef0123456789abcdef|konstruct.cc|1700000000||300",
+            "5|11111111-1111-1111-1111-111111111111|22222222-2222-2222-2222-222222222222|0123456789abcdef0123456789abcdef|konstruct.cc|1700000000||300|" +
+                "ab".repeat(32),
             invite.canonicalString(),
         )
         assertEquals(300L, InviteConfig.effectiveTtl(300))

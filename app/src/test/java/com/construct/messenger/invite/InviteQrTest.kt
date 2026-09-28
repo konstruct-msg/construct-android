@@ -19,11 +19,11 @@ class InviteQrTest {
         uuid = UUID.randomUUID().toString(),
         deviceId = "0123456789abcdef0123456789abcdef",
         server = "konstruct.cc",
-        ephKey = "",
         ts = System.currentTimeMillis() / 1000,
         sig = b64encode(ByteArray(64) { it.toByte() }),
         un = null,
         ttl = InviteConfig.QR_TTL_SECONDS,
+        addr = ByteArray(AccountAddress.LENGTH) { 0x5A },
     )
     private val payload = invite.toBase64Url()
     private val link = "konstruct://add?invite=$payload"

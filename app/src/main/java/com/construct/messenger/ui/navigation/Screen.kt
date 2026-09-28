@@ -25,4 +25,6 @@ sealed class Screen(val route: String) {
     data object InviteQr : Screen("invite_qr")
     /** Camera scanner; a scanned invite is redeemed on the Synaps tab. */
     data object ScanQr : Screen("scan_qr")
+    /** The recovery phrase, offered once after the first orientation (iOS `RecoveryGateView`). */
+    data object RecoveryPrompt : Screen("recovery_prompt")
 }

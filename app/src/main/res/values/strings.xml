@@ -175,4 +175,25 @@
     <string name="notification_new_message">New message</string>
     <string name="notification_channel_messages">Messages</string>
     <string name="notification_channel_messages_description">New messages. Shows only “New message” — never the sender or the text.</string>
+
+    <!-- Recovery phrase gate: decisions/invite-carries-the-account-address.md -->
+    <string name="recovery_gate_nav_title">Recovery phrase</string>
+    <string name="recovery_gate_title">Contacts start with your recovery phrase</string>
+    <string name="recovery_gate_why">Your contacts reach you at an address that belongs to you, not to our server. That address comes from your recovery phrase, and every invite carries it. The same 12 words bring your account back if you lose every device. Nobody can restore them for you, including us.</string>
+    <string name="recovery_gate_setup_note">Takes about a minute: you write down 12 words and confirm three of them.</string>
+    <string name="recovery_gate_setup_action">Set up recovery phrase</string>
+    <string name="recovery_gate_confirm_note">Your account already has a recovery phrase, but this device hasn\'t seen it. Enter it once. The phrase stays on this device and is never sent.</string>
+    <string name="recovery_gate_later">Later</string>
+    <string name="recovery_write_down">Write these 12 words down, in order.</string>
+    <string name="recovery_never_share">Never share them. Anyone with these words can take over your account.</string>
+    <string name="recovery_words_written">I wrote them down</string>
+    <string name="recovery_quiz_prompt">Enter three of the words to confirm you have them.</string>
+    <string name="recovery_quiz_word_n">Word #%1$d</string>
+    <string name="recovery_quiz_failed">Those words don\'t match. Check what you wrote down.</string>
+    <string name="recovery_setup_failed">Couldn\'t save the recovery phrase. Check the connection and try again.</string>
+    <string name="recovery_confirm_placeholder">12 words, separated by spaces</string>
+    <string name="recovery_confirm_action">Confirm</string>
+    <string name="recovery_confirm_invalid_phrase">That isn\'t a valid 12-word phrase. Check the spelling of each word.</string>
+    <string name="recovery_confirm_other_account">This phrase belongs to a different account.</string>
+    <string name="recovery_confirm_failed">Couldn\'t check the phrase with the server. Try again.</string>
 </resources>

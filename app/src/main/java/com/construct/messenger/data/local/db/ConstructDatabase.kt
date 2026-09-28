@@ -24,7 +24,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         IssuedInviteEntity::class,
         PeerDeviceEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -61,6 +61,16 @@ abstract class ConstructDatabase : RoomDatabase() {
                 db.execSQL(
                     "ALTER TABLE messages ADD COLUMN isEdited INTEGER NOT NULL DEFAULT 0",
                 )
+            }
+        }
+
+        /**
+         * A contact's account address, from their v5 invite. Nullable: contacts added before
+         * invites carried it keep being addressed by their server id.
+         */
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE users ADD COLUMN accountAddress BLOB")
             }
         }
     }
