@@ -94,6 +94,10 @@ which does all of the above. Either way the files stay untracked.
 - Compose UI only — no XML layouts
 - Room DB for local message persistence
 - gRPC lives in the `GrpcClient` singleton (two channels: auth + sealed); `MessagingRuntime` owns cold start
+- **Before pushing: `scripts/verify.sh`** (add `--device` when the change touches sessions,
+  delivery or start-up). It exists because this repo's breakages were mostly not test failures —
+  commits that never compiled behind `checkCoreLibrary`, a `.so` from another core build, a core
+  action with no executor. Its first run caught a commit whose tests no longer compiled.
 - Status lives only in `docs/IMPLEMENTATION_PLAN.md`. Do not add a status line anywhere else —
   that is how this file, the README and the plan came to disagree.
 - Closing a task from the plan means updating the plan in the same commit.

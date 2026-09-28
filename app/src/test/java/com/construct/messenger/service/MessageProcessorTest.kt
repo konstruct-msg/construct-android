@@ -375,7 +375,7 @@ class MessageProcessorTest {
     fun `a drained sender sync is routed as our own copy`() = runBlocking {
         val effects = RecordingEffects()
         held.hold(incoming(id = "sync-1").copy(contentType = ContentType.CONTENT_TYPE_SENDER_SYNC))
-        val bridge = CfeTimerBridge(FakeGateway(), effects, held)
+        val bridge = CfeTimerBridge(FakeGateway(), effects, held, sessionManager)
 
         bridge.execute(listOf(CfeAction.MessageDecrypted(senderDevice, "sync-1", byteArrayOf(1))))
 
@@ -390,11 +390,42 @@ class MessageProcessorTest {
     fun `an opened reset init never reaches the transcript`() = runBlocking {
         val effects = RecordingEffects()
         held.hold(incoming(id = "sri-1").copy(contentType = ContentType.CONTENT_TYPE_SESSION_RESET_INIT))
-        val bridge = CfeTimerBridge(FakeGateway(), effects, held)
+        val bridge = CfeTimerBridge(FakeGateway(), effects, held, sessionManager)
 
         bridge.execute(listOf(CfeAction.MessageDecrypted(senderDevice, "sri-1", "\$CEABF9BC".toByteArray())))
 
         assertTrue(effects.calls.contains("markProcessed:sri-1"))
         assertTrue(effects.calls.none { it.startsWith("onDecrypted:") || it.startsWith("onSenderSync:") })
+    }
+
+    // ── The core asks for an open: OpenSession ─────────────────────────
+
+    /** The PQXDH v2 upgrade sweep asks for a new session over a held one; the executor reopens
+     * that device. Until 2026-09-28 Android only logged "not acted on", so a classical session
+     * was never upgraded. Mutation that reddens it: restore the log-only branch. */
+    @Test
+    fun `an OpenSession from the core reopens that device`() = runBlocking {
+        val bridge = CfeTimerBridge(FakeGateway(), RecordingEffects(), held, sessionManager)
+
+        bridge.execute(listOf(CfeAction.OpenSession(senderDevice)))
+
+        org.mockito.kotlin.verifyBlocking(sessionManager) { reopenSessionForDevice(senderDevice) }
+    }
+
+    /** A refused reopen (a peer without ML-KEM-1024 keys, a failed fetch) is logged and nothing
+     * else: the core already kept the held session, and the actions after it still run. */
+    @Test
+    fun `a refused reopen does not stop the actions after it`() = runBlocking {
+        val effects = RecordingEffects()
+        org.mockito.kotlin.wheneverBlocking { sessionManager.reopenSessionForDevice(senderDevice) }
+            .thenThrow(IllegalStateException("PQ_REQUIRED: no Kyber prekey"))
+        val bridge = CfeTimerBridge(FakeGateway(), effects, held, sessionManager)
+
+        bridge.execute(listOf(
+            CfeAction.OpenSession(senderDevice),
+            CfeAction.DuplicateDropped("after-reopen"),
+        ))
+
+        assertTrue(effects.calls.contains("markProcessed:after-reopen"))
     }
 }

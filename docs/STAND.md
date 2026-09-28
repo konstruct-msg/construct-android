@@ -13,6 +13,9 @@
 
 ## Android
 
+Быстрая проверка одной стороны без iOS — `scripts/verify.sh --device` (или `--boot`): установит
+поверх данных, запустит и прочитает logcat. Ниже — ручные шаги для живого обмена.
+
 ```bash
 ADB=~/Library/Android/sdk/platform-tools/adb
 

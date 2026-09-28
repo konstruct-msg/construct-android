@@ -270,7 +270,10 @@ class SessionManager @Inject constructor(
         val fetched = fetchPeerBundleData(accountId, consumeOtpk = true, deviceId = deviceId)
         check(fetched.deviceId == deviceId) { "pre-key bundle resolved to a different peer device" }
         return try {
-            cryptoManager.reopenSession(deviceId, fetched.bundle)
+            cryptoManager.reopenSession(deviceId, fetched.bundle).also {
+                // Counted by scripts/verify.sh --device: without it only the refusals are visible.
+                Log.i(TAG, "session reopen for ${deviceId.take(8)}… done — PQXDH v2, the held state kept as previous")
+            }
         } catch (e: Exception) {
             if (CryptoManager.isPeerNotPostQuantum(e)) {
                 Log.w(TAG, "peer device ${deviceId.take(8)}… has no PQXDH v2 keys — upgrade deferred (${e.message})")
