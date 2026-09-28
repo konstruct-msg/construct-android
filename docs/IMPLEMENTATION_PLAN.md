@@ -51,12 +51,13 @@
 | Ротация SPK и Kyber-ключа (`RotateSignedPreKeyUseCase`) | ✅ |
 | 1:1 текст по production gRPC: отправка, приём, квитанции (KNST 14) | ✅ |
 | Правка и удаление текста, цитаты-ответы (внутри шифротекста) | ✅ |
-| Sealed sender, fail-closed при отправке | ✅ |
+| Sealed sender, fail-closed при отправке; уходит только через `SendSealedMessage` без токена; DLEQ против закреплённого ключа эмитента | ✅ (стенд — нет) |
 | Мультидевайс: fan-out по устройствам получателя и своим, SENDER_SYNC (`OwnDeviceCopy`) | ✅ (стенд Android↔iOS одного аккаунта — не гонялся) |
 | Сессии: обновление отправкой, открытие по сертификату, DECRYPTION_ERROR | ✅ стенд 2026-09-28, см. `SESSIONS.md` |
 | PQXDH v2 (ML-KEM-1024), обязательный | ✅ для новых сессий; апгрейд старых — задача A1 |
 | Доставка без GMS: foreground service + постоянный поток | ✅ на эмуляторе; на железе — задача B5 |
-| Инвайты v5: QR (CameraX + ZXing), вставка, `konstruct://add`, отзыв | ✅ |
+| Инвайты v5 с адресом аккаунта: QR (CameraX + ZXing), вставка, `konstruct://add`, отзыв; карточка контакта (тип 27) несёт адрес обратно | ✅ (стенд — нет) |
+| Фраза восстановления: настройка, подтверждение на устройстве; обязательна для QR и сканера | ✅; вход по фразе на новом устройстве — B4 |
 | FindUser, запросы в контакты | ✅ |
 | Экраны: онбординг, Orientation, чаты, чат, Synaps (список), настройки: Account, Security | ✅ |
 | Локализация `en` + `ru` | ✅ полный паритет; `ja` — B6 |
@@ -81,10 +82,10 @@
 
 | # | Задача | Где начать | Готово, когда |
 |---|---|---|---|
-| B1 | Карта серверных id (`ServerMessageIds`) переживает перезапуск | `service/ServerMessageIds.kt` → Room | DECRYPTION_ERROR после перезапуска отправителя переотправляет сообщение |
-| B2 | Убрать `session_meta.establishedAtMs` — пишется, не читается (кормил фильтр END_SESSION) | Room-миграция, `SessionStateStore` | Поля нет в схеме, миграция покрыта тестом |
-| B3 | Сузить `buildSealedInner(contentType)` до закрытого перечисления | `stealth/StealthSenderService.kt`; `WIRE_FORMAT_RULES.md` §2 | Ненулевой тип снаружи можно передать только как `DECRYPTION_ERROR` |
-| B4 | Восстановление аккаунта по BIP39 | §4 ниже; ядро: `generateMnemonic`, `deriveRecoveryKeypair` | Установка → фраза → новое устройство входит по фразе |
+| B1 | Карта серверных id (`ServerMessageIds`) переживает перезапуск — на iOS тот же пробел, делать на обоих | `service/ServerMessageIds.kt` → Room | DECRYPTION_ERROR после перезапуска отправителя переотправляет сообщение |
+| B4 | Вход по фразе на новом устройстве (настройка фразы уже есть — `recovery/`) | §4 ниже; iOS `AccountRecoveryViewModel`, `AuthServiceClient.recoverAccount` | Установка → фраза → новое устройство входит по фразе |
+| B8 | События безопасности: номер безопасности (`computeSafetyNumber` в ядре), смена ключа собеседника, конфликт адреса (сейчас только лог в `AccountAddressBook.pin`) | iOS `KeyChangeUX`, `SafetyNumber*` | Смена ключа и расхождение адреса видны пользователю, номер сверяется из чата |
+| B9 | Intake-ключи: выпуск своего в карточке, предъявление чужого вместо токена | iOS `IntakeCredentialService`; `decisions/contact-traffic-is-vouched-not-purchased.md` | Сообщение контакту, приславшему ключ, уходит без траты токена |
 | B5 | Проверка на железе: Android 11, убийство процесса, перезагрузка, Doze, смена сети | `MessagingForegroundService` | Сообщения доходят во всех пяти случаях, записано в заметке сессии |
 | B6 | Локализация `ja` | `res/values-ja/strings.xml` | Все переводимые ключи `values/` есть в `ja` |
 | B7 | Настройки: Appearance, Network | `GOOD_FIRST_ISSUES.md` №1–2 | Экраны открываются из Settings, строки во всех локалях |

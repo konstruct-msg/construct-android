@@ -23,10 +23,10 @@ data/local/
 ├── KeystoreManager.kt       # токены + private keys (CFE)      [РАБОТАЕТ]
 ├── AckStore.kt              # durable dedup (Room + in-memory   [ГОТОВ+тесты]
 │                            # mirror, hydrate() до стрима!)
-├── SessionStateStore.kt     # typed CFE slots + establishedAt [ГОТОВ+тесты]
+├── SessionStateStore.kt     # typed CFE slots [ГОТОВ+тесты]
 ├── PeerDeviceRegistry.kt    # durable account→device mapping [ГОТОВ]
 ├── db/                      # Room: chats/messages/users/       [ГОТОВ]
-│                            # acked_messages/session_state/session_meta
+│                            # acked_messages/session_state
 service/
 ├── SessionManager.kt        # DR-сессии поверх CryptoManager   [РАБОТАЕТ]
 ├── MessageRouter.kt         # стрим → домен-события: dedup,    [ГОТОВ+тесты]
@@ -96,9 +96,6 @@ domain/usecase/SendMessageUseCase.kt                            [РАБОТАЕ�
   walk use the core plans; queued multi-carrier receive reconciliation remains;
 - **CFE timers / AppLaunched / reconnect events** — wired through
   `CfeTimerBridge`; production transport coverage remains;
-- **`SEALED_UNAUTHENTICATED_TRANSPORT = false`** — флип синхронно с iOS
-  `FeatureFlags.sealedSenderUnauthenticatedTransport` (rollout-порядок в
-  decision-доке §4).
 
 ## 5. Stealth (sealed sender) — состояние
 
@@ -111,8 +108,9 @@ well-known-ключи (24ч кэш), кошелёк (EncryptedSharedPreferences)
 (лимит сервера 20/час), сертификат (кэш 24ч, verify bundle-ключом).
 
 Send path: fail-closed sealed inner (`SealedInner.content_type` unspecified).
-Receive: `MessageRouter` sealed-resolve. **Unauthenticated sealed transport
-flag still false** (lockstep with iOS). Wallet/cert prefetch after login is
+Receive: `MessageRouter` sealed-resolve. Sealed sends leave only by
+`SendSealedMessage` on the channel without a token (since 2026-09-28, as iOS);
+`sendMessage` has no sealed branch. Wallet/cert prefetch after login is
 not yet a dedicated bootstrap step. Live iOS↔Android sealed round-trip has
 not run.
 

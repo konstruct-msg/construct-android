@@ -18,6 +18,7 @@ import com.construct.messenger.service.ServerMessageIds
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.OwnDeviceCopy
 import com.construct.messenger.stealth.StealthPolicy
+import com.construct.messenger.stealth.SealedEnvelopeType
 import com.construct.messenger.stealth.StealthSenderService
 import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.DisplayNameGenerator
@@ -552,22 +553,9 @@ class SendMessageUseCase @Inject constructor(
                 recipientUserId = recipientId,
                 recipientIdentityKey = identityPublic,
                 encryptedPayload = encryptedPayload,
-                contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
+                contentType = SealedEnvelopeType.GENERIC,
             )
-            if (MessagingService.SEALED_UNAUTHENTICATED_TRANSPORT) {
-                messagingService.sendSealedMessage(sealed)
-            } else {
-                messagingService.sendMessage(
-                    messageId = messageId,
-                    senderId = senderId,
-                    recipientId = recipientId,
-                    conversationId = "",
-                    encryptedPayload = ByteArray(0),
-                    timestampMs = timestampMs,
-                    contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
-                    sealedInner = sealed,
-                )
-            }
+            messagingService.sendSealedMessage(sealed)
         } else {
             messagingService.sendMessage(
                 messageId = messageId,

@@ -5,6 +5,7 @@ import com.construct.messenger.data.api.MessagingService
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
+import com.construct.messenger.stealth.SealedEnvelopeType
 import com.construct.messenger.stealth.StealthSenderService
 import java.util.UUID
 import javax.inject.Inject
@@ -57,22 +58,9 @@ class SessionControlUseCase @Inject constructor(
                     recipientUserId = accountId,
                     recipientIdentityKey = identity,
                     encryptedPayload = payload,
-                    contentType = ContentType.CONTENT_TYPE_DECRYPTION_ERROR,
+                    contentType = SealedEnvelopeType.DECRYPTION_ERROR,
                 )
-                if (MessagingService.SEALED_UNAUTHENTICATED_TRANSPORT) {
-                    messagingService.sendSealedMessage(sealed)
-                } else {
-                    messagingService.sendMessage(
-                        messageId = messageId,
-                        senderId = myId,
-                        recipientId = accountId,
-                        conversationId = "",
-                        encryptedPayload = ByteArray(0),
-                        timestampMs = timestampMs,
-                        contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
-                        sealedInner = sealed,
-                    )
-                }
+                messagingService.sendSealedMessage(sealed)
             } else {
                 messagingService.sendMessage(
                     messageId = messageId,

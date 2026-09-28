@@ -9,6 +9,7 @@ import com.construct.messenger.invite.ContactCardPayload
 import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
+import com.construct.messenger.stealth.SealedEnvelopeType
 import com.construct.messenger.stealth.StealthSenderService
 import com.construct.messenger.util.KnstFrame
 import java.util.UUID
@@ -78,24 +79,15 @@ class SendContactCardUseCase @Inject constructor(
                 recipientUserId = target.accountId,
                 recipientIdentityKey = ik,
                 encryptedPayload = wire,
-                contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
+                contentType = SealedEnvelopeType.GENERIC,
             )
-            if (MessagingService.SEALED_UNAUTHENTICATED_TRANSPORT) {
-                messagingService.sendSealedMessage(sealed)
-            } else {
-                messagingService.sendMessage(
-                    messageId = cardId.toString(),
-                    senderId = keystoreManager.getUserId() ?: return,
-                    recipientId = target.accountId,
-                    conversationId = "",
-                    encryptedPayload = ByteArray(0),
-                    timestampMs = System.currentTimeMillis(),
-                    contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
-                    sealedInner = sealed,
-                )
+            val result = messagingService.sendSealedMessage(sealed)
+            // Only after the server took it: marking first would cost the device our address on
+            // one failed RPC. A refusal returns rather than throws.
+            if (!result.success) {
+                Log.w(TAG, "contact card to ${deviceId.take(8)}… refused (${result.errorCode}) — next exchange retries")
+                return
             }
-            // Only after the send returned: marking first would cost the device our address on
-            // one failed RPC.
             keystoreManager.markContactCardSent(deviceId)
             Log.i(TAG, "contact card handed to ${deviceId.take(8)}…")
         } catch (e: Exception) {

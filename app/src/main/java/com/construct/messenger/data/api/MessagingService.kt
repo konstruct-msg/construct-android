@@ -24,14 +24,11 @@ import shared.proto.services.v1.MessagingServiceOuterClass.SendSealedMessageRequ
  *
  * 1. [StealthPolicy.shouldUseSealedSender] false → identified [sendMessage]
  *    (sender + conversation_id + content_type on the outer envelope).
- * 2. Stealth on → build SealedInner via [StealthSenderService.buildSealedInner], then:
- *    - [SEALED_UNAUTHENTICATED_TRANSPORT] on → [sendSealedMessage]: the Phase 2
- *      `SendSealedMessage` RPC over [GrpcClient.sealedMessaging] (separate
- *      unauthenticated channel — real sender anonymity);
- *    - off → legacy sealed-over-`SendMessage`: SealedInner rides the outer
- *      envelope's `sealed_sender` field on the authenticated channel
- *      (functionally correct, but the transport still identifies the sender —
- *      L1 in the decision doc).
+ * 2. Stealth on → build SealedInner via [StealthSenderService.buildSealedInner], then
+ *    [sendSealedMessage]: `SendSealedMessage` over [GrpcClient.sealedMessaging], the channel
+ *    with no token on it. There is no sealed branch on [sendMessage]: a sealed envelope next to
+ *    a Bearer told the operator the sender of every sealed message, live (TODO 55.1). The
+ *    server refuses that path once `MSG_REJECT_LEGACY_SEALED_SENDER` is on.
  *
  * Callers own retry/backoff; this layer is a thin, stateless RPC adapter.
  */
@@ -49,12 +46,7 @@ class MessagingService @Inject constructor(
         val attemptId: String,
     )
 
-    /**
-     * Identified send, or legacy sealed-over-SendMessage when [sealedInner] is
-     * non-null (Phase 3: the sealed branch must NOT set sender/conversation_id/
-     * content_type on the outer envelope — the real content type travels inside
-     * SealedInner).
-     */
+    /** Identified send: sender and content type on the outer envelope, authenticated channel. */
     suspend fun sendMessage(
         messageId: String,
         senderId: String,
@@ -63,24 +55,16 @@ class MessagingService @Inject constructor(
         encryptedPayload: ByteArray,
         timestampMs: Long,
         contentType: ContentType = ContentType.CONTENT_TYPE_E2EE_SIGNAL,
-        sealedInner: ByteArray? = null,
     ): SendResult {
         val envelope = Envelope.newBuilder().apply {
             setMessageId(messageId)
             recipient = UserId.newBuilder().setUserId(recipientId).build()
             setTimestamp(timestampMs)
-            if (sealedInner != null && sealedInner.isNotEmpty()) {
-                // STEALTH: no sender, no conversation_id, no real content_type.
-                sealedSender = SealedSenderEnvelope.newBuilder()
-                    .setSealedInner(ByteString.copyFrom(sealedInner))
-                    .build()
-            } else {
-                sender = UserId.newBuilder().setUserId(senderId).build()
-                // conversation_id is never written — names the pair in the clear
-                // (WIRE_FORMAT_RULES). Parameter kept so call sites compile.
-                setContentType(contentType)
-                setEncryptedPayload(ByteString.copyFrom(encryptedPayload))
-            }
+            sender = UserId.newBuilder().setUserId(senderId).build()
+            // conversation_id is never written — names the pair in the clear
+            // (WIRE_FORMAT_RULES). Parameter kept so call sites compile.
+            setContentType(contentType)
+            setEncryptedPayload(ByteString.copyFrom(encryptedPayload))
         }.build()
 
         val attemptId = UUID.randomUUID().toString().lowercase()
@@ -106,20 +90,13 @@ class MessagingService @Inject constructor(
     }
 
     /**
-     * Phase 2 sealed send: `SendSealedMessage` over the unauthenticated channel.
-     * Carries ONLY the sealed envelope — no outer Envelope at all.
-     * Idempotency = SealedInner.delivery_tag (server-side replay check).
+     * Sealed send: `SendSealedMessage` over the unauthenticated channel. Carries ONLY the sealed
+     * envelope — no outer Envelope at all. Idempotency = SealedInner.delivery_tag (server-side
+     * replay check).
      */
     suspend fun sendSealedMessage(sealedInner: ByteArray): SendResult {
         val attemptId = UUID.randomUUID().toString().lowercase()
-        val request = SendSealedMessageRequest.newBuilder()
-            .setSealedSender(
-                SealedSenderEnvelope.newBuilder()
-                    .setSealedInner(ByteString.copyFrom(sealedInner))
-                    .build(),
-            )
-            .setAttemptId(attemptId)
-            .build()
+        val request = buildSealedRequest(sealedInner, System.currentTimeMillis() / 1000, attemptId)
 
         val response = grpcClient.sealedMessaging.sendSealedMessage(request)
         return SendResult(
@@ -149,11 +126,24 @@ class MessagingService @Inject constructor(
         private const val TAG = "MessagingService"
 
         /**
-         * Route sealed sends over the Phase 2 unauthenticated RPC instead of the
-         * legacy sealed-over-SendMessage branch. Mirrors iOS
-         * `FeatureFlags.sealedSenderUnauthenticatedTransport` — keep the two in
-         * sync when flipping (see stealth-sealed-sender-v2 decision doc §4).
+         * The only place a [SealedSenderEnvelope] is built. `timestamp` is the send time in
+         * **seconds**: federation forwarding hands it to the destination, which refuses one more
+         * than five minutes off its clock (`validate_federation_timestamp`). Stamped here rather
+         * than taken from the caller, whose timestamp is the message's and is in milliseconds.
+         * **Canon:** iOS `MessagingServiceClient.buildSealedRequest`.
          */
-        const val SEALED_UNAUTHENTICATED_TRANSPORT = false
+        internal fun buildSealedRequest(
+            sealedInner: ByteArray,
+            nowSeconds: Long,
+            attemptId: String,
+        ): SendSealedMessageRequest = SendSealedMessageRequest.newBuilder()
+            .setSealedSender(
+                SealedSenderEnvelope.newBuilder()
+                    .setSealedInner(ByteString.copyFrom(sealedInner))
+                    .setTimestamp(nowSeconds)
+                    .build(),
+            )
+            .setAttemptId(attemptId)
+            .build()
     }
 }

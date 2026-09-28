@@ -90,15 +90,15 @@ class StealthSenderService @Inject constructor(
     // ── Send path ───────────────────────────────────────────────────────────
 
     /**
-     * Builds SealedInner proto bytes for a sealed send. The real [contentType]
-     * travels inside SealedInner (the outer envelope stays generic — Phase 3).
+     * Builds SealedInner proto bytes for a sealed send. SealedInner is plaintext to the relay, so
+     * [contentType] is limited to [SealedEnvelopeType]; the real type rides in KNST byte 5.
      * Caller checks [StealthPolicy.shouldUseSealedSender] first.
      */
     suspend fun buildSealedInner(
         recipientUserId: String,
         recipientIdentityKey: ByteArray,
         encryptedPayload: ByteArray,
-        contentType: ContentType,
+        contentType: SealedEnvelopeType,
     ): ByteArray {
         val certBytes = getSenderCertificate()
         val sealedCert = sealedSealSenderCert(
@@ -116,7 +116,7 @@ class StealthSenderService @Inject constructor(
             )
             .setSenderCertCiphertext(ByteString.copyFrom(sealedCert))
             .setEncryptedPayload(ByteString.copyFrom(encryptedPayload))
-            .setContentType(contentType)
+            .setContentType(contentType.proto)
             .setDeliveryTag(ByteString.copyFrom(deliveryTag))
 
         if (policy.shouldConsumeToken(recipientUserId)) {

@@ -8,6 +8,7 @@ import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
+import com.construct.messenger.stealth.SealedEnvelopeType
 import com.construct.messenger.stealth.StealthSenderService
 import com.construct.messenger.util.KnstFrame
 import java.util.UUID
@@ -96,22 +97,9 @@ class SendReceiptUseCase @Inject constructor(
                     recipientUserId = accountId,
                     recipientIdentityKey = ik,
                     encryptedPayload = wire,
-                    contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
+                    contentType = SealedEnvelopeType.GENERIC,
                 )
-                if (MessagingService.SEALED_UNAUTHENTICATED_TRANSPORT) {
-                    messagingService.sendSealedMessage(sealed)
-                } else {
-                    messagingService.sendMessage(
-                        messageId = receiptId,
-                        senderId = myId,
-                        recipientId = accountId,
-                        conversationId = "",
-                        encryptedPayload = ByteArray(0),
-                        timestampMs = timestampMs,
-                        contentType = ContentType.CONTENT_TYPE_UNSPECIFIED,
-                        sealedInner = sealed,
-                    )
-                }
+                messagingService.sendSealedMessage(sealed)
             } else {
                 messagingService.sendMessage(
                     messageId = receiptId,

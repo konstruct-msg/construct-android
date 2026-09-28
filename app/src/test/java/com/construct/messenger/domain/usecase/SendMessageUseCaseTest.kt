@@ -22,7 +22,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -136,7 +135,6 @@ class SendMessageUseCaseTest {
                 encryptedPayload = any(),
                 timestampMs = any(),
                 contentType = any(),
-                sealedInner = anyOrNull(),
             ),
         ).thenReturn(
             MessagingService.SendResult("ok", accepted, if (accepted) "" else "PERMISSION_DENIED", false, 0, "a"),
@@ -154,7 +152,6 @@ class SendMessageUseCaseTest {
             encryptedPayload = any(),
             timestampMs = any(),
             contentType = any(),
-            sealedInner = anyOrNull(),
         )
         return captor.allValues
     }
@@ -299,7 +296,6 @@ class SendMessageUseCaseTest {
                 encryptedPayload = any(),
                 timestampMs = any(),
                 contentType = any(),
-                sealedInner = anyOrNull(),
             ),
         ).thenReturn(
             MessagingService.SendResult("ok", false, "UNAVAILABLE", true, 0, "a"),
