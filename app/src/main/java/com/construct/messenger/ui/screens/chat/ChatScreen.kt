@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -37,6 +39,7 @@ import com.construct.messenger.viewmodel.ChatViewModel
 @Composable
 fun ChatScreen(
     onNavigateBack: () -> Unit,
+    onOpenSafetyNumbers: () -> Unit,
     viewModel: ChatViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -91,6 +94,16 @@ fun ChatScreen(
             title = uiState.title,
             showBack = true,
             onBack = onNavigateBack,
+            trailingIcon = Icons.Default.Shield,
+            trailingColor = CTColor.textDim,
+            onTrailingAction = onOpenSafetyNumbers,
+        )
+
+        SecurityNoticeBanner(
+            notice = uiState.securityNotice,
+            contactName = uiState.contactName,
+            onVerify = onOpenSafetyNumbers,
+            onAcknowledge = viewModel::acknowledgeSecurityNotice,
         )
 
         LazyColumn(

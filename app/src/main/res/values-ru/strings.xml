@@ -193,4 +193,20 @@
     <string name="recovery_confirm_invalid_phrase">Это не фраза из 12 слов. Проверьте написание каждого слова.</string>
     <string name="recovery_confirm_other_account">Эта фраза от другого аккаунта.</string>
     <string name="recovery_confirm_failed">Не удалось проверить фразу на сервере. Попробуйте ещё раз.</string>
+    <!-- События безопасности и защитные числа (iOS KeyChangeUX, SafetyNumberView) -->
+    <string name="safety_numbers">защитные числа</string>
+    <string name="safety_numbers_verify_title">проверить личность</string>
+    <string name="safety_numbers_instruction">Сравните эти числа с %1$s устно или при личной встрече. Если числа совпадают, ваш канал безопасен и не перехвачен.</string>
+    <string name="safety_numbers_device">Устройство собеседника %1$s</string>
+    <string name="safety_numbers_copy">скопировать в буфер</string>
+    <string name="safety_numbers_copied">скопировано</string>
+    <string name="safety_numbers_mismatch_header">если числа не совпадают</string>
+    <string name="safety_numbers_mismatch_body">Прекратите общение и проверьте соединение. Несовпадение может означать, что кто-то перехватывает ваши сообщения.</string>
+    <string name="safety_numbers_unavailable">недоступно — личность не инициализирована</string>
+    <string name="address_change_banner_title">Адрес изменился</string>
+    <string name="address_change_banner_subtitle_fmt">%1$s называет другой адрес, чем раньше. Сверьте защитные числа, прежде чем доверять чату.</string>
+    <string name="address_change_toast_fmt">%1$s называет другой адрес, чем раньше. Откройте чат, чтобы проверить.</string>
+    <string name="key_change_toast_open">Открыть</string>
+    <string name="key_change_verify">Проверить</string>
+    <string name="security_notice_acknowledge">Проверено</string>
 </resources>

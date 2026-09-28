@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.construct.messenger.ui.screens.chat.ChatScreen
+import com.construct.messenger.ui.screens.chat.SafetyNumberScreen
 import com.construct.messenger.ui.screens.invite.ContactQrScreen
 import com.construct.messenger.ui.screens.invite.QrScannerScreen
 import com.construct.messenger.ui.screens.recovery.RecoveryGated
@@ -155,8 +156,19 @@ fun KonstructNavHost(
             arguments = listOf(navArgument("contactId") { type = NavType.StringType })
         ) { backStackEntry ->
             ChatScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onOpenSafetyNumbers = {
+                    backStackEntry.arguments?.getString("contactId")?.let {
+                        navController.navigate(Screen.SafetyNumbers.createRoute(it))
+                    }
+                },
             )
+        }
+        composable(
+            route = Screen.SafetyNumbers.route,
+            arguments = listOf(navArgument("contactId") { type = NavType.StringType }),
+        ) {
+            SafetyNumberScreen(onNavigateBack = { navController.popBackStack() })
         }
         composable(Screen.Account.route) {
             AccountScreen(

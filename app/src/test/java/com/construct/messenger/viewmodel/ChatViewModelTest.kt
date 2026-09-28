@@ -38,6 +38,7 @@ class ChatViewModelTest {
             handle,
             messages,
             FakeContactsRepository(),
+            org.mockito.kotlin.mock(),
         )
         viewModel.onDraftChange("hello")
         viewModel.send()
@@ -55,7 +56,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository()
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository())
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock())
 
         viewModel.startReply(
             Message(id = "ABC", chatId = "peer-1", body = "  original  ", isOutgoing = false),
@@ -78,7 +79,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository()
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository())
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock())
         val original = Message(id = "mine", chatId = "peer-1", body = "hello", isOutgoing = true)
 
         viewModel.startEdit(original)
@@ -103,7 +104,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository().also { it.failEdit = true }
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository())
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock())
         viewModel.startEdit(Message(id = "mine", chatId = "peer-1", body = "hello", isOutgoing = true))
         viewModel.onDraftChange("hello there")
         viewModel.send()
@@ -118,7 +119,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository()
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository())
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock())
         val original = Message(id = "mine", chatId = "peer-1", body = "hello", isOutgoing = true)
         viewModel.startEdit(original)
         viewModel.delete(original)

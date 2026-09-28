@@ -8,6 +8,7 @@ import com.construct.messenger.data.local.db.IssuedInviteEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.data.model.Contact
+import com.construct.messenger.data.model.SecurityNotice
 import com.construct.messenger.invite.AccountAddressBook
 import com.construct.messenger.invite.AccountAddressSource
 import com.construct.messenger.invite.InviteConfig
@@ -59,6 +60,7 @@ class ContactsRepositoryImpl @Inject constructor(
                 userId = it.id,
                 displayName = it.displayName.ifBlank { DisplayNameGenerator.generate(it.id) },
                 username = it.username,
+                securityNotice = SecurityNotice.of(it.securityNotice),
             )
         }
     }

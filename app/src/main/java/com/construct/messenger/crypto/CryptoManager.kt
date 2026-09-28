@@ -4,6 +4,7 @@ import com.construct.messenger.service.OrchestratorGateway
 import uniffi.construct_core.BinaryKeyBundle
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
+import uniffi.construct_core.computeSafetyNumber
 import uniffi.construct_core.ClassicCryptoCore
 import uniffi.construct_core.DeliveryTarget
 import uniffi.construct_core.KyberPrekeyUpload
@@ -436,6 +437,14 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
 
     fun deriveDeviceIdFromIdentity(identityPublic: ByteArray): String =
         deriveDeviceId(identityPublic.toUByteList())
+
+    /**
+     * The 60-digit number two people compare for one pair of devices, computed by the core so
+     * both clients print the same. `null` when the core cannot read an id: there is no partial
+     * safety number, and a number made from nothing would match for everyone.
+     */
+    fun safetyNumber(myDeviceId: String, theirDeviceId: String): String? =
+        computeSafetyNumber(myDeviceId, theirDeviceId)
 
     fun signingKeyBytes(): ByteArray = synchronized(coreLock) {
         (orchestrator?.getSigningKeyBytes() ?: requireBootstrap().getSigningKeyBytes())

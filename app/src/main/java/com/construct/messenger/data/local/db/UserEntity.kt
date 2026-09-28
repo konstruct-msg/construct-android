@@ -1,5 +1,6 @@
 package com.construct.messenger.data.local.db
 
+import com.construct.messenger.data.model.SecurityNotice
 import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -31,6 +32,9 @@ data class UserEntity(
     /** Their account address (Ed25519 recovery public key), from their signed invite. Sealed
      * sends name the recipient by it; `null` for a contact added before invites carried it. */
     val accountAddress: ByteArray? = null,
+    /** An unacknowledged security event for this contact ([SecurityNotice]), or 0. Cleared only by
+     * the user, from the chat banner. */
+    val securityNotice: Int = SecurityNotice.NONE.code,
 ) {
     // ByteArray field: structural equality must be explicit.
     override fun equals(other: Any?): Boolean {
@@ -44,7 +48,8 @@ data class UserEntity(
             isBlocked == other.isBlocked &&
             isSharingWithMe == other.isSharingWithMe &&
             identityPublic.contentEquals(other.identityPublic) &&
-            accountAddress.contentEquals(other.accountAddress)
+            accountAddress.contentEquals(other.accountAddress) &&
+            securityNotice == other.securityNotice
     }
 
     override fun hashCode(): Int {
@@ -57,6 +62,7 @@ data class UserEntity(
         result = 31 * result + isSharingWithMe.hashCode()
         result = 31 * result + identityPublic.contentHashCode()
         result = 31 * result + accountAddress.contentHashCode()
+        result = 31 * result + securityNotice
         return result
     }
 }
@@ -75,6 +81,9 @@ interface UserDao {
 
     @Upsert
     suspend fun upsert(user: UserEntity)
+
+    @Query("UPDATE users SET securityNotice = :code WHERE id = :userId")
+    suspend fun setSecurityNotice(userId: String, code: Int)
 
     @Query("DELETE FROM users WHERE id = :userId")
     suspend fun delete(userId: String)

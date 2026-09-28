@@ -95,7 +95,11 @@ class ProcessorEffectsImplTest {
             sessionControl = mock(),
             sendReceiptUseCase = mock(),
             sendContactCard = mock(),
-            addressBook = com.construct.messenger.invite.AccountAddressBook(users, keystore),
+            addressBook = com.construct.messenger.invite.AccountAddressBook(
+                users,
+                keystore,
+                com.construct.messenger.security.SecurityNotices(users, com.construct.messenger.data.local.ChatPresence()),
+            ),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
             sendMessage = { mock<SendMessageUseCase>() },
@@ -497,6 +501,9 @@ private class FakeUserDao : UserDao {
     override suspend fun getById(userId: String) = rows[userId]
     override suspend fun upsert(user: UserEntity) { rows[user.id] = user }
     override suspend fun delete(userId: String) { rows.remove(userId) }
+    override suspend fun setSecurityNotice(userId: String, code: Int) {
+        rows[userId]?.let { rows[userId] = it.copy(securityNotice = code) }
+    }
 }
 
 private class FakeAckStore : AckStore {

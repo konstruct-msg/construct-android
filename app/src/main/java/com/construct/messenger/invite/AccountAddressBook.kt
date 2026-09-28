@@ -2,7 +2,9 @@ package com.construct.messenger.invite
 
 import android.util.Log
 import com.construct.messenger.data.local.KeystoreManager
+import com.construct.messenger.data.model.SecurityNotice
 import com.construct.messenger.data.local.db.UserDao
+import com.construct.messenger.security.SecurityNotices
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,6 +17,7 @@ import javax.inject.Singleton
 class AccountAddressBook @Inject constructor(
     private val userDao: UserDao,
     private val keystoreManager: KeystoreManager,
+    private val securityNotices: SecurityNotices,
 ) {
     suspend fun of(accountId: String): ByteArray? {
         if (accountId == keystoreManager.getUserId()) return keystoreManager.getOwnAccountAddress()
@@ -25,8 +28,8 @@ class AccountAddressBook @Inject constructor(
      * Applies a contact's address by [AccountAddressPin.decide], onto a row that already exists: a
      * sender must not be able to put a contact in our store by sending to us.
      *
-     * A conflict is a security event. Android has no surface for one yet — a key change is not
-     * shown either — so it is logged and the pinned address stands; the surface is its own task.
+     * A conflict is a security event ([SecurityNotices]): a banner in their chat until the user
+     * acknowledges it, and a notice app-wide.
      */
     suspend fun pin(accountId: String, address: ByteArray, source: AccountAddressSource): AccountAddressPin {
         if (address.size != AccountAddress.LENGTH) return AccountAddressPin.UNCHANGED
@@ -37,6 +40,7 @@ class AccountAddressBook @Inject constructor(
         }
         if (outcome.isSecurityEvent) {
             Log.w(TAG, "ADDRESS: ${accountId.take(8)}… named a different account address ($source) — $outcome")
+            securityNotices.raise(accountId, SecurityNotice.ADDRESS_CHANGED)
         }
         return outcome
     }

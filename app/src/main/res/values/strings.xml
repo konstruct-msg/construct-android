@@ -196,4 +196,20 @@
     <string name="recovery_confirm_invalid_phrase">That isn\'t a valid 12-word phrase. Check the spelling of each word.</string>
     <string name="recovery_confirm_other_account">This phrase belongs to a different account.</string>
     <string name="recovery_confirm_failed">Couldn\'t check the phrase with the server. Try again.</string>
+    <!-- Security events and safety numbers (iOS KeyChangeUX, SafetyNumberView) -->
+    <string name="safety_numbers">safety numbers</string>
+    <string name="safety_numbers_verify_title">verify identity</string>
+    <string name="safety_numbers_instruction">Compare these numbers with %1$s out loud or in person. If they match, your connection is secure and has not been intercepted.</string>
+    <string name="safety_numbers_device">Their device %1$s</string>
+    <string name="safety_numbers_copy">copy to clipboard</string>
+    <string name="safety_numbers_copied">copied</string>
+    <string name="safety_numbers_mismatch_header">if numbers don\'t match</string>
+    <string name="safety_numbers_mismatch_body">Stop communicating and verify your connection. A mismatch may mean someone is intercepting your messages.</string>
+    <string name="safety_numbers_unavailable">unavailable — identity not initialized</string>
+    <string name="address_change_banner_title">Address changed</string>
+    <string name="address_change_banner_subtitle_fmt">%1$s named a different address than before. Compare safety numbers before you trust this chat.</string>
+    <string name="address_change_toast_fmt">%1$s is now claiming a different address. Open the chat to verify.</string>
+    <string name="key_change_toast_open">Open</string>
+    <string name="key_change_verify">Verify</string>
+    <string name="security_notice_acknowledge">I\'ve checked</string>
 </resources>

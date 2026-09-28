@@ -22,7 +22,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         IssuedInviteEntity::class,
         PeerDeviceEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -79,6 +79,13 @@ abstract class ConstructDatabase : RoomDatabase() {
         val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("DROP TABLE IF EXISTS session_meta")
+            }
+        }
+
+        /** An unacknowledged security event per contact ([SecurityNotice]). Existing rows: none. */
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE users ADD COLUMN securityNotice INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

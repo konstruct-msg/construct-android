@@ -5,9 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.model.Message
 import com.construct.messenger.data.model.ReplyRef
+import com.construct.messenger.data.model.SecurityNotice
 import com.construct.messenger.data.repository.ContactsRepository
 import com.construct.messenger.data.repository.MessagesRepository
 import com.construct.messenger.domain.usecase.SendOutcome
+import com.construct.messenger.security.SecurityNotices
 import com.construct.messenger.util.DisplayNameGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -29,6 +31,10 @@ data class ChatUiState(
     val replyingTo: ReplyRef? = null,
     /** Text of the message being edited, shown in the bar. Null when the next send is a new message. */
     val editingOriginal: String? = null,
+    /** Their unacknowledged security event; the banner shows while it is not NONE. */
+    val securityNotice: SecurityNotice = SecurityNotice.NONE,
+    /** Name for the banner — alias or generated, never the raw id. */
+    val contactName: String = "",
 )
 
 private data class EditTarget(val messageId: String, val original: String)
@@ -38,6 +44,7 @@ class ChatViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val messagesRepository: MessagesRepository,
     contactsRepository: ContactsRepository,
+    private val securityNotices: SecurityNotices,
 ) : ViewModel() {
     val contactId: String = requireNotNull(savedStateHandle.get<String>("contactId"))
 
@@ -68,6 +75,9 @@ class ChatViewModel @Inject constructor(
             sending = isSending,
             replyingTo = reply,
             editingOriginal = edit?.original,
+            securityNotice = contact?.securityNotice ?: SecurityNotice.NONE,
+            contactName = contact?.let { if (it.username.isNotBlank()) "@${it.username}" else it.displayName }
+                ?: DisplayNameGenerator.generate(contactId),
         )
     }.stateIn(
         viewModelScope,
@@ -89,6 +99,11 @@ class ChatViewModel @Inject constructor(
     fun onHidden() = messagesRepository.chatHidden(contactId)
 
     override fun onCleared() = messagesRepository.chatHidden(contactId)
+
+    /** The user checked the event (or chose to carry on): the banner goes. */
+    fun acknowledgeSecurityNotice() {
+        viewModelScope.launch { securityNotices.acknowledge(contactId) }
+    }
 
     fun onDraftChange(value: String) {
         draft.value = value

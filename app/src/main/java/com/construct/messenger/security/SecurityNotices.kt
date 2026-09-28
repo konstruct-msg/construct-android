@@ -1,0 +1,37 @@
+package com.construct.messenger.security
+
+import com.construct.messenger.data.local.ChatPresence
+import com.construct.messenger.data.model.SecurityNotice
+import com.construct.messenger.data.local.db.UserDao
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+
+/**
+ * A contact's security event, made visible: stored on their row, where the chat banner reads it
+ * until the user acknowledges it, and announced once app-wide unless their chat is the one open
+ * (the banner already says it there). **Canon:** iOS `KeyChangeUX`.
+ */
+@Singleton
+class SecurityNotices @Inject constructor(
+    private val userDao: UserDao,
+    private val presence: ChatPresence,
+) {
+    data class Announcement(val userId: String, val notice: SecurityNotice)
+
+    private val announcements = MutableSharedFlow<Announcement>(extraBufferCapacity = 8)
+    val announced: SharedFlow<Announcement> = announcements.asSharedFlow()
+
+    suspend fun raise(userId: String, notice: SecurityNotice) {
+        userDao.setSecurityNotice(userId, notice.code)
+        if (userId.isNotEmpty() && !presence.isVisible(userId)) {
+            announcements.tryEmit(Announcement(userId, notice))
+        }
+    }
+
+    suspend fun acknowledge(userId: String) {
+        userDao.setSecurityNotice(userId, SecurityNotice.NONE.code)
+    }
+}

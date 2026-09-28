@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.navigation.compose.rememberNavController
 import com.construct.messenger.data.local.PendingChatStore
+import com.construct.messenger.ui.components.SecurityNoticeHost
+import com.construct.messenger.ui.navigation.Screen
 import com.construct.messenger.data.local.PendingInviteStore
 import com.construct.messenger.service.MessageNotifier
 import com.construct.messenger.ui.navigation.KonstructNavHost
@@ -60,6 +62,9 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val navController = rememberNavController()
                     KonstructNavHost(navController = navController)
+                    SecurityNoticeHost(
+                        onOpenChat = { navController.navigate(Screen.Chat.createRoute(it)) },
+                    )
                 }
             }
         }
