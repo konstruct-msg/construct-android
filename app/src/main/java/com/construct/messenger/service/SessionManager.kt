@@ -262,24 +262,21 @@ class SessionManager @Inject constructor(
         return openSession(fetched)
     }
 
-    /** Execute the core's PQXDH upgrade request for one known peer device. */
-    suspend fun reopenSessionForDevice(deviceId: String): String {
+    /**
+     * The bundle that answers the core's `OpenSession` for [deviceId] — fetched, and checked to be
+     * that device's. Nothing is opened here: [CfeTimerBridge.answerOpenSession] hands the bundle to
+     * the core as an event, and the core's answer carries the save and the drained queue.
+     *
+     * Honours [openNextWithoutOneTimePrekey] like every other open.
+     */
+    suspend fun bundleForOpenSession(deviceId: String): BinaryKeyBundle {
         require(IdentityIds.isCryptoDeviceId(deviceId)) { "invalid peer CryptoDeviceId" }
         val accountId = peerDeviceRegistry.accountIdForDevice(deviceId)
             ?: error("no account mapping for peer device ${deviceId.take(8)}…")
-        val fetched = fetchPeerBundleData(accountId, consumeOtpk = true, deviceId = deviceId)
+        val withoutOtpk = openWithoutOneTimePrekey.remove(deviceId)
+        val fetched = fetchPeerBundleData(accountId, consumeOtpk = !withoutOtpk, deviceId = deviceId)
         check(fetched.deviceId == deviceId) { "pre-key bundle resolved to a different peer device" }
-        return try {
-            cryptoManager.reopenSession(deviceId, fetched.bundle).also {
-                // Counted by scripts/verify.sh --device: without it only the refusals are visible.
-                Log.i(TAG, "session reopen for ${deviceId.take(8)}… done — PQXDH v2, the held state kept as previous")
-            }
-        } catch (e: Exception) {
-            if (CryptoManager.isPeerNotPostQuantum(e)) {
-                Log.w(TAG, "peer device ${deviceId.take(8)}… has no PQXDH v2 keys — upgrade deferred (${e.message})")
-            }
-            throw e
-        }
+        return fetched.bundle
     }
 
     /**

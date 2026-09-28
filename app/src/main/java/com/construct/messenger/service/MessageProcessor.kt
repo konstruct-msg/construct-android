@@ -252,15 +252,11 @@ class MessageProcessor @Inject constructor(
                 is CfeAction.CheckAckInDb,
                 is CfeAction.DecryptMessage,
                 is CfeAction.EncryptMessage,
-                is CfeAction.InitSession,
                 is CfeAction.SendEncryptedMessage,
                 is CfeAction.OpenReceiving,
                 -> Log.d(TAG, "CFE action consumed by routing layer: ${action::class.simpleName}")
-                is CfeAction.OpenSession -> runCatching {
-                    sessionManager.reopenSessionForDevice(action.contactId)
-                }.onFailure { error ->
-                    Log.e(TAG, "CFE requested session reopen for ${action.contactId.take(8)}… failed", error)
-                }
+                // One implementation of the answer, on the bridge: it owns the event lock.
+                is CfeAction.OpenSession -> timerBridge.answerOpenSession(action.contactId)
             }
         }
     }

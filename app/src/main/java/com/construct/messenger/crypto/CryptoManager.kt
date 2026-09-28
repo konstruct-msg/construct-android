@@ -203,12 +203,6 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
             ?: requireBootstrap().initSession(contactId, recipientBundle)
     }
 
-    /** Open a replacement session while retaining the current ratchet as a previous state. */
-    fun reopenSession(contactId: String, recipientBundle: BinaryKeyBundle): String = synchronized(coreLock) {
-        val core = orchestrator ?: error("orchestrator not ready — setLocalUserId first")
-        core.reopenSession(contactId, recipientBundle)
-    }
-
     /**
      * Open a receiving session from what the core holds queued for [device]: each queued message
      * opens with the key its sender certificate names, once the core has checked the server's

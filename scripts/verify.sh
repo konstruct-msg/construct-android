@@ -149,7 +149,7 @@ if [ "$DEVICE" = 1 ]; then
       # What happened to sessions — counted, not judged: a fresh install and an upgraded one
       # differ, and the reader knows which this was.
       for label in "sessions reopened (OpenSession):session reopen for .* done" \
-                   "reopen failures:requested session reopen for .* failed" \
+                   "reopens refused or unavailable:session reopen for .* (refused|unavailable)" \
                    "PQ upgrade deferred:upgrade deferred" \
                    "decryption errors sent:DECRYPTION_ERROR" "decrypt failures:decrypt_failed" \
                    "sessions retired:SessionRetired|retired" "app errors (E/, system noise excluded):^[0-9-]+ [0-9:.]+ +[0-9]+ +[0-9]+ E (MessageProcessor|CfeTimerBridge|SessionManager|MessagingRuntime|MessageRouter|MessageStream|ProcessorEffects|SendMessageUseCase|SessionControl|ReceivingOpen|AuthRepository|StealthSender)"; do

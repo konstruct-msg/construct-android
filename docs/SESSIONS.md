@@ -114,10 +114,13 @@ every one on each restart until 2026-09-24.
 
 ## 8. What is not done here
 
-- **`CfeAction.OpenSession` is executed.** The timer and receive action executors fetch a fresh
-  bundle for the named `CryptoDeviceId` and call `reopen_session`; the core keeps the existing
-  state as a previous state and leaves it intact if PQXDH v2 cannot be opened. The next ordinary
-  message carries the handshake header. See `IMPLEMENTATION_PLAN.md` for the remaining stand check.
+- **`CfeAction.OpenSession` is answered by an event** (core 0.21.0). `CfeTimerBridge.answerOpenSession`
+  fetches the named device's bundle and sends `SessionBundleFetched` (or `SessionBundleUnavailable`);
+  the core reopens inside the event and answers with the save of the record, the messages that
+  waited behind the open, and the end of `Opening` — or `OPEN_SESSION_REFUSED`, the held session
+  kept. Do not call `reopen_session` for it: that call returns an id and nothing else, which is
+  how the record went unsaved and the queue undrained until 2026-09-28. The next ordinary message
+  carries the handshake header. The stand check is `IMPLEMENTATION_PLAN.md` A1.
 - The server-id map (§4) is in memory only.
 - `session_meta.establishedAtMs` is written and never read (it fed the stale-END_SESSION filter);
   removing it needs a Room migration.

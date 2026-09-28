@@ -88,6 +88,35 @@ class CfeTimerBridge @Inject constructor(
     }
 
     /**
+     * The answer to the core's `OpenSession` (the PQXDH v2 upgrade sweep): fetch that device's
+     * bundle and hand it over as `SessionBundleFetched`, or `SessionBundleUnavailable` when there
+     * is none. The core reopens inside the event and answers with the save of the record, what
+     * waited behind the open and the end of it — executed here like any other answer.
+     *
+     * Until 2026-09-28 this called `reopen_session` directly: it returns an id and nothing else,
+     * so the record went unsaved until the next send and nothing drained the queue.
+     */
+    suspend fun answerOpenSession(deviceId: String) {
+        val short = deviceId.take(8)
+        val event = try {
+            CfeIncomingEvent.SessionBundleFetched(deviceId, sessionManager.bundleForOpenSession(deviceId))
+        } catch (e: Exception) {
+            Log.w(TAG, "session reopen for $short… unavailable: ${e.message}")
+            CfeIncomingEvent.SessionBundleUnavailable(deviceId)
+        }
+        val answer = runCatching { eventMutex.withLock { orchestrator.handleEvent(event) } }
+            .onFailure { Log.e(TAG, "OpenSession answer not delivered to the core for $short…", it) }
+            .getOrNull() ?: return
+        val refused = answer.any { it is CfeAction.NotifyError && it.code == OPEN_SESSION_REFUSED }
+        if (event is CfeIncomingEvent.SessionBundleFetched) {
+            // Counted by scripts/verify.sh --device.
+            if (refused) Log.w(TAG, "session reopen for $short… refused — the held session stays")
+            else Log.i(TAG, "session reopen for $short… done — PQXDH v2, the held state kept as previous")
+        }
+        execute(answer)
+    }
+
+    /**
      * Executes core actions that arrive off the message path — from an alarm, a reconnect, or a
      * receiving open (`open_receiving` returns the opener's decrypt and whatever drained behind
      * it). One executor, so a drained message is persisted exactly as a timer-driven one is.
@@ -126,19 +155,17 @@ class CfeTimerBridge @Inject constructor(
                 is CfeAction.CheckAckInDb,
                 is CfeAction.DecryptMessage,
                 is CfeAction.EncryptMessage,
-                is CfeAction.InitSession,
                 is CfeAction.SendEncryptedMessage,
                 -> Log.d(TAG, "CFE routing action on timer path: ${action::class.simpleName}")
-                is CfeAction.OpenSession -> runCatching {
-                    sessionManager.reopenSessionForDevice(action.contactId)
-                }.onFailure { error ->
-                    Log.e(TAG, "CFE requested session reopen for ${action.contactId.take(8)}… failed", error)
-                }
+                is CfeAction.OpenSession -> answerOpenSession(action.contactId)
             }
         }
     }
 
     private companion object {
         const val TAG = "CfeTimerBridge"
+
+        /** The core's code for a refused answer to `OpenSession` (`handle_session_bundle_fetched`). */
+        const val OPEN_SESSION_REFUSED = "OPEN_SESSION_REFUSED"
     }
 }

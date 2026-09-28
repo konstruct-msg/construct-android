@@ -7394,16 +7394,6 @@ sealed class CfeAction {
         companion object
     }
     
-    data class InitSession(
-        val `contactId`: kotlin.String, 
-        val `bundleJson`: kotlin.String) : CfeAction()
-        
-    {
-        
-
-        companion object
-    }
-    
     data class ArchiveSession(
         val `contactId`: kotlin.String) : CfeAction()
         
@@ -7425,9 +7415,11 @@ sealed class CfeAction {
     }
     
     /**
-     * Open a new session with `contact_id` as INITIATOR over the one held: build it with
-     * `reopen_session`, which keeps the held state as a previous one. Nothing is sent for it —
-     * the handshake header rides on the next message. Raised by the PQXDH v2 upgrade sweep.
+     * Open a new session with `contact_id` — a device — as INITIATOR over the one held: fetch
+     * that device's bundle and answer with `SessionBundleFetched` (or `SessionBundleUnavailable`).
+     * Do not call `reopen_session` for it: the event's answer carries the save and the drained
+     * queue that the call cannot. Nothing is sent — the handshake header rides on the next
+     * message. Raised by the PQXDH v2 upgrade sweep.
      */
     data class OpenSession(
         val `contactId`: kotlin.String) : CfeAction()
@@ -7669,92 +7661,88 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            3 -> CfeAction.InitSession(
-                FfiConverterString.read(buf),
-                FfiConverterString.read(buf),
-                )
-            4 -> CfeAction.ArchiveSession(
+            3 -> CfeAction.ArchiveSession(
                 FfiConverterString.read(buf),
                 )
-            5 -> CfeAction.MessageDecrypted(
+            4 -> CfeAction.MessageDecrypted(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            6 -> CfeAction.OpenSession(
+            5 -> CfeAction.OpenSession(
                 FfiConverterString.read(buf),
                 )
-            7 -> CfeAction.MessageQueuedPendingInit(
+            6 -> CfeAction.MessageQueuedPendingInit(
                 FfiConverterString.read(buf),
                 FfiConverterUInt.read(buf),
                 )
-            8 -> CfeAction.SaveToSecureStore(
+            7 -> CfeAction.SaveToSecureStore(
                 FfiConverterTypeCfeSecureStoreSlot.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            9 -> CfeAction.PersistAck(
+            8 -> CfeAction.PersistAck(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            10 -> CfeAction.PruneAckStore(
+            9 -> CfeAction.PruneAckStore(
                 FfiConverterULong.read(buf),
                 )
-            11 -> CfeAction.MarkMessageDelivered(
+            10 -> CfeAction.MarkMessageDelivered(
                 FfiConverterString.read(buf),
                 )
-            12 -> CfeAction.DuplicateDropped(
+            11 -> CfeAction.DuplicateDropped(
                 FfiConverterString.read(buf),
                 )
-            13 -> CfeAction.OpenReceiving(
+            12 -> CfeAction.OpenReceiving(
                 FfiConverterString.read(buf),
                 )
-            14 -> CfeAction.SendEncryptedMessage(
+            13 -> CfeAction.SendEncryptedMessage(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterUByte.read(buf),
                 )
-            15 -> CfeAction.SendReceipt(
+            14 -> CfeAction.SendReceipt(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            16 -> CfeAction.SendDecryptionError(
+            15 -> CfeAction.SendDecryptionError(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            17 -> CfeAction.SessionRetired(
+            16 -> CfeAction.SessionRetired(
                 FfiConverterString.read(buf),
                 FfiConverterBoolean.read(buf),
                 )
-            18 -> CfeAction.ResendMessage(
+            17 -> CfeAction.ResendMessage(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            19 -> CfeAction.NotifyNewMessage(
+            18 -> CfeAction.NotifyNewMessage(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            20 -> CfeAction.NotifySessionCreated(
+            19 -> CfeAction.NotifySessionCreated(
                 FfiConverterString.read(buf),
                 )
-            21 -> CfeAction.NotifyError(
+            20 -> CfeAction.NotifyError(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            22 -> CfeAction.ScheduleTimer(
+            21 -> CfeAction.ScheduleTimer(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            23 -> CfeAction.CancelTimer(
+            22 -> CfeAction.CancelTimer(
                 FfiConverterString.read(buf),
                 )
-            24 -> CfeAction.CallSignalDecrypted(
+            23 -> CfeAction.CallSignalDecrypted(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            25 -> CfeAction.CheckAckInDb(
+            24 -> CfeAction.CheckAckInDb(
                 FfiConverterString.read(buf),
                 )
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
@@ -7776,14 +7764,6 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 4UL
                 + FfiConverterString.allocationSize(value.`contactId`)
                 + FfiConverterByteArray.allocationSize(value.`plaintext`)
-            )
-        }
-        is CfeAction.InitSession -> {
-            // Add the size for the Int that specifies the variant plus the size needed for all fields
-            (
-                4UL
-                + FfiConverterString.allocationSize(value.`contactId`)
-                + FfiConverterString.allocationSize(value.`bundleJson`)
             )
         }
         is CfeAction.ArchiveSession -> {
@@ -7974,69 +7954,63 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterByteArray.write(value.`plaintext`, buf)
                 Unit
             }
-            is CfeAction.InitSession -> {
-                buf.putInt(3)
-                FfiConverterString.write(value.`contactId`, buf)
-                FfiConverterString.write(value.`bundleJson`, buf)
-                Unit
-            }
             is CfeAction.ArchiveSession -> {
-                buf.putInt(4)
+                buf.putInt(3)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.MessageDecrypted -> {
-                buf.putInt(5)
+                buf.putInt(4)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`plaintext`, buf)
                 Unit
             }
             is CfeAction.OpenSession -> {
-                buf.putInt(6)
+                buf.putInt(5)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.MessageQueuedPendingInit -> {
-                buf.putInt(7)
+                buf.putInt(6)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterUInt.write(value.`queuedCount`, buf)
                 Unit
             }
             is CfeAction.SaveToSecureStore -> {
-                buf.putInt(8)
+                buf.putInt(7)
                 FfiConverterTypeCfeSecureStoreSlot.write(value.`slot`, buf)
                 FfiConverterByteArray.write(value.`data`, buf)
                 Unit
             }
             is CfeAction.PersistAck -> {
-                buf.putInt(9)
+                buf.putInt(8)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterULong.write(value.`timestamp`, buf)
                 Unit
             }
             is CfeAction.PruneAckStore -> {
-                buf.putInt(10)
+                buf.putInt(9)
                 FfiConverterULong.write(value.`cutoffTs`, buf)
                 Unit
             }
             is CfeAction.MarkMessageDelivered -> {
-                buf.putInt(11)
+                buf.putInt(10)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.DuplicateDropped -> {
-                buf.putInt(12)
+                buf.putInt(11)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.OpenReceiving -> {
-                buf.putInt(13)
+                buf.putInt(12)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.SendEncryptedMessage -> {
-                buf.putInt(14)
+                buf.putInt(13)
                 FfiConverterString.write(value.`to`, buf)
                 FfiConverterByteArray.write(value.`payload`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
@@ -8044,67 +8018,67 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 Unit
             }
             is CfeAction.SendReceipt -> {
-                buf.putInt(15)
+                buf.putInt(14)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterString.write(value.`status`, buf)
                 Unit
             }
             is CfeAction.SendDecryptionError -> {
-                buf.putInt(16)
+                buf.putInt(15)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`payload`, buf)
                 Unit
             }
             is CfeAction.SessionRetired -> {
-                buf.putInt(17)
+                buf.putInt(16)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterBoolean.write(value.`withoutOneTimePrekey`, buf)
                 Unit
             }
             is CfeAction.ResendMessage -> {
-                buf.putInt(18)
+                buf.putInt(17)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.NotifyNewMessage -> {
-                buf.putInt(19)
+                buf.putInt(18)
                 FfiConverterString.write(value.`chatId`, buf)
                 FfiConverterString.write(value.`preview`, buf)
                 Unit
             }
             is CfeAction.NotifySessionCreated -> {
-                buf.putInt(20)
+                buf.putInt(19)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyError -> {
-                buf.putInt(21)
+                buf.putInt(20)
                 FfiConverterString.write(value.`code`, buf)
                 FfiConverterString.write(value.`message`, buf)
                 Unit
             }
             is CfeAction.ScheduleTimer -> {
-                buf.putInt(22)
+                buf.putInt(21)
                 FfiConverterString.write(value.`timerId`, buf)
                 FfiConverterULong.write(value.`delayMs`, buf)
                 Unit
             }
             is CfeAction.CancelTimer -> {
-                buf.putInt(23)
+                buf.putInt(22)
                 FfiConverterString.write(value.`timerId`, buf)
                 Unit
             }
             is CfeAction.CallSignalDecrypted -> {
-                buf.putInt(24)
+                buf.putInt(23)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`protoBytes`, buf)
                 Unit
             }
             is CfeAction.CheckAckInDb -> {
-                buf.putInt(25)
+                buf.putInt(24)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
@@ -8180,9 +8154,26 @@ sealed class CfeIncomingEvent {
         companion object
     }
     
-    data class KeyBundleFetched(
-        val `userId`: kotlin.String, 
-        val `bundleJson`: kotlin.String) : CfeIncomingEvent()
+    /**
+     * The answer to `CfeAction::OpenSession`: the bundle of that one device. The core reopens
+     * from it and answers with the save, the messages that waited, or `OPEN_SESSION_REFUSED`.
+     */
+    data class SessionBundleFetched(
+        val `contactId`: kotlin.String, 
+        val `bundle`: BinaryKeyBundle) : CfeIncomingEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The answer to `CfeAction::OpenSession` when no bundle could be fetched. The held session
+     * stays; the core stops waiting for the open now instead of at its time-out.
+     */
+    data class SessionBundleUnavailable(
+        val `contactId`: kotlin.String) : CfeIncomingEvent()
         
     {
         
@@ -8287,26 +8278,29 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
             5 -> CfeIncomingEvent.AckReceived(
                 FfiConverterString.read(buf),
                 )
-            6 -> CfeIncomingEvent.KeyBundleFetched(
+            6 -> CfeIncomingEvent.SessionBundleFetched(
                 FfiConverterString.read(buf),
+                FfiConverterTypeBinaryKeyBundle.read(buf),
+                )
+            7 -> CfeIncomingEvent.SessionBundleUnavailable(
                 FfiConverterString.read(buf),
                 )
-            7 -> CfeIncomingEvent.NetworkReconnected
-            8 -> CfeIncomingEvent.AppLaunched
-            9 -> CfeIncomingEvent.TimerFired(
+            8 -> CfeIncomingEvent.NetworkReconnected
+            9 -> CfeIncomingEvent.AppLaunched
+            10 -> CfeIncomingEvent.TimerFired(
                 FfiConverterString.read(buf),
                 )
-            10 -> CfeIncomingEvent.AckDbResult(
+            11 -> CfeIncomingEvent.AckDbResult(
                 FfiConverterString.read(buf),
                 FfiConverterBoolean.read(buf),
                 )
-            11 -> CfeIncomingEvent.HeartbeatReceived(
+            12 -> CfeIncomingEvent.HeartbeatReceived(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterUInt.read(buf),
                 )
-            12 -> CfeIncomingEvent.DecryptionErrorReceived(
+            13 -> CfeIncomingEvent.DecryptionErrorReceived(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
@@ -8363,12 +8357,19 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 + FfiConverterString.allocationSize(value.`messageId`)
             )
         }
-        is CfeIncomingEvent.KeyBundleFetched -> {
+        is CfeIncomingEvent.SessionBundleFetched -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
-                + FfiConverterString.allocationSize(value.`userId`)
-                + FfiConverterString.allocationSize(value.`bundleJson`)
+                + FfiConverterString.allocationSize(value.`contactId`)
+                + FfiConverterTypeBinaryKeyBundle.allocationSize(value.`bundle`)
+            )
+        }
+        is CfeIncomingEvent.SessionBundleUnavailable -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
             )
         }
         is CfeIncomingEvent.NetworkReconnected -> {
@@ -8458,33 +8459,38 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
-            is CfeIncomingEvent.KeyBundleFetched -> {
+            is CfeIncomingEvent.SessionBundleFetched -> {
                 buf.putInt(6)
-                FfiConverterString.write(value.`userId`, buf)
-                FfiConverterString.write(value.`bundleJson`, buf)
+                FfiConverterString.write(value.`contactId`, buf)
+                FfiConverterTypeBinaryKeyBundle.write(value.`bundle`, buf)
+                Unit
+            }
+            is CfeIncomingEvent.SessionBundleUnavailable -> {
+                buf.putInt(7)
+                FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeIncomingEvent.NetworkReconnected -> {
-                buf.putInt(7)
-                Unit
-            }
-            is CfeIncomingEvent.AppLaunched -> {
                 buf.putInt(8)
                 Unit
             }
-            is CfeIncomingEvent.TimerFired -> {
+            is CfeIncomingEvent.AppLaunched -> {
                 buf.putInt(9)
+                Unit
+            }
+            is CfeIncomingEvent.TimerFired -> {
+                buf.putInt(10)
                 FfiConverterString.write(value.`timerId`, buf)
                 Unit
             }
             is CfeIncomingEvent.AckDbResult -> {
-                buf.putInt(10)
+                buf.putInt(11)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterBoolean.write(value.`isProcessed`, buf)
                 Unit
             }
             is CfeIncomingEvent.HeartbeatReceived -> {
-                buf.putInt(11)
+                buf.putInt(12)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`data`, buf)
@@ -8492,7 +8498,7 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 Unit
             }
             is CfeIncomingEvent.DecryptionErrorReceived -> {
-                buf.putInt(12)
+                buf.putInt(13)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterByteArray.write(value.`payload`, buf)
                 Unit

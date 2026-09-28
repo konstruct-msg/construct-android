@@ -400,32 +400,45 @@ class MessageProcessorTest {
 
     // ── The core asks for an open: OpenSession ─────────────────────────
 
-    /** The PQXDH v2 upgrade sweep asks for a new session over a held one; the executor reopens
-     * that device. Until 2026-09-28 Android only logged "not acted on", so a classical session
-     * was never upgraded. Mutation that reddens it: restore the log-only branch. */
+    /** The PQXDH v2 upgrade sweep asks for a new session over a held one. The bridge answers
+     * with that device's bundle as `SessionBundleFetched` and carries out what the core answers
+     * — the save of the record included. Until 2026-09-28 it called `reopen_session`, whose
+     * answer is an id: the record went unsaved and nothing drained. Mutations that redden it:
+     * restore the log-only branch; drop the `execute(answer)`. */
     @Test
-    fun `an OpenSession from the core reopens that device`() = runBlocking {
-        val bridge = CfeTimerBridge(FakeGateway(), RecordingEffects(), held, sessionManager)
+    fun `an OpenSession is answered with the device's bundle and the core's answer is carried out`() = runBlocking {
+        val bundle = shared.proto.services.v1.KeyServiceOuterClass.PreKeyBundle.getDefaultInstance()
+            .toBinaryKeyBundle(ByteArray(0))
+        org.mockito.kotlin.wheneverBlocking { sessionManager.bundleForOpenSession(senderDevice) }.thenReturn(bundle)
+        val gateway = FakeGateway(mutableListOf(listOf(CfeAction.DuplicateDropped("drained"))))
+        val effects = RecordingEffects()
+        val bridge = CfeTimerBridge(gateway, effects, held, sessionManager)
 
         bridge.execute(listOf(CfeAction.OpenSession(senderDevice)))
 
-        org.mockito.kotlin.verifyBlocking(sessionManager) { reopenSessionForDevice(senderDevice) }
+        val sent = gateway.events.single() as CfeIncomingEvent.SessionBundleFetched
+        assertEquals(senderDevice, sent.contactId)
+        assertEquals(bundle, sent.bundle)
+        assertTrue(effects.calls.contains("markProcessed:drained"))
     }
 
-    /** A refused reopen (a peer without ML-KEM-1024 keys, a failed fetch) is logged and nothing
-     * else: the core already kept the held session, and the actions after it still run. */
+    /** No bundle to hand over (a failed fetch, a device the registry does not know) is said as
+     * such, so the core ends the open now rather than at its 30 s time-out, and the actions
+     * after it still run. */
     @Test
-    fun `a refused reopen does not stop the actions after it`() = runBlocking {
+    fun `an OpenSession with no bundle is answered as unavailable`() = runBlocking {
+        org.mockito.kotlin.wheneverBlocking { sessionManager.bundleForOpenSession(senderDevice) }
+            .thenThrow(IllegalStateException("no account mapping"))
+        val gateway = FakeGateway()
         val effects = RecordingEffects()
-        org.mockito.kotlin.wheneverBlocking { sessionManager.reopenSessionForDevice(senderDevice) }
-            .thenThrow(IllegalStateException("PQ_REQUIRED: no Kyber prekey"))
-        val bridge = CfeTimerBridge(FakeGateway(), effects, held, sessionManager)
+        val bridge = CfeTimerBridge(gateway, effects, held, sessionManager)
 
         bridge.execute(listOf(
             CfeAction.OpenSession(senderDevice),
-            CfeAction.DuplicateDropped("after-reopen"),
+            CfeAction.DuplicateDropped("after-open"),
         ))
 
-        assertTrue(effects.calls.contains("markProcessed:after-reopen"))
+        assertEquals(listOf<CfeIncomingEvent>(CfeIncomingEvent.SessionBundleUnavailable(senderDevice)), gateway.events)
+        assertTrue(effects.calls.contains("markProcessed:after-open"))
     }
 }
