@@ -14,8 +14,6 @@ import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundleRequest
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundlesRequest
 import shared.proto.services.v1.KeyServiceOuterClass.PreKeyBundle
 import uniffi.construct_core.BinaryKeyBundle
-import uniffi.construct_core.DecryptedMessageResult
-import uniffi.construct_core.EncryptedMessageComponents
 import uniffi.construct_core.SenderCertificate
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -314,23 +312,6 @@ class SessionManager @Inject constructor(
     suspend fun recordOpenedDevice(certificate: SenderCertificate) {
         peerDeviceRegistry.record(certificate.userId, certificate.deviceId, certificate.identityKey)
     }
-
-    fun encryptMessage(contactId: String, plaintext: String): EncryptedMessageComponents =
-        cryptoManager.encryptMessage(contactId, plaintext)
-
-    fun decryptMessage(
-        sessionId: String,
-        ephemeralPublicKey: ByteArray,
-        messageNumber: UInt,
-        content: ByteArray,
-        suiteId: UShort,
-        pqMessageEpoch: UInt,
-        pqRatchetField: ByteArray,
-    ): DecryptedMessageResult =
-        cryptoManager.decryptMessage(
-            sessionId, ephemeralPublicKey, messageNumber, content,
-            suiteId, pqMessageEpoch, pqRatchetField,
-        )
 
     /** Exports every known session as CFE binary, keyed by contact id — never JSON/base64. */
     fun exportSessions(): Map<String, ByteArray> =

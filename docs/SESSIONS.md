@@ -1,6 +1,6 @@
 # Sessions — what Android does and what the core does
 
-> **Actualized 2026-09-28**, construct-core `0.20.0+83ccd84`. Replaces `SESSION_INITIALIZATION.md`
+> **Actualized 2026-09-28**, construct-core `0.22.0+88b7de8`. Replaces `SESSION_INITIALIZATION.md`
 > and `SESSTION_LIFECYCLE.md`, which described a protocol that no longer exists (ping/ready,
 > SESSION_RESET_INIT, tie-break, heal, END_SESSION). They are in git history if you need to know
 > what was there.
@@ -52,6 +52,19 @@ Messages that arrive before their session is open wait **in the core** (`Message
 Android keeps only what the core's answers name by id and cannot carry — the envelope's content
 type and timestamp (`HeldEnvelopes`, in memory). Nothing there decides what waits or what drains;
 do not grow it into a second queue beside the core's.
+
+### The responder learns who opened — post-quantum
+
+The first flight also names the initiator's ML-KEM-1024 identity key (derived in the core from the
+hybrid key, never stored separately). The responder pins it per device, encapsulates to it and mixes
+the secret into its first reply; the answer rides on its messages until the initiator, able to
+decapsulate, sends on a later chain. Only then is the responder's session `ReceivedProven`
+(`decisions/responder-authenticates-initiator-by-kem.md`).
+
+**Consequence for this app: a payload goes to the core whole.** The answer is a field of the wire
+payload, and a message rebuilt from components drops it — the initiator then cannot read the
+reply. The core exports `encryptToWire` / `decryptWirePayload` and nothing that takes components;
+do not add a Kotlin copy of the layout.
 
 ## 4. When nothing decrypts — DECRYPTION_ERROR (content type 28)
 

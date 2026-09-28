@@ -5,9 +5,7 @@ import uniffi.construct_core.BinaryKeyBundle
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.ClassicCryptoCore
-import uniffi.construct_core.DecryptedMessageResult
 import uniffi.construct_core.DeliveryTarget
-import uniffi.construct_core.EncryptedMessageComponents
 import uniffi.construct_core.KyberPrekeyUpload
 import uniffi.construct_core.OrchestratorCore
 import uniffi.construct_core.OtpkPair
@@ -223,33 +221,6 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
 
     fun sessionHealth(contactId: String): uniffi.construct_core.SessionHealthReport? = synchronized(coreLock) {
         orchestrator?.getSessionHealth(contactId)
-    }
-
-    fun encryptMessage(contactId: String, plaintext: String): EncryptedMessageComponents = synchronized(coreLock) {
-        // OrchestratorCore takes UTF-8 bytes (binary pipeline); the legacy
-        // ClassicCryptoCore takes the String directly.
-        orchestrator?.encryptMessage(contactId, plaintext.toByteArray(Charsets.UTF_8))
-            ?: requireBootstrap().encryptMessage(contactId, plaintext)
-    }
-
-    /** All suite-3 fields are REQUIRED (no defaults): pass them straight from the
-     * wire (`wirePayloadUnpack`) — silently defaulting to classic is how the
-     * suite-3 AEAD outage slipped through on iOS. Classic messages carry
-     * suiteId=1, pqMessageEpoch=0, empty pqRatchetField. */
-    fun decryptMessage(
-        sessionId: String,
-        ephemeralPublicKey: ByteArray,
-        messageNumber: UInt,
-        content: ByteArray,
-        suiteId: UShort,
-        pqMessageEpoch: UInt,
-        pqRatchetField: ByteArray,
-    ): DecryptedMessageResult = synchronized(coreLock) {
-        val ep = ephemeralPublicKey.toUByteList()
-        val ct = content.toUByteList()
-        val pq = pqRatchetField.toUByteList()
-        orchestrator?.decryptMessage(sessionId, ep, messageNumber, ct, suiteId, pqMessageEpoch, pq)
-            ?: requireBootstrap().decryptMessage(sessionId, ep, messageNumber, ct, suiteId, pqMessageEpoch, pq)
     }
 
     fun exportSessionBytes(contactId: String): ByteArray = synchronized(coreLock) {
