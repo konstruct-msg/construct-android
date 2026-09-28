@@ -8,6 +8,8 @@ import com.construct.messenger.data.local.db.IssuedInviteEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.data.model.Contact
+import com.construct.messenger.invite.AccountAddressBook
+import com.construct.messenger.invite.AccountAddressSource
 import com.construct.messenger.invite.InviteConfig
 import com.construct.messenger.invite.InviteException
 import com.construct.messenger.invite.InviteGenerator
@@ -45,6 +47,7 @@ class ContactsRepositoryImpl @Inject constructor(
     private val verifier: InviteVerifier,
     private val grpcClient: GrpcClient,
     private val issuedInviteDao: IssuedInviteDao,
+    private val addressBook: AccountAddressBook,
 ) : ContactsRepository {
 
     private val incoming = MutableStateFlow<List<IncomingContactRequest>>(emptyList())
@@ -272,11 +275,11 @@ class ContactsRepositoryImpl @Inject constructor(
                 displayName = display,
                 isContact = true,
                 identityPublic = identityPublic,
-                // From the signed invite, already checked by the server against the account's
-                // recovery key. An account's address cannot change.
-                accountAddress = invite.addr,
             ),
         )
+        // From the signed invite, already checked by the server against the account's recovery
+        // key: it outranks a card, and a different pinned one is a security event.
+        addressBook.pin(userId, invite.addr, AccountAddressSource.INVITE)
     }
 
     private companion object {

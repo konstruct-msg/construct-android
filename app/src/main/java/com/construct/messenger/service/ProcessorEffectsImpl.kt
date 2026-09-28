@@ -16,7 +16,11 @@ import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.domain.usecase.ReceivingOpenUseCase
 import com.construct.messenger.domain.usecase.SendMessageUseCase
+import com.construct.messenger.domain.usecase.SendContactCardUseCase
 import com.construct.messenger.domain.usecase.SendReceiptUseCase
+import com.construct.messenger.invite.AccountAddressBook
+import com.construct.messenger.invite.AccountAddressSource
+import com.construct.messenger.invite.ContactCardPayload
 import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.DisplayNameGenerator
@@ -46,6 +50,8 @@ class ProcessorEffectsImpl @Inject constructor(
     private val sessionManager: SessionManager,
     private val sessionControl: SessionControlUseCase,
     private val sendReceiptUseCase: SendReceiptUseCase,
+    private val sendContactCard: SendContactCardUseCase,
+    private val addressBook: AccountAddressBook,
     private val receivingOpen: ReceivingOpenUseCase,
     // Lazy: CfeTimerBridge executes actions *through* these effects, so a direct dependency
     // would be a cycle. Only its executor is used, and only after an open has finished.
@@ -61,6 +67,15 @@ class ProcessorEffectsImpl @Inject constructor(
         val decoded = IncomingPlaintext.decode(plaintext)
         if (decoded.knstContentType == ContentType.CONTENT_TYPE_DELIVERY_RECEIPT_VALUE) {
             IncomingReceipt.messageIds(plaintext).forEach { markDelivered(it) }
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
+        if (decoded.knstContentType == ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE) {
+            // Their card. The intake key in it has no reader on Android yet; the address does.
+            IncomingPlaintext.knstPayload(plaintext)
+                ?.let(ContactCardPayload::read)
+                ?.accountAddress
+                ?.let { addressBook.pin(accountId, it, AccountAddressSource.CARD) }
             ackStore.markProcessed(messageId, accountId)
             return
         }
@@ -86,6 +101,9 @@ class ProcessorEffectsImpl @Inject constructor(
         ackStore.markProcessed(messageId, accountId)
         runCatching { sendReceiptUseCase.delivered(accountId, listOf(rowId)) }
             .onFailure { Log.w(TAG, "e2e receipt send failed", it) }
+        // We heard from them: hand them our card if their device lacks it.
+        runCatching { sendContactCard.sendIfOwed(accountId) }
+            .onFailure { Log.w(TAG, "contact card send failed", it) }
         runCatching { sessionManager.fetchIdentityKey(contactId) }
     }
 

@@ -73,6 +73,7 @@ class KeystoreManager @Inject constructor(
             .remove(KEY_REFRESH_TOKEN)
             .remove(KEY_USER_ID)
             .remove(KEY_ACCOUNT_ADDRESS)
+            .remove(KEY_CONTACT_CARD_SENT_TO)
             .apply()
     }
 
@@ -83,6 +84,14 @@ class KeystoreManager @Inject constructor(
      */
     fun saveOwnAccountAddress(key: ByteArray) {
         prefs.edit().putString(KEY_ACCOUNT_ADDRESS, Base64.encodeToString(key, Base64.NO_WRAP)).commit()
+    }
+
+    /** Contact devices our card has reached. Not secret; kept with the account it belongs to. */
+    fun contactCardSentTo(): Set<String> =
+        prefs.getStringSet(KEY_CONTACT_CARD_SENT_TO, emptySet()).orEmpty()
+
+    fun markContactCardSent(deviceId: String) {
+        prefs.edit().putStringSet(KEY_CONTACT_CARD_SENT_TO, contactCardSentTo() + deviceId.lowercase()).apply()
     }
 
     /** `null` until this device has seen the recovery phrase. */
@@ -155,5 +164,6 @@ class KeystoreManager @Inject constructor(
         const val KEY_PRIVATE_KEYS = "private_keys_cfe"
         const val KEY_KYBER_PREKEYS = "kyber_prekeys_cfe"
         const val KEY_ACCOUNT_ADDRESS = "account_address"
+        const val KEY_CONTACT_CARD_SENT_TO = "contact_card_sent_to"
     }
 }

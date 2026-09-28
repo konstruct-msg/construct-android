@@ -64,12 +64,53 @@ class ProcessorEffectsImplTest {
             sessionManager = mock(),
             sessionControl = mock(),
             sendReceiptUseCase = mock(),
+            sendContactCard = mock(),
+            addressBook = mock(),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
             sendMessage = { mock<SendMessageUseCase>() },
             held = HeldEnvelopes(),
             alerts = alerts,
         )
+    }
+
+    /**
+     * A contact card from a contact files their address on their row; the card is not a bubble.
+     * Mutation: drop the card branch in `onDecrypted` — this reddens.
+     */
+    @Test
+    fun `a contact card pins the sender's address`() = runTest {
+        val users = FakeUserDao().also { it.rows[peer] = UserEntity(id = peer, isContact = true) }
+        val keystore = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) }
+        val messages = FakeMessageDao()
+        val effects = ProcessorEffectsImpl(
+            cryptoManager = mock<CryptoManager>(),
+            keystoreManager = keystore,
+            messageDao = messages,
+            chatDao = FakeChatDao(),
+            userDao = users,
+            ackStore = FakeAckStore(),
+            sessionStateStore = mock(),
+            sessionManager = mock(),
+            sessionControl = mock(),
+            sendReceiptUseCase = mock(),
+            sendContactCard = mock(),
+            addressBook = com.construct.messenger.invite.AccountAddressBook(users, keystore),
+            receivingOpen = mock(),
+            actionExecutor = { mock<CfeTimerBridge>() },
+            sendMessage = { mock<SendMessageUseCase>() },
+            held = HeldEnvelopes(),
+            alerts = alerts,
+        )
+        val address = ByteArray(32) { 0x5A }
+        val card = com.construct.messenger.util.KnstFrame.pack(
+            com.construct.messenger.invite.ContactCardPayload(accountAddress = address).encoded(),
+            shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE,
+            java.util.UUID.randomUUID(),
+        )
+        effects.onDecrypted(peer, "card-1", card)
+        org.junit.Assert.assertArrayEquals(address, users.rows[peer]?.accountAddress)
+        org.junit.Assert.assertTrue("a card is not a bubble", messages.rows.isEmpty())
     }
 
     @Test
@@ -123,6 +164,8 @@ class ProcessorEffectsImplTest {
             sessionManager = mock(),
             sessionControl = mock(),
             sendReceiptUseCase = mock(),
+            sendContactCard = mock(),
+            addressBook = mock(),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
             sendMessage = { mock<SendMessageUseCase>() },
@@ -160,6 +203,8 @@ class ProcessorEffectsImplTest {
             sessionManager = mock(),
             sessionControl = mock(),
             sendReceiptUseCase = mock(),
+            sendContactCard = mock(),
+            addressBook = mock(),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
             sendMessage = { mock<SendMessageUseCase>() },
@@ -332,6 +377,8 @@ class ProcessorEffectsImplTest {
             sessionManager = mock(),
             sessionControl = control,
             sendReceiptUseCase = mock(),
+            sendContactCard = mock(),
+            addressBook = mock(),
             receivingOpen = opener,
             actionExecutor = { bridge },
             sendMessage = { mock<SendMessageUseCase>() },

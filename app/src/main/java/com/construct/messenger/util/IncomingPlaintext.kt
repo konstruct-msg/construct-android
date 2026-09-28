@@ -120,7 +120,7 @@ object IncomingPlaintext {
         return chunkIndex == 0 && totalChunks <= 1
     }
 
-    private fun knstPayload(bytes: ByteArray): ByteArray? {
+    internal fun knstPayload(bytes: ByteArray): ByteArray? {
         val declared = u32(bytes, 26)
         val end = HEADER_SIZE + declared
         if (end > bytes.size) return null

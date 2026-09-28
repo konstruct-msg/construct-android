@@ -9,6 +9,7 @@ import com.construct.messenger.data.local.db.refreshChatPreview
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.Message
 import com.construct.messenger.data.model.ReplyRef
+import com.construct.messenger.domain.usecase.SendContactCardUseCase
 import com.construct.messenger.domain.usecase.SendMessageUseCase
 import com.construct.messenger.domain.usecase.SendOutcome
 import com.construct.messenger.service.IncomingAlerts
@@ -27,6 +28,7 @@ class MessagesRepositoryImpl @Inject constructor(
     private val chatDao: ChatDao,
     private val presence: ChatPresence,
     private val alerts: IncomingAlerts,
+    private val sendContactCard: SendContactCardUseCase,
 ) : MessagesRepository {
 
     override fun observeContact(contactId: String): Flow<List<Message>> {
@@ -35,8 +37,15 @@ class MessagesRepositoryImpl @Inject constructor(
         return messageDao.observeChat(chatId).map { rows -> rows.map { it.toModel() } }
     }
 
-    override suspend fun send(contactId: String, text: String, reply: ReplyRef?): SendOutcome =
-        sendMessage(contactId, text, reply)
+    override suspend fun send(contactId: String, text: String, reply: ReplyRef?): SendOutcome {
+        val outcome = sendMessage(contactId, text, reply)
+        // The first time we write to a device, it gets our card too (the other trigger is
+        // hearing from it). After the message, so a control envelope never delays the bubble.
+        if (outcome is SendOutcome.Sent) {
+            runCatching { sendContactCard.sendIfOwed(contactId) }
+        }
+        return outcome
+    }
 
     override suspend fun edit(contactId: String, messageId: String, newText: String): SendOutcome =
         sendMessage.edit(contactId, messageId, newText)
