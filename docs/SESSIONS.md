@@ -135,6 +135,4 @@ every one on each restart until 2026-09-24.
   how the record went unsaved and the queue undrained until 2026-09-28. The next ordinary message
   carries the handshake header. The stand check is `IMPLEMENTATION_PLAN.md` A1.
 - The server-id map (§4) is in memory only.
-- `session_meta.establishedAtMs` is written and never read (it fed the stale-END_SESSION filter);
-  removing it needs a Room migration.
 - Android↔iOS SENDER_SYNC between two devices of one account has not been run on the stand.

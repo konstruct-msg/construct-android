@@ -39,21 +39,6 @@ data class SessionStateEntity(
     }
 }
 
-/**
- * Per-peer session establishment timestamp.
- *
- * **Storm hardening, invariant #6** (`docs/ANDROID_ONBOARDING.md` §12 —
- * "Stale END_SESSION filter"): an END_SESSION whose timestamp pre-dates the
- * current session's [establishedAtMs] is stale — ACK and drop. Must survive
- * process restarts and be hydrated for CFE-restored sessions BEFORE any queued
- * control message is processed.
- */
-@Entity(tableName = "session_meta")
-data class SessionMetaEntity(
-    @PrimaryKey val contactId: String,
-    val establishedAtMs: Long,
-)
-
 @Dao
 interface SessionStateDao {
 
@@ -68,20 +53,4 @@ interface SessionStateDao {
 
     @Query("DELETE FROM session_state WHERE storeKey = :key")
     suspend fun delete(key: String)
-}
-
-@Dao
-interface SessionMetaDao {
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun setEstablishedAt(entry: SessionMetaEntity)
-
-    @Query("SELECT establishedAtMs FROM session_meta WHERE contactId = :contactId")
-    suspend fun getEstablishedAt(contactId: String): Long?
-
-    @Query("SELECT * FROM session_meta")
-    suspend fun getAll(): List<SessionMetaEntity>
-
-    @Query("DELETE FROM session_meta WHERE contactId = :contactId")
-    suspend fun delete(contactId: String)
 }

@@ -8,7 +8,6 @@ import com.construct.messenger.data.local.db.AckDao
 import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.ConstructDatabase
 import com.construct.messenger.data.local.db.MessageDao
-import com.construct.messenger.data.local.db.SessionMetaDao
 import com.construct.messenger.data.local.db.SessionStateDao
 import com.construct.messenger.data.local.db.IssuedInviteDao
 import com.construct.messenger.data.local.db.PeerDeviceDao
@@ -35,6 +34,7 @@ object DatabaseModule {
                 ConstructDatabase.MIGRATION_4_5,
                 ConstructDatabase.MIGRATION_5_6,
                 ConstructDatabase.MIGRATION_6_7,
+                ConstructDatabase.MIGRATION_7_8,
             )
             .fallbackToDestructiveMigrationFrom(1, 2, 3)
             .build()
@@ -53,9 +53,6 @@ object DatabaseModule {
 
     @Provides
     fun provideSessionStateDao(db: ConstructDatabase): SessionStateDao = db.sessionStateDao()
-
-    @Provides
-    fun provideSessionMetaDao(db: ConstructDatabase): SessionMetaDao = db.sessionMetaDao()
 
     @Provides
     fun provideIssuedInviteDao(db: ConstructDatabase): IssuedInviteDao = db.issuedInviteDao()

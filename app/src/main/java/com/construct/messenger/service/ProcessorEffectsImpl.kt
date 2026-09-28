@@ -185,7 +185,6 @@ class ProcessorEffectsImpl @Inject constructor(
     override suspend fun archiveSession(contactId: String) {
         sessionManager.removeSession(contactId)
         sessionStateStore.saveSecureStore(CfeSecureStoreSlot.Session(contactId), ByteArray(0))
-        sessionStateStore.removeMeta(contactId)
     }
 
     override suspend fun sendDecryptionError(contactId: String, messageId: String, payload: ByteArray) {

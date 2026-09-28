@@ -1,7 +1,5 @@
 package com.construct.messenger.data.local
 
-import com.construct.messenger.data.local.db.SessionMetaDao
-import com.construct.messenger.data.local.db.SessionMetaEntity
 import com.construct.messenger.data.local.db.SessionStateDao
 import com.construct.messenger.data.local.db.SessionStateEntity
 import javax.inject.Inject
@@ -10,23 +8,13 @@ import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeSecureStoreSlot
 
 /**
- * Persistence for CFE session bytes and per-peer session metadata.
- *
- * Two distinct concerns:
- *
- * 1. **Typed core slots** — the Rust core names the durable object with
- *    `CfeSecureStoreSlot`; Android only maps that type to a Room key. Blobs are
- *    opaque CFE binary (`docs/FFI_BINARY_FORMAT.md`) and are never parsed here.
- *
- * 2. **`establishedAt` per peer** — storm-hardening invariant #6
- *    (`docs/ANDROID_ONBOARDING.md` §12): an END_SESSION older than the current
- *    session's establishment time is stale (ACK + drop). Hydrated via
- *    [getAllEstablishedAt] BEFORE queued control messages are processed.
+ * Persistence for CFE session bytes. The Rust core names the durable object with
+ * `CfeSecureStoreSlot`; Android only maps that type to a Room key. Blobs are opaque CFE binary
+ * (`docs/FFI_BINARY_FORMAT.md`) and are never parsed here.
  */
 @Singleton
 class SessionStateStore @Inject constructor(
     private val sessionStateDao: SessionStateDao,
-    private val sessionMetaDao: SessionMetaDao,
 ) {
 
     /** Persist one CFE storage action without reconstructing a string key. */
@@ -36,11 +24,6 @@ class SessionStateStore @Inject constructor(
             sessionStateDao.delete(key)
         } else {
             saveSession(key, cfeBytes)
-        }
-        if (slot is CfeSecureStoreSlot.Session && cfeBytes.isNotEmpty() &&
-            getEstablishedAt(slot.contactId) == null
-        ) {
-            setEstablishedAt(slot.contactId, System.currentTimeMillis())
         }
     }
 
@@ -81,20 +64,6 @@ class SessionStateStore @Inject constructor(
         is CfeSecureStoreSlot.Session -> "session:${slot.contactId}"
         CfeSecureStoreSlot.OrchestratorState -> ORCHESTRATOR_STATE_KEY
     }
-
-    // ── establishedAt (stale END_SESSION filter) ─────────────────────────────
-
-    suspend fun setEstablishedAt(contactId: String, establishedAtMs: Long) {
-        sessionMetaDao.setEstablishedAt(SessionMetaEntity(contactId, establishedAtMs))
-    }
-
-    suspend fun getEstablishedAt(contactId: String): Long? =
-        sessionMetaDao.getEstablishedAt(contactId)
-
-    suspend fun getAllEstablishedAt(): Map<String, Long> =
-        sessionMetaDao.getAll().associate { it.contactId to it.establishedAtMs }
-
-    suspend fun removeMeta(contactId: String) = sessionMetaDao.delete(contactId)
 
     companion object {
         const val SESSION_KEY_PREFIX = "session:"

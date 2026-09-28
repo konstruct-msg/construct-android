@@ -8,8 +8,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 /**
  * App-local persistence.
  *
- * **Canon:** `docs/ANDROID_ONBOARDING.md` §8.3 (entities) + §12 (session_meta
- * for the stale-END_SESSION filter). Messages at rest hold E2EE ciphertext or
+ * **Canon:** `docs/ANDROID_ONBOARDING.md` §8.3 (entities). Messages at rest hold E2EE ciphertext or
  * decrypted plaintext depending on the storage-privacy spec — this DB stores
  * what the repository layer hands it; encryption-at-rest is a later phase.
  */
@@ -20,11 +19,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         UserEntity::class,
         AckedMessageEntity::class,
         SessionStateEntity::class,
-        SessionMetaEntity::class,
         IssuedInviteEntity::class,
         PeerDeviceEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -33,7 +31,6 @@ abstract class ConstructDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun ackDao(): AckDao
     abstract fun sessionStateDao(): SessionStateDao
-    abstract fun sessionMetaDao(): SessionMetaDao
     abstract fun issuedInviteDao(): IssuedInviteDao
     abstract fun peerDeviceDao(): PeerDeviceDao
 
@@ -71,6 +68,17 @@ abstract class ConstructDatabase : RoomDatabase() {
         val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE users ADD COLUMN accountAddress BLOB")
+            }
+        }
+
+        /**
+         * `session_meta` held when each session was established, for the filter that dropped a
+         * stale END_SESSION. There is no END_SESSION since 2026-09-28, so the column was written
+         * with no reader.
+         */
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS session_meta")
             }
         }
     }

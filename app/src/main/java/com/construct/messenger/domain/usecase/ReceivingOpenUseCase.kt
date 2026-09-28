@@ -91,7 +91,6 @@ class ReceivingOpenUseCase @Inject constructor(
                 return Outcome.Failed(result.triedMessageIds, result.droppedMessageIds, result.lastError, result.actions)
             }
 
-            sessionStateStore.setEstablishedAt(opened, System.currentTimeMillis())
             certificate?.takeIf { it.deviceId == opened }?.let { sessionManager.recordOpenedDevice(it) }
             // The open consumed an OTPK; drop its private from storage too.
             runCatching { uploadPreKeys.persistLocal() }

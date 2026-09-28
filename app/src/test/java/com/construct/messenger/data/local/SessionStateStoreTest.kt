@@ -1,13 +1,10 @@
 package com.construct.messenger.data.local
 
-import com.construct.messenger.data.local.db.SessionMetaDao
-import com.construct.messenger.data.local.db.SessionMetaEntity
 import com.construct.messenger.data.local.db.SessionStateDao
 import com.construct.messenger.data.local.db.SessionStateEntity
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 import uniffi.construct_core.CfeSecureStoreSlot
@@ -30,27 +27,9 @@ class SessionStateStoreTest {
         }
     }
 
-    private class FakeSessionMetaDao : SessionMetaDao {
-        val rows = mutableMapOf<String, SessionMetaEntity>()
-
-        override suspend fun setEstablishedAt(entry: SessionMetaEntity) {
-            rows[entry.contactId] = entry
-        }
-
-        override suspend fun getEstablishedAt(contactId: String): Long? =
-            rows[contactId]?.establishedAtMs
-
-        override suspend fun getAll(): List<SessionMetaEntity> = rows.values.toList()
-
-        override suspend fun delete(contactId: String) {
-            rows.remove(contactId)
-        }
-    }
-
     private fun newStore(
         stateDao: FakeSessionStateDao = FakeSessionStateDao(),
-        metaDao: FakeSessionMetaDao = FakeSessionMetaDao(),
-    ) = SessionStateStore(stateDao, metaDao)
+    ) = SessionStateStore(stateDao)
 
     @Test
     fun `session blob round-trips byte-identical`() = runTest {
@@ -96,38 +75,8 @@ class SessionStateStoreTest {
 
         val all = store.loadAllSessions()
         assertEquals(setOf("session:peer-1", "core:orchestrator-state"), all.keys)
-        assertNotNull(store.getEstablishedAt("peer-1"))
 
         store.saveSecureStore(CfeSecureStoreSlot.Session("peer-1"), ByteArray(0))
         assertNull(store.loadSession("session:peer-1"))
-    }
-
-    @Test
-    fun `establishedAt set get and overwrite`() = runTest {
-        val store = newStore()
-
-        assertNull(store.getEstablishedAt("peer-1"))
-        store.setEstablishedAt("peer-1", 1_000L)
-        assertEquals(1_000L, store.getEstablishedAt("peer-1"))
-
-        // A re-established session replaces the timestamp.
-        store.setEstablishedAt("peer-1", 2_000L)
-        assertEquals(2_000L, store.getEstablishedAt("peer-1"))
-    }
-
-    @Test
-    fun `getAllEstablishedAt and removeMeta`() = runTest {
-        val store = newStore()
-        store.setEstablishedAt("peer-1", 1_000L)
-        store.setEstablishedAt("peer-2", 2_000L)
-
-        assertEquals(
-            mapOf("peer-1" to 1_000L, "peer-2" to 2_000L),
-            store.getAllEstablishedAt(),
-        )
-
-        store.removeMeta("peer-1")
-        assertNull(store.getEstablishedAt("peer-1"))
-        assertEquals(2_000L, store.getEstablishedAt("peer-2"))
     }
 }
