@@ -13,13 +13,15 @@ import shared.proto.services.v1.AuthServiceOuterClass.IssueTokensRequest
 import uniffi.construct_core.ppBlindToken
 import uniffi.construct_core.ppFinalizeToken
 import uniffi.construct_core.ppVerifyClient
+import uniffi.construct_core.ppVerifyDleq
 
 /**
  * Privacy Pass token issuance — mirrors iOS `BlindTokenService`.
  *
  * Flow per token: random 32-byte nonce → [ppBlindToken] (blinded point +
  * blind factor) → `IssueTokens` RPC (authenticated — issuance is where the
- * server meters, spending is anonymous) → [ppVerifyClient] sanity check →
+ * server meters, spending is anonymous) → batched DLEQ against the pinned issuer
+ * key ([IssuerKeyPin]) → [ppVerifyClient] sanity check →
  * [ppFinalizeToken] → deposit into [TokenWalletService].
  *
  * Server caps issuance at 20/hr per user and 1–20 points per call; a local
@@ -63,13 +65,29 @@ class BlindTokenService @Inject constructor(
                 .build()
             val response = grpcClient.auth.issueTokens(request)
 
-            if (response.evaluatedPointsCount != n) {
-                Log.w(TAG, "issueTokens returned ${response.evaluatedPointsCount} points for $n requests")
-                return 0
+            val serverPubkey = response.serverPubkey.toByteArray()
+            val verdict = IssuerKeyPin.check(
+                requested = n,
+                blinded = blinded.map { it.copyOfRange(0, 32) },
+                evaluated = response.evaluatedPointsList.map { it.toByteArray() },
+                serverPubkey = serverPubkey,
+                dleqProof = response.dleqProof.toByteArray(),
+                keyVersion = response.issuerKeyVersion,
+            ) { b, e, proof, pin ->
+                ppVerifyDleq(b.map { it.toUByteList() }, e.map { it.toUByteList() }, proof.toUByteList(), pin.toUByteList())
+            }
+            val issued = when (verdict) {
+                is IssuerKeyPin.Verdict.Reject -> {
+                    Log.e(TAG, "issuance rejected: ${verdict.reason}")
+                    return 0
+                }
+                is IssuerKeyPin.Verdict.Accept -> {
+                    if (verdict.dleqChecked) Log.i(TAG, "DLEQ verified against pinned issuer key v${response.issuerKeyVersion} (${verdict.issued} pts)")
+                    verdict.issued
+                }
             }
 
-            val serverPubkey = response.serverPubkey.toByteArray()
-            val tokens = nonces.mapIndexedNotNull { i, nonce ->
+            val tokens = nonces.take(issued).mapIndexedNotNull { i, nonce ->
                 val evaluated = response.getEvaluatedPoints(i).toByteArray()
                 if (!ppVerifyClient(evaluated.toUByteList(), nonce.toUByteList(), serverPubkey.toUByteList())) {
                     Log.w(TAG, "evaluated point $i failed client verification — skipping")
