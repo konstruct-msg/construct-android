@@ -7,7 +7,7 @@
 
 - Android SDK с эмулятором и AVD (проверено на `Medium_Phone_API_36.1`):
   `~/Library/Android/sdk/emulator/emulator -list-avds`.
-- Для iOS-стороны — `construct-messenger` рядом и его стенд: `docs/TWO_SIM_STAND.md`,
+- Для iOS-стороны — `construct-ios` рядом (локально `~/Code/construct-messenger`) и его стенд: `docs/TWO_SIM_STAND.md`,
   `scripts/two_sims.sh` в том репозитории.
 - Обе стороны ходят в production-сервер; отдельного тестового сервера нет.
 

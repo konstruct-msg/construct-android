@@ -13,11 +13,11 @@ Android-клиент privacy-first E2EE-мессенджера Konstruct. Kotlin
 ## Источник правды
 
 При любых расхождениях между кодом, документами и реальностью **каноном считается
-iOS-приложение** `construct-messenger`. Документы могли устареть; iOS-исходники — нет.
+iOS-приложение** `construct-ios` (github.com/konstruct-msg/construct-ios; локальная папка может называться `construct-messenger`). Документы могли устареть; iOS-исходники — нет.
 
 | Что                                | Где смотреть на iOS                                               |
 |------------------------------------|-------------------------------------------------------------------|
-| Дизайн-система, токены, компоненты | `construct-messenger/ConstructMessenger/Utilities/ConstructTheme.swift` |
+| Дизайн-система, токены, компоненты | `construct-ios/ConstructMessenger/Utilities/ConstructTheme.swift` |
 | Аватары                            | `.../Views/Components/MainAvatarView.swift`                       |
 | Экраны                             | `.../Views/`                                                      |
 | ViewModels / бизнес-логика         | `.../ViewModels/`                                                 |
