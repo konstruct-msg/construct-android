@@ -66,11 +66,8 @@ class MessageProcessor @Inject constructor(
             messageId = incoming.messageId,
             from = contactId,
             data = incoming.encryptedPayload,
-            // The core derives msgNum/kemCt from `data` via the canonical parser;
-            // malformed payloads come back as a NotifyError action → ACKed below.
-            msgNum = 0u,
-            kemCt = ByteArray(0),
-            otpkId = 0u,
+            // Everything the core routes on is read from `data`; a payload that does not parse
+            // comes back as MALFORMED_WIRE_PAYLOAD → ACKed below.
             contentType = incoming.contentType.number.toUByte(),
             // What a first message opens its session from; the core checks it when it does.
             senderCertificate = incoming.senderCertificate,

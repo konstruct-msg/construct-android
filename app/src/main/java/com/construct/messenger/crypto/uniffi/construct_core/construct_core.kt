@@ -834,6 +834,8 @@ external fun uniffi_construct_core_checksum_func_verify_recovery_signature(
 ): Short
 external fun uniffi_construct_core_checksum_func_wire_payload_unpack(
 ): Short
+external fun uniffi_construct_core_checksum_func_wire_summary(
+): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_export_one_time_prekeys(
 ): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_export_private_keys(
@@ -1426,6 +1428,8 @@ external fun uniffi_construct_core_fn_func_verify_recovery_signature(`publicKey`
 ): Byte
 external fun uniffi_construct_core_fn_func_wire_payload_unpack(`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_wire_summary(`wirePayload`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun ffi_construct_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun ffi_construct_core_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1741,6 +1745,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_wire_payload_unpack() != 23560.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_wire_summary() != 13986.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_export_one_time_prekeys() != 37697.toShort()) {
@@ -7074,6 +7081,45 @@ public object FfiConverterTypeWirePayload: FfiConverterRustBuffer<WirePayload> {
 
 
 
+/**
+ * See `wire_summary`.
+ */
+data class WireSummary (
+    var `messageNumber`: kotlin.UInt
+    , 
+    var `initKind`: ReceivingInitKind
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeWireSummary: FfiConverterRustBuffer<WireSummary> {
+    override fun read(buf: ByteBuffer): WireSummary {
+        return WireSummary(
+            FfiConverterUInt.read(buf),
+            FfiConverterTypeReceivingInitKind.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: WireSummary) = (
+            FfiConverterUInt.allocationSize(value.`messageNumber`) +
+            FfiConverterTypeReceivingInitKind.allocationSize(value.`initKind`)
+    )
+
+    override fun write(value: WireSummary, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`messageNumber`, buf)
+            FfiConverterTypeReceivingInitKind.write(value.`initKind`, buf)
+    }
+}
+
+
+
 
 enum class AckCheckResult {
     
@@ -7846,9 +7892,6 @@ sealed class CfeIncomingEvent {
         val `messageId`: kotlin.String, 
         val `from`: kotlin.String, 
         val `data`: kotlin.ByteArray, 
-        val `msgNum`: kotlin.UInt, 
-        val `kemCt`: kotlin.ByteArray, 
-        val `otpkId`: kotlin.UInt, 
         val `contentType`: kotlin.UByte, 
         val `senderCertificate`: SenderCertificate?) : CfeIncomingEvent()
         
@@ -7961,8 +8004,7 @@ sealed class CfeIncomingEvent {
     data class HeartbeatReceived(
         val `contactId`: kotlin.String, 
         val `messageId`: kotlin.String, 
-        val `data`: kotlin.ByteArray, 
-        val `msgNum`: kotlin.UInt) : CfeIncomingEvent()
+        val `data`: kotlin.ByteArray) : CfeIncomingEvent()
         
     {
         
@@ -8000,9 +8042,6 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
-                FfiConverterUInt.read(buf),
-                FfiConverterByteArray.read(buf),
-                FfiConverterUInt.read(buf),
                 FfiConverterUByte.read(buf),
                 FfiConverterOptionalTypeSenderCertificate.read(buf),
                 )
@@ -8044,7 +8083,6 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
-                FfiConverterUInt.read(buf),
                 )
             13 -> CfeIncomingEvent.DecryptionErrorReceived(
                 FfiConverterString.read(buf),
@@ -8062,9 +8100,6 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 + FfiConverterString.allocationSize(value.`messageId`)
                 + FfiConverterString.allocationSize(value.`from`)
                 + FfiConverterByteArray.allocationSize(value.`data`)
-                + FfiConverterUInt.allocationSize(value.`msgNum`)
-                + FfiConverterByteArray.allocationSize(value.`kemCt`)
-                + FfiConverterUInt.allocationSize(value.`otpkId`)
                 + FfiConverterUByte.allocationSize(value.`contentType`)
                 + FfiConverterOptionalTypeSenderCertificate.allocationSize(value.`senderCertificate`)
             )
@@ -8152,7 +8187,6 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 + FfiConverterString.allocationSize(value.`contactId`)
                 + FfiConverterString.allocationSize(value.`messageId`)
                 + FfiConverterByteArray.allocationSize(value.`data`)
-                + FfiConverterUInt.allocationSize(value.`msgNum`)
             )
         }
         is CfeIncomingEvent.DecryptionErrorReceived -> {
@@ -8172,9 +8206,6 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterString.write(value.`from`, buf)
                 FfiConverterByteArray.write(value.`data`, buf)
-                FfiConverterUInt.write(value.`msgNum`, buf)
-                FfiConverterByteArray.write(value.`kemCt`, buf)
-                FfiConverterUInt.write(value.`otpkId`, buf)
                 FfiConverterUByte.write(value.`contentType`, buf)
                 FfiConverterOptionalTypeSenderCertificate.write(value.`senderCertificate`, buf)
                 Unit
@@ -8240,7 +8271,6 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`data`, buf)
-                FfiConverterUInt.write(value.`msgNum`, buf)
                 Unit
             }
             is CfeIncomingEvent.DecryptionErrorReceived -> {
@@ -10223,6 +10253,23 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     UniffiLib.uniffi_construct_core_fn_func_wire_payload_unpack(
     
         FfiConverterByteArray.lower(`data`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * What a received payload is, for routing: its message number and whether it can open a
+         * receiving session. One parse, in the core, from the bytes as they arrived — a platform
+         * keeps the payload and this, not a copy of the parse (`ChatMessage` carried nine parsed
+         * fields beside the payload until 2026-09-29 and sent three of them back in with it).
+         */
+    @Throws(CryptoException::class) fun `wireSummary`(`wirePayload`: kotlin.ByteArray): WireSummary {
+            return FfiConverterTypeWireSummary.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_wire_summary(
+    
+        FfiConverterByteArray.lower(`wirePayload`),_status)
 }
     )
     }
