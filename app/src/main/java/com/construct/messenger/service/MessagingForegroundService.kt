@@ -37,11 +37,17 @@ class MessagingForegroundService : Service() {
     @Inject
     lateinit var messagingRuntime: MessagingRuntime
 
+    @Inject
+    lateinit var messageNotifier: MessageNotifier
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        // Up front rather than at the first message: Settings → Notifications opens this channel
+        // for sound and vibration, and the system cannot open a channel that does not exist yet.
+        messageNotifier.ensureChannel()
         startInForeground()
     }
 
@@ -114,9 +120,10 @@ class MessagingForegroundService : Service() {
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    private companion object {
-        const val TAG = "MessagingFgService"
+    companion object {
+        private const val TAG = "MessagingFgService"
+        /** Also opened by Settings → Notifications, where the ongoing notification can be hidden. */
         const val CHANNEL_ID = "messaging_connection"
-        const val NOTIFICATION_ID = 1001
+        private const val NOTIFICATION_ID = 1001
     }
 }

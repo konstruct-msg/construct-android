@@ -1,8 +1,6 @@
 package com.construct.messenger.ui.screens.settings
 
 import android.content.Context
-import android.content.Intent
-import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -77,6 +75,7 @@ data class SettingsNavigation(
     val onDevices: () -> Unit = {},
     val onAppearance: () -> Unit = {},
     val onSecurity: () -> Unit = {},
+    val onNotifications: () -> Unit = {},
     val onNetwork: () -> Unit = {},
     val onOrientation: () -> Unit = {},
     val onDiagnostics: () -> Unit = {},
@@ -189,13 +188,11 @@ fun SettingsScreen(
                     modifier = Modifier.clickable(onClick = navigation.onSecurity),
                 )
                 CTSep()
-                // Android owns notification settings (channels, lock screen, sound); a copy of
-                // them here would drift from the real ones.
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_notifications).uppercase(),
                     icon = Icons.Default.Notifications,
                     disclosure = true,
-                    modifier = Modifier.clickable { context.openNotificationSettings() },
+                    modifier = Modifier.clickable(onClick = navigation.onNotifications),
                 )
                 CTSep()
                 CTSettingsRow(
@@ -295,14 +292,6 @@ internal fun ConnectionStatus.toStatus(): CTStatus = when (this) {
     ConnectionStatus.CONNECTING -> CTStatus.BUSY
     ConnectionStatus.DISCONNECTED -> CTStatus.ERROR
     ConnectionStatus.UNKNOWN -> CTStatus.UNKNOWN
-}
-
-private fun Context.openNotificationSettings() {
-    startActivity(
-        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-            .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-    )
 }
 
 /** iOS `SettingsView.recoveryBanner`: the phrase is missing, set it up or put this away. */

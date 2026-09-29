@@ -15,6 +15,7 @@ import com.construct.messenger.MainActivity
 import com.construct.messenger.R
 import com.construct.messenger.data.local.ChatPresence
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.construct.messenger.data.repository.NotificationSettingsRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -46,12 +47,14 @@ interface IncomingAlerts {
 class MessageNotifier @Inject constructor(
     @ApplicationContext private val context: Context,
     private val presence: ChatPresence,
+    private val settings: NotificationSettingsRepository,
 ) : IncomingAlerts {
 
     override fun isChatVisible(contactId: String): Boolean = presence.isVisible(contactId)
 
     override fun onUnseenMessage(contactId: String) {
-        if (!canPost()) return
+        // Off in Settings → Notifications: the message still lands and counts as unread.
+        if (!settings.enabled.value || !canPost()) return
         ensureChannel()
         val open = Intent(context, MainActivity::class.java)
             .setAction(ACTION_OPEN_CHAT)
@@ -86,7 +89,7 @@ class MessageNotifier @Inject constructor(
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
 
-    private fun ensureChannel() {
+    fun ensureChannel() {
         val manager = context.getSystemService(NotificationManager::class.java)
         if (manager.getNotificationChannel(CHANNEL_ID) != null) return
         manager.createNotificationChannel(
@@ -103,7 +106,8 @@ class MessageNotifier @Inject constructor(
     companion object {
         const val ACTION_OPEN_CHAT = "com.construct.messenger.OPEN_CHAT"
         const val EXTRA_CONTACT_ID = "contact_id"
-        private const val CHANNEL_ID = "messages"
+        /** Also opened by Settings → Notifications for sound and vibration. */
+        const val CHANNEL_ID = "messages"
         // Tagged by contact id: one slot per chat, and a different id from the service's 1001.
         private const val NOTIFICATION_ID = 2001
     }

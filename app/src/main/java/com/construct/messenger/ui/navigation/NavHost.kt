@@ -23,6 +23,7 @@ import com.construct.messenger.ui.screens.settings.AppearanceRoute
 import com.construct.messenger.ui.screens.settings.DevicesRoute
 import com.construct.messenger.ui.screens.settings.DiagnosticsScreen
 import com.construct.messenger.ui.screens.settings.NetworkScreen
+import com.construct.messenger.ui.screens.settings.NotificationsRoute
 import com.construct.messenger.ui.screens.settings.SecurityScreen
 import com.construct.messenger.ui.screens.settings.SettingsNavigation
 import com.construct.messenger.ui.screens.splash.SplashScreen
@@ -136,6 +137,7 @@ fun KonstructNavHost(
                     onDevices = { navController.navigate(Screen.Devices.route) { launchSingleTop = true } },
                     onAppearance = { navController.navigate(Screen.Appearance.route) { launchSingleTop = true } },
                     onSecurity = { navController.navigate(Screen.Security.route) { launchSingleTop = true } },
+                    onNotifications = { navController.navigate(Screen.Notifications.route) { launchSingleTop = true } },
                     onNetwork = { navController.navigate(Screen.Network.route) { launchSingleTop = true } },
                     onDiagnostics = { navController.navigate(Screen.Diagnostics.route) { launchSingleTop = true } },
                     onRecoverySetup = { navController.navigate(Screen.RecoverySetup.route) { launchSingleTop = true } },
@@ -238,6 +240,9 @@ fun KonstructNavHost(
                     }
                 },
             )
+        }
+        composable(Screen.Notifications.route) {
+            NotificationsRoute(onNavigateBack = { navController.popBackStack() })
         }
         composable(Screen.Appearance.route) {
             AppearanceRoute(onNavigateBack = { navController.popBackStack() })

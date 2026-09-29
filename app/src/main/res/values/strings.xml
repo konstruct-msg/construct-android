@@ -133,6 +133,25 @@
     <!-- Settings: account / security — canon: iOS AccountSettingsView, SecurityView -->
     <string name="settings_row_invite">invite</string>
     <string name="settings_row_notifications">notifications</string>
+    <string name="notifications_title">Notifications</string>
+    <string name="notifications_enable">Enable Notifications</string>
+    <string name="notifications_enable_footer">Off: messages still arrive and count as unread, but nothing is shown in the notification shade.</string>
+    <string name="notifications_system_section">System Notification Settings</string>
+    <string name="notifications_status">Status</string>
+    <string name="notifications_status_allowed">Allowed</string>
+    <string name="notifications_status_denied">Denied</string>
+    <string name="notifications_status_not_set">Not Set</string>
+    <string name="notifications_grant">Grant Permission</string>
+    <string name="notifications_open_system_settings">Open System Settings</string>
+    <string name="notifications_permission_required">Notification permissions are required to receive alerts</string>
+    <string name="notifications_system_footer">Manage notification permissions in Android Settings</string>
+    <string name="notifications_messages_section">Message Notifications</string>
+    <string name="notifications_sound_vibration">Sound &amp; vibration</string>
+    <string name="notifications_messages_footer">Android keeps sound, vibration and lock-screen behaviour per notification type; this opens them for messages. A notification says only “New message” — never the sender or the text.</string>
+    <string name="notifications_delivery_section">Delivery</string>
+    <string name="notifications_delivery_text">Konstruct keeps its own encrypted connection to the server and does not use Google push services, so no third party learns when you receive a message. The connection costs some battery.</string>
+    <string name="notifications_connection_notification">Connection notification</string>
+    <string name="notifications_connection_footer">Android requires an ongoing notification while the connection runs. You can hide it here; delivery keeps working.</string>
     <string name="settings_row_devices">linked devices</string>
     <string name="linked_devices">Linked Devices</string>
     <string name="this_device">This Device</string>

@@ -130,6 +130,25 @@
     <!-- Settings: account / security — canon: iOS AccountSettingsView, SecurityView -->
     <string name="settings_row_invite">пригласить</string>
     <string name="settings_row_notifications">уведомления</string>
+    <string name="notifications_title">Уведомления</string>
+    <string name="notifications_enable">Включить уведомления</string>
+    <string name="notifications_enable_footer">Если выключить, сообщения по-прежнему приходят и считаются непрочитанными, но в шторке ничего не появляется.</string>
+    <string name="notifications_system_section">Настройки уведомлений системы</string>
+    <string name="notifications_status">Статус</string>
+    <string name="notifications_status_allowed">Разрешено</string>
+    <string name="notifications_status_denied">Запрещено</string>
+    <string name="notifications_status_not_set">Не установлено</string>
+    <string name="notifications_grant">Предоставить разрешение</string>
+    <string name="notifications_open_system_settings">Открыть системные настройки</string>
+    <string name="notifications_permission_required">Для получения уведомлений требуются соответствующие разрешения</string>
+    <string name="notifications_system_footer">Управляйте разрешениями на уведомления в настройках Android</string>
+    <string name="notifications_messages_section">Уведомления о сообщениях</string>
+    <string name="notifications_sound_vibration">Звук и вибрация</string>
+    <string name="notifications_messages_footer">Звук, вибрацию и показ на экране блокировки Android хранит для каждого типа уведомлений; здесь они открываются для сообщений. Уведомление говорит только «Новое сообщение» — ни отправителя, ни текста.</string>
+    <string name="notifications_delivery_section">Доставка</string>
+    <string name="notifications_delivery_text">Konstruct держит собственное зашифрованное соединение с сервером и не использует push-сервисы Google, поэтому никто посторонний не узнаёт, когда вам приходит сообщение. Соединение немного расходует батарею.</string>
+    <string name="notifications_connection_notification">Уведомление о соединении</string>
+    <string name="notifications_connection_footer">Пока соединение работает, Android требует постоянное уведомление. Здесь его можно скрыть — доставка продолжит работать.</string>
     <string name="settings_row_devices">связанные устройства</string>
     <string name="linked_devices">Связанные устройства</string>
     <string name="this_device">Это устройство</string>
