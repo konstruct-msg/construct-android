@@ -22,6 +22,7 @@ import com.construct.messenger.ui.screens.settings.AccountScreen
 import com.construct.messenger.ui.screens.settings.AppearanceRoute
 import com.construct.messenger.ui.screens.settings.DevicesRoute
 import com.construct.messenger.ui.screens.settings.DraftsRoute
+import com.construct.messenger.ui.screens.settings.IssuedInvitesRoute
 import com.construct.messenger.ui.screens.settings.DiagnosticsScreen
 import com.construct.messenger.ui.screens.settings.NetworkScreen
 import com.construct.messenger.ui.screens.settings.NotificationsRoute
@@ -253,7 +254,14 @@ fun KonstructNavHost(
             AppearanceRoute(onNavigateBack = { navController.popBackStack() })
         }
         composable(Screen.Security.route) {
-            SecurityScreen(onNavigateBack = { navController.popBackStack() })
+            SecurityScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onRecovery = { navController.navigate(Screen.RecoverySetup.route) { launchSingleTop = true } },
+                onIssuedInvites = { navController.navigate(Screen.IssuedInvites.route) { launchSingleTop = true } },
+            )
+        }
+        composable(Screen.IssuedInvites.route) {
+            IssuedInvitesRoute(onNavigateBack = { navController.popBackStack() })
         }
         composable(Screen.Network.route) {
             NetworkScreen(onNavigateBack = { navController.popBackStack() })

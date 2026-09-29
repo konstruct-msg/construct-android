@@ -43,7 +43,7 @@ interface ContactsRepository {
     suspend fun accept(raw: String): AcceptInviteResult
 
     /** Pre-burn [jti] so an unused invite cannot be redeemed. */
-    suspend fun revoke(jti: String): Boolean
+    suspend fun revoke(jti: String): InviteRevocation
 
     val incomingRequests: Flow<List<IncomingContactRequest>>
 
@@ -73,6 +73,16 @@ data class UserProfile(
     val username: String,
     val discoverable: Boolean = false,
 )
+
+/** iOS `InviteRevocation` outcomes. The journal forgets an invite only on a confirmed answer. */
+enum class InviteRevocation {
+    /** The server burned it; the link no longer works. */
+    REVOKED,
+    /** The server answered that it was already redeemed (or is unknown to it). */
+    ALREADY_USED,
+    /** No answer — the invite may still work, so it stays listed. */
+    UNCONFIRMED,
+}
 
 data class IssuedInvite(
     val jti: String,

@@ -18,6 +18,9 @@ object CTLayout {
     val navBarHeight = 44.dp   // fixed nav bar height
     val navIconSize = 20.dp    // icon size for nav bar buttons
     val navIconSizeLg = 22.dp  // larger nav icon variant
+    val chromeGap = 10.dp      // gap between chrome elements; compact row padding
+    val inlinePad = 8.dp       // inline padding inside a row
+    val sectionGap = 16.dp     // between sections
 }
 
 /** Spacing scale. */

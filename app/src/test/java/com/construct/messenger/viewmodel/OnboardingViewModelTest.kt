@@ -111,7 +111,7 @@ private class FakeOnboardingContacts : com.construct.messenger.data.repository.C
     override suspend fun mintQr(): com.construct.messenger.invite.MintedInvite = mintLink(false)
     override suspend fun accept(raw: String) =
         com.construct.messenger.data.repository.AcceptInviteResult.Failed("unused")
-    override suspend fun revoke(jti: String) = false
+    override suspend fun revoke(jti: String) = com.construct.messenger.data.repository.InviteRevocation.UNCONFIRMED
     override val incomingRequests =
         MutableStateFlow<List<com.construct.messenger.data.repository.IncomingContactRequest>>(emptyList())
     override suspend fun findByUsername(username: String) =

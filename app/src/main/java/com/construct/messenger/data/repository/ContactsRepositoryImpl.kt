@@ -134,16 +134,20 @@ class ContactsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun revoke(jti: String): Boolean {
+    override suspend fun revoke(jti: String): InviteRevocation {
         return try {
             val response = grpcClient.invite.revokeInvite(
                 RevokeInviteRequest.newBuilder().setJti(jti).build(),
             )
-            if (response.success) issuedInviteDao.delete(jti)
-            response.success
+            // Either answer is final: burned now, or already redeemed / unknown. Only a missing
+            // answer keeps the row, since the invite may still be good.
+            issuedInviteDao.delete(jti)
+            if (response.success) InviteRevocation.REVOKED else InviteRevocation.ALREADY_USED
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "revoke $jti failed", e)
-            false
+            InviteRevocation.UNCONFIRMED
         }
     }
 

@@ -39,6 +39,8 @@ sealed class Screen(val route: String) {
     /** Theme, message face and size (iOS `AppearanceSettingsView`). */
     data object Appearance : Screen("settings/appearance")
     data object Security : Screen("settings/security")
+    /** Invites this device issued and can still revoke (iOS `IssuedInvitesView`). */
+    data object IssuedInvites : Screen("settings/security/invites")
     /** Stream status, server, transport (iOS `NetworkSettingsView`, without VEIL). */
     data object Network : Screen("settings/network")
     /** Logs: share, clear, the last lines. Debug builds only (iOS `DiagnosticsView`). */

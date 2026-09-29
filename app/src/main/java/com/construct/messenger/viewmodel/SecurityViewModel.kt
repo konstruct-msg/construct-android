@@ -3,6 +3,13 @@ package com.construct.messenger.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.repository.AccountRepository
+import com.construct.messenger.data.repository.ContactsRepository
+import com.construct.messenger.data.repository.Lockdown
+import com.construct.messenger.data.repository.SecuritySettingsRepository
+import com.construct.messenger.recovery.RecoveryRepository
+import com.construct.messenger.recovery.RecoveryStatus
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,17 +23,25 @@ data class SecurityUiState(
     val discoverable: Boolean = false,
     val busy: Boolean = false,
     val failed: Boolean = false,
+    /** Null until the server answered; then whether the phrase is set up, and its fingerprint. */
+    val recovery: RecoveryStatus? = null,
+    val lockdown: Lockdown = Lockdown(),
+    val senderAnonymity: Boolean = true,
 )
 
 /**
- * Security: for now, whether the alias can be found by exact search.
+ * Security: recovery phrase, Lockdown, sender anonymity, issued invites, discovery.
  *
- * **Canon:** iOS `SecurityView` → Discovery. Turning search on is confirmed first (the UI asks);
- * turning it off is not — becoming harder to find needs no warning.
+ * **Canon:** iOS `SecurityView`. Turning search on is confirmed first (the UI asks); turning it
+ * off is not — becoming harder to find needs no warning. Lockdown takes the contacts of the
+ * moment it is switched on as the approved set, as iOS does.
  */
 @HiltViewModel
 class SecurityViewModel @Inject constructor(
     private val accountRepository: AccountRepository,
+    private val recoveryRepository: RecoveryRepository,
+    private val securitySettings: SecuritySettingsRepository,
+    private val contactsRepository: ContactsRepository,
 ) : ViewModel() {
     private val state = MutableStateFlow(SecurityUiState())
     val uiState: StateFlow<SecurityUiState> = state.asStateFlow()
@@ -43,6 +58,35 @@ class SecurityViewModel @Inject constructor(
             }
         }
         viewModelScope.launch { accountRepository.refresh() }
+        viewModelScope.launch {
+            securitySettings.lockdown.collect { lockdown -> state.update { it.copy(lockdown = lockdown) } }
+        }
+        state.update { it.copy(senderAnonymity = securitySettings.senderAnonymity) }
+    }
+
+    /** Again on return from the phrase setup, which may have just set it up. */
+    fun refreshRecovery() {
+        viewModelScope.launch {
+            val status = try {
+                recoveryRepository.status()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            }
+            state.update { it.copy(recovery = status ?: it.recovery) }
+        }
+    }
+
+    fun setLockdown(enabled: Boolean) {
+        if (!enabled) {
+            securitySettings.disableLockdown()
+            return
+        }
+        viewModelScope.launch {
+            val approved = contactsRepository.contacts.first().map { it.userId }.toSet()
+            securitySettings.enableLockdown(approved)
+        }
     }
 
     fun setDiscoverable(enabled: Boolean) {

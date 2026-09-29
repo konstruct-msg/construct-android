@@ -16,6 +16,7 @@ import com.construct.messenger.R
 import com.construct.messenger.data.local.ChatPresence
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.construct.messenger.data.repository.NotificationSettingsRepository
+import com.construct.messenger.data.repository.SecuritySettingsRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -48,13 +49,15 @@ class MessageNotifier @Inject constructor(
     @ApplicationContext private val context: Context,
     private val presence: ChatPresence,
     private val settings: NotificationSettingsRepository,
+    private val security: SecuritySettingsRepository,
 ) : IncomingAlerts {
 
     override fun isChatVisible(contactId: String): Boolean = presence.isVisible(contactId)
 
     override fun onUnseenMessage(contactId: String) {
-        // Off in Settings → Notifications: the message still lands and counts as unread.
-        if (!settings.enabled.value || !canPost()) return
+        // Off in Settings → Notifications, or a sender Lockdown does not let through: the message
+        // still lands and counts as unread; only the alert is withheld.
+        if (!settings.enabled.value || security.suppressesAlertFrom(contactId) || !canPost()) return
         ensureChannel()
         val open = Intent(context, MainActivity::class.java)
             .setAction(ACTION_OPEN_CHAT)

@@ -75,7 +75,7 @@ private class FakeContacts : ContactsRepository {
         contacts.value = listOf(contact)
         return AcceptInviteResult.Ok(contact)
     }
-    override suspend fun revoke(jti: String) = true
+    override suspend fun revoke(jti: String) = com.construct.messenger.data.repository.InviteRevocation.REVOKED
     override val incomingRequests = MutableStateFlow<List<IncomingContactRequest>>(emptyList())
     var foundId: String? = null
     val requested = mutableListOf<String>()
