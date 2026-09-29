@@ -18,6 +18,7 @@ import com.construct.messenger.service.MessagingRuntime
 import com.construct.messenger.service.MessagingForegroundService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import shared.proto.services.v1.AuthServiceOuterClass.LogoutRequest
+import shared.proto.services.v1.UserServiceOuterClass.DeleteAccountRequest
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -160,6 +161,15 @@ class AuthRepositoryImpl @Inject constructor(
         keystoreManager.clearTokens()
         cryptoManager.close()
         mutableAuthState.value = AuthState()
+    }
+
+    override suspend fun deleteAccount() {
+        val response = grpcClient.user.deleteAccount(
+            DeleteAccountRequest.newBuilder().setConfirmation("DELETE").setReason("user_requested").build(),
+        )
+        check(response.success) { response.message.ifEmpty { "the server refused" } }
+        messagingRuntime.stop()
+        context.stopService(Intent(context, MessagingForegroundService::class.java))
     }
 
     private companion object {

@@ -227,6 +227,8 @@ fun KonstructNavHost(
         composable(Screen.Account.route) {
             AccountScreen(
                 onNavigateBack = { navController.popBackStack() },
+                onDevices = { navController.navigate(Screen.Devices.route) { launchSingleTop = true } },
+                onRecoverySetup = { navController.navigate(Screen.RecoverySetup.route) { launchSingleTop = true } },
                 onSignedOut = {
                     navController.navigate(Screen.Onboarding.route) {
                         popUpTo(Screen.Main.route) { inclusive = true }

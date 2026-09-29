@@ -35,4 +35,11 @@ interface AuthRepository {
      * the server to end every session of the account, this one included.
      */
     suspend fun logout(allDevices: Boolean = false)
+
+    /**
+     * Asks the server to delete the account (`UserService.DeleteAccount`, confirmation "DELETE",
+     * as iOS sends). Returns normally only on the server's yes; throws otherwise. The caller erases
+     * the device afterwards — this does not.
+     */
+    suspend fun deleteAccount()
 }

@@ -24,7 +24,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,14 +67,18 @@ import kotlinx.coroutines.delay
  * Who this account is: alias, fingerprint, account id — and signing out.
  *
  * **Canon:** iOS `AccountSettingsView` — flat sections with `> HEADER`, lowercase dim labels,
- * values on the right; "edit" turns the alias into a field. Not ported: photo, editable
- * display name (iOS re-sends the profile to contacts; Android has no such path yet), linked
- * devices, recovery, backup, danger zone.
+ * values on the right; "edit" turns the alias into a field; sign-out warns first when the
+ * recovery phrase is not set up; the danger zone signs out everywhere or deletes the account.
+ * Not ported: photo and editable display name (iOS re-sends the profile to contacts; Android has
+ * no such path yet), backup and nearby transfer, social recovery, and iOS's "status" row, which
+ * is a placeholder there.
  */
 @Composable
 fun AccountScreen(
     onNavigateBack: () -> Unit,
     onSignedOut: () -> Unit,
+    onDevices: () -> Unit,
+    onRecoverySetup: () -> Unit,
     viewModel: AccountViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
@@ -82,19 +88,41 @@ fun AccountScreen(
     // Back while editing abandons the edit, as the nav bar's back does.
     BackHandler(enabled = ui.editing) { viewModel.cancelEditing() }
 
-    var confirmSignOut by remember { mutableStateOf(false) }
-    if (confirmSignOut) {
+    var showDelete by remember { mutableStateOf(false) }
+    if (showDelete) {
+        DeleteAccountSheet(
+            deletion = ui.deletion,
+            onDelete = viewModel::startDeletion,
+            onAbort = viewModel::abortDeletion,
+            onDeleteLocally = viewModel::deleteLocally,
+            onDismiss = { viewModel.abortDeletion(); showDelete = false },
+        )
+    }
+    // Which sign-out was asked for; the no-backup warning comes first when the phrase is missing.
+    var confirmSignOut by remember { mutableStateOf<Boolean?>(null) }
+    var noBackupFor by remember { mutableStateOf<Boolean?>(null) }
+    val askSignOut = { allDevices: Boolean ->
+        if (ui.recoveryMissing) noBackupFor = allDevices else confirmSignOut = allDevices
+    }
+    noBackupFor?.let { allDevices ->
+        NoBackupDialog(
+            onSetUp = { noBackupFor = null; onRecoverySetup() },
+            onProceed = { noBackupFor = null; confirmSignOut = allDevices },
+            onDismiss = { noBackupFor = null },
+        )
+    }
+    confirmSignOut?.let { allDevices ->
         CTConfirmDialog(
-            title = stringResource(R.string.logout_confirm_title),
-            message = stringResource(R.string.logout_confirm_message),
-            confirmLabel = stringResource(R.string.logout_confirm_action),
+            title = stringResource(if (allDevices) R.string.logout_all_confirm_title else R.string.logout_confirm_title),
+            message = stringResource(if (allDevices) R.string.logout_all_confirm_message else R.string.logout_confirm_message),
+            confirmLabel = stringResource(if (allDevices) R.string.logout_all_confirm_action else R.string.logout_confirm_action),
             dismissLabel = stringResource(R.string.action_cancel),
             isDestructive = true,
             onConfirm = {
-                confirmSignOut = false
-                viewModel.signOut()
+                confirmSignOut = null
+                viewModel.signOut(allDevices)
             },
-            onDismiss = { confirmSignOut = false },
+            onDismiss = { confirmSignOut = null },
         )
     }
 
@@ -104,7 +132,10 @@ fun AccountScreen(
         onEdit = viewModel::startEditing,
         onSave = viewModel::save,
         onDraftChange = viewModel::onDraftChange,
-        onSignOut = { confirmSignOut = true },
+        onSignOut = { askSignOut(false) },
+        onSignOutAll = { askSignOut(true) },
+        onDevices = onDevices,
+        onDeleteAccount = { showDelete = true },
     )
 }
 
@@ -116,6 +147,9 @@ private fun AccountContent(
     onSave: () -> Unit,
     onDraftChange: (String) -> Unit,
     onSignOut: () -> Unit,
+    onSignOutAll: () -> Unit,
+    onDevices: () -> Unit,
+    onDeleteAccount: () -> Unit,
 ) {
     val account = ui.account
     Column(
@@ -189,9 +223,40 @@ private fun AccountContent(
                 )
                 RowDivider()
                 InfoRow(
+                    label = stringResource(R.string.linked_devices),
+                    onClick = onDevices.takeUnless { ui.editing },
+                ) {
+                    Text("[${stringResource(R.string.account_manage)}]", style = ctRegular(13), color = CTColor.accent)
+                }
+                RowDivider()
+                InfoRow(
                     label = stringResource(R.string.account_sign_out),
                     onClick = onSignOut.takeUnless { ui.editing || ui.signingOut },
                 ) { Chevron() }
+            }
+            Divider(thick = true)
+
+            // iOS "Danger zone": the two things that cannot be taken back.
+            Column(modifier = Modifier.alpha(if (ui.editing) 0.4f else 1f)) {
+                SectionHeader(stringResource(R.string.account_danger_zone), color = CTColor.danger)
+                RowDivider()
+                InfoRow(
+                    label = stringResource(R.string.account_sign_out_all),
+                    labelColor = CTColor.danger.copy(alpha = 0.85f),
+                    onClick = onSignOutAll.takeUnless { ui.editing || ui.signingOut },
+                ) { Chevron(CTColor.danger.copy(alpha = 0.6f)) }
+                RowDivider()
+                InfoRow(
+                    label = stringResource(R.string.account_delete),
+                    labelColor = CTColor.danger,
+                    onClick = onDeleteAccount.takeUnless { ui.editing },
+                ) {
+                    Text(
+                        "[${stringResource(R.string.account_delete_action)}]",
+                        style = ctRegular(13),
+                        color = CTColor.danger.copy(alpha = 0.6f),
+                    )
+                }
             }
             Divider(thick = true)
 
@@ -203,6 +268,30 @@ private fun AccountContent(
             )
         }
     }
+}
+
+/** iOS `logout_no_backup` alert: set the phrase up first, sign out anyway, or cancel. */
+@Composable
+private fun NoBackupDialog(onSetUp: () -> Unit, onProceed: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = CTColor.outMsgBg,
+        title = { Text(stringResource(R.string.logout_no_backup_title), style = ctBold(15), color = CTColor.text) },
+        text = { Text(stringResource(R.string.logout_no_backup_message), style = ctRegular(13), color = CTColor.textDim) },
+        confirmButton = {
+            Column(horizontalAlignment = Alignment.End) {
+                TextButton(onClick = onSetUp) {
+                    Text(stringResource(R.string.logout_no_backup_setup), style = ctBold(13), color = CTColor.accent)
+                }
+                TextButton(onClick = onProceed) {
+                    Text(stringResource(R.string.logout_no_backup_proceed), style = ctRegular(13), color = CTColor.danger)
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.action_cancel), style = ctRegular(13), color = CTColor.textDim)
+                }
+            }
+        },
+    )
 }
 
 @Composable
@@ -309,6 +398,7 @@ private fun CopyRow(
 @Composable
 private fun InfoRow(
     label: String,
+    labelColor: Color = CTColor.textDim,
     onClick: (() -> Unit)? = null,
     value: @Composable RowScope.() -> Unit,
 ) {
@@ -322,7 +412,7 @@ private fun InfoRow(
         Text(
             text = label.lowercase(),
             style = ctRegular(14),
-            color = CTColor.textDim,
+            color = labelColor,
             modifier = Modifier.weight(1f),
         )
         value()
@@ -330,11 +420,11 @@ private fun InfoRow(
 }
 
 @Composable
-private fun Chevron() {
+private fun Chevron(tint: Color = CTColor.accent) {
     Icon(
         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
         contentDescription = null,
-        tint = CTColor.accent,
+        tint = tint,
         modifier = Modifier.size(18.dp),
     )
 }

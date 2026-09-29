@@ -3,11 +3,16 @@ package com.construct.messenger.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.repository.AccountRepository
+import com.construct.messenger.data.repository.AppLockRepository
 import com.construct.messenger.data.repository.AuthRepository
 import com.construct.messenger.data.repository.OwnAccount
 import com.construct.messenger.data.repository.UsernameChange
+import com.construct.messenger.recovery.RecoveryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -26,7 +31,19 @@ data class AccountUiState(
     val saving: Boolean = false,
     val usernameError: UsernameError? = null,
     val signingOut: Boolean = false,
+    /** True once the server said the recovery phrase is not set up — sign-out warns first. */
+    val recoveryMissing: Boolean = false,
+    val deletion: Deletion = Deletion.Idle,
 )
+
+/** iOS `DeleteAccountConfirmationView`: idle, the 10 s abort window, the request, a refusal. */
+sealed interface Deletion {
+    data object Idle : Deletion
+    data class Counting(val secondsLeft: Int) : Deletion
+    data object Requesting : Deletion
+    /** The server did not confirm; [message] says why. Local-only deletion is offered. */
+    data class Failed(val message: String?) : Deletion
+}
 
 sealed interface AccountEvent {
     data object SignedOut : AccountEvent
@@ -42,7 +59,11 @@ sealed interface AccountEvent {
 class AccountViewModel @Inject constructor(
     private val accountRepository: AccountRepository,
     private val authRepository: AuthRepository,
+    private val recoveryRepository: RecoveryRepository,
+    private val appLock: AppLockRepository,
 ) : ViewModel() {
+    private var deletionJob: Job? = null
+
     private val state = MutableStateFlow(AccountUiState())
     val uiState: StateFlow<AccountUiState> = state.asStateFlow()
 
@@ -54,6 +75,17 @@ class AccountViewModel @Inject constructor(
             accountRepository.account.collect { account -> state.update { it.copy(account = account) } }
         }
         viewModelScope.launch { accountRepository.refresh() }
+        viewModelScope.launch {
+            // Unknown (no answer) is not "missing": only a known "not set up" warns.
+            val setUp = try {
+                recoveryRepository.status().isSetup
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            }
+            state.update { it.copy(recoveryMissing = setUp == false) }
+        }
     }
 
     fun startEditing() {
@@ -91,12 +123,50 @@ class AccountViewModel @Inject constructor(
         }
     }
 
-    fun signOut() {
+    /** [allDevices]: the server ends every session of the account, this one included. */
+    fun signOut(allDevices: Boolean = false) {
         if (state.value.signingOut) return
         state.update { it.copy(signingOut = true) }
         viewModelScope.launch {
-            authRepository.logout()
+            authRepository.logout(allDevices)
             events.emit(AccountEvent.SignedOut)
         }
+    }
+
+    /**
+     * The delete button: opens the ten-second window in which the same button aborts (iOS's
+     * undo-send pattern), then asks the server. On its yes, everything on this device is erased.
+     */
+    fun startDeletion() {
+        if (state.value.deletion is Deletion.Counting || state.value.deletion is Deletion.Requesting) return
+        deletionJob = viewModelScope.launch {
+            for (left in DELETE_ABORT_SECONDS downTo 1) {
+                state.update { it.copy(deletion = Deletion.Counting(left)) }
+                delay(1_000)
+            }
+            state.update { it.copy(deletion = Deletion.Requesting) }
+            try {
+                authRepository.deleteAccount()
+                appLock.eraseDevice()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                state.update { it.copy(deletion = Deletion.Failed(e.message)) }
+            }
+        }
+    }
+
+    fun abortDeletion() {
+        deletionJob?.cancel()
+        deletionJob = null
+        state.update { it.copy(deletion = Deletion.Idle) }
+    }
+
+    /** The server could not confirm: erase this device anyway (the account may live on). */
+    fun deleteLocally() = appLock.eraseDevice()
+
+    private companion object {
+        /** iOS `DeleteAccountSheetLayout.abortWindowSeconds`. */
+        const val DELETE_ABORT_SECONDS = 10
     }
 }
