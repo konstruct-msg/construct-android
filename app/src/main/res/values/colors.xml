@@ -9,4 +9,6 @@
     <color name="white">#FFFFFFFF</color>
     <!-- CTColor.bg — XML mirror for windowBackground before Compose mounts -->
     <color name="ct_bg">#FF090909</color>
+    <!-- CTColor.accentDark — the logo on the window background -->
+    <color name="ct_accent">#FF008CFF</color>
 </resources>

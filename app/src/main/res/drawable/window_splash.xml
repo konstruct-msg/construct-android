@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  What the window shows while Compose starts (≈1.5 s cold on a mid-range phone): iOS `SplashView`'s
+  logo in the accent on the background. Same centre and 72dp size as `SplashScreen`, so the
+  hand-over to Compose does not move it.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/ct_bg" />
+    <item
+        android:width="72dp"
+        android:height="72dp"
+        android:drawable="@drawable/ic_logo_accent"
+        android:gravity="center" />
+</layer-list>
