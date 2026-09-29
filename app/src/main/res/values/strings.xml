@@ -8,7 +8,7 @@
     <string name="brand_name" translatable="false">KONSTRUCT</string>
 
     <!-- Onboarding -->
-    <string name="onboarding_subtitle">the internet is a space of free thought.\nidentity is a construct.</string>
+    <string name="onboarding_subtitle">the internet is a space of free thought.</string>
     <string name="onboarding_alias_placeholder">choose a public alias (optional)</string>
     <string name="onboarding_init_action">CREATE IDENTITY</string>
     <string name="onboarding_initializing_action">INITIALIZING...</string>
