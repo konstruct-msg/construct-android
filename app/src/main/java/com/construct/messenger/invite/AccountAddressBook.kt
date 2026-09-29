@@ -1,6 +1,6 @@
 package com.construct.messenger.invite
 
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.model.SecurityNotice
 import com.construct.messenger.data.local.db.UserDao

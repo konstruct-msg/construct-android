@@ -25,6 +25,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.construct.messenger.diagnostics.Diagnostics
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -204,6 +206,19 @@ private fun IdentityFormContent(
                 modifier = Modifier.clickable(enabled = onLinkDevice != null) {
                     onLinkDevice?.invoke()
                 }
+            )
+        }
+
+        // Before any account exists: a failed registration or restore is diagnosed from these
+        // logs, and Settings is out of reach. Debug builds only, as on iOS.
+        if (Diagnostics.isEnabled) {
+            val context = LocalContext.current
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.diagnostics_share_logs),
+                style = ctRegular(12),
+                color = CTColor.textDim,
+                modifier = Modifier.clickable { Diagnostics.share(context) },
             )
         }
     }

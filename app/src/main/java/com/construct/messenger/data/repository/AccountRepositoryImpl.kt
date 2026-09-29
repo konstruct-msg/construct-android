@@ -2,7 +2,7 @@ package com.construct.messenger.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager

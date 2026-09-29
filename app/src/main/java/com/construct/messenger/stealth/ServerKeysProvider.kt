@@ -3,7 +3,7 @@ package com.construct.messenger.stealth
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.HttpURLConnection
 import java.net.URL

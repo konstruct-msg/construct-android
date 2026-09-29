@@ -1,7 +1,7 @@
 package com.construct.messenger.data.api
 
 import android.os.SystemClock
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.min

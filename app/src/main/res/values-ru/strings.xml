@@ -245,4 +245,8 @@
     <string name="restore_error_rejected">Аккаунт с такой фразой не найден. Проверьте имя пользователя и слова.</string>
     <string name="restore_error_rate_limited">Слишком много попыток. Подождите и попробуйте снова.</string>
     <string name="restore_error_network">Не удалось связаться с сервером. Проверьте подключение и попробуйте снова.</string>
+    <!-- Diagnostics (debug builds only; iOS DiagnosticsView / DiagnosticLogShare) -->
+    <string name="diagnostics_title">Диагностика</string>
+    <string name="diagnostics_share_logs">Отправить логи</string>
+    <string name="diagnostics_clear_logs">Очистить логи</string>
 </resources>

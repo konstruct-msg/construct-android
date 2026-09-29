@@ -1,6 +1,6 @@
 package com.construct.messenger.service
 
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import javax.inject.Inject
 import javax.inject.Singleton

@@ -1,6 +1,6 @@
 package com.construct.messenger.data.local
 
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.local.db.PeerDeviceDao
 import com.construct.messenger.data.local.db.PeerDeviceEntity

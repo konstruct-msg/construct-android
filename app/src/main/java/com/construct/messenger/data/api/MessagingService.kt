@@ -1,6 +1,6 @@
 package com.construct.messenger.data.api
 
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.stealth.StealthPolicy
 import com.construct.messenger.stealth.StealthSenderService
 import com.google.protobuf.ByteString

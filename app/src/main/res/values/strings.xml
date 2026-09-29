@@ -248,4 +248,8 @@
     <string name="restore_error_rejected">No account with a recovery phrase matched. Check the username and the words.</string>
     <string name="restore_error_rate_limited">Too many attempts. Wait a while and try again.</string>
     <string name="restore_error_network">Couldn\'t reach the server. Check the connection and try again.</string>
+    <!-- Diagnostics (debug builds only; iOS DiagnosticsView / DiagnosticLogShare) -->
+    <string name="diagnostics_title">Diagnostics</string>
+    <string name="diagnostics_share_logs">Share logs</string>
+    <string name="diagnostics_clear_logs">Clear logs</string>
 </resources>

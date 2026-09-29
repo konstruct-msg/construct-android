@@ -2,7 +2,7 @@ package com.construct.messenger.data.api
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.data.local.AckStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject

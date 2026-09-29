@@ -1,6 +1,6 @@
 package com.construct.messenger.domain.usecase
 
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.data.api.MessagingService
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.service.SessionManager

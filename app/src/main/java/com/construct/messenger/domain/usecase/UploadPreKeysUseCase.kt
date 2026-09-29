@@ -1,6 +1,6 @@
 package com.construct.messenger.domain.usecase
 
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.crypto.KyberPrekeyService
 import com.construct.messenger.data.api.GrpcClient

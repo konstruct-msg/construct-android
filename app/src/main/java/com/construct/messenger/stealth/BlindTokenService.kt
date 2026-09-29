@@ -2,7 +2,7 @@ package com.construct.messenger.stealth
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.data.api.GrpcClient
 import com.google.protobuf.ByteString
 import dagger.hilt.android.qualifiers.ApplicationContext

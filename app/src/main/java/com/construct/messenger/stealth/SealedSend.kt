@@ -1,6 +1,6 @@
 package com.construct.messenger.stealth
 
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.data.api.MessagingService
 import io.grpc.Status
 import javax.inject.Inject

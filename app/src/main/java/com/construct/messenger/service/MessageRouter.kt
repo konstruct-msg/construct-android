@@ -1,6 +1,6 @@
 package com.construct.messenger.service
 
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.data.api.MessageStreamService
 import com.construct.messenger.data.api.MessageStreamService.StreamEvent
 import com.construct.messenger.stealth.OwnDeviceCopy

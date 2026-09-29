@@ -1,6 +1,6 @@
 package com.construct.messenger.data.auth
 
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.data.local.KeystoreManager
 import io.grpc.Status
 import io.grpc.StatusRuntimeException

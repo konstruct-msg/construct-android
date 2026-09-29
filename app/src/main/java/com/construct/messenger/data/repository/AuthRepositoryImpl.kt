@@ -2,7 +2,7 @@ package com.construct.messenger.data.repository
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import androidx.core.content.ContextCompat
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.auth.AuthSessionManager

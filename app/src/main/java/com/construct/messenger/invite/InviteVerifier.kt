@@ -1,6 +1,6 @@
 package com.construct.messenger.invite
 
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
 import java.util.Collections

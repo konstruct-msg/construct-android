@@ -1,6 +1,6 @@
 package com.construct.messenger.viewmodel
 
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -3,6 +3,7 @@ package com.construct.messenger.ui.screens.settings
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import android.text.format.Formatter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,18 +22,25 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,11 +50,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.BuildConfig
 import com.construct.messenger.R
 import com.construct.messenger.data.repository.OwnAccount
+import com.construct.messenger.diagnostics.Diagnostics
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
 import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.CTSettingsRow
+import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.CTStatus
 import com.construct.messenger.ui.components.CTStatusBadge
 import com.construct.messenger.ui.components.ConnectionStatus
@@ -55,6 +65,9 @@ import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.ctBold
 import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.SettingsViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Callbacks for the rows that open another app screen. */
 data class SettingsNavigation(
@@ -81,7 +94,8 @@ fun SettingsRoute(
  * **Canon:** iOS `SettingsView` (compact layout) — cards separated by space, no section headers,
  * uppercase row labels. Rows appear only for what Android actually has: a row that opens
  * nothing reads as broken. Missing against iOS: linked devices, appearance, data & storage,
- * transcription, drafts, recovery (and its banner), diagnostics.
+ * transcription, drafts, recovery (and its banner). Diagnostics here is the log half of iOS
+ * `DiagnosticsView` only, and like it exists in debug builds only.
  */
 @Composable
 fun SettingsScreen(
@@ -146,6 +160,8 @@ fun SettingsScreen(
                     status = connection.toStatus(),
                 )
             }
+
+            if (Diagnostics.isEnabled) DiagnosticsSection()
 
             CTSectionGroup {
                 CTSettingsRow(
@@ -229,6 +245,52 @@ private fun Context.openNotificationSettings() {
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
 }
+
+/** Share and clear the log files. Sizes are read off the main thread: they are file stats. */
+@Composable
+private fun DiagnosticsSection() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var bytes by remember { mutableLongStateOf(-1L) }
+    suspend fun refresh() {
+        bytes = withContext(Dispatchers.IO) { Diagnostics.collector?.totalBytes() ?: 0L }
+    }
+    LaunchedEffect(Unit) { refresh() }
+
+    Column {
+        CTSettingsSectionHeader(title = stringResource(R.string.diagnostics_title), color = DEBUG_ORANGE)
+        CTSectionGroup {
+            CTSettingsRow(
+                label = stringResource(R.string.diagnostics_share_logs).uppercase(),
+                value = if (bytes >= 0) Formatter.formatShortFileSize(context, bytes) else "",
+                valueColor = CTColor.textDim,
+                icon = Icons.Default.Share,
+                modifier = Modifier.clickable {
+                    scope.launch {
+                        // The archive is built from files: not on the main thread.
+                        withContext(Dispatchers.IO) { Diagnostics.collector?.flush() }
+                        Diagnostics.share(context)
+                    }
+                },
+            )
+            CTSep()
+            CTSettingsRow(
+                label = stringResource(R.string.diagnostics_clear_logs).uppercase(),
+                icon = Icons.Default.Delete,
+                isDestructive = true,
+                modifier = Modifier.clickable {
+                    scope.launch {
+                        withContext(Dispatchers.IO) { Diagnostics.collector?.clear() }
+                        refresh()
+                    }
+                },
+            )
+        }
+    }
+}
+
+/** iOS marks debug-only surfaces `.orange`. */
+private val DEBUG_ORANGE = Color(0xFFFF9500)
 
 /** iOS `SettingsRootLayout.listSpacing`. */
 private val LIST_SPACING = 30.dp

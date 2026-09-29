@@ -1,6 +1,7 @@
 package com.construct.messenger
 
 import android.app.Application
+import com.construct.messenger.diagnostics.Diagnostics
 import dagger.hilt.android.HiltAndroidApp
 
 /**
@@ -11,4 +12,10 @@ import dagger.hilt.android.HiltAndroidApp
  * Registered in AndroidManifest.xml via `android:name=".KonstructApp"`.
  */
 @HiltAndroidApp
-class KonstructApp : Application()
+class KonstructApp : Application() {
+    override fun onCreate() {
+        // Before super: Hilt builds the graph there, and its first log lines belong in the file.
+        Diagnostics.install(this)
+        super.onCreate()
+    }
+}
