@@ -21,11 +21,11 @@ import com.construct.messenger.ui.theme.LocalIsDarkTheme
 import kotlin.random.Random
 
 /**
- * iOS passes 0.10 / 0.06, but measured on screen its glyphs land at ~21 on the dark background
- * (9) — about 0.6 of the way to `noise`. These are the values that reproduce what iOS shows, not
- * the numbers it passes.
+ * iOS's own 0.10 / 0.06. Measured on screen (2026-09-29) its glyphs land at 10–11 on the dark
+ * background (9) — barely there, a watermark. An earlier 0.6 was tuned against brighter glyphs
+ * on the iOS chats screenshot that are not this layer, and drew the noise twice as bright.
  */
-private const val NOISE_OPACITY_DARK = 0.6f
+private const val NOISE_OPACITY_DARK = 0.10f
 private const val NOISE_OPACITY_LIGHT = 0.06f
 
 /** ASCII glyphs for the noise texture — canon §4.14 / iOS `CTNoise`. */

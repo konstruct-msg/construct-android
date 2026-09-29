@@ -47,7 +47,7 @@ fun CTButton(
         isDestructive -> CTColor.danger
         else -> CTColor.accent
     }
-    val shape = RoundedCornerShape(CornerRadius.small)
+    val shape = RoundedCornerShape(CornerRadius.control)
 
     Text(
         text = label,

@@ -87,7 +87,7 @@ class RegisterUseCaseTest {
                 RegistrationStep.FetchingChallenge,
                 RegistrationStep.ComputingPow(0f),
                 RegistrationStep.SubmittingRegistration,
-                RegistrationStep.Complete,
+                RegistrationStep.Complete("device-1"),
             ),
             steps,
         )

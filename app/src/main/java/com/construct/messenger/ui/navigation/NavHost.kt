@@ -16,6 +16,7 @@ import com.construct.messenger.ui.screens.invite.QrScannerScreen
 import com.construct.messenger.ui.screens.recovery.RecoveryGated
 import com.construct.messenger.ui.screens.recovery.RecoveryPromptScreen
 import com.construct.messenger.ui.screens.main.MainTabView
+import com.construct.messenger.ui.screens.onboarding.ExistingIdentityScreen
 import com.construct.messenger.ui.screens.onboarding.OnboardingScreen
 import com.construct.messenger.ui.screens.orientation.OrientationScreen
 import com.construct.messenger.ui.screens.security.PinFlow
@@ -75,6 +76,14 @@ fun KonstructNavHost(
                         launchSingleTop = true
                     }
                 },
+                onExistingIdentity = {
+                    navController.navigate(Screen.ExistingIdentity.route) { launchSingleTop = true }
+                },
+            )
+        }
+        composable(Screen.ExistingIdentity.route) {
+            ExistingIdentityScreen(
+                onBack = { navController.popBackStack() },
                 onRestore = { navController.navigate(Screen.Restore.route) { launchSingleTop = true } },
             )
         }

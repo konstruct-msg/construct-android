@@ -91,7 +91,7 @@ class RegisterUseCase @Inject constructor(
         keystoreManager.saveTokens(response.tokens, deviceId)
         keystoreManager.savePrivateKeys(cryptoManager.exportPrivateKeys())
 
-        onStep(RegistrationStep.Complete)
+        onStep(RegistrationStep.Complete(deviceId))
         uploadInitialOneTimePrekeys(deviceId)
         if (!username.isNullOrEmpty()) {
             runCatching {

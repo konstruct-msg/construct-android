@@ -8,9 +8,17 @@
     <string name="onboarding_subtitle">интернет — пространство свободы выражения мысли.</string>
     <string name="onboarding_alias_placeholder">выберите публичный псевдоним (необязательно)</string>
     <string name="onboarding_init_action">СОЗДАТЬ ИДЕНТИЧНОСТЬ</string>
+    <string name="onboarding_already_have">Уже есть идентичность?</string>
+    <string name="onboarding_existing_title">Существующая идентичность</string>
+    <string name="onboarding_existing_intro">Выберите, как перенести её на это устройство.</string>
+    <string name="onboarding_restore_title">Восстановить по фразе</string>
+    <string name="onboarding_restore_subtitle">Нет другого устройства с Конструктом. Используйте вашу фразу из 12 слов.</string>
+    <string name="username_too_short">Имя пользователя должно быть не короче 3 символов.</string>
+    <string name="username_invalid_chars">Имя пользователя может содержать только буквы, цифры и подчёркивание.</string>
+    <string name="username_checking">Проверяем доступность...</string>
+    <string name="username_available">Имя пользователя доступно.</string>
+    <string name="username_check_failed">Не удалось проверить имя пользователя. Попробуйте ещё раз.</string>
     <string name="onboarding_initializing_action">ИНИЦИАЛИЗАЦИЯ...</string>
-    <string name="onboarding_restore_action">восстановить</string>
-    <string name="onboarding_link_device_action">привязать устройство</string>
     <string name="onboarding_security_title">Безопасность</string>
     <string name="onboarding_security_body">Ключи шифрования генерируются локально. Сервер никогда не видит ваши приватные ключи.</string>
 
@@ -42,12 +50,12 @@
     <string name="orientation_page1_caption">Публичный @псевдоним необязателен. Ключи не покидают телефон.</string>
     <string name="orientation_page1_visual_label">на этом устройстве</string>
     <string name="orientation_page2_title">Люди</string>
-    <string name="orientation_page2_body">Общего каталога нет, и вас нельзя найти без вашего ведома. Чтобы начать общение, один приглашает другого: покажите QR-код, отправьте ссылку или найдите @псевдоним и отправьте запрос.</string>
+    <string name="orientation_page2_body">Чтобы добавить собеседника, покажите QR-код или поделитесь ссылкой. Поиск по @псевдониму работает только если он включён в настройках безопасности.</string>
     <string name="orientation_page2_caption">Никто не напишет вам без вашего согласия.</string>
     <string name="orientation_page2_path_qr_title">QR / ссылка</string>
-    <string name="orientation_page2_path_qr_sub">Показать или сканировать. Действует 5 минут.</string>
+    <string name="orientation_page2_path_qr_sub">Показать или сканировать. Каждый код срабатывает один раз.</string>
     <string name="orientation_page2_path_search_title">Поиск</string>
-    <string name="orientation_page2_path_search_sub">Найти @псевдоним → отправить запрос.</string>
+    <string name="orientation_page2_path_search_sub">Только если включили в настройках безопасности.</string>
     <string name="orientation_page3_title">Три места</string>
     <string name="orientation_page3_body">Чаты — переписка. Synaps — ваши люди и входящие запросы. Настройки — ваш QR-код, восстановление и устройства.</string>
     <string name="orientation_page3_caption">Начните с Synaps — покажите QR или найдите человека.</string>
@@ -287,7 +295,7 @@
     <string name="logout_confirm_action">Выйти</string>
     <string name="changes_encrypted_footer">&gt; изменения защищены сквозным шифрованием</string>
     <string name="username_length_error">username должен быть от 3 до 20 символов</string>
-    <string name="username_unavailable">этот username уже занят</string>
+    <string name="username_unavailable">Имя пользователя уже занято.</string>
     <string name="username_save_failed">не удалось сохранить — проверьте соединение</string>
     <string name="action_edit">изменить</string>
     <string name="action_save">сохранить</string>
@@ -371,12 +379,13 @@
     <string name="new_device_banner_subtitle_fmt">У %1$s появилось устройство, которого раньше не было. Если собеседник его не добавлял, переписку может читать кто-то ещё. Сверьте защитные числа, прежде чем доверять чату.</string>
     <string name="new_device_toast_fmt">У %1$s новое устройство. Откройте чат, чтобы проверить.</string>
     <!-- Восстановление аккаунта по фразе (iOS AccountRecoveryViewModel) -->
-    <string name="restore_nav_title">Восстановление</string>
-    <string name="restore_title">Вход по фразе восстановления</string>
-    <string name="restore_body">Введите имя пользователя или ID аккаунта и 12 записанных слов. Слова остаются на этом устройстве — отправляется только подпись, сделанная ими.</string>
-    <string name="restore_identifier_placeholder">имя пользователя или ID аккаунта</string>
+    <string name="restore_nav_title">Восстановить из ключа восстановления</string>
+    <string name="restore_body">Введите фразу из 12 слов, чтобы восстановить идентичность на этом устройстве.</string>
+    <string name="restore_phrase_label">Фраза восстановления (12 слов)</string>
+    <string name="restore_identifier_label">ID аккаунта или имя пользователя</string>
+    <string name="restore_identifier_placeholder">имя_пользователя или UUID</string>
     <string name="restore_other_devices">Остальные ваши устройства выйдут из аккаунта. Переписка не восстанавливается — только сам аккаунт.</string>
-    <string name="restore_action">Восстановить</string>
+    <string name="restore_action">Восстановить аккаунт</string>
     <string name="restore_error_identifier">Введите имя пользователя или ID аккаунта.</string>
     <string name="restore_error_rejected">Аккаунт с такой фразой не найден. Проверьте имя пользователя и слова.</string>
     <string name="restore_error_rate_limited">Слишком много попыток. Подождите и попробуйте снова.</string>

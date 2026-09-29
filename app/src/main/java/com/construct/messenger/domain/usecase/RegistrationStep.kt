@@ -12,6 +12,10 @@ sealed interface RegistrationStep {
     data object FetchingChallenge : RegistrationStep
     data class ComputingPow(val progress: Float) : RegistrationStep
     data object SubmittingRegistration : RegistrationStep
-    data object Complete : RegistrationStep
+    /**
+     * The device is registered. Carries its id because it is reported before the prekey upload
+     * that follows — the welcome screen shows the id without waiting for that upload.
+     */
+    data class Complete(val deviceId: String? = null) : RegistrationStep
     data class Error(val message: String) : RegistrationStep
 }

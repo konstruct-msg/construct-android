@@ -65,7 +65,12 @@ interface ContactsRepository {
     val issuedInvites: Flow<List<IssuedInvite>>
 }
 
-data class UsernameAvailability(val available: Boolean, val reason: String? = null)
+/** [checkFailed]: no answer from the server — neither taken nor free. */
+data class UsernameAvailability(
+    val available: Boolean,
+    val reason: String? = null,
+    val checkFailed: Boolean = false,
+)
 
 data class UserProfile(
     val userId: String,

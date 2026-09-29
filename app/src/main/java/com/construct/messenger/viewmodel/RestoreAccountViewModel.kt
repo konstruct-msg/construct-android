@@ -17,13 +17,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/** A recovery phrase is 12 words — iOS `AccountRecoveryViewModel.enteredWords`. */
+const val RECOVERY_WORD_COUNT = 12
+
 data class RestoreAccountUiState(
     val identifier: String = "",
-    val phrase: String = "",
+    val words: List<String> = List(RECOVERY_WORD_COUNT) { "" },
     val working: Boolean = false,
     val done: Boolean = false,
     @StringRes val errorRes: Int? = null,
-)
+) {
+    val phrase: String get() = words.joinToString(" ") { it.trim() }
+    val canSubmit: Boolean get() = identifier.isNotBlank() && words.all { it.isNotBlank() }
+}
 
 @HiltViewModel
 class RestoreAccountViewModel @Inject constructor(
@@ -33,7 +39,23 @@ class RestoreAccountViewModel @Inject constructor(
     val uiState: StateFlow<RestoreAccountUiState> = state.asStateFlow()
 
     fun setIdentifier(value: String) = state.update { it.copy(identifier = value, errorRes = null) }
-    fun setPhrase(value: String) = state.update { it.copy(phrase = value, errorRes = null) }
+
+    /**
+     * One cell of the grid. Text with spaces in it — the whole phrase pasted into one cell — is
+     * spread over this cell and the ones after it, so pasting works as it did in a single field.
+     */
+    fun setWord(index: Int, value: String) = state.update { current ->
+        val parts = value.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+        val words = current.words.toMutableList()
+        if (parts.size <= 1) {
+            words[index] = value.trim().lowercase()
+        } else {
+            parts.take(RECOVERY_WORD_COUNT - index).forEachIndexed { offset, word ->
+                words[index + offset] = word.lowercase()
+            }
+        }
+        current.copy(words = words, errorRes = null)
+    }
 
     fun submit() {
         val current = state.value
@@ -45,7 +67,7 @@ class RestoreAccountViewModel @Inject constructor(
             state.update {
                 if (error == null) {
                     // The words are not kept in memory past the moment they were needed.
-                    it.copy(working = false, done = true, phrase = "")
+                    it.copy(working = false, done = true, words = List(RECOVERY_WORD_COUNT) { "" })
                 } else {
                     Log.w(TAG, "recovery failed", error)
                     it.copy(working = false, errorRes = errorFor(error))

@@ -10,6 +10,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
@@ -66,7 +67,16 @@ fun CTTextField(
             keyboardType = if (isSecure) KeyboardType.Password else KeyboardType.Text,
         ),
         decorationBox = { innerTextField ->
-            Box {
+            // The inner field is only as wide as its text, so [textAlign] alone left typed text
+            // at the start of a centred field; the box places it instead.
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = when (textAlign) {
+                    TextAlign.Center -> Alignment.Center
+                    TextAlign.End, TextAlign.Right -> Alignment.CenterEnd
+                    else -> Alignment.CenterStart
+                },
+            ) {
                 if (value.isEmpty()) {
                     Text(
                         text = placeholder,

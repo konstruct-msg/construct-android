@@ -36,6 +36,7 @@ object Spacing {
 /** Corner radii. */
 object CornerRadius {
     val small = 8.dp        // cards, badges, buttons, section groups
+    val control = 10.dp     // iOS CTRadius.control — CTButton
     val medium = 12.dp
     val large = 16.dp       // message bubbles
     val extraLarge = 20.dp

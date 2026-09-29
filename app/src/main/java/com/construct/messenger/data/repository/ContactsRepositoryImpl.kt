@@ -249,7 +249,7 @@ class ContactsRepositoryImpl @Inject constructor(
             )
             UsernameAvailability(response.available, if (response.hasReason()) response.reason else null)
         } catch (e: Exception) {
-            UsernameAvailability(false, e.message)
+            UsernameAvailability(false, e.message, checkFailed = true)
         }
     }
 

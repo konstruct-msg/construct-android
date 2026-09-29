@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -23,12 +24,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -36,7 +34,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material.icons.outlined.Settings
+import com.construct.messenger.ui.components.TabIcons
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -46,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.construct.messenger.R
 import com.construct.messenger.ui.components.CTButton
+import com.construct.messenger.ui.components.ctBackground
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.HairlineBorder
 import com.construct.messenger.ui.theme.KonstructMessengerTheme
@@ -91,7 +94,7 @@ private fun OrientationContent(onFinish: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(CTColor.bg)
+            .ctBackground()
             .systemBarsPadding(),
     ) {
         TopBar(onSkip = onFinish)
@@ -172,9 +175,10 @@ private fun BottomChrome(currentPage: Int, isLastPage: Boolean, onPrimary: () ->
                 if (isLastPage) R.string.orientation_enter else R.string.orientation_next
             ).uppercase(),
             onClick = onPrimary,
+            // iOS: the 24 gutter sits outside the 360 cap.
             modifier = Modifier
-                .widthIn(max = 360.dp)
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 24.dp)
+                .widthIn(max = 360.dp),
         )
     }
 }
@@ -188,20 +192,25 @@ private fun OrientationPage(page: Int) {
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
     ) {
-        Spacer(modifier = Modifier.height(12.dp))
+        // iOS: a ScrollView, content from the top — not centred in the page. Its VStack puts
+        // 28 between every child, the 12 spacer included.
+        Spacer(modifier = Modifier.height(12.dp + 28.dp))
 
+        // iOS `.frame(height: 160)` does not clip: the three-row map is taller and spills over
+        // evenly. Unbounded here too — bounded, the last row lost its subtitle.
         Box(
             modifier = Modifier
                 .height(160.dp)
                 .fillMaxWidth(),
             contentAlignment = Alignment.Center,
         ) {
-            when (page) {
-                0 -> IdentityIllustration()
-                1 -> PeopleIllustration()
-                else -> MapIllustration()
+            Box(modifier = Modifier.wrapContentHeight(unbounded = true)) {
+                when (page) {
+                    0 -> IdentityIllustration()
+                    1 -> PeopleIllustration()
+                    else -> MapIllustration()
+                }
             }
         }
 
@@ -299,7 +308,8 @@ private fun IdentityIllustration() {
                 imageVector = Icons.Filled.Key,
                 contentDescription = null,
                 tint = CTColor.accent,
-                modifier = Modifier.size(28.dp),
+                // SF `key.fill` stands upright; Material's key lies on its side.
+                modifier = Modifier.size(28.dp).rotate(90f),
             )
         }
         Row(
@@ -396,19 +406,19 @@ private fun MapIllustration() {
             .border(HairlineBorder, CTColor.noise),
     ) {
         MapRow(
-            icon = Icons.Filled.Chat,
+            icon = TabIcons.Chats,
             titleRes = R.string.orientation_map_streams,
             subRes = R.string.orientation_map_streams_sub,
         )
         Divider()
         MapRow(
-            icon = Icons.Filled.Groups,
+            icon = TabIcons.Synaps,
             titleRes = R.string.orientation_map_synaps,
             subRes = R.string.orientation_map_synaps_sub,
         )
         Divider()
         MapRow(
-            icon = Icons.Filled.Settings,
+            icon = Icons.Outlined.Settings,
             titleRes = R.string.orientation_map_settings,
             subRes = R.string.orientation_map_settings_sub,
         )
@@ -438,7 +448,8 @@ private fun MapRow(icon: ImageVector, titleRes: Int, subRes: Int) {
             imageVector = icon,
             contentDescription = null,
             tint = CTColor.accent,
-            modifier = Modifier.size(16.dp),
+            // iOS: a 16 pt SF symbol in a 24-wide frame — the glyph reads about 20 tall.
+            modifier = Modifier.width(24.dp).size(20.dp),
         )
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(

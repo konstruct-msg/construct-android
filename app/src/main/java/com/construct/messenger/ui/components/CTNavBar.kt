@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTLayout
@@ -82,25 +83,17 @@ fun CTNavBar(
             Spacer(Modifier.width(14.dp))
         }
 
-        if (isRoot) {
-            Text(
-                text = title.uppercase(),
-                style = ctBold(14),
-                color = CTColor.text,
-                letterSpacing = 4.sp,
-            )
-        } else {
-            Text(
-                text = title,
-                style = ctSemiBold(17),
-                color = CTColor.text,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-        }
-
-        Spacer(Modifier.weight(1f))
+        // The title takes the row up to the trailing icons. A title weighted beside a weighted
+        // spacer got half the row and cut "Use existing identity" to "Use existing id…".
+        Text(
+            text = if (isRoot) title.uppercase() else title,
+            style = if (isRoot) ctBold(14) else ctSemiBold(17),
+            color = CTColor.text,
+            letterSpacing = if (isRoot) 4.sp else TextUnit.Unspecified,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
 
         trailingSecondaryIcon?.let { icon ->
             NavBarIcon(

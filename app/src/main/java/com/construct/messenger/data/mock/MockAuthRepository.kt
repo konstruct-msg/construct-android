@@ -19,7 +19,7 @@ class MockAuthRepository @Inject constructor() : AuthRepository {
     override suspend fun initializeIdentity(username: String?, onStep: (RegistrationStep) -> Unit) {
         onStep(RegistrationStep.GeneratingKeys)
         delay(250)
-        onStep(RegistrationStep.Complete)
+        onStep(RegistrationStep.Complete())
         mutableAuthState.value = AuthState(isInitialized = true)
     }
 
