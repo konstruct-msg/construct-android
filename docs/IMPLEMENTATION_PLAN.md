@@ -64,6 +64,7 @@
 | Профиль контакта: защитные числа, блокировка/разблокировка, жалоба на спам, удаление (локально); список заблокированных в Synaps | ✅ |
 | Экраны: онбординг, Orientation, чаты, чат, Synaps (список), настройки: Account, Security, Network, Appearance, Linked devices (список, отзыв, выход с этого/других/всех), Notifications (свой выключатель, разрешение, каналы, доставка без push), Drafts, Security (фраза, Lockdown, анонимность отправителя, выданные приглашения с отзывом, поиск), блокировка PIN-кодом (биометрия, задержка, сброс устройства), Account (связанные устройства, выход с предупреждением о фразе, выход везде, удаление аккаунта), Network (статус, «Защищено», последний heartbeat, защита от блокировок; координаты доступности — только в debug, `decisions/silent-transport-ui`) | ✅ |
 | Светлая/тёмная/системная тема, шрифт и размер текста сообщений (Appearance); токены `CTColor` адаптивные, значения = iOS `Color.CT` | ✅ |
+| Подписанный release (`signingConfigs` читает `~/.gradle/gradle.properties`; без него release собирается неподписанным) | ✅ 2026-09-29; резервная копия ключа — A4 |
 | Локализация `en` + `ru` | ✅ полный паритет; `ja` — B6 |
 
 ---
@@ -80,7 +81,7 @@
 | A1 | **Стенд `CfeAction.OpenSession`.** Ответ сделан событием (ядро 0.21.0): бандл устройства уходит в ядро как `SessionBundleFetched`, ядро само сохраняет запись, разбирает очередь и снимает `Opening`. | `CfeTimerBridge.answerOpenSession`, `SessionManager.bundleForOpenSession`; `SESSIONS.md` §8; `scripts/verify.sh --device` считает `session reopen … done` | Пара Android↔iOS со старой сессией через ~15 с после запуска показывает `pq_handshake=InitialV2` на обеих сторонах |
 | A2 | **Стенд SENDER_SYNC Android↔iOS одного аккаунта.** Копии между платформами одного аккаунта ни разу не прогонялись. | `docs/STAND.md`; `WIRE_FORMAT_RULES.md` §SSR1 | Сообщение, отправленное с iOS, появляется исходящим на Android того же аккаунта и наоборот, по одному разу |
 | A3 | **CI, который компилирует.** Гейт `checkCoreLibrary` стоит перед компилятором: без `.so` нужной версии компилятор не запускается, и коммиты уходили без компиляции (vault TODO 67). | GitHub Actions: скачать архив ядра по ссылке из `construct-core.lock`, затем `:app:testDebugUnitTest` | Коммит, ломающий `when` по `CfeAction`, краснеет в CI до мержа |
-| A4 | **Подписанный release.** Сейчас собирается только debug. | `android-sign.md` (хранилище); `signingConfigs` в `app/build.gradle` читает `~/.gradle/gradle.properties` | `./gradlew assembleRelease` даёт подписанный APK; ключ и пароль в резервной копии вне машины |
+| A4 | **Резервная копия release-ключа.** Ключ создан 2026-09-29 (`~/.android/konstruct-release.jks`, EC P-256, SHA-256 сертификата `9038244a…e3604ec`), пароли в `~/.gradle/gradle.properties`; `./gradlew assembleRelease` даёт подписанный APK. Потеря ключа = тестировщики переустанавливают с потерей данных. | `android-sign.md` | `.jks` и пароль лежат в менеджере паролей вне этой машины |
 
 ### B — до публичной сборки
 

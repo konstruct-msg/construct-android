@@ -28,8 +28,25 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // The release key and its passwords live in ~/.gradle/gradle.properties, never in git
+    // (construct-docs client/android/android-sign.md). Without them — another machine, CI —
+    // release still builds, unsigned.
+    signingConfigs {
+        release {
+            if (project.hasProperty('KONSTRUCT_STORE_FILE')) {
+                storeFile file(KONSTRUCT_STORE_FILE)
+                storePassword KONSTRUCT_STORE_PASSWORD
+                keyAlias KONSTRUCT_KEY_ALIAS
+                keyPassword KONSTRUCT_KEY_PASSWORD
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (project.hasProperty('KONSTRUCT_STORE_FILE')) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
