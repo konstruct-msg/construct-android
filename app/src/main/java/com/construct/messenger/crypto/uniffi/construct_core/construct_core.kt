@@ -720,12 +720,6 @@ external fun uniffi_construct_core_checksum_func_derive_device_id(
 ): Short
 external fun uniffi_construct_core_checksum_func_derive_recovery_keypair(
 ): Short
-external fun uniffi_construct_core_checksum_func_derive_verifying_key_from_secret(
-): Short
-external fun uniffi_construct_core_checksum_func_device_copy_tag(
-): Short
-external fun uniffi_construct_core_checksum_func_device_copy_tag_matches(
-): Short
 external fun uniffi_construct_core_checksum_func_format_federated_id(
 ): Short
 external fun uniffi_construct_core_checksum_func_generate_dummy_message(
@@ -748,10 +742,6 @@ external fun uniffi_construct_core_checksum_func_hybrid_signature_keygen(
 ): Short
 external fun uniffi_construct_core_checksum_func_hybrid_verify(
 ): Short
-external fun uniffi_construct_core_checksum_func_identity_key_from_keys(
-): Short
-external fun uniffi_construct_core_checksum_func_import_mls_store_cfe(
-): Short
 external fun uniffi_construct_core_checksum_func_intake_epoch(
 ): Short
 external fun uniffi_construct_core_checksum_func_intake_tag(
@@ -769,8 +759,6 @@ external fun uniffi_construct_core_checksum_func_mldsa65_verify(
 external fun uniffi_construct_core_checksum_func_mlkem1024_encapsulate(
 ): Short
 external fun uniffi_construct_core_checksum_func_mnemonic_to_seed(
-): Short
-external fun uniffi_construct_core_checksum_func_open_with_device_key(
 ): Short
 external fun uniffi_construct_core_checksum_func_plan_initiation(
 ): Short
@@ -800,27 +788,17 @@ external fun uniffi_construct_core_checksum_func_seal_to_device_key(
 ): Short
 external fun uniffi_construct_core_checksum_func_sealed_seal_sender_cert(
 ): Short
-external fun uniffi_construct_core_checksum_func_sealed_unseal_sender_cert(
-): Short
 external fun uniffi_construct_core_checksum_func_sealed_verify_sender_cert(
 ): Short
 external fun uniffi_construct_core_checksum_func_sign_bundle_data_with_keys(
 ): Short
-external fun uniffi_construct_core_checksum_func_sign_invite_data(
-): Short
 external fun uniffi_construct_core_checksum_func_sign_recovery_challenge(
-): Short
-external fun uniffi_construct_core_checksum_func_signing_key_from_keys(
 ): Short
 external fun uniffi_construct_core_checksum_func_sr_create_recovery_shares(
 ): Short
 external fun uniffi_construct_core_checksum_func_sr_generate_vault_key(
 ): Short
-external fun uniffi_construct_core_checksum_func_sr_open_recovery_bundle(
-): Short
 external fun uniffi_construct_core_checksum_func_sr_reconstruct_vault_key(
-): Short
-external fun uniffi_construct_core_checksum_func_sr_seal_recovery_bundle(
 ): Short
 external fun uniffi_construct_core_checksum_func_test_platform_bridge_roundtrip(
 ): Short
@@ -846,13 +824,9 @@ external fun uniffi_construct_core_checksum_method_classiccryptocore_generate_on
 ): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_get_all_session_contact_ids(
 ): Short
-external fun uniffi_construct_core_checksum_method_classiccryptocore_get_identity_key_bytes(
-): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_get_registration_bundle_fields(
 ): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_get_session_health(
-): Short
-external fun uniffi_construct_core_checksum_method_classiccryptocore_get_signing_key_bytes(
 ): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_import_one_time_prekeys(
 ): Short
@@ -942,19 +916,17 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_generate_one
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_get_all_session_contact_ids(
 ): Short
-external fun uniffi_construct_core_checksum_method_orchestratorcore_get_identity_key_bytes(
-): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_get_registration_bundle_fields(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_get_session_health(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_get_session_suite_id(
 ): Short
-external fun uniffi_construct_core_checksum_method_orchestratorcore_get_signing_key_bytes(
-): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_handle_event(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_has_session(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_history_file_channel_key(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_hybrid_signature_public_key(
 ): Short
@@ -1008,6 +980,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_rollback_kyb
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_rotate_signed_prekey(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_seal_own_recovery_bundle(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_set_local_user_id(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_set_trusted_server_keys(
@@ -1043,8 +1017,6 @@ external fun uniffi_construct_core_checksum_method_trafficprotectionmanager_rese
 external fun uniffi_construct_core_checksum_method_trafficprotectionmanager_should_send_dummy(
 ): Short
 external fun uniffi_construct_core_checksum_method_trafficprotectionmanager_update_battery_level(
-): Short
-external fun uniffi_construct_core_checksum_constructor_mlsstore_new(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_rustackstore_new(
 ): Short
@@ -1096,13 +1068,9 @@ external fun uniffi_construct_core_fn_method_classiccryptocore_generate_one_time
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_classiccryptocore_get_all_session_contact_ids(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_method_classiccryptocore_get_identity_key_bytes(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_classiccryptocore_get_registration_bundle_fields(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_classiccryptocore_get_session_health(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_method_classiccryptocore_get_signing_key_bytes(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_classiccryptocore_import_one_time_prekeys(`ptr`: Long,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1130,8 +1098,6 @@ external fun uniffi_construct_core_fn_clone_mlsstore(`handle`: Long,uniffi_out_e
 ): Long
 external fun uniffi_construct_core_fn_free_mlsstore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_construct_core_fn_constructor_mlsstore_new(`signerPrivateKey`: RustBuffer.ByValue,`signerPublicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Long
 external fun uniffi_construct_core_fn_method_mlsstore_add_member(`ptr`: Long,`groupId`: RustBuffer.ByValue,`keyPackage`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_mlsstore_create_group(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1202,20 +1168,18 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_generate_one_time_
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_get_all_session_contact_ids(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_method_orchestratorcore_get_identity_key_bytes(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_get_registration_bundle_fields(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_get_session_health(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_get_session_suite_id(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Short
-external fun uniffi_construct_core_fn_method_orchestratorcore_get_signing_key_bytes(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_handle_event(`ptr`: Long,`event`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_has_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_method_orchestratorcore_history_file_channel_key(`ptr`: Long,`senderEphPub`: RustBuffer.ByValue,`kemKeyId`: Int,`kemCiphertext`: RustBuffer.ByValue,`snapshotId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_hybrid_signature_public_key(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_import_hybrid_signature_private_key(`ptr`: Long,`privBytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1267,6 +1231,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_retire_session(`pt
 external fun uniffi_construct_core_fn_method_orchestratorcore_rollback_kyber_spk_rotation(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_rotate_signed_prekey(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_seal_own_recovery_bundle(`ptr`: Long,`vaultKey`: RustBuffer.ByValue,`createdAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_set_local_user_id(`ptr`: Long,`userId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1338,12 +1304,6 @@ external fun uniffi_construct_core_fn_func_derive_device_id(`identityPublicKey`:
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_derive_recovery_keypair(`seed`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_derive_verifying_key_from_secret(`identitySecretKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_device_copy_tag(`baseMessageId`: RustBuffer.ByValue,`targetDeviceId`: RustBuffer.ByValue,`ourIdentityPrivate`: RustBuffer.ByValue,`peerIdentityPublic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_device_copy_tag_matches(`tag`: RustBuffer.ByValue,`baseMessageId`: RustBuffer.ByValue,`ourDeviceId`: RustBuffer.ByValue,`ourIdentityPrivate`: RustBuffer.ByValue,`peerIdentityPublic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Byte
 external fun uniffi_construct_core_fn_func_format_federated_id(`deviceId`: RustBuffer.ByValue,`serverHostname`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_generate_dummy_message(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1366,10 +1326,6 @@ external fun uniffi_construct_core_fn_func_hybrid_signature_keygen(uniffi_out_er
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_hybrid_verify(`publicKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,`signature`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
-external fun uniffi_construct_core_fn_func_identity_key_from_keys(`keys`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_import_mls_store_cfe(`data`: RustBuffer.ByValue,`signerPrivateKey`: RustBuffer.ByValue,`signerPublicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Long
 external fun uniffi_construct_core_fn_func_intake_epoch(`unixSeconds`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_func_intake_tag(`intakeKey`: RustBuffer.ByValue,`recipientAccountId`: RustBuffer.ByValue,`epoch`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1387,8 +1343,6 @@ external fun uniffi_construct_core_fn_func_mldsa65_verify(`publicKey`: RustBuffe
 external fun uniffi_construct_core_fn_func_mlkem1024_encapsulate(`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_mnemonic_to_seed(`mnemonic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_open_with_device_key(`sealedBox`: RustBuffer.ByValue,`ourIdentityPriv`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_plan_initiation(`context`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1414,31 +1368,21 @@ external fun uniffi_construct_core_fn_func_recommended_send_delay_ms(`isHighPrio
 ): Long
 external fun uniffi_construct_core_fn_func_registration_bundle_fields_from_keys(`keys`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_seal_to_device_key(`plaintext`: RustBuffer.ByValue,`deviceIdentityKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_func_seal_to_device_key(`plaintext`: RustBuffer.ByValue,`deviceIdentityPublic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sealed_seal_sender_cert(`certBytes`: RustBuffer.ByValue,`recipientIdentityKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_sealed_unseal_sender_cert(`sealedBox`: RustBuffer.ByValue,`ourIdentityPriv`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sealed_verify_sender_cert(`userId`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,`identityKey`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,`issuedAt`: Long,`expiresAt`: Long,`signature`: RustBuffer.ByValue,`serverVerifyingKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_func_sign_bundle_data_with_keys(`keys`: RustBuffer.ByValue,`bundleDataJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_sign_invite_data(`data`: RustBuffer.ByValue,`identitySecretKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sign_recovery_challenge(`privateKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_signing_key_from_keys(`keys`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sr_create_recovery_shares(`vaultKey`: RustBuffer.ByValue,`threshold`: Byte,`shareCount`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sr_generate_vault_key(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_sr_open_recovery_bundle(`vaultKey`: RustBuffer.ByValue,`ciphertext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sr_reconstruct_vault_key(`mnemonics`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_sr_seal_recovery_bundle(`vaultKey`: RustBuffer.ByValue,`bundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_test_platform_bridge_roundtrip(`bridge`: Long,`key`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
@@ -1600,15 +1544,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_derive_recovery_keypair() != 51363.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_derive_verifying_key_from_secret() != 58526.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_func_device_copy_tag() != 11615.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_func_device_copy_tag_matches() != 2349.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_construct_core_checksum_func_format_federated_id() != 19004.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1642,12 +1577,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_hybrid_verify() != 15987.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_identity_key_from_keys() != 34967.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_func_import_mls_store_cfe() != 62241.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_construct_core_checksum_func_intake_epoch() != 2449.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1673,9 +1602,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_mnemonic_to_seed() != 49697.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_func_open_with_device_key() != 45456.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_plan_initiation() != 61324.toShort()) {
@@ -1714,13 +1640,10 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_registration_bundle_fields_from_keys() != 32194.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_seal_to_device_key() != 39145.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_seal_to_device_key() != 27604.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_sealed_seal_sender_cert() != 23474.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_func_sealed_unseal_sender_cert() != 18867.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_sealed_verify_sender_cert() != 64198.toShort()) {
@@ -1729,13 +1652,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_sign_bundle_data_with_keys() != 42671.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_sign_invite_data() != 3970.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_construct_core_checksum_func_sign_recovery_challenge() != 4321.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_func_signing_key_from_keys() != 58465.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_sr_create_recovery_shares() != 18198.toShort()) {
@@ -1744,13 +1661,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_sr_generate_vault_key() != 30491.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_sr_open_recovery_bundle() != 41311.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_construct_core_checksum_func_sr_reconstruct_vault_key() != 55657.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_func_sr_seal_recovery_bundle() != 17613.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_test_platform_bridge_roundtrip() != 58358.toShort()) {
@@ -1789,16 +1700,10 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_get_all_session_contact_ids() != 3313.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_get_identity_key_bytes() != 8726.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_get_registration_bundle_fields() != 798.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_get_session_health() != 64984.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_get_signing_key_bytes() != 55710.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_import_one_time_prekeys() != 14595.toShort()) {
@@ -1933,9 +1838,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_get_all_session_contact_ids() != 44779.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_get_identity_key_bytes() != 23135.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_get_registration_bundle_fields() != 16675.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1945,13 +1847,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_get_session_suite_id() != 15328.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_get_signing_key_bytes() != 12435.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_handle_event() != 2823.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_has_session() != 45817.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_history_file_channel_key() != 35330.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_hybrid_signature_public_key() != 3228.toShort()) {
@@ -2032,6 +1934,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_rotate_signed_prekey() != 11331.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_seal_own_recovery_bundle() != 42137.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_set_local_user_id() != 22865.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2084,9 +1989,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_trafficprotectionmanager_update_battery_level() != 31087.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_construct_core_checksum_constructor_mlsstore_new() != 17806.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_constructor_rustackstore_new() != 64675.toShort()) {
@@ -2648,21 +2550,11 @@ public interface ClassicCryptoCoreInterface {
     fun `getAllSessionContactIds`(): List<kotlin.String>
     
     /**
-     * Raw identity secret key bytes (32 bytes, X25519).
-     */
-    fun `getIdentityKeyBytes`(): kotlin.ByteArray
-    
-    /**
      * Typed registration bundle fields.
      */
     fun `getRegistrationBundleFields`(): RegistrationBundleFields
     
     fun `getSessionHealth`(`contactId`: kotlin.String): SessionHealthReport?
-    
-    /**
-     * Raw Ed25519 signing secret key bytes (64 bytes).
-     */
-    fun `getSigningKeyBytes`(): kotlin.ByteArray
     
     fun `importOneTimePrekeys`(`data`: kotlin.ByteArray)
     
@@ -2862,23 +2754,6 @@ open class ClassicCryptoCore: Disposable, AutoCloseable, ClassicCryptoCoreInterf
 
     
     /**
-     * Raw identity secret key bytes (32 bytes, X25519).
-     */
-    @Throws(CryptoException::class)override fun `getIdentityKeyBytes`(): kotlin.ByteArray {
-            return FfiConverterByteArray.lift(
-    callWithHandle {
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_classiccryptocore_get_identity_key_bytes(
-        it,
-        _status)
-}
-    }
-    )
-    }
-    
-
-    
-    /**
      * Typed registration bundle fields.
      */
     @Throws(CryptoException::class)override fun `getRegistrationBundleFields`(): RegistrationBundleFields {
@@ -2901,23 +2776,6 @@ open class ClassicCryptoCore: Disposable, AutoCloseable, ClassicCryptoCoreInterf
     UniffiLib.uniffi_construct_core_fn_method_classiccryptocore_get_session_health(
         it,
         FfiConverterString.lower(`contactId`),_status)
-}
-    }
-    )
-    }
-    
-
-    
-    /**
-     * Raw Ed25519 signing secret key bytes (64 bytes).
-     */
-    @Throws(CryptoException::class)override fun `getSigningKeyBytes`(): kotlin.ByteArray {
-            return FfiConverterByteArray.lift(
-    callWithHandle {
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_classiccryptocore_get_signing_key_bytes(
-        it,
-        _status)
 }
     }
     )
@@ -3327,17 +3185,6 @@ open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
         this.handle = 0
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
     }
-    /**
-     * A fresh store bound to the device's Ed25519 identity keypair.
-     */
-    constructor(`signerPrivateKey`: kotlin.ByteArray, `signerPublicKey`: kotlin.ByteArray) :
-        this(UniffiWithHandle, 
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_constructor_mlsstore_new(
-    
-        FfiConverterByteArray.lower(`signerPrivateKey`),FfiConverterByteArray.lower(`signerPublicKey`),_status)
-}
-    )
 
     protected val handle: Long
     protected val cleanable: UniffiCleaner.Cleanable
@@ -3855,11 +3702,6 @@ public interface OrchestratorCoreInterface {
     fun `getAllSessionContactIds`(): List<kotlin.String>
     
     /**
-     * Raw identity secret key bytes (32 bytes, X25519).
-     */
-    fun `getIdentityKeyBytes`(): kotlin.ByteArray
-    
-    /**
      * Typed registration bundle — replaces `export_registration_bundle_json()` parsing.
      */
     fun `getRegistrationBundleFields`(): RegistrationBundleFields
@@ -3873,16 +3715,19 @@ public interface OrchestratorCoreInterface {
     fun `getSessionSuiteId`(`contactId`: kotlin.String): kotlin.UShort
     
     /**
-     * Raw Ed25519 signing secret key bytes (64 bytes).
-     */
-    fun `getSigningKeyBytes`(): kotlin.ByteArray
-    
-    /**
      * Typed event handler — accepts a typed `CfeIncomingEvent` and returns typed `CfeAction` list.
      */
     fun `handleEvent`(`event`: CfeIncomingEvent): List<CfeAction>
     
     fun `hasSession`(`contactId`: kotlin.String): kotlin.Boolean
+    
+    /**
+     * The history-file (CTHF) channel key on the receiving side: HKDF-SHA256 over
+     * X25519(identity, sender_eph) ‖ the ML-KEM decapsulation of `kem_ciphertext` under Kyber
+     * prekey `kem_key_id`, salt "construct_history_file_v1", info `snapshot_id`. The channel key,
+     * not the X25519 output: that would open every box sealed to this device.
+     */
+    fun `historyFileChannelKey`(`senderEphPub`: kotlin.ByteArray, `kemKeyId`: kotlin.UInt, `kemCiphertext`: kotlin.ByteArray, `snapshotId`: kotlin.ByteArray): kotlin.ByteArray
     
     fun `hybridSignaturePublicKey`(): kotlin.ByteArray?
     
@@ -3964,6 +3809,13 @@ public interface OrchestratorCoreInterface {
     fun `rollbackKyberSpkRotation`()
     
     fun `rotateSignedPrekey`(): RotatedSpkBundle
+    
+    /**
+     * This device's social-recovery bundle (device keys, derived device id, `created_at`) sealed
+     * under the 32-byte `vault_key` — the `sr_seal_recovery_bundle` format, packed in the core so
+     * only the ciphertext leaves it.
+     */
+    fun `sealOwnRecoveryBundle`(`vaultKey`: kotlin.ByteArray, `createdAt`: kotlin.Long): kotlin.ByteArray
     
     fun `setLocalUserId`(`userId`: kotlin.String)
     
@@ -4423,23 +4275,6 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
 
     
     /**
-     * Raw identity secret key bytes (32 bytes, X25519).
-     */
-    @Throws(CryptoException::class)override fun `getIdentityKeyBytes`(): kotlin.ByteArray {
-            return FfiConverterByteArray.lift(
-    callWithHandle {
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_get_identity_key_bytes(
-        it,
-        _status)
-}
-    }
-    )
-    }
-    
-
-    
-    /**
      * Typed registration bundle — replaces `export_registration_bundle_json()` parsing.
      */
     @Throws(CryptoException::class)override fun `getRegistrationBundleFields`(): RegistrationBundleFields {
@@ -4487,23 +4322,6 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
 
     
     /**
-     * Raw Ed25519 signing secret key bytes (64 bytes).
-     */
-    @Throws(CryptoException::class)override fun `getSigningKeyBytes`(): kotlin.ByteArray {
-            return FfiConverterByteArray.lift(
-    callWithHandle {
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_get_signing_key_bytes(
-        it,
-        _status)
-}
-    }
-    )
-    }
-    
-
-    
-    /**
      * Typed event handler — accepts a typed `CfeIncomingEvent` and returns typed `CfeAction` list.
      */
     @Throws(CryptoException::class)override fun `handleEvent`(`event`: CfeIncomingEvent): List<CfeAction> {
@@ -4526,6 +4344,26 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_has_session(
         it,
         FfiConverterString.lower(`contactId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The history-file (CTHF) channel key on the receiving side: HKDF-SHA256 over
+     * X25519(identity, sender_eph) ‖ the ML-KEM decapsulation of `kem_ciphertext` under Kyber
+     * prekey `kem_key_id`, salt "construct_history_file_v1", info `snapshot_id`. The channel key,
+     * not the X25519 output: that would open every box sealed to this device.
+     */
+    @Throws(CryptoException::class)override fun `historyFileChannelKey`(`senderEphPub`: kotlin.ByteArray, `kemKeyId`: kotlin.UInt, `kemCiphertext`: kotlin.ByteArray, `snapshotId`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_history_file_channel_key(
+        it,
+        FfiConverterByteArray.lower(`senderEphPub`),FfiConverterUInt.lower(`kemKeyId`),FfiConverterByteArray.lower(`kemCiphertext`),FfiConverterByteArray.lower(`snapshotId`),_status)
 }
     }
     )
@@ -4902,6 +4740,25 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_rotate_signed_prekey(
         it,
         _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * This device's social-recovery bundle (device keys, derived device id, `created_at`) sealed
+     * under the 32-byte `vault_key` — the `sr_seal_recovery_bundle` format, packed in the core so
+     * only the ciphertext leaves it.
+     */
+    @Throws(CryptoException::class)override fun `sealOwnRecoveryBundle`(`vaultKey`: kotlin.ByteArray, `createdAt`: kotlin.Long): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_seal_own_recovery_bundle(
+        it,
+        FfiConverterByteArray.lower(`vaultKey`),FfiConverterLong.lower(`createdAt`),_status)
 }
     }
     )
@@ -6211,37 +6068,6 @@ public object FfiConverterTypeInitiationContext: FfiConverterRustBuffer<Initiati
 
 
 
-data class InviteSignature (
-    var `signature`: kotlin.ByteArray
-    
-){
-    
-
-    
-    companion object
-}
-
-/**
- * @suppress
- */
-public object FfiConverterTypeInviteSignature: FfiConverterRustBuffer<InviteSignature> {
-    override fun read(buf: ByteBuffer): InviteSignature {
-        return InviteSignature(
-            FfiConverterByteArray.read(buf),
-        )
-    }
-
-    override fun allocationSize(value: InviteSignature) = (
-            FfiConverterByteArray.allocationSize(value.`signature`)
-    )
-
-    override fun write(value: InviteSignature, buf: ByteBuffer) {
-            FfiConverterByteArray.write(value.`signature`, buf)
-    }
-}
-
-
-
 /**
  * One ML-KEM-1024 Kyber prekey to upload (PQXDH v2). Both signatures are over
  * `"KonstruktX3DH-v1" || 0x00 0x11 || created_at (u64 BE) || public_key`; upload `created_at`
@@ -7066,55 +6892,6 @@ public object FfiConverterTypeSessionInitResult: FfiConverterRustBuffer<SessionI
             FfiConverterByteArray.write(value.`decryptedMessage`, buf)
             FfiConverterByteArray.write(value.`storageKey`, buf)
             FfiConverterOptionalByteArray.write(value.`kyberPrekeys`, buf)
-    }
-}
-
-
-
-/**
- * Keys and metadata packed into the encrypted recovery bundle.
- */
-data class SrRecoveryBundle (
-    var `deviceSigningKey`: kotlin.ByteArray
-    , 
-    var `deviceIdentityKey`: kotlin.ByteArray
-    , 
-    var `deviceId`: kotlin.String
-    , 
-    var `createdAt`: kotlin.Long
-    
-){
-    
-
-    
-    companion object
-}
-
-/**
- * @suppress
- */
-public object FfiConverterTypeSrRecoveryBundle: FfiConverterRustBuffer<SrRecoveryBundle> {
-    override fun read(buf: ByteBuffer): SrRecoveryBundle {
-        return SrRecoveryBundle(
-            FfiConverterByteArray.read(buf),
-            FfiConverterByteArray.read(buf),
-            FfiConverterString.read(buf),
-            FfiConverterLong.read(buf),
-        )
-    }
-
-    override fun allocationSize(value: SrRecoveryBundle) = (
-            FfiConverterByteArray.allocationSize(value.`deviceSigningKey`) +
-            FfiConverterByteArray.allocationSize(value.`deviceIdentityKey`) +
-            FfiConverterString.allocationSize(value.`deviceId`) +
-            FfiConverterLong.allocationSize(value.`createdAt`)
-    )
-
-    override fun write(value: SrRecoveryBundle, buf: ByteBuffer) {
-            FfiConverterByteArray.write(value.`deviceSigningKey`, buf)
-            FfiConverterByteArray.write(value.`deviceIdentityKey`, buf)
-            FfiConverterString.write(value.`deviceId`, buf)
-            FfiConverterLong.write(value.`createdAt`, buf)
     }
 }
 
@@ -9666,50 +9443,6 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     )
     }
     
-
-    @Throws(CryptoException::class) fun `deriveVerifyingKeyFromSecret`(`identitySecretKey`: kotlin.ByteArray): kotlin.ByteArray {
-            return FfiConverterByteArray.lift(
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_derive_verifying_key_from_secret(
-    
-        FfiConverterByteArray.lower(`identitySecretKey`),_status)
-}
-    )
-    }
-    
-
-        /**
-         * The tag a copy addressed to target_device_id travels under.
-         * base_message_id carries no per-device or per-chunk suffix, so every chunk
-         * of one message shares a tag.
-         */
-    @Throws(CryptoException::class) fun `deviceCopyTag`(`baseMessageId`: kotlin.String, `targetDeviceId`: kotlin.String, `ourIdentityPrivate`: kotlin.ByteArray, `peerIdentityPublic`: kotlin.ByteArray): kotlin.String {
-            return FfiConverterString.lift(
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_device_copy_tag(
-    
-        FfiConverterString.lower(`baseMessageId`),FfiConverterString.lower(`targetDeviceId`),FfiConverterByteArray.lower(`ourIdentityPrivate`),FfiConverterByteArray.lower(`peerIdentityPublic`),_status)
-}
-    )
-    }
-    
-
-        /**
-         * Whether tag was written for our_device_id by the device behind
-         * peer_identity_public. False for any unusable input: callers ask "is this
-         * copy foreign?", and an undecidable answer there must be "not foreign" —
-         * wrongly opening a copy costs failed decrypts, wrongly discarding one
-         * loses a message from the transcript, silently.
-         */ fun `deviceCopyTagMatches`(`tag`: kotlin.String, `baseMessageId`: kotlin.String, `ourDeviceId`: kotlin.String, `ourIdentityPrivate`: kotlin.ByteArray, `peerIdentityPublic`: kotlin.ByteArray): kotlin.Boolean {
-            return FfiConverterBoolean.lift(
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_device_copy_tag_matches(
-    
-        FfiConverterString.lower(`tag`),FfiConverterString.lower(`baseMessageId`),FfiConverterString.lower(`ourDeviceId`),FfiConverterByteArray.lower(`ourIdentityPrivate`),FfiConverterByteArray.lower(`peerIdentityPublic`),_status)
-}
-    )
-    }
-    
  fun `formatFederatedId`(`deviceId`: kotlin.String, `serverHostname`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCall() { _status ->
@@ -9844,36 +9577,6 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     )
     }
     
-
-        /**
-         * The X25519 identity secret of a key record.
-         */
-    @Throws(CryptoException::class) fun `identityKeyFromKeys`(`keys`: kotlin.ByteArray): kotlin.ByteArray {
-            return FfiConverterByteArray.lift(
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_identity_key_from_keys(
-    
-        FfiConverterByteArray.lower(`keys`),_status)
-}
-    )
-    }
-    
-
-        /**
-         * Restore an MlsStore from a CFE blob previously produced by
-         * `export_cfe()`. The device Ed25519 signer keys are passed separately —
-         * they are never part of the blob.
-         */
-    @Throws(MlsException::class) fun `importMlsStoreCfe`(`data`: kotlin.ByteArray, `signerPrivateKey`: kotlin.ByteArray, `signerPublicKey`: kotlin.ByteArray): MlsStore {
-            return FfiConverterTypeMlsStore.lift(
-    uniffiRustCallWithError(MlsException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_import_mls_store_cfe(
-    
-        FfiConverterByteArray.lower(`data`),FfiConverterByteArray.lower(`signerPrivateKey`),FfiConverterByteArray.lower(`signerPublicKey`),_status)
-}
-    )
-    }
-    
  fun `intakeEpoch`(`unixSeconds`: kotlin.ULong): kotlin.ULong {
             return FfiConverterULong.lift(
     uniffiRustCall() { _status ->
@@ -9978,22 +9681,6 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     UniffiLib.uniffi_construct_core_fn_func_mnemonic_to_seed(
     
         FfiConverterString.lower(`mnemonic`),_status)
-}
-    )
-    }
-    
-
-        /**
-         * Open one of those copies with this device's X25519 identity private key.
-         * A copy sealed to a sibling fails the AEAD tag, so a caller finds its own by trying
-         * each — the intended use, because the stored blob carries no recipient labels.
-         */
-    @Throws(CryptoException::class) fun `openWithDeviceKey`(`sealedBox`: kotlin.ByteArray, `ourIdentityPriv`: kotlin.ByteArray): kotlin.ByteArray {
-            return FfiConverterByteArray.lift(
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_open_with_device_key(
-    
-        FfiConverterByteArray.lower(`sealedBox`),FfiConverterByteArray.lower(`ourIdentityPriv`),_status)
 }
     )
     }
@@ -10188,12 +9875,12 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
          * revoked device stops being sealed to on the next re-seal instead of keeping the
          * ability to read until a key is rotated.
          */
-    @Throws(CryptoException::class) fun `sealToDeviceKey`(`plaintext`: kotlin.ByteArray, `deviceIdentityKey`: kotlin.ByteArray): kotlin.ByteArray {
+    @Throws(CryptoException::class) fun `sealToDeviceKey`(`plaintext`: kotlin.ByteArray, `deviceIdentityPublic`: kotlin.ByteArray): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_seal_to_device_key(
     
-        FfiConverterByteArray.lower(`plaintext`),FfiConverterByteArray.lower(`deviceIdentityKey`),_status)
+        FfiConverterByteArray.lower(`plaintext`),FfiConverterByteArray.lower(`deviceIdentityPublic`),_status)
 }
     )
     }
@@ -10211,22 +9898,6 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     UniffiLib.uniffi_construct_core_fn_func_sealed_seal_sender_cert(
     
         FfiConverterByteArray.lower(`certBytes`),FfiConverterByteArray.lower(`recipientIdentityKey`),_status)
-}
-    )
-    }
-    
-
-        /**
-         * Open a sealed sender box with our X25519 identity private key
-         * (32 bytes). Returns the serialized SenderCertificate bytes — the caller
-         * parses the proto and then calls sealed_verify_sender_cert.
-         */
-    @Throws(CryptoException::class) fun `sealedUnsealSenderCert`(`sealedBox`: kotlin.ByteArray, `ourIdentityPriv`: kotlin.ByteArray): kotlin.ByteArray {
-            return FfiConverterByteArray.lift(
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_sealed_unseal_sender_cert(
-    
-        FfiConverterByteArray.lower(`sealedBox`),FfiConverterByteArray.lower(`ourIdentityPriv`),_status)
 }
     )
     }
@@ -10263,37 +9934,12 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     }
     
 
-    @Throws(CryptoException::class) fun `signInviteData`(`data`: kotlin.String, `identitySecretKey`: kotlin.ByteArray): InviteSignature {
-            return FfiConverterTypeInviteSignature.lift(
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_sign_invite_data(
-    
-        FfiConverterString.lower(`data`),FfiConverterByteArray.lower(`identitySecretKey`),_status)
-}
-    )
-    }
-    
-
     @Throws(CryptoException::class) fun `signRecoveryChallenge`(`privateKey`: kotlin.ByteArray, `message`: kotlin.String): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_sign_recovery_challenge(
     
         FfiConverterByteArray.lower(`privateKey`),FfiConverterString.lower(`message`),_status)
-}
-    )
-    }
-    
-
-        /**
-         * The Ed25519 signing secret of a key record.
-         */
-    @Throws(CryptoException::class) fun `signingKeyFromKeys`(`keys`: kotlin.ByteArray): kotlin.ByteArray {
-            return FfiConverterByteArray.lift(
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_signing_key_from_keys(
-    
-        FfiConverterByteArray.lower(`keys`),_status)
 }
     )
     }
@@ -10330,20 +9976,6 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     
 
         /**
-         * Decrypt bytes to RecoveryBundle using vault_key.
-         */
-    @Throws(CryptoException::class) fun `srOpenRecoveryBundle`(`vaultKey`: kotlin.ByteArray, `ciphertext`: kotlin.ByteArray): SrRecoveryBundle {
-            return FfiConverterTypeSrRecoveryBundle.lift(
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_sr_open_recovery_bundle(
-    
-        FfiConverterByteArray.lower(`vaultKey`),FfiConverterByteArray.lower(`ciphertext`),_status)
-}
-    )
-    }
-    
-
-        /**
          * Reconstruct vault_key from at least threshold share mnemonics.
          */
     @Throws(CryptoException::class) fun `srReconstructVaultKey`(`mnemonics`: List<kotlin.String>): kotlin.ByteArray {
@@ -10352,20 +9984,6 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     UniffiLib.uniffi_construct_core_fn_func_sr_reconstruct_vault_key(
     
         FfiConverterSequenceString.lower(`mnemonics`),_status)
-}
-    )
-    }
-    
-
-        /**
-         * Encrypt a RecoveryBundle to bytes using vault_key.
-         */
-    @Throws(CryptoException::class) fun `srSealRecoveryBundle`(`vaultKey`: kotlin.ByteArray, `bundle`: SrRecoveryBundle): kotlin.ByteArray {
-            return FfiConverterByteArray.lift(
-    uniffiRustCallWithError(CryptoException) { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_sr_seal_recovery_bundle(
-    
-        FfiConverterByteArray.lower(`vaultKey`),FfiConverterTypeSrRecoveryBundle.lower(`bundle`),_status)
 }
     )
     }
