@@ -3,8 +3,9 @@ package com.construct.messenger.ui.screens.settings
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
-import android.text.format.Formatter
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,25 +23,24 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.QrCode
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -65,27 +65,41 @@ import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.ctBold
 import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.SettingsViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.construct.messenger.recovery.RecoveryStage
+import com.construct.messenger.recovery.RecoveryViewModel
 
 /** Callbacks for the rows that open another app screen. */
 data class SettingsNavigation(
     val onAccount: () -> Unit = {},
     val onInvite: () -> Unit = {},
     val onSecurity: () -> Unit = {},
+    val onNetwork: () -> Unit = {},
     val onOrientation: () -> Unit = {},
+    val onDiagnostics: () -> Unit = {},
+    val onRecoverySetup: () -> Unit = {},
 )
 
 @Composable
 fun SettingsRoute(
     navigation: SettingsNavigation,
     viewModel: SettingsViewModel = hiltViewModel(),
+    recoveryViewModel: RecoveryViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
-    // Each time the tab is shown: an alias changed on the Account screen appears on return.
-    LaunchedEffect(Unit) { viewModel.refresh() }
-    SettingsScreen(account = ui.account, connection = ui.connection, navigation = navigation)
+    val recovery by recoveryViewModel.uiState.collectAsStateWithLifecycle()
+    // Each time the tab is shown: an alias changed on the Account screen appears on return, and a
+    // phrase set up behind the banner takes it away.
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+        recoveryViewModel.refresh()
+    }
+    SettingsScreen(
+        account = ui.account,
+        connection = ui.connection,
+        navigation = navigation,
+        // Loading says nothing yet; only a known "not set up" shows the banner.
+        recoveryMissing = recovery.stage == RecoveryStage.Explain || recovery.stage == RecoveryStage.Confirm,
+    )
 }
 
 /**
@@ -94,16 +108,19 @@ fun SettingsRoute(
  * **Canon:** iOS `SettingsView` (compact layout) — cards separated by space, no section headers,
  * uppercase row labels. Rows appear only for what Android actually has: a row that opens
  * nothing reads as broken. Missing against iOS: linked devices, appearance, data & storage,
- * transcription, drafts, recovery (and its banner). Diagnostics here is the log half of iOS
- * `DiagnosticsView` only, and like it exists in debug builds only.
+ * transcription, drafts — Android has none of them yet, and a row that opens nothing reads as
+ * broken. Diagnostics is the log half of iOS `DiagnosticsView`, in debug builds only.
  */
 @Composable
 fun SettingsScreen(
     account: OwnAccount?,
     connection: ConnectionStatus,
     navigation: SettingsNavigation,
+    recoveryMissing: Boolean = false,
 ) {
     val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE) }
+    var bannerDismissed by remember { mutableStateOf(prefs.getBoolean(KEY_RECOVERY_BANNER_DISMISSED, false)) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -125,6 +142,16 @@ fun SettingsScreen(
         ) {
             CTSectionGroup {
                 ProfileRow(account = account, onClick = navigation.onAccount)
+            }
+
+            if (recoveryMissing && !bannerDismissed) {
+                RecoveryBanner(
+                    onSetUp = navigation.onRecoverySetup,
+                    onDismiss = {
+                        bannerDismissed = true
+                        prefs.edit().putBoolean(KEY_RECOVERY_BANNER_DISMISSED, true).apply()
+                    },
+                )
             }
 
             CTSectionGroup {
@@ -153,15 +180,14 @@ fun SettingsScreen(
                     modifier = Modifier.clickable { context.openNotificationSettings() },
                 )
                 CTSep()
-                // Status only: iOS's Network screen is VEIL, which Android does not have yet.
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_network).uppercase(),
                     icon = Icons.Default.Public,
                     status = connection.toStatus(),
+                    disclosure = true,
+                    modifier = Modifier.clickable(onClick = navigation.onNetwork),
                 )
             }
-
-            if (Diagnostics.isEnabled) DiagnosticsSection()
 
             CTSectionGroup {
                 CTSettingsRow(
@@ -177,6 +203,21 @@ fun SettingsScreen(
                     valueColor = CTColor.textDim,
                     icon = Icons.Default.Info,
                 )
+            }
+
+            // iOS shows this in DEBUG and internal builds; Android writes logs in debug only.
+            if (Diagnostics.isEnabled) {
+                Column {
+                    CTSettingsSectionHeader(title = stringResource(R.string.settings_section_developer), color = DEBUG_ORANGE)
+                    CTSectionGroup {
+                        CTSettingsRow(
+                            label = stringResource(R.string.diagnostics_logs).uppercase(),
+                            labelColor = DEBUG_ORANGE,
+                            disclosure = true,
+                            modifier = Modifier.clickable(onClick = navigation.onDiagnostics),
+                        )
+                    }
+                }
             }
         }
     }
@@ -231,7 +272,7 @@ private fun ProfileRow(account: OwnAccount?, onClick: () -> Unit) {
     }
 }
 
-private fun ConnectionStatus.toStatus(): CTStatus = when (this) {
+internal fun ConnectionStatus.toStatus(): CTStatus = when (this) {
     ConnectionStatus.CONNECTED -> CTStatus.OK
     ConnectionStatus.CONNECTING -> CTStatus.BUSY
     ConnectionStatus.DISCONNECTED -> CTStatus.ERROR
@@ -246,51 +287,63 @@ private fun Context.openNotificationSettings() {
     )
 }
 
-/** Share and clear the log files. Sizes are read off the main thread: they are file stats. */
+/** iOS `SettingsView.recoveryBanner`: the phrase is missing, set it up or put this away. */
 @Composable
-private fun DiagnosticsSection() {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var bytes by remember { mutableLongStateOf(-1L) }
-    suspend fun refresh() {
-        bytes = withContext(Dispatchers.IO) { Diagnostics.collector?.totalBytes() ?: 0L }
-    }
-    LaunchedEffect(Unit) { refresh() }
-
-    Column {
-        CTSettingsSectionHeader(title = stringResource(R.string.diagnostics_title), color = DEBUG_ORANGE)
-        CTSectionGroup {
-            CTSettingsRow(
-                label = stringResource(R.string.diagnostics_share_logs).uppercase(),
-                value = if (bytes >= 0) Formatter.formatShortFileSize(context, bytes) else "",
-                valueColor = CTColor.textDim,
-                icon = Icons.Default.Share,
-                modifier = Modifier.clickable {
-                    scope.launch {
-                        // The archive is built from files: not on the main thread.
-                        withContext(Dispatchers.IO) { Diagnostics.collector?.flush() }
-                        Diagnostics.share(context)
-                    }
-                },
+private fun RecoveryBanner(onSetUp: () -> Unit, onDismiss: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .padding(horizontal = CTLayout.edgePad)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(CTColor.danger.copy(alpha = 0.06f))
+            .border(1.dp, CTColor.danger.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+            .padding(CTLayout.edgePad),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Error,
+            contentDescription = null,
+            tint = CTColor.danger,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = stringResource(R.string.recovery_banner_title).uppercase(),
+                style = ctBold(11),
+                color = CTColor.danger,
             )
-            CTSep()
-            CTSettingsRow(
-                label = stringResource(R.string.diagnostics_clear_logs).uppercase(),
-                icon = Icons.Default.Delete,
-                isDestructive = true,
-                modifier = Modifier.clickable {
-                    scope.launch {
-                        withContext(Dispatchers.IO) { Diagnostics.collector?.clear() }
-                        refresh()
-                    }
-                },
+            Text(
+                text = stringResource(R.string.recovery_banner_subtitle),
+                style = ctRegular(12),
+                color = CTColor.textDim,
             )
+            Row(
+                modifier = Modifier.clickable(onClick = onSetUp).padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(text = stringResource(R.string.recovery_banner_action), style = ctBold(11), color = CTColor.accent)
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = CTColor.accent,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
         }
+        Icon(
+            imageVector = Icons.Default.Close,
+            contentDescription = stringResource(R.string.close),
+            tint = CTColor.textDim,
+            modifier = Modifier
+                .size(18.dp)
+                .clickable(onClick = onDismiss),
+        )
     }
 }
 
-/** iOS marks debug-only surfaces `.orange`. */
-private val DEBUG_ORANGE = Color(0xFFFF9500)
+private const val SETTINGS_PREFS = "settings_prefs"
+private const val KEY_RECOVERY_BANNER_DISMISSED = "recovery_banner_dismissed"
 
 /** iOS `SettingsRootLayout.listSpacing`. */
 private val LIST_SPACING = 30.dp

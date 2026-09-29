@@ -71,7 +71,7 @@ class GrpcClient @Inject constructor(
         sealedChannel.shutdown()
     }
 
-    private companion object {
+    companion object {
         // Production gRPC backend (direct TLS — OkHttpChannelBuilder defaults to TLS,
         // no usePlaintext() call). Matches docs/IMPLEMENTATION_PLAN.md §5.1. VEIL-routed
         // fallback for censored networks is not wired up yet (Phase 5.1) — both channels

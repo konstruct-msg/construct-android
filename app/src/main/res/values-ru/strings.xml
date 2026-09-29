@@ -249,4 +249,18 @@
     <string name="diagnostics_title">Диагностика</string>
     <string name="diagnostics_share_logs">Отправить логи</string>
     <string name="diagnostics_clear_logs">Очистить логи</string>
+    <!-- Settings parity with iOS SettingsView -->
+    <string name="settings_section_developer">Разработчик</string>
+    <string name="diagnostics_logs">Диагностика и логи</string>
+    <string name="diagnostics_recent_logs">Последние записи</string>
+    <string name="recovery_banner_title">Резервный ключ не настроен</string>
+    <string name="recovery_banner_subtitle">Настройте фразу восстановления, чтобы не потерять доступ.</string>
+    <string name="recovery_banner_action">НАСТРОИТЬ</string>
+    <string name="network_status">Статус</string>
+    <string name="network_server">Сервер</string>
+    <string name="network_transport">Транспорт</string>
+    <string name="network_connected">подключено</string>
+    <string name="network_connecting">подключение…</string>
+    <string name="network_offline">нет связи</string>
+    <string name="network_unknown">неизвестно</string>
 </resources>

@@ -252,4 +252,18 @@
     <string name="diagnostics_title">Diagnostics</string>
     <string name="diagnostics_share_logs">Share logs</string>
     <string name="diagnostics_clear_logs">Clear logs</string>
+    <!-- Settings parity with iOS SettingsView -->
+    <string name="settings_section_developer">Developer</string>
+    <string name="diagnostics_logs">Diagnostics &amp; Logs</string>
+    <string name="diagnostics_recent_logs">Recent logs</string>
+    <string name="recovery_banner_title">Recovery not configured</string>
+    <string name="recovery_banner_subtitle">Set up your recovery phrase to avoid losing access.</string>
+    <string name="recovery_banner_action">CONFIGURE</string>
+    <string name="network_status">Status</string>
+    <string name="network_server">Server</string>
+    <string name="network_transport">Transport</string>
+    <string name="network_connected">connected</string>
+    <string name="network_connecting">connecting…</string>
+    <string name="network_offline">offline</string>
+    <string name="network_unknown">unknown</string>
 </resources>

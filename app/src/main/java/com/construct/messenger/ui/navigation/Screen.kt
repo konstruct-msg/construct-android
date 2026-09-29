@@ -31,6 +31,12 @@ sealed class Screen(val route: String) {
     /** Settings → profile row: alias, fingerprint, account id, sign out. */
     data object Account : Screen("settings/account")
     data object Security : Screen("settings/security")
+    /** Stream status, server, transport (iOS `NetworkSettingsView`, without VEIL). */
+    data object Network : Screen("settings/network")
+    /** Logs: share, clear, the last lines. Debug builds only (iOS `DiagnosticsView`). */
+    data object Diagnostics : Screen("settings/diagnostics")
+    /** The recovery phrase, from the Settings banner; returns when the device knows the address. */
+    data object RecoverySetup : Screen("settings/recovery")
     /** My invite: self-refreshing QR + copy link (iOS ContactQRCodeView). */
     data object InviteQr : Screen("invite_qr")
     /** Camera scanner; a scanned invite is redeemed on the Synaps tab. */

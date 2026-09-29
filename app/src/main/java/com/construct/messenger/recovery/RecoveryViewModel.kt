@@ -54,6 +54,16 @@ class RecoveryViewModel @Inject constructor(
         if (state.value.stage == RecoveryStage.Loading) loadStatus()
     }
 
+    /**
+     * On return to a screen that shows the status: the phrase may have been set up elsewhere in
+     * the meantime. Never asks the server once this device knows the address — [loadStatus] would
+     * turn Ready back into Confirm.
+     */
+    fun refresh() {
+        if (repository.hasOwnAddress()) state.update { it.copy(stage = RecoveryStage.Ready) }
+        else if (state.value.stage != RecoveryStage.Loading) loadStatus()
+    }
+
     fun loadStatus() {
         viewModelScope.launch {
             val stage = try {
