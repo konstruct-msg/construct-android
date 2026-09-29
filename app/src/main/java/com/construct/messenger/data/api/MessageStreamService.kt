@@ -1,5 +1,9 @@
 package com.construct.messenger.data.api
 
+import io.grpc.Status
+import com.construct.messenger.transport.TransportRoute
+import com.construct.messenger.transport.TransportEvents
+import com.construct.messenger.transport.RouteObservingInterceptor
 import com.construct.messenger.veil.VeilProxy
 import com.construct.messenger.data.auth.AuthSessionManager
 import android.os.SystemClock
@@ -21,7 +25,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.onSubscription
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import shared.proto.core.v1.EnvelopeOuterClass.Envelope
@@ -60,6 +63,7 @@ class MessageStreamService @Inject constructor(
     private val cursorTracker: StreamCursorTracker,
     private val authSession: AuthSessionManager,
     private val veil: VeilProxy,
+    private val transportEvents: TransportEvents,
 ) {
     sealed interface StreamEvent {
         data class Message(val envelope: Envelope) : StreamEvent
@@ -112,19 +116,62 @@ class MessageStreamService @Inject constructor(
                 // A stream opened on an expired token is accepted and then hears nothing; the
                 // stale check only notices after a minute of silence.
                 authSession.ensureFresh()
-                // A silent stream through VEIL may be a dead tunnel, not a dead network.
-                veil.restartIfDead()
-                runStreamOnce(attempt)
-                attempt = 0 // clean close → reset backoff
             } catch (e: Exception) {
+                Log.w(TAG, "token refresh before the stream failed", e)
+            }
+            val generation = grpcClient.generation
+            val via = grpcClient.target
+            framesThisConnection = 0
+            var failure: Throwable? = null
+            try {
+                runStreamOnce(attempt)
+            } catch (e: Exception) {
+                failure = e
                 _isConnected.value = false
                 _events.tryEmit(StreamEvent.Disconnected(e))
                 Log.w(TAG, "stream error (attempt ${attempt + 1})", e)
             }
+            reportToRouter(failure, generation, via)
+            // A connection that carried frames was a working one: the next retry is not the
+            // (attempt + 1)-th in a row.
+            if (framesThisConnection > 0) attempt = 0
             attempt += 1
             val backoffMs = min(INITIAL_BACKOFF_MS shl min(attempt, 6), MAX_BACKOFF_MS)
             delay(backoffMs)
         }
+    }
+
+    /** Frames received on the current connection; 0 means it never reached the data plane. */
+    @Volatile
+    private var framesThisConnection = 0
+
+    /**
+     * Tell the route machine how this connection ended. Canon: iOS `MessageStreamManager` posting
+     * `streamFailed` — a stream that reached the data plane and then died is a different claim
+     * from one that never opened, and on a censored network it is the one that happens.
+     */
+    private fun reportToRouter(failure: Throwable?, generation: Long, via: TransportRoute.Target) {
+        // Cut by our own route switch or a fresh client — not about the network.
+        if (grpcClient.generation != generation) return
+        val midSession = framesThisConnection > 0
+        val kind = when {
+            failure == null -> if (midSession) TransportRoute.StreamFailure.MID_SESSION_CLOSED else TransportRoute.StreamFailure.CLOSED
+            failure is StaleStreamException ->
+                if (midSession) TransportRoute.StreamFailure.MID_SESSION_TIMEOUT else TransportRoute.StreamFailure.OPEN_TIMEOUT
+            else -> {
+                // An answer from the server (auth, application) says the path works.
+                val status = Status.fromThrowable(failure)
+                if (!RouteObservingInterceptor.classify(status, via).isTransport) return
+                if (midSession) TransportRoute.StreamFailure.MID_SESSION_UNKNOWN else TransportRoute.StreamFailure.TRANSPORT_UNKNOWN
+            }
+        }
+        if (via is TransportRoute.Target.Veil && !veil.isAlive()) {
+            // The local proxy is gone: that is a hard relay failure, and it rotates.
+            transportEvents.post(TransportRoute.Event.RpcFailed(TransportRoute.RpcFailure.STALE_LOCAL_PROXY, via, foreground = true))
+            return
+        }
+        val method = if (via is TransportRoute.Target.Veil) TransportRoute.StreamMethod.VEIL else TransportRoute.StreamMethod.H2
+        transportEvents.post(TransportRoute.Event.StreamFailed(method, kind, via))
     }
 
     private suspend fun runStreamOnce(attempt: Int) {
@@ -184,14 +231,20 @@ class MessageStreamService @Inject constructor(
         attempt: Int,
         onInbound: () -> Unit,
     ) {
+        val via = grpcClient.target
         grpcClient.messaging
-            .messageStream(outbound.onSubscription {
-                _isConnected.value = true
-                _events.tryEmit(StreamEvent.Connected(attempt))
-                Log.i(TAG, "stream connected (attempt $attempt)")
-            })
+            .messageStream(outbound)
             .collect { response ->
                 onInbound()
+                // Connected means the server answered, not that the call was placed: the stream
+                // that opened and heard nothing on 2026-09-29 was logged "connected" for a minute.
+                if (framesThisConnection++ == 0) {
+                    _isConnected.value = true
+                    _events.tryEmit(StreamEvent.Connected(attempt))
+                    Log.i(TAG, "stream connected (attempt $attempt)")
+                    val method = if (via is TransportRoute.Target.Veil) TransportRoute.StreamMethod.VEIL else TransportRoute.StreamMethod.H2
+                    transportEvents.post(TransportRoute.Event.StreamOpened(method, via))
+                }
                 // Never committed here: the cursor tells the server what it may delete, so it
                 // moves only when the message reaches a durable end (StreamCursorTracker).
                 val cursor = response.streamCursor.takeIf { response.hasStreamCursor() && it.isNotEmpty() }

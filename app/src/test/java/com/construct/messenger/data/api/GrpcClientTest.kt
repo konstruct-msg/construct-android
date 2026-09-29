@@ -24,7 +24,7 @@ class GrpcClientTest {
         whenever(keystoreManager.getDeviceId()).thenReturn(null)
 
         val authInterceptor = AuthInterceptor(keystoreManager)
-        grpcClient = GrpcClient(authInterceptor)
+        grpcClient = GrpcClient(authInterceptor, com.construct.messenger.transport.TransportEvents())
     }
 
     @Test

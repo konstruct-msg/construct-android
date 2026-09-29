@@ -271,4 +271,11 @@
     <string name="veil_front">Фронт</string>
     <string name="veil_latency">Задержка</string>
     <string name="veil_last_error">Последняя ошибка</string>
+    <string name="censorship_protection_footer_auto">Включается автоматически при обнаружении блокировки. Настройка идёт в фоне.</string>
+    <string name="veil_mode_off">Выкл</string>
+    <string name="veil_mode_auto">Авто</string>
+    <string name="veil_mode_on">Вкл</string>
+    <string name="veil_path">Путь</string>
+    <string name="veil_path_direct">напрямую</string>
+    <string name="veil_path_veil">VEIL</string>
 </resources>

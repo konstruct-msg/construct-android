@@ -1,23 +1,20 @@
 package com.construct.messenger.ui.screens.settings
 
+import com.construct.messenger.transport.TransportRoute
+import androidx.compose.ui.semantics.Role
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.RadioButton
+import androidx.compose.foundation.selection.selectable
 import com.construct.messenger.viewmodel.NetworkViewModel
-import com.construct.messenger.veil.VeilState
 import com.construct.messenger.veil.VeilMode
 import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.components.CTStatus
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.Text
-import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Icon
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material.icons.filled.VpnLock
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -62,7 +59,10 @@ fun NetworkScreen(
     networkViewModel: NetworkViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
-    val veil by networkViewModel.veilState.collectAsStateWithLifecycle()
+    val net by networkViewModel.uiState.collectAsStateWithLifecycle()
+    val route = net.route
+    val onVeil = route is TransportRoute.State.VeilActive
+    val probing = route == TransportRoute.State.VeilProbing
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -107,17 +107,28 @@ fun NetworkScreen(
 
             CTSettingsSectionHeader(title = stringResource(R.string.censorship_protection))
             CTSectionGroup {
-                VeilSwitchRow(state = veil, onChange = networkViewModel::setVeil)
-                if (veil.running) {
+                VeilMode.entries.forEachIndexed { index, mode ->
+                    if (index > 0) CTSep()
+                    ModeRow(mode = mode, selected = net.mode == mode, onSelect = { networkViewModel.setMode(mode) })
+                }
+            }
+            CTSectionGroup(modifier = Modifier.padding(top = 12.dp)) {
+                CTSettingsRow(
+                    label = stringResource(R.string.veil_path).uppercase(),
+                    value = stringResource(if (onVeil) R.string.veil_path_veil else R.string.veil_path_direct),
+                    valueColor = if (onVeil) CTColor.accent else CTColor.textDim,
+                    icon = Icons.Default.VpnLock,
+                    status = if (onVeil) CTStatus.OK else null,
+                )
+                if (onVeil) {
                     CTSep()
                     CTSettingsRow(
                         label = stringResource(R.string.veil_front).uppercase(),
-                        value = veil.relay.orEmpty(),
+                        value = (route as TransportRoute.State.VeilActive).relay,
                         valueColor = CTColor.textDim,
                         icon = Icons.Default.Shield,
-                        status = CTStatus.OK,
                     )
-                    veil.latencyMs?.let { ms ->
+                    net.info.latencyMs?.let { ms ->
                         CTSep()
                         CTSettingsRow(
                             label = stringResource(R.string.veil_latency).uppercase(),
@@ -128,16 +139,18 @@ fun NetworkScreen(
                     }
                 }
             }
+            val failed = !onVeil && !probing && net.mode != VeilMode.OFF && net.info.lastError != null &&
+                (net.mode == VeilMode.ON || route is TransportRoute.State.VeilCooldown)
             Text(
                 text = when {
-                    veil.starting -> stringResource(R.string.veil_establishing)
-                    veil.mode == VeilMode.ON && !veil.running && veil.lastError != null ->
-                        stringResource(R.string.veil_last_error) + ": " + veil.lastError
-                    veil.mode == VeilMode.ON -> stringResource(R.string.censorship_protection_footer_on)
+                    probing -> stringResource(R.string.veil_establishing)
+                    failed -> stringResource(R.string.veil_last_error) + ": " + net.info.lastError
+                    net.mode == VeilMode.ON -> stringResource(R.string.censorship_protection_footer_on)
+                    net.mode == VeilMode.AUTO -> stringResource(R.string.censorship_protection_footer_auto)
                     else -> stringResource(R.string.censorship_protection_footer_off)
                 },
                 style = ctRegular(11),
-                color = if (veil.mode == VeilMode.ON && !veil.running && !veil.starting && veil.lastError != null) CTColor.danger else CTColor.textDim,
+                color = if (failed) CTColor.danger else CTColor.textDim,
                 modifier = Modifier.padding(horizontal = CTLayout.edgePad * 2, vertical = 8.dp),
             )
         }
@@ -145,45 +158,31 @@ fun NetworkScreen(
 }
 
 @Composable
-private fun VeilSwitchRow(state: VeilState, onChange: (Boolean) -> Unit) {
+private fun ModeRow(mode: VeilMode, selected: Boolean, onSelect: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+            .selectable(selected = selected, onClick = onSelect, role = Role.RadioButton)
+            .padding(horizontal = 12.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            imageVector = Icons.Default.VpnLock,
-            contentDescription = null,
-            tint = if (state.mode == VeilMode.ON) CTColor.accent else CTColor.textDim,
-            modifier = Modifier.size(15.dp),
-        )
-        Spacer(Modifier.width(13.dp))
         Text(
-            text = stringResource(R.string.censorship_protection),
+            text = stringResource(
+                when (mode) {
+                    VeilMode.OFF -> R.string.veil_mode_off
+                    VeilMode.AUTO -> R.string.veil_mode_auto
+                    VeilMode.ON -> R.string.veil_mode_on
+                },
+            ),
             style = ctRegular(13),
             color = CTColor.text,
             modifier = Modifier.weight(1f),
         )
-        if (state.starting) {
-            CircularProgressIndicator(
-                color = CTColor.accent,
-                strokeWidth = 2.dp,
-                modifier = Modifier.padding(12.dp).size(20.dp),
-            )
-        } else {
-            Switch(
-                checked = state.mode == VeilMode.ON,
-                onCheckedChange = onChange,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = CTColor.bg,
-                    checkedTrackColor = CTColor.accent,
-                    uncheckedThumbColor = CTColor.textDim,
-                    uncheckedTrackColor = CTColor.outMsgBg,
-                    uncheckedBorderColor = CTColor.noise,
-                ),
-            )
-        }
+        RadioButton(
+            selected = selected,
+            onClick = null,
+            colors = RadioButtonDefaults.colors(selectedColor = CTColor.accent, unselectedColor = CTColor.textDim),
+        )
     }
 }
 

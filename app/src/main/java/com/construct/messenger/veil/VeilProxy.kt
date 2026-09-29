@@ -1,7 +1,6 @@
 package com.construct.messenger.veil
 
 import android.content.Context
-import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.auth.AuthSessionManager
 import com.construct.messenger.diagnostics.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -13,116 +12,84 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-/** Off: always the direct path. On: always through a front. (iOS also has Auto; not yet here.) */
-enum class VeilMode { OFF, ON }
+/**
+ * Off: always direct. Auto: direct first, VEIL once the direct path actually fails. On: always
+ * VEIL. Canon: iOS `VeilMode`, and its platform default (Auto).
+ */
+enum class VeilMode { OFF, AUTO, ON }
 
-data class VeilState(
-    val mode: VeilMode = VeilMode.OFF,
-    val running: Boolean = false,
+/** What the last start did, for the Network screen. Which path is in use is the router's state. */
+data class VeilStartInfo(
     val relay: String? = null,
     val method: VeilMethod? = null,
     val latencyMs: Int? = null,
     /** Why the last start failed, as construct-veil named it; null once one succeeds. */
     val lastError: String? = null,
-    val starting: Boolean = false,
 )
 
 /**
- * The censorship-resistant path: a local port construct-veil listens on, tunnelled to a front
- * that forwards to the server, and both gRPC channels pointed at it. **Canon:** iOS
- * `VeilProxyManager` + `NativeVeilRuntime` — the manual half. Auto mode (switch when the direct
- * path is being cut) is a routing decision and stays out of Kotlin until it lives in the core
- * (`docs/IMPLEMENTATION_PLAN.md` §5).
- *
- * Why it exists: on a censored network the stream opens, delivers the first frames, then hears
- * nothing — seen on a device 2026-09-29, fixed by a VPN, i.e. by a different path.
+ * The VEIL proxy as an effector: bring a tunnel up, tear it down, say whether it lives. It decides
+ * nothing — when to start and stop is `TransportRouter`'s, from the mode and what the wire shows.
+ * **Canon:** iOS `VeilProxyManager` (mode, relay state) + `NativeVeilRuntime` (the FFI).
  */
 @Singleton
 class VeilProxy @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val grpcClient: GrpcClient,
     private val capabilities: VeilCapabilities,
     private val authSession: AuthSessionManager,
 ) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-    private val state = MutableStateFlow(VeilState(mode = loadMode()))
-    val uiState: StateFlow<VeilState> = state.asStateFlow()
-    private val mutex = Mutex()
+    private val mode = MutableStateFlow(loadMode())
+    val modeState: StateFlow<VeilMode> = mode.asStateFlow()
+    private val info = MutableStateFlow(VeilStartInfo())
+    val startInfo: StateFlow<VeilStartInfo> = info.asStateFlow()
 
-    suspend fun setMode(mode: VeilMode) {
-        prefs.edit().putString(KEY_MODE, mode.name).apply()
-        state.update { it.copy(mode = mode) }
-        apply()
+    fun saveMode(value: VeilMode) {
+        prefs.edit().putString(KEY_MODE, value.name).apply()
+        mode.value = value
+    }
+
+    sealed interface StartResult {
+        data class Up(val relay: String, val port: Int) : StartResult
+        data class Failed(val relay: String?, val reason: String) : StartResult
     }
 
     /**
-     * Bring the path in line with the mode. Idempotent: a live tunnel is kept. Every failure
-     * leaves the direct path in place and says why in [VeilState.lastError].
+     * Capability, then `veil_start` (which runs the probe race and blocks for it). Does not route
+     * anything: the router points gRPC at the port when it adopts the result.
      */
-    suspend fun apply() = mutex.withLock {
-        if (state.value.mode == VeilMode.OFF) {
-            stopLocked()
-            return@withLock
-        }
-        if (grpcClient.veilPort != null && isAlive()) return@withLock
-
-        state.update { it.copy(starting = true) }
-        try {
-            // The capability is issued over the direct path while it still carries unary calls;
-            // an expired token would be refused.
-            authSession.ensureFresh()
-            val relay = VeilSeeds.relays.first()
-            val capability = capabilities.ensure(relay)
-            if (capability == null) {
-                fail(relay, "no capability for ${relay.address}")
-                return@withLock
-            }
-            val outcome = withContext(Dispatchers.IO) { start(relay, capability) }
-            if (outcome.port <= 0) {
-                fail(relay, outcome.error ?: "veil_start failed")
-                return@withLock
-            }
-            grpcClient.routeThrough(outcome.port)
-            state.update {
-                it.copy(running = true, relay = relay.address, method = outcome.method, latencyMs = outcome.latencyMs, lastError = null)
-            }
-            Log.i(TAG, "VEIL up: ${relay.address} via ${outcome.method} in ${outcome.latencyMs}ms, local :${outcome.port}")
-        } finally {
-            state.update { it.copy(starting = false) }
-        }
+    suspend fun start(): StartResult {
+        // The capability is issued over whatever path currently carries unary calls; an expired
+        // token would be refused.
+        authSession.ensureFresh()
+        val relay = VeilSeeds.relays.first()
+        val capability = capabilities.ensure(relay)
+            ?: return failed(relay, "no capability for ${relay.address}")
+        val outcome = withContext(Dispatchers.IO) { startNative(relay, capability) }
+        if (outcome.port <= 0) return failed(relay, outcome.error ?: "veil_start failed")
+        info.value = VeilStartInfo(relay.address, outcome.method, outcome.latencyMs, lastError = null)
+        Log.i(TAG, "VEIL up: ${relay.address} via ${outcome.method} in ${outcome.latencyMs}ms, local :${outcome.port}")
+        return StartResult.Up(relay.address, outcome.port)
     }
 
-    /** The tunnel died under us (the stream went silent): start it again if the mode says so. */
-    suspend fun restartIfDead() {
-        if (state.value.mode == VeilMode.ON && grpcClient.veilPort != null && !isAlive()) {
-            Log.w(TAG, "VEIL tunnel is gone — restarting")
-            mutex.withLock { stopLocked() }
-            apply()
-        }
-    }
-
-    private fun stopLocked() {
-        if (grpcClient.veilPort != null) grpcClient.routeThrough(null)
+    fun stop() {
         runCatching { VeilLib.INSTANCE.veil_stop() }
-        state.update { it.copy(running = false, relay = null, method = null, latencyMs = null) }
+        info.update { it.copy(relay = null, method = null, latencyMs = null) }
     }
 
-    private fun fail(relay: VeilRelay, reason: String) {
-        Log.e(TAG, "VEIL start via ${relay.address} failed: $reason — staying on the direct path")
-        grpcClient.routeThrough(null)
-        state.update { it.copy(running = false, relay = null, method = null, latencyMs = null, lastError = reason) }
-    }
+    fun isAlive(): Boolean = runCatching { VeilLib.INSTANCE.veil_is_alive() != 0 }.getOrDefault(false)
 
-    private fun isAlive(): Boolean = runCatching { VeilLib.INSTANCE.veil_is_alive() != 0 }.getOrDefault(false)
+    private fun failed(relay: VeilRelay, reason: String): StartResult {
+        Log.e(TAG, "VEIL start via ${relay.address} failed: $reason")
+        info.value = VeilStartInfo(lastError = reason)
+        return StartResult.Failed(relay.address, reason)
+    }
 
     private class Outcome(val port: Int, val method: VeilMethod?, val latencyMs: Int, val error: String?)
 
-    /** Blocking: construct-veil runs the probe race inside the call. */
-    private fun start(relay: VeilRelay, capabilityB64: String): Outcome {
+    private fun startNative(relay: VeilRelay, capabilityB64: String): Outcome {
         val lib = VeilLib.INSTANCE
         val request = VeilStartRequest.ByValue().apply {
             relay_addr = relay.address
@@ -154,8 +121,9 @@ class VeilProxy @Inject constructor(
         if (len <= 0) null else String(buf, 0, minOf(len, buf.size - 1), Charsets.UTF_8)
     }.getOrNull()
 
+    /** Never set means Auto — iOS's platform default. */
     private fun loadMode(): VeilMode =
-        prefs.getString(KEY_MODE, null)?.let { runCatching { VeilMode.valueOf(it) }.getOrNull() } ?: VeilMode.OFF
+        prefs.getString(KEY_MODE, null)?.let { runCatching { VeilMode.valueOf(it) }.getOrNull() } ?: VeilMode.AUTO
 
     private companion object {
         const val TAG = "VEIL"

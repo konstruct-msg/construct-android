@@ -1,6 +1,6 @@
 package com.construct.messenger.service
 
-import com.construct.messenger.veil.VeilProxy
+import com.construct.messenger.transport.TransportRouter
 import com.construct.messenger.data.auth.AuthSessionManager
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
@@ -79,7 +79,7 @@ class MessagingRuntime @Inject constructor(
     private val cursorTracker: StreamCursorTracker,
     private val kyberPrekeys: KyberPrekeyService,
     private val authSession: AuthSessionManager,
-    private val veil: VeilProxy,
+    private val transportRouter: TransportRouter,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var refreshJob: Job? = null
@@ -113,8 +113,8 @@ class MessagingRuntime @Inject constructor(
         // across the board (device log 2026-09-29).
         authSession.ensureFresh()
         if (refreshJob?.isActive != true) refreshJob = scope.launch { authSession.keepFresh() }
-        // Before the first RPC: with VEIL on, nothing below should go the direct way.
-        veil.apply()
+        // Before the first RPC: with VEIL on, the route machine starts the proxy now.
+        transportRouter.start()
 
         // The collector must be subscribed before drainPending(): MessageRouter.routed is a
         // SharedFlow with no replay, and tryEmit with no subscriber drops the event. Drained

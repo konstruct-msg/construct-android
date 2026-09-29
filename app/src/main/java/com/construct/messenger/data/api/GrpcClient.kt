@@ -1,6 +1,9 @@
 package com.construct.messenger.data.api
 
 import com.construct.messenger.data.auth.AuthInterceptor
+import com.construct.messenger.transport.RouteObservingInterceptor
+import com.construct.messenger.transport.TransportEvents
+import com.construct.messenger.transport.TransportRoute
 import io.grpc.ManagedChannel
 import io.grpc.okhttp.OkHttpChannelBuilder
 import shared.proto.sentinel.v1.SentinelServiceGrpcKt.SentinelServiceCoroutineStub
@@ -35,16 +38,28 @@ import javax.inject.Singleton
 @Singleton
 class GrpcClient @Inject constructor(
     private val authInterceptor: AuthInterceptor,
+    private val transportEvents: TransportEvents,
 ) {
 
     /** The two channels and where they point. Swapped whole by [routeThrough], never field by field. */
-    private class Channels(val auth: ManagedChannel, val sealed: ManagedChannel, val veilPort: Int?)
+    private class Channels(val auth: ManagedChannel, val sealed: ManagedChannel, val veilPort: Int?, val generation: Long)
+
+    private var built = 0L
 
     @Volatile
     private var channels: Channels = build(veilPort = null)
 
     /** The local VEIL port traffic goes through, or null for the direct path. */
     val veilPort: Int? get() = channels.veilPort
+
+    /**
+     * Bumped whenever the channels are replaced. A call that fails after the number moved was cut
+     * by the switch, not by the network, and is no evidence about the path.
+     */
+    val generation: Long get() = channels.generation
+
+    /** Where calls go right now, as the route machine names it. */
+    val target: TransportRoute.Target get() = channels.veilPort?.let { TransportRoute.Target.Veil(it, "") } ?: TransportRoute.Target.Direct
 
     /**
      * Point both channels at the local VEIL proxy ([port]) or back at the server (null).
@@ -61,6 +76,13 @@ class GrpcClient @Inject constructor(
         old.sealed.shutdownNow()
     }
 
+    /** Fresh channels on the same route: the router's "invalidate the gRPC client". */
+    fun reconnect() {
+        val old = synchronized(this) { channels.also { channels = build(it.veilPort) } }
+        old.auth.shutdownNow()
+        old.sealed.shutdownNow()
+    }
+
     private fun build(veilPort: Int?): Channels {
         fun base(): OkHttpChannelBuilder =
             if (veilPort == null) {
@@ -69,13 +91,17 @@ class GrpcClient @Inject constructor(
                 // The relay re-wraps this in TLS to the server; the hop to it is veil-TLS.
                 OkHttpChannelBuilder.forAddress(LOOPBACK, veilPort).usePlaintext().overrideAuthority(HOST)
             }
+        val via = veilPort?.let { TransportRoute.Target.Veil(it, "") } ?: TransportRoute.Target.Direct
+        // Every unary outcome is evidence for Auto mode (TransportRouter).
+        val observer = RouteObservingInterceptor(via, transportEvents)
         return Channels(
-            auth = base().intercept(authInterceptor).build(),
+            auth = base().intercept(authInterceptor, observer).build(),
             // No AuthInterceptor — sealed sender RPCs must not carry sender identity
             // on the transport layer. The `SendSealedMessage` method is also in the
             // interceptor's unauthenticated whitelist as defence-in-depth.
-            sealed = base().build(),
+            sealed = base().intercept(observer).build(),
             veilPort = veilPort,
+            generation = ++built,
         )
     }
 

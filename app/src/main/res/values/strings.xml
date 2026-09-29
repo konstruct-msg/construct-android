@@ -274,4 +274,11 @@
     <string name="veil_front">Front</string>
     <string name="veil_latency">Latency</string>
     <string name="veil_last_error">Last error</string>
+    <string name="censorship_protection_footer_auto">Turns on automatically when blocking is detected. Setup happens in the background.</string>
+    <string name="veil_mode_off">Off</string>
+    <string name="veil_mode_auto">Auto</string>
+    <string name="veil_mode_on">On</string>
+    <string name="veil_path">Path</string>
+    <string name="veil_path_direct">direct</string>
+    <string name="veil_path_veil">VEIL</string>
 </resources>
