@@ -32,6 +32,10 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.material.icons.outlined.Circle
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -92,16 +96,21 @@ fun MessageBubble(
     val quoteColor = CTColor.textDim
     val quoteBar = CTColor.accent
 
-    Row(
+    // iOS `MessageBubbleRegularView`: the bubble at most 70 % of the row (and 360), 12/8 padding,
+    // 15pt text; the meta line — status, edited, time — sits under the bubble, and only under the
+    // last bubble of a group, in 10pt.
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 2.dp),
-        horizontalArrangement = if (isOutgoing) Arrangement.End else Arrangement.Start,
+            .padding(horizontal = 12.dp)
+            .padding(top = 2.dp, bottom = if (isLastInGroup) 8.dp else 2.dp),
     ) {
-        Box {
+        val maxBubble = minOf(360.dp, maxWidth * 0.7f)
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = if (isOutgoing) Alignment.TopEnd else Alignment.TopStart) {
+        Column(horizontalAlignment = if (isOutgoing) Alignment.End else Alignment.Start) {
             Column(
                 modifier = Modifier
-                    .widthIn(max = 280.dp)
+                    .widthIn(max = maxBubble)
                     .background(backgroundColor, shape)
                     .then(
                         if (!isOutgoing) {
@@ -116,7 +125,7 @@ fun MessageBubble(
                         onClick = {},
                         onLongClick = onLongPress,
                     )
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
                 if (replyLabel != null) {
                     ReplyQuoteStrip(
@@ -129,34 +138,28 @@ fun MessageBubble(
                 }
                 Text(
                     text = message.body,
-                    style = ctMessage(14),
+                    style = ctMessage(15),
                     color = contentColor,
                 )
-            Row(
-                modifier = Modifier.padding(top = 4.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (message.isEdited) {
+            }
+            if (isLastInGroup) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (isOutgoing) DeliveryStatusIcon(status = message.deliveryStatus)
+                    if (message.isEdited) {
+                        Text(text = stringResource(R.string.edited), style = ctRegular(10), color = metaColor)
+                    }
                     Text(
-                        text = stringResource(R.string.edited),
-                        style = ctRegular(11),
+                        text = formatMessageTime(message.timestamp),
+                        style = ctRegular(10),
                         color = metaColor,
                     )
-                    Spacer(Modifier.width(4.dp))
-                }
-                Text(
-                    text = formatMessageTime(message.timestamp),
-                    style = ctRegular(11),
-                    color = metaColor,
-                    textAlign = TextAlign.End,
-                )
-                if (isOutgoing) {
-                    Spacer(Modifier.width(4.dp))
-                    DeliveryStatusIcon(status = message.deliveryStatus, tint = metaColor)
                 }
             }
-            }
+        }
             DropdownMenu(
                 expanded = menuExpanded,
                 onDismissRequest = onDismissMenu,
@@ -237,23 +240,23 @@ private fun ReplyQuoteStrip(
     }
 }
 
+/**
+ * iOS `deliveryStatusView`: sending — an empty circle; sent — a filled one; delivered — a green
+ * check in a circle (read renders the same: iOS has no separate read mark); failed — danger.
+ */
 @Composable
-private fun DeliveryStatusIcon(status: DeliveryStatus, tint: Color) {
+private fun DeliveryStatusIcon(status: DeliveryStatus) {
     val (icon, color) = when (status) {
-        DeliveryStatus.SENDING -> Icons.Default.AccessTime to tint
-        DeliveryStatus.SENT -> Icons.Default.Done to tint
-        DeliveryStatus.DELIVERED -> Icons.Default.DoneAll to tint
-        DeliveryStatus.READ -> Icons.Default.DoneAll to CTColor.accentDim
-        DeliveryStatus.FAILED -> Icons.Default.Error to CTColor.danger
+        DeliveryStatus.SENDING -> Icons.Outlined.Circle to CTColor.textDim
+        DeliveryStatus.SENT -> Icons.Filled.Circle to CTColor.textDim
+        DeliveryStatus.DELIVERED, DeliveryStatus.READ -> Icons.Outlined.CheckCircle to SYSTEM_GREEN
+        DeliveryStatus.FAILED -> Icons.Filled.Error to CTColor.danger
     }
-
-    Icon(
-        imageVector = icon,
-        contentDescription = null,
-        tint = color,
-        modifier = Modifier.size(14.dp),
-    )
+    Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(11.dp))
 }
+
+/** SwiftUI `.green` (dark variant 0x30D158) — iOS's "delivered" colour. */
+private val SYSTEM_GREEN = Color(0xFF30D158)
 
 private fun formatMessageTime(timestamp: Long): String {
     val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())

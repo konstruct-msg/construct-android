@@ -21,6 +21,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import com.construct.messenger.ui.components.ConnectionStatusIndicator
+import com.construct.messenger.ui.components.ctBackground
+import com.construct.messenger.ui.theme.CTLayout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,7 +37,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
-import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSearchBar
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.ctRegular
@@ -53,23 +55,40 @@ fun ChatsListScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(CTColor.bg)
+            .ctBackground()
             // Edge-to-edge: the screen keeps itself clear of the bars. Inside MainTabView the
             // Scaffold has already padded and consumed them, so these add nothing there.
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        // Canon: iOS ChatsListView toolbar (qrcode.viewfinder) — the scanner is one tap away.
-        CTNavBar(
-            title = stringResource(R.string.nav_streams),
-            trailingIcon = Icons.Default.QrCodeScanner,
-            onTrailingAction = onScanQr,
-        )
+        // Canon: iOS ChatsListView nav bar — no title; the connection dot, centred on the avatar
+        // column (40), and the scanner (qrcode.viewfinder), one tap away.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(CTLayout.navBarHeight)
+                .padding(horizontal = CTLayout.edgePad),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(modifier = Modifier.width(40.dp), contentAlignment = Alignment.Center) {
+                ConnectionStatusIndicator(status = uiState.connection)
+            }
+            Spacer(Modifier.weight(1f))
+            Icon(
+                imageVector = Icons.Default.QrCodeScanner,
+                contentDescription = stringResource(R.string.scan_qr_code),
+                tint = CTColor.accent,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clickable(onClick = onScanQr)
+                    .padding(12.dp),
+            )
+        }
 
         CTSearchBar(
             query = query,
             onQueryChange = { query = it },
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = CTLayout.edgePad).padding(top = 4.dp, bottom = 8.dp),
         )
 
         if (uiState.chats.isEmpty()) {

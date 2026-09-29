@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Text
+import com.construct.messenger.ui.components.ctBackground
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -33,7 +34,6 @@ import com.construct.messenger.ui.components.CTButton
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.CTSearchBar
-import com.construct.messenger.ui.components.CTTextField
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.Spacing
@@ -51,14 +51,14 @@ fun SynapsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(CTColor.bg)
+            .ctBackground()
             // Edge-to-edge: the screen keeps itself clear of the bars. Inside MainTabView the
             // Scaffold has already padded and consumed them, so these add nothing there.
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
         CTNavBar(
-            title = stringResource(R.string.nav_synaps),
+            title = stringResource(R.string.synaps_title),
             // Scanning only: your own QR lives in Settings → Invite.
             trailingIcon = Icons.Default.QrCodeScanner,
             onTrailingAction = onScanQr,
@@ -73,19 +73,9 @@ fun SynapsScreen(
         Column(
             modifier = Modifier.padding(horizontal = CTLayout.edgePad)
         ) {
-            CTTextField(
-                placeholder = stringResource(R.string.synaps_paste_placeholder),
-                value = uiState.paste,
-                onValueChange = viewModel::onPasteChange,
-            )
-            Spacer(Modifier.height(Spacing.small))
-            CTButton(
-                label = stringResource(R.string.synaps_accept),
-                onClick = { viewModel.accept() },
-                enabled = uiState.paste.isNotBlank() && !uiState.busy,
-            )
+            // A pasted invite goes in through the scanner's "Paste invite link", as on iOS;
+            // this screen only redeems it (PendingInviteStore) and says how it went below.
             if (uiState.query.isNotBlank()) {
-                Spacer(Modifier.height(Spacing.small))
                 CTButton(
                     label = stringResource(R.string.synaps_find_request),
                     onClick = { viewModel.findAndRequest() },
@@ -155,7 +145,8 @@ fun SynapsScreen(
 
 @Composable
 private fun ContactRow(contact: Contact, onClick: () -> Unit) {
-    val title = if (contact.username.isNotBlank()) "@${contact.username}" else contact.displayName
+    // As the chat list: the name as given, the username only when there is none.
+    val title = contact.displayName.ifBlank { contact.username }
     Row(
         modifier = Modifier
             .fillMaxWidth()

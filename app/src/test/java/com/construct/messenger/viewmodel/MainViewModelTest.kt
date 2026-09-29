@@ -14,7 +14,13 @@ class MainViewModelTest {
 
     @Test
     fun exposesMockStreamList() = runTest {
-        val viewModel = MainViewModel(MockChatsRepository())
+        val viewModel = MainViewModel(
+            MockChatsRepository(),
+            object : com.construct.messenger.data.repository.ConnectionRepository {
+                override val status = kotlinx.coroutines.flow.MutableStateFlow(com.construct.messenger.ui.components.ConnectionStatus.CONNECTED)
+                override val lastHeartbeatAt = kotlinx.coroutines.flow.MutableStateFlow<Long?>(null)
+            },
+        )
 
         assertTrue(viewModel.uiState.value.chats.isNotEmpty())
         assertEquals("test_contact", viewModel.uiState.value.suggestedContactId)

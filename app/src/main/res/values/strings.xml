@@ -62,7 +62,6 @@
     <string name="orientation_map_settings_sub">QR, recovery, devices</string>
 
     <!-- Main (streams list) -->
-    <string name="nav_streams">Chats</string>
     <string name="main_empty_title">No conversations yet</string>
     <string name="main_empty_subtitle">Find someone by @alias or show your QR code</string>
     <string name="main_start_stream">Start a chat</string>
@@ -86,15 +85,16 @@
     <string name="nav_settings">Settings</string>
 
     <!-- Synaps -->
+    <string name="synaps_title">Synapses</string>
+    <string name="paste_invite_link">Paste invite link</string>
+    <string name="clipboard_no_valid_invite">No valid invite link found in clipboard.</string>
     <string name="synaps_empty_title">No contacts yet</string>
-    <string name="synaps_paste_placeholder">Paste invite link</string>
-    <string name="synaps_accept">Add contact</string>
     <string name="synaps_share_copied">Invite copied</string>
     <string name="synaps_find_request">Send request</string>
     <string name="synaps_requests_title">Incoming requests</string>
 
     <!-- Chat -->
-    <string name="chat_input_placeholder">Message</string>
+    <string name="chat_input_placeholder">Message...</string>
     <string name="chat_send">Send</string>
     <string name="reply">Reply</string>
     <string name="copy">Copy</string>
@@ -294,6 +294,7 @@
     <string name="username_save_failed">could not save — check the connection</string>
     <string name="action_edit">edit</string>
     <string name="action_save">save</string>
+    <string name="back">Back</string>
     <string name="action_cancel">Cancel</string>
     <string name="security_title">Security</string>
     <string name="security_section_discovery">discovery</string>

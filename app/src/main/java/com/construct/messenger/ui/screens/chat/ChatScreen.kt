@@ -8,10 +8,29 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.construct.messenger.ui.components.glassCapsule
+import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.ctBold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -30,7 +49,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.data.model.Message
-import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.MessageBubble
 import com.construct.messenger.ui.components.MessageInputView
 import com.construct.messenger.ui.theme.CTColor
@@ -91,14 +109,7 @@ fun ChatScreen(
             .navigationBarsPadding()
             .imePadding()
     ) {
-        CTNavBar(
-            title = uiState.title,
-            showBack = true,
-            onBack = onNavigateBack,
-            trailingIcon = Icons.Default.Person,
-            trailingColor = CTColor.textDim,
-            onTrailingAction = onOpenProfile,
-        )
+        ChatNavBar(title = uiState.title, onBack = onNavigateBack, onOpenProfile = onOpenProfile)
 
         SecurityNoticeBanner(
             notice = uiState.securityNotice,
@@ -113,9 +124,10 @@ fun ChatScreen(
                 .fillMaxWidth(),
             state = listState,
         ) {
-            items(uiState.messages, key = { it.id }) { message ->
+            itemsIndexed(uiState.messages, key = { _, message -> message.id }) { index, message ->
                 MessageBubble(
                     message = message,
+                    isLastInGroup = isLastInGroup(index, uiState.messages),
                     replyLabel = replyLabel(message, uiState.messages),
                     onLongPress = { menuMessageId = message.id },
                     menuExpanded = menuMessageId == message.id,
@@ -178,4 +190,61 @@ private fun quoteFallback(mediaType: String?): String = when (mediaType) {
     "MEDIA_TYPE_FILE" -> stringResource(R.string.file_attachment)
     "MEDIA_TYPE_STICKER" -> stringResource(R.string.sticker)
     else -> stringResource(R.string.message_unavailable)
+}
+
+/**
+ * iOS `Message.isLastInGroup`: a group ends where the sender changes or the next message comes
+ * more than five minutes later. Only a group's last bubble carries the time and status.
+ */
+private fun isLastInGroup(index: Int, messages: List<Message>): Boolean {
+    val next = messages.getOrNull(index + 1) ?: return true
+    val current = messages[index]
+    return current.isOutgoing != next.isOutgoing || next.timestamp - current.timestamp > 5 * 60 * 1000
+}
+
+/**
+ * iOS `ChatNavBarView`: a floating glass capsule — back disc, the name upper-cased and tracked
+ * (tapping it opens the profile). iOS's call and search buttons are not here: Android has neither
+ * yet, and a button that does nothing is worse than none.
+ */
+@Composable
+private fun ChatNavBar(title: String, onBack: () -> Unit, onOpenProfile: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .fillMaxWidth()
+            .height(CTLayout.navBarHeight)
+            .glassCapsule()
+            .padding(horizontal = CTLayout.edgePad),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(CTLayout.navIconSizeLg)
+                .clip(CircleShape)
+                .background(CTColor.accent)
+                .clickable(onClick = onBack),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                contentDescription = stringResource(R.string.back),
+                tint = CTColor.bg,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Spacer(Modifier.width(CTLayout.inlinePad))
+        Text(
+            text = title.uppercase(),
+            style = ctBold(14),
+            color = CTColor.text,
+            letterSpacing = 4.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClick = onOpenProfile)
+                .padding(vertical = 10.dp),
+        )
+    }
 }

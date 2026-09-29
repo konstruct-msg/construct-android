@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -19,6 +20,14 @@ import com.construct.messenger.ui.theme.KonstructMessengerTheme
 import com.construct.messenger.ui.theme.LocalIsDarkTheme
 import kotlin.random.Random
 
+/**
+ * iOS passes 0.10 / 0.06, but measured on screen its glyphs land at ~21 on the dark background
+ * (9) — about 0.6 of the way to `noise`. These are the values that reproduce what iOS shows, not
+ * the numbers it passes.
+ */
+private const val NOISE_OPACITY_DARK = 0.6f
+private const val NOISE_OPACITY_LIGHT = 0.06f
+
 /** ASCII glyphs for the noise texture — canon §4.14 / iOS `CTNoise`. */
 internal val NOISE_CHARS = charArrayOf(
     '@', '%', '#', '+', '-', '=', ':', '.', '*', '/', '\\', '|', '~', '^', '<', '>',
@@ -28,7 +37,7 @@ internal val NOISE_CHARS = charArrayOf(
 private fun Modifier.ctNoiseOverlay(
     rows: Int = 40,
     cols: Int = 22,
-    opacity: Float = if (LocalIsDarkTheme.current) 0.10f else 0.06f,
+    opacity: Float = if (LocalIsDarkTheme.current) NOISE_OPACITY_DARK else NOISE_OPACITY_LIGHT,
 ): Modifier {
     val dark = LocalIsDarkTheme.current
     val noiseColor = if (dark) CTColor.noise else CTColor.noiseLight
@@ -39,22 +48,22 @@ private fun Modifier.ctNoiseOverlay(
     return drawWithCache {
         val cellW = size.width / cols
         val cellH = size.height / rows
-        val textSize = minOf(cellW, cellH) * 0.85f
+        // iOS draws each glyph in `CTFont.mono(10)` at the cell's top-leading corner.
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = noiseColor.copy(alpha = opacity).toArgb()
             typeface = Typeface.MONOSPACE
-            this.textSize = textSize
-            textAlign = Paint.Align.CENTER
+            this.textSize = 10.sp.toPx()
+            textAlign = Paint.Align.LEFT
         }
         val fm = paint.fontMetrics
         onDrawBehind {
             val canvas = drawContext.canvas.nativeCanvas
             for (r in 0 until rows) {
-                val y = cellH * (r + 1) - (cellH - (fm.descent - fm.ascent)) / 2f - fm.descent
+                val y = cellH * r - fm.ascent
                 for (c in 0 until cols) {
                     canvas.drawText(
                         grid[r][c].toString(),
-                        cellW * (c + 0.5f),
+                        cellW * c,
                         y,
                         paint,
                     )
@@ -75,7 +84,7 @@ fun CTNoise(
     modifier: Modifier = Modifier,
     rows: Int = 40,
     cols: Int = 22,
-    opacity: Float = if (LocalIsDarkTheme.current) 0.10f else 0.06f,
+    opacity: Float = if (LocalIsDarkTheme.current) NOISE_OPACITY_DARK else NOISE_OPACITY_LIGHT,
 ) {
     Box(modifier = modifier.ctNoiseOverlay(rows, cols, opacity))
 }
@@ -125,3 +134,12 @@ private fun CtBackgroundPreview() {
         Box(Modifier.fillMaxSize().ctBackground())
     }
 }
+
+/**
+ * iOS `.ctBackground()`: the theme's background with the ASCII noise over it — the root tabs
+ * (chats, Synaps, settings) sit on it.
+ */
+@Composable
+fun Modifier.ctBackground(): Modifier = this
+    .background(CTColor.bg)
+    .ctNoiseOverlay()

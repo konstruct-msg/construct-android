@@ -29,6 +29,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -103,21 +113,60 @@ fun QrScannerScreen(
             showBack = true,
             onBack = onNavigateBack,
         )
-        if (granted) {
-            ScannerViewport(
-                onInvite = { link ->
-                    viewModel.deliver(link)
-                    onScanned()
-                },
-            )
-        } else {
-            PermissionPrompt(
-                // After a refusal the system dialog may not come back ("don't ask again");
-                // from then on only the app's settings page can grant it.
-                permanentlyDenied = askedOnce && !context.shouldShowCameraRationale(),
-                onGrant = { launcher.launch(Manifest.permission.CAMERA) },
-                onOpenSettings = { context.openAppSettings() },
-            )
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            if (granted) {
+                ScannerViewport(
+                    onInvite = { link ->
+                        viewModel.deliver(link)
+                        onScanned()
+                    },
+                )
+            } else {
+                PermissionPrompt(
+                    // After a refusal the system dialog may not come back ("don't ask again");
+                    // from then on only the app's settings page can grant it.
+                    permanentlyDenied = askedOnce && !context.shouldShowCameraRationale(),
+                    onGrant = { launcher.launch(Manifest.permission.CAMERA) },
+                    onOpenSettings = { context.openAppSettings() },
+                )
+            }
+        }
+        // iOS `QRScannerView` bottom panel: a link that arrived as text goes in here, and takes the
+        // same path as a scanned one — Synaps redeems it and says how it went.
+        val clipboard = LocalClipboardManager.current
+        var emptyClipboard by remember { mutableStateOf(false) }
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.medium),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(Color.White.copy(alpha = 0.15f))
+                    .clickable {
+                        val text = clipboard.getText()?.text?.trim().orEmpty()
+                        if (text.isEmpty()) {
+                            emptyClipboard = true
+                        } else {
+                            viewModel.deliver(text)
+                            onScanned()
+                        }
+                    }
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Default.ContentPaste, contentDescription = null, tint = CTColor.text, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.paste_invite_link), style = ctRegular(13), color = CTColor.text)
+            }
+            if (emptyClipboard) {
+                Text(
+                    text = stringResource(R.string.clipboard_no_valid_invite),
+                    style = ctRegular(12),
+                    color = CTColor.danger,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
         }
     }
 }

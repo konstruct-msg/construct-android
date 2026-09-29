@@ -14,6 +14,10 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,12 +45,17 @@ fun CTSearchBar(
     placeholder: String = stringResource(R.string.search_prompt),
     modifier: Modifier = Modifier,
 ) {
+    // iOS `CTSearchBar`: a capsule of `.ultraThinMaterial` with a 15 % white hairline — the
+    // platform search-field shape in the CT palette. Material blur has no cheap Compose
+    // equivalent; a translucent card fill reads the same over the noise background.
+    val shape = RoundedCornerShape(percent = 50)
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(CTColor.bgMsg)
-            .ctBorderBottom()
-            .padding(horizontal = 12.dp, vertical = 9.dp),
+            .clip(shape)
+            .background(CTColor.bgMsg.copy(alpha = 0.72f))
+            .border(1.dp, Color.White.copy(alpha = 0.15f), shape)
+            .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(

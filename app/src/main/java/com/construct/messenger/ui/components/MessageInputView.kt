@@ -17,6 +17,12 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.ArrowCircleUp
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,29 +71,50 @@ fun MessageInputView(
             editingPreview != null -> EditComposerBar(preview = editingPreview, onCancel = onCancelEdit)
             replyPreview != null -> ReplyComposerBar(preview = replyPreview, onCancel = onCancelReply)
         }
+        // iOS `MessageInputTextBar`: a glass capsule (44 high) holding the text — message face, 15 —
+        // with the send button inside at the trailing edge once there is something to send. iOS's
+        // attach "+" and mic are not here: Android has no attachments or voice messages yet.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = CTLayout.edgePad, vertical = Spacing.small),
+                .padding(horizontal = CTLayout.edgePad, vertical = 4.dp)
+                .heightIn(min = 44.dp)
+                .glassCapsule()
+                .padding(start = 16.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            CTTextField(
-                placeholder = stringResource(R.string.chat_input_placeholder),
+            val textStyle = ctMessage(15).copy(color = CTColor.text)
+            BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
-                modifier = Modifier.weight(1f),
-                // The composer follows the bubble: typing in one face and watching it land in
-                // another would be a mismatch on every send.
-                style = ctMessage(14),
+                textStyle = textStyle,
+                cursorBrush = SolidColor(CTColor.accent),
+                maxLines = 8,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 11.dp),
+                decorationBox = { inner ->
+                    Box {
+                        if (value.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.chat_input_placeholder),
+                                style = textStyle,
+                                color = CTColor.textDim,
+                            )
+                        }
+                        inner()
+                    }
+                },
             )
             if (value.isNotBlank()) {
-                Spacer(Modifier.width(Spacing.small))
+                Spacer(Modifier.width(4.dp))
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Send,
+                    imageVector = Icons.Filled.ArrowCircleUp,
                     contentDescription = stringResource(R.string.chat_send),
                     tint = if (enabled) CTColor.accent else CTColor.textDim,
                     modifier = Modifier
-                        .size(CTLayout.navIconSizeLg)
+                        .size(28.dp)
+                        .clip(CircleShape)
                         .clickable(enabled = enabled, onClick = onSend),
                 )
             }

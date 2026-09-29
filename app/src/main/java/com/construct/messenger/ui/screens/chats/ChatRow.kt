@@ -12,6 +12,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import android.content.Context
+import android.text.format.DateFormat
+import android.text.format.DateUtils
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.Arrangement
+import com.construct.messenger.ui.components.CTRowDivider
+import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CornerRadius
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,9 +32,7 @@ import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.ctBold
 import com.construct.messenger.ui.theme.ctRegular
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 /**
  * One row in the chats list.
@@ -43,82 +49,87 @@ fun ChatRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CTAvatar(
-            userId = chat.contactId,
-            displayName = chat.displayName,
-            size = 44.dp,
-        )
-        Spacer(Modifier.width(12.dp))
-        Column(
-            modifier = Modifier.weight(1f)
+    val context = LocalContext.current
+    Column(modifier = modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        // Canon: iOS `ChatRowLayout` — avatar (40), 10 gap; name with the time on its line,
+        // the preview with the unread badge beneath; List row insets around it.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = if (chat.username.isNotEmpty()) "@${chat.username}" else chat.displayName.uppercase(),
-                style = ctBold(13),
-                color = CTColor.text,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            CTAvatar(
+                userId = chat.contactId,
+                displayName = chat.displayName,
+                size = 40.dp,
             )
-            Spacer(Modifier.width(2.dp))
-            Text(
-                text = chat.lastMessagePreview ?: "—",
-                style = ctRegular(12),
-                color = CTColor.textDim,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Spacer(Modifier.width(8.dp))
-        Column(
-            horizontalAlignment = Alignment.End
-        ) {
-            chat.lastMessageTime?.let { time ->
-                Text(
-                    text = formatChatTimestamp(time),
-                    style = ctRegular(11),
-                    color = CTColor.textDim,
-                )
-            }
-            if (chat.unreadCount > 0) {
-                Spacer(Modifier.width(4.dp))
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(CTColor.accent)
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
+            Spacer(Modifier.width(CTLayout.chromeGap))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // iOS `resolvedDisplayName`: the name as given, never upper-cased; the
+                    // username only when there is no name.
                     Text(
-                        text = chat.unreadCount.coerceAtMost(99).toString(),
-                        style = ctBold(10),
-                        color = CTColor.bg,
+                        text = chat.displayName.ifBlank { chat.username },
+                        style = ctBold(13),
+                        color = CTColor.text,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
                     )
+                    Spacer(Modifier.width(4.dp))
+                    chat.lastMessageTime?.let { time ->
+                        Text(
+                            text = rowTimestamp(context, time),
+                            style = ctRegular(11),
+                            color = CTColor.textDim,
+                            maxLines = 1,
+                        )
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = chat.lastMessagePreview.orEmpty(),
+                        style = ctRegular(12),
+                        color = CTColor.textDim,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (chat.unreadCount > 0) {
+                        Spacer(Modifier.width(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(CornerRadius.badge))
+                                .background(CTColor.accent)
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = if (chat.unreadCount < 10_000) chat.unreadCount.toString() else "9999+",
+                                style = ctBold(11),
+                                color = CTColor.bg,
+                            )
+                        }
+                    }
                 }
             }
         }
+        // The List separator, from the text column to the trailing inset.
+        CTRowDivider(indent = 16.dp + 40.dp + CTLayout.chromeGap, modifier = Modifier.padding(end = 16.dp))
     }
 }
 
-private fun formatChatTimestamp(timeMillis: Long): String {
-    val now = System.currentTimeMillis()
+/** iOS `rowTimestampText`: today's time; otherwise "Yesterday" where it applies, else a short date. */
+private fun rowTimestamp(context: Context, timeMillis: Long): String {
     val date = Date(timeMillis)
-    return if (isSameDay(now, timeMillis)) {
-        SimpleDateFormat("HH:mm", Locale.getDefault()).format(date)
-    } else {
-        SimpleDateFormat("dd.MM", Locale.getDefault()).format(date)
+    if (DateUtils.isToday(timeMillis)) return DateFormat.getTimeFormat(context).format(date)
+    if (DateUtils.isToday(timeMillis + DateUtils.DAY_IN_MILLIS)) {
+        return DateUtils.getRelativeTimeSpanString(
+            timeMillis, System.currentTimeMillis(), DateUtils.DAY_IN_MILLIS,
+        ).toString()
     }
-}
-
-private fun isSameDay(a: Long, b: Long): Boolean {
-    val formatter = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
-    return formatter.format(Date(a)) == formatter.format(Date(b))
+    return DateFormat.getDateFormat(context).format(date)
 }
 
 @Preview(backgroundColor = 0xFF090909, showBackground = true)

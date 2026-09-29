@@ -59,7 +59,6 @@
     <string name="orientation_map_settings_sub">QR, восстановление, устройства</string>
 
     <!-- Main (streams list) -->
-    <string name="nav_streams">Чаты</string>
     <string name="main_empty_title">Пока нет чатов</string>
     <string name="main_empty_subtitle">Найдите человека по @псевдониму или покажите свой QR-код</string>
     <string name="main_start_stream">Начать чат</string>
@@ -83,15 +82,16 @@
     <string name="nav_settings">Настройки</string>
 
     <!-- Synaps -->
+    <string name="synaps_title">Синапсы</string>
+    <string name="paste_invite_link">Вставить ссылку-приглашение</string>
+    <string name="clipboard_no_valid_invite">В буфере обмена не найдено действительной ссылки-приглашения.</string>
     <string name="synaps_empty_title">Пока нет контактов</string>
-    <string name="synaps_paste_placeholder">Вставьте ссылку-инвайт</string>
-    <string name="synaps_accept">Добавить контакт</string>
     <string name="synaps_share_copied">Инвайт скопирован</string>
     <string name="synaps_find_request">Отправить запрос</string>
     <string name="synaps_requests_title">Входящие запросы</string>
 
     <!-- Chat -->
-    <string name="chat_input_placeholder">Сообщение</string>
+    <string name="chat_input_placeholder">Сообщение...</string>
     <string name="chat_send">Отправить</string>
     <string name="reply">Ответить</string>
     <string name="copy">Копировать</string>
@@ -291,6 +291,7 @@
     <string name="username_save_failed">не удалось сохранить — проверьте соединение</string>
     <string name="action_edit">изменить</string>
     <string name="action_save">сохранить</string>
+    <string name="back">Назад</string>
     <string name="action_cancel">Отмена</string>
     <string name="security_title">Безопасность</string>
     <string name="security_section_discovery">обнаружение</string>
