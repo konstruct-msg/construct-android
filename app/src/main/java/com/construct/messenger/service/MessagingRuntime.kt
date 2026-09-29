@@ -16,6 +16,7 @@ import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.domain.usecase.RotateSignedPreKeyUseCase
 import com.construct.messenger.domain.usecase.UploadPreKeysUseCase
 import com.construct.messenger.stealth.BlindTokenService
+import com.construct.messenger.stealth.IntakeCredentials
 import com.construct.messenger.stealth.ServerKeysProvider
 import com.construct.messenger.ui.components.ConnectionStatus
 import javax.inject.Inject
@@ -70,6 +71,7 @@ class MessagingRuntime @Inject constructor(
     private val uploadPreKeys: UploadPreKeysUseCase,
     private val serverKeys: ServerKeysProvider,
     private val blindTokens: BlindTokenService,
+    private val intake: IntakeCredentials,
     private val rotateSignedPreKey: RotateSignedPreKeyUseCase,
     private val timerBridge: CfeTimerBridge,
     private val cursorTracker: StreamCursorTracker,
@@ -288,6 +290,9 @@ class MessagingRuntime @Inject constructor(
                 .onFailure { Log.w(TAG, "stealth key prefetch failed", it) }
             runCatching { blindTokens.bootstrapInitialBatch() }
                 .onFailure { Log.w(TAG, "privacy-pass bootstrap failed", it) }
+            // After the server keys: nothing here seals, but a start that has them is a start
+            // that reached the server.
+            intake.publishIfNeeded()
             val deviceId = keystoreManager.getDeviceId()
             if (deviceId != null) {
                 // Before the replenishment: one-time Kyber keys ride on the classic upload only

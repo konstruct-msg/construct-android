@@ -10,6 +10,7 @@ import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
 import com.construct.messenger.stealth.SealedEnvelopeType
+import com.construct.messenger.stealth.IntakeCredentials
 import com.construct.messenger.stealth.SealedSend
 import com.construct.messenger.util.KnstFrame
 import java.util.UUID
@@ -39,11 +40,12 @@ class SendContactCardUseCase @Inject constructor(
     private val messagingService: MessagingService,
     private val stealthPolicy: StealthPolicy,
     private val sealedSend: SealedSend,
+    private val intake: IntakeCredentials,
     private val sessionStateStore: SessionStateStore,
 ) {
     suspend fun sendIfOwed(contactId: String) {
-        // Without our address the card would be empty — Android has no intake key to put in it.
-        val address = keystoreManager.getOwnAccountAddress() ?: return
+        // The key always, the address when this device has seen the phrase.
+        val address = keystoreManager.getOwnAccountAddress()
         val target = sessionManager.resolveTarget(contactId) ?: return
         val deviceId = target.deviceId
         if (deviceId.lowercase() in keystoreManager.contactCardSentTo()) return
@@ -54,7 +56,7 @@ class SendContactCardUseCase @Inject constructor(
 
         val cardId = UUID.randomUUID()
         val plaintext = KnstFrame.pack(
-            ContactCardPayload(accountAddress = address).encoded(),
+            ContactCardPayload(intakeKey = intake.ownKey(), accountAddress = address).encoded(),
             ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE,
             cardId,
         )

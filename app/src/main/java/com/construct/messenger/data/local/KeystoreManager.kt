@@ -74,6 +74,8 @@ class KeystoreManager @Inject constructor(
             .remove(KEY_USER_ID)
             .remove(KEY_ACCOUNT_ADDRESS)
             .remove(KEY_CONTACT_CARD_SENT_TO)
+            .remove(KEY_CONTACT_CARD_SENT_TO_V1)
+            .remove(KEY_OWN_INTAKE)
             .remove(KEY_DEVICE_SETS_LISTED)
             .apply()
         prefs.all.keys.filter { it.startsWith(KEY_PEER_INTAKE_PREFIX) }
@@ -90,9 +92,15 @@ class KeystoreManager @Inject constructor(
         prefs.edit().putString(KEY_ACCOUNT_ADDRESS, Base64.encodeToString(key, Base64.NO_WRAP)).commit()
     }
 
-    /** Contact devices our card has reached. Not secret; kept with the account it belongs to. */
-    fun contactCardSentTo(): Set<String> =
-        prefs.getStringSet(KEY_CONTACT_CARD_SENT_TO, emptySet()).orEmpty()
+    /**
+     * Contact devices our card has reached. Not secret; kept with the account it belongs to.
+     * `v2` since 2026-09-29: the card carries our intake key now, and a device that got the
+     * address-only card under v1 has not got it — every contact gets the card once more, lazily.
+     */
+    fun contactCardSentTo(): Set<String> {
+        if (prefs.contains(KEY_CONTACT_CARD_SENT_TO_V1)) prefs.edit().remove(KEY_CONTACT_CARD_SENT_TO_V1).apply()
+        return prefs.getStringSet(KEY_CONTACT_CARD_SENT_TO, emptySet()).orEmpty()
+    }
 
     fun markContactCardSent(deviceId: String) {
         prefs.edit().putStringSet(KEY_CONTACT_CARD_SENT_TO, contactCardSentTo() + deviceId.lowercase()).apply()
@@ -122,6 +130,14 @@ class KeystoreManager @Inject constructor(
         prefs.edit()
             .putString(KEY_PEER_INTAKE_PREFIX + accountId.lowercase(), Base64.encodeToString(key, Base64.NO_WRAP))
             .apply()
+    }
+
+    /** This device's intake key for our account, or null before one is minted. */
+    fun ownIntakeKey(): ByteArray? =
+        prefs.getString(KEY_OWN_INTAKE, null)?.let { Base64.decode(it, Base64.NO_WRAP) }
+
+    fun saveOwnIntakeKey(key: ByteArray) {
+        prefs.edit().putString(KEY_OWN_INTAKE, Base64.encodeToString(key, Base64.NO_WRAP)).commit()
     }
 
     /** `null` until this device has seen the recovery phrase. */
@@ -194,7 +210,9 @@ class KeystoreManager @Inject constructor(
         const val KEY_PRIVATE_KEYS = "private_keys_cfe"
         const val KEY_KYBER_PREKEYS = "kyber_prekeys_cfe"
         const val KEY_ACCOUNT_ADDRESS = "account_address"
-        const val KEY_CONTACT_CARD_SENT_TO = "contact_card_sent_to"
+        const val KEY_CONTACT_CARD_SENT_TO = "contact_card_sent_to.v2"
+        const val KEY_CONTACT_CARD_SENT_TO_V1 = "contact_card_sent_to"
+        const val KEY_OWN_INTAKE = "own_intake_key"
         const val KEY_DEVICE_SETS_LISTED = "device_sets_listed"
         const val KEY_PEER_INTAKE_PREFIX = "peer_intake_key:"
     }

@@ -11,7 +11,8 @@ import shared.proto.core.v1.EnvelopeOuterClass.ContactCard
  * failing the card. **Canon:** iOS `ContactCardPayload`; vectors `knst_contact_card.json`;
  * decision `contact-card-carries-the-address-back.md`.
  *
- * Android mints no intake key yet, so what it sends carries the address alone.
+ * What Android sends carries this device's intake key always and the address once the device has
+ * seen the recovery phrase.
  */
 data class ContactCardPayload(
     val intakeKey: ByteArray? = null,
