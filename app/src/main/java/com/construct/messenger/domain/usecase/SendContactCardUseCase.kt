@@ -10,7 +10,7 @@ import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
 import com.construct.messenger.stealth.SealedEnvelopeType
-import com.construct.messenger.stealth.StealthSenderService
+import com.construct.messenger.stealth.SealedSend
 import com.construct.messenger.util.KnstFrame
 import java.util.UUID
 import javax.inject.Inject
@@ -38,7 +38,7 @@ class SendContactCardUseCase @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val messagingService: MessagingService,
     private val stealthPolicy: StealthPolicy,
-    private val stealthSender: StealthSenderService,
+    private val sealedSend: SealedSend,
     private val sessionStateStore: SessionStateStore,
 ) {
     suspend fun sendIfOwed(contactId: String) {
@@ -75,13 +75,12 @@ class SendContactCardUseCase @Inject constructor(
             ?.payload
             ?: return
         try {
-            val sealed = stealthSender.buildSealedInner(
+            val result = sealedSend.send(
                 recipientUserId = target.accountId,
                 recipientIdentityKey = ik,
                 encryptedPayload = wire,
                 contentType = SealedEnvelopeType.GENERIC,
             )
-            val result = messagingService.sendSealedMessage(sealed)
             // Only after the server took it: marking first would cost the device our address on
             // one failed RPC. A refusal returns rather than throws.
             if (!result.success) {

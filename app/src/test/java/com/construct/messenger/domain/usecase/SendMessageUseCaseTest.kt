@@ -76,6 +76,7 @@ class SendMessageUseCaseTest {
             messagingService = messaging,
             stealthPolicy = policy,
             stealthSender = stealthSender,
+            sealedSend = mock(),
             messageDao = messages,
             chatDao = chats,
             userDao = users,

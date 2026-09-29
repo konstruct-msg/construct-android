@@ -76,6 +76,9 @@ class KeystoreManager @Inject constructor(
             .remove(KEY_CONTACT_CARD_SENT_TO)
             .remove(KEY_DEVICE_SETS_LISTED)
             .apply()
+        prefs.all.keys.filter { it.startsWith(KEY_PEER_INTAKE_PREFIX) }
+            .fold(prefs.edit()) { edit, key -> edit.remove(key) }
+            .apply()
     }
 
     /**
@@ -105,6 +108,20 @@ class KeystoreManager @Inject constructor(
 
     fun markDeviceSetListed(accountId: String) {
         prefs.edit().putStringSet(KEY_DEVICE_SETS_LISTED, deviceSetsListed() + accountId.lowercase()).apply()
+    }
+
+    /**
+     * The intake key each contact account handed us in its card — what our envelopes to them
+     * present instead of a token. Secret-ish (it lets anyone send to them free), hence here.
+     */
+    fun peerIntakeKey(accountId: String): ByteArray? =
+        prefs.getString(KEY_PEER_INTAKE_PREFIX + accountId.lowercase(), null)
+            ?.let { Base64.decode(it, Base64.NO_WRAP) }
+
+    fun savePeerIntakeKey(accountId: String, key: ByteArray) {
+        prefs.edit()
+            .putString(KEY_PEER_INTAKE_PREFIX + accountId.lowercase(), Base64.encodeToString(key, Base64.NO_WRAP))
+            .apply()
     }
 
     /** `null` until this device has seen the recovery phrase. */
@@ -179,5 +196,6 @@ class KeystoreManager @Inject constructor(
         const val KEY_ACCOUNT_ADDRESS = "account_address"
         const val KEY_CONTACT_CARD_SENT_TO = "contact_card_sent_to"
         const val KEY_DEVICE_SETS_LISTED = "device_sets_listed"
+        const val KEY_PEER_INTAKE_PREFIX = "peer_intake_key:"
     }
 }

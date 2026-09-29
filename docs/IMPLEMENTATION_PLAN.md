@@ -86,7 +86,7 @@
 |---|---|---|---|
 | B1 | Карта серверных id (`ServerMessageIds`) переживает перезапуск — на iOS тот же пробел, делать на обоих | `service/ServerMessageIds.kt` → Room | DECRYPTION_ERROR после перезапуска отправителя переотправляет сообщение |
 | B4 | Вход по фразе на новом устройстве (настройка фразы уже есть — `recovery/`) | §4 ниже; iOS `AccountRecoveryViewModel`, `AuthServiceClient.recoverAccount` | Установка → фраза → новое устройство входит по фразе |
-| B9 | Intake-ключи: выпуск своего в карточке, предъявление чужого вместо токена | iOS `IntakeCredentialService`; `decisions/contact-traffic-is-vouched-not-purchased.md` | Сообщение контакту, приславшему ключ, уходит без траты токена |
+| B9 | Свой intake-ключ: выпуск и публикация меток. Сделано: ключ собеседника из карточки предъявляется вместо токена, отказ Privacy Pass — пополнить и повторить один раз с оплатой (`stealth/SealedSend.kt`). Ждёт решения: сервер хранит одну метку на (аккаунт, эпоху), и устройства одного аккаунта, выпускающие свои ключи (как iOS сейчас), перетирают друг друга | `decisions/contact-traffic-is-vouched-not-purchased.md` «Multi-device sync» | Сообщения контактов этому устройству не тратят токены, и у аккаунта iOS+Android тоже |
 | B5 | Проверка на железе: Android 11, убийство процесса, перезагрузка, Doze, смена сети | `MessagingForegroundService` | Сообщения доходят во всех пяти случаях, записано в заметке сессии |
 | B6 | Локализация `ja` | `res/values-ja/strings.xml` | Все переводимые ключи `values/` есть в `ja` |
 | B7 | Настройки: Appearance, Network | `GOOD_FIRST_ISSUES.md` №1–2 | Экраны открываются из Settings, строки во всех локалях |

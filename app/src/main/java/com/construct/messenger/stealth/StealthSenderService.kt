@@ -42,6 +42,7 @@ class StealthSenderService @Inject constructor(
     private val policy: StealthPolicy,
     private val wallet: TokenWalletService,
     private val addressBook: AccountAddressBook,
+    private val intake: IntakeCredentials,
 ) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
@@ -99,6 +100,8 @@ class StealthSenderService @Inject constructor(
         recipientIdentityKey: ByteArray,
         encryptedPayload: ByteArray,
         contentType: SealedEnvelopeType,
+        /** The server refused this envelope's credential once: pay this time (see [SealedSend]). */
+        afterCredentialRejection: Boolean = false,
     ): ByteArray {
         val certBytes = getSenderCertificate()
         val sealedCert = sealedSealSenderCert(
@@ -119,7 +122,18 @@ class StealthSenderService @Inject constructor(
             .setContentType(contentType.proto)
             .setDeliveryTag(ByteString.copyFrom(deliveryTag))
 
-        if (policy.shouldConsumeToken(recipientUserId)) {
+        // A credential the recipient issued, instead of a token. Keyed by the account id, not
+        // the address above: the server resolves the address to that id before it checks it.
+        if (afterCredentialRejection) intake.noteRejected(recipientUserId)
+        val intakeTag = if (afterCredentialRejection) null else intake.sealedTag(recipientUserId)
+        val payment = EnvelopePayment.choose(
+            credential = intakeTag != null,
+            afterCredentialRejection = afterCredentialRejection,
+            policyWantsToken = policy.shouldConsumeToken(recipientUserId),
+        )
+        if (payment == EnvelopePayment.CREDENTIAL && intakeTag != null) {
+            builder.setIntakeTagSealed(ByteString.copyFrom(intakeTag))
+        } else if (payment == EnvelopePayment.TOKEN) {
             wallet.consumeToken()?.let { token ->
                 policy.recordTokenConsumed(recipientUserId)
                 builder.setTokenNonce(ByteString.copyFrom(token.nonce))

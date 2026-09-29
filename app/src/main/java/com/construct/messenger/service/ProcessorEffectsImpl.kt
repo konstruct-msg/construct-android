@@ -19,6 +19,7 @@ import com.construct.messenger.domain.usecase.SendMessageUseCase
 import com.construct.messenger.domain.usecase.SendContactCardUseCase
 import com.construct.messenger.domain.usecase.SendReceiptUseCase
 import com.construct.messenger.invite.AccountAddressBook
+import com.construct.messenger.stealth.IntakeCredentials
 import com.construct.messenger.invite.AccountAddressSource
 import com.construct.messenger.invite.ContactCardPayload
 import com.construct.messenger.domain.usecase.SessionControlUseCase
@@ -52,6 +53,7 @@ class ProcessorEffectsImpl @Inject constructor(
     private val sendReceiptUseCase: SendReceiptUseCase,
     private val sendContactCard: SendContactCardUseCase,
     private val addressBook: AccountAddressBook,
+    private val intake: IntakeCredentials,
     private val receivingOpen: ReceivingOpenUseCase,
     // Lazy: CfeTimerBridge executes actions *through* these effects, so a direct dependency
     // would be a cycle. Only its executor is used, and only after an open has finished.
@@ -71,11 +73,12 @@ class ProcessorEffectsImpl @Inject constructor(
             return
         }
         if (decoded.knstContentType == ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE) {
-            // Their card. The intake key in it has no reader on Android yet; the address does.
-            IncomingPlaintext.knstPayload(plaintext)
-                ?.let(ContactCardPayload::read)
-                ?.accountAddress
-                ?.let { addressBook.pin(accountId, it, AccountAddressSource.CARD) }
+            // Their card: the key our envelopes to them present instead of a token, and the address
+            // they are named by.
+            IncomingPlaintext.knstPayload(plaintext)?.let(ContactCardPayload::read)?.let { card ->
+                card.intakeKey?.let { intake.recordPeerKey(accountId, it) }
+                card.accountAddress?.let { addressBook.pin(accountId, it, AccountAddressSource.CARD) }
+            }
             ackStore.markProcessed(messageId, accountId)
             return
         }

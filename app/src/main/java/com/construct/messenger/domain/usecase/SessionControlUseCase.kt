@@ -6,7 +6,7 @@ import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
 import com.construct.messenger.stealth.SealedEnvelopeType
-import com.construct.messenger.stealth.StealthSenderService
+import com.construct.messenger.stealth.SealedSend
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,7 +34,7 @@ class SessionControlUseCase @Inject constructor(
     private val sessionManager: SessionManager,
     private val messagingService: MessagingService,
     private val stealthPolicy: StealthPolicy,
-    private val stealthSender: StealthSenderService,
+    private val sealedSend: SealedSend,
 ) {
     /** Send the core's sealed [payload] to [deviceId] as a DECRYPTION_ERROR. */
     suspend fun sendDecryptionError(deviceId: String, payload: ByteArray): Boolean {
@@ -54,13 +54,12 @@ class SessionControlUseCase @Inject constructor(
                     Log.w(TAG, "DECRYPTION_ERROR stealth-on, no identity key for ${deviceId.take(8)}… — not sent identified")
                     return false
                 }
-                val sealed = stealthSender.buildSealedInner(
+                sealedSend.send(
                     recipientUserId = accountId,
                     recipientIdentityKey = identity,
                     encryptedPayload = payload,
                     contentType = SealedEnvelopeType.DECRYPTION_ERROR,
                 )
-                messagingService.sendSealedMessage(sealed)
             } else {
                 messagingService.sendMessage(
                     messageId = messageId,

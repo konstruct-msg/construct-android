@@ -66,6 +66,7 @@ class ProcessorEffectsImplTest {
             sendReceiptUseCase = mock(),
             sendContactCard = mock(),
             addressBook = mock(),
+            intake = mock(),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
             sendMessage = { mock<SendMessageUseCase>() },
@@ -100,6 +101,7 @@ class ProcessorEffectsImplTest {
                 keystore,
                 com.construct.messenger.security.SecurityNotices(users, com.construct.messenger.data.local.ChatPresence()),
             ),
+            intake = mock(),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
             sendMessage = { mock<SendMessageUseCase>() },
@@ -115,6 +117,46 @@ class ProcessorEffectsImplTest {
         effects.onDecrypted(peer, "card-1", card)
         org.junit.Assert.assertArrayEquals(address, users.rows[peer]?.accountAddress)
         org.junit.Assert.assertTrue("a card is not a bubble", messages.rows.isEmpty())
+    }
+
+    @Test
+    fun `a contact card hands over the sender's intake key`() = runTest {
+        val users = FakeUserDao().also { it.rows[peer] = UserEntity(id = peer, isContact = true) }
+        val keystore = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) }
+        val messages = FakeMessageDao()
+        val intake = mock<com.construct.messenger.stealth.IntakeCredentials>()
+        val effects = ProcessorEffectsImpl(
+            cryptoManager = mock<CryptoManager>(),
+            keystoreManager = keystore,
+            messageDao = messages,
+            chatDao = FakeChatDao(),
+            userDao = users,
+            ackStore = FakeAckStore(),
+            sessionStateStore = mock(),
+            sessionManager = mock(),
+            sessionControl = mock(),
+            sendReceiptUseCase = mock(),
+            sendContactCard = mock(),
+            addressBook = com.construct.messenger.invite.AccountAddressBook(
+                users,
+                keystore,
+                com.construct.messenger.security.SecurityNotices(users, com.construct.messenger.data.local.ChatPresence()),
+            ),
+            intake = intake,
+            receivingOpen = mock(),
+            actionExecutor = { mock<CfeTimerBridge>() },
+            sendMessage = { mock<SendMessageUseCase>() },
+            held = HeldEnvelopes(),
+            alerts = alerts,
+        )
+        val address = ByteArray(32) { 0x5A }
+        val card = com.construct.messenger.util.KnstFrame.pack(
+            com.construct.messenger.invite.ContactCardPayload(intakeKey = ByteArray(32) { 7 }, accountAddress = address).encoded(),
+            shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE,
+            java.util.UUID.randomUUID(),
+        )
+        effects.onDecrypted(peer, "card-1", card)
+        org.mockito.kotlin.verify(intake).recordPeerKey(org.mockito.kotlin.eq(peer), org.mockito.kotlin.argThat { size == 32 && all { it == 7.toByte() } })
     }
 
     @Test
@@ -170,6 +212,7 @@ class ProcessorEffectsImplTest {
             sendReceiptUseCase = mock(),
             sendContactCard = mock(),
             addressBook = mock(),
+            intake = mock(),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
             sendMessage = { mock<SendMessageUseCase>() },
@@ -209,6 +252,7 @@ class ProcessorEffectsImplTest {
             sendReceiptUseCase = mock(),
             sendContactCard = mock(),
             addressBook = mock(),
+            intake = mock(),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
             sendMessage = { mock<SendMessageUseCase>() },
@@ -383,6 +427,7 @@ class ProcessorEffectsImplTest {
             sendReceiptUseCase = mock(),
             sendContactCard = mock(),
             addressBook = mock(),
+            intake = mock(),
             receivingOpen = opener,
             actionExecutor = { bridge },
             sendMessage = { mock<SendMessageUseCase>() },

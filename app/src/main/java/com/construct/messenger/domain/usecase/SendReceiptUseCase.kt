@@ -9,7 +9,7 @@ import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
 import com.construct.messenger.stealth.SealedEnvelopeType
-import com.construct.messenger.stealth.StealthSenderService
+import com.construct.messenger.stealth.SealedSend
 import com.construct.messenger.util.KnstFrame
 import java.util.UUID
 import javax.inject.Inject
@@ -36,7 +36,7 @@ class SendReceiptUseCase @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val messagingService: MessagingService,
     private val stealthPolicy: StealthPolicy,
-    private val stealthSender: StealthSenderService,
+    private val sealedSend: SealedSend,
     private val sessionStateStore: SessionStateStore,
 ) {
     suspend fun delivered(contactId: String, messageIds: List<String>) {
@@ -93,13 +93,12 @@ class SendReceiptUseCase @Inject constructor(
                     Log.w(TAG, "receipt stealth-on, no IK — dropped")
                     return
                 }
-                val sealed = stealthSender.buildSealedInner(
+                sealedSend.send(
                     recipientUserId = accountId,
                     recipientIdentityKey = ik,
                     encryptedPayload = wire,
                     contentType = SealedEnvelopeType.GENERIC,
                 )
-                messagingService.sendSealedMessage(sealed)
             } else {
                 messagingService.sendMessage(
                     messageId = receiptId,

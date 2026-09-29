@@ -19,6 +19,7 @@ import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.OwnDeviceCopy
 import com.construct.messenger.stealth.StealthPolicy
 import com.construct.messenger.stealth.SealedEnvelopeType
+import com.construct.messenger.stealth.SealedSend
 import com.construct.messenger.stealth.StealthSenderService
 import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.DisplayNameGenerator
@@ -67,6 +68,7 @@ class SendMessageUseCase @Inject constructor(
     private val messagingService: MessagingService,
     private val stealthPolicy: StealthPolicy,
     private val stealthSender: StealthSenderService,
+    private val sealedSend: SealedSend,
     private val messageDao: MessageDao,
     private val chatDao: ChatDao,
     private val userDao: UserDao,
@@ -549,13 +551,12 @@ class SendMessageUseCase @Inject constructor(
         identityPublic: ByteArray,
     ): MessagingService.SendResult {
         return if (stealthPolicy.shouldUseSealedSender()) {
-            val sealed = stealthSender.buildSealedInner(
+            sealedSend.send(
                 recipientUserId = recipientId,
                 recipientIdentityKey = identityPublic,
                 encryptedPayload = encryptedPayload,
                 contentType = SealedEnvelopeType.GENERIC,
             )
-            messagingService.sendSealedMessage(sealed)
         } else {
             messagingService.sendMessage(
                 messageId = messageId,
