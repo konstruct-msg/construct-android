@@ -143,6 +143,7 @@ class TokenRefreshCoordinator @Inject constructor(
 
             // Persist the rotated access token immediately.
             keystoreManager.saveAccessToken(response.accessToken)
+            if (response.expiresAt > 0) keystoreManager.saveAccessTokenExpiresAt(response.expiresAt)
             // Refresh token rotation is optional — only update when the server provides one.
             if (response.hasRefreshToken()) {
                 keystoreManager.saveRefreshToken(response.refreshToken)

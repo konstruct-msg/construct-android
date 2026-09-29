@@ -1,5 +1,6 @@
 package com.construct.messenger.data.api
 
+import com.construct.messenger.data.auth.AuthSessionManager
 import android.os.SystemClock
 import com.construct.messenger.diagnostics.Log
 import javax.inject.Inject
@@ -56,6 +57,7 @@ import shared.proto.signaling.v1.Presence.TypingIndicator
 class MessageStreamService @Inject constructor(
     private val grpcClient: GrpcClient,
     private val cursorTracker: StreamCursorTracker,
+    private val authSession: AuthSessionManager,
 ) {
     sealed interface StreamEvent {
         data class Message(val envelope: Envelope) : StreamEvent
@@ -105,6 +107,9 @@ class MessageStreamService @Inject constructor(
         // 2026-09-27, every launch, once the pool had free threads at start-up.
         while (currentCoroutineContext().isActive) {
             try {
+                // A stream opened on an expired token is accepted and then hears nothing; the
+                // stale check only notices after a minute of silence.
+                authSession.ensureFresh()
                 runStreamOnce(attempt)
                 attempt = 0 // clean close → reset backoff
             } catch (e: Exception) {

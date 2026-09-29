@@ -133,14 +133,64 @@ class AuthSessionManager @Inject constructor(
     }
 
     /** Wipes tokens and marks the session invalidated. Device id and private keys are kept. */
+    /**
+     * Refresh the access token if it expires within [REFRESH_MARGIN_SECONDS], or if its expiry
+     * is unknown. Returns whether the token in store is usable afterwards, as far as this device
+     * can tell. **Canon:** iOS `AuthViewModel.scheduleTokenRefresh` (5 minutes early).
+     *
+     * Without it, nothing on Android ever refreshed: [withAuthRetry] had no callers, and a device
+     * left overnight came back with every RPC refused — the pending drain, the intake publish —
+     * and a stream that opened and then heard nothing (device log, 2026-09-29).
+     *
+     * A permanent failure is logged, not acted on: wiping the session belongs to the device
+     * re-auth path, and this runs from background loops.
+     */
+    suspend fun ensureFresh(nowSeconds: Long = System.currentTimeMillis() / 1000): Boolean {
+        if (keystoreManager.getAccessToken() == null) return false
+        if (!needsRefresh(keystoreManager.getAccessTokenExpiresAt(), nowSeconds)) return true
+        return when (val result = tokenRefreshCoordinator.refreshIfPossible()) {
+            is TokenRefreshResult.Success -> {
+                Log.i(TAG, "access token refreshed ahead of expiry")
+                true
+            }
+            is TokenRefreshResult.Failure -> {
+                Log.w(TAG, "access token refresh failed: ${result.error}")
+                false
+            }
+        }
+    }
+
+    /**
+     * Keep the token fresh for as long as [scope] lives: wake [REFRESH_MARGIN_SECONDS] before
+     * expiry and refresh. A failed refresh is tried again after [RETRY_SECONDS].
+     */
+    suspend fun keepFresh() {
+        while (true) {
+            val ok = ensureFresh()
+            val now = System.currentTimeMillis() / 1000
+            val waitSeconds = if (!ok) RETRY_SECONDS else secondsUntilRefresh(keystoreManager.getAccessTokenExpiresAt(), now)
+            kotlinx.coroutines.delay(waitSeconds * 1000)
+        }
+    }
+
     fun clearSession() {
         keystoreManager.clearTokens()
         userId = null
         _state.value = AuthSessionState.INVALIDATED
     }
 
-    private companion object {
-        const val TAG = "AuthSessionManager"
+    companion object {
+        private const val TAG = "AuthSessionManager"
+        const val REFRESH_MARGIN_SECONDS = 5 * 60L
+        const val RETRY_SECONDS = 60L
+
+        /** Unknown expiry refreshes: the answer carries the expiry, and one RPC settles it. */
+        fun needsRefresh(expiresAt: Long?, nowSeconds: Long): Boolean =
+            expiresAt == null || nowSeconds >= expiresAt - REFRESH_MARGIN_SECONDS
+
+        fun secondsUntilRefresh(expiresAt: Long?, nowSeconds: Long): Long =
+            if (expiresAt == null) RETRY_SECONDS
+            else (expiresAt - REFRESH_MARGIN_SECONDS - nowSeconds).coerceAtLeast(RETRY_SECONDS)
     }
 }
 

@@ -179,6 +179,56 @@ class AuthSessionManagerTest {
         assertEquals(AuthSessionManager.AuthSessionState.INVALIDATED, manager.state.value)
     }
 
+    // ── ensureFresh (nothing refreshed a token before 2026-09-29) ───────────
+
+    @Test
+    fun `the refresh rule - five minutes early, and whenever the expiry is unknown`() {
+        val now = 1_000_000L
+        assertFalse(AuthSessionManager.needsRefresh(now + 3600, now))
+        assertTrue(AuthSessionManager.needsRefresh(now + 299, now))
+        assertTrue(AuthSessionManager.needsRefresh(now - 10, now))
+        assertTrue(AuthSessionManager.needsRefresh(null, now))
+    }
+
+    /** The device-log case: a token that expired overnight. Mutation: return true early. */
+    @Test
+    fun `an expired token is refreshed before anything uses it`() = runTest {
+        whenever(keystoreManager.getAccessToken()).thenReturn("v4.public.x")
+        whenever(keystoreManager.getAccessTokenExpiresAt()).thenReturn(900L)
+        whenever(tokenRefreshCoordinator.refreshIfPossible())
+            .thenReturn(TokenRefreshResult.Success("new", null, 99_999L))
+
+        assertTrue(manager.ensureFresh(nowSeconds = 1_000L))
+        verify(tokenRefreshCoordinator).refreshIfPossible()
+    }
+
+    @Test
+    fun `a fresh token is left alone`() = runTest {
+        whenever(keystoreManager.getAccessToken()).thenReturn("v4.public.x")
+        whenever(keystoreManager.getAccessTokenExpiresAt()).thenReturn(10_000L)
+
+        assertTrue(manager.ensureFresh(nowSeconds = 1_000L))
+        verify(tokenRefreshCoordinator, never()).refreshIfPossible()
+    }
+
+    /** A background refresh that fails must not wipe the session: that is device re-auth's call. */
+    @Test
+    fun `a failed refresh reports false and clears nothing`() = runTest {
+        whenever(keystoreManager.getAccessToken()).thenReturn("v4.public.x")
+        whenever(keystoreManager.getAccessTokenExpiresAt()).thenReturn(null)
+        whenever(tokenRefreshCoordinator.refreshIfPossible())
+            .thenReturn(TokenRefreshResult.Failure(TokenRefreshError.TokenRevoked))
+
+        assertFalse(manager.ensureFresh(nowSeconds = 1_000L))
+        verify(keystoreManager, never()).clearTokens()
+    }
+
+    @Test
+    fun `the wait is until five minutes before expiry, never shorter than the retry`() {
+        assertEquals(3600L - 300L, AuthSessionManager.secondsUntilRefresh(10_000L + 3600L, 10_000L))
+        assertEquals(AuthSessionManager.RETRY_SECONDS, AuthSessionManager.secondsUntilRefresh(10_010L, 10_000L))
+    }
+
     private companion object {
         const val USER_ID = "3f6f1c44-2c3a-4f5e-9c7d-1a2b3c4d5e6f"
         const val DEVICE_ID = "0123456789abcdef0123456789abcdef"

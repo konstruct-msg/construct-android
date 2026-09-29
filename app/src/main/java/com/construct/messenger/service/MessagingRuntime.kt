@@ -1,5 +1,6 @@
 package com.construct.messenger.service
 
+import com.construct.messenger.data.auth.AuthSessionManager
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.crypto.KyberPrekeyService
@@ -76,8 +77,10 @@ class MessagingRuntime @Inject constructor(
     private val timerBridge: CfeTimerBridge,
     private val cursorTracker: StreamCursorTracker,
     private val kyberPrekeys: KyberPrekeyService,
+    private val authSession: AuthSessionManager,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var refreshJob: Job? = null
     private val startMutex = Mutex()
 
     @Volatile
@@ -104,6 +107,10 @@ class MessagingRuntime @Inject constructor(
 
         restoreSessions()
         ackStore.hydrate()
+        // Every RPC below carries the stored token; one that expired overnight was refused
+        // across the board (device log 2026-09-29).
+        authSession.ensureFresh()
+        if (refreshJob?.isActive != true) refreshJob = scope.launch { authSession.keepFresh() }
 
         // The collector must be subscribed before drainPending(): MessageRouter.routed is a
         // SharedFlow with no replay, and tryEmit with no subscriber drops the event. Drained

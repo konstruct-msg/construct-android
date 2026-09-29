@@ -43,7 +43,20 @@ class KeystoreManager @Inject constructor(
             .putString(KEY_REFRESH_TOKEN, tokens.refreshToken)
             .putString(KEY_USER_ID, tokens.userId)
             .putString(KEY_DEVICE_ID, deviceId)
+            .putLong(KEY_ACCESS_TOKEN_EXPIRES_AT, tokens.expiresAt)
             .apply()
+    }
+
+    /**
+     * When the access token stops being accepted, in Unix seconds, as the server stated it with
+     * the token — never parsed out of it (`docs/TOKEN_AUTH.md` §3.4). Null for a token saved
+     * before this was kept: the caller refreshes once, and the answer carries it.
+     */
+    fun getAccessTokenExpiresAt(): Long? =
+        prefs.getLong(KEY_ACCESS_TOKEN_EXPIRES_AT, 0L).takeIf { it > 0 }
+
+    fun saveAccessTokenExpiresAt(expiresAt: Long) {
+        prefs.edit().putLong(KEY_ACCESS_TOKEN_EXPIRES_AT, expiresAt).apply()
     }
 
     fun getAccessToken(): String? = prefs.getString(KEY_ACCESS_TOKEN, null)
@@ -71,6 +84,7 @@ class KeystoreManager @Inject constructor(
         prefs.edit()
             .remove(KEY_ACCESS_TOKEN)
             .remove(KEY_REFRESH_TOKEN)
+            .remove(KEY_ACCESS_TOKEN_EXPIRES_AT)
             .remove(KEY_USER_ID)
             .remove(KEY_ACCOUNT_ADDRESS)
             .remove(KEY_CONTACT_CARD_SENT_TO)
@@ -205,6 +219,7 @@ class KeystoreManager @Inject constructor(
         const val KEY_OTPKS = "one_time_prekeys_cfe"
         const val KEY_ACCESS_TOKEN = "access_token"
         const val KEY_REFRESH_TOKEN = "refresh_token"
+        const val KEY_ACCESS_TOKEN_EXPIRES_AT = "access_token_expires_at"
         const val KEY_USER_ID = "user_id"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_PRIVATE_KEYS = "private_keys_cfe"
