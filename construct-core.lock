@@ -16,4 +16,4 @@
 # loads, and a mismatched pair does not fail at the call, it fails at start-up.
 #
 # Ready-made builds: https://github.com/konstruct-msg/construct-core/releases/download/latest/construct-core-android.tar.gz
-CONSTRUCT_CORE_VERSION=0.22.0+7a8fa9bb9a5d
+CONSTRUCT_CORE_VERSION=0.22.0+67f50d7e164d

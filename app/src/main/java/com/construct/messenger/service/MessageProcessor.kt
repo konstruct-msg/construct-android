@@ -118,12 +118,10 @@ class MessageProcessor @Inject constructor(
     private fun resolveCopyRoute(incoming: MessageRouter.IncomingMessage): CopyRouteResolution {
         val route = DeviceCopyRoute.parse(incoming.messageId) ?: return CopyRouteResolution.NotADeviceCopy
         val certificate = incoming.senderCertificate ?: return CopyRouteResolution.NotADeviceCopy
-        val localDeviceId = cryptoManager.currentDeviceId() ?: return CopyRouteResolution.NotADeviceCopy
         val ours = runCatching {
             cryptoManager.deviceCopyTagMatches(
                 tag = route.tag,
                 baseMessageId = route.baseMessageId,
-                ourDeviceId = localDeviceId,
                 peerIdentityPublic = certificate.identityKey,
             )
         }.getOrDefault(true)

@@ -19,7 +19,6 @@ import shared.proto.core.v1.EnvelopeOuterClass.SenderCertificate
 import shared.proto.services.v1.AuthServiceOuterClass.GetSenderCertificateRequest
 import uniffi.construct_core.ppSealTokenBytes
 import uniffi.construct_core.sealedSealSenderCert
-import uniffi.construct_core.sealedUnsealSenderCert
 
 /**
  * ConstructSEALED — sealed sender (hides sender identity from the server).
@@ -175,11 +174,7 @@ class StealthSenderService @Inject constructor(
             val inner = SealedInner.parseFrom(sealedInnerBytes)
             if (inner.senderCertCiphertext.isEmpty) return null
 
-            val identityPriv = cryptoManager.identityKeyBytes()
-            val certBytes = sealedUnsealSenderCert(
-                inner.senderCertCiphertext.toByteArray(),
-                identityPriv,
-            )
+            val certBytes = cryptoManager.openSealedToDevice(inner.senderCertCiphertext.toByteArray())
             val cert = SenderCertificate.parseFrom(certBytes)
 
             ResolvedSender(

@@ -916,6 +916,10 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_current_kybe
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_decrypt_wire_payload(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_device_copy_tag(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_device_copy_tag_matches(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_encrypt_to_wire(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_ensure_hybrid_signature_key(
@@ -958,6 +962,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_import_hybri
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_import_kyber_prekeys(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_import_mls_store(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_import_one_time_prekeys(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_import_orchestrator_state(
@@ -974,9 +980,13 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_kyber_one_ti
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_kyber_prekey_decapsulate(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_new_mls_store(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_one_time_prekey_count(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_open_receiving(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_open_sealed_to_device(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_peer_handshake_held(
 ): Short
@@ -1007,6 +1017,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_sign_bundle_
 external fun uniffi_construct_core_checksum_method_orchestratorcore_sign_hybrid(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_sign_hybrid_prekey(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_sign_with_device_key(
 ): Short
 external fun uniffi_construct_core_checksum_method_rustackstore_cache_len(
 ): Short
@@ -1164,6 +1176,10 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_current_kyber_spk_
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_decrypt_wire_payload(`ptr`: Long,`contactId`: RustBuffer.ByValue,`wirePayload`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_device_copy_tag(`ptr`: Long,`baseMessageId`: RustBuffer.ByValue,`targetDeviceId`: RustBuffer.ByValue,`peerIdentityPublic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_device_copy_tag_matches(`ptr`: Long,`tag`: RustBuffer.ByValue,`baseMessageId`: RustBuffer.ByValue,`peerIdentityPublic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_orchestratorcore_encrypt_to_wire(`ptr`: Long,`contactId`: RustBuffer.ByValue,`plaintext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_ensure_hybrid_signature_key(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1206,6 +1222,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_import_hybrid_sign
 ): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_import_kyber_prekeys(`ptr`: Long,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_method_orchestratorcore_import_mls_store(`ptr`: Long,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
 external fun uniffi_construct_core_fn_method_orchestratorcore_import_one_time_prekeys(`ptr`: Long,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_import_orchestrator_state(`ptr`: Long,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1222,9 +1240,13 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_kyber_one_time_pre
 ): Int
 external fun uniffi_construct_core_fn_method_orchestratorcore_kyber_prekey_decapsulate(`ptr`: Long,`keyId`: Int,`ciphertext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_new_mls_store(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
 external fun uniffi_construct_core_fn_method_orchestratorcore_one_time_prekey_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
 external fun uniffi_construct_core_fn_method_orchestratorcore_open_receiving(`ptr`: Long,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_open_sealed_to_device(`ptr`: Long,`sealedBox`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_peer_handshake_held(`ptr`: Long,`devices`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
@@ -1255,6 +1277,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_sign_bundle_data(`
 external fun uniffi_construct_core_fn_method_orchestratorcore_sign_hybrid(`ptr`: Long,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_sign_hybrid_prekey(`ptr`: Long,`suiteId`: Byte,`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_sign_with_device_key(`ptr`: Long,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_clone_rustackstore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
@@ -1870,6 +1894,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_decrypt_wire_payload() != 22393.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_device_copy_tag() != 16396.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_device_copy_tag_matches() != 16613.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_encrypt_to_wire() != 5089.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1933,6 +1963,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_kyber_prekeys() != 16146.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_mls_store() != 61532.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_one_time_prekeys() != 20260.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1957,10 +1990,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_kyber_prekey_decapsulate() != 28414.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_new_mls_store() != 46483.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_one_time_prekey_count() != 21478.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_open_receiving() != 32397.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_open_sealed_to_device() != 63797.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_peer_handshake_held() != 14228.toShort()) {
@@ -2006,6 +2045,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_sign_hybrid_prekey() != 60717.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_sign_with_device_key() != 47610.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_rustackstore_cache_len() != 41894.toShort()) {
@@ -3759,6 +3801,17 @@ public interface OrchestratorCoreInterface {
     fun `decryptWirePayload`(`contactId`: kotlin.String, `wirePayload`: kotlin.ByteArray): DecryptedMessageResult
     
     /**
+     * `device_copy_tag` with our identity key.
+     */
+    fun `deviceCopyTag`(`baseMessageId`: kotlin.String, `targetDeviceId`: kotlin.String, `peerIdentityPublic`: kotlin.ByteArray): kotlin.String
+    
+    /**
+     * `device_copy_tag_matches` with our identity key and our device id, which the core derives
+     * from that key rather than taking it from the caller.
+     */
+    fun `deviceCopyTagMatches`(`tag`: kotlin.String, `baseMessageId`: kotlin.String, `peerIdentityPublic`: kotlin.ByteArray): kotlin.Boolean
+    
+    /**
      * Encrypt for a device and return the whole wire payload. Sent as it is: a payload rebuilt
      * from components dropped fields (decisions/responder-authenticates-initiator-by-kem.md).
      */
@@ -3837,6 +3890,11 @@ public interface OrchestratorCoreInterface {
     
     fun `importKyberPrekeys`(`data`: kotlin.ByteArray)
     
+    /**
+     * An MLS store restored from `MlsStore.export_cfe()`, signing with this device's key.
+     */
+    fun `importMlsStore`(`data`: kotlin.ByteArray): MlsStore
+    
     fun `importOneTimePrekeys`(`data`: kotlin.ByteArray)
     
     /**
@@ -3861,9 +3919,21 @@ public interface OrchestratorCoreInterface {
      */
     fun `kyberPrekeyDecapsulate`(`keyId`: kotlin.UInt, `ciphertext`: kotlin.ByteArray): kotlin.ByteArray
     
+    /**
+     * A fresh MLS store signing with this device's Ed25519 key.
+     */
+    fun `newMlsStore`(): MlsStore
+    
     fun `oneTimePrekeyCount`(): kotlin.UInt
     
     fun `openReceiving`(`device`: kotlin.String): ReceivingOpenResult
+    
+    /**
+     * Open a box sealed to this device's X25519 identity key (`sealed_seal_sender_cert`,
+     * `seal_to_device_key`): a sender certificate, a sibling's device metadata. A box sealed to
+     * another key fails with DecryptionFailed, which is how a caller finds its own copy.
+     */
+    fun `openSealedToDevice`(`sealedBox`: kotlin.ByteArray): kotlin.ByteArray
     
     fun `peerHandshakeHeld`(`devices`: List<kotlin.String>): kotlin.Boolean
     
@@ -3904,6 +3974,12 @@ public interface OrchestratorCoreInterface {
     fun `signHybrid`(`message`: kotlin.ByteArray): kotlin.ByteArray
     
     fun `signHybridPrekey`(`suiteId`: kotlin.UByte, `publicKey`: kotlin.ByteArray): kotlin.ByteArray
+    
+    /**
+     * Ed25519 over `message` with this device's signing key (device auth, invites). The same
+     * signature `sign_invite_data` / CryptoKit made from the exported key: Ed25519 is deterministic.
+     */
+    fun `signWithDeviceKey`(`message`: kotlin.ByteArray): kotlin.ByteArray
     
     companion object
 }
@@ -4133,6 +4209,40 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_decrypt_wire_payload(
         it,
         FfiConverterString.lower(`contactId`),FfiConverterByteArray.lower(`wirePayload`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * `device_copy_tag` with our identity key.
+     */
+    @Throws(CryptoException::class)override fun `deviceCopyTag`(`baseMessageId`: kotlin.String, `targetDeviceId`: kotlin.String, `peerIdentityPublic`: kotlin.ByteArray): kotlin.String {
+            return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_device_copy_tag(
+        it,
+        FfiConverterString.lower(`baseMessageId`),FfiConverterString.lower(`targetDeviceId`),FfiConverterByteArray.lower(`peerIdentityPublic`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * `device_copy_tag_matches` with our identity key and our device id, which the core derives
+     * from that key rather than taking it from the caller.
+     */override fun `deviceCopyTagMatches`(`tag`: kotlin.String, `baseMessageId`: kotlin.String, `peerIdentityPublic`: kotlin.ByteArray): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_device_copy_tag_matches(
+        it,
+        FfiConverterString.lower(`tag`),FfiConverterString.lower(`baseMessageId`),FfiConverterByteArray.lower(`peerIdentityPublic`),_status)
 }
     }
     )
@@ -4462,6 +4572,23 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
+    /**
+     * An MLS store restored from `MlsStore.export_cfe()`, signing with this device's key.
+     */
+    @Throws(MlsException::class)override fun `importMlsStore`(`data`: kotlin.ByteArray): MlsStore {
+            return FfiConverterTypeMlsStore.lift(
+    callWithHandle {
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_import_mls_store(
+        it,
+        FfiConverterByteArray.lower(`data`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(CryptoException::class)override fun `importOneTimePrekeys`(`data`: kotlin.ByteArray)
         = 
     callWithHandle {
@@ -4578,6 +4705,23 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     
 
+    
+    /**
+     * A fresh MLS store signing with this device's Ed25519 key.
+     */
+    @Throws(MlsException::class)override fun `newMlsStore`(): MlsStore {
+            return FfiConverterTypeMlsStore.lift(
+    callWithHandle {
+    uniffiRustCallWithError(MlsException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_new_mls_store(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
     override fun `oneTimePrekeyCount`(): kotlin.UInt {
             return FfiConverterUInt.lift(
     callWithHandle {
@@ -4598,6 +4742,25 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_open_receiving(
         it,
         FfiConverterString.lower(`device`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Open a box sealed to this device's X25519 identity key (`sealed_seal_sender_cert`,
+     * `seal_to_device_key`): a sender certificate, a sibling's device metadata. A box sealed to
+     * another key fails with DecryptionFailed, which is how a caller finds its own copy.
+     */
+    @Throws(CryptoException::class)override fun `openSealedToDevice`(`sealedBox`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_open_sealed_to_device(
+        it,
+        FfiConverterByteArray.lower(`sealedBox`),_status)
 }
     }
     )
@@ -4805,6 +4968,24 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_sign_hybrid_prekey(
         it,
         FfiConverterUByte.lower(`suiteId`),FfiConverterByteArray.lower(`publicKey`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Ed25519 over `message` with this device's signing key (device auth, invites). The same
+     * signature `sign_invite_data` / CryptoKit made from the exported key: Ed25519 is deterministic.
+     */
+    @Throws(CryptoException::class)override fun `signWithDeviceKey`(`message`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_sign_with_device_key(
+        it,
+        FfiConverterByteArray.lower(`message`),_status)
 }
     }
     )

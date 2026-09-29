@@ -23,11 +23,9 @@ import uniffi.construct_core.createCryptoCoreFromKeys
 import uniffi.construct_core.createOrchestratorCoreFromKeys
 import uniffi.construct_core.deriveDeviceId
 import uniffi.construct_core.deriveRecoveryKeypair
-import uniffi.construct_core.deriveVerifyingKeyFromSecret
 import uniffi.construct_core.generateMnemonic
 import uniffi.construct_core.mnemonicToSeed
 import uniffi.construct_core.planSend as planSendTargets
-import uniffi.construct_core.signInviteData
 import uniffi.construct_core.signRecoveryChallenge
 import uniffi.construct_core.validateMnemonic
 import uniffi.construct_core.verifyInviteSignature
@@ -183,11 +181,13 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         orchestrator?.importOneTimePrekeys(list) ?: requireBootstrap().importOneTimePrekeys(list)
     }
 
-    /** X25519 identity **secret** key bytes — needed by
-     * [com.construct.messenger.stealth.StealthSenderService] to unseal inbound
-     * sender certificates. Never persist or log. */
-    fun identityKeyBytes(): ByteArray = synchronized(coreLock) {
-        orchestrator?.getIdentityKeyBytes() ?: requireBootstrap().getIdentityKeyBytes()
+    /**
+     * Opens a box sealed to this device's X25519 identity key — an inbound sender certificate —
+     * inside the core. Until 2026-09-29 the identity secret was read out for this on every
+     * sealed message. Throws when the box is sealed to another key.
+     */
+    fun openSealedToDevice(sealedBox: ByteArray): ByteArray = synchronized(coreLock) {
+        requireOrchestrator().openSealedToDevice(sealedBox)
     }
 
     // ── Sessions / messages (orchestrator once logged in) ───────────────────
@@ -274,27 +274,17 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         targetDeviceId: String,
         peerIdentityPublic: ByteArray,
     ): String = synchronized(coreLock) {
-        uniffi.construct_core.deviceCopyTag(
-            baseMessageId,
-            targetDeviceId,
-            identityKeyBytes(),
-            peerIdentityPublic,
-        )
+        requireOrchestrator().deviceCopyTag(baseMessageId, targetDeviceId, peerIdentityPublic)
     }
 
+    /** Whether [tag] was written for this device by the device behind [peerIdentityPublic]. The
+     * core derives this device's id from its own key; a caller cannot pass the wrong one. */
     fun deviceCopyTagMatches(
         tag: String,
         baseMessageId: String,
-        ourDeviceId: String,
         peerIdentityPublic: ByteArray,
     ): Boolean = synchronized(coreLock) {
-        uniffi.construct_core.deviceCopyTagMatches(
-            tag,
-            baseMessageId,
-            ourDeviceId,
-            identityKeyBytes(),
-            peerIdentityPublic,
-        )
+        requireOrchestrator().deviceCopyTagMatches(tag, baseMessageId, peerIdentityPublic)
     }
 
     /** CFE coordination snapshots; callers persist the returned bytes in typed slots. */
@@ -446,30 +436,26 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     fun safetyNumber(myDeviceId: String, theirDeviceId: String): String? =
         computeSafetyNumber(myDeviceId, theirDeviceId)
 
-    fun signingKeyBytes(): ByteArray = synchronized(coreLock) {
-        (orchestrator?.getSigningKeyBytes() ?: requireBootstrap().getSigningKeyBytes())
-    }
-
-    fun signInvite(canonical: String): ByteArray = synchronized(coreLock) {
-        signInviteData(canonical, signingKeyBytes()).signature
-    }
+    fun signInvite(canonical: String): ByteArray = signWithDeviceKey(canonical)
 
     fun verifyInvite(canonical: String, signature: ByteArray, verifyingKey: ByteArray): Boolean =
         verifyInviteSignature(canonical, signature, verifyingKey)
 
-    fun verifyingKeyFromSigningSecret(): ByteArray = synchronized(coreLock) {
-        deriveVerifyingKeyFromSecret(signingKeyBytes())
+    /** The Ed25519 verifying key this device publishes — what a recipient checks its invite with. */
+    fun verifyingKey(): ByteArray = synchronized(coreLock) {
+        (orchestrator?.getRegistrationBundleFields() ?: requireBootstrap().getRegistrationBundleFields())
+            .verifyingKey
     }
 
     /**
-     * Ed25519-signs [message] with this device's signing key. Used for the device
-     * auth challenge (`"{device_id}{timestamp}"`) — there is no dedicated FFI export for
-     * a bare Ed25519 sign, so this repurposes [signRecoveryChallenge], which is the same
-     * primitive (sign(privateKey, message)) under a recovery-specific name.
+     * Ed25519-signs [message] with this device's signing key, inside the core: the device auth
+     * challenge (`"{device_id}{timestamp}"`) and invites. Until 2026-09-29 the key was read out
+     * with `getSigningKeyBytes` and signed through the recovery function. Before login the
+     * bootstrap core signs (`signBundleData` is the same plain Ed25519 under its first use's name).
      */
     fun signWithDeviceKey(message: String): ByteArray = synchronized(coreLock) {
-        val signingKey = orchestrator?.getSigningKeyBytes() ?: requireBootstrap().getSigningKeyBytes()
-        signRecoveryChallenge(signingKey, message)
+        val bytes = message.toByteArray(Charsets.UTF_8)
+        orchestrator?.signWithDeviceKey(bytes) ?: requireBootstrap().signBundleData(bytes)
     }
 
     fun close() = synchronized(coreLock) {

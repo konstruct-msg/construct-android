@@ -351,7 +351,6 @@ class MessageProcessorTest {
                 org.mockito.kotlin.any(),
                 org.mockito.kotlin.any(),
                 org.mockito.kotlin.any(),
-                org.mockito.kotlin.any(),
             ),
         ).thenReturn(false)
         val gateway = FakeGateway()

@@ -76,7 +76,7 @@ class InviteGenerator @Inject constructor(
         } catch (_: Exception) {
             throw InviteException.MissingIdentityKey
         }
-        val verifying = cryptoManager.verifyingKeyFromSigningSecret()
+        val verifying = cryptoManager.verifyingKey()
         if (!cryptoManager.verifyInvite(canonical, signature, verifying)) {
             throw InviteException.SigningFailed
         }
