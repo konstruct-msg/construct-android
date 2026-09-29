@@ -18,6 +18,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import com.construct.messenger.data.repository.AppLockState
+import com.construct.messenger.data.repository.LockDelay
+import com.construct.messenger.ui.screens.security.PinFlow
+import com.construct.messenger.ui.theme.ctBold
+import com.construct.messenger.viewmodel.AppLockViewModel
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.PendingActions
@@ -68,9 +79,20 @@ fun SecurityScreen(
     onNavigateBack: () -> Unit,
     onRecovery: () -> Unit,
     onIssuedInvites: () -> Unit,
+    onPin: (PinFlow) -> Unit,
     viewModel: SecurityViewModel = hiltViewModel(),
+    lockViewModel: AppLockViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
+    val lock by lockViewModel.lock.collectAsStateWithLifecycle()
+    var pickDelay by remember { mutableStateOf(false) }
+    if (pickDelay) {
+        LockDelayDialog(
+            current = lock.lockDelay,
+            onPick = { pickDelay = false; lockViewModel.setLockDelay(it) },
+            onDismiss = { pickDelay = false },
+        )
+    }
     // On every entry: the phrase may have just been set up on the screen this returns from.
     LaunchedEffect(Unit) { viewModel.refreshRecovery() }
     var confirmEnable by remember { mutableStateOf(false) }
@@ -89,6 +111,10 @@ fun SecurityScreen(
     }
     SecurityContent(
         ui = ui,
+        lock = lock,
+        onPin = onPin,
+        onBiometric = lockViewModel::setBiometricEnabled,
+        onLockDelay = { pickDelay = true },
         onNavigateBack = onNavigateBack,
         onRecovery = onRecovery,
         onLockdown = viewModel::setLockdown,
@@ -102,13 +128,17 @@ fun SecurityScreen(
  * Security.
  *
  * **Canon:** iOS `SecurityView` — one flat list, blocks divided by a separator, each with its
- * hint beneath. Order: recovery phrase, Lockdown, sender anonymity, issued invites, discovery.
- * Not ported yet: PIN / biometric lock and the duress PIN (next steps of plan B7); key
- * transparency, which Android does not have.
+ * hint beneath. Order: PIN (biometrics, lock delay, off), recovery phrase, Lockdown, sender
+ * anonymity, issued invites, discovery. Not ported: the duress PIN (a separate step — it erases
+ * the account); key transparency, which Android does not have.
  */
 @Composable
 private fun SecurityContent(
     ui: SecurityUiState,
+    lock: AppLockState,
+    onPin: (PinFlow) -> Unit,
+    onBiometric: (Boolean) -> Unit,
+    onLockDelay: () -> Unit,
     onNavigateBack: () -> Unit,
     onRecovery: () -> Unit,
     onLockdown: (Boolean) -> Unit,
@@ -133,6 +163,9 @@ private fun SecurityContent(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState()),
         ) {
+            PinBlock(lock = lock, onPin = onPin, onBiometric = onBiometric, onLockDelay = onLockDelay)
+            CTSep(style = CTSepStyle.THICK)
+
             RecoveryRow(recovery = ui.recovery, onClick = onRecovery)
             Hint(stringResource(R.string.security_recovery_hint))
             CTSep(style = CTSepStyle.THICK)
@@ -185,6 +218,101 @@ private fun SecurityContent(
         }
     }
 }
+
+@Composable
+private fun PinBlock(
+    lock: AppLockState,
+    onPin: (PinFlow) -> Unit,
+    onBiometric: (Boolean) -> Unit,
+    onLockDelay: () -> Unit,
+) {
+    SecurityRow(modifier = Modifier.clickable { onPin(if (lock.pinEnabled) PinFlow.CHANGE else PinFlow.CREATE) }) {
+        Text(
+            text = stringResource(if (lock.pinEnabled) R.string.pin_change else R.string.pin_enable),
+            style = ctRegular(13),
+            color = CTColor.text,
+            modifier = Modifier.weight(1f),
+        )
+        Chevron()
+    }
+    if (!lock.pinEnabled) return
+    CTSep()
+    SecurityRow(vertical = CTLayout.chromeGap) {
+        RowIcon(Icons.Default.Fingerprint, if (lock.biometricEnabled) CTColor.accent else CTColor.textDim)
+        Text(
+            text = stringResource(R.string.security_use_biometric),
+            style = ctRegular(13),
+            color = if (lock.biometricAvailable) CTColor.text else CTColor.textDim,
+            modifier = Modifier.weight(1f),
+        )
+        CTSwitch(checked = lock.biometricEnabled, onCheckedChange = onBiometric, enabled = lock.biometricAvailable)
+    }
+    CTSep()
+    SecurityRow(modifier = Modifier.clickable(onClick = onLockDelay)) {
+        RowIcon(Icons.Default.Timer, CTColor.textDim)
+        Text(
+            text = stringResource(R.string.lock_delay),
+            style = ctRegular(13),
+            color = CTColor.text,
+            modifier = Modifier.weight(1f),
+        )
+        Text(text = stringResource(lock.lockDelay.label), style = ctRegular(12), color = CTColor.textDim)
+        Chevron()
+    }
+    CTSep()
+    SecurityRow(modifier = Modifier.clickable { onPin(PinFlow.DISABLE) }) {
+        RowIcon(Icons.Default.Cancel, CTColor.danger)
+        Text(text = stringResource(R.string.pin_disable), style = ctRegular(13), color = CTColor.danger)
+    }
+}
+
+/** iOS `confirmationDialog` for the lock delay: the choices, the current one checked. */
+@Composable
+private fun LockDelayDialog(current: LockDelay, onPick: (LockDelay) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = CTColor.outMsgBg,
+        title = { Text(stringResource(R.string.lock_delay), style = ctBold(15), color = CTColor.text) },
+        text = {
+            Column {
+                LockDelay.entries.forEach { delay ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onPick(delay) }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(delay.label),
+                            style = ctRegular(14),
+                            color = CTColor.text,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (delay == current) {
+                            Icon(Icons.Default.Check, contentDescription = null, tint = CTColor.accent, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel), style = ctRegular(13), color = CTColor.textDim)
+            }
+        },
+    )
+}
+
+private val LockDelay.label: Int
+    get() = when (this) {
+        LockDelay.IMMEDIATE -> R.string.lock_delay_immediate
+        LockDelay.THIRTY_SECONDS -> R.string.lock_delay_30s
+        LockDelay.ONE_MINUTE -> R.string.lock_delay_1m
+        LockDelay.FIVE_MINUTES -> R.string.lock_delay_5m
+        LockDelay.TEN_MINUTES -> R.string.lock_delay_10m
+    }
 
 @Composable
 private fun RecoveryRow(recovery: RecoveryStatus?, onClick: () -> Unit) {
@@ -330,6 +458,10 @@ private fun Hint(text: String, color: Color = CTColor.textDim, top: Dp = 6.dp) {
 @Composable
 private fun SecurityContentPreview() {
     SecurityContent(
+        lock = AppLockState(pinEnabled = true, biometricAvailable = true),
+        onPin = {},
+        onBiometric = {},
+        onLockDelay = {},
         ui = SecurityUiState(
             hasUsername = true,
             recovery = RecoveryStatus(isSetup = true, fingerprint = "a1b2 c3d4 e5f6 0718 9a0b"),

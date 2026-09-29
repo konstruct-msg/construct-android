@@ -18,6 +18,8 @@ import com.construct.messenger.ui.screens.recovery.RecoveryPromptScreen
 import com.construct.messenger.ui.screens.main.MainTabView
 import com.construct.messenger.ui.screens.onboarding.OnboardingScreen
 import com.construct.messenger.ui.screens.orientation.OrientationScreen
+import com.construct.messenger.ui.screens.security.PinFlow
+import com.construct.messenger.ui.screens.security.PinSetupScreen
 import com.construct.messenger.ui.screens.settings.AccountScreen
 import com.construct.messenger.ui.screens.settings.AppearanceRoute
 import com.construct.messenger.ui.screens.settings.DevicesRoute
@@ -258,7 +260,15 @@ fun KonstructNavHost(
                 onNavigateBack = { navController.popBackStack() },
                 onRecovery = { navController.navigate(Screen.RecoverySetup.route) { launchSingleTop = true } },
                 onIssuedInvites = { navController.navigate(Screen.IssuedInvites.route) { launchSingleTop = true } },
+                onPin = { flow -> navController.navigate(Screen.PinSetup.createRoute(flow.name)) { launchSingleTop = true } },
             )
+        }
+        composable(
+            route = Screen.PinSetup.route,
+            arguments = listOf(navArgument("flow") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val flow = PinFlow.valueOf(backStackEntry.arguments?.getString("flow") ?: PinFlow.CREATE.name)
+            PinSetupScreen(flow = flow, onDone = { navController.popBackStack() })
         }
         composable(Screen.IssuedInvites.route) {
             IssuedInvitesRoute(onNavigateBack = { navController.popBackStack() })

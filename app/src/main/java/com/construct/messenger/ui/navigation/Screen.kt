@@ -39,6 +39,10 @@ sealed class Screen(val route: String) {
     /** Theme, message face and size (iOS `AppearanceSettingsView`). */
     data object Appearance : Screen("settings/appearance")
     data object Security : Screen("settings/security")
+    /** Create / change / turn off the app-lock PIN (iOS `PinSetupView`, `PinDisableView`). */
+    data object PinSetup : Screen("settings/security/pin/{flow}") {
+        fun createRoute(flow: String) = "settings/security/pin/$flow"
+    }
     /** Invites this device issued and can still revoke (iOS `IssuedInvitesView`). */
     data object IssuedInvites : Screen("settings/security/invites")
     /** Stream status, server, transport (iOS `NetworkSettingsView`, without VEIL). */

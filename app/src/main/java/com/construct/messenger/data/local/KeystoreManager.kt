@@ -98,6 +98,36 @@ class KeystoreManager @Inject constructor(
         prefs.edit().putLong(KEY_ACCESS_TOKEN_EXPIRES_AT, expiresAt).apply()
     }
 
+    /**
+     * The app-lock PIN record: PBKDF2 hash, salt, hash version and PIN length (iOS keeps the same
+     * four in the Keychain). Survives logout on purpose — it locks the app, not the account.
+     */
+    fun pinRecord(): PinRecord? {
+        val hash = prefs.getString(KEY_PIN_HASH, null) ?: return null
+        val salt = prefs.getString(KEY_PIN_SALT, null) ?: return null
+        return PinRecord(
+            hash = Base64.decode(hash, Base64.NO_WRAP),
+            salt = Base64.decode(salt, Base64.NO_WRAP),
+            version = prefs.getInt(KEY_PIN_VERSION, 0),
+            length = prefs.getInt(KEY_PIN_LENGTH, 6),
+        )
+    }
+
+    fun savePinRecord(record: PinRecord) {
+        prefs.edit()
+            .putString(KEY_PIN_HASH, Base64.encodeToString(record.hash, Base64.NO_WRAP))
+            .putString(KEY_PIN_SALT, Base64.encodeToString(record.salt, Base64.NO_WRAP))
+            .putInt(KEY_PIN_VERSION, record.version)
+            .putInt(KEY_PIN_LENGTH, record.length)
+            .commit()
+    }
+
+    fun clearPinRecord() {
+        prefs.edit()
+            .remove(KEY_PIN_HASH).remove(KEY_PIN_SALT).remove(KEY_PIN_VERSION).remove(KEY_PIN_LENGTH)
+            .commit()
+    }
+
     fun getAccessToken(): String? = prefs.getString(KEY_ACCESS_TOKEN, null)
     fun getRefreshToken(): String? = prefs.getString(KEY_REFRESH_TOKEN, null)
     fun getUserId(): String? = prefs.getString(KEY_USER_ID, null)
@@ -269,6 +299,10 @@ class KeystoreManager @Inject constructor(
         const val KEY_VEIL_CAPABILITY_V2_PREFIX = "veil_capability_v2:"
         const val KEY_VEIL_CAPABILITY_V2_EXP_PREFIX = "veil_capability_v2_exp:"
         const val KEY_VEIL_ACCESS_SEED = "veil_access_seed"
+        const val KEY_PIN_HASH = "app_pin_hash"
+        const val KEY_PIN_SALT = "app_pin_salt"
+        const val KEY_PIN_VERSION = "app_pin_hash_version"
+        const val KEY_PIN_LENGTH = "app_pin_length"
         const val KEY_USER_ID = "user_id"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_PRIVATE_KEYS = "private_keys_cfe"
@@ -281,3 +315,6 @@ class KeystoreManager @Inject constructor(
         const val KEY_PEER_INTAKE_PREFIX = "peer_intake_key:"
     }
 }
+
+/** See [KeystoreManager.pinRecord]. */
+class PinRecord(val hash: ByteArray, val salt: ByteArray, val version: Int, val length: Int)

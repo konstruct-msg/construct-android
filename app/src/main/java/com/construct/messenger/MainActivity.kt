@@ -5,9 +5,9 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.Manifest
-import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.SystemBarStyle
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -22,6 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import com.construct.messenger.data.local.PendingChatStore
 import com.construct.messenger.data.model.AppTheme
 import com.construct.messenger.data.model.ChatFace
+import com.construct.messenger.data.repository.AppLockRepository
 import com.construct.messenger.data.repository.AppearanceRepository
 import com.construct.messenger.ui.components.SecurityNoticeHost
 import com.construct.messenger.ui.navigation.Screen
@@ -29,13 +30,14 @@ import com.construct.messenger.data.local.PendingInviteStore
 import com.construct.messenger.service.MessageNotifier
 import com.construct.messenger.ui.navigation.KonstructNavHost
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.screens.security.PinLockScreen
 import com.construct.messenger.ui.theme.ChatText
 import com.construct.messenger.ui.theme.KonstructMessengerTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -54,6 +56,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var appearanceRepository: AppearanceRepository
+
+    @Inject
+    lateinit var appLock: AppLockRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,9 +89,28 @@ class MainActivity : ComponentActivity() {
                     SecurityNoticeHost(
                         onOpenChat = { navController.navigate(Screen.Chat.createRoute(it)) },
                     )
+                    // iOS `SecurityGateView`: the lock covers everything while the PIN is required.
+                    val lock by appLock.lock.collectAsStateWithLifecycle()
+                    LaunchedEffect(lock.pinEnabled) {
+                        // With a PIN, the recents thumbnail must not show what the lock hides.
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            setRecentsScreenshotEnabled(!lock.pinEnabled)
+                        }
+                    }
+                    if (lock.requiresUnlock) PinLockScreen()
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        appLock.onForeground()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        appLock.onBackground()
     }
 
     override fun onNewIntent(intent: Intent) {
