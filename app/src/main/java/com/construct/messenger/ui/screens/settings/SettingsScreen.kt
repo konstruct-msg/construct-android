@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Laptop
 import androidx.compose.material.icons.filled.Lock
@@ -77,6 +78,7 @@ data class SettingsNavigation(
     val onSecurity: () -> Unit = {},
     val onNotifications: () -> Unit = {},
     val onNetwork: () -> Unit = {},
+    val onDrafts: () -> Unit = {},
     val onOrientation: () -> Unit = {},
     val onDiagnostics: () -> Unit = {},
     val onRecoverySetup: () -> Unit = {},
@@ -110,9 +112,9 @@ fun SettingsRoute(
  *
  * **Canon:** iOS `SettingsView` (compact layout) — cards separated by space, no section headers,
  * uppercase row labels. Rows appear only for what Android actually has: a row that opens
- * nothing reads as broken. Missing against iOS: data & storage,
- * transcription, drafts — Android has none of them yet, and a row that opens nothing reads as
- * broken. Diagnostics is the log half of iOS `DiagnosticsView`, in debug builds only.
+ * nothing reads as broken. Missing against iOS: data & storage and transcription — both wait
+ * for media, and a row that opens nothing reads as broken. Diagnostics is the log half of iOS
+ * `DiagnosticsView`, in debug builds only.
  */
 @Composable
 fun SettingsScreen(
@@ -201,6 +203,13 @@ fun SettingsScreen(
                     status = connection.toStatus(),
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onNetwork),
+                )
+                CTSep()
+                CTSettingsRow(
+                    label = stringResource(R.string.settings_row_drafts).uppercase(),
+                    icon = Icons.Default.Folder,
+                    disclosure = true,
+                    modifier = Modifier.clickable(onClick = navigation.onDrafts),
                 )
             }
 

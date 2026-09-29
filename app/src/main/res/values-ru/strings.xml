@@ -149,6 +149,10 @@
     <string name="notifications_delivery_text">Konstruct держит собственное зашифрованное соединение с сервером и не использует push-сервисы Google, поэтому никто посторонний не узнаёт, когда вам приходит сообщение. Соединение немного расходует батарею.</string>
     <string name="notifications_connection_notification">Уведомление о соединении</string>
     <string name="notifications_connection_footer">Пока соединение работает, Android требует постоянное уведомление. Здесь его можно скрыть — доставка продолжит работать.</string>
+    <string name="settings_row_drafts">черновики</string>
+    <string name="drafts_title">Черновики</string>
+    <string name="drafts_save">Сохранить черновик</string>
+    <string name="drafts_stored_locally">Черновики хранятся локально на этом устройстве.</string>
     <string name="settings_row_devices">связанные устройства</string>
     <string name="linked_devices">Связанные устройства</string>
     <string name="this_device">Это устройство</string>

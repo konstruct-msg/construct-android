@@ -152,6 +152,10 @@
     <string name="notifications_delivery_text">Konstruct keeps its own encrypted connection to the server and does not use Google push services, so no third party learns when you receive a message. The connection costs some battery.</string>
     <string name="notifications_connection_notification">Connection notification</string>
     <string name="notifications_connection_footer">Android requires an ongoing notification while the connection runs. You can hide it here; delivery keeps working.</string>
+    <string name="settings_row_drafts">drafts</string>
+    <string name="drafts_title">Drafts</string>
+    <string name="drafts_save">Save Draft</string>
+    <string name="drafts_stored_locally">Drafts are stored locally on this device.</string>
     <string name="settings_row_devices">linked devices</string>
     <string name="linked_devices">Linked Devices</string>
     <string name="this_device">This Device</string>

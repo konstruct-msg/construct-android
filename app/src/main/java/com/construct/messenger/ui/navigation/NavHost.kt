@@ -21,6 +21,7 @@ import com.construct.messenger.ui.screens.orientation.OrientationScreen
 import com.construct.messenger.ui.screens.settings.AccountScreen
 import com.construct.messenger.ui.screens.settings.AppearanceRoute
 import com.construct.messenger.ui.screens.settings.DevicesRoute
+import com.construct.messenger.ui.screens.settings.DraftsRoute
 import com.construct.messenger.ui.screens.settings.DiagnosticsScreen
 import com.construct.messenger.ui.screens.settings.NetworkScreen
 import com.construct.messenger.ui.screens.settings.NotificationsRoute
@@ -138,6 +139,7 @@ fun KonstructNavHost(
                     onAppearance = { navController.navigate(Screen.Appearance.route) { launchSingleTop = true } },
                     onSecurity = { navController.navigate(Screen.Security.route) { launchSingleTop = true } },
                     onNotifications = { navController.navigate(Screen.Notifications.route) { launchSingleTop = true } },
+                    onDrafts = { navController.navigate(Screen.Drafts.route) { launchSingleTop = true } },
                     onNetwork = { navController.navigate(Screen.Network.route) { launchSingleTop = true } },
                     onDiagnostics = { navController.navigate(Screen.Diagnostics.route) { launchSingleTop = true } },
                     onRecoverySetup = { navController.navigate(Screen.RecoverySetup.route) { launchSingleTop = true } },
@@ -243,6 +245,9 @@ fun KonstructNavHost(
         }
         composable(Screen.Notifications.route) {
             NotificationsRoute(onNavigateBack = { navController.popBackStack() })
+        }
+        composable(Screen.Drafts.route) {
+            DraftsRoute(onNavigateBack = { navController.popBackStack() })
         }
         composable(Screen.Appearance.route) {
             AppearanceRoute(onNavigateBack = { navController.popBackStack() })
