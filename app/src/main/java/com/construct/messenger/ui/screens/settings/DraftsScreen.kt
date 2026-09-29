@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -34,10 +34,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
@@ -108,7 +111,8 @@ private fun DraftsScreen(
                     cursorBrush = SolidColor(CTColor.accent),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 120.dp, max = 180.dp)
+                        // iOS: the editor takes its 180 maximum, plus 8 of padding each side.
+                        .height(196.dp)
                         .clip(shape)
                         .background(CTColor.bgMsg)
                         .border(1.dp, CTColor.noise, shape)
@@ -119,7 +123,7 @@ private fun DraftsScreen(
                         .fillMaxWidth()
                         .clip(shape)
                         .background(CTColor.bgMsg)
-                        .border(1.dp, if (canSave) CTColor.accent else CTColor.noise, shape)
+                        .border(1.dp, CTColor.accent, shape)
                         .clickable(enabled = canSave) {
                             onSave(text)
                             text = ""
@@ -139,7 +143,8 @@ private fun DraftsScreen(
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Text(
                         text = stringResource(R.string.drafts_stored_locally),
-                        style = ctRegular(12),
+                        // iOS `.footnote`: the system face, not the chrome's mono.
+                        style = TextStyle(fontFamily = FontFamily.Default, fontSize = 13.sp),
                         color = CTColor.textDim,
                         textAlign = TextAlign.Center,
                     )

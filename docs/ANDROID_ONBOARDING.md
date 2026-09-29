@@ -140,21 +140,23 @@ object CT {
 ### 3.2 Типографика
 
 ```kotlin
-// CTTypography.kt
-object CTFont {
-    // JetBrains Mono — моноширинный шрифт для всего UI
-    fun regular(size: Int) = FontFamily("JetBrains Mono", weight = FontWeight.Normal, size = size)
-    fun medium(size: Int)  = FontFamily("JetBrains Mono", weight = FontWeight.Medium, size = size)
-    fun bold(size: Int)    = FontFamily("JetBrains Mono", weight = FontWeight.Bold, size = size)
-}
+// ui/theme/Type.kt
+// JetBrains Mono вложен в приложение: res/font/jetbrains_mono_{regular,medium,semibold,bold}.ttf —
+// те же четыре файла, что в iOS `Fonts/` (OFL 1.1, лицензия в assets/licenses/).
+val CTFontFamily = FontFamily(Font(R.font.jetbrains_mono_regular, FontWeight.Normal), /* … */)
+fun ctRegular(size: Int)  // Normal
+fun ctSemiBold(size: Int) // SemiBold — заголовок CTNavBar
+fun ctBold(size: Int)     // Bold
+fun ctMessage(size: Int)  // текст сообщений: выбор читателя (System / JetBrains Mono) × размер
 ```
 
 **Распространённые размеры:**
-- `CTFont.bold(14)` — заголовки в `CTNavBar` + `tracking(4)`
-- `CTFont.regular(13)` — текст в строках настроек, сообщения
-- `CTFont.bold(12)` — > SECTION заголовки
-- `CTFont.regular(11)` — таймстемпы, метаданные
-- `CTFont.bold(16)` — заголовки в `ConstructActionRow`
+- `ctSemiBold(17)` — заголовок `CTNavBar` подэкрана, как задан, без разрядки
+- `ctBold(14)` + `letterSpacing(4.sp)` + капс — шапка корня вкладки (Settings, Chats, Synaps)
+- `ctRegular(13)` — текст в строках настроек
+- `ctBold(12)` — > SECTION заголовки
+- `ctRegular(11)` — таймстемпы, метаданные
+- `ctBold(16)` — заголовки в `ConstructActionRow` и строках выбора
 
 В Kotlin/Compose для `tracking(4)` использовать `letterSpacing(4.sp)`.
 
@@ -380,8 +382,11 @@ fun CTNavBar(
 ```
 
 **iOS Reference** (`ConstructTheme.swift`):
-- Title: `.uppercased()` + `CTFont.bold(14)` + `.tracking(4)`
-- Back: SF Symbol `chevron.backward.circle.fill` / `xmark.circle` (macOS)
+- Title (подэкран): как задан, `CTFont.ui(17, .semibold)`, без разрядки — iOS снял капс и
+  `tracking(4)` со всех экранов («читалось как машинная метка, а не имя экрана»)
+- Корень вкладки (без back): капс, `bold(14)`, `tracking(4)`, без нижней линии (шапка `SettingsView`)
+- Back: SF Symbol `chevron.backward.circle.fill` 22pt в accent → на Android акцентный круг со
+  шевроном, вырезанным цветом фона
 - Trailing: SF Symbol или CTSymbol
 - Frame: `frame(height: CTLayout.navBarHeight)` + `.padding(.horizontal, CTLayout.edgePad)`
 - Bottom border: 0.5pt line in `Color.CT.noise`

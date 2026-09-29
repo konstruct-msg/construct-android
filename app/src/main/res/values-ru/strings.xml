@@ -71,6 +71,7 @@
     <string name="settings_title">Настройки</string>
     <string name="settings_row_network">Сеть</string>
     <string name="settings_row_security">Безопасность</string>
+    <string name="build_channel_beta">Бета</string>
     <string name="settings_row_version">Версия</string>
     <string name="onboarding_username_taken">псевдоним занят</string>
     <string name="onboarding_username_invalid">некорректный псевдоним</string>
@@ -258,7 +259,7 @@
     <string name="appearance_chat_font">Шрифт сообщений</string>
     <string name="appearance_chat_font_footer">Действует на текст сообщений и поле ввода. Остальной интерфейс остаётся моноширинным.</string>
     <string name="appearance_chat_font_system">Системный</string>
-    <string name="appearance_chat_font_mono">Моноширинный</string>
+    <string name="appearance_chat_font_mono">JetBrains Mono</string>
     <string name="appearance_text_size">Размер текста</string>
     <string name="appearance_text_size_footer">Действует на текст сообщений и поле ввода. Остальной интерфейс не меняет размер.</string>
     <string name="appearance_text_size_compact">Компактный</string>
@@ -268,12 +269,12 @@
     <string name="username_not_set">username не задан</string>
     <string name="searchable_indicator">в поиске</string>
     <string name="searchable_indicator_off">не в поиске</string>
-    <string name="account_title">идентичность</string>
+    <string name="account_title">Идентичность</string>
     <string name="account_editing_title">редактирование</string>
     <string name="account_section_identity">идентичность</string>
     <string name="account_section_account">аккаунт</string>
     <string name="account_username">username</string>
-    <string name="account_username_hint">ваш уникальный публичный идентификатор. нажмите «изменить», чтобы сменить.</string>
+    <string name="account_username_hint">ваш уникальный публичный идентификатор. нажмите чтобы изменить.</string>
     <string name="account_display_name">отображаемое имя</string>
     <string name="identity_fingerprint">отпечаток</string>
     <string name="identity_fingerprint_copied">скопировано</string>
@@ -291,7 +292,7 @@
     <string name="action_edit">изменить</string>
     <string name="action_save">сохранить</string>
     <string name="action_cancel">Отмена</string>
-    <string name="security_title">безопасность</string>
+    <string name="security_title">Безопасность</string>
     <string name="security_section_discovery">обнаружение</string>
     <string name="searchable_toggle_title">видимость в поиске</string>
     <string name="searchable_toggle_footer">Когда включено, любой, кто знает ваш точный username, может вас найти. Угадать или перебрать username невозможно — срабатывает только 100% совпадение. По умолчанию выключено.</string>
@@ -392,14 +393,16 @@
     <string name="recovery_banner_action">НАСТРОИТЬ</string>
     <string name="net_status_protected">Защищено</string>
     <string name="net_status_connecting">Подключение…</string>
-    <string name="network_last_heartbeat">Последний heartbeat</string>
+    <string name="network_last_heartbeat">Последний Heartbeat</string>
+    <string name="duration_seconds_short">%1$d с</string>
+    <string name="duration_minutes_short">%1$d мин</string>
     <string name="network_status">Статус</string>
     <string name="network_server">Сервер</string>
     <string name="network_transport">Транспорт</string>
-    <string name="network_connected">подключено</string>
-    <string name="network_connecting">подключение…</string>
-    <string name="network_offline">нет связи</string>
-    <string name="network_unknown">неизвестно</string>
+    <string name="network_connected">Подключено</string>
+    <string name="network_connecting">Подключение…</string>
+    <string name="network_offline">Отключено</string>
+    <string name="network_unknown">Неизвестно</string>
     <!-- VEIL (iOS NetworkSettingsView) -->
     <string name="censorship_protection">Защита от блокировок</string>
     <string name="censorship_protection_footer_off">Выкл. Подключение напрямую к Конструкту.</string>

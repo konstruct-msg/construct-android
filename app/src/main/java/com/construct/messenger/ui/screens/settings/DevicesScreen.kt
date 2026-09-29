@@ -53,7 +53,8 @@ import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
 import com.construct.messenger.ui.components.CTSep
-import com.construct.messenger.ui.components.CTSettingsRow
+import com.construct.messenger.ui.components.ConstructActionRow
+import com.construct.messenger.ui.components.ConstructRowRole
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTLayout
@@ -203,28 +204,33 @@ private fun DevicesScreen(
             }
 
             CTSettingsSectionHeader(title = stringResource(R.string.session_management))
-            CTSectionGroup {
-                CTSettingsRow(
-                    label = stringResource(R.string.sign_out_this_device),
+            // iOS: each a destructive `ConstructActionRow` card of its own, not rows in a group.
+            Column(
+                modifier = Modifier.padding(horizontal = CTLayout.edgePad),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                ConstructActionRow(
                     icon = Icons.AutoMirrored.Filled.Logout,
-                    isDestructive = true,
-                    modifier = Modifier.fillMaxWidth().clickable { onConfirm(DevicesConfirm.SignOutThis) },
+                    title = stringResource(R.string.sign_out_this_device),
+                    role = ConstructRowRole.DESTRUCTIVE,
+                    onClick = { onConfirm(DevicesConfirm.SignOutThis) },
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 if (others.isNotEmpty()) {
-                    CTSep()
-                    CTSettingsRow(
-                        label = stringResource(R.string.sign_out_other_devices),
+                    ConstructActionRow(
                         icon = Icons.Default.PersonOff,
-                        isDestructive = true,
-                        modifier = Modifier.fillMaxWidth().clickable { onConfirm(DevicesConfirm.SignOutOthers) },
+                        title = stringResource(R.string.sign_out_other_devices),
+                        role = ConstructRowRole.DESTRUCTIVE,
+                        onClick = { onConfirm(DevicesConfirm.SignOutOthers) },
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
-                CTSep()
-                CTSettingsRow(
-                    label = stringResource(R.string.sign_out_all_devices),
+                ConstructActionRow(
                     icon = Icons.Default.HighlightOff,
-                    isDestructive = true,
-                    modifier = Modifier.fillMaxWidth().clickable { onConfirm(DevicesConfirm.SignOutAll) },
+                    title = stringResource(R.string.sign_out_all_devices),
+                    role = ConstructRowRole.DESTRUCTIVE,
+                    onClick = { onConfirm(DevicesConfirm.SignOutAll) },
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
             Hint(stringResource(R.string.sign_out_all_hint))

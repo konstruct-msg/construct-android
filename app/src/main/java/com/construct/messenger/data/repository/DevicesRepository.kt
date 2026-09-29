@@ -57,7 +57,9 @@ class DevicesRepositoryImpl @Inject constructor(
         return LinkedDevice(
             id = id,
             name = described?.deviceName?.takeIf { it.isNotEmpty() },
-            platform = (described?.platform ?: platform).toModel(),
+            // This device is known to be Android even before it has published a description.
+            platform = (described?.platform ?: platform).toModel()
+                ?: if (isCurrent || id == ownId) DevicePlatform.ANDROID else null,
             createdAt = createdAt,
             isCurrent = isCurrent || id == ownId,
             isPrimary = isPrimary,

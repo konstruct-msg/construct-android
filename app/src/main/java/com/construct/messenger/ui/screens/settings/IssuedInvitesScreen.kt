@@ -220,7 +220,7 @@ private val InviteRevocation.message: Int
 private fun Line(text: String, modifier: Modifier = Modifier, color: androidx.compose.ui.graphics.Color = CTColor.textDim) {
     Text(
         text = text,
-        style = ctRegular(12),
+        style = ctRegular(11),
         color = color,
         modifier = modifier
             .fillMaxWidth()

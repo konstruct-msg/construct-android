@@ -250,7 +250,8 @@ private fun ToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean
             .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = label, style = ctRegular(13), color = CTColor.text, modifier = Modifier.weight(1f))
+        // iOS sets these labels in textDim.
+        Text(text = label, style = ctRegular(13), color = CTColor.textDim, modifier = Modifier.weight(1f))
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,

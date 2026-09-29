@@ -23,7 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.TextButton
@@ -44,6 +44,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
@@ -164,7 +165,7 @@ private fun AccountContent(
             title = stringResource(if (ui.editing) R.string.account_editing_title else R.string.account_title),
             showBack = true,
             onBack = onBack,
-            trailingIcon = if (ui.editing) Icons.Default.Check else Icons.Default.Edit,
+            trailingIcon = if (ui.editing) Icons.Default.Check else Icons.Outlined.Edit,
             trailingColor = if (ui.saving) CTColor.textDim else CTColor.accent,
             onTrailingAction = { if (ui.editing) onSave() else onEdit() },
         )
@@ -179,20 +180,21 @@ private fun AccountContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 24.dp),
+                    .padding(vertical = 28.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 CTAvatar(
                     userId = account?.userId.orEmpty(),
                     displayName = account?.displayName.orEmpty(),
-                    size = 88.dp,
+                    // iOS `MainAvatarView` at `accountSize` draws its disc about 72pt across.
+                    size = 72.dp,
                 )
             }
             Divider(thick = true)
 
             SectionHeader(stringResource(R.string.account_section_identity))
             RowDivider()
-            UsernameRow(ui = ui, onDraftChange = onDraftChange)
+            UsernameRow(ui = ui, onDraftChange = onDraftChange, onEdit = onEdit)
             RowDivider()
             SearchableRow(searchable = account?.discoverable == true)
             RowDivider()
@@ -220,6 +222,8 @@ private fun AccountContent(
                     unknown = "",
                     copiedLabel = stringResource(R.string.account_user_id_copied),
                     enabled = !ui.editing,
+                    // iOS: the id is dim; the fingerprint above is the accent one.
+                    valueColor = CTColor.textDim,
                 )
                 RowDivider()
                 InfoRow(
@@ -231,6 +235,7 @@ private fun AccountContent(
                 RowDivider()
                 InfoRow(
                     label = stringResource(R.string.account_sign_out),
+                    labelColor = CTColor.text,
                     onClick = onSignOut.takeUnless { ui.editing || ui.signingOut },
                 ) { Chevron() }
             }
@@ -295,9 +300,15 @@ private fun NoBackupDialog(onSetUp: () -> Unit, onProceed: () -> Unit, onDismiss
 }
 
 @Composable
-private fun UsernameRow(ui: AccountUiState, onDraftChange: (String) -> Unit) {
+private fun UsernameRow(ui: AccountUiState, onDraftChange: (String) -> Unit, onEdit: () -> Unit) {
     val username = ui.account?.username.orEmpty()
-    Column(modifier = Modifier.padding(horizontal = ROW_H_PAD, vertical = ROW_V_PAD)) {
+    // iOS: "tap to change" — the row itself opens the edit, as the nav bar's pencil does.
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (ui.editing) Modifier else Modifier.clickable(onClick = onEdit))
+            .padding(horizontal = ROW_H_PAD, vertical = ROW_V_PAD),
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(R.string.account_username),
@@ -362,6 +373,7 @@ private fun CopyRow(
     unknown: String,
     copiedLabel: String,
     enabled: Boolean = true,
+    valueColor: Color = CTColor.accent,
 ) {
     val clipboard = LocalClipboardManager.current
     var flash by remember { mutableStateOf(false) }
@@ -389,7 +401,7 @@ private fun CopyRow(
                 else -> shown
             },
             style = ctRegular(13),
-            color = if (shown == null) CTColor.textDim else CTColor.accent,
+            color = if (shown == null) CTColor.textDim else valueColor,
             maxLines = 1,
         )
     }
@@ -434,7 +446,7 @@ private fun SectionHeader(title: String, color: Color = CTColor.accent) {
     Row(modifier = Modifier.padding(horizontal = ROW_H_PAD, vertical = 10.dp)) {
         Text(">", style = ctBold(12), color = color)
         Spacer(Modifier.width(6.dp))
-        Text(title.uppercase(), style = ctBold(12), color = color)
+        Text(title.uppercase(), style = ctBold(12), color = color, letterSpacing = 2.sp)
     }
 }
 
@@ -468,6 +480,7 @@ private fun UsernameError.message(): Int = when (this) {
 /** iOS: `8 chars…last 2` — enough to tell accounts apart, the full id is one tap away. */
 private fun shortId(id: String): String = if (id.length > 12) "${id.take(8)}…${id.takeLast(2)}" else id
 
-private val ROW_H_PAD = CTLayout.edgePad + 4.dp
-private val ROW_V_PAD = 12.dp
+/** iOS `AccountSettingsLayout.rowHorizontalPadding` / `rowVerticalPadding`. */
+private val ROW_H_PAD = 20.dp
+private val ROW_V_PAD = 14.dp
 private const val COPIED_FLASH_MS = 1_500L

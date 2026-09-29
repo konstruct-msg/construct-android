@@ -74,6 +74,7 @@
     <string name="settings_title">Settings</string>
     <string name="settings_row_network">Network</string>
     <string name="settings_row_security">Security</string>
+    <string name="build_channel_beta">Beta</string>
     <string name="settings_row_version">Version</string>
     <string name="onboarding_username_taken">alias taken</string>
     <string name="onboarding_username_invalid">invalid alias</string>
@@ -138,7 +139,7 @@
     <string name="notifications_enable_footer">Off: messages still arrive and count as unread, but nothing is shown in the notification shade.</string>
     <string name="notifications_system_section">System Notification Settings</string>
     <string name="notifications_status">Status</string>
-    <string name="notifications_status_allowed">Allowed</string>
+    <string name="notifications_status_allowed">Authorized</string>
     <string name="notifications_status_denied">Denied</string>
     <string name="notifications_status_not_set">Not Set</string>
     <string name="notifications_grant">Grant Permission</string>
@@ -210,9 +211,9 @@
     <string name="security_stealth_on_hint">Konstruct never learns who sent a message. Always on — there is no switch, and nothing to keep topped up.</string>
     <string name="security_stealth_off_hint">Off — your sends disclose who you are to Konstruct. Debug override only.</string>
     <string name="issued_invites_title">Issued invites</string>
-    <string name="issued_invites_hint">Issued from this device in the last %1$d h. Another device keeps its own list.</string>
+    <string name="issued_invites_hint">Issued from this device in the last %1$dh. Another device keeps its own list.</string>
     <string name="issued_invites_revoke_scope">Any link or QR code can be revoked until it expires.</string>
-    <string name="issued_invites_empty">Nothing issued from this device in the last %1$d h.</string>
+    <string name="issued_invites_empty">Nothing issued from this device in the last %1$dh.</string>
     <string name="invite_revoke_confirm_title">Revoke this invite?</string>
     <string name="invite_revoke_confirm_message">Anyone holding it will find it no longer works, with no notice. You can make a new one at any time.</string>
     <string name="invite_revoke">Revoke</string>
@@ -261,7 +262,7 @@
     <string name="appearance_chat_font">Message font</string>
     <string name="appearance_chat_font_footer">Applies to message text and the composer. The rest of the interface stays monospaced.</string>
     <string name="appearance_chat_font_system">System</string>
-    <string name="appearance_chat_font_mono">Monospace</string>
+    <string name="appearance_chat_font_mono">JetBrains Mono</string>
     <string name="appearance_text_size">Text size</string>
     <string name="appearance_text_size_footer">Applies to message text and the composer. The rest of the interface keeps its size.</string>
     <string name="appearance_text_size_compact">Compact</string>
@@ -271,12 +272,12 @@
     <string name="username_not_set">no username</string>
     <string name="searchable_indicator">searchable</string>
     <string name="searchable_indicator_off">not searchable</string>
-    <string name="account_title">identity</string>
+    <string name="account_title">Identity</string>
     <string name="account_editing_title">edit identity</string>
     <string name="account_section_identity">identity</string>
     <string name="account_section_account">account</string>
     <string name="account_username">username</string>
-    <string name="account_username_hint">your unique public identifier. tap edit to change.</string>
+    <string name="account_username_hint">your unique public identifier. tap to change.</string>
     <string name="account_display_name">display name</string>
     <string name="identity_fingerprint">fingerprint</string>
     <string name="identity_fingerprint_copied">copied</string>
@@ -294,7 +295,7 @@
     <string name="action_edit">edit</string>
     <string name="action_save">save</string>
     <string name="action_cancel">Cancel</string>
-    <string name="security_title">security</string>
+    <string name="security_title">Security</string>
     <string name="security_section_discovery">discovery</string>
     <string name="searchable_toggle_title">searchable by username</string>
     <string name="searchable_toggle_footer">When enabled, anyone who knows your exact username can find you. This cannot be used to guess or enumerate usernames — only 100% exact matches work. Off by default.</string>
@@ -395,14 +396,16 @@
     <string name="recovery_banner_action">CONFIGURE</string>
     <string name="net_status_protected">Protected</string>
     <string name="net_status_connecting">Connecting…</string>
-    <string name="network_last_heartbeat">Last heartbeat</string>
+    <string name="network_last_heartbeat">Last Heartbeat</string>
+    <string name="duration_seconds_short">%1$d sec</string>
+    <string name="duration_minutes_short">%1$d min</string>
     <string name="network_status">Status</string>
     <string name="network_server">Server</string>
     <string name="network_transport">Transport</string>
-    <string name="network_connected">connected</string>
-    <string name="network_connecting">connecting…</string>
-    <string name="network_offline">offline</string>
-    <string name="network_unknown">unknown</string>
+    <string name="network_connected">Connected</string>
+    <string name="network_connecting">Connecting…</string>
+    <string name="network_offline">Disconnected</string>
+    <string name="network_unknown">Unknown</string>
     <!-- VEIL (iOS NetworkSettingsView) -->
     <string name="censorship_protection">Censorship protection</string>
     <string name="censorship_protection_footer_off">Off. Connection goes directly to Konstruct.</string>

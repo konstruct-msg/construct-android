@@ -1,6 +1,5 @@
 package com.construct.messenger.ui.screens.settings
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -243,17 +242,23 @@ private fun technicalPath(route: TransportRoute.State): String = when (route) {
     else -> "TLS 1.3 ${GrpcClient.HOST}:${GrpcClient.PORT}"
 }
 
-/** "12 seconds ago", refreshed every few seconds so it does not freeze on screen. */
+/** "12 sec", refreshed every few seconds so it does not freeze on screen. */
 @Composable
 private fun relativeTime(at: Long): String {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
-            delay(5_000)
+            delay(1_000)
             now = System.currentTimeMillis()
         }
     }
-    return DateUtils.getRelativeTimeSpanString(at, now, DateUtils.SECOND_IN_MILLIS).toString()
+    // iOS `Text(date, style: .relative)`: "10 sec", "2 min".
+    val seconds = ((now - at) / 1000).coerceAtLeast(0)
+    return if (seconds < 60) {
+        stringResource(R.string.duration_seconds_short, seconds.toInt())
+    } else {
+        stringResource(R.string.duration_minutes_short, (seconds / 60).toInt())
+    }
 }
 
 private fun ConnectionStatus.label(): Int = when (this) {

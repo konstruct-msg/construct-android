@@ -1,20 +1,41 @@
 package com.construct.messenger.ui.theme
 
 import androidx.compose.material3.Typography
+import com.construct.messenger.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-val CTFontRegular = FontFamily.Monospace
-val CTFontBold = FontFamily.Monospace
+/**
+ * JetBrains Mono, bundled — iOS `ConstructFont.mono` sets the chrome in it (`Fonts/` in
+ * construct-messenger; the same four files here, OFL 1.1, licence in `assets/licenses/`).
+ * `FontFamily.Monospace` this replaces was whatever the phone ships (Droid Sans Mono on most),
+ * so every screen read differently from iOS.
+ */
+val CTFontFamily = FontFamily(
+    Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+    Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+    Font(R.font.jetbrains_mono_semibold, FontWeight.SemiBold),
+    Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+)
+val CTFontRegular = CTFontFamily
+val CTFontBold = CTFontFamily
 
 fun ctRegular(size: Int) = TextStyle(
     fontFamily = CTFontRegular,
     fontSize = size.sp,
     fontWeight = FontWeight.Normal
+)
+
+/** iOS `CTFont.ui(size, weight: .semibold)` — the nav bar title. */
+fun ctSemiBold(size: Int) = TextStyle(
+    fontFamily = CTFontFamily,
+    fontSize = size.sp,
+    fontWeight = FontWeight.SemiBold
 )
 
 fun ctBold(size: Int) = TextStyle(

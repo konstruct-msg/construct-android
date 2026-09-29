@@ -19,6 +19,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.ui.text.style.TextOverflow
+import com.construct.messenger.ui.theme.ctSemiBold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,9 +39,12 @@ import com.construct.messenger.ui.theme.ctRegular
 /**
  * Navigation bar — reusable header.
  *
- * **Canon:** iOS `ConstructTheme.swift` → `struct CTNavBar`.
- * - Title is `.uppercase()` + `ctBold(14)` + `letterSpacing(4)`.
- * - Leading: optional back (chevron) / close (when [isModal]).
+ * **Canon:** iOS `ConstructTheme.swift` → `struct CTNavBar` for a pushed screen: the title as
+ *   given, `ctSemiBold(17)`, no letter-spacing (iOS dropped the uppercase + tracking on all its
+ *   screens — it read as a machine label, not a screen's name); back is a filled accent circle
+ *   with a chevron (`chevron.backward.circle.fill`, 22pt). Bottom border.
+ * - A tab's root (no back, not modal) is iOS's root header instead: uppercase, `ctBold(14)`,
+ *   tracking 4, no border (iOS `SettingsView` header).
  * - Trailing: an icon ([trailingIcon]); an optional secondary icon
  *   ([trailingSecondaryIcon]) renders to its left (typically a muted cancel next
  *   to a primary confirm).
@@ -60,31 +67,38 @@ fun CTNavBar(
     onTrailingAction: () -> Unit = {},
     onTrailingSecondaryAction: () -> Unit = {},
 ) {
+    val isRoot = !showBack && !isModal
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(CTLayout.navBarHeight)
             .background(CTColor.bg)
-            .ctBorderBottom()
+            .then(if (isRoot) Modifier else Modifier.ctBorderBottom())
             .padding(horizontal = CTLayout.edgePad),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (showBack) {
-            NavBarIcon(
-                icon = if (isModal) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack,
-                tint = CTColor.accent,
-                iconSize = CTLayout.navIconSizeLg,
-                onClick = onBack,
-            )
-            Spacer(Modifier.width(10.dp))
+            NavBarBackButton(isModal = isModal, onClick = onBack)
+            Spacer(Modifier.width(14.dp))
         }
 
-        Text(
-            text = title.uppercase(),
-            style = ctBold(14),
-            color = CTColor.text,
-            letterSpacing = 4.sp,
-        )
+        if (isRoot) {
+            Text(
+                text = title.uppercase(),
+                style = ctBold(14),
+                color = CTColor.text,
+                letterSpacing = 4.sp,
+            )
+        } else {
+            Text(
+                text = title,
+                style = ctSemiBold(17),
+                color = CTColor.text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+        }
 
         Spacer(Modifier.weight(1f))
 
@@ -136,6 +150,36 @@ private fun NavBarIcon(
         contentAlignment = Alignment.Center,
     ) {
         Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(iconSize))
+    }
+}
+
+/** iOS `chevron.backward.circle.fill` at 22pt: an accent disc, the chevron cut out of it. */
+@Composable
+private fun NavBarBackButton(isModal: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .layout { measurable, _ ->
+                val target = CTLayout.navBarHeight.roundToPx()
+                val glyph = CTLayout.navIconSizeLg.roundToPx()
+                val placeable = measurable.measure(Constraints.fixed(target, target))
+                layout(glyph, glyph) { placeable.place((glyph - target) / 2, (glyph - target) / 2) }
+            }
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(CTLayout.navIconSizeLg)
+                .background(CTColor.accent, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = if (isModal) Icons.Default.Close else Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                contentDescription = null,
+                tint = CTColor.bg,
+                modifier = Modifier.size(18.dp),
+            )
+        }
     }
 }
 

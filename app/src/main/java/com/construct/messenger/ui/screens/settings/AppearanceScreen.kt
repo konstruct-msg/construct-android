@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BrightnessMedium
+import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
@@ -43,9 +43,10 @@ import com.construct.messenger.data.model.ChatFace
 import com.construct.messenger.data.model.TextSize
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
-import com.construct.messenger.ui.components.CTSep
+import com.construct.messenger.ui.components.CTRowDivider
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFontFamily
 import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.ctBold
 import com.construct.messenger.ui.theme.ctRegular
@@ -126,9 +127,9 @@ fun AppearanceScreen(
                 ChoiceLabel(
                     text = stringResource(face.label),
                     style = TextStyle(
-                        fontFamily = if (face == ChatFace.MONO) FontFamily.Monospace else FontFamily.Default,
+                        fontFamily = if (face == ChatFace.MONO) CTFontFamily else FontFamily.Default,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
+                        fontSize = 16.sp,
                     ),
                 )
             }
@@ -157,12 +158,12 @@ private fun <T> ChoiceSection(
     CTSettingsSectionHeader(title = title)
     CTSectionGroup {
         options.forEachIndexed { index, option ->
-            if (index > 0) CTSep()
+            if (index > 0) CTRowDivider(indent = 52.dp)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onSelect(option) }
-                    .padding(horizontal = CTLayout.edgePad, vertical = 14.dp),
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
@@ -183,7 +184,7 @@ private fun <T> ChoiceSection(
         text = footer,
         style = ctRegular(11),
         color = CTColor.textDim,
-        modifier = Modifier.padding(horizontal = CTLayout.edgePad * 2, vertical = 8.dp),
+        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 14.dp),
     )
 }
 
@@ -192,11 +193,11 @@ private fun ChoiceLabel(
     text: String,
     icon: ImageVector? = null,
     iconTint: Color = CTColor.textDim,
-    style: TextStyle = ctBold(15),
+    style: TextStyle = ctBold(16),
 ) {
     if (icon != null) {
         Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(14.dp))
     }
     Text(text = text, style = style, color = CTColor.text)
 }
@@ -210,7 +211,7 @@ private val AppTheme.label: Int
 
 private val AppTheme.icon: ImageVector
     get() = when (this) {
-        AppTheme.AUTOMATIC -> Icons.Default.BrightnessMedium
+        AppTheme.AUTOMATIC -> Icons.Default.Contrast
         AppTheme.LIGHT -> Icons.Default.LightMode
         AppTheme.DARK -> Icons.Default.DarkMode
     }

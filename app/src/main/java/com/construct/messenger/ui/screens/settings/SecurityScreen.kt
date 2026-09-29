@@ -63,7 +63,6 @@ import com.construct.messenger.recovery.RecoveryStatus
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSep
-import com.construct.messenger.ui.components.CTSepStyle
 import com.construct.messenger.ui.components.CTSettingsRow
 import com.construct.messenger.ui.components.CTStatus
 import com.construct.messenger.ui.components.CTStatusBadge
@@ -164,15 +163,15 @@ private fun SecurityContent(
                 .verticalScroll(rememberScrollState()),
         ) {
             PinBlock(lock = lock, onPin = onPin, onBiometric = onBiometric, onLockDelay = onLockDelay)
-            CTSep(style = CTSepStyle.THICK)
+            CTSep()
 
             RecoveryRow(recovery = ui.recovery, onClick = onRecovery)
             Hint(stringResource(R.string.security_recovery_hint))
-            CTSep(style = CTSepStyle.THICK)
+            CTSep()
 
             LockdownRow(lockdown = ui.lockdown, onChange = onLockdown)
             Hint(stringResource(R.string.security_lockdown_hint))
-            CTSep(style = CTSepStyle.THICK)
+            CTSep()
 
             // A statement, not a setting: sealed sender is always on (iOS stealth Phase 4). Read
             // rather than assumed, so a debug override shows honestly.
@@ -196,7 +195,7 @@ private fun SecurityContent(
                 color = if (ui.senderAnonymity) CTColor.textDim else CTColor.danger,
                 top = 2.dp,
             )
-            CTSep(style = CTSepStyle.THICK)
+            CTSep()
 
             CTSettingsRow(
                 label = stringResource(R.string.issued_invites_title).uppercase(),
@@ -204,7 +203,7 @@ private fun SecurityContent(
                 disclosure = true,
                 modifier = Modifier.fillMaxWidth().clickable(onClick = onIssuedInvites),
             )
-            CTSep(style = CTSepStyle.THICK)
+            CTSep()
 
             DiscoveryRow(ui = ui, onChange = onDiscoverable)
             Hint(
@@ -330,7 +329,7 @@ private fun RecoveryRow(recovery: RecoveryStatus?, onClick: () -> Unit) {
                 recovery?.isSetup == false -> Text(
                     text = stringResource(R.string.security_recovery_not_set_up),
                     style = ctRegular(11),
-                    color = CTColor.danger,
+                    color = CTColor.warning,
                 )
             }
         }
@@ -408,10 +407,10 @@ private fun SecurityRow(
     )
 }
 
-/** iOS `CTRowIcon`: 14pt. */
+/** iOS `CTRowIcon(sf:)`: a 16pt symbol, which draws a little larger than its point size. */
 @Composable
 private fun RowIcon(icon: ImageVector, tint: Color) {
-    Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(15.dp))
+    Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
 }
 
 @Composable

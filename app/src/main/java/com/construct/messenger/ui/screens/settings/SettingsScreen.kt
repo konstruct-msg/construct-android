@@ -20,17 +20,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Laptop
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.outlined.Brush
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Laptop
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.QrCode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -145,10 +145,7 @@ fun SettingsScreen(
                 .padding(vertical = LIST_SPACING / 2),
             verticalArrangement = Arrangement.spacedBy(LIST_SPACING),
         ) {
-            CTSectionGroup {
-                ProfileRow(account = account, onClick = navigation.onAccount)
-            }
-
+            // iOS: the warning is first, above the identity.
             if (recoveryMissing && !bannerDismissed) {
                 RecoveryBanner(
                     onSetUp = navigation.onRecoverySetup,
@@ -160,9 +157,13 @@ fun SettingsScreen(
             }
 
             CTSectionGroup {
+                ProfileRow(account = account, onClick = navigation.onAccount)
+            }
+
+            CTSectionGroup {
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_invite).uppercase(),
-                    icon = Icons.Default.QrCode,
+                    icon = Icons.Outlined.QrCode,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onInvite),
                 )
@@ -171,35 +172,35 @@ fun SettingsScreen(
             CTSectionGroup {
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_devices).uppercase(),
-                    icon = Icons.Default.Laptop,
+                    icon = Icons.Outlined.Laptop,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onDevices),
                 )
                 CTSep()
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_appearance).uppercase(),
-                    icon = Icons.Default.Brush,
+                    icon = Icons.Outlined.Brush,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onAppearance),
                 )
                 CTSep()
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_security).uppercase(),
-                    icon = Icons.Default.Lock,
+                    icon = Icons.Outlined.Lock,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onSecurity),
                 )
                 CTSep()
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_notifications).uppercase(),
-                    icon = Icons.Default.Notifications,
+                    icon = Icons.Outlined.Notifications,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onNotifications),
                 )
                 CTSep()
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_network).uppercase(),
-                    icon = Icons.Default.Public,
+                    icon = Icons.Outlined.Public,
                     status = connection.toStatus(),
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onNetwork),
@@ -207,7 +208,7 @@ fun SettingsScreen(
                 CTSep()
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_drafts).uppercase(),
-                    icon = Icons.Default.Folder,
+                    icon = Icons.Outlined.Folder,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onDrafts),
                 )
@@ -216,23 +217,25 @@ fun SettingsScreen(
             CTSectionGroup {
                 CTSettingsRow(
                     label = stringResource(R.string.orientation_settings_replay).uppercase(),
-                    icon = Icons.AutoMirrored.Filled.MenuBook,
+                    icon = Icons.AutoMirrored.Outlined.MenuBook,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onOrientation),
                 )
                 CTSep()
+                // iOS `versionDisplayString`: `v0.2.0 (2)`, and ` BETA` in orange on a
+                // non-production build.
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_version).uppercase(),
-                    value = BuildConfig.VERSION_NAME,
-                    valueColor = CTColor.textDim,
-                    icon = Icons.Default.Info,
+                    value = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})" +
+                        if (BuildConfig.DEBUG) " " + stringResource(R.string.build_channel_beta).uppercase() else "",
+                    valueColor = if (BuildConfig.DEBUG) CTColor.warning else CTColor.textDim,
+                    icon = Icons.Outlined.Info,
                 )
             }
 
             // iOS shows this in DEBUG and internal builds; Android writes logs in debug only.
             if (Diagnostics.isEnabled) {
                 Column {
-                    CTSettingsSectionHeader(title = stringResource(R.string.settings_section_developer), color = DEBUG_ORANGE)
                     CTSectionGroup {
                         CTSettingsRow(
                             label = stringResource(R.string.diagnostics_logs).uppercase(),
