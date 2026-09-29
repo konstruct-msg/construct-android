@@ -48,11 +48,6 @@ class KeystoreManager @Inject constructor(
     }
 
     /**
-     * When the access token stops being accepted, in Unix seconds, as the server stated it with
-     * the token — never parsed out of it (`docs/TOKEN_AUTH.md` §3.4). Null for a token saved
-     * before this was kept: the caller refreshes once, and the answer carries it.
-     */
-    /**
      * The veil-front capability for [relayAddress] — base64 of the blob `IssueVeilCapability`
      * returned — and its expiry in Unix seconds. Bearer auth material for the relay: kept with the
      * tokens, wiped with them.
@@ -70,6 +65,32 @@ class KeystoreManager @Inject constructor(
             .apply()
     }
 
+    /** The key-bound (B1) capability for [relayAddress], as [veilCapability]; kept beside the bearer one. */
+    fun veilKeyBoundCapability(relayAddress: String): Pair<String, Long>? {
+        val blob = prefs.getString(KEY_VEIL_CAPABILITY_V2_PREFIX + relayAddress, null) ?: return null
+        return blob to prefs.getLong(KEY_VEIL_CAPABILITY_V2_EXP_PREFIX + relayAddress, 0L)
+    }
+
+    fun saveVeilKeyBoundCapability(relayAddress: String, blobB64: String, notAfter: Long) {
+        prefs.edit()
+            .putString(KEY_VEIL_CAPABILITY_V2_PREFIX + relayAddress, blobB64)
+            .putLong(KEY_VEIL_CAPABILITY_V2_EXP_PREFIX + relayAddress, notAfter)
+            .apply()
+    }
+
+    /** The 32-byte Ed25519 seed of this device's veil access key ([com.construct.messenger.veil.VeilAccessKey]). */
+    fun veilAccessSeed(): ByteArray? =
+        prefs.getString(KEY_VEIL_ACCESS_SEED, null)?.let { Base64.decode(it, Base64.NO_WRAP) }
+
+    fun saveVeilAccessSeed(seed: ByteArray) {
+        prefs.edit().putString(KEY_VEIL_ACCESS_SEED, Base64.encodeToString(seed, Base64.NO_WRAP)).commit()
+    }
+
+    /**
+     * When the access token stops being accepted, in Unix seconds, as the server stated it with
+     * the token — never parsed out of it (`docs/TOKEN_AUTH.md` §3.4). Null for a token saved
+     * before this was kept: the caller refreshes once, and the answer carries it.
+     */
     fun getAccessTokenExpiresAt(): Long? =
         prefs.getLong(KEY_ACCESS_TOKEN_EXPIRES_AT, 0L).takeIf { it > 0 }
 
@@ -109,8 +130,13 @@ class KeystoreManager @Inject constructor(
             .remove(KEY_CONTACT_CARD_SENT_TO_V1)
             .remove(KEY_OWN_INTAKE)
             .remove(KEY_DEVICE_SETS_LISTED)
+            .remove(KEY_VEIL_ACCESS_SEED)
             .apply()
-        prefs.all.keys.filter { it.startsWith(KEY_PEER_INTAKE_PREFIX) || it.startsWith(KEY_VEIL_CAPABILITY_PREFIX) || it.startsWith(KEY_VEIL_CAPABILITY_EXP_PREFIX) }
+        val wiped = listOf(
+            KEY_PEER_INTAKE_PREFIX, KEY_VEIL_CAPABILITY_PREFIX, KEY_VEIL_CAPABILITY_EXP_PREFIX,
+            KEY_VEIL_CAPABILITY_V2_PREFIX, KEY_VEIL_CAPABILITY_V2_EXP_PREFIX,
+        )
+        prefs.all.keys.filter { key -> wiped.any { key.startsWith(it) } }
             .fold(prefs.edit()) { edit, key -> edit.remove(key) }
             .apply()
     }
@@ -240,6 +266,9 @@ class KeystoreManager @Inject constructor(
         const val KEY_ACCESS_TOKEN_EXPIRES_AT = "access_token_expires_at"
         const val KEY_VEIL_CAPABILITY_PREFIX = "veil_capability:"
         const val KEY_VEIL_CAPABILITY_EXP_PREFIX = "veil_capability_exp:"
+        const val KEY_VEIL_CAPABILITY_V2_PREFIX = "veil_capability_v2:"
+        const val KEY_VEIL_CAPABILITY_V2_EXP_PREFIX = "veil_capability_v2_exp:"
+        const val KEY_VEIL_ACCESS_SEED = "veil_access_seed"
         const val KEY_USER_ID = "user_id"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_PRIVATE_KEYS = "private_keys_cfe"

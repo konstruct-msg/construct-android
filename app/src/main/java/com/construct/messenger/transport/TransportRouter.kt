@@ -74,6 +74,8 @@ class TransportRouter @Inject constructor(
             Log.i(TAG, "$from → ${outcome.state} | $event | ${outcome.effects}")
         }
         for (effect in outcome.effects) apply(effect)
+        // Routed through a fresh tunnel: the key-bound capability is requested inside it.
+        if (outcome.state is State.VeilActive && from !is State.VeilActive) scope.launch { veil.renewKeyBound() }
     }
 
     private fun apply(effect: Effect) {

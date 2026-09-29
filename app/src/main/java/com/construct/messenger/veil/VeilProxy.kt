@@ -65,13 +65,26 @@ class VeilProxy @Inject constructor(
         // token would be refused.
         authSession.ensureFresh()
         val relay = VeilSeeds.relays.first()
-        val capability = capabilities.ensure(relay)
-            ?: return failed(relay, "no capability for ${relay.address}")
-        val outcome = withContext(Dispatchers.IO) { startNative(relay, capability) }
+        // Key-bound when there is one — `veil_start` then signs with `veil_sk` and ignores the
+        // bearer field. The bearer one is still what opens the first tunnel on a new device.
+        val keyBound = capabilities.currentKeyBound(relay)
+        val bearer = if (keyBound != null) capabilities.current(relay).orEmpty() else {
+            capabilities.ensure(relay) ?: return failed(relay, "no capability for ${relay.address}")
+        }
+        val outcome = withContext(Dispatchers.IO) { startNative(relay, bearer, keyBound) }
         if (outcome.port <= 0) return failed(relay, outcome.error ?: "veil_start failed")
         info.value = VeilStartInfo(relay.address, outcome.method, outcome.latencyMs, lastError = null)
-        Log.i(TAG, "VEIL up: ${relay.address} via ${outcome.method} in ${outcome.latencyMs}ms, local :${outcome.port}")
+        Log.i(TAG, "VEIL up: ${relay.address} via ${outcome.method} in ${outcome.latencyMs}ms, local :${outcome.port}, key-bound ${keyBound != null}")
         return StartResult.Up(relay.address, outcome.port)
+    }
+
+    /**
+     * Once the router has routed through the tunnel: get or renew the key-bound capability over
+     * it. Throttled in [VeilCapabilities.renewKeyBound].
+     */
+    suspend fun renewKeyBound() {
+        authSession.ensureFresh()
+        capabilities.renewKeyBound(VeilSeeds.relays.first())
     }
 
     fun stop() {
@@ -89,7 +102,7 @@ class VeilProxy @Inject constructor(
 
     private class Outcome(val port: Int, val method: VeilMethod?, val latencyMs: Int, val error: String?)
 
-    private fun startNative(relay: VeilRelay, capabilityB64: String): Outcome {
+    private fun startNative(relay: VeilRelay, bearerB64: String, keyBound: VeilCapabilities.KeyBound?): Outcome {
         val lib = VeilLib.INSTANCE
         val request = VeilStartRequest.ByValue().apply {
             relay_addr = relay.address
@@ -101,10 +114,10 @@ class VeilProxy @Inject constructor(
             allowed_methods = VeilMethod.DISABLED_EXCEPT_VEIL_FRONT
             // Method scores survive restarts; the file is this device's, not a backup's.
             scores_path = File(context.noBackupFilesDir, SCORES_FILE).absolutePath
-            veil_front_ticket_b64 = capabilityB64
-            // B1 (key-bound) is not provisioned on Android yet: empty falls back to the ticket.
-            veil_capability_v2_b64 = ""
-            veil_sk_hex = ""
+            veil_front_ticket_b64 = bearerB64
+            // Empty = AUTH v3 not configured: the relay is authenticated with the bearer ticket.
+            veil_capability_v2_b64 = keyBound?.capabilityB64.orEmpty()
+            veil_sk_hex = keyBound?.veilSkHex.orEmpty()
         }
         val out = VeilStartResult()
         val rc = runCatching { lib.veil_start(request, out) }.getOrElse {
