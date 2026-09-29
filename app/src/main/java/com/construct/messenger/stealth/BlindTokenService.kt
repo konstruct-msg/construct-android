@@ -58,7 +58,7 @@ class BlindTokenService @Inject constructor(
 
         return try {
             // ppBlindToken returns blinded_point(32) || blind_factor(32).
-            val blinded = nonces.map { ppBlindToken(it.toUByteList()).toByteArray() }
+            val blinded = nonces.map { ppBlindToken(it) }
 
             val request = IssueTokensRequest.newBuilder()
                 .addAllBlindedPoints(blinded.map { ByteString.copyFrom(it, 0, 32) })
@@ -74,7 +74,7 @@ class BlindTokenService @Inject constructor(
                 dleqProof = response.dleqProof.toByteArray(),
                 keyVersion = response.issuerKeyVersion,
             ) { b, e, proof, pin ->
-                ppVerifyDleq(b.map { it.toUByteList() }, e.map { it.toUByteList() }, proof.toUByteList(), pin.toUByteList())
+                ppVerifyDleq(b.map { it }, e.map { it }, proof, pin)
             }
             val issued = when (verdict) {
                 is IssuerKeyPin.Verdict.Reject -> {
@@ -89,16 +89,16 @@ class BlindTokenService @Inject constructor(
 
             val tokens = nonces.take(issued).mapIndexedNotNull { i, nonce ->
                 val evaluated = response.getEvaluatedPoints(i).toByteArray()
-                if (!ppVerifyClient(evaluated.toUByteList(), nonce.toUByteList(), serverPubkey.toUByteList())) {
+                if (!ppVerifyClient(evaluated, nonce, serverPubkey)) {
                     Log.w(TAG, "evaluated point $i failed client verification — skipping")
                     return@mapIndexedNotNull null
                 }
                 val blindFactor = blinded[i].copyOfRange(32, 64)
                 val token = ppFinalizeToken(
-                    evaluated.toUByteList(),
-                    blindFactor.toUByteList(),
-                    nonce.toUByteList(),
-                ).toByteArray()
+                    evaluated,
+                    blindFactor,
+                    nonce,
+                )
                 BlindToken(nonce = nonce, token = token)
             }
 
@@ -121,5 +121,3 @@ class BlindTokenService @Inject constructor(
     }
 }
 
-internal fun ByteArray.toUByteList(): List<UByte> = map { it.toUByte() }
-internal fun List<UByte>.toByteArray(): ByteArray = ByteArray(size) { this[it].toByte() }

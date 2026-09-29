@@ -139,7 +139,7 @@ class UploadPreKeysUseCase @Inject constructor(
     }
 }
 
-private fun List<UByte>.toByteString(): ByteString = ByteString.copyFrom(ByteArray(size) { this[it].toByte() })
+private fun ByteArray.toByteString(): ByteString = ByteString.copyFrom(this)
 
 /**
  * Loads persisted OTPK privates into a core just restored from saved keys — before

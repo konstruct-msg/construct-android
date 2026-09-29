@@ -60,19 +60,19 @@ class RotateSignedPreKeyUseCase @Inject constructor(
             val kyber = cryptoManager.beginKyberSpkRotation()
             if (!kyberPrekeys.persist()) error("Kyber SPK not persisted — rotation deferred")
             val rotated = cryptoManager.rotateSignedPrekey()
-            val classicPublic = rotated.publicKey.map { it.toByte() }.toByteArray()
+            val classicPublic = rotated.publicKey
             val request = RotateSignedPreKeyRequest.newBuilder()
                 .setDeviceId(deviceId)
                 .setNewSignedPreKey(
                     SignedPreKeyUpload.newBuilder()
                         .setKeyId(rotated.keyId.toInt())
                         .setPublicKey(ByteString.copyFrom(classicPublic))
-                        .setSignature(ByteString.copyFrom(rotated.signature.map { it.toByte() }.toByteArray())),
+                        .setSignature(ByteString.copyFrom(rotated.signature)),
                 )
                 .setNewKyberSignedPreKey(kyber.toSignedProto())
                 .setSignedPreKeyHybridSignature(ByteString.copyFrom(cryptoManager.signClassicSpkHybrid(classicPublic)))
                 .setKyberSignedPreKeyHybridSignature(
-                    ByteString.copyFrom(kyber.hybridSignature.map { it.toByte() }.toByteArray()),
+                    ByteString.copyFrom(kyber.hybridSignature),
                 )
                 .setReason(SignedPreKeyRotationReason.SIGNED_PRE_KEY_ROTATION_REASON_SCHEDULED)
                 .build()

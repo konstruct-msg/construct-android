@@ -105,9 +105,9 @@ class StealthSenderService @Inject constructor(
     ): ByteArray {
         val certBytes = getSenderCertificate()
         val sealedCert = sealedSealSenderCert(
-            certBytes.toUByteList(),
-            recipientIdentityKey.toUByteList(),
-        ).toByteArray()
+            certBytes,
+            recipientIdentityKey,
+        )
 
         val deliveryTag = ByteArray(32).also(random::nextBytes)
         val builder = SealedInner.newBuilder()
@@ -150,7 +150,7 @@ class StealthSenderService @Inject constructor(
     private fun sealTokenBytes(token: ByteArray): ByteArray {
         val serverKey = serverKeys.tokenEncryptionKey() ?: return token
         return runCatching {
-            ppSealTokenBytes(token.toUByteList(), serverKey.toUByteList()).toByteArray()
+            ppSealTokenBytes(token, serverKey)
         }.getOrElse {
             Log.w(TAG, "token seal failed — plaintext fallback", it)
             token
@@ -177,9 +177,9 @@ class StealthSenderService @Inject constructor(
 
             val identityPriv = cryptoManager.identityKeyBytes()
             val certBytes = sealedUnsealSenderCert(
-                inner.senderCertCiphertext.toByteArray().toUByteList(),
-                identityPriv.toUByteList(),
-            ).toByteArray()
+                inner.senderCertCiphertext.toByteArray(),
+                identityPriv,
+            )
             val cert = SenderCertificate.parseFrom(certBytes)
 
             ResolvedSender(

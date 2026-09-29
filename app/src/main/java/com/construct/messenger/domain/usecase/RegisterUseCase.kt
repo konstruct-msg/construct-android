@@ -116,4 +116,4 @@ class RegisterUseCase @Inject constructor(
     }
 }
 
-private fun List<UByte>.toByteString(): ByteString = ByteString.copyFrom(ByteArray(size) { this[it].toByte() })
+private fun ByteArray.toByteString(): ByteString = ByteString.copyFrom(this)

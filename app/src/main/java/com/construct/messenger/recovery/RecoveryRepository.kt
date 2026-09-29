@@ -51,7 +51,7 @@ class RecoveryRepository @Inject constructor(
             keypair,
             "CONSTRUCT_RECOVERY_SETUP:$userId:$timestamp",
         )
-        val publicKey = keypair.publicKey.map { it.toByte() }.toByteArray()
+        val publicKey = keypair.publicKey
         grpcClient.auth.setRecoveryKey(
             SetRecoveryKeyRequest.newBuilder()
                 .setRecoveryPublicKey(ByteString.copyFrom(publicKey))
@@ -74,7 +74,7 @@ class RecoveryRepository @Inject constructor(
         val fingerprint = status.fingerprint
         if (!status.isSetup || fingerprint == null) return ConfirmFailure.NOT_SET_UP
         val publicKey = cryptoManager.deriveRecoveryKeypair(normalized)
-            .publicKey.map { it.toByte() }.toByteArray()
+            .publicKey
         if (!AccountAddress.matchesServerFingerprint(publicKey, fingerprint)) {
             return ConfirmFailure.OTHER_ACCOUNT
         }

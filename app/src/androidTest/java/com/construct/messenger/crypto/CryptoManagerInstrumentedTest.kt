@@ -91,7 +91,7 @@ class CryptoManagerInstrumentedTest {
         val signature = crypto.signWithDeviceKey(message)
 
         assertTrue(
-            verifyRecoverySignature(bundle.verifyingKey, message, signature.toUByteList()),
+            verifyRecoverySignature(bundle.verifyingKey, message, signature),
         )
         crypto.close()
     }
@@ -244,14 +244,12 @@ private fun CryptoManager.pqxdhTestBundle(
         kyberOneTimePrekeyCreatedAt = otpk?.createdAt,
         kyberOneTimePrekeySignature = otpk?.signature,
         kyberOneTimePrekeyHybridSignature = otpk?.hybridSignature,
-        hybridIdentityKey = hybrid.toUByteList(),
-        hybridIdentitySignature = binding.toUByteList(),
+        hybridIdentityKey = hybrid,
+        hybridIdentitySignature = binding,
     )
 }
 
-private fun List<UByte>.toByteArray(): ByteArray = ByteArray(size) { this[it].toByte() }
-private fun ByteArray.toUByteList(): List<UByte> = map { it.toUByte() }
-private fun List<UByte>.toUtf8String(): String = String(toByteArray(), Charsets.UTF_8)
+private fun ByteArray.toUtf8String(): String = String(this, Charsets.UTF_8)
 
 /**
  * Signs sender certificates the way `identity-service` does: Ed25519 over `user_id ‖ domain ‖
@@ -263,7 +261,7 @@ private fun List<UByte>.toUtf8String(): String = String(toByteArray(), Charsets.
 private class TestCertificateServer {
     private val core = uniffi.construct_core.createCryptoCore()
 
-    val verifyingKey: ByteArray = core.getRegistrationBundleFields().verifyingKey.toByteArray()
+    val verifyingKey: ByteArray = core.getRegistrationBundleFields().verifyingKey
 
     fun certify(deviceId: String, identityKey: ByteArray, account: String = "test-account"): SenderCertificate {
         val domain = "konstruct.test"
@@ -276,7 +274,7 @@ private class TestCertificateServer {
             write(deviceId.toByteArray())
             write(java.nio.ByteBuffer.allocate(16).putLong(issued).putLong(expires).array())
         }.toByteArray()
-        val signature = core.signBundleData(payload.toUByteList()).toByteArray()
+        val signature = core.signBundleData(payload)
         return SenderCertificate(account, domain, identityKey, deviceId, issued, expires, signature)
     }
 }

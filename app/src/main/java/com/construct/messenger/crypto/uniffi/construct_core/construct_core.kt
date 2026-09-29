@@ -1560,73 +1560,73 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_create_crypto_core() != 59945.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_create_crypto_core_from_keys() != 41063.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_create_crypto_core_from_keys() != 53404.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_create_orchestrator_core_from_keys() != 63491.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_create_orchestrator_core_from_keys() != 16700.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_derive_device_id() != 1055.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_derive_device_id() != 24562.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_derive_recovery_keypair() != 19396.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_derive_recovery_keypair() != 51363.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_derive_verifying_key_from_secret() != 31516.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_derive_verifying_key_from_secret() != 58526.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_device_copy_tag() != 42913.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_device_copy_tag() != 11615.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_device_copy_tag_matches() != 64839.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_device_copy_tag_matches() != 2349.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_format_federated_id() != 19004.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_generate_dummy_message() != 52724.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_generate_dummy_message() != 19539.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_generate_ephemeral_keypair() != 59553.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_generate_intake_key() != 3346.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_generate_intake_key() != 16021.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_generate_mnemonic() != 45721.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_generate_private_keys() != 4524.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_generate_private_keys() != 4994.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_heartbeat_interval_ms() != 51594.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_hybrid_public_key_from_private() != 18985.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_hybrid_public_key_from_private() != 12004.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_hybrid_sign() != 61982.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_hybrid_sign() != 19647.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_hybrid_signature_keygen() != 46423.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_hybrid_verify() != 56378.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_hybrid_verify() != 15987.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_identity_key_from_keys() != 29768.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_identity_key_from_keys() != 34967.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_import_mls_store_cfe() != 54998.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_import_mls_store_cfe() != 62241.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_intake_epoch() != 2449.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_intake_tag() != 7949.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_intake_tag() != 36931.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_is_dummy_message() != 41979.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_is_dummy_message() != 57872.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_jittered_interval_ms() != 6840.toShort()) {
@@ -1635,19 +1635,19 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_mldsa65_keygen() != 58411.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_mldsa65_sign() != 44353.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_mldsa65_sign() != 44541.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_mldsa65_verify() != 57408.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_mldsa65_verify() != 30528.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_mlkem1024_encapsulate() != 55276.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_mlkem1024_encapsulate() != 15734.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_mnemonic_to_seed() != 53142.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_mnemonic_to_seed() != 49697.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_open_with_device_key() != 7865.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_open_with_device_key() != 45456.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_plan_initiation() != 61324.toShort()) {
@@ -1659,19 +1659,19 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_plan_send() != 48521.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_pp_blind_token() != 34290.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_pp_blind_token() != 33863.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_pp_finalize_token() != 38839.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_pp_finalize_token() != 3098.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_pp_seal_token_bytes() != 51612.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_pp_seal_token_bytes() != 21400.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_pp_verify_client() != 14654.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_pp_verify_client() != 52098.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_pp_verify_dleq() != 9036.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_pp_verify_dleq() != 53114.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_random_send_delay_ms() != 9943.toShort()) {
@@ -1683,46 +1683,46 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_recommended_send_delay_ms() != 24315.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_registration_bundle_fields_from_keys() != 16104.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_registration_bundle_fields_from_keys() != 32194.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_seal_to_device_key() != 11700.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_seal_to_device_key() != 39145.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_sealed_seal_sender_cert() != 11670.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_sealed_seal_sender_cert() != 23474.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_sealed_unseal_sender_cert() != 57873.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_sealed_unseal_sender_cert() != 18867.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_sealed_verify_sender_cert() != 7421.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_sealed_verify_sender_cert() != 64198.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_sign_bundle_data_with_keys() != 50810.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_sign_bundle_data_with_keys() != 42671.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_sign_invite_data() != 47259.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_sign_invite_data() != 3970.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_sign_recovery_challenge() != 2630.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_sign_recovery_challenge() != 4321.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_signing_key_from_keys() != 26397.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_signing_key_from_keys() != 58465.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_sr_create_recovery_shares() != 33586.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_sr_create_recovery_shares() != 18198.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_sr_generate_vault_key() != 65018.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_sr_generate_vault_key() != 30491.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_sr_open_recovery_bundle() != 30257.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_sr_open_recovery_bundle() != 41311.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_sr_reconstruct_vault_key() != 19594.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_sr_reconstruct_vault_key() != 55657.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_sr_seal_recovery_bundle() != 62781.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_sr_seal_recovery_bundle() != 17613.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_test_platform_bridge_roundtrip() != 58358.toShort()) {
@@ -1731,25 +1731,25 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_validate_mnemonic() != 51524.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_verify_invite_signature() != 39140.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_verify_invite_signature() != 50101.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_verify_pow() != 44600.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_verify_recovery_signature() != 1269.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_verify_recovery_signature() != 45298.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_wire_payload_unpack() != 35590.toShort()) {
+    if (lib.uniffi_construct_core_checksum_func_wire_payload_unpack() != 23560.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_export_one_time_prekeys() != 45190.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_export_one_time_prekeys() != 37697.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_export_private_keys() != 61671.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_export_private_keys() != 13521.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_export_session() != 12774.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_export_session() != 58420.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_generate_one_time_prekeys() != 24636.toShort()) {
@@ -1770,13 +1770,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_get_signing_key_bytes() != 55710.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_import_one_time_prekeys() != 47991.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_import_one_time_prekeys() != 14595.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_import_private_keys() != 9774.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_import_private_keys() != 38606.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_import_session() != 41224.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_import_session() != 26161.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_init_session() != 23651.toShort()) {
@@ -1800,43 +1800,43 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_set_local_user_id() != 65330.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_sign_bundle_data() != 22123.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_classiccryptocore_sign_bundle_data() != 43516.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_mlsstore_add_member() != 62203.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_add_member() != 60309.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_mlsstore_create_group() != 12298.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_create_group() != 43416.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_mlsstore_decrypt() != 59573.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_decrypt() != 56358.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_mlsstore_encrypt() != 53931.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_encrypt() != 50553.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_mlsstore_epoch() != 33449.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_epoch() != 36436.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_mlsstore_export_cfe() != 18462.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_export_cfe() != 58130.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_mlsstore_generate_key_package() != 24070.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_generate_key_package() != 26940.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_mlsstore_join_from_welcome() != 24122.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_join_from_welcome() != 58231.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_mlsstore_leave_group() != 16325.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_leave_group() != 27203.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_mlsstore_member_count() != 32053.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_member_count() != 50972.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_mlsstore_process_commit() != 27846.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_process_commit() != 55288.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_mlsstore_remove_member() != 14016.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_mlsstore_remove_member() != 48469.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_ack_is_processed() != 63134.toShort()) {
@@ -1848,10 +1848,10 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_begin_kyber_spk_rotation() != 57721.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_build_hybrid_identity_bind_message() != 61991.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_build_hybrid_identity_bind_message() != 2339.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_build_x3dh_sign_message() != 50237.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_build_x3dh_sign_message() != 28178.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_commit_kyber_spk_rotation() != 27935.toShort()) {
@@ -1866,22 +1866,22 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_encrypt_to_wire() != 5089.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_ensure_hybrid_signature_key() != 6511.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_ensure_hybrid_signature_key() != 52743.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_kyber_prekeys() != 29105.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_kyber_prekeys() != 49363.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_one_time_prekeys() != 58452.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_one_time_prekeys() != 56347.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_orchestrator_state() != 49630.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_orchestrator_state() != 52527.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_private_keys() != 53846.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_private_keys() != 31989.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_session() != 59847.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_export_session() != 27333.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_forget_contact_state() != 50563.toShort()) {
@@ -1917,25 +1917,25 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_has_session() != 45817.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_hybrid_signature_public_key() != 51840.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_hybrid_signature_public_key() != 3228.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_hybrid_signature_private_key() != 32195.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_hybrid_signature_private_key() != 18250.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_kyber_prekeys() != 7335.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_kyber_prekeys() != 16146.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_one_time_prekeys() != 21471.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_one_time_prekeys() != 20260.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_orchestrator_state() != 51713.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_orchestrator_state() != 39172.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_session() != 64657.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_import_session() != 51332.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_init_receiving_session_from_wire_payload() != 45553.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_init_receiving_session_from_wire_payload() != 33168.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_init_session() != 15049.toShort()) {
@@ -1947,7 +1947,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_kyber_one_time_prekey_count() != 51317.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_kyber_prekey_decapsulate() != 12272.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_kyber_prekey_decapsulate() != 28414.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_one_time_prekey_count() != 21478.toShort()) {
@@ -1992,13 +1992,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_set_trusted_server_keys() != 25656.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_sign_bundle_data() != 20046.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_sign_bundle_data() != 54061.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_sign_hybrid() != 37336.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_sign_hybrid() != 47624.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_sign_hybrid_prekey() != 15369.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_sign_hybrid_prekey() != 60717.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_rustackstore_cache_len() != 41894.toShort()) {
@@ -2016,7 +2016,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_trafficprotectionmanager_current_interval_ms() != 34869.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_trafficprotectionmanager_generate_dummy() != 59992.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_trafficprotectionmanager_generate_dummy() != 32319.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_trafficprotectionmanager_get_metrics() != 5234.toShort()) {
@@ -2037,7 +2037,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_trafficprotectionmanager_update_battery_level() != 31087.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_constructor_mlsstore_new() != 26119.toShort()) {
+    if (lib.uniffi_construct_core_checksum_constructor_mlsstore_new() != 17806.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_constructor_rustackstore_new() != 64675.toShort()) {
@@ -2588,11 +2588,11 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
 //
 public interface ClassicCryptoCoreInterface {
     
-    fun `exportOneTimePrekeys`(): List<kotlin.UByte>
+    fun `exportOneTimePrekeys`(): kotlin.ByteArray
     
-    fun `exportPrivateKeys`(): List<kotlin.UByte>
+    fun `exportPrivateKeys`(): kotlin.ByteArray
     
-    fun `exportSession`(`contactId`: kotlin.String): List<kotlin.UByte>
+    fun `exportSession`(`contactId`: kotlin.String): kotlin.ByteArray
     
     fun `generateOneTimePrekeys`(`count`: kotlin.UInt): List<OtpkPair>
     
@@ -2615,11 +2615,11 @@ public interface ClassicCryptoCoreInterface {
      */
     fun `getSigningKeyBytes`(): kotlin.ByteArray
     
-    fun `importOneTimePrekeys`(`data`: List<kotlin.UByte>)
+    fun `importOneTimePrekeys`(`data`: kotlin.ByteArray)
     
-    fun `importPrivateKeys`(`data`: List<kotlin.UByte>)
+    fun `importPrivateKeys`(`data`: kotlin.ByteArray)
     
-    fun `importSession`(`contactId`: kotlin.String, `data`: List<kotlin.UByte>): kotlin.String
+    fun `importSession`(`contactId`: kotlin.String, `data`: kotlin.ByteArray): kotlin.String
     
     fun `initSession`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String
     
@@ -2641,7 +2641,7 @@ public interface ClassicCryptoCoreInterface {
     
     fun `setLocalUserId`(`userId`: kotlin.String)
     
-    fun `signBundleData`(`bundleDataJson`: List<kotlin.UByte>): List<kotlin.UByte>
+    fun `signBundleData`(`bundleDataJson`: kotlin.ByteArray): kotlin.ByteArray
     
     companion object
 }
@@ -2743,8 +2743,8 @@ open class ClassicCryptoCore: Disposable, AutoCloseable, ClassicCryptoCoreInterf
     }
 
     
-    @Throws(CryptoException::class)override fun `exportOneTimePrekeys`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class)override fun `exportOneTimePrekeys`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_classiccryptocore_export_one_time_prekeys(
@@ -2757,8 +2757,8 @@ open class ClassicCryptoCore: Disposable, AutoCloseable, ClassicCryptoCoreInterf
     
 
     
-    @Throws(CryptoException::class)override fun `exportPrivateKeys`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class)override fun `exportPrivateKeys`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_classiccryptocore_export_private_keys(
@@ -2771,8 +2771,8 @@ open class ClassicCryptoCore: Disposable, AutoCloseable, ClassicCryptoCoreInterf
     
 
     
-    @Throws(CryptoException::class)override fun `exportSession`(`contactId`: kotlin.String): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class)override fun `exportSession`(`contactId`: kotlin.String): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_classiccryptocore_export_session(
@@ -2876,39 +2876,39 @@ open class ClassicCryptoCore: Disposable, AutoCloseable, ClassicCryptoCoreInterf
     
 
     
-    @Throws(CryptoException::class)override fun `importOneTimePrekeys`(`data`: List<kotlin.UByte>)
+    @Throws(CryptoException::class)override fun `importOneTimePrekeys`(`data`: kotlin.ByteArray)
         = 
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_classiccryptocore_import_one_time_prekeys(
         it,
-        FfiConverterSequenceUByte.lower(`data`),_status)
+        FfiConverterByteArray.lower(`data`),_status)
 }
     }
     
     
 
     
-    @Throws(CryptoException::class)override fun `importPrivateKeys`(`data`: List<kotlin.UByte>)
+    @Throws(CryptoException::class)override fun `importPrivateKeys`(`data`: kotlin.ByteArray)
         = 
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_classiccryptocore_import_private_keys(
         it,
-        FfiConverterSequenceUByte.lower(`data`),_status)
+        FfiConverterByteArray.lower(`data`),_status)
 }
     }
     
     
 
     
-    @Throws(CryptoException::class)override fun `importSession`(`contactId`: kotlin.String, `data`: List<kotlin.UByte>): kotlin.String {
+    @Throws(CryptoException::class)override fun `importSession`(`contactId`: kotlin.String, `data`: kotlin.ByteArray): kotlin.String {
             return FfiConverterString.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_classiccryptocore_import_session(
         it,
-        FfiConverterString.lower(`contactId`),FfiConverterSequenceUByte.lower(`data`),_status)
+        FfiConverterString.lower(`contactId`),FfiConverterByteArray.lower(`data`),_status)
 }
     }
     )
@@ -3014,13 +3014,13 @@ open class ClassicCryptoCore: Disposable, AutoCloseable, ClassicCryptoCoreInterf
     
 
     
-    @Throws(CryptoException::class)override fun `signBundleData`(`bundleDataJson`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class)override fun `signBundleData`(`bundleDataJson`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_classiccryptocore_sign_bundle_data(
         it,
-        FfiConverterSequenceUByte.lower(`bundleDataJson`),_status)
+        FfiConverterByteArray.lower(`bundleDataJson`),_status)
 }
     }
     )
@@ -3179,66 +3179,66 @@ public interface MlsStoreInterface {
      * Add a member by their published KeyPackage. The commit is merged
      * locally — call only when about to SubmitCommit.
      */
-    fun `addMember`(`groupId`: List<kotlin.UByte>, `keyPackage`: List<kotlin.UByte>): MemberAddition
+    fun `addMember`(`groupId`: kotlin.ByteArray, `keyPackage`: kotlin.ByteArray): MemberAddition
     
     /**
      * Create a new group with this device as the sole member.
      * Returns the group id — the handle for every other group call.
      */
-    fun `createGroup`(): List<kotlin.UByte>
+    fun `createGroup`(): kotlin.ByteArray
     
     /**
      * Decrypt an application message from another member.
      */
-    fun `decrypt`(`groupId`: List<kotlin.UByte>, `ciphertext`: List<kotlin.UByte>): List<kotlin.UByte>
+    fun `decrypt`(`groupId`: kotlin.ByteArray, `ciphertext`: kotlin.ByteArray): kotlin.ByteArray
     
     /**
      * Encrypt an application message to the group.
      */
-    fun `encrypt`(`groupId`: List<kotlin.UByte>, `plaintext`: List<kotlin.UByte>): List<kotlin.UByte>
+    fun `encrypt`(`groupId`: kotlin.ByteArray, `plaintext`: kotlin.ByteArray): kotlin.ByteArray
     
     /**
      * Current MLS epoch. Increments on every commit.
      */
-    fun `epoch`(`groupId`: List<kotlin.UByte>): kotlin.ULong
+    fun `epoch`(`groupId`: kotlin.ByteArray): kotlin.ULong
     
     /**
      * Snapshot the entire MLS storage as a CFE blob (msg_type 0x44).
      */
-    fun `exportCfe`(): List<kotlin.UByte>
+    fun `exportCfe`(): kotlin.ByteArray
     
     /**
      * Generate a KeyPackage for publishing (PublishKeyPackage). Writes its
      * private material into this store — persist before uploading.
      */
-    fun `generateKeyPackage`(): List<kotlin.UByte>
+    fun `generateKeyPackage`(): kotlin.ByteArray
     
     /**
      * Join a group from a Welcome message addressed to a KeyPackage
      * generated by this store. Returns the joined group's id.
      */
-    fun `joinFromWelcome`(`welcome`: List<kotlin.UByte>): List<kotlin.UByte>
+    fun `joinFromWelcome`(`welcome`: kotlin.ByteArray): kotlin.ByteArray
     
     /**
      * Propose leaving. Broadcast the returned message; another member's
      * commit actually removes us.
      */
-    fun `leaveGroup`(`groupId`: List<kotlin.UByte>): List<kotlin.UByte>
+    fun `leaveGroup`(`groupId`: kotlin.ByteArray): kotlin.ByteArray
     
     /**
      * Current number of members in the group.
      */
-    fun `memberCount`(`groupId`: List<kotlin.UByte>): kotlin.UInt
+    fun `memberCount`(`groupId`: kotlin.ByteArray): kotlin.UInt
     
     /**
      * Process and merge a commit produced by another member.
      */
-    fun `processCommit`(`groupId`: List<kotlin.UByte>, `commit`: List<kotlin.UByte>)
+    fun `processCommit`(`groupId`: kotlin.ByteArray, `commit`: kotlin.ByteArray)
     
     /**
      * Remove a member by leaf index. Commit is merged locally.
      */
-    fun `removeMember`(`groupId`: List<kotlin.UByte>, `leafIndex`: kotlin.UInt): List<kotlin.UByte>
+    fun `removeMember`(`groupId`: kotlin.ByteArray, `leafIndex`: kotlin.UInt): kotlin.ByteArray
     
     companion object
 }
@@ -3281,12 +3281,12 @@ open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
     /**
      * A fresh store bound to the device's Ed25519 identity keypair.
      */
-    constructor(`signerPrivateKey`: List<kotlin.UByte>, `signerPublicKey`: List<kotlin.UByte>) :
+    constructor(`signerPrivateKey`: kotlin.ByteArray, `signerPublicKey`: kotlin.ByteArray) :
         this(UniffiWithHandle, 
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_constructor_mlsstore_new(
     
-        FfiConverterSequenceUByte.lower(`signerPrivateKey`),FfiConverterSequenceUByte.lower(`signerPublicKey`),_status)
+        FfiConverterByteArray.lower(`signerPrivateKey`),FfiConverterByteArray.lower(`signerPublicKey`),_status)
 }
     )
 
@@ -3366,13 +3366,13 @@ open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
      * Add a member by their published KeyPackage. The commit is merged
      * locally — call only when about to SubmitCommit.
      */
-    @Throws(MlsException::class)override fun `addMember`(`groupId`: List<kotlin.UByte>, `keyPackage`: List<kotlin.UByte>): MemberAddition {
+    @Throws(MlsException::class)override fun `addMember`(`groupId`: kotlin.ByteArray, `keyPackage`: kotlin.ByteArray): MemberAddition {
             return FfiConverterTypeMemberAddition.lift(
     callWithHandle {
     uniffiRustCallWithError(MlsException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_mlsstore_add_member(
         it,
-        FfiConverterSequenceUByte.lower(`groupId`),FfiConverterSequenceUByte.lower(`keyPackage`),_status)
+        FfiConverterByteArray.lower(`groupId`),FfiConverterByteArray.lower(`keyPackage`),_status)
 }
     }
     )
@@ -3384,8 +3384,8 @@ open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
      * Create a new group with this device as the sole member.
      * Returns the group id — the handle for every other group call.
      */
-    @Throws(MlsException::class)override fun `createGroup`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(MlsException::class)override fun `createGroup`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(MlsException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_mlsstore_create_group(
@@ -3401,13 +3401,13 @@ open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
     /**
      * Decrypt an application message from another member.
      */
-    @Throws(MlsException::class)override fun `decrypt`(`groupId`: List<kotlin.UByte>, `ciphertext`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(MlsException::class)override fun `decrypt`(`groupId`: kotlin.ByteArray, `ciphertext`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(MlsException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_mlsstore_decrypt(
         it,
-        FfiConverterSequenceUByte.lower(`groupId`),FfiConverterSequenceUByte.lower(`ciphertext`),_status)
+        FfiConverterByteArray.lower(`groupId`),FfiConverterByteArray.lower(`ciphertext`),_status)
 }
     }
     )
@@ -3418,13 +3418,13 @@ open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
     /**
      * Encrypt an application message to the group.
      */
-    @Throws(MlsException::class)override fun `encrypt`(`groupId`: List<kotlin.UByte>, `plaintext`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(MlsException::class)override fun `encrypt`(`groupId`: kotlin.ByteArray, `plaintext`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(MlsException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_mlsstore_encrypt(
         it,
-        FfiConverterSequenceUByte.lower(`groupId`),FfiConverterSequenceUByte.lower(`plaintext`),_status)
+        FfiConverterByteArray.lower(`groupId`),FfiConverterByteArray.lower(`plaintext`),_status)
 }
     }
     )
@@ -3435,13 +3435,13 @@ open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
     /**
      * Current MLS epoch. Increments on every commit.
      */
-    @Throws(MlsException::class)override fun `epoch`(`groupId`: List<kotlin.UByte>): kotlin.ULong {
+    @Throws(MlsException::class)override fun `epoch`(`groupId`: kotlin.ByteArray): kotlin.ULong {
             return FfiConverterULong.lift(
     callWithHandle {
     uniffiRustCallWithError(MlsException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_mlsstore_epoch(
         it,
-        FfiConverterSequenceUByte.lower(`groupId`),_status)
+        FfiConverterByteArray.lower(`groupId`),_status)
 }
     }
     )
@@ -3452,8 +3452,8 @@ open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
     /**
      * Snapshot the entire MLS storage as a CFE blob (msg_type 0x44).
      */
-    @Throws(MlsException::class)override fun `exportCfe`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(MlsException::class)override fun `exportCfe`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(MlsException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_mlsstore_export_cfe(
@@ -3470,8 +3470,8 @@ open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
      * Generate a KeyPackage for publishing (PublishKeyPackage). Writes its
      * private material into this store — persist before uploading.
      */
-    @Throws(MlsException::class)override fun `generateKeyPackage`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(MlsException::class)override fun `generateKeyPackage`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(MlsException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_mlsstore_generate_key_package(
@@ -3488,13 +3488,13 @@ open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
      * Join a group from a Welcome message addressed to a KeyPackage
      * generated by this store. Returns the joined group's id.
      */
-    @Throws(MlsException::class)override fun `joinFromWelcome`(`welcome`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(MlsException::class)override fun `joinFromWelcome`(`welcome`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(MlsException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_mlsstore_join_from_welcome(
         it,
-        FfiConverterSequenceUByte.lower(`welcome`),_status)
+        FfiConverterByteArray.lower(`welcome`),_status)
 }
     }
     )
@@ -3506,13 +3506,13 @@ open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
      * Propose leaving. Broadcast the returned message; another member's
      * commit actually removes us.
      */
-    @Throws(MlsException::class)override fun `leaveGroup`(`groupId`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(MlsException::class)override fun `leaveGroup`(`groupId`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(MlsException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_mlsstore_leave_group(
         it,
-        FfiConverterSequenceUByte.lower(`groupId`),_status)
+        FfiConverterByteArray.lower(`groupId`),_status)
 }
     }
     )
@@ -3523,13 +3523,13 @@ open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
     /**
      * Current number of members in the group.
      */
-    @Throws(MlsException::class)override fun `memberCount`(`groupId`: List<kotlin.UByte>): kotlin.UInt {
+    @Throws(MlsException::class)override fun `memberCount`(`groupId`: kotlin.ByteArray): kotlin.UInt {
             return FfiConverterUInt.lift(
     callWithHandle {
     uniffiRustCallWithError(MlsException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_mlsstore_member_count(
         it,
-        FfiConverterSequenceUByte.lower(`groupId`),_status)
+        FfiConverterByteArray.lower(`groupId`),_status)
 }
     }
     )
@@ -3540,13 +3540,13 @@ open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
     /**
      * Process and merge a commit produced by another member.
      */
-    @Throws(MlsException::class)override fun `processCommit`(`groupId`: List<kotlin.UByte>, `commit`: List<kotlin.UByte>)
+    @Throws(MlsException::class)override fun `processCommit`(`groupId`: kotlin.ByteArray, `commit`: kotlin.ByteArray)
         = 
     callWithHandle {
     uniffiRustCallWithError(MlsException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_mlsstore_process_commit(
         it,
-        FfiConverterSequenceUByte.lower(`groupId`),FfiConverterSequenceUByte.lower(`commit`),_status)
+        FfiConverterByteArray.lower(`groupId`),FfiConverterByteArray.lower(`commit`),_status)
 }
     }
     
@@ -3556,13 +3556,13 @@ open class MlsStore: Disposable, AutoCloseable, MlsStoreInterface
     /**
      * Remove a member by leaf index. Commit is merged locally.
      */
-    @Throws(MlsException::class)override fun `removeMember`(`groupId`: List<kotlin.UByte>, `leafIndex`: kotlin.UInt): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(MlsException::class)override fun `removeMember`(`groupId`: kotlin.ByteArray, `leafIndex`: kotlin.UInt): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(MlsException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_mlsstore_remove_member(
         it,
-        FfiConverterSequenceUByte.lower(`groupId`),FfiConverterUInt.lower(`leafIndex`),_status)
+        FfiConverterByteArray.lower(`groupId`),FfiConverterUInt.lower(`leafIndex`),_status)
 }
     }
     )
@@ -3732,9 +3732,9 @@ public interface OrchestratorCoreInterface {
      */
     fun `beginKyberSpkRotation`(): KyberPrekeyUpload
     
-    fun `buildHybridIdentityBindMessage`(`hybridPublicKey`: List<kotlin.UByte>): List<kotlin.UByte>
+    fun `buildHybridIdentityBindMessage`(`hybridPublicKey`: kotlin.ByteArray): kotlin.ByteArray
     
-    fun `buildX3dhSignMessage`(`suiteId`: kotlin.UByte, `publicKey`: List<kotlin.UByte>): List<kotlin.UByte>
+    fun `buildX3dhSignMessage`(`suiteId`: kotlin.UByte, `publicKey`: kotlin.ByteArray): kotlin.ByteArray
     
     /**
      * The server confirmed the upload. Returns false if nothing was pending.
@@ -3757,22 +3757,22 @@ public interface OrchestratorCoreInterface {
      */
     fun `encryptToWire`(`contactId`: kotlin.String, `plaintext`: kotlin.ByteArray): kotlin.ByteArray
     
-    fun `ensureHybridSignatureKey`(): List<kotlin.UByte>
+    fun `ensureHybridSignatureKey`(): kotlin.ByteArray
     
-    fun `exportKyberPrekeys`(): List<kotlin.UByte>
+    fun `exportKyberPrekeys`(): kotlin.ByteArray
     
-    fun `exportOneTimePrekeys`(): List<kotlin.UByte>
+    fun `exportOneTimePrekeys`(): kotlin.ByteArray
     
     /**
      * Export the full orchestrator coordination state (init locks, prekey tracker, pins) as a
      * CFE binary blob.
      * Persist under CfeSecureStoreSlot::OrchestratorState.
      */
-    fun `exportOrchestratorState`(): List<kotlin.UByte>
+    fun `exportOrchestratorState`(): kotlin.ByteArray
     
-    fun `exportPrivateKeys`(): List<kotlin.UByte>
+    fun `exportPrivateKeys`(): kotlin.ByteArray
     
-    fun `exportSession`(`contactId`: kotlin.String): List<kotlin.UByte>
+    fun `exportSession`(`contactId`: kotlin.String): kotlin.ByteArray
     
     /**
      * Drop every piece of local orchestration state this core holds about `contact_id`:
@@ -3824,23 +3824,23 @@ public interface OrchestratorCoreInterface {
     
     fun `hasSession`(`contactId`: kotlin.String): kotlin.Boolean
     
-    fun `hybridSignaturePublicKey`(): List<kotlin.UByte>?
+    fun `hybridSignaturePublicKey`(): kotlin.ByteArray?
     
-    fun `importHybridSignaturePrivateKey`(`privBytes`: List<kotlin.UByte>)
+    fun `importHybridSignaturePrivateKey`(`privBytes`: kotlin.ByteArray)
     
-    fun `importKyberPrekeys`(`data`: List<kotlin.UByte>)
+    fun `importKyberPrekeys`(`data`: kotlin.ByteArray)
     
-    fun `importOneTimePrekeys`(`data`: List<kotlin.UByte>)
+    fun `importOneTimePrekeys`(`data`: kotlin.ByteArray)
     
     /**
      * Restore the full orchestrator coordination state from a CFE blob.
      * Call at app start before processing any messages.
      */
-    fun `importOrchestratorState`(`data`: List<kotlin.UByte>)
+    fun `importOrchestratorState`(`data`: kotlin.ByteArray)
     
-    fun `importSession`(`contactId`: kotlin.String, `data`: List<kotlin.UByte>): kotlin.String
+    fun `importSession`(`contactId`: kotlin.String, `data`: kotlin.ByteArray): kotlin.String
     
-    fun `initReceivingSessionFromWirePayload`(`senderCertificate`: SenderCertificate, `wirePayload`: List<kotlin.UByte>): SessionInitResult
+    fun `initReceivingSessionFromWirePayload`(`senderCertificate`: SenderCertificate, `wirePayload`: kotlin.ByteArray): SessionInitResult
     
     fun `initSession`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String
     
@@ -3852,7 +3852,7 @@ public interface OrchestratorCoreInterface {
      * Decapsulate with our Kyber prekey `key_id` (0 = current SPK). For history transfer; the
      * handshake decapsulates inside the core.
      */
-    fun `kyberPrekeyDecapsulate`(`keyId`: kotlin.UInt, `ciphertext`: List<kotlin.UByte>): List<kotlin.UByte>
+    fun `kyberPrekeyDecapsulate`(`keyId`: kotlin.UInt, `ciphertext`: kotlin.ByteArray): kotlin.ByteArray
     
     fun `oneTimePrekeyCount`(): kotlin.UInt
     
@@ -3892,11 +3892,11 @@ public interface OrchestratorCoreInterface {
     
     fun `setTrustedServerKeys`(`keys`: List<kotlin.ByteArray>)
     
-    fun `signBundleData`(`bundleDataJson`: List<kotlin.UByte>): List<kotlin.UByte>
+    fun `signBundleData`(`bundleDataJson`: kotlin.ByteArray): kotlin.ByteArray
     
-    fun `signHybrid`(`message`: List<kotlin.UByte>): List<kotlin.UByte>
+    fun `signHybrid`(`message`: kotlin.ByteArray): kotlin.ByteArray
     
-    fun `signHybridPrekey`(`suiteId`: kotlin.UByte, `publicKey`: List<kotlin.UByte>): List<kotlin.UByte>
+    fun `signHybridPrekey`(`suiteId`: kotlin.UByte, `publicKey`: kotlin.ByteArray): kotlin.ByteArray
     
     companion object
 }
@@ -4056,26 +4056,26 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     
 
-    override fun `buildHybridIdentityBindMessage`(`hybridPublicKey`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    override fun `buildHybridIdentityBindMessage`(`hybridPublicKey`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_build_hybrid_identity_bind_message(
         it,
-        FfiConverterSequenceUByte.lower(`hybridPublicKey`),_status)
+        FfiConverterByteArray.lower(`hybridPublicKey`),_status)
 }
     }
     )
     }
     
 
-    override fun `buildX3dhSignMessage`(`suiteId`: kotlin.UByte, `publicKey`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    override fun `buildX3dhSignMessage`(`suiteId`: kotlin.UByte, `publicKey`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_build_x3dh_sign_message(
         it,
-        FfiConverterUByte.lower(`suiteId`),FfiConverterSequenceUByte.lower(`publicKey`),_status)
+        FfiConverterUByte.lower(`suiteId`),FfiConverterByteArray.lower(`publicKey`),_status)
 }
     }
     )
@@ -4151,8 +4151,8 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
-    @Throws(CryptoException::class)override fun `ensureHybridSignatureKey`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class)override fun `ensureHybridSignatureKey`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_ensure_hybrid_signature_key(
@@ -4165,8 +4165,8 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
-    @Throws(CryptoException::class)override fun `exportKyberPrekeys`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class)override fun `exportKyberPrekeys`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_export_kyber_prekeys(
@@ -4179,8 +4179,8 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
-    @Throws(CryptoException::class)override fun `exportOneTimePrekeys`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class)override fun `exportOneTimePrekeys`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_export_one_time_prekeys(
@@ -4198,8 +4198,8 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
      * CFE binary blob.
      * Persist under CfeSecureStoreSlot::OrchestratorState.
      */
-    @Throws(CryptoException::class)override fun `exportOrchestratorState`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class)override fun `exportOrchestratorState`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_export_orchestrator_state(
@@ -4212,8 +4212,8 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
-    @Throws(CryptoException::class)override fun `exportPrivateKeys`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class)override fun `exportPrivateKeys`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_export_private_keys(
@@ -4226,8 +4226,8 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
-    @Throws(CryptoException::class)override fun `exportSession`(`contactId`: kotlin.String): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class)override fun `exportSession`(`contactId`: kotlin.String): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_export_session(
@@ -4415,8 +4415,8 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     
 
-    override fun `hybridSignaturePublicKey`(): List<kotlin.UByte>? {
-            return FfiConverterOptionalSequenceUByte.lift(
+    override fun `hybridSignaturePublicKey`(): kotlin.ByteArray? {
+            return FfiConverterOptionalByteArray.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_hybrid_signature_public_key(
@@ -4429,39 +4429,39 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
-    @Throws(CryptoException::class)override fun `importHybridSignaturePrivateKey`(`privBytes`: List<kotlin.UByte>)
+    @Throws(CryptoException::class)override fun `importHybridSignaturePrivateKey`(`privBytes`: kotlin.ByteArray)
         = 
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_import_hybrid_signature_private_key(
         it,
-        FfiConverterSequenceUByte.lower(`privBytes`),_status)
+        FfiConverterByteArray.lower(`privBytes`),_status)
 }
     }
     
     
 
     
-    @Throws(CryptoException::class)override fun `importKyberPrekeys`(`data`: List<kotlin.UByte>)
+    @Throws(CryptoException::class)override fun `importKyberPrekeys`(`data`: kotlin.ByteArray)
         = 
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_import_kyber_prekeys(
         it,
-        FfiConverterSequenceUByte.lower(`data`),_status)
+        FfiConverterByteArray.lower(`data`),_status)
 }
     }
     
     
 
     
-    @Throws(CryptoException::class)override fun `importOneTimePrekeys`(`data`: List<kotlin.UByte>)
+    @Throws(CryptoException::class)override fun `importOneTimePrekeys`(`data`: kotlin.ByteArray)
         = 
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_import_one_time_prekeys(
         it,
-        FfiConverterSequenceUByte.lower(`data`),_status)
+        FfiConverterByteArray.lower(`data`),_status)
 }
     }
     
@@ -4472,26 +4472,26 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
      * Restore the full orchestrator coordination state from a CFE blob.
      * Call at app start before processing any messages.
      */
-    @Throws(CryptoException::class)override fun `importOrchestratorState`(`data`: List<kotlin.UByte>)
+    @Throws(CryptoException::class)override fun `importOrchestratorState`(`data`: kotlin.ByteArray)
         = 
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_import_orchestrator_state(
         it,
-        FfiConverterSequenceUByte.lower(`data`),_status)
+        FfiConverterByteArray.lower(`data`),_status)
 }
     }
     
     
 
     
-    @Throws(CryptoException::class)override fun `importSession`(`contactId`: kotlin.String, `data`: List<kotlin.UByte>): kotlin.String {
+    @Throws(CryptoException::class)override fun `importSession`(`contactId`: kotlin.String, `data`: kotlin.ByteArray): kotlin.String {
             return FfiConverterString.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_import_session(
         it,
-        FfiConverterString.lower(`contactId`),FfiConverterSequenceUByte.lower(`data`),_status)
+        FfiConverterString.lower(`contactId`),FfiConverterByteArray.lower(`data`),_status)
 }
     }
     )
@@ -4499,13 +4499,13 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
-    @Throws(CryptoException::class)override fun `initReceivingSessionFromWirePayload`(`senderCertificate`: SenderCertificate, `wirePayload`: List<kotlin.UByte>): SessionInitResult {
+    @Throws(CryptoException::class)override fun `initReceivingSessionFromWirePayload`(`senderCertificate`: SenderCertificate, `wirePayload`: kotlin.ByteArray): SessionInitResult {
             return FfiConverterTypeSessionInitResult.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_init_receiving_session_from_wire_payload(
         it,
-        FfiConverterTypeSenderCertificate.lower(`senderCertificate`),FfiConverterSequenceUByte.lower(`wirePayload`),_status)
+        FfiConverterTypeSenderCertificate.lower(`senderCertificate`),FfiConverterByteArray.lower(`wirePayload`),_status)
 }
     }
     )
@@ -4558,13 +4558,13 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
      * Decapsulate with our Kyber prekey `key_id` (0 = current SPK). For history transfer; the
      * handshake decapsulates inside the core.
      */
-    @Throws(CryptoException::class)override fun `kyberPrekeyDecapsulate`(`keyId`: kotlin.UInt, `ciphertext`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class)override fun `kyberPrekeyDecapsulate`(`keyId`: kotlin.UInt, `ciphertext`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_kyber_prekey_decapsulate(
         it,
-        FfiConverterUInt.lower(`keyId`),FfiConverterSequenceUByte.lower(`ciphertext`),_status)
+        FfiConverterUInt.lower(`keyId`),FfiConverterByteArray.lower(`ciphertext`),_status)
 }
     }
     )
@@ -4763,13 +4763,13 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
-    @Throws(CryptoException::class)override fun `signBundleData`(`bundleDataJson`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class)override fun `signBundleData`(`bundleDataJson`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_sign_bundle_data(
         it,
-        FfiConverterSequenceUByte.lower(`bundleDataJson`),_status)
+        FfiConverterByteArray.lower(`bundleDataJson`),_status)
 }
     }
     )
@@ -4777,13 +4777,13 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
-    @Throws(CryptoException::class)override fun `signHybrid`(`message`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class)override fun `signHybrid`(`message`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_sign_hybrid(
         it,
-        FfiConverterSequenceUByte.lower(`message`),_status)
+        FfiConverterByteArray.lower(`message`),_status)
 }
     }
     )
@@ -4791,13 +4791,13 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
 
     
-    @Throws(CryptoException::class)override fun `signHybridPrekey`(`suiteId`: kotlin.UByte, `publicKey`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class)override fun `signHybridPrekey`(`suiteId`: kotlin.UByte, `publicKey`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_sign_hybrid_prekey(
         it,
-        FfiConverterUByte.lower(`suiteId`),FfiConverterSequenceUByte.lower(`publicKey`),_status)
+        FfiConverterUByte.lower(`suiteId`),FfiConverterByteArray.lower(`publicKey`),_status)
 }
     }
     )
@@ -5281,7 +5281,7 @@ public interface TrafficProtectionManagerInterface {
     
     fun `currentIntervalMs`(): kotlin.ULong
     
-    fun `generateDummy`(): List<kotlin.UByte>
+    fun `generateDummy`(): kotlin.ByteArray
     
     fun `getMetrics`(): EnergyMetrics
     
@@ -5415,8 +5415,8 @@ open class TrafficProtectionManager: Disposable, AutoCloseable, TrafficProtectio
     }
     
 
-    override fun `generateDummy`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    override fun `generateDummy`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_method_trafficprotectionmanager_generate_dummy(
@@ -5545,20 +5545,20 @@ public object FfiConverterTypeTrafficProtectionManager: FfiConverter<TrafficProt
 
 /**
  * Binary key bundle passed across the FFI boundary — no JSON encoding.
- * Replaces the former sequence<u8> JSON payload for init_session / init_receiving_session.
+ * Replaces the former bytes JSON payload for init_session / init_receiving_session.
  */
 data class BinaryKeyBundle (
-    var `identityPublic`: List<kotlin.UByte>
+    var `identityPublic`: kotlin.ByteArray
     , 
-    var `signedPrekeyPublic`: List<kotlin.UByte>
+    var `signedPrekeyPublic`: kotlin.ByteArray
     , 
-    var `signature`: List<kotlin.UByte>
+    var `signature`: kotlin.ByteArray
     , 
-    var `verifyingKey`: List<kotlin.UByte>
+    var `verifyingKey`: kotlin.ByteArray
     , 
     var `suiteId`: kotlin.UShort
     , 
-    var `oneTimePrekeyPublic`: List<kotlin.UByte>?
+    var `oneTimePrekeyPublic`: kotlin.ByteArray?
     , 
     var `oneTimePrekeyId`: kotlin.UInt?
     , 
@@ -5573,36 +5573,36 @@ data class BinaryKeyBundle (
     /**
      * Kyber signed prekey (ML-KEM-1024, 1568 bytes), its id and signed creation time.
      */
-    var `kyberPreKeyPublic`: List<kotlin.UByte>?
+    var `kyberPreKeyPublic`: kotlin.ByteArray?
     , 
     var `kyberPreKeyId`: kotlin.UInt? = null 
     , 
     var `kyberPreKeyCreatedAt`: kotlin.ULong? = null 
     , 
-    var `kyberPreKeySignature`: List<kotlin.UByte>? = null 
+    var `kyberPreKeySignature`: kotlin.ByteArray? = null 
     , 
-    var `kyberPreKeyHybridSignature`: List<kotlin.UByte>? = null 
+    var `kyberPreKeyHybridSignature`: kotlin.ByteArray? = null 
     , 
     /**
      * Kyber one-time prekey (id from 1 000 000), preferred when present and signed.
      */
-    var `kyberOneTimePrekeyPublic`: List<kotlin.UByte>?
+    var `kyberOneTimePrekeyPublic`: kotlin.ByteArray?
     , 
     var `kyberOneTimePrekeyId`: kotlin.UInt?
     , 
     var `kyberOneTimePrekeyCreatedAt`: kotlin.ULong? = null 
     , 
-    var `kyberOneTimePrekeySignature`: List<kotlin.UByte>? = null 
+    var `kyberOneTimePrekeySignature`: kotlin.ByteArray? = null 
     , 
-    var `kyberOneTimePrekeyHybridSignature`: List<kotlin.UByte>? = null 
+    var `kyberOneTimePrekeyHybridSignature`: kotlin.ByteArray? = null 
     , 
     /**
      * Hybrid identity key (Ed25519 + ML-DSA-65, 1984 bytes; field 20) and the Ed25519
      * cross-signature binding it to `verifying_key` (field 21). Pinned per device on first use.
      */
-    var `hybridIdentityKey`: List<kotlin.UByte>? = null 
+    var `hybridIdentityKey`: kotlin.ByteArray? = null 
     , 
-    var `hybridIdentitySignature`: List<kotlin.UByte>? = null 
+    var `hybridIdentitySignature`: kotlin.ByteArray? = null 
     
 ){
     
@@ -5617,82 +5617,82 @@ data class BinaryKeyBundle (
 public object FfiConverterTypeBinaryKeyBundle: FfiConverterRustBuffer<BinaryKeyBundle> {
     override fun read(buf: ByteBuffer): BinaryKeyBundle {
         return BinaryKeyBundle(
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
             FfiConverterUShort.read(buf),
-            FfiConverterOptionalSequenceUByte.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
             FfiConverterOptionalUInt.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterUInt.read(buf),
-            FfiConverterOptionalSequenceUByte.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalULong.read(buf),
-            FfiConverterOptionalSequenceUByte.read(buf),
-            FfiConverterOptionalSequenceUByte.read(buf),
-            FfiConverterOptionalSequenceUByte.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalULong.read(buf),
-            FfiConverterOptionalSequenceUByte.read(buf),
-            FfiConverterOptionalSequenceUByte.read(buf),
-            FfiConverterOptionalSequenceUByte.read(buf),
-            FfiConverterOptionalSequenceUByte.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
         )
     }
 
     override fun allocationSize(value: BinaryKeyBundle) = (
-            FfiConverterSequenceUByte.allocationSize(value.`identityPublic`) +
-            FfiConverterSequenceUByte.allocationSize(value.`signedPrekeyPublic`) +
-            FfiConverterSequenceUByte.allocationSize(value.`signature`) +
-            FfiConverterSequenceUByte.allocationSize(value.`verifyingKey`) +
+            FfiConverterByteArray.allocationSize(value.`identityPublic`) +
+            FfiConverterByteArray.allocationSize(value.`signedPrekeyPublic`) +
+            FfiConverterByteArray.allocationSize(value.`signature`) +
+            FfiConverterByteArray.allocationSize(value.`verifyingKey`) +
             FfiConverterUShort.allocationSize(value.`suiteId`) +
-            FfiConverterOptionalSequenceUByte.allocationSize(value.`oneTimePrekeyPublic`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`oneTimePrekeyPublic`) +
             FfiConverterOptionalUInt.allocationSize(value.`oneTimePrekeyId`) +
             FfiConverterULong.allocationSize(value.`spkUploadedAt`) +
             FfiConverterUInt.allocationSize(value.`spkRotationEpoch`) +
             FfiConverterULong.allocationSize(value.`kyberSpkUploadedAt`) +
             FfiConverterUInt.allocationSize(value.`kyberSpkRotationEpoch`) +
-            FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberPreKeyPublic`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`kyberPreKeyPublic`) +
             FfiConverterOptionalUInt.allocationSize(value.`kyberPreKeyId`) +
             FfiConverterOptionalULong.allocationSize(value.`kyberPreKeyCreatedAt`) +
-            FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberPreKeySignature`) +
-            FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberPreKeyHybridSignature`) +
-            FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberOneTimePrekeyPublic`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`kyberPreKeySignature`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`kyberPreKeyHybridSignature`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`kyberOneTimePrekeyPublic`) +
             FfiConverterOptionalUInt.allocationSize(value.`kyberOneTimePrekeyId`) +
             FfiConverterOptionalULong.allocationSize(value.`kyberOneTimePrekeyCreatedAt`) +
-            FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberOneTimePrekeySignature`) +
-            FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberOneTimePrekeyHybridSignature`) +
-            FfiConverterOptionalSequenceUByte.allocationSize(value.`hybridIdentityKey`) +
-            FfiConverterOptionalSequenceUByte.allocationSize(value.`hybridIdentitySignature`)
+            FfiConverterOptionalByteArray.allocationSize(value.`kyberOneTimePrekeySignature`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`kyberOneTimePrekeyHybridSignature`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`hybridIdentityKey`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`hybridIdentitySignature`)
     )
 
     override fun write(value: BinaryKeyBundle, buf: ByteBuffer) {
-            FfiConverterSequenceUByte.write(value.`identityPublic`, buf)
-            FfiConverterSequenceUByte.write(value.`signedPrekeyPublic`, buf)
-            FfiConverterSequenceUByte.write(value.`signature`, buf)
-            FfiConverterSequenceUByte.write(value.`verifyingKey`, buf)
+            FfiConverterByteArray.write(value.`identityPublic`, buf)
+            FfiConverterByteArray.write(value.`signedPrekeyPublic`, buf)
+            FfiConverterByteArray.write(value.`signature`, buf)
+            FfiConverterByteArray.write(value.`verifyingKey`, buf)
             FfiConverterUShort.write(value.`suiteId`, buf)
-            FfiConverterOptionalSequenceUByte.write(value.`oneTimePrekeyPublic`, buf)
+            FfiConverterOptionalByteArray.write(value.`oneTimePrekeyPublic`, buf)
             FfiConverterOptionalUInt.write(value.`oneTimePrekeyId`, buf)
             FfiConverterULong.write(value.`spkUploadedAt`, buf)
             FfiConverterUInt.write(value.`spkRotationEpoch`, buf)
             FfiConverterULong.write(value.`kyberSpkUploadedAt`, buf)
             FfiConverterUInt.write(value.`kyberSpkRotationEpoch`, buf)
-            FfiConverterOptionalSequenceUByte.write(value.`kyberPreKeyPublic`, buf)
+            FfiConverterOptionalByteArray.write(value.`kyberPreKeyPublic`, buf)
             FfiConverterOptionalUInt.write(value.`kyberPreKeyId`, buf)
             FfiConverterOptionalULong.write(value.`kyberPreKeyCreatedAt`, buf)
-            FfiConverterOptionalSequenceUByte.write(value.`kyberPreKeySignature`, buf)
-            FfiConverterOptionalSequenceUByte.write(value.`kyberPreKeyHybridSignature`, buf)
-            FfiConverterOptionalSequenceUByte.write(value.`kyberOneTimePrekeyPublic`, buf)
+            FfiConverterOptionalByteArray.write(value.`kyberPreKeySignature`, buf)
+            FfiConverterOptionalByteArray.write(value.`kyberPreKeyHybridSignature`, buf)
+            FfiConverterOptionalByteArray.write(value.`kyberOneTimePrekeyPublic`, buf)
             FfiConverterOptionalUInt.write(value.`kyberOneTimePrekeyId`, buf)
             FfiConverterOptionalULong.write(value.`kyberOneTimePrekeyCreatedAt`, buf)
-            FfiConverterOptionalSequenceUByte.write(value.`kyberOneTimePrekeySignature`, buf)
-            FfiConverterOptionalSequenceUByte.write(value.`kyberOneTimePrekeyHybridSignature`, buf)
-            FfiConverterOptionalSequenceUByte.write(value.`hybridIdentityKey`, buf)
-            FfiConverterOptionalSequenceUByte.write(value.`hybridIdentitySignature`, buf)
+            FfiConverterOptionalByteArray.write(value.`kyberOneTimePrekeySignature`, buf)
+            FfiConverterOptionalByteArray.write(value.`kyberOneTimePrekeyHybridSignature`, buf)
+            FfiConverterOptionalByteArray.write(value.`hybridIdentityKey`, buf)
+            FfiConverterOptionalByteArray.write(value.`hybridIdentitySignature`, buf)
     }
 }
 
@@ -5760,9 +5760,9 @@ public object FfiConverterTypeCoverTrafficConfig: FfiConverterRustBuffer<CoverTr
 
 
 data class DecryptedMessageResult (
-    var `plaintext`: List<kotlin.UByte>
+    var `plaintext`: kotlin.ByteArray
     , 
-    var `storageKey`: List<kotlin.UByte>
+    var `storageKey`: kotlin.ByteArray
     
 ){
     
@@ -5777,19 +5777,19 @@ data class DecryptedMessageResult (
 public object FfiConverterTypeDecryptedMessageResult: FfiConverterRustBuffer<DecryptedMessageResult> {
     override fun read(buf: ByteBuffer): DecryptedMessageResult {
         return DecryptedMessageResult(
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
         )
     }
 
     override fun allocationSize(value: DecryptedMessageResult) = (
-            FfiConverterSequenceUByte.allocationSize(value.`plaintext`) +
-            FfiConverterSequenceUByte.allocationSize(value.`storageKey`)
+            FfiConverterByteArray.allocationSize(value.`plaintext`) +
+            FfiConverterByteArray.allocationSize(value.`storageKey`)
     )
 
     override fun write(value: DecryptedMessageResult, buf: ByteBuffer) {
-            FfiConverterSequenceUByte.write(value.`plaintext`, buf)
-            FfiConverterSequenceUByte.write(value.`storageKey`, buf)
+            FfiConverterByteArray.write(value.`plaintext`, buf)
+            FfiConverterByteArray.write(value.`storageKey`, buf)
     }
 }
 
@@ -5873,9 +5873,9 @@ public object FfiConverterTypeEnergyMetrics: FfiConverterRustBuffer<EnergyMetric
 
 
 data class EphemeralKeyPair (
-    var `secretKey`: List<kotlin.UByte>
+    var `secretKey`: kotlin.ByteArray
     , 
-    var `publicKey`: List<kotlin.UByte>
+    var `publicKey`: kotlin.ByteArray
     
 ){
     
@@ -5890,19 +5890,19 @@ data class EphemeralKeyPair (
 public object FfiConverterTypeEphemeralKeyPair: FfiConverterRustBuffer<EphemeralKeyPair> {
     override fun read(buf: ByteBuffer): EphemeralKeyPair {
         return EphemeralKeyPair(
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
         )
     }
 
     override fun allocationSize(value: EphemeralKeyPair) = (
-            FfiConverterSequenceUByte.allocationSize(value.`secretKey`) +
-            FfiConverterSequenceUByte.allocationSize(value.`publicKey`)
+            FfiConverterByteArray.allocationSize(value.`secretKey`) +
+            FfiConverterByteArray.allocationSize(value.`publicKey`)
     )
 
     override fun write(value: EphemeralKeyPair, buf: ByteBuffer) {
-            FfiConverterSequenceUByte.write(value.`secretKey`, buf)
-            FfiConverterSequenceUByte.write(value.`publicKey`, buf)
+            FfiConverterByteArray.write(value.`secretKey`, buf)
+            FfiConverterByteArray.write(value.`publicKey`, buf)
     }
 }
 
@@ -5917,13 +5917,13 @@ data class HybridSignatureKeyPair (
      * Hybrid private key: 2016 bytes
      * [ed25519_seed (32)] [mldsa65_seed (32)] [mldsa65_pk (1952)]
      */
-    var `privateKey`: List<kotlin.UByte>
+    var `privateKey`: kotlin.ByteArray
     , 
     /**
      * Hybrid public key: 1984 bytes
      * [ed25519_pk (32)] [mldsa65_pk (1952)]
      */
-    var `publicKey`: List<kotlin.UByte>
+    var `publicKey`: kotlin.ByteArray
     
 ){
     
@@ -5938,19 +5938,19 @@ data class HybridSignatureKeyPair (
 public object FfiConverterTypeHybridSignatureKeyPair: FfiConverterRustBuffer<HybridSignatureKeyPair> {
     override fun read(buf: ByteBuffer): HybridSignatureKeyPair {
         return HybridSignatureKeyPair(
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
         )
     }
 
     override fun allocationSize(value: HybridSignatureKeyPair) = (
-            FfiConverterSequenceUByte.allocationSize(value.`privateKey`) +
-            FfiConverterSequenceUByte.allocationSize(value.`publicKey`)
+            FfiConverterByteArray.allocationSize(value.`privateKey`) +
+            FfiConverterByteArray.allocationSize(value.`publicKey`)
     )
 
     override fun write(value: HybridSignatureKeyPair, buf: ByteBuffer) {
-            FfiConverterSequenceUByte.write(value.`privateKey`, buf)
-            FfiConverterSequenceUByte.write(value.`publicKey`, buf)
+            FfiConverterByteArray.write(value.`privateKey`, buf)
+            FfiConverterByteArray.write(value.`publicKey`, buf)
     }
 }
 
@@ -6024,7 +6024,7 @@ public object FfiConverterTypeInitiationContext: FfiConverterRustBuffer<Initiati
 
 
 data class InviteSignature (
-    var `signature`: List<kotlin.UByte>
+    var `signature`: kotlin.ByteArray
     
 ){
     
@@ -6039,16 +6039,16 @@ data class InviteSignature (
 public object FfiConverterTypeInviteSignature: FfiConverterRustBuffer<InviteSignature> {
     override fun read(buf: ByteBuffer): InviteSignature {
         return InviteSignature(
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
         )
     }
 
     override fun allocationSize(value: InviteSignature) = (
-            FfiConverterSequenceUByte.allocationSize(value.`signature`)
+            FfiConverterByteArray.allocationSize(value.`signature`)
     )
 
     override fun write(value: InviteSignature, buf: ByteBuffer) {
-            FfiConverterSequenceUByte.write(value.`signature`, buf)
+            FfiConverterByteArray.write(value.`signature`, buf)
     }
 }
 
@@ -6062,13 +6062,13 @@ public object FfiConverterTypeInviteSignature: FfiConverterRustBuffer<InviteSign
 data class KyberPrekeyUpload (
     var `keyId`: kotlin.UInt
     , 
-    var `publicKey`: List<kotlin.UByte>
+    var `publicKey`: kotlin.ByteArray
     , 
     var `createdAt`: kotlin.ULong
     , 
-    var `signature`: List<kotlin.UByte>
+    var `signature`: kotlin.ByteArray
     , 
-    var `hybridSignature`: List<kotlin.UByte>
+    var `hybridSignature`: kotlin.ByteArray
     
 ){
     
@@ -6084,27 +6084,27 @@ public object FfiConverterTypeKyberPrekeyUpload: FfiConverterRustBuffer<KyberPre
     override fun read(buf: ByteBuffer): KyberPrekeyUpload {
         return KyberPrekeyUpload(
             FfiConverterUInt.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
             FfiConverterULong.read(buf),
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
         )
     }
 
     override fun allocationSize(value: KyberPrekeyUpload) = (
             FfiConverterUInt.allocationSize(value.`keyId`) +
-            FfiConverterSequenceUByte.allocationSize(value.`publicKey`) +
+            FfiConverterByteArray.allocationSize(value.`publicKey`) +
             FfiConverterULong.allocationSize(value.`createdAt`) +
-            FfiConverterSequenceUByte.allocationSize(value.`signature`) +
-            FfiConverterSequenceUByte.allocationSize(value.`hybridSignature`)
+            FfiConverterByteArray.allocationSize(value.`signature`) +
+            FfiConverterByteArray.allocationSize(value.`hybridSignature`)
     )
 
     override fun write(value: KyberPrekeyUpload, buf: ByteBuffer) {
             FfiConverterUInt.write(value.`keyId`, buf)
-            FfiConverterSequenceUByte.write(value.`publicKey`, buf)
+            FfiConverterByteArray.write(value.`publicKey`, buf)
             FfiConverterULong.write(value.`createdAt`, buf)
-            FfiConverterSequenceUByte.write(value.`signature`, buf)
-            FfiConverterSequenceUByte.write(value.`hybridSignature`, buf)
+            FfiConverterByteArray.write(value.`signature`, buf)
+            FfiConverterByteArray.write(value.`hybridSignature`, buf)
     }
 }
 
@@ -6117,12 +6117,12 @@ data class MldsaKeyPair (
     /**
      * Secret key: 32-byte signing seed (RustCrypto ml-dsa; expanded key re-derived on sign)
      */
-    var `secretKey`: List<kotlin.UByte>
+    var `secretKey`: kotlin.ByteArray
     , 
     /**
      * Public key: 1952 bytes
      */
-    var `publicKey`: List<kotlin.UByte>
+    var `publicKey`: kotlin.ByteArray
     
 ){
     
@@ -6137,19 +6137,19 @@ data class MldsaKeyPair (
 public object FfiConverterTypeMLDSAKeyPair: FfiConverterRustBuffer<MldsaKeyPair> {
     override fun read(buf: ByteBuffer): MldsaKeyPair {
         return MldsaKeyPair(
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
         )
     }
 
     override fun allocationSize(value: MldsaKeyPair) = (
-            FfiConverterSequenceUByte.allocationSize(value.`secretKey`) +
-            FfiConverterSequenceUByte.allocationSize(value.`publicKey`)
+            FfiConverterByteArray.allocationSize(value.`secretKey`) +
+            FfiConverterByteArray.allocationSize(value.`publicKey`)
     )
 
     override fun write(value: MldsaKeyPair, buf: ByteBuffer) {
-            FfiConverterSequenceUByte.write(value.`secretKey`, buf)
-            FfiConverterSequenceUByte.write(value.`publicKey`, buf)
+            FfiConverterByteArray.write(value.`secretKey`, buf)
+            FfiConverterByteArray.write(value.`publicKey`, buf)
     }
 }
 
@@ -6159,9 +6159,9 @@ public object FfiConverterTypeMLDSAKeyPair: FfiConverterRustBuffer<MldsaKeyPair>
  * Result of an ML-KEM-1024 encapsulation (history transfer to a peer's Kyber SPK).
  */
 data class MlkemEncapsulation (
-    var `ciphertext`: List<kotlin.UByte>
+    var `ciphertext`: kotlin.ByteArray
     , 
-    var `sharedSecret`: List<kotlin.UByte>
+    var `sharedSecret`: kotlin.ByteArray
     
 ){
     
@@ -6176,19 +6176,19 @@ data class MlkemEncapsulation (
 public object FfiConverterTypeMLKEMEncapsulation: FfiConverterRustBuffer<MlkemEncapsulation> {
     override fun read(buf: ByteBuffer): MlkemEncapsulation {
         return MlkemEncapsulation(
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
         )
     }
 
     override fun allocationSize(value: MlkemEncapsulation) = (
-            FfiConverterSequenceUByte.allocationSize(value.`ciphertext`) +
-            FfiConverterSequenceUByte.allocationSize(value.`sharedSecret`)
+            FfiConverterByteArray.allocationSize(value.`ciphertext`) +
+            FfiConverterByteArray.allocationSize(value.`sharedSecret`)
     )
 
     override fun write(value: MlkemEncapsulation, buf: ByteBuffer) {
-            FfiConverterSequenceUByte.write(value.`ciphertext`, buf)
-            FfiConverterSequenceUByte.write(value.`sharedSecret`, buf)
+            FfiConverterByteArray.write(value.`ciphertext`, buf)
+            FfiConverterByteArray.write(value.`sharedSecret`, buf)
     }
 }
 
@@ -6200,9 +6200,9 @@ public object FfiConverterTypeMLKEMEncapsulation: FfiConverterRustBuffer<MlkemEn
  * delivered to the new member (InviteToGroup).
  */
 data class MemberAddition (
-    var `commit`: List<kotlin.UByte>
+    var `commit`: kotlin.ByteArray
     , 
-    var `welcome`: List<kotlin.UByte>
+    var `welcome`: kotlin.ByteArray
     , 
     var `memberCount`: kotlin.UInt
     
@@ -6219,21 +6219,21 @@ data class MemberAddition (
 public object FfiConverterTypeMemberAddition: FfiConverterRustBuffer<MemberAddition> {
     override fun read(buf: ByteBuffer): MemberAddition {
         return MemberAddition(
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
             FfiConverterUInt.read(buf),
         )
     }
 
     override fun allocationSize(value: MemberAddition) = (
-            FfiConverterSequenceUByte.allocationSize(value.`commit`) +
-            FfiConverterSequenceUByte.allocationSize(value.`welcome`) +
+            FfiConverterByteArray.allocationSize(value.`commit`) +
+            FfiConverterByteArray.allocationSize(value.`welcome`) +
             FfiConverterUInt.allocationSize(value.`memberCount`)
     )
 
     override fun write(value: MemberAddition, buf: ByteBuffer) {
-            FfiConverterSequenceUByte.write(value.`commit`, buf)
-            FfiConverterSequenceUByte.write(value.`welcome`, buf)
+            FfiConverterByteArray.write(value.`commit`, buf)
+            FfiConverterByteArray.write(value.`welcome`, buf)
             FfiConverterUInt.write(value.`memberCount`, buf)
     }
 }
@@ -6243,7 +6243,7 @@ public object FfiConverterTypeMemberAddition: FfiConverterRustBuffer<MemberAddit
 data class OtpkPair (
     var `keyId`: kotlin.UInt
     , 
-    var `publicKey`: List<kotlin.UByte>
+    var `publicKey`: kotlin.ByteArray
     
 ){
     
@@ -6259,18 +6259,18 @@ public object FfiConverterTypeOtpkPair: FfiConverterRustBuffer<OtpkPair> {
     override fun read(buf: ByteBuffer): OtpkPair {
         return OtpkPair(
             FfiConverterUInt.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
         )
     }
 
     override fun allocationSize(value: OtpkPair) = (
             FfiConverterUInt.allocationSize(value.`keyId`) +
-            FfiConverterSequenceUByte.allocationSize(value.`publicKey`)
+            FfiConverterByteArray.allocationSize(value.`publicKey`)
     )
 
     override fun write(value: OtpkPair, buf: ByteBuffer) {
             FfiConverterUInt.write(value.`keyId`, buf)
-            FfiConverterSequenceUByte.write(value.`publicKey`, buf)
+            FfiConverterByteArray.write(value.`publicKey`, buf)
     }
 }
 
@@ -6279,9 +6279,9 @@ public object FfiConverterTypeOtpkPair: FfiConverterRustBuffer<OtpkPair> {
 data class OtpkRecord (
     var `keyId`: kotlin.UInt
     , 
-    var `privateKey`: List<kotlin.UByte>
+    var `privateKey`: kotlin.ByteArray
     , 
-    var `publicKey`: List<kotlin.UByte>
+    var `publicKey`: kotlin.ByteArray
     
 ){
     
@@ -6297,21 +6297,21 @@ public object FfiConverterTypeOtpkRecord: FfiConverterRustBuffer<OtpkRecord> {
     override fun read(buf: ByteBuffer): OtpkRecord {
         return OtpkRecord(
             FfiConverterUInt.read(buf),
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
         )
     }
 
     override fun allocationSize(value: OtpkRecord) = (
             FfiConverterUInt.allocationSize(value.`keyId`) +
-            FfiConverterSequenceUByte.allocationSize(value.`privateKey`) +
-            FfiConverterSequenceUByte.allocationSize(value.`publicKey`)
+            FfiConverterByteArray.allocationSize(value.`privateKey`) +
+            FfiConverterByteArray.allocationSize(value.`publicKey`)
     )
 
     override fun write(value: OtpkRecord, buf: ByteBuffer) {
             FfiConverterUInt.write(value.`keyId`, buf)
-            FfiConverterSequenceUByte.write(value.`privateKey`, buf)
-            FfiConverterSequenceUByte.write(value.`publicKey`, buf)
+            FfiConverterByteArray.write(value.`privateKey`, buf)
+            FfiConverterByteArray.write(value.`publicKey`, buf)
     }
 }
 
@@ -6523,7 +6523,7 @@ data class ReceivingOpenResult (
     , 
     var `lastError`: kotlin.String?
     , 
-    var `kyberPrekeys`: List<kotlin.UByte>?
+    var `kyberPrekeys`: kotlin.ByteArray?
     , 
     var `awaitingServerKey`: kotlin.Boolean
     
@@ -6546,7 +6546,7 @@ public object FfiConverterTypeReceivingOpenResult: FfiConverterRustBuffer<Receiv
             FfiConverterSequenceString.read(buf),
             FfiConverterSequenceString.read(buf),
             FfiConverterOptionalString.read(buf),
-            FfiConverterOptionalSequenceUByte.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
             FfiConverterBoolean.read(buf),
         )
     }
@@ -6558,7 +6558,7 @@ public object FfiConverterTypeReceivingOpenResult: FfiConverterRustBuffer<Receiv
             FfiConverterSequenceString.allocationSize(value.`triedMessageIds`) +
             FfiConverterSequenceString.allocationSize(value.`droppedMessageIds`) +
             FfiConverterOptionalString.allocationSize(value.`lastError`) +
-            FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberPrekeys`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`kyberPrekeys`) +
             FfiConverterBoolean.allocationSize(value.`awaitingServerKey`)
     )
 
@@ -6569,7 +6569,7 @@ public object FfiConverterTypeReceivingOpenResult: FfiConverterRustBuffer<Receiv
             FfiConverterSequenceString.write(value.`triedMessageIds`, buf)
             FfiConverterSequenceString.write(value.`droppedMessageIds`, buf)
             FfiConverterOptionalString.write(value.`lastError`, buf)
-            FfiConverterOptionalSequenceUByte.write(value.`kyberPrekeys`, buf)
+            FfiConverterOptionalByteArray.write(value.`kyberPrekeys`, buf)
             FfiConverterBoolean.write(value.`awaitingServerKey`, buf)
     }
 }
@@ -6577,9 +6577,9 @@ public object FfiConverterTypeReceivingOpenResult: FfiConverterRustBuffer<Receiv
 
 
 data class RecoveryKeypair (
-    var `privateKey`: List<kotlin.UByte>
+    var `privateKey`: kotlin.ByteArray
     , 
-    var `publicKey`: List<kotlin.UByte>
+    var `publicKey`: kotlin.ByteArray
     
 ){
     
@@ -6594,32 +6594,32 @@ data class RecoveryKeypair (
 public object FfiConverterTypeRecoveryKeypair: FfiConverterRustBuffer<RecoveryKeypair> {
     override fun read(buf: ByteBuffer): RecoveryKeypair {
         return RecoveryKeypair(
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
         )
     }
 
     override fun allocationSize(value: RecoveryKeypair) = (
-            FfiConverterSequenceUByte.allocationSize(value.`privateKey`) +
-            FfiConverterSequenceUByte.allocationSize(value.`publicKey`)
+            FfiConverterByteArray.allocationSize(value.`privateKey`) +
+            FfiConverterByteArray.allocationSize(value.`publicKey`)
     )
 
     override fun write(value: RecoveryKeypair, buf: ByteBuffer) {
-            FfiConverterSequenceUByte.write(value.`privateKey`, buf)
-            FfiConverterSequenceUByte.write(value.`publicKey`, buf)
+            FfiConverterByteArray.write(value.`privateKey`, buf)
+            FfiConverterByteArray.write(value.`publicKey`, buf)
     }
 }
 
 
 
 data class RegistrationBundleFields (
-    var `identityPublic`: List<kotlin.UByte>
+    var `identityPublic`: kotlin.ByteArray
     , 
-    var `signedPrekeyPublic`: List<kotlin.UByte>
+    var `signedPrekeyPublic`: kotlin.ByteArray
     , 
-    var `signature`: List<kotlin.UByte>
+    var `signature`: kotlin.ByteArray
     , 
-    var `verifyingKey`: List<kotlin.UByte>
+    var `verifyingKey`: kotlin.ByteArray
     , 
     var `suiteId`: kotlin.UShort
     
@@ -6636,27 +6636,27 @@ data class RegistrationBundleFields (
 public object FfiConverterTypeRegistrationBundleFields: FfiConverterRustBuffer<RegistrationBundleFields> {
     override fun read(buf: ByteBuffer): RegistrationBundleFields {
         return RegistrationBundleFields(
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
             FfiConverterUShort.read(buf),
         )
     }
 
     override fun allocationSize(value: RegistrationBundleFields) = (
-            FfiConverterSequenceUByte.allocationSize(value.`identityPublic`) +
-            FfiConverterSequenceUByte.allocationSize(value.`signedPrekeyPublic`) +
-            FfiConverterSequenceUByte.allocationSize(value.`signature`) +
-            FfiConverterSequenceUByte.allocationSize(value.`verifyingKey`) +
+            FfiConverterByteArray.allocationSize(value.`identityPublic`) +
+            FfiConverterByteArray.allocationSize(value.`signedPrekeyPublic`) +
+            FfiConverterByteArray.allocationSize(value.`signature`) +
+            FfiConverterByteArray.allocationSize(value.`verifyingKey`) +
             FfiConverterUShort.allocationSize(value.`suiteId`)
     )
 
     override fun write(value: RegistrationBundleFields, buf: ByteBuffer) {
-            FfiConverterSequenceUByte.write(value.`identityPublic`, buf)
-            FfiConverterSequenceUByte.write(value.`signedPrekeyPublic`, buf)
-            FfiConverterSequenceUByte.write(value.`signature`, buf)
-            FfiConverterSequenceUByte.write(value.`verifyingKey`, buf)
+            FfiConverterByteArray.write(value.`identityPublic`, buf)
+            FfiConverterByteArray.write(value.`signedPrekeyPublic`, buf)
+            FfiConverterByteArray.write(value.`signature`, buf)
+            FfiConverterByteArray.write(value.`verifyingKey`, buf)
             FfiConverterUShort.write(value.`suiteId`, buf)
     }
 }
@@ -6669,9 +6669,9 @@ public object FfiConverterTypeRegistrationBundleFields: FfiConverterRustBuffer<R
 data class RotatedSpkBundle (
     var `keyId`: kotlin.UInt
     , 
-    var `publicKey`: List<kotlin.UByte>
+    var `publicKey`: kotlin.ByteArray
     , 
-    var `signature`: List<kotlin.UByte>
+    var `signature`: kotlin.ByteArray
     
 ){
     
@@ -6687,21 +6687,21 @@ public object FfiConverterTypeRotatedSpkBundle: FfiConverterRustBuffer<RotatedSp
     override fun read(buf: ByteBuffer): RotatedSpkBundle {
         return RotatedSpkBundle(
             FfiConverterUInt.read(buf),
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
         )
     }
 
     override fun allocationSize(value: RotatedSpkBundle) = (
             FfiConverterUInt.allocationSize(value.`keyId`) +
-            FfiConverterSequenceUByte.allocationSize(value.`publicKey`) +
-            FfiConverterSequenceUByte.allocationSize(value.`signature`)
+            FfiConverterByteArray.allocationSize(value.`publicKey`) +
+            FfiConverterByteArray.allocationSize(value.`signature`)
     )
 
     override fun write(value: RotatedSpkBundle, buf: ByteBuffer) {
             FfiConverterUInt.write(value.`keyId`, buf)
-            FfiConverterSequenceUByte.write(value.`publicKey`, buf)
-            FfiConverterSequenceUByte.write(value.`signature`, buf)
+            FfiConverterByteArray.write(value.`publicKey`, buf)
+            FfiConverterByteArray.write(value.`signature`, buf)
     }
 }
 
@@ -6840,11 +6840,11 @@ public object FfiConverterTypeSessionHealthReport: FfiConverterRustBuffer<Sessio
 data class SessionInitResult (
     var `sessionId`: kotlin.String
     , 
-    var `decryptedMessage`: List<kotlin.UByte>
+    var `decryptedMessage`: kotlin.ByteArray
     , 
-    var `storageKey`: List<kotlin.UByte>
+    var `storageKey`: kotlin.ByteArray
     , 
-    var `kyberPrekeys`: List<kotlin.UByte>?
+    var `kyberPrekeys`: kotlin.ByteArray?
     
 ){
     
@@ -6860,24 +6860,24 @@ public object FfiConverterTypeSessionInitResult: FfiConverterRustBuffer<SessionI
     override fun read(buf: ByteBuffer): SessionInitResult {
         return SessionInitResult(
             FfiConverterString.read(buf),
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
-            FfiConverterOptionalSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
         )
     }
 
     override fun allocationSize(value: SessionInitResult) = (
             FfiConverterString.allocationSize(value.`sessionId`) +
-            FfiConverterSequenceUByte.allocationSize(value.`decryptedMessage`) +
-            FfiConverterSequenceUByte.allocationSize(value.`storageKey`) +
-            FfiConverterOptionalSequenceUByte.allocationSize(value.`kyberPrekeys`)
+            FfiConverterByteArray.allocationSize(value.`decryptedMessage`) +
+            FfiConverterByteArray.allocationSize(value.`storageKey`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`kyberPrekeys`)
     )
 
     override fun write(value: SessionInitResult, buf: ByteBuffer) {
             FfiConverterString.write(value.`sessionId`, buf)
-            FfiConverterSequenceUByte.write(value.`decryptedMessage`, buf)
-            FfiConverterSequenceUByte.write(value.`storageKey`, buf)
-            FfiConverterOptionalSequenceUByte.write(value.`kyberPrekeys`, buf)
+            FfiConverterByteArray.write(value.`decryptedMessage`, buf)
+            FfiConverterByteArray.write(value.`storageKey`, buf)
+            FfiConverterOptionalByteArray.write(value.`kyberPrekeys`, buf)
     }
 }
 
@@ -6984,7 +6984,7 @@ public object FfiConverterTypeTimingConfig: FfiConverterRustBuffer<TimingConfig>
 
 
 data class WirePayload (
-    var `dhPublicKey`: List<kotlin.UByte>
+    var `dhPublicKey`: kotlin.ByteArray
     , 
     var `messageNumber`: kotlin.UInt
     , 
@@ -6996,19 +6996,19 @@ data class WirePayload (
     , 
     var `suiteId`: kotlin.UShort
     , 
-    var `kemCiphertext`: List<kotlin.UByte>?
+    var `kemCiphertext`: kotlin.ByteArray?
     , 
-    var `sealedBox`: List<kotlin.UByte>
+    var `sealedBox`: kotlin.ByteArray
     , 
     var `pqMessageEpoch`: kotlin.UInt
     , 
-    var `pqRatchetField`: List<kotlin.UByte>
+    var `pqRatchetField`: kotlin.ByteArray
     , 
     var `pqxdhV2`: kotlin.Boolean = false 
     , 
-    var `kemIdentity`: List<kotlin.UByte>? = null 
+    var `kemIdentity`: kotlin.ByteArray? = null 
     , 
-    var `identityProofCiphertext`: List<kotlin.UByte>? = null 
+    var `identityProofCiphertext`: kotlin.ByteArray? = null 
     
 ){
     
@@ -7023,52 +7023,52 @@ data class WirePayload (
 public object FfiConverterTypeWirePayload: FfiConverterRustBuffer<WirePayload> {
     override fun read(buf: ByteBuffer): WirePayload {
         return WirePayload(
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterUShort.read(buf),
-            FfiConverterOptionalSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
             FfiConverterUInt.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterByteArray.read(buf),
             FfiConverterBoolean.read(buf),
-            FfiConverterOptionalSequenceUByte.read(buf),
-            FfiConverterOptionalSequenceUByte.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
         )
     }
 
     override fun allocationSize(value: WirePayload) = (
-            FfiConverterSequenceUByte.allocationSize(value.`dhPublicKey`) +
+            FfiConverterByteArray.allocationSize(value.`dhPublicKey`) +
             FfiConverterUInt.allocationSize(value.`messageNumber`) +
             FfiConverterUInt.allocationSize(value.`oneTimePrekeyId`) +
             FfiConverterUInt.allocationSize(value.`kyberOtpkId`) +
             FfiConverterUInt.allocationSize(value.`previousChainLength`) +
             FfiConverterUShort.allocationSize(value.`suiteId`) +
-            FfiConverterOptionalSequenceUByte.allocationSize(value.`kemCiphertext`) +
-            FfiConverterSequenceUByte.allocationSize(value.`sealedBox`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`kemCiphertext`) +
+            FfiConverterByteArray.allocationSize(value.`sealedBox`) +
             FfiConverterUInt.allocationSize(value.`pqMessageEpoch`) +
-            FfiConverterSequenceUByte.allocationSize(value.`pqRatchetField`) +
+            FfiConverterByteArray.allocationSize(value.`pqRatchetField`) +
             FfiConverterBoolean.allocationSize(value.`pqxdhV2`) +
-            FfiConverterOptionalSequenceUByte.allocationSize(value.`kemIdentity`) +
-            FfiConverterOptionalSequenceUByte.allocationSize(value.`identityProofCiphertext`)
+            FfiConverterOptionalByteArray.allocationSize(value.`kemIdentity`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`identityProofCiphertext`)
     )
 
     override fun write(value: WirePayload, buf: ByteBuffer) {
-            FfiConverterSequenceUByte.write(value.`dhPublicKey`, buf)
+            FfiConverterByteArray.write(value.`dhPublicKey`, buf)
             FfiConverterUInt.write(value.`messageNumber`, buf)
             FfiConverterUInt.write(value.`oneTimePrekeyId`, buf)
             FfiConverterUInt.write(value.`kyberOtpkId`, buf)
             FfiConverterUInt.write(value.`previousChainLength`, buf)
             FfiConverterUShort.write(value.`suiteId`, buf)
-            FfiConverterOptionalSequenceUByte.write(value.`kemCiphertext`, buf)
-            FfiConverterSequenceUByte.write(value.`sealedBox`, buf)
+            FfiConverterOptionalByteArray.write(value.`kemCiphertext`, buf)
+            FfiConverterByteArray.write(value.`sealedBox`, buf)
             FfiConverterUInt.write(value.`pqMessageEpoch`, buf)
-            FfiConverterSequenceUByte.write(value.`pqRatchetField`, buf)
+            FfiConverterByteArray.write(value.`pqRatchetField`, buf)
             FfiConverterBoolean.write(value.`pqxdhV2`, buf)
-            FfiConverterOptionalSequenceUByte.write(value.`kemIdentity`, buf)
-            FfiConverterOptionalSequenceUByte.write(value.`identityProofCiphertext`, buf)
+            FfiConverterOptionalByteArray.write(value.`kemIdentity`, buf)
+            FfiConverterOptionalByteArray.write(value.`identityProofCiphertext`, buf)
     }
 }
 
@@ -9197,66 +9197,6 @@ public object FfiConverterOptionalTypePowProgressCallback: FfiConverterRustBuffe
 /**
  * @suppress
  */
-public object FfiConverterOptionalSequenceUByte: FfiConverterRustBuffer<List<kotlin.UByte>?> {
-    override fun read(buf: ByteBuffer): List<kotlin.UByte>? {
-        if (buf.get().toInt() == 0) {
-            return null
-        }
-        return FfiConverterSequenceUByte.read(buf)
-    }
-
-    override fun allocationSize(value: List<kotlin.UByte>?): ULong {
-        if (value == null) {
-            return 1UL
-        } else {
-            return 1UL + FfiConverterSequenceUByte.allocationSize(value)
-        }
-    }
-
-    override fun write(value: List<kotlin.UByte>?, buf: ByteBuffer) {
-        if (value == null) {
-            buf.put(0)
-        } else {
-            buf.put(1)
-            FfiConverterSequenceUByte.write(value, buf)
-        }
-    }
-}
-
-
-
-
-/**
- * @suppress
- */
-public object FfiConverterSequenceUByte: FfiConverterRustBuffer<List<kotlin.UByte>> {
-    override fun read(buf: ByteBuffer): List<kotlin.UByte> {
-        val len = buf.getInt()
-        return List<kotlin.UByte>(len) {
-            FfiConverterUByte.read(buf)
-        }
-    }
-
-    override fun allocationSize(value: List<kotlin.UByte>): ULong {
-        val sizeForLength = 4UL
-        val sizeForItems = value.map { FfiConverterUByte.allocationSize(it) }.sum()
-        return sizeForLength + sizeForItems
-    }
-
-    override fun write(value: List<kotlin.UByte>, buf: ByteBuffer) {
-        buf.putInt(value.size)
-        value.iterator().forEach {
-            FfiConverterUByte.write(it, buf)
-        }
-    }
-}
-
-
-
-
-/**
- * @suppress
- */
 public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.String>> {
     override fun read(buf: ByteBuffer): List<kotlin.String> {
         val len = buf.getInt()
@@ -9417,34 +9357,6 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
             FfiConverterTypeCfeAction.write(it, buf)
         }
     }
-}
-
-
-
-
-/**
- * @suppress
- */
-public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<List<kotlin.UByte>>> {
-    override fun read(buf: ByteBuffer): List<List<kotlin.UByte>> {
-        val len = buf.getInt()
-        return List<List<kotlin.UByte>>(len) {
-            FfiConverterSequenceUByte.read(buf)
-        }
-    }
-
-    override fun allocationSize(value: List<List<kotlin.UByte>>): ULong {
-        val sizeForLength = 4UL
-        val sizeForItems = value.map { FfiConverterSequenceUByte.allocationSize(it) }.sum()
-        return sizeForLength + sizeForItems
-    }
-
-    override fun write(value: List<List<kotlin.UByte>>, buf: ByteBuffer) {
-        buf.putInt(value.size)
-        value.iterator().forEach {
-            FfiConverterSequenceUByte.write(it, buf)
-        }
-    }
 } fun `batteryAwareJitterMs`(`baseMs`: kotlin.ULong, `maxJitterMs`: kotlin.ULong, `batteryLevel`: kotlin.Float): kotlin.ULong {
             return FfiConverterULong.lift(
     uniffiRustCall() { _status ->
@@ -9497,12 +9409,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     }
     
 
-    @Throws(CryptoException::class) fun `createCryptoCoreFromKeys`(`keys`: List<kotlin.UByte>): ClassicCryptoCore {
+    @Throws(CryptoException::class) fun `createCryptoCoreFromKeys`(`keys`: kotlin.ByteArray): ClassicCryptoCore {
             return FfiConverterTypeClassicCryptoCore.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_create_crypto_core_from_keys(
     
-        FfiConverterSequenceUByte.lower(`keys`),_status)
+        FfiConverterByteArray.lower(`keys`),_status)
 }
     )
     }
@@ -9512,44 +9424,44 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * Create an OrchestratorCore from CFE binary or legacy JSON key bytes.
          * Accepts both formats — Rust handles detection and migration internally.
          */
-    @Throws(CryptoException::class) fun `createOrchestratorCoreFromKeys`(`keysData`: List<kotlin.UByte>, `myUserId`: kotlin.String): OrchestratorCore {
+    @Throws(CryptoException::class) fun `createOrchestratorCoreFromKeys`(`keysData`: kotlin.ByteArray, `myUserId`: kotlin.String): OrchestratorCore {
             return FfiConverterTypeOrchestratorCore.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_create_orchestrator_core_from_keys(
     
-        FfiConverterSequenceUByte.lower(`keysData`),FfiConverterString.lower(`myUserId`),_status)
+        FfiConverterByteArray.lower(`keysData`),FfiConverterString.lower(`myUserId`),_status)
 }
     )
     }
     
- fun `deriveDeviceId`(`identityPublicKey`: List<kotlin.UByte>): kotlin.String {
+ fun `deriveDeviceId`(`identityPublicKey`: kotlin.ByteArray): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_func_derive_device_id(
     
-        FfiConverterSequenceUByte.lower(`identityPublicKey`),_status)
+        FfiConverterByteArray.lower(`identityPublicKey`),_status)
 }
     )
     }
     
 
-    @Throws(CryptoException::class) fun `deriveRecoveryKeypair`(`seed`: List<kotlin.UByte>): RecoveryKeypair {
+    @Throws(CryptoException::class) fun `deriveRecoveryKeypair`(`seed`: kotlin.ByteArray): RecoveryKeypair {
             return FfiConverterTypeRecoveryKeypair.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_derive_recovery_keypair(
     
-        FfiConverterSequenceUByte.lower(`seed`),_status)
+        FfiConverterByteArray.lower(`seed`),_status)
 }
     )
     }
     
 
-    @Throws(CryptoException::class) fun `deriveVerifyingKeyFromSecret`(`identitySecretKey`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `deriveVerifyingKeyFromSecret`(`identitySecretKey`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_derive_verifying_key_from_secret(
     
-        FfiConverterSequenceUByte.lower(`identitySecretKey`),_status)
+        FfiConverterByteArray.lower(`identitySecretKey`),_status)
 }
     )
     }
@@ -9560,12 +9472,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * base_message_id carries no per-device or per-chunk suffix, so every chunk
          * of one message shares a tag.
          */
-    @Throws(CryptoException::class) fun `deviceCopyTag`(`baseMessageId`: kotlin.String, `targetDeviceId`: kotlin.String, `ourIdentityPrivate`: List<kotlin.UByte>, `peerIdentityPublic`: List<kotlin.UByte>): kotlin.String {
+    @Throws(CryptoException::class) fun `deviceCopyTag`(`baseMessageId`: kotlin.String, `targetDeviceId`: kotlin.String, `ourIdentityPrivate`: kotlin.ByteArray, `peerIdentityPublic`: kotlin.ByteArray): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_device_copy_tag(
     
-        FfiConverterString.lower(`baseMessageId`),FfiConverterString.lower(`targetDeviceId`),FfiConverterSequenceUByte.lower(`ourIdentityPrivate`),FfiConverterSequenceUByte.lower(`peerIdentityPublic`),_status)
+        FfiConverterString.lower(`baseMessageId`),FfiConverterString.lower(`targetDeviceId`),FfiConverterByteArray.lower(`ourIdentityPrivate`),FfiConverterByteArray.lower(`peerIdentityPublic`),_status)
 }
     )
     }
@@ -9577,12 +9489,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * copy foreign?", and an undecidable answer there must be "not foreign" —
          * wrongly opening a copy costs failed decrypts, wrongly discarding one
          * loses a message from the transcript, silently.
-         */ fun `deviceCopyTagMatches`(`tag`: kotlin.String, `baseMessageId`: kotlin.String, `ourDeviceId`: kotlin.String, `ourIdentityPrivate`: List<kotlin.UByte>, `peerIdentityPublic`: List<kotlin.UByte>): kotlin.Boolean {
+         */ fun `deviceCopyTagMatches`(`tag`: kotlin.String, `baseMessageId`: kotlin.String, `ourDeviceId`: kotlin.String, `ourIdentityPrivate`: kotlin.ByteArray, `peerIdentityPublic`: kotlin.ByteArray): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_func_device_copy_tag_matches(
     
-        FfiConverterString.lower(`tag`),FfiConverterString.lower(`baseMessageId`),FfiConverterString.lower(`ourDeviceId`),FfiConverterSequenceUByte.lower(`ourIdentityPrivate`),FfiConverterSequenceUByte.lower(`peerIdentityPublic`),_status)
+        FfiConverterString.lower(`tag`),FfiConverterString.lower(`baseMessageId`),FfiConverterString.lower(`ourDeviceId`),FfiConverterByteArray.lower(`ourIdentityPrivate`),FfiConverterByteArray.lower(`peerIdentityPublic`),_status)
 }
     )
     }
@@ -9597,8 +9509,8 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     )
     }
     
- fun `generateDummyMessage`(`size`: kotlin.ULong): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+ fun `generateDummyMessage`(`size`: kotlin.ULong): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_func_generate_dummy_message(
     
@@ -9618,8 +9530,8 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     )
     }
     
- fun `generateIntakeKey`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+ fun `generateIntakeKey`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_func_generate_intake_key(
     
@@ -9643,8 +9555,8 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
         /**
          * Fresh device keys (identity, signing, signed prekey) as a key record.
          */
-    @Throws(CryptoException::class) fun `generatePrivateKeys`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `generatePrivateKeys`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_generate_private_keys(
     
@@ -9667,12 +9579,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
         /**
          * Derive the hybrid public key from a hybrid private key.
          */
-    @Throws(CryptoException::class) fun `hybridPublicKeyFromPrivate`(`privateKey`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `hybridPublicKeyFromPrivate`(`privateKey`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_hybrid_public_key_from_private(
     
-        FfiConverterSequenceUByte.lower(`privateKey`),_status)
+        FfiConverterByteArray.lower(`privateKey`),_status)
 }
     )
     }
@@ -9682,12 +9594,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * Sign a message with a hybrid private key (Ed25519 + ML-DSA-65).
          * Returns a hybrid signature: [ed25519_sig (64)] [mldsa65_sig (3309)] = 3373 bytes.
          */
-    @Throws(CryptoException::class) fun `hybridSign`(`privateKey`: List<kotlin.UByte>, `message`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `hybridSign`(`privateKey`: kotlin.ByteArray, `message`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_hybrid_sign(
     
-        FfiConverterSequenceUByte.lower(`privateKey`),FfiConverterSequenceUByte.lower(`message`),_status)
+        FfiConverterByteArray.lower(`privateKey`),FfiConverterByteArray.lower(`message`),_status)
 }
     )
     }
@@ -9711,12 +9623,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
         /**
          * Verify a hybrid signature. Both Ed25519 and ML-DSA-65 signatures must be valid.
          */
-    @Throws(CryptoException::class) fun `hybridVerify`(`publicKey`: List<kotlin.UByte>, `message`: List<kotlin.UByte>, `signature`: List<kotlin.UByte>): kotlin.Boolean {
+    @Throws(CryptoException::class) fun `hybridVerify`(`publicKey`: kotlin.ByteArray, `message`: kotlin.ByteArray, `signature`: kotlin.ByteArray): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_hybrid_verify(
     
-        FfiConverterSequenceUByte.lower(`publicKey`),FfiConverterSequenceUByte.lower(`message`),FfiConverterSequenceUByte.lower(`signature`),_status)
+        FfiConverterByteArray.lower(`publicKey`),FfiConverterByteArray.lower(`message`),FfiConverterByteArray.lower(`signature`),_status)
 }
     )
     }
@@ -9725,12 +9637,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
         /**
          * The X25519 identity secret of a key record.
          */
-    @Throws(CryptoException::class) fun `identityKeyFromKeys`(`keys`: List<kotlin.UByte>): kotlin.ByteArray {
+    @Throws(CryptoException::class) fun `identityKeyFromKeys`(`keys`: kotlin.ByteArray): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_identity_key_from_keys(
     
-        FfiConverterSequenceUByte.lower(`keys`),_status)
+        FfiConverterByteArray.lower(`keys`),_status)
 }
     )
     }
@@ -9741,12 +9653,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * `export_cfe()`. The device Ed25519 signer keys are passed separately —
          * they are never part of the blob.
          */
-    @Throws(MlsException::class) fun `importMlsStoreCfe`(`data`: List<kotlin.UByte>, `signerPrivateKey`: List<kotlin.UByte>, `signerPublicKey`: List<kotlin.UByte>): MlsStore {
+    @Throws(MlsException::class) fun `importMlsStoreCfe`(`data`: kotlin.ByteArray, `signerPrivateKey`: kotlin.ByteArray, `signerPublicKey`: kotlin.ByteArray): MlsStore {
             return FfiConverterTypeMlsStore.lift(
     uniffiRustCallWithError(MlsException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_import_mls_store_cfe(
     
-        FfiConverterSequenceUByte.lower(`data`),FfiConverterSequenceUByte.lower(`signerPrivateKey`),FfiConverterSequenceUByte.lower(`signerPublicKey`),_status)
+        FfiConverterByteArray.lower(`data`),FfiConverterByteArray.lower(`signerPrivateKey`),FfiConverterByteArray.lower(`signerPublicKey`),_status)
 }
     )
     }
@@ -9762,22 +9674,22 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     }
     
 
-    @Throws(CryptoException::class) fun `intakeTag`(`intakeKey`: List<kotlin.UByte>, `recipientAccountId`: kotlin.String, `epoch`: kotlin.ULong): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `intakeTag`(`intakeKey`: kotlin.ByteArray, `recipientAccountId`: kotlin.String, `epoch`: kotlin.ULong): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_intake_tag(
     
-        FfiConverterSequenceUByte.lower(`intakeKey`),FfiConverterString.lower(`recipientAccountId`),FfiConverterULong.lower(`epoch`),_status)
+        FfiConverterByteArray.lower(`intakeKey`),FfiConverterString.lower(`recipientAccountId`),FfiConverterULong.lower(`epoch`),_status)
 }
     )
     }
     
- fun `isDummyMessage`(`data`: List<kotlin.UByte>): kotlin.Boolean {
+ fun `isDummyMessage`(`data`: kotlin.ByteArray): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_func_is_dummy_message(
     
-        FfiConverterSequenceUByte.lower(`data`),_status)
+        FfiConverterByteArray.lower(`data`),_status)
 }
     )
     }
@@ -9810,12 +9722,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
         /**
          * Sign a message with an ML-DSA-65 secret key. Returns a detached signature (3309 bytes).
          */
-    @Throws(CryptoException::class) fun `mldsa65Sign`(`secretKey`: List<kotlin.UByte>, `message`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `mldsa65Sign`(`secretKey`: kotlin.ByteArray, `message`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_mldsa65_sign(
     
-        FfiConverterSequenceUByte.lower(`secretKey`),FfiConverterSequenceUByte.lower(`message`),_status)
+        FfiConverterByteArray.lower(`secretKey`),FfiConverterByteArray.lower(`message`),_status)
 }
     )
     }
@@ -9824,12 +9736,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
         /**
          * Verify an ML-DSA-65 detached signature. Returns true if valid.
          */
-    @Throws(CryptoException::class) fun `mldsa65Verify`(`publicKey`: List<kotlin.UByte>, `message`: List<kotlin.UByte>, `signature`: List<kotlin.UByte>): kotlin.Boolean {
+    @Throws(CryptoException::class) fun `mldsa65Verify`(`publicKey`: kotlin.ByteArray, `message`: kotlin.ByteArray, `signature`: kotlin.ByteArray): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_mldsa65_verify(
     
-        FfiConverterSequenceUByte.lower(`publicKey`),FfiConverterSequenceUByte.lower(`message`),FfiConverterSequenceUByte.lower(`signature`),_status)
+        FfiConverterByteArray.lower(`publicKey`),FfiConverterByteArray.lower(`message`),FfiConverterByteArray.lower(`signature`),_status)
 }
     )
     }
@@ -9838,19 +9750,19 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
         /**
          * Encapsulate to an ML-KEM-1024 public key (1568 bytes).
          */
-    @Throws(CryptoException::class) fun `mlkem1024Encapsulate`(`publicKey`: List<kotlin.UByte>): MlkemEncapsulation {
+    @Throws(CryptoException::class) fun `mlkem1024Encapsulate`(`publicKey`: kotlin.ByteArray): MlkemEncapsulation {
             return FfiConverterTypeMLKEMEncapsulation.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_mlkem1024_encapsulate(
     
-        FfiConverterSequenceUByte.lower(`publicKey`),_status)
+        FfiConverterByteArray.lower(`publicKey`),_status)
 }
     )
     }
     
 
-    @Throws(CryptoException::class) fun `mnemonicToSeed`(`mnemonic`: kotlin.String): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `mnemonicToSeed`(`mnemonic`: kotlin.String): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_mnemonic_to_seed(
     
@@ -9865,12 +9777,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * A copy sealed to a sibling fails the AEAD tag, so a caller finds its own by trying
          * each — the intended use, because the stored blob carries no recipient labels.
          */
-    @Throws(CryptoException::class) fun `openWithDeviceKey`(`sealedBox`: List<kotlin.UByte>, `ourIdentityPriv`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `openWithDeviceKey`(`sealedBox`: kotlin.ByteArray, `ourIdentityPriv`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_open_with_device_key(
     
-        FfiConverterSequenceUByte.lower(`sealedBox`),FfiConverterSequenceUByte.lower(`ourIdentityPriv`),_status)
+        FfiConverterByteArray.lower(`sealedBox`),FfiConverterByteArray.lower(`ourIdentityPriv`),_status)
 }
     )
     }
@@ -9925,12 +9837,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * Returns packed 64 bytes: blinded_point[0..32] || blind_factor[32..64].
          * blinded_point is sent to server; blind_factor is kept secret until finalize().
          */
-    @Throws(CryptoException::class) fun `ppBlindToken`(`nonce`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `ppBlindToken`(`nonce`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_pp_blind_token(
     
-        FfiConverterSequenceUByte.lower(`nonce`),_status)
+        FfiConverterByteArray.lower(`nonce`),_status)
 }
     )
     }
@@ -9943,12 +9855,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * nonce            — original 32-byte nonce passed to pp_blind_token
          * Returns 32-byte token to store in the wallet.
          */
-    @Throws(CryptoException::class) fun `ppFinalizeToken`(`evaluatedBytes`: List<kotlin.UByte>, `blindFactorBytes`: List<kotlin.UByte>, `nonce`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `ppFinalizeToken`(`evaluatedBytes`: kotlin.ByteArray, `blindFactorBytes`: kotlin.ByteArray, `nonce`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_pp_finalize_token(
     
-        FfiConverterSequenceUByte.lower(`evaluatedBytes`),FfiConverterSequenceUByte.lower(`blindFactorBytes`),FfiConverterSequenceUByte.lower(`nonce`),_status)
+        FfiConverterByteArray.lower(`evaluatedBytes`),FfiConverterByteArray.lower(`blindFactorBytes`),FfiConverterByteArray.lower(`nonce`),_status)
 }
     )
     }
@@ -9960,12 +9872,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * operators cannot read spent tokens. Returns
          * ephemeral_pub(32) || nonce(12) || ciphertext || tag(16).
          */
-    @Throws(CryptoException::class) fun `ppSealTokenBytes`(`token`: List<kotlin.UByte>, `serverEncryptionKey`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `ppSealTokenBytes`(`token`: kotlin.ByteArray, `serverEncryptionKey`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_pp_seal_token_bytes(
     
-        FfiConverterSequenceUByte.lower(`token`),FfiConverterSequenceUByte.lower(`serverEncryptionKey`),_status)
+        FfiConverterByteArray.lower(`token`),FfiConverterByteArray.lower(`serverEncryptionKey`),_status)
 }
     )
     }
@@ -9975,12 +9887,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * Verify the evaluated point is a valid Ristretto255 curve point.
          * server_pubkey_bytes is reserved for future DLEQ batch proof verification.
          * Returns false if evaluated_bytes cannot be decompressed.
-         */ fun `ppVerifyClient`(`evaluatedBytes`: List<kotlin.UByte>, `nonce`: List<kotlin.UByte>, `serverPubkeyBytes`: List<kotlin.UByte>): kotlin.Boolean {
+         */ fun `ppVerifyClient`(`evaluatedBytes`: kotlin.ByteArray, `nonce`: kotlin.ByteArray, `serverPubkeyBytes`: kotlin.ByteArray): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_func_pp_verify_client(
     
-        FfiConverterSequenceUByte.lower(`evaluatedBytes`),FfiConverterSequenceUByte.lower(`nonce`),FfiConverterSequenceUByte.lower(`serverPubkeyBytes`),_status)
+        FfiConverterByteArray.lower(`evaluatedBytes`),FfiConverterByteArray.lower(`nonce`),FfiConverterByteArray.lower(`serverPubkeyBytes`),_status)
 }
     )
     }
@@ -9993,12 +9905,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * key-tagging (Phase C). blinded/evaluated are the batch of 32-byte points
          * (blinded as sent to IssueTokens, evaluated as returned); proof is 64 bytes;
          * issuer_public is the pinned 32-byte K. False on any malformed input.
-         */ fun `ppVerifyDleq`(`blinded`: List<List<kotlin.UByte>>, `evaluated`: List<List<kotlin.UByte>>, `proof`: List<kotlin.UByte>, `issuerPublic`: List<kotlin.UByte>): kotlin.Boolean {
+         */ fun `ppVerifyDleq`(`blinded`: List<kotlin.ByteArray>, `evaluated`: List<kotlin.ByteArray>, `proof`: kotlin.ByteArray, `issuerPublic`: kotlin.ByteArray): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_func_pp_verify_dleq(
     
-        FfiConverterSequenceSequenceUByte.lower(`blinded`),FfiConverterSequenceSequenceUByte.lower(`evaluated`),FfiConverterSequenceUByte.lower(`proof`),FfiConverterSequenceUByte.lower(`issuerPublic`),_status)
+        FfiConverterSequenceByteArray.lower(`blinded`),FfiConverterSequenceByteArray.lower(`evaluated`),FfiConverterByteArray.lower(`proof`),FfiConverterByteArray.lower(`issuerPublic`),_status)
 }
     )
     }
@@ -10042,12 +9954,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
         /**
          * The public registration bundle of a key record.
          */
-    @Throws(CryptoException::class) fun `registrationBundleFieldsFromKeys`(`keys`: List<kotlin.UByte>): RegistrationBundleFields {
+    @Throws(CryptoException::class) fun `registrationBundleFieldsFromKeys`(`keys`: kotlin.ByteArray): RegistrationBundleFields {
             return FfiConverterTypeRegistrationBundleFields.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_registration_bundle_fields_from_keys(
     
-        FfiConverterSequenceUByte.lower(`keys`),_status)
+        FfiConverterByteArray.lower(`keys`),_status)
 }
     )
     }
@@ -10065,12 +9977,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * revoked device stops being sealed to on the next re-seal instead of keeping the
          * ability to read until a key is rotated.
          */
-    @Throws(CryptoException::class) fun `sealToDeviceKey`(`plaintext`: List<kotlin.UByte>, `deviceIdentityKey`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `sealToDeviceKey`(`plaintext`: kotlin.ByteArray, `deviceIdentityKey`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_seal_to_device_key(
     
-        FfiConverterSequenceUByte.lower(`plaintext`),FfiConverterSequenceUByte.lower(`deviceIdentityKey`),_status)
+        FfiConverterByteArray.lower(`plaintext`),FfiConverterByteArray.lower(`deviceIdentityKey`),_status)
 }
     )
     }
@@ -10082,12 +9994,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * ephemeral_pub(32) || nonce(12) || ciphertext || tag(16).
          * Bit-compatible with the iOS CryptoKit implementation.
          */
-    @Throws(CryptoException::class) fun `sealedSealSenderCert`(`certBytes`: List<kotlin.UByte>, `recipientIdentityKey`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `sealedSealSenderCert`(`certBytes`: kotlin.ByteArray, `recipientIdentityKey`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_sealed_seal_sender_cert(
     
-        FfiConverterSequenceUByte.lower(`certBytes`),FfiConverterSequenceUByte.lower(`recipientIdentityKey`),_status)
+        FfiConverterByteArray.lower(`certBytes`),FfiConverterByteArray.lower(`recipientIdentityKey`),_status)
 }
     )
     }
@@ -10098,12 +10010,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * (32 bytes). Returns the serialized SenderCertificate bytes — the caller
          * parses the proto and then calls sealed_verify_sender_cert.
          */
-    @Throws(CryptoException::class) fun `sealedUnsealSenderCert`(`sealedBox`: List<kotlin.UByte>, `ourIdentityPriv`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `sealedUnsealSenderCert`(`sealedBox`: kotlin.ByteArray, `ourIdentityPriv`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_sealed_unseal_sender_cert(
     
-        FfiConverterSequenceUByte.lower(`sealedBox`),FfiConverterSequenceUByte.lower(`ourIdentityPriv`),_status)
+        FfiConverterByteArray.lower(`sealedBox`),FfiConverterByteArray.lower(`ourIdentityPriv`),_status)
 }
     )
     }
@@ -10115,12 +10027,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * BE64(issued_at) || BE64(expires_at) — no separators).
          * server_verifying_key is the 32-byte bundle verification key from
          * /.well-known/construct-server. Returns false on any malformed input.
-         */ fun `sealedVerifySenderCert`(`userId`: kotlin.String, `domain`: kotlin.String, `identityKey`: List<kotlin.UByte>, `deviceId`: kotlin.String, `issuedAt`: kotlin.Long, `expiresAt`: kotlin.Long, `signature`: List<kotlin.UByte>, `serverVerifyingKey`: List<kotlin.UByte>): kotlin.Boolean {
+         */ fun `sealedVerifySenderCert`(`userId`: kotlin.String, `domain`: kotlin.String, `identityKey`: kotlin.ByteArray, `deviceId`: kotlin.String, `issuedAt`: kotlin.Long, `expiresAt`: kotlin.Long, `signature`: kotlin.ByteArray, `serverVerifyingKey`: kotlin.ByteArray): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_func_sealed_verify_sender_cert(
     
-        FfiConverterString.lower(`userId`),FfiConverterString.lower(`domain`),FfiConverterSequenceUByte.lower(`identityKey`),FfiConverterString.lower(`deviceId`),FfiConverterLong.lower(`issuedAt`),FfiConverterLong.lower(`expiresAt`),FfiConverterSequenceUByte.lower(`signature`),FfiConverterSequenceUByte.lower(`serverVerifyingKey`),_status)
+        FfiConverterString.lower(`userId`),FfiConverterString.lower(`domain`),FfiConverterByteArray.lower(`identityKey`),FfiConverterString.lower(`deviceId`),FfiConverterLong.lower(`issuedAt`),FfiConverterLong.lower(`expiresAt`),FfiConverterByteArray.lower(`signature`),FfiConverterByteArray.lower(`serverVerifyingKey`),_status)
 }
     )
     }
@@ -10129,34 +10041,34 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
         /**
          * Ed25519 signature over bundle_data_json with the key record's signing key.
          */
-    @Throws(CryptoException::class) fun `signBundleDataWithKeys`(`keys`: List<kotlin.UByte>, `bundleDataJson`: List<kotlin.UByte>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `signBundleDataWithKeys`(`keys`: kotlin.ByteArray, `bundleDataJson`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_sign_bundle_data_with_keys(
     
-        FfiConverterSequenceUByte.lower(`keys`),FfiConverterSequenceUByte.lower(`bundleDataJson`),_status)
+        FfiConverterByteArray.lower(`keys`),FfiConverterByteArray.lower(`bundleDataJson`),_status)
 }
     )
     }
     
 
-    @Throws(CryptoException::class) fun `signInviteData`(`data`: kotlin.String, `identitySecretKey`: List<kotlin.UByte>): InviteSignature {
+    @Throws(CryptoException::class) fun `signInviteData`(`data`: kotlin.String, `identitySecretKey`: kotlin.ByteArray): InviteSignature {
             return FfiConverterTypeInviteSignature.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_sign_invite_data(
     
-        FfiConverterString.lower(`data`),FfiConverterSequenceUByte.lower(`identitySecretKey`),_status)
+        FfiConverterString.lower(`data`),FfiConverterByteArray.lower(`identitySecretKey`),_status)
 }
     )
     }
     
 
-    @Throws(CryptoException::class) fun `signRecoveryChallenge`(`privateKey`: List<kotlin.UByte>, `message`: kotlin.String): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `signRecoveryChallenge`(`privateKey`: kotlin.ByteArray, `message`: kotlin.String): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_sign_recovery_challenge(
     
-        FfiConverterSequenceUByte.lower(`privateKey`),FfiConverterString.lower(`message`),_status)
+        FfiConverterByteArray.lower(`privateKey`),FfiConverterString.lower(`message`),_status)
 }
     )
     }
@@ -10165,12 +10077,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
         /**
          * The Ed25519 signing secret of a key record.
          */
-    @Throws(CryptoException::class) fun `signingKeyFromKeys`(`keys`: List<kotlin.UByte>): kotlin.ByteArray {
+    @Throws(CryptoException::class) fun `signingKeyFromKeys`(`keys`: kotlin.ByteArray): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_signing_key_from_keys(
     
-        FfiConverterSequenceUByte.lower(`keys`),_status)
+        FfiConverterByteArray.lower(`keys`),_status)
 }
     )
     }
@@ -10181,12 +10093,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
          * threshold must be <= share_count, both must be 2-10.
          * Returns one 28-word mnemonic string per share.
          */
-    @Throws(CryptoException::class) fun `srCreateRecoveryShares`(`vaultKey`: List<kotlin.UByte>, `threshold`: kotlin.UByte, `shareCount`: kotlin.UByte): List<kotlin.String> {
+    @Throws(CryptoException::class) fun `srCreateRecoveryShares`(`vaultKey`: kotlin.ByteArray, `threshold`: kotlin.UByte, `shareCount`: kotlin.UByte): List<kotlin.String> {
             return FfiConverterSequenceString.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_sr_create_recovery_shares(
     
-        FfiConverterSequenceUByte.lower(`vaultKey`),FfiConverterUByte.lower(`threshold`),FfiConverterUByte.lower(`shareCount`),_status)
+        FfiConverterByteArray.lower(`vaultKey`),FfiConverterUByte.lower(`threshold`),FfiConverterUByte.lower(`shareCount`),_status)
 }
     )
     }
@@ -10195,8 +10107,8 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
         /**
          * Generate a 32-byte random vault key.
          */
-    @Throws(CryptoException::class) fun `srGenerateVaultKey`(): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `srGenerateVaultKey`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_sr_generate_vault_key(
     
@@ -10209,12 +10121,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
         /**
          * Decrypt bytes to RecoveryBundle using vault_key.
          */
-    @Throws(CryptoException::class) fun `srOpenRecoveryBundle`(`vaultKey`: List<kotlin.UByte>, `ciphertext`: List<kotlin.UByte>): SrRecoveryBundle {
+    @Throws(CryptoException::class) fun `srOpenRecoveryBundle`(`vaultKey`: kotlin.ByteArray, `ciphertext`: kotlin.ByteArray): SrRecoveryBundle {
             return FfiConverterTypeSrRecoveryBundle.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_sr_open_recovery_bundle(
     
-        FfiConverterSequenceUByte.lower(`vaultKey`),FfiConverterSequenceUByte.lower(`ciphertext`),_status)
+        FfiConverterByteArray.lower(`vaultKey`),FfiConverterByteArray.lower(`ciphertext`),_status)
 }
     )
     }
@@ -10223,8 +10135,8 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
         /**
          * Reconstruct vault_key from at least threshold share mnemonics.
          */
-    @Throws(CryptoException::class) fun `srReconstructVaultKey`(`mnemonics`: List<kotlin.String>): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `srReconstructVaultKey`(`mnemonics`: List<kotlin.String>): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_sr_reconstruct_vault_key(
     
@@ -10237,12 +10149,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
         /**
          * Encrypt a RecoveryBundle to bytes using vault_key.
          */
-    @Throws(CryptoException::class) fun `srSealRecoveryBundle`(`vaultKey`: List<kotlin.UByte>, `bundle`: SrRecoveryBundle): List<kotlin.UByte> {
-            return FfiConverterSequenceUByte.lift(
+    @Throws(CryptoException::class) fun `srSealRecoveryBundle`(`vaultKey`: kotlin.ByteArray, `bundle`: SrRecoveryBundle): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_sr_seal_recovery_bundle(
     
-        FfiConverterSequenceUByte.lower(`vaultKey`),FfiConverterTypeSrRecoveryBundle.lower(`bundle`),_status)
+        FfiConverterByteArray.lower(`vaultKey`),FfiConverterTypeSrRecoveryBundle.lower(`bundle`),_status)
 }
     )
     }
@@ -10274,12 +10186,12 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     }
     
 
-    @Throws(CryptoException::class) fun `verifyInviteSignature`(`data`: kotlin.String, `signature`: List<kotlin.UByte>, `verifyingKey`: List<kotlin.UByte>): kotlin.Boolean {
+    @Throws(CryptoException::class) fun `verifyInviteSignature`(`data`: kotlin.String, `signature`: kotlin.ByteArray, `verifyingKey`: kotlin.ByteArray): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_verify_invite_signature(
     
-        FfiConverterString.lower(`data`),FfiConverterSequenceUByte.lower(`signature`),FfiConverterSequenceUByte.lower(`verifyingKey`),_status)
+        FfiConverterString.lower(`data`),FfiConverterByteArray.lower(`signature`),FfiConverterByteArray.lower(`verifyingKey`),_status)
 }
     )
     }
@@ -10294,23 +10206,23 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     )
     }
     
- fun `verifyRecoverySignature`(`publicKey`: List<kotlin.UByte>, `message`: kotlin.String, `signature`: List<kotlin.UByte>): kotlin.Boolean {
+ fun `verifyRecoverySignature`(`publicKey`: kotlin.ByteArray, `message`: kotlin.String, `signature`: kotlin.ByteArray): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_func_verify_recovery_signature(
     
-        FfiConverterSequenceUByte.lower(`publicKey`),FfiConverterString.lower(`message`),FfiConverterSequenceUByte.lower(`signature`),_status)
+        FfiConverterByteArray.lower(`publicKey`),FfiConverterString.lower(`message`),FfiConverterByteArray.lower(`signature`),_status)
 }
     )
     }
     
 
-    @Throws(CryptoException::class) fun `wirePayloadUnpack`(`data`: List<kotlin.UByte>): WirePayload {
+    @Throws(CryptoException::class) fun `wirePayloadUnpack`(`data`: kotlin.ByteArray): WirePayload {
             return FfiConverterTypeWirePayload.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_wire_payload_unpack(
     
-        FfiConverterSequenceUByte.lower(`data`),_status)
+        FfiConverterByteArray.lower(`data`),_status)
 }
     )
     }

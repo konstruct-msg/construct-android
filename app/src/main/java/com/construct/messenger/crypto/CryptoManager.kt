@@ -91,13 +91,13 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     /** Creates a fresh core (new identity) or restores one from exported private keys. */
     fun loadOrCreate(savedPrivateKeys: ByteArray? = null): RegistrationBundleFields = synchronized(coreLock) {
         val instance = if (savedPrivateKeys != null) {
-            createCryptoCoreFromKeys(savedPrivateKeys.toUByteList())
+            createCryptoCoreFromKeys(savedPrivateKeys)
         } else {
             createCryptoCore()
         }
         bootstrapCore = instance
         val bundle = instance.getRegistrationBundleFields()
-        localIdentityPublic = bundle.identityPublic.toByteArray()
+        localIdentityPublic = bundle.identityPublic
         localDeviceId = deriveDeviceId(bundle).also { derived ->
             check(IdentityIds.isCryptoDeviceId(derived)) {
                 "construct-core returned invalid local CryptoDeviceId"
@@ -136,7 +136,7 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         // no-op when the bootstrap core generated none (returning-user login).
         runCatching { orch.importOneTimePrekeys(boot.exportOneTimePrekeys()) }
         if (savedKyberPrekeys != null && savedKyberPrekeys.isNotEmpty()) {
-            kyberPrekeysLost = runCatching { orch.importKyberPrekeys(savedKyberPrekeys.toUByteList()) }.isFailure
+            kyberPrekeysLost = runCatching { orch.importKyberPrekeys(savedKyberPrekeys) }.isFailure
         }
         orchestrator = orch
         bootstrapCore = null
@@ -158,7 +158,7 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     // ── Registration / identity ─────────────────────────────────────────────
 
     fun exportPrivateKeys(): ByteArray = synchronized(coreLock) {
-        (orchestrator?.exportPrivateKeys() ?: requireBootstrap().exportPrivateKeys()).toByteArray()
+        (orchestrator?.exportPrivateKeys() ?: requireBootstrap().exportPrivateKeys())
     }
 
     fun generateOneTimePrekeys(count: Int): List<OtpkPair> = synchronized(coreLock) {
@@ -173,13 +173,13 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
      * **Canon:** iOS `OtpkReplenishmentService.persistOtpks`.
      */
     fun exportOneTimePrekeys(): ByteArray = synchronized(coreLock) {
-        (orchestrator?.exportOneTimePrekeys() ?: requireBootstrap().exportOneTimePrekeys()).toByteArray()
+        (orchestrator?.exportOneTimePrekeys() ?: requireBootstrap().exportOneTimePrekeys())
     }
 
     /** Restores [exportOneTimePrekeys] output. Call before [setLocalUserId] on a restored
      * identity: the bootstrap core's OTPKs are carried into the orchestrator there. */
     fun importOneTimePrekeys(bytes: ByteArray) = synchronized(coreLock) {
-        val list = bytes.toUByteList()
+        val list = bytes
         orchestrator?.importOneTimePrekeys(list) ?: requireBootstrap().importOneTimePrekeys(list)
     }
 
@@ -226,12 +226,12 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     }
 
     fun exportSessionBytes(contactId: String): ByteArray = synchronized(coreLock) {
-        (orchestrator?.exportSession(contactId) ?: requireBootstrap().exportSession(contactId)).toByteArray()
+        (orchestrator?.exportSession(contactId) ?: requireBootstrap().exportSession(contactId))
     }
 
     fun importSessionBytes(contactId: String, bytes: ByteArray): String = synchronized(coreLock) {
-        orchestrator?.importSession(contactId, bytes.toUByteList())
-            ?: requireBootstrap().importSession(contactId, bytes.toUByteList())
+        orchestrator?.importSession(contactId, bytes)
+            ?: requireBootstrap().importSession(contactId, bytes)
     }
 
     fun removeSession(contactId: String): Boolean = synchronized(coreLock) {
@@ -277,8 +277,8 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         uniffi.construct_core.deviceCopyTag(
             baseMessageId,
             targetDeviceId,
-            identityKeyBytes().toUByteList(),
-            peerIdentityPublic.toUByteList(),
+            identityKeyBytes(),
+            peerIdentityPublic,
         )
     }
 
@@ -292,8 +292,8 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
             tag,
             baseMessageId,
             ourDeviceId,
-            identityKeyBytes().toUByteList(),
-            peerIdentityPublic.toUByteList(),
+            identityKeyBytes(),
+            peerIdentityPublic,
         )
     }
 
@@ -301,12 +301,12 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     fun exportOrchestratorState(): ByteArray = synchronized(coreLock) {
         (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
             .exportOrchestratorState()
-            .toByteArray()
+            
     }
 
     fun importOrchestratorState(bytes: ByteArray) = synchronized(coreLock) {
         (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
-            .importOrchestratorState(bytes.toUByteList())
+            .importOrchestratorState(bytes)
     }
 
     // ── Kyber prekeys (ML-KEM-1024, PQXDH v2) ───────────────────────────────
@@ -320,7 +320,7 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
 
     /** The store as one CFE blob (seeds included) — for `KeystoreManager`, never for a log. */
     fun exportKyberPrekeys(): ByteArray = synchronized(coreLock) {
-        requireOrchestrator().exportKyberPrekeys().toByteArray()
+        requireOrchestrator().exportKyberPrekeys()
     }
 
     /** One-time Kyber keys, each signed by the core over its `created_at` (Ed25519 and hybrid).
@@ -361,24 +361,24 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
      * back with a different key than the one peers pinned.
      */
     fun ensureHybridIdentityPublicKey(): ByteArray = synchronized(coreLock) {
-        requireOrchestrator().ensureHybridSignatureKey().toByteArray()
+        requireOrchestrator().ensureHybridSignatureKey()
     }
 
     /** Ed25519 signature binding [hybridPublic] to this device's identity (bundle field 21). */
     fun signHybridIdentityBinding(hybridPublic: ByteArray): ByteArray = synchronized(coreLock) {
         val orch = requireOrchestrator()
-        orch.signBundleData(orch.buildHybridIdentityBindMessage(hybridPublic.toUByteList())).toByteArray()
+        orch.signBundleData(orch.buildHybridIdentityBindMessage(hybridPublic))
     }
 
     /** Hybrid signature over the classic SPK's X3DH sign-message (suite 0x01). */
     fun signClassicSpkHybrid(spkPublic: ByteArray): ByteArray = synchronized(coreLock) {
-        requireOrchestrator().signHybridPrekey(CLASSIC_SUITE, spkPublic.toUByteList()).toByteArray()
+        requireOrchestrator().signHybridPrekey(CLASSIC_SUITE, spkPublic)
     }
 
     /** The classic SPK the core currently holds (public half). */
     fun currentSignedPrekeyPublic(): ByteArray = synchronized(coreLock) {
         (orchestrator?.getRegistrationBundleFields() ?: requireBootstrap().getRegistrationBundleFields())
-            .signedPrekeyPublic.toByteArray()
+            .signedPrekeyPublic
     }
 
     /** Drop all Rust-owned state for a contact, not only its hot ratchet blob. */
@@ -415,7 +415,7 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
 
     /** Signs [message] with a recovery private key — the `SetRecoveryKey` proof of possession. */
     fun signWithRecoveryKey(keypair: RecoveryKeypair, message: String): ByteArray =
-        signRecoveryChallenge(keypair.privateKey, message).toByteArray()
+        signRecoveryChallenge(keypair.privateKey, message)
 
     fun computePow(challenge: String, difficulty: Int): PowSolution =
         computePow(challenge, difficulty.toUInt())
@@ -436,7 +436,7 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     fun deriveDeviceId(bundle: RegistrationBundleFields): String = deriveDeviceId(bundle.identityPublic)
 
     fun deriveDeviceIdFromIdentity(identityPublic: ByteArray): String =
-        deriveDeviceId(identityPublic.toUByteList())
+        deriveDeviceId(identityPublic)
 
     /**
      * The 60-digit number two people compare for one pair of devices, computed by the core so
@@ -451,14 +451,14 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     }
 
     fun signInvite(canonical: String): ByteArray = synchronized(coreLock) {
-        signInviteData(canonical, signingKeyBytes().toUByteList()).signature.toByteArray()
+        signInviteData(canonical, signingKeyBytes()).signature
     }
 
     fun verifyInvite(canonical: String, signature: ByteArray, verifyingKey: ByteArray): Boolean =
-        verifyInviteSignature(canonical, signature.toUByteList(), verifyingKey.toUByteList())
+        verifyInviteSignature(canonical, signature, verifyingKey)
 
     fun verifyingKeyFromSigningSecret(): ByteArray = synchronized(coreLock) {
-        deriveVerifyingKeyFromSecret(signingKeyBytes().toUByteList()).toByteArray()
+        deriveVerifyingKeyFromSecret(signingKeyBytes())
     }
 
     /**
@@ -469,7 +469,7 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
      */
     fun signWithDeviceKey(message: String): ByteArray = synchronized(coreLock) {
         val signingKey = orchestrator?.getSigningKeyBytes() ?: requireBootstrap().getSigningKeyBytes()
-        signRecoveryChallenge(signingKey.toUByteList(), message).toByteArray()
+        signRecoveryChallenge(signingKey, message)
     }
 
     fun close() = synchronized(coreLock) {
@@ -483,5 +483,3 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
     }
 }
 
-private fun ByteArray.toUByteList(): List<UByte> = map { it.toUByte() }
-private fun List<UByte>.toByteArray(): ByteArray = ByteArray(size) { this[it].toByte() }

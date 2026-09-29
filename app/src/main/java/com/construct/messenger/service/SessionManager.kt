@@ -361,34 +361,33 @@ private fun PreKeyBundle.coreSuiteId(): UShort = when (cryptoSuite) {
  * maps to null, never to an empty or zero value the core would try to verify.
  */
 internal fun PreKeyBundle.toBinaryKeyBundle(verifyingKey: ByteArray): BinaryKeyBundle = BinaryKeyBundle(
-    identityPublic = identityKey.toByteArray().toUByteList(),
-    signedPrekeyPublic = signedPreKey.toByteArray().toUByteList(),
-    signature = signedPreKeySignature.toByteArray().toUByteList(),
-    verifyingKey = verifyingKey.toUByteList(),
+    identityPublic = identityKey.toByteArray(),
+    signedPrekeyPublic = signedPreKey.toByteArray(),
+    signature = signedPreKeySignature.toByteArray(),
+    verifyingKey = verifyingKey,
     suiteId = coreSuiteId(),
-    oneTimePrekeyPublic = if (hasOneTimePreKey()) oneTimePreKey.toByteArray().toUByteList() else null,
+    oneTimePrekeyPublic = if (hasOneTimePreKey()) oneTimePreKey.toByteArray() else null,
     oneTimePrekeyId = if (hasOneTimePreKeyId()) oneTimePreKeyId.toUInt() else null,
     spkUploadedAt = spkUploadedAt.toULong(),
     spkRotationEpoch = spkRotationEpoch.toUInt(),
     kyberSpkUploadedAt = if (hasKyberSpkUploadedAt()) kyberSpkUploadedAt.toULong() else 0uL,
     kyberSpkRotationEpoch = if (hasKyberSpkRotationEpoch()) kyberSpkRotationEpoch.toUInt() else 0u,
-    kyberPreKeyPublic = if (hasKyberPreKey()) kyberPreKey.toByteArray().toUByteList() else null,
+    kyberPreKeyPublic = if (hasKyberPreKey()) kyberPreKey.toByteArray() else null,
     kyberPreKeyId = if (hasKyberPreKeyId()) kyberPreKeyId.toUInt() else null,
     kyberPreKeyCreatedAt = if (hasKyberPreKeyCreatedAt()) kyberPreKeyCreatedAt.toULong() else null,
-    kyberPreKeySignature = if (hasKyberPreKeySignature()) kyberPreKeySignature.toByteArray().toUByteList() else null,
+    kyberPreKeySignature = if (hasKyberPreKeySignature()) kyberPreKeySignature.toByteArray() else null,
     kyberPreKeyHybridSignature =
-        if (hasKyberPreKeyHybridSignature()) kyberPreKeyHybridSignature.toByteArray().toUByteList() else null,
-    kyberOneTimePrekeyPublic = if (hasKyberOneTimePreKey()) kyberOneTimePreKey.toByteArray().toUByteList() else null,
+        if (hasKyberPreKeyHybridSignature()) kyberPreKeyHybridSignature.toByteArray() else null,
+    kyberOneTimePrekeyPublic = if (hasKyberOneTimePreKey()) kyberOneTimePreKey.toByteArray() else null,
     kyberOneTimePrekeyId = if (hasKyberOneTimePreKeyId()) kyberOneTimePreKeyId.toUInt() else null,
     kyberOneTimePrekeyCreatedAt =
         if (hasKyberOneTimePreKeyCreatedAt()) kyberOneTimePreKeyCreatedAt.toULong() else null,
     kyberOneTimePrekeySignature =
-        if (hasKyberOneTimePreKeySignature()) kyberOneTimePreKeySignature.toByteArray().toUByteList() else null,
+        if (hasKyberOneTimePreKeySignature()) kyberOneTimePreKeySignature.toByteArray() else null,
     kyberOneTimePrekeyHybridSignature =
-        if (hasKyberOneTimePreKeyHybridSignature()) kyberOneTimePreKeyHybridSignature.toByteArray().toUByteList() else null,
-    hybridIdentityKey = if (hasHybridIdentityKey()) hybridIdentityKey.toByteArray().toUByteList() else null,
+        if (hasKyberOneTimePreKeyHybridSignature()) kyberOneTimePreKeyHybridSignature.toByteArray() else null,
+    hybridIdentityKey = if (hasHybridIdentityKey()) hybridIdentityKey.toByteArray() else null,
     hybridIdentitySignature =
-        if (hasHybridIdentitySignature()) hybridIdentitySignature.toByteArray().toUByteList() else null,
+        if (hasHybridIdentitySignature()) hybridIdentitySignature.toByteArray() else null,
 )
 
-private fun ByteArray.toUByteList(): List<UByte> = map { it.toUByte() }

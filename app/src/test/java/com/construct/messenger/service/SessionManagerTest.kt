@@ -6,6 +6,7 @@ import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
@@ -67,10 +68,10 @@ class SessionManagerTest {
         verify(cryptoManager).initSession(eq("11111111111111111111111111111111"), bundleCaptor.capture())
         val mapped = bundleCaptor.firstValue
 
-        assertEquals(listOf<UByte>(1u, 2u, 3u), mapped.identityPublic)
-        assertEquals(listOf<UByte>(4u, 5u, 6u), mapped.signedPrekeyPublic)
-        assertEquals(listOf<UByte>(7u, 8u), mapped.signature)
-        assertEquals(listOf<UByte>(9u, 9u), mapped.verifyingKey)
+        assertArrayEquals(byteArrayOf(1, 2, 3), mapped.identityPublic)
+        assertArrayEquals(byteArrayOf(4, 5, 6), mapped.signedPrekeyPublic)
+        assertArrayEquals(byteArrayOf(7, 8), mapped.signature)
+        assertArrayEquals(byteArrayOf(9, 9), mapped.verifyingKey)
         // Proto CRYPTO_SUITE_CLASSIC_X25519_CHACHA20 (=10) maps to the CORE SuiteID 1
         // (CLASSIC) — the raw proto value would be rejected by SuiteID::new.
         assertEquals(1, mapped.suiteId.toInt())
@@ -136,22 +137,22 @@ class SessionManagerTest {
         verify(cryptoManager).initSession(eq("22222222222222222222222222222222"), bundleCaptor.capture())
         val mapped = bundleCaptor.firstValue
 
-        assertEquals(listOf<UByte>(4u), mapped.oneTimePrekeyPublic)
+        assertArrayEquals(byteArrayOf(4), mapped.oneTimePrekeyPublic)
         assertEquals(42u, mapped.oneTimePrekeyId)
         // Every field the PQXDH v2 initiator checks survives the conversion: a dropped one would
         // read as "peer not post-quantum" for every peer.
-        assertEquals(listOf<UByte>(5u), mapped.kyberPreKeyPublic)
+        assertArrayEquals(byteArrayOf(5), mapped.kyberPreKeyPublic)
         assertEquals(11u, mapped.kyberPreKeyId)
         assertEquals(1_800_000_000UL, mapped.kyberPreKeyCreatedAt)
-        assertEquals(listOf<UByte>(12u), mapped.kyberPreKeySignature)
-        assertEquals(listOf<UByte>(13u), mapped.kyberPreKeyHybridSignature)
-        assertEquals(listOf<UByte>(6u), mapped.kyberOneTimePrekeyPublic)
+        assertArrayEquals(byteArrayOf(12), mapped.kyberPreKeySignature)
+        assertArrayEquals(byteArrayOf(13), mapped.kyberPreKeyHybridSignature)
+        assertArrayEquals(byteArrayOf(6), mapped.kyberOneTimePrekeyPublic)
         assertEquals(7u, mapped.kyberOneTimePrekeyId)
         assertEquals(1_800_000_060UL, mapped.kyberOneTimePrekeyCreatedAt)
-        assertEquals(listOf<UByte>(14u), mapped.kyberOneTimePrekeySignature)
-        assertEquals(listOf<UByte>(15u), mapped.kyberOneTimePrekeyHybridSignature)
-        assertEquals(listOf<UByte>(16u), mapped.hybridIdentityKey)
-        assertEquals(listOf<UByte>(17u), mapped.hybridIdentitySignature)
+        assertArrayEquals(byteArrayOf(14), mapped.kyberOneTimePrekeySignature)
+        assertArrayEquals(byteArrayOf(15), mapped.kyberOneTimePrekeyHybridSignature)
+        assertArrayEquals(byteArrayOf(16), mapped.hybridIdentityKey)
+        assertArrayEquals(byteArrayOf(17), mapped.hybridIdentitySignature)
         assertEquals(2_000UL, mapped.kyberSpkUploadedAt)
         assertEquals(4u, mapped.kyberSpkRotationEpoch)
         // Proto CRYPTO_SUITE_HYBRID_KYBER768_X25519 (=2) → core SuiteID 2 (PQ_HYBRID).

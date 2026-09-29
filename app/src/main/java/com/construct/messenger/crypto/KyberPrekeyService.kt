@@ -248,4 +248,4 @@ internal fun KyberPrekeyUpload.toSignedProto(): KyberSignedPreKeyUpload = KyberS
     .setCreatedAt(createdAt.toLong())
     .build()
 
-private fun List<UByte>.toByteString(): ByteString = ByteString.copyFrom(ByteArray(size) { this[it].toByte() })
+private fun ByteArray.toByteString(): ByteString = ByteString.copyFrom(this)

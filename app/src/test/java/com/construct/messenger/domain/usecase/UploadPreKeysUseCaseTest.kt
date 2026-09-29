@@ -53,7 +53,7 @@ class UploadPreKeysUseCaseTest {
     @Test
     fun invoke_generatesAndUploadsOtPKs() = runTest {
         whenever(cryptoManager.generateOneTimePrekeys(any())).thenReturn(
-            listOf(OtpkPair(keyId = 1u, publicKey = listOf(10u, 20u))),
+            listOf(OtpkPair(keyId = 1u, publicKey = byteArrayOf(10, 20))),
         )
         whenever(keyStub.uploadPreKeys(any(), any())).thenReturn(
             UploadPreKeysResponse.newBuilder().setSuccess(true).build(),
@@ -77,7 +77,7 @@ class UploadPreKeysUseCaseTest {
     @Test
     fun invoke_carriesKyberOneTimeKeysWithTheClassicOnes() = runTest {
         whenever(cryptoManager.generateOneTimePrekeys(eq(2))).thenReturn(
-            listOf(OtpkPair(keyId = 1u, publicKey = listOf(1u)), OtpkPair(keyId = 2u, publicKey = listOf(2u))),
+            listOf(OtpkPair(keyId = 1u, publicKey = byteArrayOf(1)), OtpkPair(keyId = 2u, publicKey = byteArrayOf(2))),
         )
         val kyber = (1..2).map { i ->
             KyberOneTimePreKey.newBuilder()
@@ -102,7 +102,7 @@ class UploadPreKeysUseCaseTest {
     @Test
     fun invoke_usesDefaultBatchSize() = runTest {
         whenever(cryptoManager.generateOneTimePrekeys(eq(100))).thenReturn(
-            (1..100).map { i -> OtpkPair(keyId = i.toUInt(), publicKey = listOf(i.toUByte())) },
+            (1..100).map { i -> OtpkPair(keyId = i.toUInt(), publicKey = byteArrayOf(i.toByte())) },
         )
         whenever(keyStub.uploadPreKeys(any(), any())).thenReturn(
             UploadPreKeysResponse.newBuilder().setSuccess(true).build(),
@@ -119,7 +119,7 @@ class UploadPreKeysUseCaseTest {
     @Test
     fun invoke_returnsFailed_onGrpcError() = runTest {
         whenever(cryptoManager.generateOneTimePrekeys(any())).thenReturn(
-            listOf(OtpkPair(keyId = 1u, publicKey = listOf(1u))),
+            listOf(OtpkPair(keyId = 1u, publicKey = byteArrayOf(1))),
         )
         whenever(keyStub.uploadPreKeys(any(), any())).thenThrow(RuntimeException("unavailable"))
 
@@ -161,7 +161,7 @@ class UploadPreKeysUseCaseTest {
             GetPreKeyCountResponse.newBuilder().setCount(5).build(),
         )
         whenever(cryptoManager.generateOneTimePrekeys(any())).thenReturn(
-            listOf(OtpkPair(keyId = 1u, publicKey = listOf(1u))),
+            listOf(OtpkPair(keyId = 1u, publicKey = byteArrayOf(1))),
         )
         whenever(keyStub.uploadPreKeys(any(), any())).thenReturn(
             UploadPreKeysResponse.newBuilder().setSuccess(true).build(),
@@ -201,7 +201,7 @@ class UploadPreKeysUseCaseTest {
     @Test
     fun invoke_persistsPrivatesBeforeUploadingPublics() = runTest {
         whenever(cryptoManager.generateOneTimePrekeys(any())).thenReturn(
-            listOf(OtpkPair(keyId = 1u, publicKey = listOf(1u))),
+            listOf(OtpkPair(keyId = 1u, publicKey = byteArrayOf(1))),
         )
         whenever(keyStub.uploadPreKeys(any(), any())).thenReturn(
             UploadPreKeysResponse.newBuilder().setSuccess(true).build(),
@@ -219,7 +219,7 @@ class UploadPreKeysUseCaseTest {
     fun replenishIfNeeded_replacesServerPool_whenNoPrivatesPersisted() = runTest {
         whenever(keystoreManager.getOneTimePrekeys()).thenReturn(null)
         whenever(cryptoManager.generateOneTimePrekeys(any())).thenReturn(
-            listOf(OtpkPair(keyId = 1u, publicKey = listOf(1u))),
+            listOf(OtpkPair(keyId = 1u, publicKey = byteArrayOf(1))),
         )
         whenever(keyStub.uploadPreKeys(any(), any())).thenReturn(
             UploadPreKeysResponse.newBuilder().setSuccess(true).build(),

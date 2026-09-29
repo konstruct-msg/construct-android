@@ -43,7 +43,7 @@ class IntakeCredentials @Inject constructor(
      * shipped and a fresh one are the same case, with no migration to find either. */
     fun ownKey(): ByteArray {
         keystoreManager.ownIntakeKey()?.takeIf { it.size == KEY_LENGTH }?.let { return it }
-        val fresh = generateIntakeKey().toByteArray()
+        val fresh = generateIntakeKey()
         keystoreManager.saveOwnIntakeKey(fresh)
         Log.i(TAG, "minted this device's intake key")
         return fresh
@@ -62,7 +62,7 @@ class IntakeCredentials @Inject constructor(
         if (!Publishing.shouldPublish(last, epoch)) return
         val key = ownKey()
         val entries = Publishing.window(epoch).mapNotNull { e ->
-            runCatching { intakeTag(key.toUByteList(), accountId, e).toByteArray() }.getOrNull()?.let { tag ->
+            runCatching { intakeTag(key, accountId, e) }.getOrNull()?.let { tag ->
                 IntakeTagEntry.newBuilder().setEpoch(e.toLong()).setTag(ByteString.copyFrom(tag)).build()
             }
         }
@@ -104,14 +104,14 @@ class IntakeCredentials @Inject constructor(
         val epoch = intakeEpoch(nowSeconds.toULong())
         if (isRejected(accountId, epoch.toLong())) return null
         val key = keystoreManager.peerIntakeKey(accountId)?.takeIf { it.size == KEY_LENGTH } ?: return null
-        val tag = runCatching { intakeTag(key.toUByteList(), accountId, epoch).toByteArray() }
+        val tag = runCatching { intakeTag(key, accountId, epoch) }
             .onFailure { Log.w(TAG, "intake tag for ${accountId.take(8)}… not derived", it) }
             .getOrNull() ?: return null
         // Sealed or not at all: SealedInner is plaintext to the relay, and a tag in the clear is
         // free sending to this contact for whoever reads it, until the epoch rolls. Unlike a token
         // there is no plaintext fallback.
         val serverKey = serverKeys.tokenEncryptionKey() ?: return null
-        return runCatching { ppSealTokenBytes(tag.toUByteList(), serverKey.toUByteList()).toByteArray() }
+        return runCatching { ppSealTokenBytes(tag, serverKey) }
             .onFailure { Log.w(TAG, "intake tag seal failed", it) }
             .getOrNull()
     }

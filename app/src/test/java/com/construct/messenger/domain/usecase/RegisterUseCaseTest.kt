@@ -40,7 +40,7 @@ class RegisterUseCaseTest {
         whenever(grpcClient.auth).thenReturn(authStub)
         whenever(grpcClient.key).thenReturn(keyStub)
         whenever(cryptoManager.generateOneTimePrekeys(any())).thenReturn(
-            listOf(OtpkPair(keyId = 1u, publicKey = listOf(1u, 2u))),
+            listOf(OtpkPair(keyId = 1u, publicKey = byteArrayOf(1, 2))),
         )
         registerUseCase = RegisterUseCase(cryptoManager, grpcClient, keystoreManager, uploadPreKeysUseCase)
     }
@@ -48,10 +48,10 @@ class RegisterUseCaseTest {
     @Test
     fun invoke_buildsRequestFromBundleAndPowSolution_andPersistsTokens() = runTest {
         val bundle = RegistrationBundleFields(
-            identityPublic = listOf(1u, 2u),
-            signedPrekeyPublic = listOf(3u, 4u),
-            signature = listOf(5u, 6u),
-            verifyingKey = listOf(7u, 8u),
+            identityPublic = byteArrayOf(1, 2),
+            signedPrekeyPublic = byteArrayOf(3, 4),
+            signature = byteArrayOf(5, 6),
+            verifyingKey = byteArrayOf(7, 8),
             suiteId = 10u,
         )
         whenever(cryptoManager.loadOrCreate()).thenReturn(bundle)
@@ -120,10 +120,10 @@ class RegisterUseCaseTest {
     @Test
     fun invoke_otpkUploadFailure_doesNotFailRegistration() = runTest {
         val bundle = RegistrationBundleFields(
-            identityPublic = listOf(1u),
-            signedPrekeyPublic = listOf(2u),
-            signature = listOf(3u),
-            verifyingKey = listOf(4u),
+            identityPublic = byteArrayOf(1),
+            signedPrekeyPublic = byteArrayOf(2),
+            signature = byteArrayOf(3),
+            verifyingKey = byteArrayOf(4),
             suiteId = 10u,
         )
         whenever(cryptoManager.loadOrCreate()).thenReturn(bundle)
@@ -148,10 +148,10 @@ class RegisterUseCaseTest {
     @Test
     fun invoke_omitsUsername_whenNullOrBlank() = runTest {
         val bundle = RegistrationBundleFields(
-            identityPublic = listOf(1u),
-            signedPrekeyPublic = listOf(2u),
-            signature = listOf(3u),
-            verifyingKey = listOf(4u),
+            identityPublic = byteArrayOf(1),
+            signedPrekeyPublic = byteArrayOf(2),
+            signature = byteArrayOf(3),
+            verifyingKey = byteArrayOf(4),
             suiteId = 10u,
         )
         whenever(cryptoManager.loadOrCreate()).thenReturn(bundle)

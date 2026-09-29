@@ -73,7 +73,7 @@ class RecoverAccountUseCase @Inject constructor(
         cryptoManager.setLocalUserId(response.tokens.userId)
         keystoreManager.saveTokens(response.tokens, deviceId)
         keystoreManager.savePrivateKeys(cryptoManager.exportPrivateKeys())
-        keystoreManager.saveOwnAccountAddress(recovery.publicKey.toByteArray())
+        keystoreManager.saveOwnAccountAddress(recovery.publicKey)
         uploadPreKeysUseCase(deviceId, count = INITIAL_OTPK_COUNT, replaceExisting = true)
         return deviceId
     }
@@ -90,5 +90,4 @@ class RecoverRefused(val reason: RecoverRefusal) : Exception(reason.name)
 internal fun normalizePhrase(phrase: String): String =
     phrase.trim().lowercase().split(Regex("\\s+")).filter { it.isNotEmpty() }.joinToString(" ")
 
-private fun List<UByte>.toByteString(): ByteString = ByteString.copyFrom(ByteArray(size) { this[it].toByte() })
-private fun List<UByte>.toByteArray(): ByteArray = ByteArray(size) { this[it].toByte() }
+private fun ByteArray.toByteString(): ByteString = ByteString.copyFrom(this)
