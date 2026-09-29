@@ -231,4 +231,7 @@
     <string name="contact_delete_title">Удалить контакт?</string>
     <string name="contact_delete_message">%1$s, чат и сообщения будут удалены с этого устройства. Собеседнику ничего не отправляется. Если собеседник напишет снова, контакт появится опять — чтобы этого не было, заблокируйте.</string>
     <string name="synaps_blocked">заблокированные</string>
+    <string name="new_device_banner_title">Новое устройство</string>
+    <string name="new_device_banner_subtitle_fmt">У %1$s появилось устройство, которого раньше не было. Если собеседник его не добавлял, переписку может читать кто-то ещё. Сверьте защитные числа, прежде чем доверять чату.</string>
+    <string name="new_device_toast_fmt">У %1$s новое устройство. Откройте чат, чтобы проверить.</string>
 </resources>

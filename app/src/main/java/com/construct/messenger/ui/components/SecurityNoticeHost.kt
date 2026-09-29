@@ -34,6 +34,7 @@ fun SecurityNoticeHost(
             val message = when (event.notice) {
                 SecurityNotice.NONE -> return@collect
                 SecurityNotice.ADDRESS_CHANGED -> context.getString(R.string.address_change_toast_fmt, event.name)
+                SecurityNotice.NEW_DEVICE -> context.getString(R.string.new_device_toast_fmt, event.name)
             }
             val result = host.showSnackbar(
                 message = message,

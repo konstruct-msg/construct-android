@@ -74,6 +74,7 @@ class KeystoreManager @Inject constructor(
             .remove(KEY_USER_ID)
             .remove(KEY_ACCOUNT_ADDRESS)
             .remove(KEY_CONTACT_CARD_SENT_TO)
+            .remove(KEY_DEVICE_SETS_LISTED)
             .apply()
     }
 
@@ -92,6 +93,18 @@ class KeystoreManager @Inject constructor(
 
     fun markContactCardSent(deviceId: String) {
         prefs.edit().putStringSet(KEY_CONTACT_CARD_SENT_TO, contactCardSentTo() + deviceId.lowercase()).apply()
+    }
+
+    /**
+     * Accounts whose full device list this device has had from the server at least once. A device
+     * that appears for one of them afterwards is a security event
+     * (`decisions/a-new-device-is-the-security-event.md`); before it, devices are first sight.
+     */
+    fun deviceSetsListed(): Set<String> =
+        prefs.getStringSet(KEY_DEVICE_SETS_LISTED, emptySet()).orEmpty()
+
+    fun markDeviceSetListed(accountId: String) {
+        prefs.edit().putStringSet(KEY_DEVICE_SETS_LISTED, deviceSetsListed() + accountId.lowercase()).apply()
     }
 
     /** `null` until this device has seen the recovery phrase. */
@@ -165,5 +178,6 @@ class KeystoreManager @Inject constructor(
         const val KEY_KYBER_PREKEYS = "kyber_prekeys_cfe"
         const val KEY_ACCOUNT_ADDRESS = "account_address"
         const val KEY_CONTACT_CARD_SENT_TO = "contact_card_sent_to"
+        const val KEY_DEVICE_SETS_LISTED = "device_sets_listed"
     }
 }

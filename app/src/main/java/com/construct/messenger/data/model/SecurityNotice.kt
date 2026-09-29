@@ -9,6 +9,9 @@ enum class SecurityNotice(val code: Int) {
 
     /** They named a different account address than the one pinned (card or invite). */
     ADDRESS_CHANGED(1),
+
+    /** Their account has a device its listed set did not name — possibly one the server added. */
+    NEW_DEVICE(2),
     ;
 
     companion object {

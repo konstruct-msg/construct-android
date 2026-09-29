@@ -6,6 +6,8 @@ import com.construct.messenger.data.local.db.PeerDeviceDao
 import com.construct.messenger.data.local.db.PeerDeviceEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.model.IdentityIds
+import com.construct.messenger.data.model.SecurityNotice
+import com.construct.messenger.security.SecurityNotices
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,6 +22,8 @@ class PeerDeviceRegistry @Inject constructor(
     private val peerDeviceDao: PeerDeviceDao,
     private val userDao: UserDao,
     private val cryptoManager: CryptoManager,
+    private val keystoreManager: KeystoreManager,
+    private val securityNotices: SecurityNotices,
 ) {
     suspend fun record(
         accountId: String,
@@ -34,6 +38,16 @@ class PeerDeviceRegistry @Inject constructor(
         if (existing != null && existing.accountId != accountId) {
             Log.e(TAG, "refusing to rehome device ${deviceId.take(8)}…")
             return
+        }
+        if (isNewDeviceEvent(
+                accountId = accountId,
+                ownAccountId = keystoreManager.getUserId(),
+                listedBefore = accountId.lowercase() in keystoreManager.deviceSetsListed(),
+                alreadyKnown = existing != null,
+            )
+        ) {
+            Log.w(TAG, "NEW_DEVICE: ${accountId.take(8)}… has device ${deviceId.take(8)}… not in its listed set")
+            securityNotices.raise(accountId, SecurityNotice.NEW_DEVICE)
         }
         peerDeviceDao.upsert(
             PeerDeviceEntity(
@@ -61,6 +75,8 @@ class PeerDeviceRegistry @Inject constructor(
         if (active.isNotEmpty()) {
             peerDeviceDao.deleteNotActive(accountId, active)
         }
+        // After the rows: the first full list is first sight for every device on it.
+        if (devices.isNotEmpty()) keystoreManager.markDeviceSetListed(accountId)
     }
 
     suspend fun knownDevices(accountId: String): List<PeerDeviceEntity> =
@@ -101,7 +117,20 @@ class PeerDeviceRegistry @Inject constructor(
         val platform: Int = 0,
     )
 
-    private companion object {
-        const val TAG = "PeerDeviceRegistry"
+    companion object {
+        private const val TAG = "PeerDeviceRegistry"
+
+        /**
+         * A device is a security event when its account's full list was already had and did not
+         * name it. Before the first full list every device is first sight — an invite records one
+         * device and the send fan-out then lists the rest. Our own account's devices are not this
+         * event. `decisions/a-new-device-is-the-security-event.md`.
+         */
+        internal fun isNewDeviceEvent(
+            accountId: String,
+            ownAccountId: String?,
+            listedBefore: Boolean,
+            alreadyKnown: Boolean,
+        ): Boolean = listedBefore && !alreadyKnown && !accountId.equals(ownAccountId, ignoreCase = true)
     }
 }
