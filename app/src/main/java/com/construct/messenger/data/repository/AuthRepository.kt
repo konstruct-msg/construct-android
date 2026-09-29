@@ -23,6 +23,13 @@ interface AuthRepository {
      */
     suspend fun restoreSession(): Boolean
 
+    /**
+     * Sign in to an existing account with its recovery phrase — this device gets a fresh identity
+     * and the account's other devices are signed out. Throws on refusal
+     * ([com.construct.messenger.domain.usecase.RecoverRefused]) or the server's error.
+     */
+    suspend fun recoverAccount(identifier: String, phrase: String)
+
     /** END_SESSION every live peer, `Logout` RPC, drop tokens, stop runtime. */
     suspend fun logout()
 }

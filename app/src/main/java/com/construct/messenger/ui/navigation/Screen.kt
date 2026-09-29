@@ -5,6 +5,8 @@ import android.net.Uri
 sealed class Screen(val route: String) {
     data object Splash : Screen("splash")
     data object Onboarding : Screen("onboarding")
+    /** Sign in to an existing account with its recovery phrase. */
+    data object Restore : Screen("restore")
 
     /** Post-registration product guide. [fromSettings] = replay (returns back instead of Main). */
     data object Orientation : Screen("orientation?fromSettings={fromSettings}") {

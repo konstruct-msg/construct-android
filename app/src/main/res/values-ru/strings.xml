@@ -234,4 +234,15 @@
     <string name="new_device_banner_title">Новое устройство</string>
     <string name="new_device_banner_subtitle_fmt">У %1$s появилось устройство, которого раньше не было. Если собеседник его не добавлял, переписку может читать кто-то ещё. Сверьте защитные числа, прежде чем доверять чату.</string>
     <string name="new_device_toast_fmt">У %1$s новое устройство. Откройте чат, чтобы проверить.</string>
+    <!-- Восстановление аккаунта по фразе (iOS AccountRecoveryViewModel) -->
+    <string name="restore_nav_title">Восстановление</string>
+    <string name="restore_title">Вход по фразе восстановления</string>
+    <string name="restore_body">Введите имя пользователя или ID аккаунта и 12 записанных слов. Слова остаются на этом устройстве — отправляется только подпись, сделанная ими.</string>
+    <string name="restore_identifier_placeholder">имя пользователя или ID аккаунта</string>
+    <string name="restore_other_devices">Остальные ваши устройства выйдут из аккаунта. Переписка не восстанавливается — только сам аккаунт.</string>
+    <string name="restore_action">Восстановить</string>
+    <string name="restore_error_identifier">Введите имя пользователя или ID аккаунта.</string>
+    <string name="restore_error_rejected">Аккаунт с такой фразой не найден. Проверьте имя пользователя и слова.</string>
+    <string name="restore_error_rate_limited">Слишком много попыток. Подождите и попробуйте снова.</string>
+    <string name="restore_error_network">Не удалось связаться с сервером. Проверьте подключение и попробуйте снова.</string>
 </resources>

@@ -121,6 +121,7 @@ private class GatedAuth : AuthRepository {
     override val authState = MutableStateFlow(AuthState())
     override suspend fun initializeIdentity(username: String?, onStep: (RegistrationStep) -> Unit) = Unit
     override suspend fun restoreSession() = true
+    override suspend fun recoverAccount(identifier: String, phrase: String) = Unit
     override suspend fun logout() {
         logouts++
         release.await()

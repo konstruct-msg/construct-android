@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.construct.messenger.ui.screens.chat.ChatScreen
 import com.construct.messenger.ui.screens.chat.SafetyNumberScreen
+import com.construct.messenger.ui.screens.onboarding.RestoreAccountScreen
 import com.construct.messenger.ui.screens.synaps.ContactProfileScreen
 import com.construct.messenger.ui.screens.invite.ContactQrScreen
 import com.construct.messenger.ui.screens.invite.QrScannerScreen
@@ -63,7 +64,20 @@ fun KonstructNavHost(
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
                         launchSingleTop = true
                     }
-                }
+                },
+                onRestore = { navController.navigate(Screen.Restore.route) { launchSingleTop = true } },
+            )
+        }
+        composable(Screen.Restore.route) {
+            RestoreAccountScreen(
+                onBack = { navController.popBackStack() },
+                onRestored = {
+                    // An existing account: no product guide, straight to its chats.
+                    navController.navigate(Screen.Main.createRoute()) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
         composable(

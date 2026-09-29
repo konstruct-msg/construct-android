@@ -237,4 +237,15 @@
     <string name="new_device_banner_title">New device</string>
     <string name="new_device_banner_subtitle_fmt">%1$s has a device you have not seen before. If they did not add one, someone may be reading along. Compare safety numbers before you trust this chat.</string>
     <string name="new_device_toast_fmt">%1$s has a new device. Open the chat to verify.</string>
+    <!-- Restore an account with its recovery phrase (iOS AccountRecoveryViewModel) -->
+    <string name="restore_nav_title">Restore account</string>
+    <string name="restore_title">Sign in with your recovery phrase</string>
+    <string name="restore_body">Enter your username or account ID and the 12 words you wrote down. The words stay on this device; only a signature made with them is sent.</string>
+    <string name="restore_identifier_placeholder">username or account ID</string>
+    <string name="restore_other_devices">Your other devices will be signed out, and chats are not brought back — only the account.</string>
+    <string name="restore_action">Restore</string>
+    <string name="restore_error_identifier">Enter your username or account ID.</string>
+    <string name="restore_error_rejected">No account with a recovery phrase matched. Check the username and the words.</string>
+    <string name="restore_error_rate_limited">Too many attempts. Wait a while and try again.</string>
+    <string name="restore_error_network">Couldn\'t reach the server. Check the connection and try again.</string>
 </resources>

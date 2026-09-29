@@ -80,6 +80,7 @@ class OnboardingViewModelTest {
         }
 
         override suspend fun restoreSession(): Boolean = false
+        override suspend fun recoverAccount(identifier: String, phrase: String) = Unit
         override suspend fun logout() = Unit
     }
 
@@ -98,6 +99,7 @@ class OnboardingViewModelTest {
         }
 
         override suspend fun restoreSession(): Boolean = mutableAuthState.value.isInitialized
+        override suspend fun recoverAccount(identifier: String, phrase: String) = Unit
         override suspend fun logout() = Unit
     }
 }

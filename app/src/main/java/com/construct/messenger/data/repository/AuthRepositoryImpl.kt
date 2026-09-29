@@ -10,6 +10,7 @@ import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.model.AuthState
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.domain.usecase.LoginUseCase
+import com.construct.messenger.domain.usecase.RecoverAccountUseCase
 import com.construct.messenger.domain.usecase.RegisterUseCase
 import com.construct.messenger.domain.usecase.RegistrationStep
 import com.construct.messenger.domain.usecase.restoreOneTimePrekeys
@@ -35,6 +36,7 @@ class AuthRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val registerUseCase: RegisterUseCase,
     private val loginUseCase: LoginUseCase,
+    private val recoverAccountUseCase: RecoverAccountUseCase,
     private val keystoreManager: KeystoreManager,
     private val cryptoManager: CryptoManager,
     private val authSession: AuthSessionManager,
@@ -82,6 +84,14 @@ class AuthRepositoryImpl @Inject constructor(
             deviceId = resolvedDeviceId,
             username = resolvedUsername,
         )
+        startMessagingService()
+    }
+
+    /** Runs to the end even if the caller is cancelled — same reason as [initializeIdentity]. */
+    override suspend fun recoverAccount(identifier: String, phrase: String) = withContext(NonCancellable) {
+        val deviceId = recoverAccountUseCase(identifier, phrase)
+        keystoreManager.getUserId()?.let { authSession.onAuthenticated(it, deviceId) }
+        mutableAuthState.value = AuthState(isInitialized = true, deviceId = deviceId, username = null)
         startMessagingService()
     }
 
