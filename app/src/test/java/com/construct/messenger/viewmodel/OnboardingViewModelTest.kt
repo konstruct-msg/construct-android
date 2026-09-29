@@ -81,7 +81,7 @@ class OnboardingViewModelTest {
 
         override suspend fun restoreSession(): Boolean = false
         override suspend fun recoverAccount(identifier: String, phrase: String) = Unit
-        override suspend fun logout() = Unit
+        override suspend fun logout(allDevices: Boolean) = Unit
     }
 
     private class DelayedCountingAuthRepository : AuthRepository {
@@ -100,7 +100,7 @@ class OnboardingViewModelTest {
 
         override suspend fun restoreSession(): Boolean = mutableAuthState.value.isInitialized
         override suspend fun recoverAccount(identifier: String, phrase: String) = Unit
-        override suspend fun logout() = Unit
+        override suspend fun logout(allDevices: Boolean) = Unit
     }
 }
 

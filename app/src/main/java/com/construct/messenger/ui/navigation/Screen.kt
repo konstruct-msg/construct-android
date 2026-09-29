@@ -30,6 +30,10 @@ sealed class Screen(val route: String) {
     }
     /** Settings → profile row: alias, fingerprint, account id, sign out. */
     data object Account : Screen("settings/account")
+    /** The account's devices: list, revoke, sign out (iOS `DevicesView`). */
+    data object Devices : Screen("settings/devices")
+    /** Theme, message face and size (iOS `AppearanceSettingsView`). */
+    data object Appearance : Screen("settings/appearance")
     data object Security : Screen("settings/security")
     /** Stream status, server, transport (iOS `NetworkSettingsView`, without VEIL). */
     data object Network : Screen("settings/network")

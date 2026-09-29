@@ -23,9 +23,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Laptop
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Public
@@ -72,6 +74,8 @@ import com.construct.messenger.recovery.RecoveryViewModel
 data class SettingsNavigation(
     val onAccount: () -> Unit = {},
     val onInvite: () -> Unit = {},
+    val onDevices: () -> Unit = {},
+    val onAppearance: () -> Unit = {},
     val onSecurity: () -> Unit = {},
     val onNetwork: () -> Unit = {},
     val onOrientation: () -> Unit = {},
@@ -107,7 +111,7 @@ fun SettingsRoute(
  *
  * **Canon:** iOS `SettingsView` (compact layout) — cards separated by space, no section headers,
  * uppercase row labels. Rows appear only for what Android actually has: a row that opens
- * nothing reads as broken. Missing against iOS: linked devices, appearance, data & storage,
+ * nothing reads as broken. Missing against iOS: data & storage,
  * transcription, drafts — Android has none of them yet, and a row that opens nothing reads as
  * broken. Diagnostics is the log half of iOS `DiagnosticsView`, in debug builds only.
  */
@@ -164,6 +168,20 @@ fun SettingsScreen(
             }
 
             CTSectionGroup {
+                CTSettingsRow(
+                    label = stringResource(R.string.settings_row_devices).uppercase(),
+                    icon = Icons.Default.Laptop,
+                    disclosure = true,
+                    modifier = Modifier.clickable(onClick = navigation.onDevices),
+                )
+                CTSep()
+                CTSettingsRow(
+                    label = stringResource(R.string.settings_row_appearance).uppercase(),
+                    icon = Icons.Default.Brush,
+                    disclosure = true,
+                    modifier = Modifier.clickable(onClick = navigation.onAppearance),
+                )
+                CTSep()
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_security).uppercase(),
                     icon = Icons.Default.Lock,

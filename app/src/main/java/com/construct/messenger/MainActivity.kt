@@ -10,18 +10,26 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.construct.messenger.data.local.PendingChatStore
+import com.construct.messenger.data.model.AppTheme
+import com.construct.messenger.data.model.ChatFace
+import com.construct.messenger.data.repository.AppearanceRepository
 import com.construct.messenger.ui.components.SecurityNoticeHost
 import com.construct.messenger.ui.navigation.Screen
 import com.construct.messenger.data.local.PendingInviteStore
 import com.construct.messenger.service.MessageNotifier
 import com.construct.messenger.ui.navigation.KonstructNavHost
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.ChatText
 import com.construct.messenger.ui.theme.KonstructMessengerTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -44,18 +52,29 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var pendingChats: PendingChatStore
 
+    @Inject
+    lateinit var appearanceRepository: AppearanceRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestNotificationPermissionIfNeeded()
         captureInvite(intent)
         captureChat(intent)
-        val barScrim = CTColor.bg.toArgb()
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(barScrim),
-            navigationBarStyle = SystemBarStyle.dark(barScrim),
-        )
         setContent {
-            KonstructMessengerTheme(darkTheme = true) {
+            val appearance by appearanceRepository.appearance.collectAsStateWithLifecycle()
+            val darkTheme = when (appearance.theme) {
+                AppTheme.DARK -> true
+                AppTheme.LIGHT -> false
+                AppTheme.AUTOMATIC -> isSystemInDarkTheme()
+            }
+            LaunchedEffect(darkTheme) { applySystemBars(darkTheme) }
+            KonstructMessengerTheme(
+                darkTheme = darkTheme,
+                chatText = ChatText(
+                    monospace = appearance.chatFace == ChatFace.MONO,
+                    multiplier = appearance.textSize.multiplier,
+                ),
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = CTColor.bg,
@@ -88,6 +107,16 @@ class MainActivity : ComponentActivity() {
         if (data.startsWith("konstruct://add")) {
             pendingInvites.offer(data)
         }
+    }
+
+    /** Bars take the app background of the chosen theme, with icons that read on it. */
+    private fun applySystemBars(darkTheme: Boolean) {
+        val style = if (darkTheme) {
+            SystemBarStyle.dark(CTColor.bgDark.toArgb())
+        } else {
+            SystemBarStyle.light(CTColor.bgLight.toArgb(), CTColor.bgDark.toArgb())
+        }
+        enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
     }
 
     private fun requestNotificationPermissionIfNeeded() {

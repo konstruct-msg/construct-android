@@ -19,6 +19,8 @@ import com.construct.messenger.ui.screens.main.MainTabView
 import com.construct.messenger.ui.screens.onboarding.OnboardingScreen
 import com.construct.messenger.ui.screens.orientation.OrientationScreen
 import com.construct.messenger.ui.screens.settings.AccountScreen
+import com.construct.messenger.ui.screens.settings.AppearanceRoute
+import com.construct.messenger.ui.screens.settings.DevicesRoute
 import com.construct.messenger.ui.screens.settings.DiagnosticsScreen
 import com.construct.messenger.ui.screens.settings.NetworkScreen
 import com.construct.messenger.ui.screens.settings.SecurityScreen
@@ -131,6 +133,8 @@ fun KonstructNavHost(
                 settingsNavigation = SettingsNavigation(
                     onAccount = { navController.navigate(Screen.Account.route) { launchSingleTop = true } },
                     onInvite = { navController.navigate(Screen.InviteQr.route) { launchSingleTop = true } },
+                    onDevices = { navController.navigate(Screen.Devices.route) { launchSingleTop = true } },
+                    onAppearance = { navController.navigate(Screen.Appearance.route) { launchSingleTop = true } },
                     onSecurity = { navController.navigate(Screen.Security.route) { launchSingleTop = true } },
                     onNetwork = { navController.navigate(Screen.Network.route) { launchSingleTop = true } },
                     onDiagnostics = { navController.navigate(Screen.Diagnostics.route) { launchSingleTop = true } },
@@ -223,6 +227,20 @@ fun KonstructNavHost(
                     }
                 },
             )
+        }
+        composable(Screen.Devices.route) {
+            DevicesRoute(
+                onNavigateBack = { navController.popBackStack() },
+                onSignedOut = {
+                    navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(Screen.Main.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+            )
+        }
+        composable(Screen.Appearance.route) {
+            AppearanceRoute(onNavigateBack = { navController.popBackStack() })
         }
         composable(Screen.Security.route) {
             SecurityScreen(onNavigateBack = { navController.popBackStack() })

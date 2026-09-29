@@ -1,5 +1,8 @@
 package com.construct.messenger.ui.theme
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 
 /**
@@ -7,15 +10,38 @@ import androidx.compose.ui.graphics.Color
  *
  * **Canon:** iOS `ConstructMessenger/Utilities/ConstructTheme.swift` → `Color.CT`.
  * Values must match the iOS app exactly — do not eyeball them. iOS defines most
- * tokens as `dark/light` pairs; we mirror that with `<token>` (dark) + `<token>Light`.
+ * tokens as `dark/light` pairs; we mirror that with `<token>Dark` + `<token>Light`,
+ * and `<token>` returns the half for the current theme ([isDark]).
  */
 object CTColor {
+    /**
+     * Which half of each pair the unsuffixed tokens return.
+     *
+     * Snapshot state, so every composable (and every draw lambda) that read a token recomposes
+     * when it flips; the tokens stay plain getters, which keeps them usable outside composition
+     * (`CTStatus.color`, the system bar scrim). Set by `MainActivity` from Settings → Appearance.
+     * The `…Dark` / `…Light` halves are fixed values for places that need one side explicitly.
+     */
+    var isDark: Boolean by mutableStateOf(true)
+
+    val bg: Color get() = if (isDark) bgDark else bgLight
+    val bgMsg: Color get() = if (isDark) bgMsgDark else bgMsgLight
+    val outMsgBg: Color get() = if (isDark) outMsgBgDark else outMsgBgLight
+    val accent: Color get() = if (isDark) accentDark else accentLight
+    val accentDim: Color get() = if (isDark) accentDimDark else accentDimLight
+    val text: Color get() = if (isDark) textDark else textLight
+    val textDim: Color get() = if (isDark) textDimDark else textDimLight
+    val outMsgText: Color get() = if (isDark) outMsgTextDark else outMsgTextLight
+    val noise: Color get() = if (isDark) noiseDark else noiseLight
+    val disabledBg: Color get() = if (isDark) disabledBgDark else disabledBgLight
+    val warning: Color get() = if (isDark) warningDark else warningLight
+
     // Backgrounds
-    val bg = Color(0xFF090909)          // dark 0x090909 / light 0xF2F2F2
+    val bgDark = Color(0xFF090909)          // dark 0x090909 / light 0xF2F2F2
     val bgLight = Color(0xFFF2F2F2)
-    val bgMsg = Color(0xFF202020)       // incoming bubble — dark 0x202020 / light 0xE2E2E2
+    val bgMsgDark = Color(0xFF202020)       // incoming bubble — dark 0x202020 / light 0xE2E2E2
     val bgMsgLight = Color(0xFFE2E2E2)
-    val outMsgBg = Color(0xFF111111)    // outgoing bubble — dark 0x111111 / light 0xE9E9E9
+    val outMsgBgDark = Color(0xFF111111)    // outgoing bubble — dark 0x111111 / light 0xE9E9E9
     val outMsgBgLight = Color(0xFFE9E9E9)
 
     // Accent
@@ -30,7 +56,7 @@ object CTColor {
      * 0x008CFF is 5.87 on [bg] and 4.81 on a [bgMsg] card; 0x0057E0 is 5.45 / 4.71 on the light
      * pair. `CTColorContrastTest` measures all four — do not eyeball a replacement.
      */
-    val accent = Color(0xFF008CFF)
+    val accentDark = Color(0xFF008CFF)
     val accentLight = Color(0xFF0057E0)
 
     /**
@@ -41,25 +67,38 @@ object CTColor {
      * instead. `CTColorContrastTest` asserts the 4.42, so the rule has its evidence beside it
      * rather than only in this comment.
      */
-    val accentDim = Color(0xFF0077DB)
+    val accentDimDark = Color(0xFF0077DB)
     val accentDimLight = Color(0xFF0047B3)
 
     // Text
-    val text = Color(0xFFE8E8E8)        // dark 0xE8E8E8 / light 0x111111
+    val textDark = Color(0xFFE8E8E8)        // dark 0xE8E8E8 / light 0x111111
     val textLight = Color(0xFF111111)
-    val textDim = Color(0xFF818181)     // dark 0x818181 / light 0x333333
+    /**
+     * Timestamps, metadata, inactive — dark 0x8A8A8A / light 0x333333.
+     *
+     * The dark value was 0x818181: 5.11 on [bg] but 4.18 on a [bgMsg] card, which is where most
+     * secondary text sits. iOS moved to 0x8A8A8A for that reason; `CTColorContrastTest` measures it.
+     */
+    val textDimDark = Color(0xFF8A8A8A)
     val textDimLight = Color(0xFF333333)
-    val outMsgText = Color(0xFFFFFFFF)  // dark #FFFFFF / light #111111
+    val outMsgTextDark = Color(0xFFFFFFFF)  // dark #FFFFFF / light #111111
     val outMsgTextLight = Color(0xFF111111)
 
     // Structure (separators, ASCII noise)
-    val noise = Color(0xFF1E1E1E)       // dark 0x1E1E1E / light 0xC8C8C8
+    val noiseDark = Color(0xFF1E1E1E)       // dark 0x1E1E1E / light 0xC8C8C8
     val noiseLight = Color(0xFFC8C8C8)
 
     // Disabled button background (ConstructTheme.swift CTButton)
-    val disabledBg = Color(0xFF1C1C1C)  // dark 0x1C1C1C / light 0xD8D8D8
+    val disabledBgDark = Color(0xFF1C1C1C)  // dark 0x1C1C1C / light 0xD8D8D8
     val disabledBgLight = Color(0xFFD8D8D8)
 
     // Danger (single value)
     val danger = Color(0xFFDC3C3C)
+
+    /**
+     * Warning, debug chrome, the light-theme sun — iOS writes these as SwiftUI `.orange`, which is
+     * the system orange: dark 0xFF9F0A / light 0xFF9500. Not text on a card; a status tint.
+     */
+    val warningDark = Color(0xFFFF9F0A)
+    val warningLight = Color(0xFFFF9500)
 }

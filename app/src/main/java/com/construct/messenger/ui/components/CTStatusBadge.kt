@@ -46,7 +46,7 @@ enum class CTStatus {
             OK -> CTColor.accent
             ON -> CTColor.accentDim
             ERROR -> CTColor.danger
-            WARNING -> Color(0xFFFF9500)
+            WARNING -> CTColor.warning
             OFF, BUSY, UNKNOWN -> CTColor.textDim
         }
 }

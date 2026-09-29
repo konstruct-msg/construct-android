@@ -8,6 +8,7 @@ import io.grpc.ManagedChannel
 import io.grpc.okhttp.OkHttpChannelBuilder
 import shared.proto.sentinel.v1.SentinelServiceGrpcKt.SentinelServiceCoroutineStub
 import shared.proto.services.v1.AuthServiceGrpcKt.AuthServiceCoroutineStub
+import shared.proto.services.v1.DeviceServiceGrpcKt.DeviceServiceCoroutineStub
 import shared.proto.services.v1.InviteServiceGrpcKt.InviteServiceCoroutineStub
 import shared.proto.services.v1.KeyServiceGrpcKt.KeyServiceCoroutineStub
 import shared.proto.services.v1.MessagingServiceGrpcKt.MessagingServiceCoroutineStub
@@ -111,6 +112,7 @@ class GrpcClient @Inject constructor(
 
     val auth: AuthServiceCoroutineStub get() = AuthServiceCoroutineStub(channels.auth)
     val key: KeyServiceCoroutineStub get() = KeyServiceCoroutineStub(channels.auth)
+    val device: DeviceServiceCoroutineStub get() = DeviceServiceCoroutineStub(channels.auth)
     val messaging: MessagingServiceCoroutineStub get() = MessagingServiceCoroutineStub(channels.auth)
     val user: UserServiceCoroutineStub get() = UserServiceCoroutineStub(channels.auth)
     val invite: InviteServiceCoroutineStub get() = InviteServiceCoroutineStub(channels.auth)

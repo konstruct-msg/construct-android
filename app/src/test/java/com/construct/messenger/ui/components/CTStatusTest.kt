@@ -35,7 +35,7 @@ class CTStatusTest {
     @Test
     fun warningStatusUsesWarningIconAndOrangeColor() {
         assertEquals(Icons.Filled.Warning, CTStatus.WARNING.icon)
-        assertEquals(Color(0xFFFF9500), CTStatus.WARNING.color)
+        assertEquals(CTColor.warning, CTStatus.WARNING.color)
     }
 
     @Test

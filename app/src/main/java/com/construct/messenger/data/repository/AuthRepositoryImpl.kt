@@ -143,14 +143,14 @@ class AuthRepositoryImpl @Inject constructor(
         cryptoManager.setLocalUserId(userId, keystoreManager.getKyberPrekeys())
     }
 
-    override suspend fun logout() {
+    override suspend fun logout(allDevices: Boolean) {
         // Nothing is announced to contacts: the device leaves the account's directory. Until
         // 2026-09-27 an END_SESSION went to every contact here.
         val token = keystoreManager.getAccessToken()
         if (token != null) {
             runCatching {
                 grpcClient.auth.logout(
-                    LogoutRequest.newBuilder().setAccessToken(token).setAllDevices(false).build(),
+                    LogoutRequest.newBuilder().setAccessToken(token).setAllDevices(allDevices).build(),
                 )
             }.onFailure { Log.w(TAG, "Logout RPC failed", it) }
         }

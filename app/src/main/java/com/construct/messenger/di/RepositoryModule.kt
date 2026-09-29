@@ -7,6 +7,8 @@ import com.construct.messenger.data.repository.AuthRepositoryImpl
 import com.construct.messenger.data.repository.ChatsRepository
 import com.construct.messenger.data.repository.ChatsRepositoryImpl
 import com.construct.messenger.data.repository.ContactsRepository
+import com.construct.messenger.data.repository.DevicesRepository
+import com.construct.messenger.data.repository.DevicesRepositoryImpl
 import com.construct.messenger.data.repository.ContactsRepositoryImpl
 import com.construct.messenger.data.repository.ConnectionRepository
 import com.construct.messenger.data.repository.ConnectionRepositoryImpl
@@ -56,4 +58,10 @@ abstract class RepositoryModule {
     abstract fun bindConnectionRepository(
         repository: ConnectionRepositoryImpl
     ): ConnectionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDevicesRepository(
+        repository: DevicesRepositoryImpl
+    ): DevicesRepository
 }

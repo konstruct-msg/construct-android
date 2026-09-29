@@ -21,7 +21,8 @@ fun CTConfirmDialog(
     title: String,
     message: String,
     confirmLabel: String,
-    dismissLabel: String,
+    /** Null for a one-button notice. */
+    dismissLabel: String?,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     isDestructive: Boolean = false,
@@ -41,9 +42,11 @@ fun CTConfirmDialog(
                 )
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(dismissLabel, style = ctRegular(13), color = CTColor.textDim)
+        dismissButton = dismissLabel?.let { label ->
+            {
+                TextButton(onClick = onDismiss) {
+                    Text(label, style = ctRegular(13), color = CTColor.textDim)
+                }
             }
         },
     )

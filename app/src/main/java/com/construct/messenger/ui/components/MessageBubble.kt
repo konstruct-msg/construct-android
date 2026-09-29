@@ -47,6 +47,7 @@ import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.Message
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.Spacing
+import com.construct.messenger.ui.theme.ctMessage
 import com.construct.messenger.ui.theme.ctRegular
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -83,11 +84,13 @@ fun MessageBubble(
 ) {
     val isOutgoing = message.isOutgoing
     val shape = RoundedCornerShape(10.dp)
-    val backgroundColor = if (isOutgoing) CTColor.accent else CTColor.bgMsg
+    // iOS `CTMessageBubbleTheme`: outgoing is the dark-grey `outMsgBg` (light 0xE9E9E9) with
+    // `outMsgText`, no stroke; only the text colour differs from incoming.
+    val backgroundColor = if (isOutgoing) CTColor.outMsgBg else CTColor.bgMsg
     val contentColor = if (isOutgoing) CTColor.outMsgText else CTColor.text
-    val metaColor = if (isOutgoing) CTColor.outMsgText.copy(alpha = 0.7f) else CTColor.textDim
-    val quoteColor = if (isOutgoing) CTColor.outMsgText.copy(alpha = 0.85f) else CTColor.textDim
-    val quoteBar = if (isOutgoing) CTColor.outMsgText.copy(alpha = 0.85f) else CTColor.accent
+    val metaColor = CTColor.textDim
+    val quoteColor = CTColor.textDim
+    val quoteBar = CTColor.accent
 
     Row(
         modifier = modifier
@@ -126,7 +129,7 @@ fun MessageBubble(
                 }
                 Text(
                     text = message.body,
-                    style = ctRegular(14),
+                    style = ctMessage(14),
                     color = contentColor,
                 )
             Row(

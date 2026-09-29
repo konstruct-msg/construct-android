@@ -22,27 +22,19 @@
 
 ## Задачи
 
-### 1. `AppearanceSettingsScreen` (план B7)
+### 1. `DraftsScreen` (план B7)
 
-`ui/screens/settings/AppearanceSettingsScreen.kt` — `ANDROID_ONBOARDING.md` §5.7.
-`AppTheme`: AUTOMATIC / LIGHT / DARK; выбранное — `Icons.Default.Check`. Строки в `SettingsScreen`
-ещё нет — добавить (и убрать «appearance» из списка недостающего в его KDoc). Образец структуры —
-`SecurityScreen.kt`.
+`ui/screens/settings/DraftsScreen.kt` — канон iOS `Views/Settings/DraftsView.swift`: поле, «сохранить
+черновик», список с удалением; хранится только локально. Строку в `SettingsScreen` добавить последней
+в группе с Appearance (и убрать «drafts» из списка недостающего в его KDoc). Образец — `AppearanceScreen.kt`.
 
-### 2. `NetworkSettingsScreen` (план B7)
-
-`ui/screens/settings/NetworkSettingsScreen.kt` — §5.8. Сейчас строка Network в `SettingsScreen` —
-только статус и никуда не ведёт; сделать её открывающей экран с connected / connecting /
-disconnected из состояния потока. Переключатель VEIL показать выключенным с пометкой «скоро» —
-транспорта ещё нет, **не** подключать.
-
-### 3. Японская локализация (план B6)
+### 2. Японская локализация (план B6)
 
 `values-ja/strings.xml`: все переводимые ключи из `values/` (`translatable="false"` пропускать),
 по канону копирайта (§5.1), без жаргона. Название продукта — транслитерация (`コンストラクト`), не
 перевод.
 
-### 4. Compose-тесты на `ChatRow` и `ConstructNavRow`
+### 3. Compose-тесты на `ChatRow` и `ConstructNavRow`
 
 `onClick` срабатывает по тапу, строка показывает то, что ей передали. `@Preview` тестом не
 считается. Тест должен уметь упасть: проверь это, сломав код на минуту.

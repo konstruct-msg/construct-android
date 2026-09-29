@@ -1,6 +1,8 @@
 package com.construct.messenger.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -20,6 +22,25 @@ fun ctBold(size: Int) = TextStyle(
     fontSize = size.sp,
     fontWeight = FontWeight.Bold
 )
+
+/** What message text is set in: [monospace] or the platform face, scaled by [multiplier]. */
+data class ChatText(val monospace: Boolean = false, val multiplier: Float = 1f)
+
+/**
+ * Message text — bubbles and the composer that fills them — in the reader's face and size.
+ *
+ * **Canon:** iOS `CTFont.message`. Everything else is chrome and stays [ctRegular].
+ */
+@Composable
+@ReadOnlyComposable
+fun ctMessage(size: Int): TextStyle {
+    val chat = LocalChatText.current
+    return TextStyle(
+        fontFamily = if (chat.monospace) CTFontRegular else FontFamily.Default,
+        fontSize = (size * chat.multiplier).sp,
+        fontWeight = FontWeight.Normal,
+    )
+}
 
 val Typography = Typography(
     bodyLarge = ctRegular(16),

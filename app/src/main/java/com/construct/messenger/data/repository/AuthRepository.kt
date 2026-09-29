@@ -30,6 +30,9 @@ interface AuthRepository {
      */
     suspend fun recoverAccount(identifier: String, phrase: String)
 
-    /** END_SESSION every live peer, `Logout` RPC, drop tokens, stop runtime. */
-    suspend fun logout()
+    /**
+     * `Logout` RPC, drop tokens, stop the runtime. Nothing is sent to contacts. [allDevices] asks
+     * the server to end every session of the account, this one included.
+     */
+    suspend fun logout(allDevices: Boolean = false)
 }

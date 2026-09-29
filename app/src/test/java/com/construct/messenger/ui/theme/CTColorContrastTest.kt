@@ -72,4 +72,13 @@ class CTColorContrastTest {
             contrast(CTColor.accentDim, CTColor.bg) < 4.5
         )
     }
+
+    /** Mutation: put 0x818181 back as [CTColor.textDimDark] — this reddens at 4.18 on a card. */
+    @Test
+    fun secondaryTextIsReadableOnCards() {
+        assertReadable(CTColor.textDimDark, CTColor.bgDark, "textDim on bg")
+        assertReadable(CTColor.textDimDark, CTColor.bgMsgDark, "textDim on a bgMsg card")
+        assertReadable(CTColor.textDimLight, CTColor.bgLight, "textDimLight on bgLight")
+        assertReadable(CTColor.textDimLight, CTColor.bgMsgLight, "textDimLight on a light card")
+    }
 }

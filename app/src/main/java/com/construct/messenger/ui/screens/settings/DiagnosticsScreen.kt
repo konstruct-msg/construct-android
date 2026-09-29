@@ -122,4 +122,5 @@ fun DiagnosticsScreen(onNavigateBack: () -> Unit) {
 private const val RECENT_LINES = 60
 
 /** iOS marks debug-only surfaces `.orange`. */
-internal val DEBUG_ORANGE = Color(0xFFFF9500)
+/** iOS paints the developer chrome `.orange`; see [CTColor.warning]. */
+internal val DEBUG_ORANGE: Color get() = CTColor.warning

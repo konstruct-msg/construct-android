@@ -9,16 +9,16 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 private val DarkColorScheme = darkColorScheme(
-    primary = CTColor.accent,
-    secondary = CTColor.accentDim,
+    primary = CTColor.accentDark,
+    secondary = CTColor.accentDimDark,
     tertiary = CTColor.danger,
-    background = CTColor.bg,
-    surface = CTColor.bgMsg,
+    background = CTColor.bgDark,
+    surface = CTColor.bgMsgDark,
     onPrimary = Color.White,
     onSecondary = Color.White,
     onTertiary = Color.White,
-    onBackground = CTColor.text,
-    onSurface = CTColor.text
+    onBackground = CTColor.textDark,
+    onSurface = CTColor.textDark
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -38,15 +38,24 @@ private val LightColorScheme = lightColorScheme(
 
 val LocalIsDarkTheme = staticCompositionLocalOf { true }
 
+/** Message face and size from Settings → Appearance; read by [ctMessage]. */
+val LocalChatText = staticCompositionLocalOf { ChatText() }
+
+/**
+ * @param darkTheme Also switches the `CTColor` tokens ([CTColor.isDark]); the app root passes
+ *   the resolved Settings → Appearance choice.
+ */
 @Composable
 fun KonstructMessengerTheme(
-    // ponytail: light theme not wired — CT* components use dark tokens directly
     darkTheme: Boolean = true,
+    chatText: ChatText = ChatText(),
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    // Written before any child reads a token, so the first frame is already in the right theme.
+    if (CTColor.isDark != darkTheme) CTColor.isDark = darkTheme
 
-    CompositionLocalProvider(LocalIsDarkTheme provides darkTheme) {
+    CompositionLocalProvider(LocalIsDarkTheme provides darkTheme, LocalChatText provides chatText) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,

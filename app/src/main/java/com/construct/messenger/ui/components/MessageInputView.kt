@@ -32,6 +32,7 @@ import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.HairlineBorder
 import com.construct.messenger.ui.theme.Spacing
+import com.construct.messenger.ui.theme.ctMessage
 import com.construct.messenger.ui.theme.ctRegular
 
 /**
@@ -75,6 +76,9 @@ fun MessageInputView(
                 value = value,
                 onValueChange = onValueChange,
                 modifier = Modifier.weight(1f),
+                // The composer follows the bubble: typing in one face and watching it land in
+                // another would be a mismatch on every send.
+                style = ctMessage(14),
             )
             if (value.isNotBlank()) {
                 Spacer(Modifier.width(Spacing.small))

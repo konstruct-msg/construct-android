@@ -122,7 +122,7 @@ private class GatedAuth : AuthRepository {
     override suspend fun initializeIdentity(username: String?, onStep: (RegistrationStep) -> Unit) = Unit
     override suspend fun restoreSession() = true
     override suspend fun recoverAccount(identifier: String, phrase: String) = Unit
-    override suspend fun logout() {
+    override suspend fun logout(allDevices: Boolean) {
         logouts++
         release.await()
     }
