@@ -84,6 +84,10 @@ class MessageStreamService @Inject constructor(
     private val _isConnected = MutableStateFlow(false)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
+    /** Wall-clock time the server last answered a heartbeat — the Network screen's "last heartbeat". */
+    private val _lastHeartbeatAt = MutableStateFlow<Long?>(null)
+    val lastHeartbeatAt: StateFlow<Long?> = _lastHeartbeatAt.asStateFlow()
+
     private val subscriptions = MutableStateFlow<List<String>>(emptyList())
     private var connectJob: Job? = null
 
@@ -259,6 +263,7 @@ class MessageStreamService @Inject constructor(
                     response.hasMessage() -> _events.tryEmit(StreamEvent.Message(response.message))
                     response.hasReceipt() -> _events.tryEmit(StreamEvent.Receipt(response.receipt))
                     response.hasTyping() -> _events.tryEmit(StreamEvent.Typing(response.typing))
+                    response.hasHeartbeatAck() -> _lastHeartbeatAt.value = System.currentTimeMillis()
                     // acks/errors/presence: no consumer yet — extend StreamEvent when needed.
                     else -> Log.d(TAG, "unhandled stream frame: ${response.responseCase}")
                 }

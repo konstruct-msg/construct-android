@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -38,7 +38,7 @@ import com.construct.messenger.ui.theme.ctRegular
  * @param options Ordered list of selectable options.
  * @param labels Map from option to display label.
  * @param onSelection Called when an option is tapped.
- * @param width Total width of the control. Defaults to 180dp; pass null to fill parent.
+ * @param width Fixed total width (iOS: 180). Pass null to fill the parent.
  */
 @Composable
 fun <T> CTModeSelector(
@@ -53,7 +53,9 @@ fun <T> CTModeSelector(
 
     Row(
         modifier = modifier
-            .then(if (width != null) Modifier.defaultMinSize(minWidth = width) else Modifier.fillMaxWidth())
+            // Fixed, as iOS's `frame(width:)`: a minimum only let the weighted segments take the whole
+            // row and squeeze the label beside it to nothing.
+            .then(if (width != null) Modifier.width(width) else Modifier.fillMaxWidth())
             .height(32.dp)
             .clip(shape)
             .border(width = 0.5.dp, color = CTColor.accent.copy(alpha = 0.4f), shape = shape),

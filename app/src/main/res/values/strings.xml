@@ -393,6 +393,9 @@
     <string name="recovery_banner_title">Recovery not configured</string>
     <string name="recovery_banner_subtitle">Set up your recovery phrase to avoid losing access.</string>
     <string name="recovery_banner_action">CONFIGURE</string>
+    <string name="net_status_protected">Protected</string>
+    <string name="net_status_connecting">Connecting…</string>
+    <string name="network_last_heartbeat">Last heartbeat</string>
     <string name="network_status">Status</string>
     <string name="network_server">Server</string>
     <string name="network_transport">Transport</string>

@@ -92,6 +92,8 @@ class MessagingRuntime @Inject constructor(
     private var processorJob: Job? = null
     private var subscriptionJob: Job? = null
 
+    val lastHeartbeatAt: StateFlow<Long?> get() = stream.lastHeartbeatAt
+
     val connectionStatus: StateFlow<ConnectionStatus> = stream.isConnected
         .map { connected -> if (connected) ConnectionStatus.CONNECTED else ConnectionStatus.DISCONNECTED }
         .stateIn(scope, SharingStarted.Eagerly, ConnectionStatus.UNKNOWN)

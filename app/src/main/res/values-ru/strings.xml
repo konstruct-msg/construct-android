@@ -390,6 +390,9 @@
     <string name="recovery_banner_title">Резервный ключ не настроен</string>
     <string name="recovery_banner_subtitle">Настройте фразу восстановления, чтобы не потерять доступ.</string>
     <string name="recovery_banner_action">НАСТРОИТЬ</string>
+    <string name="net_status_protected">Защищено</string>
+    <string name="net_status_connecting">Подключение…</string>
+    <string name="network_last_heartbeat">Последний heartbeat</string>
     <string name="network_status">Статус</string>
     <string name="network_server">Сервер</string>
     <string name="network_transport">Транспорт</string>
