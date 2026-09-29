@@ -10,6 +10,7 @@ import shared.proto.services.v1.KeyServiceGrpcKt.KeyServiceCoroutineStub
 import shared.proto.services.v1.MessagingServiceGrpcKt.MessagingServiceCoroutineStub
 import shared.proto.services.v1.NotificationServiceGrpcKt.NotificationServiceCoroutineStub
 import shared.proto.services.v1.UserServiceGrpcKt.UserServiceCoroutineStub
+import shared.proto.services.v1.VeilServiceGrpcKt.VeilServiceCoroutineStub
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,47 +37,77 @@ class GrpcClient @Inject constructor(
     private val authInterceptor: AuthInterceptor,
 ) {
 
-    private val authChannel: ManagedChannel = OkHttpChannelBuilder
-        .forAddress(HOST, PORT)
-        .intercept(authInterceptor)
-        .build()
+    /** The two channels and where they point. Swapped whole by [routeThrough], never field by field. */
+    private class Channels(val auth: ManagedChannel, val sealed: ManagedChannel, val veilPort: Int?)
 
-    private val sealedChannel: ManagedChannel = OkHttpChannelBuilder
-        .forAddress(HOST, PORT)
-        // No AuthInterceptor — sealed sender RPCs must not carry sender identity
-        // on the transport layer. The `SendSealedMessage` method is also in the
-        // interceptor's unauthenticated whitelist as defence-in-depth.
-        .build()
+    @Volatile
+    private var channels: Channels = build(veilPort = null)
 
-    // ── Authenticated stubs (authChannel) ──────────────────────────────────
+    /** The local VEIL port traffic goes through, or null for the direct path. */
+    val veilPort: Int? get() = channels.veilPort
 
-    val auth: AuthServiceCoroutineStub by lazy { AuthServiceCoroutineStub(authChannel) }
-    val key: KeyServiceCoroutineStub by lazy { KeyServiceCoroutineStub(authChannel) }
-    val messaging: MessagingServiceCoroutineStub by lazy { MessagingServiceCoroutineStub(authChannel) }
-    val user: UserServiceCoroutineStub by lazy { UserServiceCoroutineStub(authChannel) }
-    val invite: InviteServiceCoroutineStub by lazy { InviteServiceCoroutineStub(authChannel) }
-    val notification: NotificationServiceCoroutineStub by lazy { NotificationServiceCoroutineStub(authChannel) }
-    val sentinel: SentinelServiceCoroutineStub by lazy { SentinelServiceCoroutineStub(authChannel) }
+    /**
+     * Point both channels at the local VEIL proxy ([port]) or back at the server (null).
+     * Calls in flight on the old channels are cancelled — the stream reconnects on the new ones.
+     * **Canon:** iOS `GRPCChannelManager.makeClient`: plaintext to 127.0.0.1, with the server's
+     * host as `:authority`, because the backend routes on it.
+     */
+    fun routeThrough(port: Int?) {
+        val old = synchronized(this) {
+            if (channels.veilPort == port) return
+            channels.also { channels = build(port) }
+        }
+        old.auth.shutdownNow()
+        old.sealed.shutdownNow()
+    }
 
-    // ── Sealed / unauthenticated stub (sealedChannel) ──────────────────────
+    private fun build(veilPort: Int?): Channels {
+        fun base(): OkHttpChannelBuilder =
+            if (veilPort == null) {
+                OkHttpChannelBuilder.forAddress(HOST, PORT)
+            } else {
+                // The relay re-wraps this in TLS to the server; the hop to it is veil-TLS.
+                OkHttpChannelBuilder.forAddress(LOOPBACK, veilPort).usePlaintext().overrideAuthority(HOST)
+            }
+        return Channels(
+            auth = base().intercept(authInterceptor).build(),
+            // No AuthInterceptor — sealed sender RPCs must not carry sender identity
+            // on the transport layer. The `SendSealedMessage` method is also in the
+            // interceptor's unauthenticated whitelist as defence-in-depth.
+            sealed = base().build(),
+            veilPort = veilPort,
+        )
+    }
+
+    // ── Authenticated stubs (auth channel) ─────────────────────────────────
+    // Getters, not lazies: a stub is bound to a channel, and the channel changes with the route.
+    // Building one is a wrapper allocation.
+
+    val auth: AuthServiceCoroutineStub get() = AuthServiceCoroutineStub(channels.auth)
+    val key: KeyServiceCoroutineStub get() = KeyServiceCoroutineStub(channels.auth)
+    val messaging: MessagingServiceCoroutineStub get() = MessagingServiceCoroutineStub(channels.auth)
+    val user: UserServiceCoroutineStub get() = UserServiceCoroutineStub(channels.auth)
+    val invite: InviteServiceCoroutineStub get() = InviteServiceCoroutineStub(channels.auth)
+    val notification: NotificationServiceCoroutineStub get() = NotificationServiceCoroutineStub(channels.auth)
+    val sentinel: SentinelServiceCoroutineStub get() = SentinelServiceCoroutineStub(channels.auth)
+    val veil: VeilServiceCoroutineStub get() = VeilServiceCoroutineStub(channels.auth)
+
+    // ── Sealed / unauthenticated stub (sealed channel) ─────────────────────
 
     /** Sealed-sender [MessagingServiceCoroutineStub] — **no** [AuthInterceptor].
      * Use for `SendSealedMessage` only (Stealth v2). */
-    val sealedMessaging: MessagingServiceCoroutineStub by lazy {
-        MessagingServiceCoroutineStub(sealedChannel)
-    }
+    val sealedMessaging: MessagingServiceCoroutineStub get() = MessagingServiceCoroutineStub(channels.sealed)
 
     fun shutdown() {
-        authChannel.shutdown()
-        sealedChannel.shutdown()
+        channels.auth.shutdown()
+        channels.sealed.shutdown()
     }
 
     companion object {
-        // Production gRPC backend (direct TLS — OkHttpChannelBuilder defaults to TLS,
-        // no usePlaintext() call). Matches docs/IMPLEMENTATION_PLAN.md §5.1. VEIL-routed
-        // fallback for censored networks is not wired up yet (Phase 5.1) — both channels
-        // use the same host:port for now.
+        // Production gRPC backend (direct TLS — OkHttpChannelBuilder defaults to TLS).
+        // Through VEIL both channels go to LOOPBACK instead ([routeThrough]).
         const val HOST = "ams.konstruct.cc"
         const val PORT = 443
+        private const val LOOPBACK = "127.0.0.1"
     }
 }

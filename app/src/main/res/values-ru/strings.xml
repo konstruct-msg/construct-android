@@ -263,4 +263,12 @@
     <string name="network_connecting">подключение…</string>
     <string name="network_offline">нет связи</string>
     <string name="network_unknown">неизвестно</string>
+    <!-- VEIL (iOS NetworkSettingsView) -->
+    <string name="censorship_protection">Защита от блокировок</string>
+    <string name="censorship_protection_footer_off">Выкл. Подключение напрямую к Конструкту.</string>
+    <string name="censorship_protection_footer_on">Всегда обходит сетевые блокировки. Настройка идёт в фоне.</string>
+    <string name="veil_establishing">Устанавливаем veil-front туннель…</string>
+    <string name="veil_front">Фронт</string>
+    <string name="veil_latency">Задержка</string>
+    <string name="veil_last_error">Последняя ошибка</string>
 </resources>

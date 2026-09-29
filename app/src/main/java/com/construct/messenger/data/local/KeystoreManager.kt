@@ -52,6 +52,24 @@ class KeystoreManager @Inject constructor(
      * the token — never parsed out of it (`docs/TOKEN_AUTH.md` §3.4). Null for a token saved
      * before this was kept: the caller refreshes once, and the answer carries it.
      */
+    /**
+     * The veil-front capability for [relayAddress] — base64 of the blob `IssueVeilCapability`
+     * returned — and its expiry in Unix seconds. Bearer auth material for the relay: kept with the
+     * tokens, wiped with them.
+     */
+    fun veilCapability(relayAddress: String): Pair<String, Long>? {
+        val blob = prefs.getString(KEY_VEIL_CAPABILITY_PREFIX + relayAddress, null) ?: return null
+        val notAfter = prefs.getLong(KEY_VEIL_CAPABILITY_EXP_PREFIX + relayAddress, 0L)
+        return blob to notAfter
+    }
+
+    fun saveVeilCapability(relayAddress: String, blobB64: String, notAfter: Long) {
+        prefs.edit()
+            .putString(KEY_VEIL_CAPABILITY_PREFIX + relayAddress, blobB64)
+            .putLong(KEY_VEIL_CAPABILITY_EXP_PREFIX + relayAddress, notAfter)
+            .apply()
+    }
+
     fun getAccessTokenExpiresAt(): Long? =
         prefs.getLong(KEY_ACCESS_TOKEN_EXPIRES_AT, 0L).takeIf { it > 0 }
 
@@ -92,7 +110,7 @@ class KeystoreManager @Inject constructor(
             .remove(KEY_OWN_INTAKE)
             .remove(KEY_DEVICE_SETS_LISTED)
             .apply()
-        prefs.all.keys.filter { it.startsWith(KEY_PEER_INTAKE_PREFIX) }
+        prefs.all.keys.filter { it.startsWith(KEY_PEER_INTAKE_PREFIX) || it.startsWith(KEY_VEIL_CAPABILITY_PREFIX) || it.startsWith(KEY_VEIL_CAPABILITY_EXP_PREFIX) }
             .fold(prefs.edit()) { edit, key -> edit.remove(key) }
             .apply()
     }
@@ -220,6 +238,8 @@ class KeystoreManager @Inject constructor(
         const val KEY_ACCESS_TOKEN = "access_token"
         const val KEY_REFRESH_TOKEN = "refresh_token"
         const val KEY_ACCESS_TOKEN_EXPIRES_AT = "access_token_expires_at"
+        const val KEY_VEIL_CAPABILITY_PREFIX = "veil_capability:"
+        const val KEY_VEIL_CAPABILITY_EXP_PREFIX = "veil_capability_exp:"
         const val KEY_USER_ID = "user_id"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_PRIVATE_KEYS = "private_keys_cfe"

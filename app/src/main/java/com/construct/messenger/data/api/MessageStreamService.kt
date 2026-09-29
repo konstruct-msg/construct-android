@@ -1,5 +1,6 @@
 package com.construct.messenger.data.api
 
+import com.construct.messenger.veil.VeilProxy
 import com.construct.messenger.data.auth.AuthSessionManager
 import android.os.SystemClock
 import com.construct.messenger.diagnostics.Log
@@ -58,6 +59,7 @@ class MessageStreamService @Inject constructor(
     private val grpcClient: GrpcClient,
     private val cursorTracker: StreamCursorTracker,
     private val authSession: AuthSessionManager,
+    private val veil: VeilProxy,
 ) {
     sealed interface StreamEvent {
         data class Message(val envelope: Envelope) : StreamEvent
@@ -110,6 +112,8 @@ class MessageStreamService @Inject constructor(
                 // A stream opened on an expired token is accepted and then hears nothing; the
                 // stale check only notices after a minute of silence.
                 authSession.ensureFresh()
+                // A silent stream through VEIL may be a dead tunnel, not a dead network.
+                veil.restartIfDead()
                 runStreamOnce(attempt)
                 attempt = 0 // clean close → reset backoff
             } catch (e: Exception) {

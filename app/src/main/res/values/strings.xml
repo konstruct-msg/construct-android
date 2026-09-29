@@ -266,4 +266,12 @@
     <string name="network_connecting">connecting…</string>
     <string name="network_offline">offline</string>
     <string name="network_unknown">unknown</string>
+    <!-- VEIL (iOS NetworkSettingsView) -->
+    <string name="censorship_protection">Censorship protection</string>
+    <string name="censorship_protection_footer_off">Off. Connection goes directly to Konstruct.</string>
+    <string name="censorship_protection_footer_on">Always routes around network blocks. Setup happens in the background.</string>
+    <string name="veil_establishing">Establishing veil-front tunnel…</string>
+    <string name="veil_front">Front</string>
+    <string name="veil_latency">Latency</string>
+    <string name="veil_last_error">Last error</string>
 </resources>
