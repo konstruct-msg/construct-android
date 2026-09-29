@@ -20,6 +20,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import shared.proto.services.v1.AuthServiceOuterClass.LogoutRequest
 import shared.proto.services.v1.UserServiceOuterClass.DeleteAccountRequest
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -56,11 +57,15 @@ class AuthRepositoryImpl @Inject constructor(
      * leave onboarding — clearing the caller's viewModelScope — while this is still running.
      * Cancelled there, the device was registered with no one-time prekeys and no
      * [MessagingForegroundService] until the next cold start (seen on a device, 2026-09-24).
+     *
+     * Off the main thread: key generation and the proof-of-work nonce search are blocking core
+     * calls, and the caller is a viewModelScope. On the main thread they froze the screen for
+     * ~26 s on a Redmi — no frame drawn, the progress never moved (2026-09-30).
      */
     override suspend fun initializeIdentity(
         username: String?,
         onStep: (RegistrationStep) -> Unit,
-    ) = withContext(NonCancellable) {
+    ) = withContext(NonCancellable + Dispatchers.Default) {
         val existingDeviceId = keystoreManager.getDeviceId()
         val savedPrivateKeys = keystoreManager.getPrivateKeys()
 
@@ -89,12 +94,13 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     /** Runs to the end even if the caller is cancelled — same reason as [initializeIdentity]. */
-    override suspend fun recoverAccount(identifier: String, phrase: String) = withContext(NonCancellable) {
-        val deviceId = recoverAccountUseCase(identifier, phrase)
-        keystoreManager.getUserId()?.let { authSession.onAuthenticated(it, deviceId) }
-        mutableAuthState.value = AuthState(isInitialized = true, deviceId = deviceId, username = null)
-        startMessagingService()
-    }
+    override suspend fun recoverAccount(identifier: String, phrase: String) =
+        withContext(NonCancellable + Dispatchers.Default) {
+            val deviceId = recoverAccountUseCase(identifier, phrase)
+            keystoreManager.getUserId()?.let { authSession.onAuthenticated(it, deviceId) }
+            mutableAuthState.value = AuthState(isInitialized = true, deviceId = deviceId, username = null)
+            startMessagingService()
+        }
 
     override suspend fun restoreSession(): Boolean {
         val keys = keystoreManager.getPrivateKeys()
