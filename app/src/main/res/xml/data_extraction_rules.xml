@@ -1,19 +1,27 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nothing leaves the device by backup or by device-to-device transfer. `allowBackup="false"` covers
+  Android 11 and below; from 12 on it does not stop a device transfer, so both are excluded here.
+
+  Why: the stores are session and key state (construct.db, construct_auth_prefs, the stealth and
+  intake prefs). Restored elsewhere, EncryptedSharedPreferences cannot be opened — its key is in
+  this device's Keystore and does not travel. Restored here, it rolls ratchets back, and what was
+  sent after the backup no longer opens. A new device is linked to the account instead, as on iOS
+  (ThisDeviceOnly keychain items).
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
     </device-transfer>
-    -->
 </data-extraction-rules>
