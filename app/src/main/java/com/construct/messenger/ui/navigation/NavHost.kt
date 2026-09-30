@@ -144,6 +144,7 @@ fun KonstructNavHost(
                     navController.navigate(Screen.Contact.createRoute(contactId)) { launchSingleTop = true }
                 },
                 onScanQr = { navController.navigate(Screen.ScanQr.route) { launchSingleTop = true } },
+                onShowMyQr = { navController.navigate(Screen.InviteQr.route) { launchSingleTop = true } },
                 settingsNavigation = SettingsNavigation(
                     onAccount = { navController.navigate(Screen.Account.route) { launchSingleTop = true } },
                     onInvite = { navController.navigate(Screen.InviteQr.route) { launchSingleTop = true } },

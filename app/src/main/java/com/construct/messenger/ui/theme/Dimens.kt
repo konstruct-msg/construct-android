@@ -21,6 +21,7 @@ object CTLayout {
     val chromeGap = 10.dp      // gap between chrome elements; compact row padding
     val inlinePad = 8.dp       // inline padding inside a row
     val sectionGap = 16.dp     // between sections
+    val controlHeight = 42.dp  // minimum height of a tappable card row
 }
 
 /** Spacing scale. */

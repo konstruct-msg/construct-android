@@ -67,9 +67,12 @@
     <string name="orientation_map_settings_sub">QR, восстановление, устройства</string>
 
     <!-- Main (streams list) -->
-    <string name="main_empty_title">Пока нет чатов</string>
-    <string name="main_empty_subtitle">Найдите человека по @псевдониму или покажите свой QR-код</string>
-    <string name="main_start_stream">Начать чат</string>
+    <string name="search_clear">Очистить поиск</string>
+    <string name="chats_empty_title">Пока нет чатов</string>
+    <string name="chats_empty_subtitle">Свяжитесь с кем-то через QR или Synaps — переписки появятся здесь.</string>
+    <string name="chats_empty_scan_qr">Сканировать QR</string>
+    <string name="chats_empty_show_qr">Мой QR</string>
+    <string name="chats_empty_open_synaps">Открыть Synaps</string>
 
     <!-- Search -->
     <string name="search_prompt">Поиск</string>

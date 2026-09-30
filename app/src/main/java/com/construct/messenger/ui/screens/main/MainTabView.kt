@@ -57,6 +57,7 @@ fun MainTabView(
     onNavigateToChat: (String) -> Unit,
     onOpenContact: (String) -> Unit = {},
     onScanQr: () -> Unit = {},
+    onShowMyQr: () -> Unit = {},
     settingsNavigation: SettingsNavigation = SettingsNavigation(),
     pendingChatViewModel: PendingChatViewModel = hiltViewModel(),
     startTab: Int = 0,
@@ -95,6 +96,7 @@ fun MainTabView(
                     onNavigateToChat = onNavigateToChat,
                     onFindPeople = { selectedTab = 1 },
                     onScanQr = onScanQr,
+                    onShowMyQr = onShowMyQr,
                 )
                 1 -> SynapsScreen(
                     onOpenContact = onOpenContact,

@@ -70,9 +70,12 @@
     <string name="orientation_map_settings_sub">QR, recovery, devices</string>
 
     <!-- Main (streams list) -->
-    <string name="main_empty_title">No conversations yet</string>
-    <string name="main_empty_subtitle">Find someone by @alias or show your QR code</string>
-    <string name="main_start_stream">Start a chat</string>
+    <string name="search_clear">Clear search</string>
+    <string name="chats_empty_title">No chats yet</string>
+    <string name="chats_empty_subtitle">Connect with someone via QR or Synaps — conversations show up here.</string>
+    <string name="chats_empty_scan_qr">Scan QR</string>
+    <string name="chats_empty_show_qr">Show my QR</string>
+    <string name="chats_empty_open_synaps">Open Synaps</string>
 
     <!-- Search -->
     <string name="search_prompt">Search</string>

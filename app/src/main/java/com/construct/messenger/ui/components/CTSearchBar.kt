@@ -91,7 +91,7 @@ fun CTSearchBar(
             ) {
                 Icon(
                     imageVector = Icons.Default.Clear,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.search_clear),
                     tint = CTColor.textDim,
                     modifier = Modifier.size(16.dp),
                 )
