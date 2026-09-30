@@ -11,3 +11,4 @@ Long-running / background services. Sessions: `docs/SESSIONS.md`.
 - `SessionManager` — initiator `initSession`, account↔device resolution, bundle fetch for sending.
 - `HeldEnvelopes` — what the core's queue answers name by id and cannot carry. Not a second queue.
 - `ServerMessageIds` — server-assigned id → our id, so a resend finds the message (Room, 30 days).
+- `PendingResends` — the core's `ResendMessage`, kept in Room until sent; drained off the incoming pipeline and on every reconnect.

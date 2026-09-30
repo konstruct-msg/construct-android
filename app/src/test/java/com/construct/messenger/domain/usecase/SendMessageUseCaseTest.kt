@@ -339,7 +339,7 @@ class SendMessageUseCaseTest {
         val sent = h.useCase()(peer, "hello") as SendOutcome.Sent
 
         assertEquals(sent.messageId.lowercase(), h.serverIds.rows["server-id-1"]?.localId)
-        assertTrue(h.useCase().resend(peer, pinnedDevice, "SERVER-ID-1"))
+        assertEquals(ResendOutcome.SENT, h.useCase().resend(peer, pinnedDevice, "SERVER-ID-1"))
     }
 
     @Test

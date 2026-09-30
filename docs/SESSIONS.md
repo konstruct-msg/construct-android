@@ -96,9 +96,11 @@ reader                                          writer
   id the server assigned, so `ServerMessageIds` maps it back to ours before
   `SendMessageUseCase.resend`. The map is a Room table kept 30 days, as long as the server keeps
   a queue: the error usually arrives when the reader next comes online, after the sender has
-  restarted (in memory until 2026-09-30, and such an error resent nothing). Only text is resent,
-  and once — the core answers one error per message; a resend lost to the network is lost (plan
-  B10).
+  restarted (in memory until 2026-09-30, and such an error resent nothing). Only text is resent.
+  The core asks once per message, so the request is kept: `PendingResends` writes it to Room and
+  sends it off the incoming pipeline, and every reconnect of the stream tries what the network
+  refused (20 tries, 30 days). Until 2026-09-30 it ran inline — a dead stream held the pipeline
+  60 s and the message was lost.
 - Content type 21 (END_SESSION) from an older build is acknowledged and ignored.
 
 ## 5. Local operations send nothing

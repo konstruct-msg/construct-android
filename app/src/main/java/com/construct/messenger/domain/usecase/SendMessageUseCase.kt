@@ -60,6 +60,9 @@ sealed interface SendOutcome {
  *    retryable refusal. Fail closed — never identified-downgrade when stealth is on.
  * 7. The row's status is a fold: SENT once any copy is accepted, FAILED when none is.
  */
+/** What [SendMessageUseCase.resend] did: [FAILED] is worth another try, [NOT_OURS] is not. */
+enum class ResendOutcome { SENT, NOT_OURS, FAILED }
+
 class SendMessageUseCase @Inject constructor(
     private val keystoreManager: KeystoreManager,
     private val sessionManager: SessionManager,
@@ -131,8 +134,8 @@ class SendMessageUseCase @Inject constructor(
      * lost (`decisions/sessions-renew-by-sending.md`). Canon: iOS
      * `SessionCoordinator.resendAfterDecryptionError`.
      */
-    suspend fun resend(contactId: String, deviceId: String, messageId: String): Boolean {
-        val myId = keystoreManager.getUserId() ?: return false
+    suspend fun resend(contactId: String, deviceId: String, messageId: String): ResendOutcome {
+        val myId = keystoreManager.getUserId() ?: return ResendOutcome.FAILED
         // The peer names the id it received, which for a sealed copy is the server's.
         val localId = serverMessageIds.localId(messageId)
         val row = messageDao.getById(localId) ?: messageDao.getByIdIgnoreCase(localId)
@@ -140,7 +143,7 @@ class SendMessageUseCase @Inject constructor(
             row.chatId != ConversationId.direct(myId, contactId)
         ) {
             Log.i(TAG, "resend ${messageId.take(8)}… for ${deviceId.take(8)}… — no text message of ours here")
-            return false
+            return ResendOutcome.NOT_OURS
         }
         val reply = row.replyToId?.let { ReplyRef(it, row.replyPreview.orEmpty(), row.replyMediaType) }
         return try {
@@ -148,7 +151,7 @@ class SendMessageUseCase @Inject constructor(
             val tag = cryptoManager.deviceCopyTag(row.id, deviceId, peer.identityPublic)
             val wireMessageId = "${row.id}-fd-$tag"
             val encrypted = encryptFor(deviceId, wireMessageId, knstText(row.text, row.id, reply))
-                ?: return false
+                ?: return ResendOutcome.FAILED
             val result = sendOneCopy(
                 myId = myId,
                 accountId = contactId,
@@ -162,12 +165,12 @@ class SendMessageUseCase @Inject constructor(
             // The new copy has its own server id; an error about it must find this row too.
             if (sent) serverMessageIds.record(result!!.messageId, row.id)
             Log.i(TAG, "resend ${messageId.take(8)}… to ${deviceId.take(8)}… — ${if (sent) "sent" else "failed"}")
-            sent
+            if (sent) ResendOutcome.SENT else ResendOutcome.FAILED
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             Log.w(TAG, "resend ${messageId.take(8)}… to ${deviceId.take(8)}… threw", e)
-            false
+            ResendOutcome.FAILED
         }
     }
 

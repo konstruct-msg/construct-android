@@ -15,7 +15,6 @@ import com.construct.messenger.data.local.db.refreshChatPreview
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.domain.usecase.ReceivingOpenUseCase
-import com.construct.messenger.domain.usecase.SendMessageUseCase
 import com.construct.messenger.domain.usecase.SendContactCardUseCase
 import com.construct.messenger.domain.usecase.SendReceiptUseCase
 import com.construct.messenger.invite.AccountAddressBook
@@ -59,7 +58,7 @@ class ProcessorEffectsImpl @Inject constructor(
     // would be a cycle. Only its executor is used, and only after an open has finished.
     private val actionExecutor: dagger.Lazy<CfeTimerBridge>,
     // Lazy for the same reason: a resend encrypts through the core, which answers through here.
-    private val sendMessage: dagger.Lazy<SendMessageUseCase>,
+    private val pendingResends: PendingResends,
     private val held: HeldEnvelopes,
     private val alerts: IncomingAlerts,
 ) : ProcessorEffects {
@@ -206,7 +205,7 @@ class ProcessorEffectsImpl @Inject constructor(
             Log.i(TAG, "resend ${messageId.take(8)}… — device ${contactId.take(8)}… of no known contact")
             return
         }
-        sendMessage.get().resend(account, contactId, messageId)
+        pendingResends.enqueue(account, contactId, messageId)
     }
 
     override suspend fun openReceiving(

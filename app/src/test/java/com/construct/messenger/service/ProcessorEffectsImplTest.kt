@@ -16,7 +16,6 @@ import com.construct.messenger.util.EditWire
 import com.construct.messenger.util.KnstFrame
 import com.construct.messenger.util.TextWire
 import com.construct.messenger.domain.usecase.ReceivingOpenUseCase
-import com.construct.messenger.domain.usecase.SendMessageUseCase
 import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.util.SenderSyncRouting
 import shared.proto.messaging.v1.Content.DeleteMessage
@@ -69,7 +68,7 @@ class ProcessorEffectsImplTest {
             intake = mock(),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
-            sendMessage = { mock<SendMessageUseCase>() },
+            pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
         )
@@ -104,7 +103,7 @@ class ProcessorEffectsImplTest {
             intake = mock(),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
-            sendMessage = { mock<SendMessageUseCase>() },
+            pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
         )
@@ -145,7 +144,7 @@ class ProcessorEffectsImplTest {
             intake = intake,
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
-            sendMessage = { mock<SendMessageUseCase>() },
+            pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
         )
@@ -215,7 +214,7 @@ class ProcessorEffectsImplTest {
             intake = mock(),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
-            sendMessage = { mock<SendMessageUseCase>() },
+            pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
         )
@@ -255,7 +254,7 @@ class ProcessorEffectsImplTest {
             intake = mock(),
             receivingOpen = mock(),
             actionExecutor = { mock<CfeTimerBridge>() },
-            sendMessage = { mock<SendMessageUseCase>() },
+            pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
         )
@@ -430,7 +429,7 @@ class ProcessorEffectsImplTest {
             intake = mock(),
             receivingOpen = opener,
             actionExecutor = { bridge },
-            sendMessage = { mock<SendMessageUseCase>() },
+            pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
         )

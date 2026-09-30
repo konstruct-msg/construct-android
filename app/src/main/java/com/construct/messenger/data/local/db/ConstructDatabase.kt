@@ -22,8 +22,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         IssuedInviteEntity::class,
         PeerDeviceEntity::class,
         ServerMessageIdEntity::class,
+        PendingResendEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -35,6 +36,7 @@ abstract class ConstructDatabase : RoomDatabase() {
     abstract fun issuedInviteDao(): IssuedInviteDao
     abstract fun peerDeviceDao(): PeerDeviceDao
     abstract fun serverMessageIdDao(): ServerMessageIdDao
+    abstract fun pendingResendDao(): PendingResendDao
 
     companion object {
         const val NAME = "construct.db"
@@ -100,6 +102,17 @@ abstract class ConstructDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE TABLE IF NOT EXISTS `server_message_ids` (`serverId` TEXT NOT NULL, " +
                         "`localId` TEXT NOT NULL, `recordedAtMs` INTEGER NOT NULL, PRIMARY KEY(`serverId`))",
+                )
+            }
+        }
+
+        /** Resends the core asked for and the network refused ([com.construct.messenger.service.PendingResends]). */
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `pending_resends` (`messageId` TEXT NOT NULL, " +
+                        "`deviceId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `createdAtMs` INTEGER NOT NULL, " +
+                        "`attempts` INTEGER NOT NULL, PRIMARY KEY(`messageId`, `deviceId`))",
                 )
             }
         }

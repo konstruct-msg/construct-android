@@ -80,6 +80,7 @@ class MessagingRuntime @Inject constructor(
     private val kyberPrekeys: KyberPrekeyService,
     private val authSession: AuthSessionManager,
     private val transportRouter: TransportRouter,
+    private val pendingResends: PendingResends,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var refreshJob: Job? = null
@@ -227,6 +228,8 @@ class MessagingRuntime @Inject constructor(
                 is MessageRouter.RoutedEvent.ConnectionChanged -> {
                     if (event.connected) {
                         timerBridge.onNetworkReconnected()
+                        // Resends the network refused; the core will not ask for them again.
+                        pendingResends.drainSoon()
                     }
                     Log.i(TAG, "stream connected=${event.connected}")
                 }
