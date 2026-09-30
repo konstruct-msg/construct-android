@@ -12,6 +12,8 @@ import com.construct.messenger.data.repository.DevicesRepositoryImpl
 import com.construct.messenger.data.repository.ContactsRepositoryImpl
 import com.construct.messenger.data.repository.ConnectionRepository
 import com.construct.messenger.data.repository.ConnectionRepositoryImpl
+import com.construct.messenger.data.repository.MediaRepository
+import com.construct.messenger.data.repository.MediaRepositoryImpl
 import com.construct.messenger.data.repository.MessagesRepository
 import com.construct.messenger.data.repository.MessagesRepositoryImpl
 import dagger.Binds
@@ -40,6 +42,12 @@ abstract class RepositoryModule {
     abstract fun bindMessagesRepository(
         repository: MessagesRepositoryImpl
     ): MessagesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMediaRepository(
+        repository: MediaRepositoryImpl
+    ): MediaRepository
 
     @Binds
     @Singleton

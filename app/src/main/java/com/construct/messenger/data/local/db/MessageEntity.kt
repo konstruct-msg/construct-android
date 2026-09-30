@@ -45,10 +45,13 @@ data class MessageEntity(
     val replyMediaType: String? = null,
     /** True after `MessageContent.edit` replaced [text]. A redelivery must not put the old text back. */
     val isEdited: Boolean = false,
+    /** `MediaWire.KIND_*` when the message carries media; [mediaPayload] is then its wire message. */
     val mediaType: String? = null,
     val mediaUrl: String? = null,
     /** 0 = regular message; control types (21/24/25/26) are never user-visible. */
     val contentType: Int = 0,
+    /** The `MediaAlbumMessage` / `VoiceMessage` bytes as received — keys included, as iOS keeps them. */
+    val mediaPayload: ByteArray? = null,
 )
 
 @Dao

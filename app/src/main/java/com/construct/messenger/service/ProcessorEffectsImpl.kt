@@ -26,6 +26,7 @@ import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.IncomingPlaintext
 import com.construct.messenger.util.KnstFrame
+import com.construct.messenger.util.MediaWire
 import com.construct.messenger.util.ProfileShare
 import com.construct.messenger.util.IncomingReceipt
 import com.construct.messenger.util.SenderSyncRouting
@@ -64,6 +65,7 @@ class ProcessorEffectsImpl @Inject constructor(
     private val held: HeldEnvelopes,
     private val alerts: IncomingAlerts,
     private val chunks: ChunkReassembler,
+    private val mediaPreview: MediaPreviewText,
 ) : ProcessorEffects {
 
     override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
@@ -108,7 +110,7 @@ class ProcessorEffectsImpl @Inject constructor(
         // The receipt and the row name the sender's KNST id. The envelope id is what
         // the server redelivers, so the ACK stays on that.
         val rowId = storageId(decoded.e2eMessageId, messageId, sentByMe = false)
-        persistIncoming(accountId, rowId, decoded.text, System.currentTimeMillis(), decoded.reply)
+        persistIncoming(accountId, rowId, decoded.text, System.currentTimeMillis(), decoded.reply, decoded.media)
         ackStore.markProcessed(messageId, accountId)
         runCatching { sendReceiptUseCase.delivered(accountId, listOf(rowId)) }
             .onFailure { Log.w(TAG, "e2e receipt send failed", it) }
@@ -207,6 +209,7 @@ class ProcessorEffectsImpl @Inject constructor(
             text = decoded.text,
             timestampMs = timestampMs,
             reply = decoded.reply,
+            media = decoded.media,
         )
         ackStore.markProcessed(messageId, accountId)
     }
@@ -225,7 +228,7 @@ class ProcessorEffectsImpl @Inject constructor(
     override suspend fun notifyNewMessage(chatId: String, preview: String) {
         // persistIncoming is the one place that knows whether a message is new and unseen,
         // so it raises the notification; this CFE hook only logs.
-        Log.d(TAG, "notify $chatId preview=${preview.take(40)}")
+        Log.d(TAG, "notify ${chatId.take(8)}… (${preview.length} chars)")
     }
 
     override suspend fun markDelivered(messageId: String) {
@@ -309,6 +312,7 @@ class ProcessorEffectsImpl @Inject constructor(
         text: String,
         timestampMs: Long,
         reply: ReplyRef?,
+        media: MediaWire.Stored? = null,
     ) {
         val myId = keystoreManager.getUserId() ?: run {
             Log.e(TAG, "persistIncoming: no local user id — dropping ${messageId.take(8)}…")
@@ -333,6 +337,8 @@ class ProcessorEffectsImpl @Inject constructor(
                 replyToId = reply?.messageId,
                 replyPreview = reply?.preview?.ifEmpty { null },
                 replyMediaType = reply?.mediaType,
+                mediaType = media?.kind,
+                mediaPayload = media?.bytes,
             ),
         )
         // On screen, it is read as it lands.
@@ -343,13 +349,13 @@ class ProcessorEffectsImpl @Inject constructor(
                 ChatEntity(
                     id = chatId,
                     otherUserId = contactId,
-                    lastMessageText = text,
+                    lastMessageText = media?.let(mediaPreview::of) ?: text,
                     lastMessageTime = timestampMs,
                     unreadCount = if (unseen) 1 else 0,
                 ),
             )
         } else {
-            chatDao.updateLastMessage(chatId, text, timestampMs)
+            chatDao.updateLastMessage(chatId, media?.let(mediaPreview::of) ?: text, timestampMs)
             if (unseen) chatDao.incrementUnreadCount(chatId)
         }
         if (userDao.getById(contactId) == null) {
@@ -373,6 +379,7 @@ class ProcessorEffectsImpl @Inject constructor(
         text: String,
         timestampMs: Long,
         reply: ReplyRef?,
+        media: MediaWire.Stored? = null,
     ) {
         val myId = keystoreManager.getUserId() ?: run {
             Log.e(TAG, "persistOutgoingCopy: no local user id — dropping ${messageId.take(8)}…")
@@ -392,6 +399,8 @@ class ProcessorEffectsImpl @Inject constructor(
                 replyToId = reply?.messageId,
                 replyPreview = reply?.preview?.ifEmpty { null },
                 replyMediaType = reply?.mediaType,
+                mediaType = media?.kind,
+                mediaPayload = media?.bytes,
             ),
         )
         val existing = chatDao.getById(chatId)
@@ -400,13 +409,13 @@ class ProcessorEffectsImpl @Inject constructor(
                 ChatEntity(
                     id = chatId,
                     otherUserId = partnerUserId,
-                    lastMessageText = text,
+                    lastMessageText = media?.let(mediaPreview::of) ?: text,
                     lastMessageTime = timestampMs,
                     unreadCount = 0,
                 ),
             )
         } else {
-            chatDao.updateLastMessage(chatId, text, timestampMs)
+            chatDao.updateLastMessage(chatId, media?.let(mediaPreview::of) ?: text, timestampMs)
         }
         if (userDao.getById(partnerUserId) == null) {
             userDao.upsert(

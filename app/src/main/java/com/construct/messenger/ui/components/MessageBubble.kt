@@ -37,7 +37,10 @@ import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import com.construct.messenger.R
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.Message
+import com.construct.messenger.data.model.MessageMedia
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.Spacing
 import com.construct.messenger.ui.theme.ctMessage
@@ -108,7 +112,26 @@ fun MessageBubble(
         val maxBubble = minOf(360.dp, maxWidth * 0.7f)
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = if (isOutgoing) Alignment.TopEnd else Alignment.TopStart) {
         Column(horizontalAlignment = if (isOutgoing) Alignment.End else Alignment.Start) {
-            Column(
+            val album = (message.media as? MessageMedia.Album)?.takeUnless { it.isFiles }
+            if (album != null) {
+                // iOS: photos stand on their own, no bubble; the quote above, the caption below.
+                var viewing by remember { mutableStateOf<Int?>(null) }
+                if (replyLabel != null) {
+                    Box(Modifier.widthIn(max = maxBubble)) {
+                        ReplyQuoteStrip(replyLabel, quoteBar, quoteColor, onJumpToReply, onLongPress)
+                    }
+                }
+                MediaAlbumView(album = album, onOpen = { viewing = it }, onLongPress = onLongPress)
+                if (message.body.isNotBlank()) {
+                    Text(
+                        text = message.body,
+                        style = ctMessage(12),
+                        color = CTColor.text,
+                        modifier = Modifier.widthIn(max = 260.dp).padding(top = 2.dp),
+                    )
+                }
+                viewing?.let { MediaViewer(album, it, onDismiss = { viewing = null }) }
+            } else Column(
                 modifier = Modifier
                     .widthIn(max = maxBubble)
                     .background(backgroundColor, shape)
@@ -136,11 +159,16 @@ fun MessageBubble(
                         onLongPress = onLongPress,
                     )
                 }
-                Text(
-                    text = message.body,
-                    style = ctMessage(15),
-                    color = contentColor,
-                )
+                mediaLine(message.media)?.let { line ->
+                    Text(text = line, style = ctRegular(13), color = contentColor)
+                }
+                if (message.body.isNotBlank() || message.media == null) {
+                    Text(
+                        text = message.body,
+                        style = ctMessage(15),
+                        color = contentColor,
+                    )
+                }
             }
             if (isLastInGroup) {
                 Row(
@@ -171,7 +199,7 @@ fun MessageBubble(
                     },
                     onClick = onReply,
                 )
-                if (message.isOutgoing && message.body.isNotBlank()) {
+                if (message.isOutgoing && message.body.isNotBlank() && message.media == null) {
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.edit_message), style = ctRegular(14), color = CTColor.text) },
                         leadingIcon = {
@@ -199,6 +227,18 @@ fun MessageBubble(
             }
         }
     }
+}
+
+/**
+ * Files and voice notes until they have bubbles of their own: what the message holds, so it is not
+ * a blank bubble. Opening a file and playing a voice note come next.
+ */
+@Composable
+private fun mediaLine(media: MessageMedia?): String? = when (media) {
+    null -> null
+    is MessageMedia.Voice -> stringResource(R.string.voice_message) +
+        (media.audio.durationMs?.let { " · %d:%02d".format(it / 60_000, it / 1000 % 60) } ?: "")
+    is MessageMedia.Album -> media.items.map { it.filename ?: stringResource(R.string.file_attachment) }.joinToString("\n")
 }
 
 /** Canon: iOS `MessageBubbleReplyPreview` — accent rule and up to two lines. Tap jumps. */

@@ -75,6 +75,7 @@ class ProcessorEffectsImplTest {
             held = HeldEnvelopes(),
             alerts = alerts,
             chunks = ChunkReassembler(pendingChunks),
+            mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
         )
     }
 
@@ -111,6 +112,7 @@ class ProcessorEffectsImplTest {
             held = HeldEnvelopes(),
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
+            mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
         )
         val address = ByteArray(32) { 0x5A }
         val card = com.construct.messenger.util.KnstFrame.pack(
@@ -153,6 +155,7 @@ class ProcessorEffectsImplTest {
             held = HeldEnvelopes(),
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
+            mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
         )
         val address = ByteArray(32) { 0x5A }
         val card = com.construct.messenger.util.KnstFrame.pack(
@@ -224,6 +227,7 @@ class ProcessorEffectsImplTest {
             held = HeldEnvelopes(),
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
+            mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
         )
 
         effects.onDecrypted(peer, "msg-1", "hello".toByteArray())
@@ -265,6 +269,7 @@ class ProcessorEffectsImplTest {
             held = HeldEnvelopes(),
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
+            mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
         )
         val baseId = "550e8400-e29b-41d4-a716-446655440000"
         val content = MessageContent.newBuilder()
@@ -398,6 +403,30 @@ class ProcessorEffectsImplTest {
         assertEquals(ConversationId.direct(myId, peer), row?.chatId)
     }
 
+    /**
+     * A photo from iOS is a row: its caption as the text, the album kept whole for the bubble,
+     * and the chat list says what it is. Until C3 it was acknowledged and dropped.
+     */
+    @Test
+    fun `a photo album is kept with the message`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        val id = UUID.fromString("88888888-8888-4888-8888-888888888888")
+        val album = shared.proto.messaging.v1.Content.MediaAlbumMessage.newBuilder().addItems(
+            shared.proto.messaging.v1.Content.MediaMessage.newBuilder()
+                .setMediaId("m1")
+                .setEncryptionKey(com.google.protobuf.ByteString.copyFrom(ByteArray(32)))
+                .setMimeType("image/jpeg"),
+        )
+        val content = MessageContent.newBuilder().setMediaAlbum(album).build().toByteArray()
+        inbox.effects.onDecrypted(peer, "env-photo", KnstFrame.pack(content, KnstFrame.TYPE_E2EE_SIGNAL, id))
+
+        val row = inbox.messages.rows[id.toString()]!!
+        assertEquals("", row.text)
+        assertEquals(com.construct.messenger.util.MediaWire.KIND_ALBUM, row.mediaType)
+        assertEquals(album.build().toByteArray().toList(), row.mediaPayload?.toList())
+        assertEquals("Photo", inbox.chats.rows[ConversationId.direct(myId, peer)]?.lastMessageText)
+    }
+
     @Test
     fun `a peer cannot edit a message we sent`() = runTest {
         val inbox = Inbox(alerts, myId)
@@ -515,6 +544,7 @@ class ProcessorEffectsImplTest {
             held = HeldEnvelopes(),
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
+            mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
         )
     }
 

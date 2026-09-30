@@ -127,6 +127,14 @@
     <string name="voice_message">Voice message</string>
     <string name="file_attachment">File</string>
     <string name="sticker">Sticker</string>
+    <string name="retry">Retry</string>
+    <string name="failed_to_load">Failed to load</string>
+    <string name="media_unavailable">Media unavailable</string>
+    <string name="media_viewer_counter" translatable="false">%1$d / %2$d</string>
+    <plurals name="n_files">
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
+    </plurals>
 
     <!-- Calls -->
     <string name="calls_empty_title">No calls yet</string>

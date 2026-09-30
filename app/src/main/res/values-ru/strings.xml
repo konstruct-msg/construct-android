@@ -124,6 +124,15 @@
     <string name="voice_message">Голосовое сообщение</string>
     <string name="file_attachment">Файл</string>
     <string name="sticker">Стикер</string>
+    <string name="retry">Повторить</string>
+    <string name="failed_to_load">Не удалось загрузить</string>
+    <string name="media_unavailable">Медиа недоступно</string>
+    <plurals name="n_files">
+        <item quantity="one">%d файл</item>
+        <item quantity="few">%d файла</item>
+        <item quantity="many">%d файлов</item>
+        <item quantity="other">%d файла</item>
+    </plurals>
 
     <!-- Calls -->
     <string name="calls_empty_title">Пока нет звонков</string>

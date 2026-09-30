@@ -45,6 +45,8 @@ object IncomingPlaintext {
         val delete: Delete? = null,
         /** A contact sharing their profile — applied to their row, never a bubble. */
         val profile: ProfileShare? = null,
+        /** Photos, videos, files or a voice note; [text] is then the caption, possibly empty. */
+        val media: MediaWire.Stored? = null,
     )
 
     fun decode(plaintext: ByteArray): Decoded {
@@ -93,9 +95,9 @@ object IncomingPlaintext {
 
     /**
      * Null when these bytes are not a `MessageContent` we recognise, so a bare
-     * legacy string can still be tried. A recognised non-text payload (edit,
-     * reaction, media) returns a non-visible [Decoded] instead, so it is never
-     * shown as mojibake.
+     * legacy string can still be tried. A recognised payload that is not shown
+     * (edit, reaction, sticker) returns a non-visible [Decoded] instead, so it is
+     * never shown as mojibake.
      */
     private fun decodePayload(payload: ByteArray, knstContentType: Int, e2eMessageId: String?): Decoded? =
         try {
@@ -126,6 +128,17 @@ object IncomingPlaintext {
                     reply = replyOf(content.text),
                     e2eMessageId = e2eMessageId,
                 )
+                MediaWire.stored(content) != null -> {
+                    val media = MediaWire.stored(content)!!
+                    Decoded(
+                        text = media.caption,
+                        knstContentType = knstContentType,
+                        isUserVisible = true,
+                        reply = MediaWire.albumQuote(content)?.let(::replyOf),
+                        e2eMessageId = e2eMessageId,
+                        media = media,
+                    )
+                }
                 // Empty text is not a message. Unknown fields on a legacy string are not one either:
                 // protobuf will parse "hi" and report a size, and that must stay the word hi.
                 content.hasText() || content.contentCase == ContentCase.CONTENT_NOT_SET -> null

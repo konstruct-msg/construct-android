@@ -5,6 +5,7 @@ import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.MessageEntity
+import com.construct.messenger.util.MediaWire
 import com.construct.messenger.data.local.db.refreshChatPreview
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.Message
@@ -83,4 +84,5 @@ private fun MessageEntity.toModel(): Message = Message(
     replyPreview = replyPreview,
     replyMediaType = replyMediaType,
     isEdited = isEdited,
+    media = MediaWire.decode(mediaType, mediaPayload),
 )

@@ -25,7 +25,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PendingResendEntity::class,
         PendingChunkEntity::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -150,6 +150,13 @@ abstract class ConstructDatabase : RoomDatabase() {
                         "contentType INTEGER NOT NULL, payload BLOB NOT NULL, receivedAtMs INTEGER NOT NULL, " +
                         "PRIMARY KEY(senderId, messageId, chunkIndex))",
                 )
+            }
+        }
+
+        /** A message's media (`MessageEntity.mediaPayload`). Existing rows: text only. */
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE messages ADD COLUMN mediaPayload BLOB")
             }
         }
     }

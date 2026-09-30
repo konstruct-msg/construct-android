@@ -15,5 +15,7 @@ data class Message(
     val replyMediaType: String? = null,
     /** Set when a later `MessageContent.edit` replaced [body]. The timestamp stays the original. */
     val isEdited: Boolean = false,
+    /** Photos, videos, files or a voice note; [body] is then the caption, possibly empty. */
+    val media: MessageMedia? = null,
 )
 

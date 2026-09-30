@@ -11,6 +11,7 @@ import shared.proto.services.v1.AuthServiceGrpcKt.AuthServiceCoroutineStub
 import shared.proto.services.v1.DeviceServiceGrpcKt.DeviceServiceCoroutineStub
 import shared.proto.services.v1.InviteServiceGrpcKt.InviteServiceCoroutineStub
 import shared.proto.services.v1.KeyServiceGrpcKt.KeyServiceCoroutineStub
+import shared.proto.services.v1.MediaServiceGrpcKt.MediaServiceCoroutineStub
 import shared.proto.services.v1.MessagingServiceGrpcKt.MessagingServiceCoroutineStub
 import shared.proto.services.v1.NotificationServiceGrpcKt.NotificationServiceCoroutineStub
 import shared.proto.services.v1.UserServiceGrpcKt.UserServiceCoroutineStub
@@ -27,7 +28,7 @@ import javax.inject.Singleton
  * | Channel | Auth | Used for |
  * |---------|------|---------|
  * | [authChannel] | [AuthInterceptor] | All authenticated RPCs (auth, key, user, messaging stream, …) |
- * | [sealedChannel] | **none** | `SendSealedMessage` only (Stealth v2 — sender anonymity) |
+ * | [sealedChannel] | **none** | `SendSealedMessage` (Stealth v2 — sender anonymity), `DownloadMedia` |
  *
  * The sealed channel is intentionally **separate** at the HTTP/2 connection level to prevent
  * the server from correlating sealed sends with the authenticated identity via connection
@@ -125,6 +126,16 @@ class GrpcClient @Inject constructor(
     /** Sealed-sender [MessagingServiceCoroutineStub] — **no** [AuthInterceptor].
      * Use for `SendSealedMessage` only (Stealth v2). */
     val sealedMessaging: MessagingServiceCoroutineStub get() = MessagingServiceCoroutineStub(channels.sealed)
+
+    /**
+     * [MediaServiceCoroutineStub] on the channel with no token — for `DownloadMedia` only, which
+     * the server serves to anyone holding a media id. A token there would tell the server who
+     * fetched each blob, and so who received whose upload; iOS sends one (TODO in the vault).
+     */
+    val publicMedia: MediaServiceCoroutineStub get() = MediaServiceCoroutineStub(channels.sealed)
+
+    /** Authenticated media: minting an upload token and the upload itself. */
+    val media: MediaServiceCoroutineStub get() = MediaServiceCoroutineStub(channels.auth)
 
     fun shutdown() {
         channels.auth.shutdown()
