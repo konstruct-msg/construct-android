@@ -127,6 +127,8 @@
     <string name="voice_message">Voice message</string>
     <string name="file_attachment">File</string>
     <string name="sticker">Sticker</string>
+    <string name="attach">Attach</string>
+    <string name="remove">Remove</string>
     <string name="retry">Retry</string>
     <string name="failed_to_load">Failed to load</string>
     <string name="media_unavailable">Media unavailable</string>

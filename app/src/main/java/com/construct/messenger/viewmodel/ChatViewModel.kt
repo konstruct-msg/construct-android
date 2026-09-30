@@ -1,5 +1,6 @@
 package com.construct.messenger.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -35,6 +36,8 @@ data class ChatUiState(
     val securityNotice: SecurityNotice = SecurityNotice.NONE,
     /** Name for the banner — alias or generated, never the raw id. */
     val contactName: String = "",
+    /** Photos picked for the next message, in order; its text is then their caption. */
+    val attachments: List<Uri> = emptyList(),
 )
 
 private data class EditTarget(val messageId: String, val original: String)
@@ -52,15 +55,16 @@ class ChatViewModel @Inject constructor(
     private val sending = MutableStateFlow(false)
     private val replying = MutableStateFlow<ReplyRef?>(null)
     private val editing = MutableStateFlow<EditTarget?>(null)
+    private val attachments = MutableStateFlow<List<Uri>>(emptyList())
 
     val uiState: StateFlow<ChatUiState> = combine(
         messagesRepository.observeContact(contactId),
         contactsRepository.contacts,
         draft,
         sending,
-        combine(replying, editing) { reply, edit -> reply to edit },
+        combine(replying, editing, attachments) { reply, edit, photos -> Triple(reply, edit, photos) },
     ) { messages, contacts, draftText, isSending, composer ->
-        val (reply, edit) = composer
+        val (reply, edit, photos) = composer
         val contact = contacts.find { it.userId == contactId }
         val title = when {
             contact == null -> DisplayNameGenerator.generate(contactId).uppercase()
@@ -79,6 +83,7 @@ class ChatViewModel @Inject constructor(
             securityNotice = contact?.securityNotice ?: SecurityNotice.NONE,
             contactName = contact?.let { it.localName ?: if (it.username.isNotBlank()) "@${it.username}" else it.displayName }
                 ?: DisplayNameGenerator.generate(contactId),
+            attachments = photos,
         )
     }.stateIn(
         viewModelScope,
@@ -143,14 +148,35 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch { messagesRepository.delete(contactId, message.id) }
     }
 
+    /** Photos from the picker join the ones already chosen (iOS allows 99 in one album). */
+    fun attach(uris: List<Uri>) {
+        if (editing.value != null || uris.isEmpty()) return
+        attachments.value = (attachments.value + uris).distinct().take(MAX_ATTACHMENTS)
+    }
+
+    fun removeAttachment(uri: Uri) {
+        attachments.value = attachments.value - uri
+    }
+
     fun send() {
         val text = draft.value.trim()
-        if (text.isEmpty() || sending.value) return
+        val photos = attachments.value
+        if ((text.isEmpty() && photos.isEmpty()) || sending.value) return
         val reply = replying.value
         val edit = editing.value
         sending.value = true
         viewModelScope.launch {
             try {
+                if (photos.isNotEmpty() && edit == null) {
+                    // The bubble is in the transcript before the uploads end; the composer
+                    // is free again at once, as on iOS.
+                    attachments.value = emptyList()
+                    draft.value = ""
+                    replying.value = null
+                    sending.value = false
+                    messagesRepository.sendPhotos(contactId, photos, text, reply)
+                    return@launch
+                }
                 val outcome = if (edit != null) {
                     messagesRepository.edit(contactId, edit.messageId, text)
                 } else {
@@ -165,5 +191,9 @@ class ChatViewModel @Inject constructor(
                 sending.value = false
             }
         }
+    }
+
+    private companion object {
+        const val MAX_ATTACHMENTS = 99
     }
 }

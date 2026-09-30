@@ -1,5 +1,6 @@
 package com.construct.messenger.data.repository
 
+import android.net.Uri
 import com.construct.messenger.data.local.ChatPresence
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.db.ChatDao
@@ -11,12 +12,17 @@ import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.Message
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.domain.usecase.SendContactCardUseCase
+import com.construct.messenger.domain.usecase.SendMediaUseCase
 import com.construct.messenger.domain.usecase.SendMessageUseCase
 import com.construct.messenger.domain.usecase.SendOutcome
 import com.construct.messenger.service.IncomingAlerts
 import com.construct.messenger.util.ConversationId
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
@@ -30,6 +36,7 @@ class MessagesRepositoryImpl @Inject constructor(
     private val presence: ChatPresence,
     private val alerts: IncomingAlerts,
     private val sendContactCard: SendContactCardUseCase,
+    private val sendMedia: SendMediaUseCase,
 ) : MessagesRepository {
 
     override fun observeContact(contactId: String): Flow<List<Message>> {
@@ -47,6 +54,18 @@ class MessagesRepositoryImpl @Inject constructor(
         }
         return outcome
     }
+
+    /** On a scope of its own: leaving the chat must not cancel an upload half done. */
+    override suspend fun sendPhotos(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef?): SendOutcome =
+        scope.async {
+            val outcome = sendMedia.photos(contactId, uris, caption, reply)
+            if (outcome is SendOutcome.Sent) {
+                runCatching { sendContactCard.sendIfOwed(contactId) }
+            }
+            outcome
+        }.await()
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override suspend fun edit(contactId: String, messageId: String, newText: String): SendOutcome =
         sendMessage.edit(contactId, messageId, newText)

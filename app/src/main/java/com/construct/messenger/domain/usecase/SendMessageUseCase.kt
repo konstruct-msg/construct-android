@@ -13,6 +13,7 @@ import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ReplyRef
+import com.construct.messenger.service.MediaPreviewText
 import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.ServerMessageIds
 import com.construct.messenger.service.SessionManager
@@ -26,6 +27,7 @@ import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.data.local.db.refreshChatPreview
 import com.construct.messenger.util.EditWire
 import com.construct.messenger.util.KnstFrame
+import com.construct.messenger.util.MediaWire
 import com.construct.messenger.util.ProfileShare
 import com.construct.messenger.util.TextWire
 import com.construct.messenger.util.SenderSyncRouting
@@ -79,6 +81,7 @@ class SendMessageUseCase @Inject constructor(
     private val userDao: UserDao,
     private val sessionStateStore: SessionStateStore,
     private val serverMessageIds: ServerMessageIds,
+    private val mediaPreview: MediaPreviewText,
 ) {
     suspend operator fun invoke(contactId: String, text: String, reply: ReplyRef? = null): SendOutcome {
         val body = text.trim()
@@ -93,9 +96,43 @@ class SendMessageUseCase @Inject constructor(
         val chatId = ConversationId.direct(myId, contactId)
 
         persistOutgoing(chatId, contactId, messageId, body, timestampMs, DeliveryStatus.SENDING, reply)
+        return deliver(myId, contactId, messageId, timestampMs, TextWire.encode(body, reply))
+    }
 
+    /**
+     * An outgoing message with media, shown before it is sent: the row the bubble reads, in
+     * SENDING, while its media uploads (`SendMediaUseCase`). [media] names the staged copies.
+     */
+    suspend fun persistMedia(contactId: String, messageId: String, timestampMs: Long, media: MediaWire.Stored, reply: ReplyRef?) {
+        val myId = keystoreManager.getUserId() ?: error("not authenticated")
+        persistOutgoing(ConversationId.direct(myId, contactId), contactId, messageId, media.caption, timestampMs, DeliveryStatus.SENDING, reply, media)
+    }
+
+    /** The uploaded media, by the ids the store gave it, in place of the staged ones. */
+    suspend fun replaceMedia(messageId: String, media: MediaWire.Stored) {
+        val row = messageDao.getById(messageId) ?: return
+        messageDao.insert(row.copy(mediaType = media.kind, mediaPayload = media.bytes))
+    }
+
+    suspend fun markFailed(messageId: String) {
+        messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
+    }
+
+    /** Send [content] as the row [messageId] already written; its status follows the answer. */
+    suspend fun deliverPrepared(contactId: String, messageId: String, timestampMs: Long, content: ByteArray): SendOutcome {
+        val myId = keystoreManager.getUserId() ?: return SendOutcome.Failed(messageId, "not authenticated")
+        if (!cryptoManager.isMessagingReady) return SendOutcome.Failed(messageId, "orchestrator not ready")
+        return deliver(myId, contactId, messageId, timestampMs, content)
+    }
+
+    private suspend fun deliver(
+        myId: String,
+        contactId: String,
+        messageId: String,
+        timestampMs: Long,
+        content: ByteArray,
+    ): SendOutcome {
         return try {
-            val content = TextWire.encode(body, reply)
             // Establishment is deliberately unchanged by this: the first send to a peer we hold
             // nothing with still opens a session with the device the registry pins, and that
             // device is also the offline answer for the set below when the key server cannot be
@@ -131,7 +168,8 @@ class SendMessageUseCase @Inject constructor(
      * the core retired our state with the device, the copy opens a new one on the way.
      *
      * The same per-device path as a send, and only to [deviceId]: the account's other devices
-     * read their copies. Text only, as on iOS — a media message's plaintext is not kept. Until
+     * read their copies. Text, and media from the wire message its row keeps — iOS resends text
+     * only, keeping no plaintext of media. Until
      * 2026-09-27 nothing on Android resent anything; a message lost to a broken session stayed
      * lost (`decisions/sessions-renew-by-sending.md`). Canon: iOS
      * `SessionCoordinator.resendAfterDecryptionError`.
@@ -141,18 +179,18 @@ class SendMessageUseCase @Inject constructor(
         // The peer names the id it received, which for a sealed copy is the server's.
         val localId = serverMessageIds.localId(messageId)
         val row = messageDao.getById(localId) ?: messageDao.getByIdIgnoreCase(localId)
-        if (row == null || !row.isSentByMe || row.contentType != 0 || row.text.isEmpty() ||
+        val content = row?.let(::resendableContent)
+        if (row == null || !row.isSentByMe || row.contentType != 0 || content == null ||
             row.chatId != ConversationId.direct(myId, contactId)
         ) {
-            Log.i(TAG, "resend ${messageId.take(8)}… for ${deviceId.take(8)}… — no text message of ours here")
+            Log.i(TAG, "resend ${messageId.take(8)}… for ${deviceId.take(8)}… — no message of ours to resend here")
             return ResendOutcome.NOT_OURS
         }
-        val reply = row.replyToId?.let { ReplyRef(it, row.replyPreview.orEmpty(), row.replyMediaType) }
         return try {
             val peer = sessionManager.ensureSessionForDevice(contactId, deviceId)
             val tag = cryptoManager.deviceCopyTag(row.id, deviceId, peer.identityPublic)
             val result = sendFrames(
-                frames = framesOf(TextWire.encode(row.text, reply), row.id, isOwnReplica = false, partner = contactId),
+                frames = framesOf(content, row.id, isOwnReplica = false, partner = contactId),
                 wireIdBase = "${row.id}-fd-$tag",
                 deviceId = deviceId,
                 myId = myId,
@@ -171,6 +209,22 @@ class SendMessageUseCase @Inject constructor(
             Log.w(TAG, "resend ${messageId.take(8)}… to ${deviceId.take(8)}… threw", e)
             ResendOutcome.FAILED
         }
+    }
+
+    /**
+     * What [row] was sent as, again: its text with its quote, or its media — which iOS cannot
+     * resend, keeping no plaintext of it; the row here holds the wire message. Null when there is
+     * nothing to send, or the media never finished uploading.
+     */
+    private fun resendableContent(row: MessageEntity): ByteArray? {
+        val reply = row.replyToId?.let { ReplyRef(it, row.replyPreview.orEmpty(), row.replyMediaType) }
+        val payload = row.mediaPayload
+        if (row.mediaType != null && payload != null) {
+            val media = MediaWire.decode(row.mediaType, payload) ?: return null
+            if (MediaWire.isStaged(media)) return null
+            return MediaWire.content(row.mediaType, payload)
+        }
+        return row.text.takeIf { it.isNotEmpty() }?.let { TextWire.encode(it, reply) }
     }
 
     /**
@@ -525,6 +579,7 @@ class SendMessageUseCase @Inject constructor(
         timestampMs: Long,
         status: DeliveryStatus,
         reply: ReplyRef?,
+        media: MediaWire.Stored? = null,
     ) {
         messageDao.insert(
             MessageEntity(
@@ -537,21 +592,24 @@ class SendMessageUseCase @Inject constructor(
                 replyToId = reply?.messageId,
                 replyPreview = reply?.preview?.ifEmpty { null },
                 replyMediaType = reply?.mediaType,
+                mediaType = media?.kind,
+                mediaPayload = media?.bytes,
             ),
         )
+        val preview = media?.let(mediaPreview::of) ?: text
         val existing = chatDao.getById(chatId)
         if (existing == null) {
             chatDao.upsert(
                 ChatEntity(
                     id = chatId,
                     otherUserId = contactId,
-                    lastMessageText = text,
+                    lastMessageText = preview,
                     lastMessageTime = timestampMs,
                     unreadCount = 0,
                 ),
             )
         } else {
-            chatDao.updateLastMessage(chatId, text, timestampMs)
+            chatDao.updateLastMessage(chatId, preview, timestampMs)
         }
         if (userDao.getById(contactId) == null) {
             userDao.upsert(

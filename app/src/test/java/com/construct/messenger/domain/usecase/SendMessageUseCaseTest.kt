@@ -91,6 +91,7 @@ class SendMessageUseCaseTest {
             userDao = users,
             sessionStateStore = sessions,
             serverMessageIds = ServerMessageIds(serverIds),
+            mediaPreview = { "Photo" },
         )
     }
 
@@ -229,6 +230,32 @@ class SendMessageUseCaseTest {
         assertEquals(KnstFrame.TYPE_E2EE_SIGNAL, framesSentTo(h, pinnedDevice).single().contentType)
     }
 
+
+    /**
+     * A photo message can be sent again after a decryption error: its row keeps the wire album.
+     * One still uploading cannot — its ids name nothing in the store. Mutation: resend text only
+     * (the old guard) — the first case reddens.
+     */
+    @Test
+    fun `a photo message is resent from its row, not before its upload`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        fun album(id: String) = shared.proto.messaging.v1.Content.MediaAlbumMessage.newBuilder().addItems(
+            shared.proto.messaging.v1.Content.MediaMessage.newBuilder()
+                .setMediaId(id)
+                .setEncryptionKey(com.google.protobuf.ByteString.copyFrom(ByteArray(32)))
+                .setMimeType("image/jpeg"),
+        ).build().toByteArray()
+        val chatId = com.construct.messenger.util.ConversationId.direct(myId, peer)
+        val sent = "11111111-1111-4111-8111-111111111111"
+        val staged = "22222222-2222-4222-8222-222222222222"
+        h.messages.rows[sent] = MessageEntity(sent, chatId, "", true, 1L, DeliveryStatus.SENT.name, mediaType = "album", mediaPayload = album("store-id"))
+        h.messages.rows[staged] = MessageEntity(staged, chatId, "", true, 1L, DeliveryStatus.SENDING.name, mediaType = "album", mediaPayload = album("local-x"))
+
+        assertEquals(ResendOutcome.SENT, h.useCase().resend(peer, pinnedDevice, sent))
+        val frame = framesSentTo(h, pinnedDevice).single()
+        assertEquals("store-id", shared.proto.messaging.v1.Content.MessageContent.parseFrom(frame.payload).mediaAlbum.getItems(0).mediaId)
+        assertEquals(ResendOutcome.NOT_OURS, h.useCase().resend(peer, pinnedDevice, staged))
+    }
 
     @Test
     fun `a successful send persists SENT`() = runTest {

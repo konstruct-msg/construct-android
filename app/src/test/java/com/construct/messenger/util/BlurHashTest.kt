@@ -32,4 +32,20 @@ class BlurHashTest {
         assertNull(BlurHash.decode("LEHV6nWB2yk8", 32, 32))
         assertNull(BlurHash.decode("LEHV6nWB2yk8pyo0adR*.7kCMdné", 32, 32))
     }
+
+    /**
+     * The same 8×6 picture through iOS `BlurHash.encode`'s arithmetic (`Utilities/BlurHash.swift`,
+     * run as a script) gives this hash. Mutation: drop the ×2 normalisation of the AC terms.
+     */
+    @Test
+    fun `encodes as iOS does`() {
+        val w = 8
+        val h = 6
+        val px = IntArray(w * h) { k ->
+            val i = k % w
+            val j = k / w
+            (0xFF shl 24) or (((i * 31 + j * 7) % 256) shl 16) or (((j * 40 + 20) % 256) shl 8) or ((255 - i * 25) % 256)
+        }
+        assertEquals("L~HB\$9BtWvxcmwWHjvjJV^jajtaz", BlurHash.encode(px, w, h))
+    }
 }

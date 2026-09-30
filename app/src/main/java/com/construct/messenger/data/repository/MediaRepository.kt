@@ -24,6 +24,18 @@ interface MediaRepository {
      * keeps a blob 7 days — and anything else (network) when it may yet come.
      */
     suspend fun bytes(item: MediaItem): ByteArray
+
+    /**
+     * Keep [blob], a photo of ours sealed and not yet uploaded, under [localId], so its bubble
+     * shows it at once and the upload can be retried from it.
+     */
+    suspend fun stage(localId: String, blob: ByteArray)
+
+    /**
+     * Upload what [stage] kept under [localId]; the copy is then filed under the id the store
+     * gave it, so the sender never downloads its own photo.
+     */
+    suspend fun upload(localId: String, sha256: ByteArray): MediaService.Uploaded
 }
 
 class MediaUnavailable(message: String) : Exception(message)
@@ -62,6 +74,32 @@ class MediaRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun stage(localId: String, blob: ByteArray) = withContext(Dispatchers.IO) {
+        val name = fileName(localId) ?: error("malformed local id")
+        dir.mkdirs()
+        File(dir, name).writeBytes(blob)
+    }
+
+    override suspend fun upload(localId: String, sha256: ByteArray): MediaService.Uploaded = withContext(Dispatchers.IO) {
+        val staged = File(dir, fileName(localId) ?: error("malformed local id"))
+        val blob = staged.readBytes()
+        var attempt = 0
+        while (true) {
+            try {
+                val uploaded = mediaService.upload(blob, sha256)
+                fileName(uploaded.mediaId)?.let { staged.renameTo(File(dir, it)) }
+                return@withContext uploaded
+            } catch (e: io.grpc.StatusException) {
+                // iOS `NetworkTiming`: again after 3 s and 6 s, on what the network can cause.
+                if (attempt >= UPLOAD_RETRY_MS.size || e.status.code !in RETRYABLE) throw e
+                Log.w(TAG, "upload of ${localId.take(14)}… failed (${e.status.code}) — again")
+                kotlinx.coroutines.delay(UPLOAD_RETRY_MS[attempt++])
+            }
+        }
+        @Suppress("UNREACHABLE_CODE")
+        error("unreachable")
+    }
+
     private suspend fun blob(mediaId: String, file: File): ByteArray {
         missingUntil[mediaId]?.let { until ->
             if (System.currentTimeMillis() < until) throw MediaUnavailable("not found")
@@ -92,6 +130,13 @@ class MediaRepositoryImpl @Inject constructor(
     companion object {
         private const val TAG = "MediaRepository"
         private const val NOT_FOUND_MS = 30 * 60 * 1000L
+        private val UPLOAD_RETRY_MS = listOf(3_000L, 6_000L)
+        private val RETRYABLE = setOf(
+            io.grpc.Status.Code.CANCELLED,
+            io.grpc.Status.Code.UNAVAILABLE,
+            io.grpc.Status.Code.DEADLINE_EXCEEDED,
+            io.grpc.Status.Code.UNKNOWN,
+        )
         private val ID = Regex("[0-9A-Za-z-]{1,64}")
 
         /** The server mints UUIDs; anything else never becomes a path. */

@@ -70,6 +70,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.util.BlurHash
+import com.construct.messenger.util.MediaWire
 
 /**
  * Photos and videos of one message. **Canon:** iOS `MediaMessageView` — one item 260 wide at its
@@ -203,6 +204,17 @@ private fun Tile(
                     }
                 }
             }
+        }
+        if (item.mediaId.startsWith(MediaWire.LOCAL_PREFIX)) {
+            // Ours, still uploading (iOS `uploadingBadge`).
+            CircularProgressIndicator(
+                color = Color.White,
+                strokeWidth = 2.dp,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(8.dp)
+                    .size(18.dp),
+            )
         }
     }
 }

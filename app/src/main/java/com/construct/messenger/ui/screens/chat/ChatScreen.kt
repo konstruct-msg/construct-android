@@ -31,6 +31,9 @@ import androidx.compose.ui.unit.sp
 import com.construct.messenger.ui.components.glassCapsule
 import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.ctBold
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -153,7 +156,18 @@ fun ChatScreen(
             }
         }
 
+        // The system photo picker: no permission, nothing but what the user picks is readable.
+        val pickPhotos = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) {
+            viewModel.attach(it)
+        }
         MessageInputView(
+            attachments = uiState.attachments,
+            onAttach = if (uiState.editingOriginal == null) {
+                { pickPhotos.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+            } else {
+                null
+            },
+            onRemoveAttachment = viewModel::removeAttachment,
             value = uiState.draft,
             onValueChange = viewModel::onDraftChange,
             onSend = viewModel::send,

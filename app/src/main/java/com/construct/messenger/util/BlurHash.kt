@@ -60,6 +60,69 @@ object BlurHash {
         return out
     }
 
+    /**
+     * A BlurHash of [pixels] ([width]×[height] ARGB), [cx]×[cy] components — iOS sends 4×3 from
+     * a picture scaled to 32 px at most (`Utilities/BlurHash.swift`), and so does this.
+     */
+    fun encode(pixels: IntArray, width: Int, height: Int, cx: Int = 4, cy: Int = 3): String {
+        require(cx in 1..9 && cy in 1..9 && pixels.size == width * height)
+        val factors = Array(cx * cy) { FloatArray(3) }
+        for (j in 0 until cy) {
+            for (i in 0 until cx) {
+                val norm = if (i == 0 && j == 0) 1f else 2f
+                var r = 0f
+                var g = 0f
+                var b = 0f
+                for (y in 0 until height) {
+                    val cosY = cos(PI * j * y / height).toFloat()
+                    for (x in 0 until width) {
+                        val basis = norm * cos(PI * i * x / width).toFloat() * cosY
+                        val p = pixels[y * width + x]
+                        r += basis * toLinear((p shr 16) and 255)
+                        g += basis * toLinear((p shr 8) and 255)
+                        b += basis * toLinear(p and 255)
+                    }
+                }
+                val scale = 1f / (width * height)
+                factors[j * cx + i] = floatArrayOf(r * scale, g * scale, b * scale)
+            }
+        }
+        val out = StringBuilder()
+        out.append(encode83(cx - 1 + (cy - 1) * 9, 1))
+        val ac = factors.drop(1)
+        val maxValue: Float
+        if (ac.isNotEmpty()) {
+            val actualMax = ac.maxOf { f -> f.maxOf { kotlin.math.abs(it) } }
+            val quantMax = (actualMax * 166 - 0.5f).toInt().coerceIn(0, 82)
+            maxValue = (quantMax + 1) / 166f
+            out.append(encode83(quantMax, 1))
+        } else {
+            maxValue = 1f
+            out.append(encode83(0, 1))
+        }
+        val dc = factors[0]
+        out.append(encode83((toSrgb(dc[0]) shl 16) + (toSrgb(dc[1]) shl 8) + toSrgb(dc[2]), 4))
+        for (f in ac) {
+            fun q(v: Float) = (signedPow(v / maxValue, 0.5f) * 9 + 9.5f).toInt().coerceIn(0, 18)
+            out.append(encode83(q(f[0]) * 19 * 19 + q(f[1]) * 19 + q(f[2]), 2))
+        }
+        return out.toString()
+    }
+
+    private fun signedPow(v: Float, e: Float) = kotlin.math.abs(v).pow(e).withSign(v)
+
+    private fun encode83(value: Int, length: Int): String {
+        val sb = StringBuilder()
+        var divisor = 1
+        repeat(length - 1) { divisor *= 83 }
+        var d = divisor
+        repeat(length) {
+            sb.append(CHARS[(value / d) % 83])
+            d /= 83
+        }
+        return sb.toString()
+    }
+
     private const val CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#$%*+,-.:;=?@[]^_{|}~"
 
     private fun decode83(s: String, from: Int, to: Int): Int? {

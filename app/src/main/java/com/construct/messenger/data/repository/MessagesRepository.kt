@@ -1,5 +1,6 @@
 package com.construct.messenger.data.repository
 
+import android.net.Uri
 import com.construct.messenger.data.model.Message
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.domain.usecase.SendOutcome
@@ -17,6 +18,12 @@ interface MessagesRepository {
      * travels inside the ciphertext and is stored on the outgoing row.
      */
     suspend fun send(contactId: String, text: String, reply: ReplyRef? = null): SendOutcome
+
+    /**
+     * Send the photos at [uris] (picked by the user, readable now) as one album, [caption] its
+     * text. The message shows at once and is sent when every photo is uploaded.
+     */
+    suspend fun sendPhotos(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef? = null): SendOutcome
 
     /**
      * Replace the text of a message this account sent. The edit travels as

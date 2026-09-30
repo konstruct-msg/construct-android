@@ -17,14 +17,18 @@ import shared.proto.messaging.v1.Content.TextMessage
 object TextWire {
     fun encode(text: String, reply: ReplyRef? = null): ByteArray {
         val textMsg = TextMessage.newBuilder().setText(text)
-        if (reply != null) {
-            val quoted = QuotedMessage.newBuilder().setMessageId(reply.messageId)
-            val preview = reply.preview.take(ReplyRef.MAX_CHARS)
-            if (preview.isNotEmpty()) quoted.setTextPreview(preview)
-            mediaType(reply.mediaType)?.let { quoted.setMediaType(it) }
-            textMsg.setQuoted(quoted)
-        }
+        quoted(reply)?.let { textMsg.setQuoted(it) }
         return MessageContent.newBuilder().setText(textMsg).build().toByteArray()
+    }
+
+    /** The quote for [reply], as a text or an album carries it. */
+    fun quoted(reply: ReplyRef?): QuotedMessage? {
+        if (reply == null) return null
+        val quoted = QuotedMessage.newBuilder().setMessageId(reply.messageId)
+        val preview = reply.preview.take(ReplyRef.MAX_CHARS)
+        if (preview.isNotEmpty()) quoted.setTextPreview(preview)
+        mediaType(reply.mediaType)?.let { quoted.setMediaType(it) }
+        return quoted.build()
     }
 
     private fun mediaType(name: String?): MediaType? {

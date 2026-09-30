@@ -17,6 +17,23 @@ object MediaWire {
     const val KIND_ALBUM = "album"
     const val KIND_VOICE = "voice"
 
+    /** An item of ours not yet in the store is named this, then the store's id once uploaded. */
+    const val LOCAL_PREFIX = "local-"
+
+    fun isStaged(media: MessageMedia): Boolean = when (media) {
+        is MessageMedia.Album -> media.items.any { it.mediaId.startsWith(LOCAL_PREFIX) }
+        is MessageMedia.Voice -> media.audio.mediaId.startsWith(LOCAL_PREFIX)
+    }
+
+    /** The `MessageContent` a stored media message was, to send again. */
+    fun content(kind: String, bytes: ByteArray): ByteArray? = runCatching {
+        when (kind) {
+            KIND_ALBUM -> MessageContent.newBuilder().setMediaAlbum(MediaAlbumMessage.parseFrom(bytes))
+            KIND_VOICE -> MessageContent.newBuilder().setVoice(VoiceMessage.parseFrom(bytes))
+            else -> null
+        }?.build()?.toByteArray()
+    }.getOrNull()
+
     class Stored(val kind: String, val bytes: ByteArray, val caption: String)
 
     /**

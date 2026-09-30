@@ -129,6 +129,24 @@ class ChatViewModelTest {
         assertNull(viewModel.uiState.value.editingOriginal)
         assertEquals("", viewModel.uiState.value.draft)
     }
+    /** Picked photos go with the typed text as their caption, and the composer is free at once. */
+    @Test
+    fun `picked photos are sent with the draft as caption`() = runTest {
+        val handle = SavedStateHandle().apply { set("contactId", "peer") }
+        val messages = FakeMessagesRepository()
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock())
+        val a = org.mockito.kotlin.mock<android.net.Uri>()
+        val b = org.mockito.kotlin.mock<android.net.Uri>()
+        viewModel.attach(listOf(a, b, a))
+        viewModel.onDraftChange("sea")
+        viewModel.send()
+        advanceUntilIdle()
+
+        assertEquals(listOf(listOf(a, b) to "sea"), messages.photos)
+        assertTrue(messages.sent.isEmpty())
+        assertEquals(emptyList<android.net.Uri>(), viewModel.uiState.value.attachments)
+        assertEquals("", viewModel.uiState.value.draft)
+    }
 }
 
 private class FakeMessagesRepository : MessagesRepository {
@@ -149,6 +167,11 @@ private class FakeMessagesRepository : MessagesRepository {
     }
 
     data class Sent(val contactId: String, val text: String, val reply: ReplyRef?)
+    val photos = mutableListOf<Pair<List<android.net.Uri>, String>>()
+    override suspend fun sendPhotos(contactId: String, uris: List<android.net.Uri>, caption: String, reply: ReplyRef?): SendOutcome {
+        photos += uris to caption
+        return SendOutcome.Sent("p-${photos.size}")
+    }
     val edits = mutableListOf<Edit>()
     val deleted = mutableListOf<String>()
     var failEdit = false

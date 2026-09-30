@@ -1,6 +1,15 @@
 package com.construct.messenger.ui.components
 
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -61,6 +70,9 @@ fun MessageInputView(
     onCancelReply: () -> Unit = {},
     editingPreview: String? = null,
     onCancelEdit: () -> Unit = {},
+    attachments: List<Uri> = emptyList(),
+    onAttach: (() -> Unit)? = null,
+    onRemoveAttachment: (Uri) -> Unit = {},
 ) {
     Column(
         modifier = modifier
@@ -71,13 +83,36 @@ fun MessageInputView(
             editingPreview != null -> EditComposerBar(preview = editingPreview, onCancel = onCancelEdit)
             replyPreview != null -> ReplyComposerBar(preview = replyPreview, onCancel = onCancelReply)
         }
-        // iOS `MessageInputTextBar`: a glass capsule (44 high) holding the text — message face, 15 —
-        // with the send button inside at the trailing edge once there is something to send. iOS's
-        // attach "+" and mic are not here: Android has no attachments or voice messages yet.
+        if (attachments.isNotEmpty()) AttachmentStrip(attachments, onRemoveAttachment)
+        // iOS `MessageInputTextBar`: the attach "+" in a glass circle (44), then a glass capsule
+        // (44 high) holding the text — message face, 15 — with the send button inside at the
+        // trailing edge once there is something to send. The mic is not here yet.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = CTLayout.edgePad, vertical = 4.dp)
+                .padding(horizontal = CTLayout.edgePad, vertical = 4.dp),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+        if (onAttach != null) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .glassCapsule()
+                    .clickable(onClick = onAttach),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.AddCircleOutline,
+                    contentDescription = stringResource(R.string.attach),
+                    tint = CTColor.textDim,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+        }
+        Row(
+            modifier = Modifier
+                .weight(1f)
                 .heightIn(min = 44.dp)
                 .glassCapsule()
                 .padding(start = 16.dp, end = 8.dp),
@@ -106,7 +141,7 @@ fun MessageInputView(
                     }
                 },
             )
-            if (value.isNotBlank()) {
+            if (value.isNotBlank() || attachments.isNotEmpty()) {
                 Spacer(Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.Filled.ArrowCircleUp,
@@ -116,6 +151,52 @@ fun MessageInputView(
                         .size(28.dp)
                         .clip(CircleShape)
                         .clickable(enabled = enabled, onClick = onSend),
+                )
+            }
+        }
+        }
+    }
+}
+
+/**
+ * Canon: iOS `MessageAttachmentPreviews` — the picked photos above the field, each with a
+ * remove button; they go as one album with the text as its caption.
+ */
+@Composable
+private fun AttachmentStrip(uris: List<Uri>, onRemove: (Uri) -> Unit) {
+    val shape = RoundedCornerShape(CornerRadius.small)
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = CTLayout.edgePad)
+            .padding(top = Spacing.small)
+            .clip(shape)
+            .background(CTColor.bgMsg)
+            .border(HairlineBorder, CTColor.noise, shape),
+        contentPadding = PaddingValues(Spacing.small),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+    ) {
+        items(uris, key = { it.toString() }) { uri ->
+            Box(Modifier.size(80.dp)) {
+                AsyncImage(
+                    model = uri,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(CornerRadius.small)),
+                )
+                Icon(
+                    imageVector = Icons.Filled.Cancel,
+                    contentDescription = stringResource(R.string.remove),
+                    tint = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.45f))
+                        .clickable { onRemove(uri) },
                 )
             }
         }

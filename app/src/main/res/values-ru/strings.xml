@@ -124,6 +124,8 @@
     <string name="voice_message">Голосовое сообщение</string>
     <string name="file_attachment">Файл</string>
     <string name="sticker">Стикер</string>
+    <string name="attach">Прикрепить</string>
+    <string name="remove">Убрать</string>
     <string name="retry">Повторить</string>
     <string name="failed_to_load">Не удалось загрузить</string>
     <string name="media_unavailable">Медиа недоступно</string>
