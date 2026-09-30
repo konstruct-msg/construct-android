@@ -5,6 +5,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.model.Message
+import com.construct.messenger.data.model.MessageMedia
+import com.construct.messenger.data.repository.MediaUnavailable
+import com.construct.messenger.media.VoicePlayer
+import com.construct.messenger.media.VoiceRecorder
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.data.model.SecurityNotice
 import com.construct.messenger.data.repository.ContactsRepository
@@ -48,7 +52,21 @@ class ChatViewModel @Inject constructor(
     private val messagesRepository: MessagesRepository,
     contactsRepository: ContactsRepository,
     private val securityNotices: SecurityNotices,
+    private val recorder: VoiceRecorder,
+    private val player: VoicePlayer,
 ) : ViewModel() {
+    /** The voice note being recorded or waiting to be sent; the composer shows its bar. */
+    val recording: StateFlow<VoiceRecorder.State> = recorder.state
+
+    /** The voice note playing, anywhere in this chat. */
+    val playing: StateFlow<VoicePlayer.Playing?> = player.state
+
+    private val _voiceLoading = MutableStateFlow<Set<String>>(emptySet())
+    val voiceLoading: StateFlow<Set<String>> = _voiceLoading.asStateFlow()
+
+    private val _voiceUnavailable = MutableStateFlow<Set<String>>(emptySet())
+    val voiceUnavailable: StateFlow<Set<String>> = _voiceUnavailable.asStateFlow()
+
     val contactId: String = requireNotNull(savedStateHandle.get<String>("contactId"))
 
     private val draft = MutableStateFlow("")
@@ -104,7 +122,11 @@ class ChatViewModel @Inject constructor(
     /** ON_STOP — navigated away or the app went to the background. */
     fun onHidden() = messagesRepository.chatHidden(contactId)
 
-    override fun onCleared() = messagesRepository.chatHidden(contactId)
+    override fun onCleared() {
+        messagesRepository.chatHidden(contactId)
+        player.stop()
+        if (recorder.state.value !is VoiceRecorder.State.Idle) recorder.cancel()
+    }
 
     /** The user checked the event (or chose to carry on): the banner goes. */
     fun acknowledgeSecurityNotice() {
@@ -156,6 +178,49 @@ class ChatViewModel @Inject constructor(
 
     fun removeAttachment(uri: Uri) {
         attachments.value = attachments.value - uri
+    }
+
+    /** False when the microphone would not open. The screen has RECORD_AUDIO by now. */
+    fun startRecording(): Boolean {
+        player.stop()
+        return recorder.start()
+    }
+
+    fun stopRecording() = recorder.stop()
+
+    fun cancelRecording() = recorder.cancel()
+
+    fun sendRecording() {
+        val done = recorder.state.value as? VoiceRecorder.State.Recorded ?: return
+        recorder.handedOff()
+        viewModelScope.launch {
+            messagesRepository.sendVoice(contactId, done.file, done.durationMs, done.waveform)
+        }
+    }
+
+    /**
+     * Play or pause [voice]. iOS fetches a voice note only when it is played, never ahead; so
+     * does this.
+     */
+    fun toggleVoice(voice: MessageMedia.Voice) {
+        val id = voice.audio.mediaId
+        if (player.state.value?.mediaId == id) {
+            player.toggle(id, ByteArray(0))
+            return
+        }
+        if (id in _voiceLoading.value) return
+        _voiceLoading.value = _voiceLoading.value + id
+        viewModelScope.launch {
+            try {
+                player.toggle(id, messagesRepository.mediaBytes(voice.audio))
+            } catch (e: MediaUnavailable) {
+                _voiceUnavailable.value = _voiceUnavailable.value + id
+            } catch (e: Exception) {
+                // Network: the button stays, a tap tries again.
+            } finally {
+                _voiceLoading.value = _voiceLoading.value - id
+            }
+        }
     }
 
     fun send() {

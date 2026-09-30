@@ -124,6 +124,9 @@
     <string name="voice_message">Голосовое сообщение</string>
     <string name="file_attachment">Файл</string>
     <string name="sticker">Стикер</string>
+    <string name="voice_stop">Остановить запись</string>
+    <string name="voice_record">Записать голосовое сообщение</string>
+    <string name="voice_mic_denied">Для голосовых сообщений Konstruct нужен микрофон. Разрешите его в настройках приложения.</string>
     <string name="attach">Прикрепить</string>
     <string name="remove">Убрать</string>
     <string name="retry">Повторить</string>

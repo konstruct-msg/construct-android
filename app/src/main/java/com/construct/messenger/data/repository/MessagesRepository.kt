@@ -25,6 +25,12 @@ interface MessagesRepository {
      */
     suspend fun sendPhotos(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef? = null): SendOutcome
 
+    /** Send a recorded voice note; [recording] is taken over (and deleted once sealed). */
+    suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>): SendOutcome
+
+    /** The decrypted bytes of an item of a message, fetched if they are not here. */
+    suspend fun mediaBytes(item: com.construct.messenger.data.model.MediaItem): ByteArray
+
     /**
      * Replace the text of a message this account sent. The edit travels as
      * `MessageContent.edit` inside the ciphertext. The row changes only after a

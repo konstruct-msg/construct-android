@@ -89,6 +89,8 @@ fun MessageBubble(
     onEdit: () -> Unit = {},
     onDelete: () -> Unit = {},
     onJumpToReply: () -> Unit = {},
+    voicePlayback: VoicePlayback = VoicePlayback(),
+    onToggleVoice: () -> Unit = {},
 ) {
     val isOutgoing = message.isOutgoing
     val shape = RoundedCornerShape(10.dp)
@@ -113,7 +115,17 @@ fun MessageBubble(
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = if (isOutgoing) Alignment.TopEnd else Alignment.TopStart) {
         Column(horizontalAlignment = if (isOutgoing) Alignment.End else Alignment.Start) {
             val album = (message.media as? MessageMedia.Album)?.takeUnless { it.isFiles }
-            if (album != null) {
+            val voice = message.media as? MessageMedia.Voice
+            if (voice != null) {
+                VoiceBubble(
+                    voice = voice,
+                    outgoing = isOutgoing,
+                    playback = voicePlayback,
+                    maxWidth = maxBubble,
+                    onToggle = onToggleVoice,
+                    onLongPress = onLongPress,
+                )
+            } else if (album != null) {
                 // iOS: photos stand on their own, no bubble; the quote above, the caption below.
                 var viewing by remember { mutableStateOf<Int?>(null) }
                 if (replyLabel != null) {
@@ -230,14 +242,13 @@ fun MessageBubble(
 }
 
 /**
- * Files and voice notes until they have bubbles of their own: what the message holds, so it is not
- * a blank bubble. Opening a file and playing a voice note come next.
+ * Files until they have a bubble of their own: their names, so the message is not blank. Opening
+ * one comes next.
  */
 @Composable
 private fun mediaLine(media: MessageMedia?): String? = when (media) {
     null -> null
-    is MessageMedia.Voice -> stringResource(R.string.voice_message) +
-        (media.audio.durationMs?.let { " · %d:%02d".format(it / 60_000, it / 1000 % 60) } ?: "")
+    is MessageMedia.Voice -> null
     is MessageMedia.Album -> media.items.map { it.filename ?: stringResource(R.string.file_attachment) }.joinToString("\n")
 }
 

@@ -35,6 +35,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import com.construct.messenger.media.VoiceRecorder
+import com.construct.messenger.ui.components.VoiceComposerBar
+import com.construct.messenger.ui.components.VoicePlayback
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -65,6 +68,21 @@ fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val recording by viewModel.recording.collectAsStateWithLifecycle()
+    val playing by viewModel.playing.collectAsStateWithLifecycle()
+    val voiceLoading by viewModel.voiceLoading.collectAsStateWithLifecycle()
+    val voiceUnavailable by viewModel.voiceUnavailable.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val micDenied = stringResource(R.string.voice_mic_denied)
+    fun startRecording() {
+        if (!viewModel.startRecording()) {
+            android.widget.Toast.makeText(context, micDenied, android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+    // Asked for the first time the microphone is tapped, never before (AGENTS.md: permissions).
+    val askMic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) startRecording() else android.widget.Toast.makeText(context, micDenied, android.widget.Toast.LENGTH_LONG).show()
+    }
     val listState = rememberLazyListState()
     val clipboard = LocalClipboardManager.current
     var menuMessageId by remember { mutableStateOf<String?>(null) }
@@ -128,7 +146,18 @@ fun ChatScreen(
             state = listState,
         ) {
             itemsIndexed(uiState.messages, key = { _, message -> message.id }) { index, message ->
+                val voice = message.media as? com.construct.messenger.data.model.MessageMedia.Voice
+                val voiceId = voice?.audio?.mediaId
                 MessageBubble(
+                    voicePlayback = if (voice == null) VoicePlayback() else VoicePlayback(
+                        progress = playing?.takeIf { it.mediaId == voiceId }?.progress,
+                        paused = playing?.takeIf { it.mediaId == voiceId }?.paused ?: false,
+                        playingDurationMs = playing?.takeIf { it.mediaId == voiceId }?.durationMs ?: 0,
+                        loading = voiceId in voiceLoading,
+                        unavailable = voiceId in voiceUnavailable,
+                        uploading = voiceId!!.startsWith(com.construct.messenger.util.MediaWire.LOCAL_PREFIX),
+                    ),
+                    onToggleVoice = { voice?.let(viewModel::toggleVoice) },
                     message = message,
                     isLastInGroup = isLastInGroup(index, uiState.messages),
                     replyLabel = replyLabel(message, uiState.messages),
@@ -161,6 +190,24 @@ fun ChatScreen(
             viewModel.attach(it)
         }
         MessageInputView(
+            onMic = if (uiState.editingOriginal == null) {
+                {
+                    val granted = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
+                        android.content.pm.PackageManager.PERMISSION_GRANTED
+                    if (granted) startRecording() else askMic.launch(android.Manifest.permission.RECORD_AUDIO)
+                }
+            } else {
+                null
+            },
+            voiceBar = when (val r = recording) {
+                is VoiceRecorder.State.Recording -> {
+                    { VoiceComposerBar(true, r.durationMs, r.recent, viewModel::cancelRecording, viewModel::stopRecording) }
+                }
+                is VoiceRecorder.State.Recorded -> {
+                    { VoiceComposerBar(false, r.durationMs, r.waveform, viewModel::cancelRecording, viewModel::sendRecording) }
+                }
+                VoiceRecorder.State.Idle -> null
+            },
             attachments = uiState.attachments,
             onAttach = if (uiState.editingOriginal == null) {
                 { pickPhotos.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }

@@ -73,6 +73,29 @@ class SendMediaUseCaseTest {
         assertFalse(first.hasThumbnail())
     }
 
+    /**
+     * iOS has no media id field for voice and reads it out of `codec` as `mime|id|size`; the
+     * waveform goes as 0–255. Mutation: put the blob's size in the codec — reddens.
+     */
+    @Test
+    fun `a voice note carries its id in the codec, as iOS reads it`() = runTest {
+        val media = FakeMedia()
+        val send: SendMessageUseCase = mock()
+        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        val file = java.io.File.createTempFile("voice", ".m4a").apply { writeBytes(ByteArray(500) { 3 }) }
+
+        SendMediaUseCase(images, media, send).voice("peer", file, 4200, listOf(0f, 0.5f, 1f))
+
+        assertFalse(file.exists())
+        val content = argumentCaptor<ByteArray>()
+        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        val voice = MessageContent.parseFrom(content.firstValue).voice
+        assertEquals("audio/m4a|store-0|500", voice.codec)
+        assertEquals(4200, voice.durationMs)
+        assertEquals(listOf(0, 128, 255), voice.waveformList)
+        assertEquals(500, MediaCrypto.open(media.staged.values.first(), voice.encryptionKey.toByteArray()).size)
+    }
+
     /** Nothing the recipient could not open is sent: a failed upload fails the message. */
     @Test
     fun `a failed upload fails the message and sends nothing`() = runTest {

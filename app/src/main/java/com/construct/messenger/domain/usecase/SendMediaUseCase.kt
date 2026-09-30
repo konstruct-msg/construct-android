@@ -9,7 +9,9 @@ import com.construct.messenger.media.MediaCrypto
 import com.construct.messenger.util.MediaWire
 import com.construct.messenger.util.TextWire
 import com.google.protobuf.ByteString
+import java.io.File
 import java.util.UUID
+import kotlin.math.roundToInt
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +26,7 @@ import shared.proto.messaging.v1.Content.MediaDimensions
 import shared.proto.messaging.v1.Content.MediaMessage
 import shared.proto.messaging.v1.Content.MediaType
 import shared.proto.messaging.v1.Content.MessageContent
+import shared.proto.messaging.v1.Content.VoiceMessage
 
 /**
  * Photos sent as one album. **Canon:** iOS `ChatSendCoordinator` + `MediaUploadManager` +
@@ -86,6 +89,45 @@ class SendMediaUseCase @Inject constructor(
         return sendMessage.deliverPrepared(contactId, messageId, timestampMs, content.toByteArray())
     }
 
+    /**
+     * A voice note. **Canon:** iOS `MediaWireCodec.voiceMessageContent` — `MessageContent.voice`
+     * with the key and the blob's digest, the length, the waveform as 0–255, and — there being
+     * no field for it — the media id in `codec` as `audio/m4a|<id>|<size of the recording>`.
+     * The recording is sealed, kept under a local id for the bubble, and deleted from the cache.
+     */
+    suspend fun voice(contactId: String, recording: File, durationMs: Long, waveform: List<Float>): SendOutcome {
+        val messageId = UUID.randomUUID().toString().lowercase()
+        val timestampMs = System.currentTimeMillis()
+        val localId = MediaWire.LOCAL_PREFIX + UUID.randomUUID()
+        val audio = withContext(Dispatchers.IO) { recording.readBytes().also { recording.delete() } }
+        val sealed = MediaCrypto.seal(audio)
+        media.stage(localId, sealed.blob)
+        fun wire(mediaId: String, url: String) = MediaWire.stored(
+            MessageContent.newBuilder().setVoice(
+                VoiceMessage.newBuilder()
+                    .setFileUrl(url)
+                    .setEncryptionKey(ByteString.copyFrom(sealed.key))
+                    .setFileHash(ByteString.copyFrom(sealed.sha256))
+                    .setDurationMs(durationMs.toInt())
+                    .addAllWaveform(waveform.map { (it * 255).roundToInt().coerceIn(0, 255) })
+                    .setCodec("$VOICE_MIME|$mediaId|${audio.size}"),
+            ).build(),
+        )!!
+        sendMessage.persistMedia(contactId, messageId, timestampMs, wire(localId, ""), null)
+        val uploaded = try {
+            media.upload(localId, sealed.sha256)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "voice upload for ${messageId.take(8)}… failed", e)
+            sendMessage.markFailed(messageId)
+            return SendOutcome.Failed(messageId, "upload failed")
+        }
+        val stored = wire(uploaded.mediaId, uploaded.downloadUrl)
+        sendMessage.replaceMedia(messageId, stored)
+        return sendMessage.deliverPrepared(contactId, messageId, timestampMs, MediaWire.content(stored.kind, stored.bytes)!!)
+    }
+
     private class Staged(val localId: String, val sealed: MediaCrypto.Sealed, val photo: ImagePreparer.Prepared) {
         fun item(uploaded: com.construct.messenger.data.api.MediaService.Uploaded) = item(uploaded.mediaId, uploaded.downloadUrl)
 
@@ -118,5 +160,8 @@ class SendMediaUseCase @Inject constructor(
 
         /** iOS `MediaUploadManager`: four at a time. */
         const val PARALLEL_UPLOADS = 4
+
+        /** What iOS names a voice note's type — not a registered one, but the one it reads. */
+        const val VOICE_MIME = "audio/m4a"
     }
 }

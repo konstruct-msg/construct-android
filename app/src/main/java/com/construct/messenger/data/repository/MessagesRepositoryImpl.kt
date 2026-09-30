@@ -37,6 +37,7 @@ class MessagesRepositoryImpl @Inject constructor(
     private val alerts: IncomingAlerts,
     private val sendContactCard: SendContactCardUseCase,
     private val sendMedia: SendMediaUseCase,
+    private val media: MediaRepository,
 ) : MessagesRepository {
 
     override fun observeContact(contactId: String): Flow<List<Message>> {
@@ -64,6 +65,11 @@ class MessagesRepositoryImpl @Inject constructor(
             }
             outcome
         }.await()
+
+    override suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>): SendOutcome =
+        scope.async { sendMedia.voice(contactId, recording, durationMs, waveform) }.await()
+
+    override suspend fun mediaBytes(item: com.construct.messenger.data.model.MediaItem): ByteArray = media.bytes(item)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 

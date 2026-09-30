@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import androidx.compose.foundation.border
@@ -73,6 +74,8 @@ fun MessageInputView(
     attachments: List<Uri> = emptyList(),
     onAttach: (() -> Unit)? = null,
     onRemoveAttachment: (Uri) -> Unit = {},
+    onMic: (() -> Unit)? = null,
+    voiceBar: (@Composable () -> Unit)? = null,
 ) {
     Column(
         modifier = modifier
@@ -83,10 +86,15 @@ fun MessageInputView(
             editingPreview != null -> EditComposerBar(preview = editingPreview, onCancel = onCancelEdit)
             replyPreview != null -> ReplyComposerBar(preview = replyPreview, onCancel = onCancelReply)
         }
+        if (voiceBar != null) {
+            // iOS: the recording bar takes the row's place; nothing else of the composer shows.
+            voiceBar()
+            return@Column
+        }
         if (attachments.isNotEmpty()) AttachmentStrip(attachments, onRemoveAttachment)
         // iOS `MessageInputTextBar`: the attach "+" in a glass circle (44), then a glass capsule
         // (44 high) holding the text — message face, 15 — with the send button inside at the
-        // trailing edge once there is something to send. The mic is not here yet.
+        // trailing edge once there is something to send, the microphone while there is not.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -151,6 +159,18 @@ fun MessageInputView(
                         .size(28.dp)
                         .clip(CircleShape)
                         .clickable(enabled = enabled, onClick = onSend),
+                )
+            } else if (onMic != null) {
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Filled.Mic,
+                    contentDescription = stringResource(R.string.voice_record),
+                    tint = CTColor.textDim,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onMic)
+                        .padding(2.dp),
                 )
             }
         }

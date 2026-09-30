@@ -127,6 +127,9 @@
     <string name="voice_message">Voice message</string>
     <string name="file_attachment">File</string>
     <string name="sticker">Sticker</string>
+    <string name="voice_stop">Stop recording</string>
+    <string name="voice_record">Record a voice message</string>
+    <string name="voice_mic_denied">Konstruct needs the microphone to record voice messages. Allow it in the app\'s settings.</string>
     <string name="attach">Attach</string>
     <string name="remove">Remove</string>
     <string name="retry">Retry</string>
