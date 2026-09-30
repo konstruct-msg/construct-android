@@ -42,9 +42,18 @@ data class ChatUiState(
     val contactName: String = "",
     /** Photos picked for the next message, in order; its text is then their caption. */
     val attachments: List<Uri> = emptyList(),
+    /** Files picked for the next message: each with its name and size for the strip. */
+    val files: List<PickedFile> = emptyList(),
 )
 
+data class PickedFile(val uri: Uri, val name: String, val sizeBytes: Long)
+
+/** A received file, decrypted, for the screen to hand to the app that opens it. */
+data class OpenFile(val uri: Uri, val mime: String)
+
 private data class EditTarget(val messageId: String, val original: String)
+
+private data class Composer(val reply: ReplyRef?, val edit: EditTarget?, val photos: List<Uri>, val files: List<PickedFile>)
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -74,15 +83,25 @@ class ChatViewModel @Inject constructor(
     private val replying = MutableStateFlow<ReplyRef?>(null)
     private val editing = MutableStateFlow<EditTarget?>(null)
     private val attachments = MutableStateFlow<List<Uri>>(emptyList())
+    private val files = MutableStateFlow<List<PickedFile>>(emptyList())
+
+    private val _fileLoading = MutableStateFlow<Set<String>>(emptySet())
+    val fileLoading: StateFlow<Set<String>> = _fileLoading.asStateFlow()
+
+    private val _fileUnavailable = MutableStateFlow<Set<String>>(emptySet())
+    val fileUnavailable: StateFlow<Set<String>> = _fileUnavailable.asStateFlow()
+
+    private val _openFile = kotlinx.coroutines.flow.MutableSharedFlow<OpenFile>(extraBufferCapacity = 1)
+    val openFile: kotlinx.coroutines.flow.SharedFlow<OpenFile> = _openFile
 
     val uiState: StateFlow<ChatUiState> = combine(
         messagesRepository.observeContact(contactId),
         contactsRepository.contacts,
         draft,
         sending,
-        combine(replying, editing, attachments) { reply, edit, photos -> Triple(reply, edit, photos) },
+        combine(replying, editing, attachments, files) { reply, edit, photos, picked -> Composer(reply, edit, photos, picked) },
     ) { messages, contacts, draftText, isSending, composer ->
-        val (reply, edit, photos) = composer
+        val (reply, edit, photos, picked) = composer
         val contact = contacts.find { it.userId == contactId }
         val title = when {
             contact == null -> DisplayNameGenerator.generate(contactId).uppercase()
@@ -102,6 +121,7 @@ class ChatViewModel @Inject constructor(
             contactName = contact?.let { it.localName ?: if (it.username.isNotBlank()) "@${it.username}" else it.displayName }
                 ?: DisplayNameGenerator.generate(contactId),
             attachments = photos,
+            files = picked,
         )
     }.stateIn(
         viewModelScope,
@@ -178,6 +198,36 @@ class ChatViewModel @Inject constructor(
 
     fun removeAttachment(uri: Uri) {
         attachments.value = attachments.value - uri
+        files.value = files.value.filterNot { it.uri == uri }
+    }
+
+    fun attachFiles(uris: List<Uri>) {
+        if (editing.value != null || uris.isEmpty()) return
+        val known = files.value.map { it.uri }.toSet()
+        val added = uris.filterNot { it in known }.map { uri ->
+            val (name, size) = runCatching { messagesRepository.describe(uri) }.getOrDefault("file" to -1L)
+            PickedFile(uri, name, size)
+        }
+        files.value = (files.value + added).take(MAX_ATTACHMENTS)
+    }
+
+    /** Fetch, open and hand [item] (a received or sent file) to the app that shows it. */
+    fun openFile(item: com.construct.messenger.data.model.MediaItem) {
+        val id = item.mediaId
+        if (id in _fileLoading.value) return
+        _fileLoading.value = _fileLoading.value + id
+        viewModelScope.launch {
+            try {
+                val uri = messagesRepository.openable(item, item.filename ?: "file")
+                _openFile.tryEmit(OpenFile(uri, item.mimeType))
+            } catch (e: MediaUnavailable) {
+                _fileUnavailable.value = _fileUnavailable.value + id
+            } catch (e: Exception) {
+                // Network: a tap tries again.
+            } finally {
+                _fileLoading.value = _fileLoading.value - id
+            }
+        }
     }
 
     /** False when the microphone would not open. The screen has RECORD_AUDIO by now. */
@@ -226,20 +276,26 @@ class ChatViewModel @Inject constructor(
     fun send() {
         val text = draft.value.trim()
         val photos = attachments.value
-        if ((text.isEmpty() && photos.isEmpty()) || sending.value) return
+        val picked = files.value
+        if ((text.isEmpty() && photos.isEmpty() && picked.isEmpty()) || sending.value) return
         val reply = replying.value
         val edit = editing.value
         sending.value = true
         viewModelScope.launch {
             try {
-                if (photos.isNotEmpty() && edit == null) {
+                if ((photos.isNotEmpty() || picked.isNotEmpty()) && edit == null) {
                     // The bubble is in the transcript before the uploads end; the composer
-                    // is free again at once, as on iOS.
+                    // is free again at once, as on iOS. Photos and files go as two messages,
+                    // the text with the first.
                     attachments.value = emptyList()
+                    files.value = emptyList()
                     draft.value = ""
                     replying.value = null
                     sending.value = false
-                    messagesRepository.sendPhotos(contactId, photos, text, reply)
+                    if (photos.isNotEmpty()) messagesRepository.sendPhotos(contactId, photos, text, reply)
+                    if (picked.isNotEmpty()) {
+                        messagesRepository.sendFiles(contactId, picked.map { it.uri }, if (photos.isEmpty()) text else "")
+                    }
                     return@launch
                 }
                 val outcome = if (edit != null) {

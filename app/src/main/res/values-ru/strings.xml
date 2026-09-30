@@ -124,6 +124,10 @@
     <string name="voice_message">Голосовое сообщение</string>
     <string name="file_attachment">Файл</string>
     <string name="sticker">Стикер</string>
+    <string name="open_file">Открыть</string>
+    <string name="attach_photo_video">Фото или видео</string>
+    <string name="attach_file">Файл</string>
+    <string name="no_app_to_open">На телефоне нет приложения, которое откроет этот файл.</string>
     <string name="voice_stop">Остановить запись</string>
     <string name="voice_record">Записать голосовое сообщение</string>
     <string name="voice_mic_denied">Для голосовых сообщений Konstruct нужен микрофон. Разрешите его в настройках приложения.</string>

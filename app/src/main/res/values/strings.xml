@@ -127,6 +127,10 @@
     <string name="voice_message">Voice message</string>
     <string name="file_attachment">File</string>
     <string name="sticker">Sticker</string>
+    <string name="open_file">Open</string>
+    <string name="attach_photo_video">Photo or video</string>
+    <string name="attach_file">File</string>
+    <string name="no_app_to_open">No app on this phone opens this file.</string>
     <string name="voice_stop">Stop recording</string>
     <string name="voice_record">Record a voice message</string>
     <string name="voice_mic_denied">Konstruct needs the microphone to record voice messages. Allow it in the app\'s settings.</string>

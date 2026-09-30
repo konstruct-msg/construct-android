@@ -91,6 +91,9 @@ fun MessageBubble(
     onJumpToReply: () -> Unit = {},
     voicePlayback: VoicePlayback = VoicePlayback(),
     onToggleVoice: () -> Unit = {},
+    fileLoading: Set<String> = emptySet(),
+    fileUnavailable: Set<String> = emptySet(),
+    onOpenFile: (com.construct.messenger.data.model.MediaItem) -> Unit = {},
 ) {
     val isOutgoing = message.isOutgoing
     val shape = RoundedCornerShape(10.dp)
@@ -116,7 +119,24 @@ fun MessageBubble(
         Column(horizontalAlignment = if (isOutgoing) Alignment.End else Alignment.Start) {
             val album = (message.media as? MessageMedia.Album)?.takeUnless { it.isFiles }
             val voice = message.media as? MessageMedia.Voice
-            if (voice != null) {
+            val files = (message.media as? MessageMedia.Album)?.takeIf { it.isFiles }
+            if (files != null) {
+                if (replyLabel != null) {
+                    Box(Modifier.widthIn(max = maxBubble)) {
+                        ReplyQuoteStrip(replyLabel, quoteBar, quoteColor, onJumpToReply, onLongPress)
+                    }
+                }
+                Box(
+                    Modifier.combinedClickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {},
+                        onLongClick = onLongPress,
+                    ),
+                ) {
+                    FilesBubble(files, message.body, isOutgoing, maxBubble, fileLoading, fileUnavailable, onOpenFile)
+                }
+            } else if (voice != null) {
                 VoiceBubble(
                     voice = voice,
                     outgoing = isOutgoing,
@@ -170,9 +190,6 @@ fun MessageBubble(
                         onJump = onJumpToReply,
                         onLongPress = onLongPress,
                     )
-                }
-                mediaLine(message.media)?.let { line ->
-                    Text(text = line, style = ctRegular(13), color = contentColor)
                 }
                 if (message.body.isNotBlank() || message.media == null) {
                     Text(
@@ -239,17 +256,6 @@ fun MessageBubble(
             }
         }
     }
-}
-
-/**
- * Files until they have a bubble of their own: their names, so the message is not blank. Opening
- * one comes next.
- */
-@Composable
-private fun mediaLine(media: MessageMedia?): String? = when (media) {
-    null -> null
-    is MessageMedia.Voice -> null
-    is MessageMedia.Album -> media.items.map { it.filename ?: stringResource(R.string.file_attachment) }.joinToString("\n")
 }
 
 /** Canon: iOS `MessageBubbleReplyPreview` — accent rule and up to two lines. Tap jumps. */

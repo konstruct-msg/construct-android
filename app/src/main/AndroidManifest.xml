@@ -56,6 +56,16 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/log_export_paths" />
         </provider>
+        <!-- A received file, handed to the app the user opens it with (MediaRepository.openable). Only cache/open. -->
+        <provider
+            android:name=".media.MediaFileProvider"
+            android:authorities="${applicationId}.media"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/media_open_paths" />
+        </provider>
     </application>
 
 </manifest>

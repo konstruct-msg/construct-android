@@ -25,6 +25,15 @@ interface MessagesRepository {
      */
     suspend fun sendPhotos(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef? = null): SendOutcome
 
+    /** Send the files at [uris] as one message, [caption] its text. */
+    suspend fun sendFiles(contactId: String, uris: List<Uri>, caption: String): SendOutcome
+
+    /** A received file, ready to hand to another app: a content URI with a read grant to give. */
+    suspend fun openable(item: com.construct.messenger.data.model.MediaItem, name: String): Uri
+
+    /** Name and size of a picked file, for the strip — nothing is read. */
+    fun describe(uri: Uri): Pair<String, Long>
+
     /** Send a recorded voice note; [recording] is taken over (and deleted once sealed). */
     suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>): SendOutcome
 

@@ -35,6 +35,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import com.construct.messenger.ui.theme.ctRegular
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
 import com.construct.messenger.media.VoiceRecorder
 import com.construct.messenger.ui.components.VoiceComposerBar
 import com.construct.messenger.ui.components.VoicePlayback
@@ -72,8 +77,23 @@ fun ChatScreen(
     val playing by viewModel.playing.collectAsStateWithLifecycle()
     val voiceLoading by viewModel.voiceLoading.collectAsStateWithLifecycle()
     val voiceUnavailable by viewModel.voiceUnavailable.collectAsStateWithLifecycle()
+    val fileLoading by viewModel.fileLoading.collectAsStateWithLifecycle()
+    val fileUnavailable by viewModel.fileUnavailable.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
     val micDenied = stringResource(R.string.voice_mic_denied)
+    val noApp = stringResource(R.string.no_app_to_open)
+    LaunchedEffect(Unit) {
+        viewModel.openFile.collect { open ->
+            val view = android.content.Intent(android.content.Intent.ACTION_VIEW)
+                .setDataAndType(open.uri, open.mime)
+                .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            try {
+                context.startActivity(android.content.Intent.createChooser(view, null))
+            } catch (e: android.content.ActivityNotFoundException) {
+                android.widget.Toast.makeText(context, noApp, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
     fun startRecording() {
         if (!viewModel.startRecording()) {
             android.widget.Toast.makeText(context, micDenied, android.widget.Toast.LENGTH_LONG).show()
@@ -158,6 +178,9 @@ fun ChatScreen(
                         uploading = voiceId!!.startsWith(com.construct.messenger.util.MediaWire.LOCAL_PREFIX),
                     ),
                     onToggleVoice = { voice?.let(viewModel::toggleVoice) },
+                    fileLoading = fileLoading,
+                    fileUnavailable = fileUnavailable,
+                    onOpenFile = viewModel::openFile,
                     message = message,
                     isLastInGroup = isLastInGroup(index, uiState.messages),
                     replyLabel = replyLabel(message, uiState.messages),
@@ -189,6 +212,11 @@ fun ChatScreen(
         val pickPhotos = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) {
             viewModel.attach(it)
         }
+        // The system document picker: any file, nothing else readable.
+        val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) {
+            viewModel.attachFiles(it)
+        }
+        var attachMenuOpen by remember { mutableStateOf(false) }
         MessageInputView(
             onMic = if (uiState.editingOriginal == null) {
                 {
@@ -210,10 +238,32 @@ fun ChatScreen(
             },
             attachments = uiState.attachments,
             onAttach = if (uiState.editingOriginal == null) {
-                { pickPhotos.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                { attachMenuOpen = true }
             } else {
                 null
             },
+            attachMenu = {
+                // iOS `MediaPickerSheet` has Gallery and Files tabs; here the two are a menu.
+                DropdownMenu(expanded = attachMenuOpen, onDismissRequest = { attachMenuOpen = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.attach_photo_video), style = ctRegular(14), color = CTColor.text) },
+                        leadingIcon = { Icon(Icons.Filled.Image, null, tint = CTColor.text) },
+                        onClick = {
+                            attachMenuOpen = false
+                            pickPhotos.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.attach_file), style = ctRegular(14), color = CTColor.text) },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.InsertDriveFile, null, tint = CTColor.text) },
+                        onClick = {
+                            attachMenuOpen = false
+                            pickFiles.launch(arrayOf("*/*"))
+                        },
+                    )
+                }
+            },
+            files = uiState.files.map { it.uri to it.name },
             onRemoveAttachment = viewModel::removeAttachment,
             value = uiState.draft,
             onValueChange = viewModel::onDraftChange,

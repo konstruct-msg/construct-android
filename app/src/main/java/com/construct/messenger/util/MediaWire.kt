@@ -25,6 +25,18 @@ object MediaWire {
         is MessageMedia.Voice -> media.audio.mediaId.startsWith(LOCAL_PREFIX)
     }
 
+    /** iOS `protoMediaType`: gif animated, other images images, video, audio, else a file. */
+    fun mediaTypeOf(mime: String): shared.proto.messaging.v1.Content.MediaType {
+        val m = mime.lowercase()
+        return when {
+            m == "image/gif" -> shared.proto.messaging.v1.Content.MediaType.MEDIA_TYPE_ANIMATED
+            m.startsWith("image/") -> shared.proto.messaging.v1.Content.MediaType.MEDIA_TYPE_IMAGE
+            m.startsWith("video/") -> shared.proto.messaging.v1.Content.MediaType.MEDIA_TYPE_VIDEO
+            m.startsWith("audio/") -> shared.proto.messaging.v1.Content.MediaType.MEDIA_TYPE_AUDIO
+            else -> shared.proto.messaging.v1.Content.MediaType.MEDIA_TYPE_FILE
+        }
+    }
+
     /** The `MessageContent` a stored media message was, to send again. */
     fun content(kind: String, bytes: ByteArray): ByteArray? = runCatching {
         when (kind) {

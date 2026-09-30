@@ -38,6 +38,7 @@ class MessagesRepositoryImpl @Inject constructor(
     private val sendContactCard: SendContactCardUseCase,
     private val sendMedia: SendMediaUseCase,
     private val media: MediaRepository,
+    private val pickedFiles: com.construct.messenger.media.PickedFiles,
 ) : MessagesRepository {
 
     override fun observeContact(contactId: String): Flow<List<Message>> {
@@ -68,6 +69,13 @@ class MessagesRepositoryImpl @Inject constructor(
 
     override suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>): SendOutcome =
         scope.async { sendMedia.voice(contactId, recording, durationMs, waveform) }.await()
+
+    override suspend fun sendFiles(contactId: String, uris: List<Uri>, caption: String): SendOutcome =
+        scope.async { sendMedia.files(contactId, uris, caption) }.await()
+
+    override suspend fun openable(item: com.construct.messenger.data.model.MediaItem, name: String): Uri = media.openable(item, name)
+
+    override fun describe(uri: Uri): Pair<String, Long> = pickedFiles.describe(uri)
 
     override suspend fun mediaBytes(item: com.construct.messenger.data.model.MediaItem): ByteArray = media.bytes(item)
 

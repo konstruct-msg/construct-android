@@ -4,6 +4,7 @@ import android.content.Context
 import com.construct.messenger.data.api.MediaService
 import com.construct.messenger.data.model.MediaItem
 import com.construct.messenger.diagnostics.Log
+import com.construct.messenger.media.FileContent
 import com.construct.messenger.media.MediaCrypto
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -36,6 +37,13 @@ interface MediaRepository {
      * gave it, so the sender never downloads its own photo.
      */
     suspend fun upload(localId: String, sha256: ByteArray): MediaService.Uploaded
+
+    /**
+     * [item], a received file, decrypted into a file another app can be handed: a content URI
+     * for [name], readable only through the grant that goes with it. The copy is deleted an hour
+     * later, when the next file is opened, or when the app starts.
+     */
+    suspend fun openable(item: MediaItem, name: String): android.net.Uri
 }
 
 class MediaUnavailable(message: String) : Exception(message)
@@ -55,6 +63,9 @@ class MediaRepositoryImpl @Inject constructor(
     private val mediaService: MediaService,
 ) : MediaRepository {
     private val dir = File(context.filesDir, "media")
+    private val openDir = File(context.cacheDir, OPEN_DIR).also { it.deleteRecursively() }
+    private val authority = "${context.packageName}.media"
+    private val appContext = context
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val inFlight = ConcurrentHashMap<String, Deferred<ByteArray>>()
     private val missingUntil = ConcurrentHashMap<String, Long>()
@@ -100,6 +111,16 @@ class MediaRepositoryImpl @Inject constructor(
         error("unreachable")
     }
 
+    override suspend fun openable(item: MediaItem, name: String): android.net.Uri = withContext(Dispatchers.IO) {
+        val bytes = FileContent.unpacked(bytes(item), item.mimeType)
+        val cutoff = System.currentTimeMillis() - OPEN_KEEP_MS
+        openDir.listFiles()?.filter { it.lastModified() < cutoff }?.forEach { it.deleteRecursively() }
+        val folder = File(openDir, fileName(item.mediaId) ?: throw MediaUnavailable("malformed media id")).apply { mkdirs() }
+        val file = File(folder, FileContent.safeName(name))
+        file.writeBytes(bytes)
+        androidx.core.content.FileProvider.getUriForFile(appContext, authority, file)
+    }
+
     private suspend fun blob(mediaId: String, file: File): ByteArray {
         missingUntil[mediaId]?.let { until ->
             if (System.currentTimeMillis() < until) throw MediaUnavailable("not found")
@@ -130,6 +151,8 @@ class MediaRepositoryImpl @Inject constructor(
     companion object {
         private const val TAG = "MediaRepository"
         private const val NOT_FOUND_MS = 30 * 60 * 1000L
+        const val OPEN_DIR = "open"
+        private const val OPEN_KEEP_MS = 60 * 60 * 1000L
         private val UPLOAD_RETRY_MS = listOf(3_000L, 6_000L)
         private val RETRYABLE = setOf(
             io.grpc.Status.Code.CANCELLED,

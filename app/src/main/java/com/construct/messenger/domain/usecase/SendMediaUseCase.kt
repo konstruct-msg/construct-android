@@ -6,6 +6,7 @@ import com.construct.messenger.data.repository.MediaRepository
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.media.ImagePreparer
 import com.construct.messenger.media.MediaCrypto
+import com.construct.messenger.media.PickedFiles
 import com.construct.messenger.util.MediaWire
 import com.construct.messenger.util.TextWire
 import com.google.protobuf.ByteString
@@ -40,6 +41,7 @@ import shared.proto.messaging.v1.Content.VoiceMessage
  */
 class SendMediaUseCase @Inject constructor(
     private val images: ImagePreparer,
+    private val files: PickedFiles,
     private val media: MediaRepository,
     private val sendMessage: SendMessageUseCase,
 ) {
@@ -87,6 +89,65 @@ class SendMediaUseCase @Inject constructor(
         sendMessage.replaceMedia(messageId, album)
         val content = MessageContent.newBuilder().setMediaAlbum(MediaAlbumMessage.parseFrom(album.bytes)).build()
         return sendMessage.deliverPrepared(contactId, messageId, timestampMs, content.toByteArray())
+    }
+
+    /**
+     * Documents, as one album of files. **Canon:** iOS `MediaManager.uploadFile` +
+     * `MediaWireCodec.fileAlbumContent` — each file whole, its type as the system names it (the
+     * album's items say what kind it is, `MediaType` from the type as iOS maps it), its name, and
+     * its own size. Never compressed: iOS's receiver cannot tell a compressed file (the flag is
+     * not on the wire), so Android does not make any.
+     */
+    suspend fun files(contactId: String, uris: List<Uri>, caption: String): SendOutcome {
+        require(uris.isNotEmpty())
+        val messageId = UUID.randomUUID().toString().lowercase()
+        val timestampMs = System.currentTimeMillis()
+        val staged = try {
+            withContext(Dispatchers.IO) {
+                uris.map { uri ->
+                    val picked = files.read(uri)
+                    val sealed = MediaCrypto.seal(picked.bytes)
+                    val localId = MediaWire.LOCAL_PREFIX + UUID.randomUUID()
+                    media.stage(localId, sealed.blob)
+                    StagedFile(localId, sealed, picked.name, picked.mime, picked.bytes.size.toLong())
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "files could not be read", e)
+            return SendOutcome.Failed(messageId, if (e is PickedFiles.TooLarge) "file too large" else "file unreadable")
+        }
+        val caption = caption.trim()
+        sendMessage.persistMedia(contactId, messageId, timestampMs, stored(staged.map { it.item(it.localId, "") }, caption, null), null)
+        val uploaded = try {
+            coroutineScope {
+                val gate = Semaphore(PARALLEL_UPLOADS)
+                staged.map { f -> async { gate.withPermit { media.upload(f.localId, f.sealed.sha256).let { f.item(it.mediaId, it.downloadUrl) } } } }.awaitAll()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "file upload for ${messageId.take(8)}… failed", e)
+            sendMessage.markFailed(messageId)
+            return SendOutcome.Failed(messageId, "upload failed")
+        }
+        val album = stored(uploaded, caption, null)
+        sendMessage.replaceMedia(messageId, album)
+        return sendMessage.deliverPrepared(contactId, messageId, timestampMs, MediaWire.content(album.kind, album.bytes)!!)
+    }
+
+    private class StagedFile(val localId: String, val sealed: MediaCrypto.Sealed, val name: String, val mime: String, val size: Long) {
+        fun item(mediaId: String, url: String): MediaMessage = MediaMessage.newBuilder()
+            .setMediaType(MediaWire.mediaTypeOf(mime))
+            .setFileUrl(url)
+            .setEncryptionKey(ByteString.copyFrom(sealed.key))
+            .setFileHash(ByteString.copyFrom(sealed.sha256))
+            .setFileSize(size)
+            .setMimeType(mime)
+            .setFilename(name)
+            .setMediaId(mediaId)
+            .build()
     }
 
     /**

@@ -27,12 +27,17 @@ class SendMediaUseCaseTest {
     private class FakeMedia(val fail: Boolean = false) : MediaRepository {
         val staged = linkedMapOf<String, ByteArray>()
         override suspend fun bytes(item: MediaItem) = error("not read here")
+        override suspend fun openable(item: MediaItem, name: String): Uri = error("not opened here")
         override suspend fun stage(localId: String, blob: ByteArray) { staged[localId] = blob }
         override suspend fun upload(localId: String, sha256: ByteArray): MediaService.Uploaded {
             if (fail) throw io.grpc.StatusException(io.grpc.Status.UNAVAILABLE)
             assertTrue(sha256.contentEquals(MediaCrypto.sha256(staged.getValue(localId))))
             return MediaService.Uploaded("store-${staged.keys.indexOf(localId)}", "grpc://media/MediaService/DownloadMedia")
         }
+    }
+
+    private val pickedFiles: com.construct.messenger.media.PickedFiles = mock<com.construct.messenger.media.PickedFiles>().also {
+        whenever(it.read(any())).thenReturn(com.construct.messenger.media.PickedFiles.Picked("report.pdf", "application/pdf", ByteArray(700) { 5 }))
     }
 
     private val images: ImagePreparer = mock<ImagePreparer>().also {
@@ -50,7 +55,7 @@ class SendMediaUseCaseTest {
         val send: SendMessageUseCase = mock()
         whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
 
-        SendMediaUseCase(images, media, send).photos("peer", listOf(mock<Uri>(), mock<Uri>()), " look ", null)
+        SendMediaUseCase(images, pickedFiles, media, send).photos("peer", listOf(mock<Uri>(), mock<Uri>()), " look ", null)
 
         val shown = argumentCaptor<MediaWire.Stored>()
         verify(send).persistMedia(eq("peer"), any(), any(), shown.capture(), eq(null))
@@ -84,7 +89,7 @@ class SendMediaUseCaseTest {
         whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
         val file = java.io.File.createTempFile("voice", ".m4a").apply { writeBytes(ByteArray(500) { 3 }) }
 
-        SendMediaUseCase(images, media, send).voice("peer", file, 4200, listOf(0f, 0.5f, 1f))
+        SendMediaUseCase(images, pickedFiles, media, send).voice("peer", file, 4200, listOf(0f, 0.5f, 1f))
 
         assertFalse(file.exists())
         val content = argumentCaptor<ByteArray>()
@@ -96,11 +101,35 @@ class SendMediaUseCaseTest {
         assertEquals(500, MediaCrypto.open(media.staged.values.first(), voice.encryptionKey.toByteArray()).size)
     }
 
+    /**
+     * A document goes as iOS sends one: an album item of type FILE with its name, its own type
+     * and its own size, uncompressed. Mutation: send the blob's size — reddens.
+     */
+    @Test
+    fun `a file goes with its name, type and own size`() = runTest {
+        val media = FakeMedia()
+        val send: SendMessageUseCase = mock()
+        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+
+        SendMediaUseCase(images, pickedFiles, media, send).files("peer", listOf(mock<Uri>()), "q3")
+
+        val content = argumentCaptor<ByteArray>()
+        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        val album = MessageContent.parseFrom(content.firstValue).mediaAlbum
+        val item = album.getItems(0)
+        assertEquals("q3", album.caption)
+        assertEquals(MediaType.MEDIA_TYPE_FILE, item.mediaType)
+        assertEquals("report.pdf", item.filename)
+        assertEquals("application/pdf", item.mimeType)
+        assertEquals(700L, item.fileSize)
+        assertEquals(700, MediaCrypto.open(media.staged.values.first(), item.encryptionKey.toByteArray()).size)
+    }
+
     /** Nothing the recipient could not open is sent: a failed upload fails the message. */
     @Test
     fun `a failed upload fails the message and sends nothing`() = runTest {
         val send: SendMessageUseCase = mock()
-        val outcome = SendMediaUseCase(images, FakeMedia(fail = true), send).photos("peer", listOf(mock<Uri>()), "", null)
+        val outcome = SendMediaUseCase(images, pickedFiles, FakeMedia(fail = true), send).photos("peer", listOf(mock<Uri>()), "", null)
 
         assertTrue(outcome is SendOutcome.Failed)
         verify(send).markFailed(any())

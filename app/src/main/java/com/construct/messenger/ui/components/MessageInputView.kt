@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
@@ -21,10 +22,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.foundation.text.BasicTextField
@@ -72,7 +75,9 @@ fun MessageInputView(
     editingPreview: String? = null,
     onCancelEdit: () -> Unit = {},
     attachments: List<Uri> = emptyList(),
+    files: List<Pair<Uri, String>> = emptyList(),
     onAttach: (() -> Unit)? = null,
+    attachMenu: (@Composable () -> Unit)? = null,
     onRemoveAttachment: (Uri) -> Unit = {},
     onMic: (() -> Unit)? = null,
     voiceBar: (@Composable () -> Unit)? = null,
@@ -91,7 +96,7 @@ fun MessageInputView(
             voiceBar()
             return@Column
         }
-        if (attachments.isNotEmpty()) AttachmentStrip(attachments, onRemoveAttachment)
+        if (attachments.isNotEmpty() || files.isNotEmpty()) AttachmentStrip(attachments, files, onRemoveAttachment)
         // iOS `MessageInputTextBar`: the attach "+" in a glass circle (44), then a glass capsule
         // (44 high) holding the text — message face, 15 — with the send button inside at the
         // trailing edge once there is something to send, the microphone while there is not.
@@ -115,6 +120,7 @@ fun MessageInputView(
                     tint = CTColor.textDim,
                     modifier = Modifier.size(24.dp),
                 )
+                attachMenu?.invoke()
             }
             Spacer(Modifier.width(8.dp))
         }
@@ -149,7 +155,7 @@ fun MessageInputView(
                     }
                 },
             )
-            if (value.isNotBlank() || attachments.isNotEmpty()) {
+            if (value.isNotBlank() || attachments.isNotEmpty() || files.isNotEmpty()) {
                 Spacer(Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.Filled.ArrowCircleUp,
@@ -183,7 +189,7 @@ fun MessageInputView(
  * remove button; they go as one album with the text as its caption.
  */
 @Composable
-private fun AttachmentStrip(uris: List<Uri>, onRemove: (Uri) -> Unit) {
+private fun AttachmentStrip(uris: List<Uri>, files: List<Pair<Uri, String>>, onRemove: (Uri) -> Unit) {
     val shape = RoundedCornerShape(CornerRadius.small)
     LazyRow(
         modifier = Modifier
@@ -196,6 +202,39 @@ private fun AttachmentStrip(uris: List<Uri>, onRemove: (Uri) -> Unit) {
         contentPadding = PaddingValues(Spacing.small),
         horizontalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
+        // iOS `MessageAttachmentPreviews`: a file is a chip — icon, name, remove — not a tile.
+        items(files, key = { it.first.toString() }) { (uri, name) ->
+            Row(
+                Modifier
+                    .height(80.dp)
+                    .clip(RoundedCornerShape(CornerRadius.small))
+                    .background(CTColor.bg)
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.AutoMirrored.Filled.InsertDriveFile, null, tint = CTColor.accent, modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    name,
+                    style = ctRegular(13),
+                    color = CTColor.text,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 160.dp),
+                )
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.remove),
+                    tint = CTColor.textDim,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .clip(CircleShape)
+                        .clickable { onRemove(uri) }
+                        .padding(4.dp)
+                        .size(18.dp),
+                )
+            }
+        }
         items(uris, key = { it.toString() }) { uri ->
             Box(Modifier.size(80.dp)) {
                 AsyncImage(
