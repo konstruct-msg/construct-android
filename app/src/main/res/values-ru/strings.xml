@@ -67,6 +67,11 @@
     <string name="orientation_map_settings_sub">QR, восстановление, устройства</string>
 
     <!-- Main (streams list) -->
+    <string name="chat_pin">Закрепить</string>
+    <string name="chat_pinned">Закреплён</string>
+    <string name="chat_unpin">Открепить</string>
+    <string name="chat_mark_read">Отметить как прочитанное</string>
+    <string name="chat_mark_unread">Отметить как непрочитанное</string>
     <string name="search_clear">Очистить поиск</string>
     <string name="chats_empty_title">Пока нет чатов</string>
     <string name="chats_empty_subtitle">Свяжитесь с кем-то через QR или Synaps — переписки появятся здесь.</string>

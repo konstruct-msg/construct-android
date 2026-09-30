@@ -2,6 +2,17 @@ package com.construct.messenger.ui.screens.chats
 
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.foundation.background
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.remember
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.outlined.MarkChatUnread
+import androidx.compose.material.icons.outlined.MarkChatRead
+import androidx.compose.material.icons.outlined.Delete
 import com.construct.messenger.ui.theme.ctBold
 import com.construct.messenger.ui.theme.HairlineBorder
 import com.construct.messenger.ui.theme.CornerRadius
@@ -71,6 +82,9 @@ fun ChatsListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf("") }
+    // The row whose swipe buttons are showing; opening another closes it.
+    var openRow by remember { mutableStateOf<String?>(null) }
+    var menuFor by remember { mutableStateOf<String?>(null) }
 
     Box(modifier = Modifier.fillMaxSize().ctBackground()) {
     // iOS draws the lattice behind the rows as well as the noise (`ChatsListView`).
@@ -135,10 +149,67 @@ fun ChatsListScreen(
                     items = chats,
                     key = { it.contactId }
                 ) { chat ->
-                    ChatRow(
-                        chat = chat,
-                        onClick = { onNavigateToChat(chat.contactId) }
-                    )
+                    SwipeActionsRow(
+                        open = openRow == chat.contactId,
+                        onOpenChange = { isOpen ->
+                            openRow = if (isOpen) chat.contactId else openRow.takeUnless { it == chat.contactId }
+                        },
+                        leading = SwipeAction(
+                            icon = Icons.Outlined.PushPin,
+                            label = stringResource(if (chat.isPinned) R.string.chat_unpin else R.string.chat_pin),
+                            color = CTColor.textDim,
+                            tint = Color.White,
+                            onClick = { viewModel.togglePin(chat) },
+                        ),
+                        trailing = listOf(
+                            SwipeAction(
+                                icon = Icons.Outlined.Delete,
+                                label = stringResource(R.string.delete),
+                                color = CTColor.danger,
+                                tint = Color.White,
+                                onClick = { viewModel.deleteChat(chat) },
+                            ),
+                            SwipeAction(
+                                icon = if (chat.unreadCount > 0) Icons.Outlined.MarkChatRead else Icons.Outlined.MarkChatUnread,
+                                label = stringResource(
+                                    if (chat.unreadCount > 0) R.string.chat_mark_read else R.string.chat_mark_unread,
+                                ),
+                                color = CTColor.accentDim,
+                                tint = Color.White,
+                                onClick = { viewModel.toggleUnread(chat) },
+                            ),
+                        ),
+                    ) { closeInstead ->
+                        Box {
+                            ChatRow(
+                                chat = chat,
+                                onClick = closeInstead ?: { onNavigateToChat(chat.contactId) },
+                                onLongClick = { menuFor = chat.contactId },
+                            )
+                            // iOS `contextMenu`: the same three, reachable without a swipe.
+                            DropdownMenu(
+                                expanded = menuFor == chat.contactId,
+                                onDismissRequest = { menuFor = null },
+                                modifier = Modifier.background(CTColor.outMsgBg),
+                            ) {
+                                ChatMenuItem(
+                                    stringResource(if (chat.isPinned) R.string.chat_unpin else R.string.chat_pin),
+                                    Icons.Outlined.PushPin,
+                                    CTColor.text,
+                                ) { menuFor = null; viewModel.togglePin(chat) }
+                                ChatMenuItem(
+                                    stringResource(if (chat.unreadCount > 0) R.string.chat_mark_read else R.string.chat_mark_unread),
+                                    if (chat.unreadCount > 0) Icons.Outlined.MarkChatRead else Icons.Outlined.MarkChatUnread,
+                                    CTColor.text,
+                                ) { menuFor = null; viewModel.toggleUnread(chat) }
+                                HorizontalDivider(color = CTColor.noise)
+                                ChatMenuItem(stringResource(R.string.delete), Icons.Outlined.Delete, CTColor.danger) {
+                                    menuFor = null
+                                    viewModel.deleteChat(chat)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -155,6 +226,9 @@ private fun EmptyState(onScanQr: () -> Unit, onShowMyQr: () -> Unit, onOpenSynap
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            // It sits in a List on iOS: on a short screen (landscape) it scrolls instead of
+            // squeezing its text to nothing.
+            .verticalScroll(rememberScrollState())
             // iOS: 48 above and below, under the list's top inset.
             .padding(top = LIST_TOP_INSET + 48.dp, bottom = 48.dp)
             .padding(horizontal = CTLayout.edgePad),
@@ -219,4 +293,13 @@ private fun EmptyAction(icon: ImageVector, title: String, onClick: () -> Unit) {
         )
         Icon(Icons.Default.ChevronRight, contentDescription = null, tint = CTColor.textDim, modifier = Modifier.size(14.dp))
     }
+}
+
+@Composable
+private fun ChatMenuItem(label: String, icon: ImageVector, color: Color, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = { Text(label, style = ctRegular(14), color = color) },
+        leadingIcon = { Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp)) },
+        onClick = onClick,
+    )
 }

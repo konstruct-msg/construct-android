@@ -52,6 +52,30 @@ class ContactActionsUseCase @Inject constructor(
             chatDao.delete(chatId)
         }
         userDao.delete(userId)
+        forgetSessions(devices)
+        Log.i(TAG, "contact ${userId.take(8)}… removed — forgot ${devices.size} device session(s)")
+    }
+
+    /**
+     * Delete the chat with [userId] and its messages; the contact stays (Synaps). Every session
+     * with their devices is forgotten too, as [delete] does and for the same reason: a chat
+     * deleted here should not be continued on a state the user threw away. Local only; their
+     * next message opens a new state and a new chat. **Canon:** iOS
+     * `ChatsViewModel.deleteChatForgettingSessions` — logged first, deleted before anything slow.
+     */
+    suspend fun deleteChat(userId: String) {
+        Log.i(TAG, "chat delete requested for ${userId.take(8)}…")
+        val devices = devicesOf(userId)
+        keystoreManager.getUserId()?.let { myId ->
+            val chatId = ConversationId.direct(myId, userId)
+            messageDao.deleteChat(chatId)
+            chatDao.delete(chatId)
+        }
+        forgetSessions(devices)
+        Log.i(TAG, "chat with ${userId.take(8)}… deleted — forgot ${devices.size} device session(s)")
+    }
+
+    private suspend fun forgetSessions(devices: List<String>) {
         for (device in devices) {
             runCatching { cryptoManager.forgetContactState(device) }
                 .onFailure { Log.w(TAG, "forget ${device.take(8)}… failed", it) }
@@ -59,7 +83,6 @@ class ContactActionsUseCase @Inject constructor(
             // next launch.
             sessionStateStore.saveSecureStore(CfeSecureStoreSlot.Session(device), ByteArray(0))
         }
-        Log.i(TAG, "contact ${userId.take(8)}… removed — forgot ${devices.size} device session(s)")
     }
 
     /**

@@ -1,7 +1,13 @@
 package com.construct.messenger.ui.screens.chats
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import com.construct.messenger.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,14 +49,16 @@ import java.util.Date
  * - Preview line in `ctRegular(12)` + `textDim`.
  * - Timestamp and unread badge on the trailing edge.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatRow(
     chat: ChatSummary,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    Column(modifier = modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    Column(modifier = modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick)) {
         // Canon: iOS `ChatRowLayout` — avatar (40), 10 gap; name with the time on its line,
         // the preview with the unread badge beneath; List row insets around it.
         Row(
@@ -84,6 +92,16 @@ fun ChatRow(
                             style = ctRegular(11),
                             color = CTColor.textDim,
                             maxLines = 1,
+                        )
+                    }
+                    // iOS: a pinned chat with nothing unread shows the pin after the time.
+                    if (chat.isPinned && chat.unreadCount == 0) {
+                        Spacer(Modifier.width(CTLayout.inlinePad))
+                        Icon(
+                            imageVector = Icons.Filled.PushPin,
+                            contentDescription = stringResource(R.string.chat_pinned),
+                            tint = CTColor.textDim,
+                            modifier = Modifier.size(11.dp),
                         )
                     }
                 }

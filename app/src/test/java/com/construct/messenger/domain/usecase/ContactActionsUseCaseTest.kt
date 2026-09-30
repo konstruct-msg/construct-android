@@ -11,10 +11,12 @@ import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.util.ConversationId
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import uniffi.construct_core.CfeSecureStoreSlot
@@ -55,6 +57,28 @@ class ContactActionsUseCaseTest {
             verify(registry).knownDevices(peer)
             verify(users).delete(peer)
         }
+        devices.forEach { device ->
+            verify(crypto).forgetContactState(device)
+            verify(sessions).saveSecureStore(eq(CfeSecureStoreSlot.Session(device)), argThat { isEmpty() })
+        }
+    }
+
+    /**
+     * Deleting a chat takes the chat, its messages and every device session, and keeps the
+     * contact (iOS: the contact lives on in Synaps). Mutation: delete the user row — this reddens.
+     */
+    @Test
+    fun `deleting a chat keeps the contact and forgets its sessions`() = runTest {
+        whenever(registry.knownDevices(peer)).thenReturn(
+            devices.map { PeerDeviceEntity(peer, it, ByteArray(32), firstSeenAtMs = 0, lastSeenAtMs = 0) },
+        )
+
+        actions.deleteChat(peer)
+
+        val chatId = ConversationId.direct(me, peer)
+        verify(messages).deleteChat(chatId)
+        verify(chats).delete(chatId)
+        verify(users, never()).delete(any())
         devices.forEach { device ->
             verify(crypto).forgetContactState(device)
             verify(sessions).saveSecureStore(eq(CfeSecureStoreSlot.Session(device)), argThat { isEmpty() })

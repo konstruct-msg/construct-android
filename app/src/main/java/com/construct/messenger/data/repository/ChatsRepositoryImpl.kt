@@ -1,10 +1,12 @@
 package com.construct.messenger.data.repository
 
+import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.ChatEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.data.model.ChatSummary
+import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.DisplayNameGenerator
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,8 +20,9 @@ import kotlinx.coroutines.flow.stateIn
 
 @Singleton
 class ChatsRepositoryImpl @Inject constructor(
-    chatDao: ChatDao,
+    private val chatDao: ChatDao,
     userDao: UserDao,
+    private val keystoreManager: KeystoreManager,
 ) : ChatsRepository {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -33,6 +36,17 @@ class ChatsRepositoryImpl @Inject constructor(
     }.stateIn(scope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     override fun suggestedContactId(): String = chats.value.firstOrNull()?.contactId.orEmpty()
+
+    override suspend fun setPinned(contactId: String, pinned: Boolean) {
+        chatId(contactId)?.let { chatDao.setPinned(it, pinned) }
+    }
+
+    override suspend fun setUnread(contactId: String, unread: Boolean) {
+        chatId(contactId)?.let { chatDao.updateUnreadCount(it, if (unread) 1 else 0) }
+    }
+
+    private fun chatId(contactId: String): String? =
+        keystoreManager.getUserId()?.let { ConversationId.direct(it, contactId) }
 }
 
 private fun ChatEntity.toSummary(user: UserEntity?): ChatSummary {

@@ -536,6 +536,9 @@ private class FakeChatDao : ChatDao {
     override suspend fun incrementUnreadCount(chatId: String) {
         rows[chatId]?.let { rows[chatId] = it.copy(unreadCount = it.unreadCount + 1) }
     }
+    override suspend fun setPinned(chatId: String, pinned: Boolean) {
+        rows[chatId]?.let { rows[chatId] = it.copy(isPinned = pinned) }
+    }
     override suspend fun delete(chatId: String) { rows.remove(chatId) }
 }
 

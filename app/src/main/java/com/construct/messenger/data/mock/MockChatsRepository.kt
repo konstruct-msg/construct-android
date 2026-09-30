@@ -49,4 +49,15 @@ class MockChatsRepository @Inject constructor() : ChatsRepository {
     override val chats: StateFlow<List<ChatSummary>> = mutableChats.asStateFlow()
 
     override fun suggestedContactId(): String = "test_contact"
+
+    override suspend fun setPinned(contactId: String, pinned: Boolean) = update(contactId) { it.copy(isPinned = pinned) }
+
+    override suspend fun setUnread(contactId: String, unread: Boolean) =
+        update(contactId) { it.copy(unreadCount = if (unread) 1 else 0) }
+
+    private fun update(contactId: String, change: (ChatSummary) -> ChatSummary) {
+        mutableChats.value = mutableChats.value
+            .map { if (it.contactId == contactId) change(it) else it }
+            .sortedWith(compareByDescending<ChatSummary> { it.isPinned }.thenByDescending { it.lastMessageTime })
+    }
 }

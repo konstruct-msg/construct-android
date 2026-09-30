@@ -20,6 +20,7 @@ class MainViewModelTest {
                 override val status = kotlinx.coroutines.flow.MutableStateFlow(com.construct.messenger.ui.components.ConnectionStatus.CONNECTED)
                 override val lastHeartbeatAt = kotlinx.coroutines.flow.MutableStateFlow<Long?>(null)
             },
+            org.mockito.kotlin.mock(),
         )
 
         assertTrue(viewModel.uiState.value.chats.isNotEmpty())
