@@ -11,6 +11,7 @@ import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.SessionStateDao
 import com.construct.messenger.data.local.db.IssuedInviteDao
 import com.construct.messenger.data.local.db.PeerDeviceDao
+import com.construct.messenger.data.local.db.ServerMessageIdDao
 import com.construct.messenger.data.local.db.UserDao
 import dagger.Module
 import dagger.Provides
@@ -36,6 +37,7 @@ object DatabaseModule {
                 ConstructDatabase.MIGRATION_6_7,
                 ConstructDatabase.MIGRATION_7_8,
                 ConstructDatabase.MIGRATION_8_9,
+                ConstructDatabase.MIGRATION_9_10,
             )
             .fallbackToDestructiveMigrationFrom(1, 2, 3)
             .build()
@@ -60,6 +62,9 @@ object DatabaseModule {
 
     @Provides
     fun providePeerDeviceDao(db: ConstructDatabase): PeerDeviceDao = db.peerDeviceDao()
+
+    @Provides
+    fun provideServerMessageIdDao(db: ConstructDatabase): ServerMessageIdDao = db.serverMessageIdDao()
 
     @Provides
     @Singleton

@@ -11,7 +11,10 @@ import com.construct.messenger.data.local.db.MessageEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.data.model.DeliveryStatus
+import com.construct.messenger.data.local.db.ServerMessageIdDao
+import com.construct.messenger.data.local.db.ServerMessageIdEntity
 import com.construct.messenger.service.OrchestratorGateway
+import com.construct.messenger.service.ServerMessageIds
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
 import com.construct.messenger.stealth.StealthSenderService
@@ -59,6 +62,7 @@ class SendMessageUseCaseTest {
         val messages = FakeMessageDao()
         val chats = FakeChatDao()
         val users = FakeUserDao()
+        val serverIds = FakeServerMessageIdDao()
         val sessions: SessionStateStore = mock()
         val keystore: KeystoreManager = mock()
         val crypto: CryptoManager = mock()
@@ -81,6 +85,7 @@ class SendMessageUseCaseTest {
             chatDao = chats,
             userDao = users,
             sessionStateStore = sessions,
+            serverMessageIds = ServerMessageIds(serverIds),
         )
     }
 
@@ -307,6 +312,60 @@ class SendMessageUseCaseTest {
 
         assertTrue(outcome is SendOutcome.Sent)
         assertEquals(2, sentMessageIds(h).size)
+    }
+
+    /**
+     * B1: the recipient reads its queue whenever it next comes online, so its DECRYPTION_ERROR
+     * often reaches a sender that has restarted since. It names the server's id for the copy;
+     * the pair must outlive the process. A new [SendMessageUseCase] over the same table is the
+     * restart.
+     *
+     * Mutation: keep the map in memory again — this reddens.
+     */
+    @Test
+    fun `a resend after a restart finds the message by the server's id`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        whenever(
+            h.messaging.sendMessage(
+                messageId = any(),
+                senderId = any(),
+                recipientId = any(),
+                conversationId = any(),
+                encryptedPayload = any(),
+                timestampMs = any(),
+                contentType = any(),
+            ),
+        ).thenReturn(MessagingService.SendResult("SERVER-ID-1", true, "", false, 0, "a"))
+        val sent = h.useCase()(peer, "hello") as SendOutcome.Sent
+
+        assertEquals(sent.messageId.lowercase(), h.serverIds.rows["server-id-1"]?.localId)
+        assertTrue(h.useCase().resend(peer, pinnedDevice, "SERVER-ID-1"))
+    }
+
+    @Test
+    fun `an id the table does not hold is taken as our own`() = runTest {
+        val ids = ServerMessageIds(FakeServerMessageIdDao())
+        assertEquals("abc-fd-1", ids.localId("abc-fd-1"))
+    }
+
+    /** Older than the server keeps a queue, no error can name it. Mutation: never prune — this reddens. */
+    @Test
+    fun `pairs older than the queue are dropped`() = runTest {
+        val dao = FakeServerMessageIdDao()
+        dao.upsert(ServerMessageIdEntity("old", "m1", recordedAtMs = 0))
+        ServerMessageIds(dao).record("new", "m2", nowMs = ServerMessageIds.RETENTION_MS + 1)
+        assertEquals(setOf("new"), dao.rows.keys)
+    }
+}
+
+private class FakeServerMessageIdDao : ServerMessageIdDao {
+    val rows = linkedMapOf<String, ServerMessageIdEntity>()
+    override suspend fun upsert(entry: ServerMessageIdEntity) { rows[entry.serverId] = entry }
+    override suspend fun localId(serverId: String) = rows[serverId]?.localId
+    override suspend fun pruneOlderThan(thresholdMs: Long): Int {
+        val old = rows.values.filter { it.recordedAtMs < thresholdMs }.map { it.serverId }
+        old.forEach(rows::remove)
+        return old.size
     }
 }
 

@@ -21,8 +21,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SessionStateEntity::class,
         IssuedInviteEntity::class,
         PeerDeviceEntity::class,
+        ServerMessageIdEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -33,6 +34,7 @@ abstract class ConstructDatabase : RoomDatabase() {
     abstract fun sessionStateDao(): SessionStateDao
     abstract fun issuedInviteDao(): IssuedInviteDao
     abstract fun peerDeviceDao(): PeerDeviceDao
+    abstract fun serverMessageIdDao(): ServerMessageIdDao
 
     companion object {
         const val NAME = "construct.db"
@@ -86,6 +88,19 @@ abstract class ConstructDatabase : RoomDatabase() {
         val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE users ADD COLUMN securityNotice INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
+         * Server-assigned ids of our sealed copies ([com.construct.messenger.service.ServerMessageIds]),
+         * which were in memory. Starts empty: ids from before the update were already lost.
+         */
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `server_message_ids` (`serverId` TEXT NOT NULL, " +
+                        "`localId` TEXT NOT NULL, `recordedAtMs` INTEGER NOT NULL, PRIMARY KEY(`serverId`))",
+                )
             }
         }
     }

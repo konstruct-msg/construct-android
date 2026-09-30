@@ -73,6 +73,7 @@ class SendMessageUseCase @Inject constructor(
     private val chatDao: ChatDao,
     private val userDao: UserDao,
     private val sessionStateStore: SessionStateStore,
+    private val serverMessageIds: ServerMessageIds,
 ) {
     suspend operator fun invoke(contactId: String, text: String, reply: ReplyRef? = null): SendOutcome {
         val body = text.trim()
@@ -133,7 +134,7 @@ class SendMessageUseCase @Inject constructor(
     suspend fun resend(contactId: String, deviceId: String, messageId: String): Boolean {
         val myId = keystoreManager.getUserId() ?: return false
         // The peer names the id it received, which for a sealed copy is the server's.
-        val localId = ServerMessageIds.localId(messageId)
+        val localId = serverMessageIds.localId(messageId)
         val row = messageDao.getById(localId) ?: messageDao.getByIdIgnoreCase(localId)
         if (row == null || !row.isSentByMe || row.contentType != 0 || row.text.isEmpty() ||
             row.chatId != ConversationId.direct(myId, contactId)
@@ -158,6 +159,8 @@ class SendMessageUseCase @Inject constructor(
                 isOwnReplica = false,
             )
             val sent = result?.success == true
+            // The new copy has its own server id; an error about it must find this row too.
+            if (sent) serverMessageIds.record(result!!.messageId, row.id)
             Log.i(TAG, "resend ${messageId.take(8)}… to ${deviceId.take(8)}… — ${if (sent) "sent" else "failed"}")
             sent
         } catch (e: CancellationException) {
@@ -356,7 +359,7 @@ class SendMessageUseCase @Inject constructor(
             )
             if (result?.success == true) {
                 // Sealed, the server gives the copy its own id; a decryption error names that one.
-                if (!isOwnReplica) ServerMessageIds.record(result.messageId, baseMessageId)
+                if (!isOwnReplica) serverMessageIds.record(result.messageId, baseMessageId)
                 if (isOwnReplica) replicaAccepted++ else recipientAccepted++
             } else {
                 lastError = result?.errorCode?.ifEmpty { "send failed" } ?: "send failed"

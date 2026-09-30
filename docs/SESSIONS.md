@@ -94,8 +94,11 @@ reader                                          writer
   one.
 - `ResendMessage(messageId)` names the id **the peer received**. For a sealed copy that is the
   id the server assigned, so `ServerMessageIds` maps it back to ours before
-  `SendMessageUseCase.resend`. The map is in memory: an error that arrives after the sender
-  restarted retires the state but resends nothing. Only text is resent.
+  `SendMessageUseCase.resend`. The map is a Room table kept 30 days, as long as the server keeps
+  a queue: the error usually arrives when the reader next comes online, after the sender has
+  restarted (in memory until 2026-09-30, and such an error resent nothing). Only text is resent,
+  and once — the core answers one error per message; a resend lost to the network is lost (plan
+  B10).
 - Content type 21 (END_SESSION) from an older build is acknowledged and ignored.
 
 ## 5. Local operations send nothing
@@ -134,5 +137,4 @@ every one on each restart until 2026-09-24.
   kept. Do not call `reopen_session` for it: that call returns an id and nothing else, which is
   how the record went unsaved and the queue undrained until 2026-09-28. The next ordinary message
   carries the handshake header. The stand check is `IMPLEMENTATION_PLAN.md` A1.
-- The server-id map (§4) is in memory only.
 - Android↔iOS SENDER_SYNC between two devices of one account has not been run on the stand.

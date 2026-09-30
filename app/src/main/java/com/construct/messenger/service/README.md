@@ -10,4 +10,4 @@ Long-running / background services. Sessions: `docs/SESSIONS.md`.
 - `CfeTimerBridge` — core timers, launch, reconnect and a decryption error received → the same effects.
 - `SessionManager` — initiator `initSession`, account↔device resolution, bundle fetch for sending.
 - `HeldEnvelopes` — what the core's queue answers name by id and cannot carry. Not a second queue.
-- `ServerMessageIds` — server-assigned id → our id, so a resend finds the message (in memory).
+- `ServerMessageIds` — server-assigned id → our id, so a resend finds the message (Room, 30 days).

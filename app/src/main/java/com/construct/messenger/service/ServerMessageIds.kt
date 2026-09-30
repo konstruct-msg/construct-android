@@ -1,5 +1,11 @@
 package com.construct.messenger.service
 
+import com.construct.messenger.data.local.db.ServerMessageIdDao
+import com.construct.messenger.data.local.db.ServerMessageIdEntity
+import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
+import javax.inject.Singleton
+
 /**
  * Which of our messages a server-assigned id belongs to.
  *
@@ -8,24 +14,32 @@ package com.construct.messenger.service
  * when it cannot read the copy its DECRYPTION_ERROR names it — so `ResendMessage` names an id no
  * row here has. The send response is the one place the pair is visible.
  *
- * In memory, capped, like iOS `ServerMessageIdMap`: an error answered across a restart still
- * retires the state, and resends nothing.
+ * In Room since 2026-09-30. It was in memory, like iOS `ServerMessageIdMap`, and an error that
+ * arrived after we restarted — the ordinary case: the recipient reads its queue whenever it next
+ * comes online — retired the state and resent nothing, so the message stayed lost. Kept for
+ * [RETENTION_MS], as long as the server keeps a device's queue: an error cannot name a copy older
+ * than that.
  */
-object ServerMessageIds {
-    private const val CAPACITY = 512
-    private val map = object : LinkedHashMap<String, String>(CAPACITY, 0.75f, false) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>?) = size > CAPACITY
-    }
+@Singleton
+class ServerMessageIds @Inject constructor(
+    private val dao: ServerMessageIdDao,
+) {
+    private val pruned = AtomicBoolean(false)
 
-    @Synchronized
-    fun record(serverId: String, localId: String) {
+    suspend fun record(serverId: String, localId: String, nowMs: Long = System.currentTimeMillis()) {
         val server = serverId.lowercase()
         val local = localId.lowercase()
         if (server.isEmpty() || server == local) return
-        map[server] = local
+        // Once per process: the table only grows by our own sends.
+        if (pruned.compareAndSet(false, true)) dao.pruneOlderThan(nowMs - RETENTION_MS)
+        dao.upsert(ServerMessageIdEntity(serverId = server, localId = local, recordedAtMs = nowMs))
     }
 
     /** The local id for a (possibly server-assigned) [id]; [id] itself when unknown. */
-    @Synchronized
-    fun localId(id: String): String = map[id.lowercase()] ?: id
+    suspend fun localId(id: String): String = dao.localId(id.lowercase()) ?: id
+
+    companion object {
+        /** The server trims a device queue to 30 days (`XTRIM MINID`, vault TODO 79). */
+        const val RETENTION_MS = 30L * 24 * 60 * 60 * 1000
+    }
 }
