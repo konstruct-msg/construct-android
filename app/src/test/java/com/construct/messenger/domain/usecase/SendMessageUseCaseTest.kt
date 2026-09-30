@@ -15,6 +15,8 @@ import com.construct.messenger.data.local.db.ServerMessageIdDao
 import com.construct.messenger.data.local.db.ServerMessageIdEntity
 import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.ServerMessageIds
+import com.construct.messenger.util.IncomingPlaintext
+import com.construct.messenger.util.ProfileShare
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
 import com.construct.messenger.stealth.StealthSenderService
@@ -315,6 +317,28 @@ class SendMessageUseCaseTest {
     }
 
     /**
+     * B8: our profile goes to every device of theirs as a frame their reader takes for a profile,
+     * not to our own devices, and leaves no row. Mutation: send it as a text body — this reddens.
+     */
+    @Test
+    fun `a shared profile reaches every device of theirs and no one else`() = runTest {
+        val h = harness()
+        val events = argumentCaptor<uniffi.construct_core.CfeIncomingEvent>()
+
+        val ok = h.useCase().shareProfile(peer, ProfileShare("jolly mammoth", timestampSec = 1))
+
+        assertTrue(ok)
+        assertEquals(2, sentMessageIds(h).size)
+        verify(h.orchestrator, times(2)).handleEvent(events.capture())
+        events.allValues.forEach { event ->
+            val plaintext = (event as uniffi.construct_core.CfeIncomingEvent.OutgoingMessage).plaintext
+            assertEquals("jolly mammoth", IncomingPlaintext.decode(plaintext).profile?.displayName)
+        }
+        verify(h.sessionManager, times(0)).discoverOwnDeviceBundles(any())
+        assertTrue(h.messages.rows.isEmpty())
+    }
+
+    /**
      * B1: the recipient reads its queue whenever it next comes online, so its DECRYPTION_ERROR
      * often reaches a sender that has restarted since. It names the server's id for the copy;
      * the pair must outlive the process. A new [SendMessageUseCase] over the same table is the
@@ -423,5 +447,8 @@ private class FakeUserDao : UserDao {
     }
     override suspend fun setLocalAlias(userId: String, alias: String?) {
         rows[userId]?.let { rows[userId] = it.copy(localAlias = alias) }
+    }
+    override suspend fun setAmSharingWith(userId: String, sharing: Boolean) {
+        rows[userId]?.let { rows[userId] = it.copy(amSharingWith = sharing) }
     }
 }

@@ -24,7 +24,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ServerMessageIdEntity::class,
         PendingResendEntity::class,
     ],
-    version = 13,
+    version = 14,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -128,6 +128,13 @@ abstract class ConstructDatabase : RoomDatabase() {
         val MIGRATION_12_13 = object : Migration(12, 13) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE users ADD COLUMN localAlias TEXT")
+            }
+        }
+
+        /** Whether we share our profile with a contact (iOS `amISharingWith`). Nobody yet. */
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE users ADD COLUMN amSharingWith INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

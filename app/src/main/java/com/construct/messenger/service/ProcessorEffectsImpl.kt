@@ -25,6 +25,7 @@ import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.IncomingPlaintext
+import com.construct.messenger.util.ProfileShare
 import com.construct.messenger.util.IncomingReceipt
 import com.construct.messenger.util.SenderSyncRouting
 import javax.inject.Inject
@@ -81,6 +82,11 @@ class ProcessorEffectsImpl @Inject constructor(
             ackStore.markProcessed(messageId, accountId)
             return
         }
+        decoded.profile?.let { profile ->
+            applySharedProfile(accountId, profile)
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
         decoded.edit?.let { edit ->
             applyEdit(edit, sentByMe = false)
             ackStore.markProcessed(messageId, accountId)
@@ -107,6 +113,19 @@ class ProcessorEffectsImpl @Inject constructor(
         runCatching { sendContactCard.sendIfOwed(accountId) }
             .onFailure { Log.w(TAG, "contact card send failed", it) }
         runCatching { sessionManager.fetchIdentityKey(contactId) }
+    }
+
+    /**
+     * They shared their profile: the name they go by replaces the one we had, and the row says
+     * they share. **Canon:** iOS `ProfileSharingManager.handleProfileMessage`. A contact we have no
+     * row for is not created by it. The avatar needs media, which Android does not have yet.
+     * The name is theirs to choose, as on iOS: a local name the user gave still outranks it.
+     */
+    private suspend fun applySharedProfile(accountId: String, profile: ProfileShare) {
+        val row = userDao.getById(accountId) ?: return
+        val name = profile.displayName.trim()
+        userDao.upsert(row.copy(displayName = name.ifEmpty { row.displayName }, isSharingWithMe = true))
+        Log.i(TAG, "profile from ${accountId.take(8)}… applied")
     }
 
     override suspend fun onSenderSync(

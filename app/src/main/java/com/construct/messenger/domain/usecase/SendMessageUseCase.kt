@@ -26,6 +26,7 @@ import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.data.local.db.refreshChatPreview
 import com.construct.messenger.util.EditWire
 import com.construct.messenger.util.KnstFrame
+import com.construct.messenger.util.ProfileShare
 import com.construct.messenger.util.TextWire
 import com.construct.messenger.util.SenderSyncRouting
 import java.util.UUID
@@ -175,6 +176,32 @@ class SendMessageUseCase @Inject constructor(
     }
 
     /**
+     * Our profile to every device of [contactId] — the name we go by (iOS
+     * `ProfileShareViewModel.shareProfile`): the binary [ProfileShare] as an ordinary type-1 KNST
+     * body under a fresh id, per device, as a message is. Not to our own devices, as on iOS: it is
+     * about us, they already know. No row is written. True when a device of theirs took it.
+     */
+    suspend fun shareProfile(contactId: String, profile: ProfileShare): Boolean {
+        val myId = keystoreManager.getUserId() ?: return false
+        if (!cryptoManager.isMessagingReady || contactId == myId) return false
+        val id = UUID.randomUUID()
+        return try {
+            val pinned = sessionManager.ensureSession(contactId)
+            val plaintext = KnstFrame.pack(profile.encode(), KnstFrame.TYPE_E2EE_SIGNAL, id)
+            val tally = deliverCopies(
+                myId, contactId, id.toString(), System.currentTimeMillis(), plaintext, pinned, recipientsOnly = true,
+            )
+            Log.i(TAG, "profile to ${contactId.take(8)}… — ${tally.recipientAccepted} device(s) took it")
+            tally.recipientAccepted > 0
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "profile to ${contactId.take(8)}… failed", e)
+            false
+        }
+    }
+
+    /**
      * Edit one of our own text messages. Same fan-out as a send, different payload:
      * `MessageContent.edit` names the row, and no new row is written. The local
      * text changes only after a recipient copy is accepted — a failure leaves the
@@ -285,17 +312,22 @@ class SendMessageUseCase @Inject constructor(
         timestampMs: Long,
         plaintext: ByteArray,
         pinned: SessionManager.SessionPeer,
+        recipientsOnly: Boolean = false,
     ): DeliveryTally {
         val ourDeviceId = cryptoManager.currentDeviceId()
             ?: return DeliveryTally(0, 0, "no device id")
         val recipientIsSelf = contactId == myId
         val recipientDevices =
             if (recipientIsSelf) emptyList() else recipientDeviceSet(contactId, pinned)
-        val ownBundles = runCatching { sessionManager.discoverOwnDeviceBundles(myId) }
-            .getOrElse {
-                Log.w(TAG, "own device discovery failed", it)
-                emptyList()
-            }
+        val ownBundles = if (recipientsOnly) {
+            emptyList()
+        } else {
+            runCatching { sessionManager.discoverOwnDeviceBundles(myId) }
+                .getOrElse {
+                    Log.w(TAG, "own device discovery failed", it)
+                    emptyList()
+                }
+        }
 
         val targets = cryptoManager.planSend(
             recipientDeviceIds = recipientDevices.map { it.deviceId },

@@ -10,6 +10,7 @@ import com.construct.messenger.data.model.SecurityNotice
 import com.construct.messenger.data.repository.SessionSecurity
 import com.construct.messenger.data.repository.SessionSecurityRepository
 import com.construct.messenger.domain.usecase.ContactActionsUseCase
+import com.construct.messenger.domain.usecase.ShareProfileUseCase
 import com.construct.messenger.security.SecurityNotices
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.IdentityFingerprint
@@ -43,7 +44,16 @@ data class ContactProfileUiState(
     val busy: Boolean = false,
     /** One-shot outcome of a report, for the dialog: null until one ran. */
     val reportAccepted: Boolean? = null,
+    /** We share our profile with them. */
+    val amSharing: Boolean = false,
+    /** They shared their profile with us. */
+    val sharingWithMe: Boolean = false,
+    val sharing: Boolean = false,
+    /** One-shot outcome of share / stop, for the dialog. */
+    val shareOutcome: ShareOutcome? = null,
 )
+
+enum class ShareOutcome { SHARED, FAILED, STOPPED }
 
 @HiltViewModel
 class ContactProfileViewModel @Inject constructor(
@@ -52,6 +62,7 @@ class ContactProfileViewModel @Inject constructor(
     private val actions: ContactActionsUseCase,
     private val securityNotices: SecurityNotices,
     private val sessionSecurity: SessionSecurityRepository,
+    private val shareProfile: ShareProfileUseCase,
 ) : ViewModel() {
     val userId: String = requireNotNull(savedStateHandle.get<String>("contactId"))
 
@@ -60,6 +71,7 @@ class ContactProfileViewModel @Inject constructor(
     private val busy = MutableStateFlow(false)
     private val reported = MutableStateFlow<Boolean?>(null)
     private val session = MutableStateFlow<SessionSecurity?>(null)
+    private val share = MutableStateFlow(Pair<Boolean, ShareOutcome?>(false, null))
 
     init {
         refreshSession()
@@ -70,7 +82,8 @@ class ContactProfileViewModel @Inject constructor(
         busy,
         reported,
         session,
-    ) { row, isBusy, report, sessionState ->
+        share,
+    ) { row, isBusy, report, sessionState, (isSharing, outcome) ->
         if (row == null) {
             ContactProfileUiState(userId = userId, removed = true)
         } else {
@@ -88,11 +101,37 @@ class ContactProfileViewModel @Inject constructor(
                 session = sessionState,
                 busy = isBusy,
                 reportAccepted = report,
+                amSharing = row.amSharingWith,
+                sharingWithMe = row.isSharingWithMe,
+                sharing = isSharing,
+                shareOutcome = outcome,
             )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ContactProfileUiState(userId = userId))
 
     fun setBlocked(blocked: Boolean) = run { actions.setBlocked(userId, blocked) }
+
+    /** iOS `handleShareToggle`: on sends our profile, off only stops marking it shared. */
+    fun toggleSharing() {
+        if (share.value.first) return
+        val stopping = uiState.value.amSharing
+        share.value = true to null
+        viewModelScope.launch {
+            val outcome = if (stopping) {
+                shareProfile.stop(userId)
+                ShareOutcome.STOPPED
+            } else if (shareProfile.share(userId)) {
+                ShareOutcome.SHARED
+            } else {
+                ShareOutcome.FAILED
+            }
+            share.value = false to outcome
+        }
+    }
+
+    fun shareOutcomeShown() {
+        share.value = share.value.first to null
+    }
 
     /** Blank clears it. */
     fun setLocalName(name: String?) {

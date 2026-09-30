@@ -43,6 +43,8 @@ object IncomingPlaintext {
         val e2eMessageId: String? = null,
         val edit: Edit? = null,
         val delete: Delete? = null,
+        /** A contact sharing their profile — applied to their row, never a bubble. */
+        val profile: ProfileShare? = null,
     )
 
     fun decode(plaintext: ByteArray): Decoded {
@@ -53,11 +55,15 @@ object IncomingPlaintext {
                 return hidden(type, e2e)
             }
             val payload = knstPayload(plaintext) ?: return hidden(type, e2e)
+            // iOS `decodeAssembled`: MessageContent, then a binary profile, then text. A profile
+            // read as text was hidden only while its timestamp bytes happened not to be UTF-8.
             return decodePayload(payload, type, e2e)
+                ?: ProfileShare.decode(payload)?.let { hidden(type, e2e).copy(profile = it) }
                 ?: framedText(payload, type, e2e)
                 ?: hidden(type, e2e)
         }
         decodePayload(plaintext, knstContentType = 0, e2eMessageId = null)?.let { return it }
+        ProfileShare.decode(plaintext)?.let { return hidden(0, null).copy(profile = it) }
         val utf8 = plaintext.toString(Charsets.UTF_8)
         return Decoded(utf8, knstContentType = 0, isUserVisible = utf8.isNotEmpty())
     }

@@ -190,6 +190,22 @@ class IncomingPlaintextTest {
         )
         assertFalse(decoded.isUserVisible)
     }
+    /**
+     * iOS frames a shared profile as an ordinary type-1 KNST body. With a timestamp whose bytes
+     * are all ASCII the whole payload is valid UTF-8, and the bare-text fallback showed it as a
+     * bubble of control bytes. Mutation: try the text fallback first — this reddens.
+     */
+    @Test
+    fun `a shared profile in a frame is a profile, not a bubble`() {
+        val profile = ProfileShare("Kostya", timestampSec = 0x01010101)
+        val frame = KnstFrame.pack(profile.encode(), KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID())
+
+        val decoded = IncomingPlaintext.decode(frame)
+
+        assertEquals(false, decoded.isUserVisible)
+        assertEquals("Kostya", decoded.profile?.displayName)
+    }
+
 }
 
 private fun knstTextFrame(text: String, contentType: Int = 0, messageId: ByteArray = ByteArray(16)): ByteArray {

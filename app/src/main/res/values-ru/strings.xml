@@ -378,6 +378,12 @@
     <string name="profile_user_id">id пользователя</string>
     <string name="profile_actions">Действия</string>
     <string name="profile_call_voice">голосовой звонок</string>
+    <string name="share_my_profile">Поделиться моим профилем</string>
+    <string name="stop_sharing_profile">Прекратить делиться профилем</string>
+    <string name="profile_shared_successfully">Профиль успешно отправлен</string>
+    <string name="failed_to_share_profile">Не удалось отправить профиль</string>
+    <string name="profile_sharing_stopped">Обмен профилем остановлен</string>
+    <string name="sharing_with_you">Поделился с вами</string>
     <string name="profile_soon">скоро</string>
     <string name="profile_security">Безопасность</string>
     <string name="profile_encryption">Шифрование</string>

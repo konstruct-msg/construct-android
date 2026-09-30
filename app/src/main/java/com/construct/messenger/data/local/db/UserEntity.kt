@@ -38,6 +38,8 @@ data class UserEntity(
     val securityNotice: Int = SecurityNotice.NONE.code,
     /** A name the user gave them here. Never leaves the device; outranks every other name. */
     val localAlias: String? = null,
+    /** This device sent them our profile and has not stopped sharing (iOS `amISharingWith`). */
+    val amSharingWith: Boolean = false,
 ) {
     // ByteArray field: structural equality must be explicit.
     override fun equals(other: Any?): Boolean {
@@ -53,7 +55,8 @@ data class UserEntity(
             identityPublic.contentEquals(other.identityPublic) &&
             accountAddress.contentEquals(other.accountAddress) &&
             securityNotice == other.securityNotice &&
-            localAlias == other.localAlias
+            localAlias == other.localAlias &&
+            amSharingWith == other.amSharingWith
     }
 
     override fun hashCode(): Int {
@@ -68,6 +71,7 @@ data class UserEntity(
         result = 31 * result + accountAddress.contentHashCode()
         result = 31 * result + securityNotice
         result = 31 * result + (localAlias?.hashCode() ?: 0)
+        result = 31 * result + amSharingWith.hashCode()
         return result
     }
 }
@@ -113,6 +117,9 @@ interface UserDao {
     /** Its own statement, so no upsert of a row read earlier can carry an older alias back. */
     @Query("UPDATE users SET localAlias = :alias WHERE id = :userId")
     suspend fun setLocalAlias(userId: String, alias: String?)
+
+    @Query("UPDATE users SET amSharingWith = :sharing WHERE id = :userId")
+    suspend fun setAmSharingWith(userId: String, sharing: Boolean)
 
     @Query("DELETE FROM users WHERE id = :userId")
     suspend fun delete(userId: String)

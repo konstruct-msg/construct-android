@@ -52,12 +52,13 @@ class ProcessorEffectsImplTest {
     private class Inbox(alerts: IncomingAlerts, myId: String) {
         val messages = FakeMessageDao()
         val chats = FakeChatDao()
+        val users = FakeUserDao()
         val effects = ProcessorEffectsImpl(
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) },
             messageDao = messages,
             chatDao = chats,
-            userDao = FakeUserDao(),
+            userDao = users,
             ackStore = FakeAckStore(),
             sessionStateStore = mock(),
             sessionManager = mock(),
@@ -280,6 +281,30 @@ class ProcessorEffectsImplTest {
         assertEquals(chatId, messages.rows[baseId]?.chatId)
         assertEquals(0, chats.rows[chatId]?.unreadCount)
         assertTrue(acks.isProcessed("$baseId-ss-0123456789abcdef"))
+    }
+
+    /**
+     * B8: a contact sharing their profile renames them here and marks them sharing; no bubble,
+     * and a local name the user gave still wins where names are shown. Mutation: drop the profile
+     * branch — this reddens (the frame falls through as non-visible and nothing changes).
+     */
+    @Test
+    fun `a shared profile renames the contact and adds no bubble`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.users.rows[peer] = UserEntity(id = peer, displayName = "quick hotfix", isContact = true, localAlias = "Kostya")
+        val frame = KnstFrame.pack(
+            com.construct.messenger.util.ProfileShare("Konstantin", timestampSec = 1).encode(),
+            KnstFrame.TYPE_E2EE_SIGNAL,
+            UUID.randomUUID(),
+        )
+
+        inbox.effects.onDecrypted(peer, "p1", frame)
+
+        val row = inbox.users.rows[peer]!!
+        assertEquals("Konstantin", row.displayName)
+        assertTrue(row.isSharingWithMe)
+        assertEquals("Kostya", row.localAlias)
+        assertTrue(inbox.messages.rows.isEmpty())
     }
 
     @Test
@@ -555,6 +580,9 @@ private class FakeUserDao : UserDao {
     }
     override suspend fun setLocalAlias(userId: String, alias: String?) {
         rows[userId]?.let { rows[userId] = it.copy(localAlias = alias) }
+    }
+    override suspend fun setAmSharingWith(userId: String, sharing: Boolean) {
+        rows[userId]?.let { rows[userId] = it.copy(amSharingWith = sharing) }
     }
 }
 

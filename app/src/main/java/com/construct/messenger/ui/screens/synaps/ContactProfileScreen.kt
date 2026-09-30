@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GppMaybe
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -68,6 +69,7 @@ import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.ui.theme.ctSemiBold
 import com.construct.messenger.viewmodel.ContactProfileUiState
 import com.construct.messenger.viewmodel.ContactProfileViewModel
+import com.construct.messenger.viewmodel.ShareOutcome
 
 private enum class Confirm { BLOCK, UNBLOCK, REPORT, DELETE }
 
@@ -79,8 +81,8 @@ private val ROW_V = 14.dp
  * A contact's card. **Canon:** iOS `UserProfileView` — the avatar, then flat sections under
  * `> TITLE` headers: identity, actions, security, the danger zone, and the closing line.
  *
- * Not here yet: "share my profile" (the profile-share call) and calls — the voice call row is
- * iOS's own disabled "soon" row. "Remove contact" stays on every entry point:
+ * Not here yet: calls — the voice call row is iOS's own disabled "soon" row — and the avatar in
+ * a shared profile, which needs media. "Remove contact" stays on every entry point:
  * removing is local, and Android has no Synaps prune to leave it to.
  */
 @Composable
@@ -135,6 +137,31 @@ fun ContactProfileScreen(
         )
     }
 
+    ui.shareOutcome?.let { outcome ->
+        AlertDialog(
+            onDismissRequest = viewModel::shareOutcomeShown,
+            containerColor = CTColor.outMsgBg,
+            text = {
+                Text(
+                    stringResource(
+                        when (outcome) {
+                            ShareOutcome.SHARED -> R.string.profile_shared_successfully
+                            ShareOutcome.FAILED -> R.string.failed_to_share_profile
+                            ShareOutcome.STOPPED -> R.string.profile_sharing_stopped
+                        },
+                    ),
+                    style = ctRegular(13),
+                    color = CTColor.textDim,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::shareOutcomeShown) {
+                    Text(stringResource(R.string.close), style = ctBold(13), color = CTColor.accent)
+                }
+            },
+        )
+    }
+
     ui.reportAccepted?.let { accepted ->
         AlertDialog(
             onDismissRequest = viewModel::reportShown,
@@ -173,7 +200,12 @@ fun ContactProfileScreen(
             FlatDivider(thick = true)
             IdentitySection(ui, onEditLocalName = { editingLocalName = true })
             FlatDivider(thick = true)
-            ActionsSection(showOpenChat = !viewModel.fromChat, onOpenChat = { onOpenChat(viewModel.userId) })
+            ActionsSection(
+                ui = ui,
+                showOpenChat = !viewModel.fromChat,
+                onOpenChat = { onOpenChat(viewModel.userId) },
+                onToggleSharing = viewModel::toggleSharing,
+            )
             FlatDivider(thick = true)
             SecuritySection(
                 ui = ui,
@@ -299,7 +331,12 @@ private fun IdentitySection(ui: ContactProfileUiState, onEditLocalName: () -> Un
 }
 
 @Composable
-private fun ActionsSection(showOpenChat: Boolean, onOpenChat: () -> Unit) {
+private fun ActionsSection(
+    ui: ContactProfileUiState,
+    showOpenChat: Boolean,
+    onOpenChat: () -> Unit,
+    onToggleSharing: () -> Unit,
+) {
     SectionHeader(stringResource(R.string.profile_actions))
     RowDivider()
     if (showOpenChat) {
@@ -315,6 +352,24 @@ private fun ActionsSection(showOpenChat: Boolean, onOpenChat: () -> Unit) {
             modifier = Modifier
                 .background(CTColor.noise, RoundedCornerShape(CornerRadius.small))
                 .padding(horizontal = 7.dp, vertical = 3.dp),
+        )
+    }
+    RowDivider()
+    // iOS: accent to share, plain to stop; the row waits while the share is in flight.
+    ActionRow(
+        label = stringResource(if (ui.amSharing) R.string.stop_sharing_profile else R.string.share_my_profile),
+        color = if (ui.amSharing) CTColor.text else CTColor.accent,
+        enabled = !ui.sharing,
+        loading = ui.sharing,
+        onClick = onToggleSharing,
+    )
+    if (ui.sharingWithMe) {
+        RowDivider()
+        Text(
+            text = stringResource(R.string.sharing_with_you),
+            style = ctRegular(11),
+            color = CTColor.textDim,
+            modifier = Modifier.padding(horizontal = ROW_H, vertical = 10.dp),
         )
     }
 }
@@ -473,7 +528,13 @@ private fun ProfileRow(label: String, modifier: Modifier = Modifier, value: @Com
 }
 
 @Composable
-private fun ActionRow(label: String, color: Color, enabled: Boolean = true, onClick: () -> Unit) {
+private fun ActionRow(
+    label: String,
+    color: Color,
+    enabled: Boolean = true,
+    loading: Boolean = false,
+    onClick: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -482,7 +543,12 @@ private fun ActionRow(label: String, color: Color, enabled: Boolean = true, onCl
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label.lowercase(), style = ctRegular(14), color = color, modifier = Modifier.weight(1f))
-        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = color.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
+        // iOS `actionRow(isLoading:)`: a share can take as long as opening a session does.
+        if (loading) {
+            CircularProgressIndicator(color = CTColor.textDim, strokeWidth = 2.dp, modifier = Modifier.size(14.dp))
+        } else {
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = color.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
+        }
     }
 }
 
