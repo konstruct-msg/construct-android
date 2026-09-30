@@ -343,12 +343,12 @@
     <!-- Security events and safety numbers (iOS KeyChangeUX, SafetyNumberView) -->
     <string name="safety_numbers">safety numbers</string>
     <string name="safety_numbers_verify_title">verify identity</string>
-    <string name="safety_numbers_instruction">Compare these numbers with %1$s out loud or in person. If they match, your connection is secure and has not been intercepted.</string>
+    <string name="safety_numbers_instruction">Compare these numbers with %1$s verbally or in person. If the numbers match, your connection is secure and has not been intercepted.</string>
     <string name="safety_numbers_device">Their device %1$s</string>
     <string name="safety_numbers_copy">copy to clipboard</string>
     <string name="safety_numbers_copied">copied</string>
     <string name="safety_numbers_mismatch_header">if numbers don\'t match</string>
-    <string name="safety_numbers_mismatch_body">Stop communicating and verify your connection. A mismatch may mean someone is intercepting your messages.</string>
+    <string name="safety_numbers_mismatch_body">Stop communicating and verify your connection. A mismatch may indicate that someone is intercepting your messages.</string>
     <string name="safety_numbers_unavailable">unavailable — identity not initialized</string>
     <string name="address_change_banner_title">Address changed</string>
     <string name="address_change_banner_subtitle_fmt">%1$s named a different address than before. Compare safety numbers before you trust this chat.</string>
@@ -357,10 +357,25 @@
     <string name="key_change_verify">Verify</string>
     <string name="security_notice_acknowledge">I\'ve checked</string>
     <!-- Contact profile (iOS UserProfileView) -->
-    <string name="contact_username">username</string>
-    <string name="contact_fingerprint">fingerprint</string>
-    <string name="contact_address">address</string>
-    <string name="contact_address_unknown">not known yet</string>
+    <string name="profile_title">Profile</string>
+    <string name="profile_identity">identity</string>
+    <string name="profile_username">Username</string>
+    <string name="profile_display_name">Display Name</string>
+    <string name="profile_fingerprint">Fingerprint</string>
+    <string name="profile_fingerprint_unknown">Not pinned yet</string>
+    <string name="profile_fingerprint_copy">Copies fingerprint to clipboard</string>
+    <string name="profile_user_id">user id</string>
+    <string name="profile_actions">Actions</string>
+    <string name="profile_call_voice">voice call</string>
+    <string name="profile_soon">soon</string>
+    <string name="profile_security">Security</string>
+    <string name="profile_encryption">Encryption</string>
+    <string name="profile_encrypted">Encrypted</string>
+    <string name="profile_no_session">No active session</string>
+    <string name="profile_block_user">Block User</string>
+    <string name="profile_unblock_user">Unblock User</string>
+    <string name="profile_blocked_badge">Blocked</string>
+    <string name="profile_e2e">changes are end-to-end encrypted</string>
     <string name="contact_open_chat">Open chat</string>
     <string name="contact_danger_zone">danger zone</string>
     <string name="contact_block">Block</string>

@@ -208,14 +208,17 @@ fun KonstructNavHost(
                 },
                 onOpenProfile = {
                     backStackEntry.arguments?.getString("contactId")?.let {
-                        navController.navigate(Screen.Contact.createRoute(it)) { launchSingleTop = true }
+                        navController.navigate(Screen.Contact.createRoute(it, fromChat = true)) { launchSingleTop = true }
                     }
                 },
             )
         }
         composable(
             route = Screen.Contact.route,
-            arguments = listOf(navArgument("contactId") { type = NavType.StringType }),
+            arguments = listOf(
+                navArgument("contactId") { type = NavType.StringType },
+                navArgument("fromChat") { type = NavType.BoolType; defaultValue = false },
+            ),
         ) {
             ContactProfileScreen(
                 onNavigateBack = { navController.popBackStack() },

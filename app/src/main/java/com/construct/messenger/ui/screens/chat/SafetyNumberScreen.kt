@@ -3,6 +3,8 @@ package com.construct.messenger.ui.screens.chat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,38 +18,47 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.ui.components.CTNavBar
-import com.construct.messenger.ui.components.CTSep
-import com.construct.messenger.ui.components.CTSettingsSectionHeader
+import com.construct.messenger.ui.components.ctBackground
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.Spacing
 import com.construct.messenger.ui.theme.ctBold
 import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.DeviceSafetyNumber
 import com.construct.messenger.viewmodel.SafetyNumberViewModel
+import kotlinx.coroutines.delay
+
+/** iOS `SafetyNumberView` insets: blocks 20 from the edges, 16 above and below. */
+private val EDGE = 20.dp
 
 /**
  * Safety numbers with a contact, one block per device of theirs. **Canon:** iOS
- * `SafetyNumberView`; the number is the core's (`computeSafetyNumber`).
+ * `SafetyNumberView`; the number is the core's (`computeSafetyNumber`). With several devices
+ * each block is headed by that device's key fingerprint, where iOS prints its id — the
+ * fingerprint is what the profile shows, so the two can be matched.
  */
 @Composable
 fun SafetyNumberScreen(
@@ -58,25 +69,29 @@ fun SafetyNumberScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(CTColor.bg)
+            .ctBackground()
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
         CTNavBar(title = stringResource(R.string.safety_numbers), showBack = true, onBack = onNavigateBack)
-        CTSep()
+        Divider()
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
-            CTSettingsSectionHeader(title = stringResource(R.string.safety_numbers_verify_title))
-            Text(
-                text = stringResource(R.string.safety_numbers_instruction, ui.contactName),
-                style = ctRegular(14),
-                color = CTColor.textDim,
-                modifier = Modifier.padding(horizontal = CTLayout.edgePad, vertical = Spacing.small),
-            )
-            CTSep()
+            Column(
+                modifier = Modifier.padding(horizontal = EDGE, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Tracked("> ${stringResource(R.string.safety_numbers_verify_title).uppercase()}", ctBold(12), CTColor.accent)
+                Text(
+                    text = stringResource(R.string.safety_numbers_instruction, ui.contactName),
+                    style = ctRegular(13).copy(lineHeight = 21.sp),
+                    color = CTColor.textDim,
+                )
+            }
+            Divider()
             when {
                 ui.loading -> CircularProgressIndicator(
                     color = CTColor.accent,
@@ -84,22 +99,30 @@ fun SafetyNumberScreen(
                         .align(Alignment.CenterHorizontally)
                         .padding(Spacing.large),
                 )
-                ui.devices.isEmpty() -> Unavailable()
+                ui.devices.isEmpty() -> {
+                    Unavailable()
+                    Divider()
+                }
                 else -> ui.devices.forEach { device ->
                     DeviceBlock(device, showDevice = ui.devices.size > 1)
-                    CTSep()
+                    Divider(alpha = 0.4f)
                 }
             }
-            CTSettingsSectionHeader(
-                title = stringResource(R.string.safety_numbers_mismatch_header),
-                color = CTColor.textDim,
-            )
-            Text(
-                text = stringResource(R.string.safety_numbers_mismatch_body),
-                style = ctRegular(13),
-                color = CTColor.textDim,
-                modifier = Modifier.padding(horizontal = CTLayout.edgePad, vertical = Spacing.small),
-            )
+            Column(
+                modifier = Modifier.padding(horizontal = EDGE, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Tracked(
+                    "! ${stringResource(R.string.safety_numbers_mismatch_header).uppercase()}",
+                    ctBold(11),
+                    CTColor.accent.copy(alpha = 0.7f),
+                )
+                Text(
+                    text = stringResource(R.string.safety_numbers_mismatch_body),
+                    style = ctRegular(12).copy(lineHeight = 20.sp),
+                    color = CTColor.textDim,
+                )
+            }
         }
     }
 }
@@ -108,24 +131,31 @@ fun SafetyNumberScreen(
 private fun DeviceBlock(device: DeviceSafetyNumber, showDevice: Boolean) {
     val clipboard = LocalClipboardManager.current
     var copied by remember(device.number) { mutableStateOf(false) }
+    LaunchedEffect(copied) {
+        if (copied) {
+            delay(2_000)
+            copied = false
+        }
+    }
+    if (showDevice) {
+        Tracked(
+            text = stringResource(R.string.safety_numbers_device, device.fingerprint),
+            style = ctBold(11),
+            color = CTColor.textDim,
+            modifier = Modifier.padding(start = EDGE, end = EDGE, top = 14.dp),
+        )
+    }
+    val number = device.number
+    if (number == null) {
+        Unavailable()
+        return
+    }
     Column(
-        modifier = Modifier.padding(horizontal = CTLayout.edgePad, vertical = Spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(Spacing.small),
+        modifier = Modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        if (showDevice) {
-            Text(
-                text = stringResource(R.string.safety_numbers_device, device.fingerprint),
-                style = ctRegular(12),
-                color = CTColor.textDim,
-            )
-        }
-        val number = device.number
-        if (number == null) {
-            Unavailable()
-            return@Column
-        }
         number.split(" ").filter { it.isNotBlank() }.chunked(4).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEach { chunk ->
                     Text(
                         text = chunk,
@@ -133,36 +163,37 @@ private fun DeviceBlock(device: DeviceSafetyNumber, showDevice: Boolean) {
                         color = CTColor.text,
                         modifier = Modifier
                             .weight(1f)
-                            .background(CTColor.bgMsg)
-                            .padding(vertical = Spacing.small),
+                            .background(CTColor.noise.copy(alpha = 0.25f))
+                            .padding(vertical = 10.dp),
                         textAlign = TextAlign.Center,
                     )
                 }
             }
         }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    clipboard.setText(AnnotatedString(number))
-                    copied = true
-                }
-                .padding(vertical = Spacing.small),
-        ) {
-            Text(
-                text = stringResource(if (copied) R.string.safety_numbers_copied else R.string.safety_numbers_copy),
-                style = ctRegular(14),
-                color = if (copied) CTColor.accent else CTColor.text,
-            )
-            Spacer(Modifier.weight(1f))
-            Icon(
-                imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
-                contentDescription = null,
-                tint = if (copied) CTColor.accent else CTColor.textDim,
-                modifier = Modifier.size(CTLayout.navIconSize),
-            )
-        }
+    }
+    Divider()
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                clipboard.setText(AnnotatedString(number))
+                copied = true
+            }
+            .padding(horizontal = EDGE, vertical = 14.dp),
+    ) {
+        Text(
+            text = stringResource(if (copied) R.string.safety_numbers_copied else R.string.safety_numbers_copy),
+            style = ctRegular(13),
+            color = if (copied) CTColor.accent else CTColor.text,
+        )
+        Spacer(Modifier.weight(1f))
+        Icon(
+            imageVector = if (copied) Icons.Default.Check else Icons.Outlined.ContentCopy,
+            contentDescription = null,
+            tint = if (copied) CTColor.accent else CTColor.textDim,
+            modifier = Modifier.size(18.dp),
+        )
     }
 }
 
@@ -172,6 +203,23 @@ private fun Unavailable() {
         text = stringResource(R.string.safety_numbers_unavailable),
         style = ctRegular(13),
         color = CTColor.textDim,
-        modifier = Modifier.padding(horizontal = CTLayout.edgePad, vertical = Spacing.medium),
+        modifier = Modifier.padding(horizontal = EDGE, vertical = 14.dp),
+    )
+}
+
+/** iOS headers here are tracked 2 pt. */
+@Composable
+private fun Tracked(text: String, style: TextStyle, color: Color, modifier: Modifier = Modifier) {
+    Text(text = text, style = style, color = color, letterSpacing = 2.sp, modifier = modifier)
+}
+
+/** A full-width `noise` rule, 1 dp — this screen's only separator. */
+@Composable
+private fun Divider(alpha: Float = 1f) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(CTColor.noise.copy(alpha = alpha)),
     )
 }

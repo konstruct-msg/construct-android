@@ -22,8 +22,9 @@ sealed class Screen(val route: String) {
         fun createRoute(contactId: String) = "chat/${Uri.encode(contactId)}"
     }
     /** A contact's profile: identity, safety numbers, block / report / remove. */
-    data object Contact : Screen("contact/{contactId}") {
-        fun createRoute(contactId: String) = "contact/${Uri.encode(contactId)}"
+    data object Contact : Screen("contact/{contactId}?fromChat={fromChat}") {
+        fun createRoute(contactId: String, fromChat: Boolean = false) =
+            "contact/${Uri.encode(contactId)}?fromChat=$fromChat"
     }
     /** Safety numbers with a contact, one per device of theirs. */
     data object SafetyNumbers : Screen("safety/{contactId}") {

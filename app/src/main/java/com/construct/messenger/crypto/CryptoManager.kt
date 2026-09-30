@@ -246,6 +246,11 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         orchestrator?.hasSession(contactId) ?: false
     }
 
+    /** The negotiated suite of the session with [deviceId] (1 classic, 3 PQ ratchet), 0 for none. */
+    fun sessionSuiteId(deviceId: String): Int = synchronized(coreLock) {
+        orchestrator?.getSessionSuiteId(deviceId)?.toInt() ?: 0
+    }
+
     /** Core-owned multi-device delivery plan; account→device translation stays in the app. */
     fun planSend(
         recipientDeviceIds: List<String>,

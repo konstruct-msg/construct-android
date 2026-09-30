@@ -4,8 +4,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.local.db.UserDao
+import com.construct.messenger.data.model.SecurityNotice
+import com.construct.messenger.data.repository.SessionSecurity
+import com.construct.messenger.data.repository.SessionSecurityRepository
+import com.construct.messenger.security.SecurityNotices
 import com.construct.messenger.domain.usecase.ContactActionsUseCase
-import com.construct.messenger.invite.AccountAddress
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.IdentityFingerprint
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,8 +26,11 @@ data class ContactProfileUiState(
     val name: String = "",
     val username: String = "",
     val fingerprint: String? = null,
-    val address: String? = null,
+    val avatar: ByteArray? = null,
     val isBlocked: Boolean = false,
+    val securityNotice: SecurityNotice = SecurityNotice.NONE,
+    /** Null until the core has been asked. */
+    val session: SessionSecurity? = null,
     /** The row is gone — deleted here or never existed. The screen leaves. */
     val removed: Boolean = false,
     val busy: Boolean = false,
@@ -37,16 +43,27 @@ class ContactProfileViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     userDao: UserDao,
     private val actions: ContactActionsUseCase,
+    private val securityNotices: SecurityNotices,
+    private val sessionSecurity: SessionSecurityRepository,
 ) : ViewModel() {
     val userId: String = requireNotNull(savedStateHandle.get<String>("contactId"))
+
+    /** Opened from their chat: "open chat" would only lead back (iOS `showMessageButton`). */
+    val fromChat: Boolean = savedStateHandle.get<Boolean>("fromChat") ?: false
     private val busy = MutableStateFlow(false)
     private val reported = MutableStateFlow<Boolean?>(null)
+    private val session = MutableStateFlow<SessionSecurity?>(null)
+
+    init {
+        refreshSession()
+    }
 
     val uiState: StateFlow<ContactProfileUiState> = combine(
         userDao.observeById(userId),
         busy,
         reported,
-    ) { row, isBusy, report ->
+        session,
+    ) { row, isBusy, report, sessionState ->
         if (row == null) {
             ContactProfileUiState(userId = userId, removed = true)
         } else {
@@ -54,9 +71,12 @@ class ContactProfileViewModel @Inject constructor(
                 userId = userId,
                 name = row.displayName.ifBlank { DisplayNameGenerator.generate(userId) },
                 username = row.username,
-                fingerprint = row.identityPublic?.let(IdentityFingerprint::short),
-                address = row.accountAddress?.takeIf { it.size == AccountAddress.LENGTH }?.let(AccountAddress::wire),
+                // The row keeps the key of a contact added before the device registry did.
+                fingerprint = (row.identityPublic ?: sessionState?.identityPublic)?.let(IdentityFingerprint::short),
+                avatar = row.avatarData,
                 isBlocked = row.isBlocked,
+                securityNotice = SecurityNotice.of(row.securityNotice),
+                session = sessionState,
                 busy = isBusy,
                 reportAccepted = report,
             )
@@ -68,6 +88,15 @@ class ContactProfileViewModel @Inject constructor(
     fun reportSpam() = run { reported.value = actions.reportSpam(userId) }
 
     fun delete() = run { actions.delete(userId) }
+
+    fun acknowledgeSecurityNotice() {
+        viewModelScope.launch { securityNotices.acknowledge(userId) }
+    }
+
+    /** The session can open or change while the profile is behind another screen. */
+    fun refreshSession() {
+        viewModelScope.launch { session.value = sessionSecurity.of(userId) }
+    }
 
     fun reportShown() {
         reported.value = null
