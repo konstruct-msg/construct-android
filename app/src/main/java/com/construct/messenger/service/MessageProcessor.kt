@@ -2,6 +2,7 @@ package com.construct.messenger.service
 
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.stealth.ServerKeysProvider
 import javax.inject.Inject
 import javax.inject.Singleton
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
@@ -44,6 +45,7 @@ class MessageProcessor @Inject constructor(
     private val timerBridge: CfeTimerBridge,
     private val cryptoManager: CryptoManager,
     private val held: HeldEnvelopes,
+    private val serverKeys: ServerKeysProvider,
 ) {
     suspend fun process(incoming: MessageRouter.IncomingMessage): ProcessingOutcome {
         val copyRoute = resolveCopyRoute(incoming)
@@ -73,6 +75,12 @@ class MessageProcessor @Inject constructor(
             senderCertificate = incoming.senderCertificate,
         )
 
+        // The core answers a message nothing reads with a decryption error only when it can check
+        // the writer's certificate, against these keys. They used to arrive with the first
+        // receiving open, so after a restart a message on a forgotten state (a deleted chat or
+        // contact) was dropped with no answer, and its writer never resent it. iOS hands them
+        // over at the same point, before an open, and has the same gap.
+        cryptoManager.setTrustedServerKeys(listOfNotNull(serverKeys.bundleVerificationKey()))
         var actions = try {
             orchestrator.handleEvent(event)
         } catch (e: Exception) {

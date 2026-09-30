@@ -84,7 +84,7 @@ class MessageProcessorTest {
     @Test
     fun `messageDecrypted executes side effects and reports Processed`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held, mock())
         val actions = listOf(
             CfeAction.MessageDecrypted("alice", "m1", byteArrayOf(7)),
             CfeAction.SendReceipt("m1", "delivered"),
@@ -102,7 +102,7 @@ class MessageProcessorTest {
     @Test
     fun `duplicateDropped records the message and does not receipt it`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held, mock())
 
         val outcome = processor.route(
             listOf(CfeAction.DuplicateDropped("m1"), CfeAction.ScheduleTimer("cooldown", 5_000uL)),
@@ -126,7 +126,7 @@ class MessageProcessorTest {
                 emptyList(),
             ),
         )
-        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held, mock())
 
         val outcome = processor.process(incoming())
 
@@ -142,7 +142,7 @@ class MessageProcessorTest {
     @Test
     fun `an unread message sends the core's decryption error and is acked`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held, mock())
 
         val outcome = processor.route(
             listOf(
@@ -164,7 +164,7 @@ class MessageProcessorTest {
     @Test
     fun `an unread message with no error to send is acked without a receipt`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held, mock())
 
         val outcome = processor.route(
             listOf(CfeAction.NotifyError("decrypt_failed", "AEAD decryption failed")),
@@ -182,7 +182,7 @@ class MessageProcessorTest {
     @Test
     fun `openReceiving opens the named device and holds the envelope`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held, mock())
 
         val outcome = processor.route(listOf(CfeAction.OpenReceiving(device)), incoming())
 
@@ -194,7 +194,7 @@ class MessageProcessorTest {
     @Test
     fun `no actionable decision acks as delivered`() = runBlocking {
         val effects = RecordingEffects()
-        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held)
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held, mock())
 
         val outcome = processor.route(listOf(CfeAction.PruneAckStore(0uL)), incoming())
 
@@ -209,7 +209,7 @@ class MessageProcessorTest {
         val effects = RecordingEffects()
         whenever(sessionManager.resolveDeviceId("alice")).thenReturn("11111111111111111111111111111111")
         val gateway = FakeGateway(mutableListOf(listOf(CfeAction.MessageDecrypted("alice", "m1", byteArrayOf(9)))))
-        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held, mock())
 
         val outcome = processor.process(incoming())
 
@@ -228,7 +228,7 @@ class MessageProcessorTest {
                 listOf(CfeAction.MessageDecrypted("alice", "m1", byteArrayOf(1))), // after AckDbResult
             ),
         )
-        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held, mock())
 
         val outcome = processor.process(incoming())
 
@@ -245,7 +245,7 @@ class MessageProcessorTest {
         val gateway = object : OrchestratorGateway {
             override fun handleEvent(event: CfeIncomingEvent): List<CfeAction> = throw RuntimeException("boom")
         }
-        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held, mock())
 
         val outcome = processor.process(incoming())
 
@@ -266,7 +266,7 @@ class MessageProcessorTest {
         val gateway = FakeGateway(
             mutableListOf(listOf(CfeAction.NotifyError("MALFORMED_WIRE_PAYLOAD", "too short"))),
         )
-        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
+        val processor = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held, mock())
 
         val outcome = processor.process(incoming().copy(encryptedPayload = ByteArray(4)))
 
@@ -286,7 +286,7 @@ class MessageProcessorTest {
     fun `a reset init goes to the core as a message`() = runBlocking {
         whenever(sessionManager.resolveDeviceId("alice")).thenReturn(device)
         val gateway = FakeGateway()
-        MessageProcessor(gateway, RecordingEffects(), sessionManager, timerBridge, cryptoManager, held)
+        MessageProcessor(gateway, RecordingEffects(), sessionManager, timerBridge, cryptoManager, held, mock())
             .process(incoming().copy(contentType = ContentType.CONTENT_TYPE_SESSION_RESET_INIT))
 
         val event = gateway.events.filterIsInstance<CfeIncomingEvent.MessageReceived>().single()
@@ -315,7 +315,7 @@ class MessageProcessorTest {
         whenever(sessionManager.resolveDeviceId("alice")).thenReturn(device)
         val gateway = FakeGateway()
         val cert = certificate()
-        MessageProcessor(gateway, RecordingEffects(), sessionManager, timerBridge, cryptoManager, held)
+        MessageProcessor(gateway, RecordingEffects(), sessionManager, timerBridge, cryptoManager, held, mock())
             .process(incoming().copy(senderCertificate = cert))
 
         val event = gateway.events.filterIsInstance<CfeIncomingEvent.MessageReceived>().single()
@@ -332,7 +332,7 @@ class MessageProcessorTest {
         val gateway = FakeGateway()
         val effects = RecordingEffects()
 
-        val outcome = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
+        val outcome = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held, mock())
             .process(incoming())
 
         assertEquals(ProcessingOutcome.Acked, outcome)
@@ -357,7 +357,7 @@ class MessageProcessorTest {
         val effects = RecordingEffects()
         val copy = incoming(id = "base-1-fd-0123456789abcdef").copy(senderCertificate = certificate())
 
-        val outcome = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held)
+        val outcome = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held, mock())
             .process(copy)
 
         assertEquals(ProcessingOutcome.Acked, outcome)

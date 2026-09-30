@@ -166,6 +166,30 @@ class IncomingPlaintextTest {
         assertFalse(decoded.isUserVisible)
         assertEquals(ContentType.CONTENT_TYPE_HEARTBEAT_VALUE, decoded.knstContentType)
     }
+
+    /**
+     * iOS resends a message a peer could not read as bare UTF-8 in a KNST frame, not as
+     * MessageContent. Mutation: drop the UTF-8 fallback — the resend is hidden again.
+     */
+    @Test
+    fun `bare utf8 in a knst frame is the text iOS resends`() {
+        val id = UUID.randomUUID()
+        val decoded = IncomingPlaintext.decode(
+            KnstFrame.pack("Oo".toByteArray(), KnstFrame.TYPE_E2EE_SIGNAL, id),
+        )
+        assertTrue(decoded.isUserVisible)
+        assertEquals("Oo", decoded.text)
+        assertEquals(id.toString(), decoded.e2eMessageId)
+    }
+
+    /** Bytes that are neither MessageContent nor UTF-8 stay hidden, never shown as mojibake. */
+    @Test
+    fun `binary that is not text stays hidden in a knst frame`() {
+        val decoded = IncomingPlaintext.decode(
+            KnstFrame.pack(byteArrayOf(0xFF.toByte(), 0xFE.toByte(), 0x07), KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID()),
+        )
+        assertFalse(decoded.isUserVisible)
+    }
 }
 
 private fun knstTextFrame(text: String, contentType: Int = 0, messageId: ByteArray = ByteArray(16)): ByteArray {

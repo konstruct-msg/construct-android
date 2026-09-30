@@ -214,6 +214,16 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
      * accepts. When the open burned a Kyber one-time key, [ReceivingOpenResult.kyberPrekeys]
      * carries the store without it — persist it before anything else.
      */
+    /**
+     * Hand the core the server keys a sender certificate is checked against. [openReceiving] does
+     * this itself; a message no held state reads needs it too — the core seals a decryption error
+     * only to a writer whose certificate it can check, and with no keys it answers nothing.
+     */
+    fun setTrustedServerKeys(trustedServerKeys: List<ByteArray>) = synchronized(coreLock) {
+        orchestrator?.setTrustedServerKeys(trustedServerKeys)
+        Unit
+    }
+
     fun openReceiving(device: String, trustedServerKeys: List<ByteArray>): ReceivingOpenResult =
         synchronized(coreLock) {
             val core = orchestrator ?: error("orchestrator not ready — setLocalUserId first")

@@ -53,11 +53,26 @@ object IncomingPlaintext {
                 return hidden(type, e2e)
             }
             val payload = knstPayload(plaintext) ?: return hidden(type, e2e)
-            return decodePayload(payload, type, e2e) ?: hidden(type, e2e)
+            return decodePayload(payload, type, e2e)
+                ?: framedText(payload, type, e2e)
+                ?: hidden(type, e2e)
         }
         decodePayload(plaintext, knstContentType = 0, e2eMessageId = null)?.let { return it }
         val utf8 = plaintext.toString(Charsets.UTF_8)
         return Decoded(utf8, knstContentType = 0, isUserVisible = utf8.isNotEmpty())
+    }
+
+    /**
+     * A frame whose payload is bare UTF-8 rather than `MessageContent` — what iOS resends after a
+     * decryption error (`SessionCoordinator.resendAfterDecryptionError` frames the stored text as
+     * is). iOS reads it (`decodeAssembled` ends in the same fallback); Android hid it, so the one
+     * message a peer resent because this device had lost its state was lost a second time.
+     */
+    private fun framedText(payload: ByteArray, type: Int, e2e: String?): Decoded? {
+        val text = runCatching {
+            Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(payload)).toString()
+        }.getOrNull()?.takeIf { it.isNotEmpty() } ?: return null
+        return Decoded(text = text, knstContentType = type, isUserVisible = true, e2eMessageId = e2e)
     }
 
     fun isKnst(bytes: ByteArray): Boolean =
