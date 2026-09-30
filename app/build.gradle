@@ -127,6 +127,14 @@ dependencies {
     // javax.annotation.Generated, referenced by grpc-java generated stubs.
     compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
     implementation 'io.coil-kt:coil-compose:2.6.0'
+    // Video: playback from memory (ExoPlayer) and re-encoding before sending (Transformer), as
+    // iOS exports at 1080p. AndroidX, build-time only — nothing of Play Services on the device.
+    // 1.6.x: later lines require compileSdk 36.
+    def media3Version = '1.6.1'
+    implementation "androidx.media3:media3-exoplayer:${media3Version}"
+    implementation "androidx.media3:media3-ui:${media3Version}"
+    implementation "androidx.media3:media3-transformer:${media3Version}"
+    implementation "androidx.media3:media3-effect:${media3Version}"
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-core:5.12.0'
     testImplementation 'org.mockito.kotlin:mockito-kotlin:5.4.0'

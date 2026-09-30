@@ -181,6 +181,7 @@ fun ChatScreen(
                     fileLoading = fileLoading,
                     fileUnavailable = fileUnavailable,
                     onOpenFile = viewModel::openFile,
+                    loadMedia = viewModel::mediaBytes,
                     message = message,
                     isLastInGroup = isLastInGroup(index, uiState.messages),
                     replyLabel = replyLabel(message, uiState.messages),
@@ -250,7 +251,7 @@ fun ChatScreen(
                         leadingIcon = { Icon(Icons.Filled.Image, null, tint = CTColor.text) },
                         onClick = {
                             attachMenuOpen = false
-                            pickPhotos.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            pickPhotos.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
                         },
                     )
                     DropdownMenuItem(

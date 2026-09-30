@@ -94,6 +94,7 @@ fun MessageBubble(
     fileLoading: Set<String> = emptySet(),
     fileUnavailable: Set<String> = emptySet(),
     onOpenFile: (com.construct.messenger.data.model.MediaItem) -> Unit = {},
+    loadMedia: suspend (com.construct.messenger.data.model.MediaItem) -> ByteArray = { error("no loader") },
 ) {
     val isOutgoing = message.isOutgoing
     val shape = RoundedCornerShape(10.dp)
@@ -162,7 +163,7 @@ fun MessageBubble(
                         modifier = Modifier.widthIn(max = 260.dp).padding(top = 2.dp),
                     )
                 }
-                viewing?.let { MediaViewer(album, it, onDismiss = { viewing = null }) }
+                viewing?.let { MediaViewer(album, it, onDismiss = { viewing = null }, loadVideo = loadMedia) }
             } else Column(
                 modifier = Modifier
                     .widthIn(max = maxBubble)

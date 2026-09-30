@@ -7,6 +7,7 @@ import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.media.ImagePreparer
 import com.construct.messenger.media.MediaCrypto
 import com.construct.messenger.media.PickedFiles
+import com.construct.messenger.media.VideoPreparer
 import com.construct.messenger.util.MediaWire
 import com.construct.messenger.util.TextWire
 import com.google.protobuf.ByteString
@@ -42,6 +43,7 @@ import shared.proto.messaging.v1.Content.VoiceMessage
 class SendMediaUseCase @Inject constructor(
     private val images: ImagePreparer,
     private val files: PickedFiles,
+    private val videos: VideoPreparer,
     private val media: MediaRepository,
     private val sendMessage: SendMessageUseCase,
 ) {
@@ -53,11 +55,18 @@ class SendMediaUseCase @Inject constructor(
         val staged = try {
             withContext(Dispatchers.Default) {
                 uris.map { uri ->
-                    val photo = images.prepare(uri)
-                    val sealed = MediaCrypto.seal(photo.jpeg)
                     val localId = MediaWire.LOCAL_PREFIX + UUID.randomUUID()
-                    media.stage(localId, sealed.blob)
-                    Staged(localId, sealed, photo)
+                    if (videos.isVideo(uri)) {
+                        val video = videos.prepare(uri)
+                        val sealed = MediaCrypto.seal(video.mp4)
+                        media.stage(localId, sealed.blob)
+                        Staged(localId, sealed, video = video)
+                    } else {
+                        val photo = images.prepare(uri)
+                        val sealed = MediaCrypto.seal(photo.jpeg)
+                        media.stage(localId, sealed.blob)
+                        Staged(localId, sealed, photo = photo)
+                    }
                 }
             }
         } catch (e: CancellationException) {
@@ -189,24 +198,41 @@ class SendMediaUseCase @Inject constructor(
         return sendMessage.deliverPrepared(contactId, messageId, timestampMs, MediaWire.content(stored.kind, stored.bytes)!!)
     }
 
-    private class Staged(val localId: String, val sealed: MediaCrypto.Sealed, val photo: ImagePreparer.Prepared) {
+    private class Staged(
+        val localId: String,
+        val sealed: MediaCrypto.Sealed,
+        val photo: ImagePreparer.Prepared? = null,
+        val video: VideoPreparer.Prepared? = null,
+    ) {
         fun item(uploaded: com.construct.messenger.data.api.MediaService.Uploaded) = item(uploaded.mediaId, uploaded.downloadUrl)
 
         /**
-         * iOS `MediaWireCodec.albumContent` for a compressed photo: the blob's size, the digest
-         * of the blob, pixel dimensions, and a BlurHash — no thumbnail when there is one.
+         * iOS `MediaWireCodec.albumContent`: the blob's size and digest, pixel dimensions, a
+         * BlurHash. A photo has no thumbnail when it has a BlurHash; a video always has its
+         * poster, and its length (`InlinePreviewPolicy`).
          */
-        fun item(mediaId: String, url: String): MediaMessage = MediaMessage.newBuilder()
-            .setMediaType(MediaType.MEDIA_TYPE_IMAGE)
-            .setFileUrl(url)
-            .setEncryptionKey(ByteString.copyFrom(sealed.key))
-            .setFileHash(ByteString.copyFrom(sealed.sha256))
-            .setFileSize(sealed.blob.size.toLong())
-            .setMimeType("image/jpeg")
-            .setDimensions(MediaDimensions.newBuilder().setWidth(photo.width).setHeight(photo.height))
-            .also { m -> photo.blurhash?.let { m.setBlurhash(it) } }
-            .setMediaId(mediaId)
-            .build()
+        fun item(mediaId: String, url: String): MediaMessage {
+            val m = MediaMessage.newBuilder()
+                .setFileUrl(url)
+                .setEncryptionKey(ByteString.copyFrom(sealed.key))
+                .setFileHash(ByteString.copyFrom(sealed.sha256))
+                .setFileSize(sealed.blob.size.toLong())
+                .setMediaId(mediaId)
+            val v = video
+            if (v != null) {
+                m.setMediaType(MediaType.MEDIA_TYPE_VIDEO).setMimeType("video/mp4")
+                if (v.width > 0 && v.height > 0) m.setDimensions(MediaDimensions.newBuilder().setWidth(v.width).setHeight(v.height))
+                m.setDurationMs(v.durationMs.toInt())
+                v.thumbnail?.let { m.setThumbnail(ByteString.copyFrom(it)) }
+                v.blurhash?.let { m.setBlurhash(it) }
+            } else {
+                val p = photo!!
+                m.setMediaType(MediaType.MEDIA_TYPE_IMAGE).setMimeType("image/jpeg")
+                m.setDimensions(MediaDimensions.newBuilder().setWidth(p.width).setHeight(p.height))
+                p.blurhash?.let { m.setBlurhash(it) }
+            }
+            return m.build()
+        }
     }
 
     private fun stored(items: List<MediaMessage>, caption: String, reply: ReplyRef?): MediaWire.Stored {

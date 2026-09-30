@@ -104,7 +104,30 @@ class ImagePreparer @Inject constructor(
         return best
     }
 
-    private fun blurhash(bitmap: Bitmap): String? = runCatching {
+    /**
+     * A poster small enough to ride in the message itself. **Canon:** iOS `ThumbnailBudget` —
+     * 320, 240, 180, 128 px on the long side, the best JPEG quality from 0.35 to 0.88 within
+     * 3258 bytes (one KNST chunk less room for the item around it).
+     */
+    fun thumbnail(bitmap: Bitmap): ByteArray? {
+        for (side in THUMB_SIDES) {
+            val small = scaledTo(bitmap, side)
+            fun at(q: Int) = ByteArrayOutputStream().also { small.compress(Bitmap.CompressFormat.JPEG, q, it) }.toByteArray()
+            at(Q_MAX).let { if (it.size <= THUMB_BYTES) return it }
+            var best = at(Q_MIN).takeIf { it.size <= THUMB_BYTES } ?: continue
+            var lo = Q_MIN + 1
+            var hi = Q_MAX - 1
+            while (lo <= hi) {
+                val mid = (lo + hi) / 2
+                val bytes = at(mid)
+                if (bytes.size <= THUMB_BYTES) { best = bytes; lo = mid + 1 } else hi = mid - 1
+            }
+            return best
+        }
+        return null
+    }
+
+    fun blurhash(bitmap: Bitmap): String? = runCatching {
         val f = BLUR_SIDE.toFloat() / max(bitmap.width, bitmap.height)
         val w = max(1, (bitmap.width * f).roundToInt())
         val h = max(1, (bitmap.height * f).roundToInt())
@@ -119,5 +142,7 @@ class ImagePreparer @Inject constructor(
         const val Q_MIN = 35
         const val Q_MAX = 88
         private const val BLUR_SIDE = 32
+        private val THUMB_SIDES = listOf(320, 240, 180, 128)
+        const val THUMB_BYTES = 3770 - 512
     }
 }

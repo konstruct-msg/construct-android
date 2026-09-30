@@ -211,6 +211,9 @@ class ChatViewModel @Inject constructor(
         files.value = (files.value + added).take(MAX_ATTACHMENTS)
     }
 
+    /** The decrypted bytes of [item], for a video about to play. */
+    suspend fun mediaBytes(item: com.construct.messenger.data.model.MediaItem): ByteArray = messagesRepository.mediaBytes(item)
+
     /** Fetch, open and hand [item] (a received or sent file) to the app that shows it. */
     fun openFile(item: com.construct.messenger.data.model.MediaItem) {
         val id = item.mediaId

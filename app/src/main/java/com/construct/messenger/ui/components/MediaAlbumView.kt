@@ -71,6 +71,7 @@ import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.util.BlurHash
 import com.construct.messenger.util.MediaWire
+import kotlinx.coroutines.launch
 
 /**
  * Photos and videos of one message. **Canon:** iOS `MediaMessageView` — one item 260 wide at its
@@ -168,8 +169,16 @@ private fun Tile(
     ) {
         preview?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
         if (item.isVideo) {
-            // Not fetched in the list: iOS downloads a video only when it is opened.
-            Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(40.dp))
+            // Not fetched in the list: iOS downloads a video only when it is opened. The glyph sits
+            // on a dark chip (iOS `videoOverlayGlyph`), or a light poster swallows it.
+            Box(
+                Modifier
+                    .size(54.dp)
+                    .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(CornerRadius.small)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(32.dp))
+            }
             item.durationMs?.let { ms ->
                 Text(
                     text = formatDuration(ms),
@@ -248,16 +257,21 @@ private fun Failure(label: String, onRetry: (() -> Unit)?) {
     }
 }
 
-/** The sender's BlurHash at 32 px, else their thumbnail; decoded once per item. */
+/**
+ * What to show before the item itself; decoded once per item. A video's poster first (iOS
+ * `videoCell`), then the BlurHash at 32 px; for a photo the BlurHash, then any thumbnail.
+ */
 @Composable
 private fun rememberPreview(item: MediaItem): ImageBitmap? = remember(item.mediaId) {
-    item.blurhash?.let { hash ->
+    fun thumb() = item.thumbnail?.let { bytes ->
+        runCatching { BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap() }.getOrNull()
+    }
+    fun blur() = item.blurhash?.let { hash ->
         BlurHash.decode(hash, PREVIEW_PX, PREVIEW_PX)?.let {
             Bitmap.createBitmap(it, PREVIEW_PX, PREVIEW_PX, Bitmap.Config.ARGB_8888).asImageBitmap()
         }
-    } ?: item.thumbnail?.let { bytes ->
-        runCatching { BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap() }.getOrNull()
     }
+    if (item.isVideo) thumb() ?: blur() else blur() ?: thumb()
 }
 
 /**
@@ -265,8 +279,13 @@ private fun rememberPreview(item: MediaItem): ImageBitmap? = remember(item.media
  * `MediaGalleryViewer` (paged, zoomable, counter); saving and sharing are not here yet.
  */
 @Composable
-fun MediaViewer(album: MessageMedia.Album, startIndex: Int, onDismiss: () -> Unit) {
-    val photos = album.items.filter { it.isImage }
+fun MediaViewer(
+    album: MessageMedia.Album,
+    startIndex: Int,
+    onDismiss: () -> Unit,
+    loadVideo: suspend (MediaItem) -> ByteArray,
+) {
+    val photos = album.items.filter { it.isImage || it.isVideo }
     if (photos.isEmpty()) return
     val first = photos.indexOf(album.items.getOrNull(startIndex)).coerceAtLeast(0)
     val pager = rememberPagerState(initialPage = first) { photos.size }
@@ -276,7 +295,8 @@ fun MediaViewer(album: MessageMedia.Album, startIndex: Int, onDismiss: () -> Uni
     ) {
         Box(Modifier.fillMaxSize().background(Color.Black)) {
             HorizontalPager(state = pager, modifier = Modifier.fillMaxSize()) { page ->
-                ZoomableImage(photos[page])
+                val item = photos[page]
+                if (item.isVideo) VideoPage(item, active = pager.currentPage == page, load = loadVideo) else ZoomableImage(item)
             }
             Row(
                 modifier = Modifier.statusBarsPadding().padding(8.dp),
@@ -295,6 +315,80 @@ fun MediaViewer(album: MessageMedia.Album, startIndex: Int, onDismiss: () -> Uni
             }
         }
     }
+}
+
+/**
+ * A video in the viewer: its poster until tapped, then fetched (iOS downloads a video only when
+ * it is opened), and played from memory — the decrypted file is never written to disk. It pauses
+ * when paged away from.
+ */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+@Composable
+private fun VideoPage(item: MediaItem, active: Boolean, load: suspend (MediaItem) -> ByteArray) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val preview = rememberPreview(item)
+    var bytes by remember { mutableStateOf<ByteArray?>(null) }
+    var loading by remember { mutableStateOf(false) }
+    var failure by remember { mutableStateOf<String?>(null) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val unavailable = stringResource(R.string.media_unavailable)
+    val failed = stringResource(R.string.failed_to_load)
+    val data = bytes
+    if (data == null) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .clickable(enabled = !loading) {
+                    loading = true
+                    failure = null
+                    scope.launch {
+                        try {
+                            bytes = load(item)
+                        } catch (e: MediaUnavailable) {
+                            failure = unavailable
+                        } catch (e: kotlinx.coroutines.CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            failure = failed
+                        } finally {
+                            loading = false
+                        }
+                    }
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            preview?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
+            when {
+                loading -> CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp)
+                failure != null -> Text(failure!!, style = ctRegular(14), color = Color.White)
+                else -> Icon(
+                    Icons.Filled.PlayArrow,
+                    null,
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(CornerRadius.small)),
+                )
+            }
+        }
+        return
+    }
+    val player = remember(data) {
+        androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
+            val source = androidx.media3.exoplayer.source.ProgressiveMediaSource.Factory {
+                androidx.media3.datasource.ByteArrayDataSource(data)
+            }.createMediaSource(androidx.media3.common.MediaItem.fromUri("data://${item.mediaId}"))
+            setMediaSource(source)
+            prepare()
+            playWhenReady = true
+        }
+    }
+    androidx.compose.runtime.DisposableEffect(player) { onDispose { player.release() } }
+    androidx.compose.runtime.LaunchedEffect(active) { if (!active) player.pause() }
+    androidx.compose.ui.viewinterop.AndroidView(
+        factory = { ctx -> androidx.media3.ui.PlayerView(ctx).apply { this.player = player } },
+        modifier = Modifier.fillMaxSize(),
+    )
 }
 
 @Composable
