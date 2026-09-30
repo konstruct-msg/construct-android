@@ -1,14 +1,16 @@
 package com.construct.messenger.data.repository
 
-import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.db.IssuedInviteDao
 import com.construct.messenger.data.local.db.IssuedInviteEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.data.local.db.localName
+import com.construct.messenger.data.local.db.resolvedName
 import com.construct.messenger.data.model.Contact
 import com.construct.messenger.data.model.SecurityNotice
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.invite.AccountAddressBook
 import com.construct.messenger.invite.AccountAddressSource
 import com.construct.messenger.invite.InviteConfig
@@ -17,12 +19,12 @@ import com.construct.messenger.invite.InviteGenerator
 import com.construct.messenger.invite.InviteObject
 import com.construct.messenger.invite.InviteVerifier
 import com.construct.messenger.invite.MintedInvite
-import com.google.protobuf.ByteString
 import com.construct.messenger.util.DisplayNameGenerator
-import javax.inject.Inject
-import javax.inject.Singleton
+import com.google.protobuf.ByteString
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,12 +33,12 @@ import kotlinx.coroutines.flow.map
 import shared.proto.services.v1.InviteServiceOuterClass.AcceptInviteRequest
 import shared.proto.services.v1.InviteServiceOuterClass.InviteToken
 import shared.proto.services.v1.InviteServiceOuterClass.RevokeInviteRequest
+import shared.proto.services.v1.UserServiceOuterClass.CheckUsernameAvailabilityRequest
 import shared.proto.services.v1.UserServiceOuterClass.ContactRequestAction
 import shared.proto.services.v1.UserServiceOuterClass.FindUserRequest
 import shared.proto.services.v1.UserServiceOuterClass.GetContactRequestsRequest
-import shared.proto.services.v1.UserServiceOuterClass.RespondToContactRequestRequest
-import shared.proto.services.v1.UserServiceOuterClass.CheckUsernameAvailabilityRequest
 import shared.proto.services.v1.UserServiceOuterClass.GetUserProfileRequest
+import shared.proto.services.v1.UserServiceOuterClass.RespondToContactRequestRequest
 import shared.proto.services.v1.UserServiceOuterClass.SendContactRequestRequest
 import shared.proto.services.v1.UserServiceOuterClass.SetDiscoverableRequest
 
@@ -58,9 +60,10 @@ class ContactsRepositoryImpl @Inject constructor(
         rows.map {
             Contact(
                 userId = it.id,
-                displayName = it.displayName.ifBlank { DisplayNameGenerator.generate(it.id) },
+                displayName = it.resolvedName(it.id),
                 username = it.username,
                 securityNotice = SecurityNotice.of(it.securityNotice),
+                localName = it.localName,
             )
         }
     }
@@ -69,8 +72,9 @@ class ContactsRepositoryImpl @Inject constructor(
         rows.map {
             Contact(
                 userId = it.id,
-                displayName = it.displayName.ifBlank { DisplayNameGenerator.generate(it.id) },
+                displayName = it.resolvedName(it.id),
                 username = it.username,
+                localName = it.localName,
             )
         }
     }

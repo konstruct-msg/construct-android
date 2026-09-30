@@ -370,6 +370,11 @@
     <string name="profile_identity">identity</string>
     <string name="profile_username">Username</string>
     <string name="profile_display_name">Display Name</string>
+    <string name="local_name">Local name</string>
+    <string name="local_name_unset">Not set</string>
+    <string name="local_name_placeholder">Enter a name</string>
+    <string name="local_name_clear">Clear</string>
+    <string name="local_name_footer">Visible only to you. The contact never sees it.</string>
     <string name="profile_fingerprint">Fingerprint</string>
     <string name="profile_fingerprint_unknown">Not pinned yet</string>
     <string name="profile_fingerprint_copy">Copies fingerprint to clipboard</string>

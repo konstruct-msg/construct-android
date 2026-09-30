@@ -4,11 +4,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.local.db.UserDao
+import com.construct.messenger.data.local.db.localName
+import com.construct.messenger.data.local.db.resolvedName
 import com.construct.messenger.data.model.SecurityNotice
 import com.construct.messenger.data.repository.SessionSecurity
 import com.construct.messenger.data.repository.SessionSecurityRepository
-import com.construct.messenger.security.SecurityNotices
 import com.construct.messenger.domain.usecase.ContactActionsUseCase
+import com.construct.messenger.security.SecurityNotices
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.IdentityFingerprint
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,7 +25,12 @@ import kotlinx.coroutines.launch
 
 data class ContactProfileUiState(
     val userId: String,
+    /** What the app calls them everywhere — their local name when the user gave one. */
     val name: String = "",
+    /** The name they go by themselves: shared, or generated from the id. */
+    val displayName: String = "",
+    /** The user's own name for them, or null. */
+    val localName: String? = null,
     val username: String = "",
     val fingerprint: String? = null,
     val avatar: ByteArray? = null,
@@ -69,7 +76,9 @@ class ContactProfileViewModel @Inject constructor(
         } else {
             ContactProfileUiState(
                 userId = userId,
-                name = row.displayName.ifBlank { DisplayNameGenerator.generate(userId) },
+                name = row.resolvedName(userId),
+                displayName = row.displayName.ifBlank { DisplayNameGenerator.generate(userId) },
+                localName = row.localName,
                 username = row.username,
                 // The row keeps the key of a contact added before the device registry did.
                 fingerprint = (row.identityPublic ?: sessionState?.identityPublic)?.let(IdentityFingerprint::short),
@@ -84,6 +93,11 @@ class ContactProfileViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ContactProfileUiState(userId = userId))
 
     fun setBlocked(blocked: Boolean) = run { actions.setBlocked(userId, blocked) }
+
+    /** Blank clears it. */
+    fun setLocalName(name: String?) {
+        viewModelScope.launch { actions.setLocalName(userId, name) }
+    }
 
     fun reportSpam() = run { reported.value = actions.reportSpam(userId) }
 

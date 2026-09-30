@@ -553,6 +553,9 @@ private class FakeUserDao : UserDao {
     override suspend fun setSecurityNotice(userId: String, code: Int) {
         rows[userId]?.let { rows[userId] = it.copy(securityNotice = code) }
     }
+    override suspend fun setLocalAlias(userId: String, alias: String?) {
+        rows[userId]?.let { rows[userId] = it.copy(localAlias = alias) }
+    }
 }
 
 private class FakeAckStore : AckStore {

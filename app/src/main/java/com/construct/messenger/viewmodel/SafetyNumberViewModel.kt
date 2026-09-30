@@ -7,6 +7,7 @@ import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.construct.messenger.data.local.db.UserDao
+import com.construct.messenger.data.local.db.localName
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.IdentityFingerprint
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -48,7 +49,8 @@ class SafetyNumberViewModel @Inject constructor(
 
     private suspend fun load() {
         val row = userDao.getById(contactId)
-        val name = row?.username?.takeIf { it.isNotBlank() }?.let { "@$it" }
+        val name = row?.localName
+            ?: row?.username?.takeIf { it.isNotBlank() }?.let { "@$it" }
             ?: row?.displayName?.takeIf { it.isNotBlank() }
             ?: DisplayNameGenerator.generate(contactId)
         val mine = keystoreManager.getDeviceId()

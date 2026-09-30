@@ -24,7 +24,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ServerMessageIdEntity::class,
         PendingResendEntity::class,
     ],
-    version = 12,
+    version = 13,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -121,6 +121,13 @@ abstract class ConstructDatabase : RoomDatabase() {
         val MIGRATION_11_12 = object : Migration(11, 12) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE issued_invites ADD COLUMN sitting TEXT")
+            }
+        }
+
+        /** The user's own name for a contact (iOS `localAlias`). Existing rows: none given. */
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE users ADD COLUMN localAlias TEXT")
             }
         }
     }

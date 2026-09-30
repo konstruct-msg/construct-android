@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GppMaybe
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.AlertDialog
@@ -59,6 +60,7 @@ import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTStatus
 import com.construct.messenger.ui.components.CTStatusBadge
+import com.construct.messenger.ui.components.CTTextField
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.ctBold
@@ -77,9 +79,8 @@ private val ROW_V = 14.dp
  * A contact's card. **Canon:** iOS `UserProfileView` — the avatar, then flat sections under
  * `> TITLE` headers: identity, actions, security, the danger zone, and the closing line.
  *
- * Not here yet, because Android has not got them: the local name (a Room column and every
- * place a name is shown), "share my profile" (the profile-share call), and calls — the voice
- * call row is iOS's own disabled "soon" row. "Remove contact" stays on every entry point:
+ * Not here yet: "share my profile" (the profile-share call) and calls — the voice call row is
+ * iOS's own disabled "soon" row. "Remove contact" stays on every entry point:
  * removing is local, and Android has no Synaps prune to leave it to.
  */
 @Composable
@@ -91,6 +92,7 @@ fun ContactProfileScreen(
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
     var confirm by remember { mutableStateOf<Confirm?>(null) }
+    var editingLocalName by remember { mutableStateOf(false) }
 
     LaunchedEffect(ui.removed) {
         if (ui.removed) onNavigateBack()
@@ -121,6 +123,15 @@ fun ContactProfileScreen(
                 }
             },
             onDismiss = { confirm = null },
+        )
+    }
+
+    if (editingLocalName) {
+        LocalNameDialog(
+            current = ui.localName.orEmpty(),
+            onSave = { editingLocalName = false; viewModel.setLocalName(it) },
+            onClear = { editingLocalName = false; viewModel.setLocalName(null) },
+            onDismiss = { editingLocalName = false },
         )
     }
 
@@ -160,7 +171,7 @@ fun ContactProfileScreen(
         ) {
             AvatarHeader(ui)
             FlatDivider(thick = true)
-            IdentitySection(ui)
+            IdentitySection(ui, onEditLocalName = { editingLocalName = true })
             FlatDivider(thick = true)
             ActionsSection(showOpenChat = !viewModel.fromChat, onOpenChat = { onOpenChat(viewModel.userId) })
             FlatDivider(thick = true)
@@ -227,7 +238,7 @@ private fun AvatarHeader(ui: ContactProfileUiState) {
 }
 
 @Composable
-private fun IdentitySection(ui: ContactProfileUiState) {
+private fun IdentitySection(ui: ContactProfileUiState, onEditLocalName: () -> Unit) {
     val clipboard = LocalClipboardManager.current
     SectionHeader(stringResource(R.string.profile_identity))
     RowDivider()
@@ -236,7 +247,22 @@ private fun IdentitySection(ui: ContactProfileUiState) {
     }
     RowDivider()
     ProfileRow(stringResource(R.string.profile_display_name)) {
-        Text(ui.name, style = ctRegular(14), color = CTColor.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(ui.displayName, style = ctRegular(14), color = CTColor.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+    RowDivider()
+    // iOS: a name only this device shows, overriding every other one wherever they are named.
+    ProfileRow(stringResource(R.string.local_name), modifier = Modifier.clickable(onClick = onEditLocalName)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val local = ui.localName
+            Text(
+                text = local ?: stringResource(R.string.local_name_unset),
+                style = ctRegular(14),
+                color = if (local != null) CTColor.text else CTColor.textDim,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Icon(Icons.Default.Edit, contentDescription = null, tint = CTColor.accent.copy(alpha = 0.7f), modifier = Modifier.size(12.dp))
+        }
     }
     RowDivider()
     val fingerprint = ui.fingerprint
@@ -371,6 +397,44 @@ private fun SecurityNoticeBlock(notice: SecurityNotice, name: String, onVerify: 
             )
         }
     }
+}
+
+/** iOS `.alert("local_name")`: a field, save, clear when there is one, cancel; the footer says who sees it. */
+@Composable
+private fun LocalNameDialog(current: String, onSave: (String) -> Unit, onClear: () -> Unit, onDismiss: () -> Unit) {
+    var draft by remember { mutableStateOf(current) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = CTColor.outMsgBg,
+        title = { Text(stringResource(R.string.local_name), style = ctBold(15), color = CTColor.text) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stringResource(R.string.local_name_footer), style = ctRegular(12), color = CTColor.textDim)
+                CTTextField(
+                    placeholder = stringResource(R.string.local_name_placeholder),
+                    value = draft,
+                    onValueChange = { draft = it },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(draft) }) {
+                Text(stringResource(R.string.action_save).replaceFirstChar { it.titlecase() }, style = ctBold(13), color = CTColor.accent)
+            }
+        },
+        dismissButton = {
+            Row {
+                if (current.isNotEmpty()) {
+                    TextButton(onClick = onClear) {
+                        Text(stringResource(R.string.local_name_clear), style = ctRegular(13), color = CTColor.danger)
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.action_cancel), style = ctRegular(13), color = CTColor.textDim)
+                }
+            }
+        },
+    )
 }
 
 /** Must follow `SuiteID` in construct-core `crypto/suite_id.rs`, as iOS `cryptoSuiteName` does. */

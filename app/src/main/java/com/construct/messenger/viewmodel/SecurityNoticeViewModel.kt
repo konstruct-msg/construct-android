@@ -2,6 +2,7 @@ package com.construct.messenger.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.construct.messenger.data.local.db.UserDao
+import com.construct.messenger.data.local.db.localName
 import com.construct.messenger.data.model.SecurityNotice
 import com.construct.messenger.security.SecurityNotices
 import com.construct.messenger.util.DisplayNameGenerator
@@ -20,7 +21,8 @@ class SecurityNoticeViewModel @Inject constructor(
 ) : ViewModel() {
     val announcements: Flow<SecurityNoticeAnnouncement> = securityNotices.announced.map { event ->
         val row = userDao.getById(event.userId)
-        val name = row?.username?.takeIf { it.isNotBlank() }?.let { "@$it" }
+        val name = row?.localName
+            ?: row?.username?.takeIf { it.isNotBlank() }?.let { "@$it" }
             ?: row?.displayName?.takeIf { it.isNotBlank() }
             ?: DisplayNameGenerator.generate(event.userId)
         SecurityNoticeAnnouncement(event.userId, name, event.notice)

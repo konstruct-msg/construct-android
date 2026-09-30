@@ -84,4 +84,14 @@ class ContactActionsUseCaseTest {
             verify(sessions).saveSecureStore(eq(CfeSecureStoreSlot.Session(device)), argThat { isEmpty() })
         }
     }
+
+    /** Local only, trimmed; blank is "no name", not an empty one. Mutation: store it as typed — this reddens. */
+    @Test
+    fun `a local name is stored trimmed and a blank one clears it`() = runTest {
+        actions.setLocalName(peer, "  Kostya ")
+        actions.setLocalName(peer, "   ")
+
+        verify(users).setLocalAlias(peer, "Kostya")
+        verify(users).setLocalAlias(peer, null)
+    }
 }

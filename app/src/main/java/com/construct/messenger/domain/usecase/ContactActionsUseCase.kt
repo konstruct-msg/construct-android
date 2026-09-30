@@ -89,6 +89,11 @@ class ContactActionsUseCase @Inject constructor(
      * Block or unblock. The local flag stands whatever the server says: it is what this device
      * shows, and the server row is what refuses delivery — a failed sync is logged, not undone.
      */
+    /** A name only this device shows; blank clears it. Nothing is sent (iOS `saveLocalName`). */
+    suspend fun setLocalName(userId: String, name: String?) {
+        userDao.setLocalAlias(userId, name?.trim()?.takeIf { it.isNotEmpty() })
+    }
+
     suspend fun setBlocked(userId: String, blocked: Boolean) {
         userDao.getById(userId)?.let { userDao.upsert(it.copy(isBlocked = blocked)) }
         val myId = keystoreManager.getUserId().orEmpty()

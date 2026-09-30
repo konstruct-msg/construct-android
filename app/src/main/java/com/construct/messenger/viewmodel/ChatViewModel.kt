@@ -64,6 +64,7 @@ class ChatViewModel @Inject constructor(
         val contact = contacts.find { it.userId == contactId }
         val title = when {
             contact == null -> DisplayNameGenerator.generate(contactId).uppercase()
+            contact.localName != null -> contact.localName.uppercase()
             contact.username.isNotBlank() -> "@${contact.username}"
             else -> contact.displayName.uppercase()
         }
@@ -76,7 +77,7 @@ class ChatViewModel @Inject constructor(
             replyingTo = reply,
             editingOriginal = edit?.original,
             securityNotice = contact?.securityNotice ?: SecurityNotice.NONE,
-            contactName = contact?.let { if (it.username.isNotBlank()) "@${it.username}" else it.displayName }
+            contactName = contact?.let { it.localName ?: if (it.username.isNotBlank()) "@${it.username}" else it.displayName }
                 ?: DisplayNameGenerator.generate(contactId),
         )
     }.stateIn(

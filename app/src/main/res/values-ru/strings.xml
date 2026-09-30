@@ -367,6 +367,11 @@
     <string name="profile_identity">идентичность</string>
     <string name="profile_username">Имя пользователя</string>
     <string name="profile_display_name">Отображаемое имя</string>
+    <string name="local_name">Внутреннее имя</string>
+    <string name="local_name_unset">Не задано</string>
+    <string name="local_name_placeholder">Введите имя</string>
+    <string name="local_name_clear">Очистить</string>
+    <string name="local_name_footer">Видно только вам. Контакт об этом не узнает.</string>
     <string name="profile_fingerprint">Отпечаток</string>
     <string name="profile_fingerprint_unknown">Ещё не закреплён</string>
     <string name="profile_fingerprint_copy">Копирует отпечаток в буфер</string>

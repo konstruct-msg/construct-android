@@ -5,9 +5,9 @@ import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.ChatEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.data.local.db.resolvedName
 import com.construct.messenger.data.model.ChatSummary
 import com.construct.messenger.util.ConversationId
-import com.construct.messenger.util.DisplayNameGenerator
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -50,8 +50,7 @@ class ChatsRepositoryImpl @Inject constructor(
 }
 
 private fun ChatEntity.toSummary(user: UserEntity?): ChatSummary {
-    val name = user?.displayName?.takeIf { it.isNotBlank() }
-        ?: DisplayNameGenerator.generate(otherUserId)
+    val name = user.resolvedName(otherUserId)
     return ChatSummary(
         contactId = otherUserId,
         displayName = name,

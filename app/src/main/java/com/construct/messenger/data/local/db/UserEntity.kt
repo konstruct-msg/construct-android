@@ -1,6 +1,7 @@
 package com.construct.messenger.data.local.db
 
 import com.construct.messenger.data.model.SecurityNotice
+import com.construct.messenger.util.DisplayNameGenerator
 import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -35,6 +36,8 @@ data class UserEntity(
     /** An unacknowledged security event for this contact ([SecurityNotice]), or 0. Cleared only by
      * the user, from the chat banner. */
     val securityNotice: Int = SecurityNotice.NONE.code,
+    /** A name the user gave them here. Never leaves the device; outranks every other name. */
+    val localAlias: String? = null,
 ) {
     // ByteArray field: structural equality must be explicit.
     override fun equals(other: Any?): Boolean {
@@ -49,7 +52,8 @@ data class UserEntity(
             isSharingWithMe == other.isSharingWithMe &&
             identityPublic.contentEquals(other.identityPublic) &&
             accountAddress.contentEquals(other.accountAddress) &&
-            securityNotice == other.securityNotice
+            securityNotice == other.securityNotice &&
+            localAlias == other.localAlias
     }
 
     override fun hashCode(): Int {
@@ -63,9 +67,24 @@ data class UserEntity(
         result = 31 * result + identityPublic.contentHashCode()
         result = 31 * result + accountAddress.contentHashCode()
         result = 31 * result + securityNotice
+        result = 31 * result + (localAlias?.hashCode() ?: 0)
         return result
     }
 }
+
+/** The user's own name for them, when they gave one. */
+val UserEntity.localName: String?
+    get() = localAlias?.trim()?.takeIf { it.isNotEmpty() }
+
+/**
+ * The name to show for [userId]: the one the user gave them, the name they shared, their
+ * username, then the name generated from the id. **Canon:** iOS `User.resolvedDisplayName`.
+ */
+fun UserEntity?.resolvedName(userId: String): String =
+    this?.localName
+        ?: this?.displayName?.takeIf { it.isNotBlank() }
+        ?: this?.username?.takeIf { it.isNotBlank() }
+        ?: DisplayNameGenerator.generate(userId)
 
 @Dao
 interface UserDao {
@@ -90,6 +109,10 @@ interface UserDao {
 
     @Query("UPDATE users SET securityNotice = :code WHERE id = :userId")
     suspend fun setSecurityNotice(userId: String, code: Int)
+
+    /** Its own statement, so no upsert of a row read earlier can carry an older alias back. */
+    @Query("UPDATE users SET localAlias = :alias WHERE id = :userId")
+    suspend fun setLocalAlias(userId: String, alias: String?)
 
     @Query("DELETE FROM users WHERE id = :userId")
     suspend fun delete(userId: String)
