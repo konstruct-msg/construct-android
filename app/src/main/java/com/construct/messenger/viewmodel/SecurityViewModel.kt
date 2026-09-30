@@ -1,5 +1,6 @@
 package com.construct.messenger.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.repository.AccountRepository
@@ -72,6 +73,7 @@ class SecurityViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                Log.w(TAG, "recovery status unavailable: $e")
                 null
             }
             state.update { it.copy(recovery = status ?: it.recovery) }
@@ -98,3 +100,5 @@ class SecurityViewModel @Inject constructor(
         }
     }
 }
+
+private const val TAG = "SecurityViewModel"

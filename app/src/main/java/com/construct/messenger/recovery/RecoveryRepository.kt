@@ -5,6 +5,7 @@ import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.invite.AccountAddress
 import com.google.protobuf.ByteString
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import shared.proto.services.v1.AuthServiceOuterClass.GetRecoveryStatusRequest
@@ -34,7 +35,9 @@ class RecoveryRepository @Inject constructor(
     fun newPhrase(): List<String> = cryptoManager.generateMnemonic(PHRASE_WORDS).split(" ")
 
     suspend fun status(): RecoveryStatus {
-        val response = grpcClient.auth.getRecoveryStatus(GetRecoveryStatusRequest.getDefaultInstance())
+        // Without a deadline a stalled call left the row blank with no error, indefinitely.
+        val response = grpcClient.auth.withDeadlineAfter(STATUS_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .getRecoveryStatus(GetRecoveryStatusRequest.getDefaultInstance())
         return RecoveryStatus(
             isSetup = response.isSetup,
             fingerprint = if (response.hasFingerprint()) response.fingerprint else null,
@@ -86,3 +89,5 @@ class RecoveryRepository @Inject constructor(
         const val PHRASE_WORDS = 12
     }
 }
+
+private const val STATUS_TIMEOUT_SECONDS = 20L
