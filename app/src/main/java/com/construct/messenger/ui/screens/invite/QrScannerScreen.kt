@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
-import com.construct.messenger.diagnostics.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -16,29 +15,27 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.material.icons.filled.ContentPaste
-import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -48,22 +45,33 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.construct.messenger.R
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.invite.InviteQr
 import com.construct.messenger.ui.components.CTButton
-import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.Spacing
 import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.QrScannerViewModel
@@ -101,44 +109,67 @@ fun QrScannerScreen(
         if (!granted) launcher.launch(Manifest.permission.CAMERA)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(CTColor.bg)
-            .statusBarsPadding()
-            .navigationBarsPadding(),
-    ) {
-        CTNavBar(
-            title = stringResource(R.string.scan_qr_code),
-            showBack = true,
-            onBack = onNavigateBack,
-        )
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            if (granted) {
-                ScannerViewport(
-                    onInvite = { link ->
-                        viewModel.deliver(link)
-                        onScanned()
-                    },
-                )
-            } else {
-                PermissionPrompt(
-                    // After a refusal the system dialog may not come back ("don't ask again");
-                    // from then on only the app's settings page can grant it.
-                    permanentlyDenied = askedOnce && !context.shouldShowCameraRationale(),
-                    onGrant = { launcher.launch(Manifest.permission.CAMERA) },
-                    onOpenSettings = { context.openAppSettings() },
-                )
-            }
+    // iOS `QRScannerView`: the camera fills the screen, "Cancel" over it, a dark card at the
+    // foot with the title, the hint, and the paste button.
+    var notAnInvite by remember { mutableStateOf(false) }
+    val clipboard = LocalClipboardManager.current
+    var emptyClipboard by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        if (granted) {
+            ScannerViewport(
+                onNotAnInvite = { notAnInvite = true },
+                onInvite = { link ->
+                    viewModel.deliver(link)
+                    onScanned()
+                },
+            )
+        } else {
+            PermissionPrompt(
+                // After a refusal the system dialog may not come back ("don't ask again");
+                // from then on only the app's settings page can grant it.
+                permanentlyDenied = askedOnce && !context.shouldShowCameraRationale(),
+                onGrant = { launcher.launch(Manifest.permission.CAMERA) },
+                onOpenSettings = { context.openAppSettings() },
+            )
         }
-        // iOS `QRScannerView` bottom panel: a link that arrived as text goes in here, and takes the
-        // same path as a scanned one — Synaps redeems it and says how it went.
-        val clipboard = LocalClipboardManager.current
-        var emptyClipboard by remember { mutableStateOf(false) }
+        Text(
+            text = stringResource(R.string.action_cancel),
+            style = TextStyle(fontSize = 17.sp),
+            color = Color.White,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(horizontal = Spacing.small, vertical = Spacing.small)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onNavigateBack)
+                .padding(horizontal = Spacing.small, vertical = Spacing.small),
+        )
+        // A link that arrived as text goes in here and takes the same path as a scanned one —
+        // Synaps redeems it and says how it went.
         Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.medium),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 60.dp)
+                .padding(horizontal = Spacing.medium)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.Black.copy(alpha = 0.7f))
+                .padding(Spacing.medium),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
+            Text(
+                text = stringResource(R.string.scan_qr_code),
+                style = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.SemiBold),
+                color = Color.White,
+            )
+            Text(
+                text = stringResource(if (notAnInvite) R.string.invalid_qr_code else R.string.scan_hint),
+                style = TextStyle(fontSize = 15.sp),
+                color = if (notAnInvite) CTColor.danger else Color.White.copy(alpha = 0.8f),
+                textAlign = TextAlign.Center,
+            )
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(percent = 50))
@@ -155,16 +186,16 @@ fun QrScannerScreen(
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Default.ContentPaste, contentDescription = null, tint = CTColor.text, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.ContentPaste, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.paste_invite_link), style = ctRegular(13), color = CTColor.text)
+                Text(stringResource(R.string.paste_invite_link), style = TextStyle(fontSize = 15.sp), color = Color.White)
             }
             if (emptyClipboard) {
                 Text(
                     text = stringResource(R.string.clipboard_no_valid_invite),
-                    style = ctRegular(12),
+                    style = TextStyle(fontSize = 13.sp),
                     color = CTColor.danger,
-                    modifier = Modifier.padding(top = 8.dp),
+                    textAlign = TextAlign.Center,
                 )
             }
         }
@@ -172,11 +203,10 @@ fun QrScannerScreen(
 }
 
 @Composable
-private fun ScannerViewport(onInvite: (String) -> Unit) {
+private fun ScannerViewport(onNotAnInvite: () -> Unit, onInvite: (String) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val haptics = LocalHapticFeedback.current
-    var notAnInvite by remember { mutableStateOf(false) }
     val done = remember { AtomicBoolean(false) }
     val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
     val previewView = remember {
@@ -198,7 +228,7 @@ private fun ScannerViewport(onInvite: (String) -> Unit) {
                 val link = InviteQr.linkFromScan(scan.first, scan.second)
                 mainExecutor.execute {
                     if (link == null) {
-                        notAnInvite = true
+                        onNotAnInvite()
                     } else if (done.compareAndSet(false, true)) {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         provider.unbindAll()
@@ -217,24 +247,42 @@ private fun ScannerViewport(onInvite: (String) -> Unit) {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
-        Box(
-            modifier = Modifier
-                .size(260.dp)
-                .border(2.dp, CTColor.accent, RoundedCornerShape(12.dp)),
-        )
-        Text(
-            text = stringResource(if (notAnInvite) R.string.invalid_qr_code else R.string.scan_hint),
-            style = ctRegular(13),
-            color = if (notAnInvite) CTColor.danger else CTColor.text,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(CTColor.bg.copy(alpha = 0.7f))
-                .padding(horizontal = CTLayout.edgePad, vertical = Spacing.medium),
-        )
+        ScanFrame(modifier = Modifier.fillMaxSize())
+    }
+}
+
+/**
+ * iOS `ScannerDimOverlay` + `ScannerCornerBrackets`: the picture dimmed to 60 % outside a
+ * rounded square — 72 % of the width, at most 260, 30 above centre — and four brackets on it.
+ * iOS strokes them in `AppBrand.button`, which is a near-black grey since the button colour
+ * changed; here they stay accent so they can be seen.
+ */
+@Composable
+private fun ScanFrame(modifier: Modifier) {
+    val accent = CTColor.accent
+    Canvas(modifier = modifier) {
+        val side = minOf(size.width * 0.72f, 260.dp.toPx())
+        val left = (size.width - side) / 2
+        val top = (size.height - side) / 2 - 30.dp.toPx()
+        val cutout = Path().apply {
+            fillType = PathFillType.EvenOdd
+            addRect(Rect(0f, 0f, size.width, size.height))
+            addRoundRect(RoundRect(left, top, left + side, top + side, CornerRadius(12.dp.toPx())))
+        }
+        drawPath(cutout, Color.Black.copy(alpha = 0.6f))
+        val len = 24.dp.toPx()
+        val r = 4.dp.toPx()
+        val right = left + side
+        val bottom = top + side
+        val brackets = Path().apply {
+            moveTo(left, top + len); lineTo(left, top + r); quadraticBezierTo(left, top, left + r, top); lineTo(left + len, top)
+            moveTo(right - len, top); lineTo(right - r, top); quadraticBezierTo(right, top, right, top + r); lineTo(right, top + len)
+            moveTo(left, bottom - len); lineTo(left, bottom - r); quadraticBezierTo(left, bottom, left + r, bottom); lineTo(left + len, bottom)
+            moveTo(right - len, bottom); lineTo(right - r, bottom); quadraticBezierTo(right, bottom, right, bottom - r); lineTo(right, bottom - len)
+        }
+        drawPath(brackets, accent, style = Stroke(width = 3.dp.toPx()))
     }
 }
 
