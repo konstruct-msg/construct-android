@@ -31,6 +31,13 @@ fun ctRegular(size: Int) = TextStyle(
     fontWeight = FontWeight.Normal
 )
 
+/** iOS `CTFont.ui(size, weight: .medium)`. */
+fun ctMedium(size: Int) = TextStyle(
+    fontFamily = CTFontFamily,
+    fontSize = size.sp,
+    fontWeight = FontWeight.Medium
+)
+
 /** iOS `CTFont.ui(size, weight: .semibold)` — the nav bar title. */
 fun ctSemiBold(size: Int) = TextStyle(
     fontFamily = CTFontFamily,

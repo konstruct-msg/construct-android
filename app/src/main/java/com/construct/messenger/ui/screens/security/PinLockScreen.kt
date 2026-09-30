@@ -4,6 +4,14 @@ import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.core.Animatable
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,7 +30,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.automirrored.outlined.Backspace
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -48,8 +56,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTLogoView
-import com.construct.messenger.ui.components.CTNoise
+import com.construct.messenger.ui.components.CTMatrixBackground
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.ctMedium
 import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.AppLockViewModel
 import kotlinx.coroutines.delay
@@ -133,7 +142,7 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
             // Swallows every touch: nothing under the lock is reachable.
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
     ) {
-        CTNoise(modifier = Modifier.fillMaxSize())
+        CTMatrixBackground(modifier = Modifier.fillMaxSize())
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -142,13 +151,16 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.weight(1f))
-            CTLogoView(size = 140.dp, color = CTColor.text)
+            CTLogoView(size = 140.dp, color = CTColor.accent)
             Spacer(Modifier.height(44.dp))
             if (showPinEntry || !biometricMode) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(40.dp)) {
                     PinDots(
                         length = lock.pinLength,
                         filled = pin.length,
+                        dotSize = 13.dp,
+                        spacing = 16.dp,
+                        pop = 1.2f,
                         modifier = Modifier.offset { IntOffset(shake.value.dp.roundToPx(), 0) },
                     )
                     Numpad(
@@ -166,7 +178,13 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
                         onDelete = { pin = pin.dropLast(1) },
                         onBiometric = { pin = ""; error = null; promptBiometric() },
                     )
-                    Text(text = error ?: " ", style = ctRegular(13), color = CTColor.danger, textAlign = TextAlign.Center)
+                    Text(
+                        text = error ?: " ",
+                        style = ctRegular(13),
+                        color = CTColor.danger,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 32.dp).height(18.dp),
+                    )
                 }
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -174,15 +192,25 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
                         imageVector = Icons.Default.Fingerprint,
                         contentDescription = null,
                         tint = CTColor.accent,
-                        modifier = Modifier.size(56.dp).clickable { promptBiometric() },
+                        modifier = Modifier.size(64.dp).clickable { promptBiometric() },
                     )
-                    Text(text = stringResource(R.string.security_use_biometric), style = ctRegular(14), color = CTColor.text)
-                    error?.let { Text(text = it, style = ctRegular(12), color = CTColor.danger, textAlign = TextAlign.Center) }
+                    Text(text = stringResource(R.string.security_use_biometric), style = ctMedium(16), color = CTColor.textDim)
+                    error?.let {
+                        Text(
+                            text = it,
+                            style = ctRegular(13),
+                            color = CTColor.danger,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 32.dp),
+                        )
+                    }
                     Text(
                         text = stringResource(R.string.pin_use_pin),
                         style = ctRegular(14),
                         color = CTColor.accent,
-                        modifier = Modifier.clickable { showPinEntry = true; error = null },
+                        modifier = Modifier
+                            .padding(top = 8.dp - LINK_PAD_V)
+                            .linkTarget { showPinEntry = true; error = null },
                     )
                 }
             }
@@ -192,12 +220,12 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
                 if (left != null) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.padding(bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp - LINK_PAD_V),
+                        modifier = Modifier.padding(bottom = 24.dp - LINK_PAD_V),
                     ) {
                         Text(
                             text = stringResource(R.string.pin_reset_countdown, left),
-                            style = ctRegular(12),
+                            style = ctMedium(14),
                             color = CTColor.danger,
                             textAlign = TextAlign.Center,
                         )
@@ -205,17 +233,18 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
                             text = stringResource(R.string.action_cancel),
                             style = ctRegular(13),
                             color = CTColor.accent,
-                            modifier = Modifier.clickable { countdown = null },
+                            modifier = Modifier.linkTarget { countdown = null },
                         )
                     }
                 } else {
                     Text(
                         text = stringResource(R.string.pin_cant_unlock),
-                        style = ctRegular(12).copy(textDecoration = TextDecoration.Underline),
+                        style = ctRegular(13).copy(textDecoration = TextDecoration.Underline),
                         color = CTColor.textDim,
+                        // The text stays 24 dp above the bottom; the rest of that is touch area.
                         modifier = Modifier
-                            .padding(bottom = 24.dp)
-                            .clickable { confirmReset = true },
+                            .padding(bottom = 24.dp - LINK_PAD_V)
+                            .linkTarget { confirmReset = true },
                     )
                 }
             }
@@ -223,16 +252,42 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
     }
 }
 
-/** iOS dot indicator: 14dp circles, filled as digits arrive. */
+/**
+ * Room around a text link that still counts as the link. The screen's own catch-all click wins
+ * every tap outside a target, so Compose's usual widening of small targets never applies here:
+ * without this, only a tap on the 17 dp line of text itself opened "Can't sign in?".
+ */
+private val LINK_PAD_V = 14.dp
+
+private fun Modifier.linkTarget(onClick: () -> Unit): Modifier =
+    clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = LINK_PAD_V)
+
+/**
+ * The PIN dots. Defaults are iOS `PinDotsView` (setup): 14 dp, 14 apart, the newest dot popping
+ * to 1.15. The lock screen passes its own `PinLockView.dotsIndicator` values: 13, 16, 1.2.
+ */
 @Composable
-fun PinDots(length: Int, filled: Int, modifier: Modifier = Modifier) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+fun PinDots(
+    length: Int,
+    filled: Int,
+    modifier: Modifier = Modifier,
+    dotSize: Dp = 14.dp,
+    spacing: Dp = 14.dp,
+    pop: Float = 1.15f,
+) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(spacing)) {
         repeat(length) { index ->
             val on = index < filled
+            val scale by animateFloatAsState(
+                targetValue = if (index == filled - 1) pop else 1f,
+                animationSpec = spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessHigh),
+                label = "dot",
+            )
             Box(
                 modifier = Modifier
-                    .size(14.dp)
-                    .background(if (on) CTColor.text else CTColor.bg, CircleShape)
+                    .size(dotSize)
+                    .scale(scale)
+                    .background(if (on) CTColor.text else Color.Transparent, CircleShape)
                     .border(1.5.dp, CTColor.text.copy(alpha = if (on) 1f else 0.3f), CircleShape),
             )
         }
@@ -261,17 +316,25 @@ private fun Numpad(
                         imageVector = Icons.Default.Fingerprint,
                         contentDescription = stringResource(R.string.security_use_biometric),
                         tint = CTColor.accent,
-                        modifier = Modifier.size(32.dp).clickable(onClick = onBiometric),
+                        modifier = Modifier
+                            .size(KEY_SIZE)
+                            .clip(CircleShape)
+                            .clickable(onClick = onBiometric)
+                            .padding((KEY_SIZE - 26.dp) / 2),
                     )
                 }
             }
             DigitKey('0', onDigit)
             Box(Modifier.size(KEY_SIZE), contentAlignment = Alignment.Center) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Backspace,
+                    imageVector = Icons.AutoMirrored.Outlined.Backspace,
                     contentDescription = stringResource(R.string.delete),
                     tint = if (canDelete) CTColor.text else CTColor.textDim.copy(alpha = 0.4f),
-                    modifier = Modifier.size(26.dp).clickable(enabled = canDelete, onClick = onDelete),
+                    modifier = Modifier
+                        .size(KEY_SIZE)
+                        .clip(CircleShape)
+                        .clickable(enabled = canDelete, onClick = onDelete)
+                        .padding((KEY_SIZE - 24.dp) / 2),
                 )
             }
         }
@@ -280,17 +343,30 @@ private fun Numpad(
 
 private val KEY_SIZE = 74.dp
 
+/**
+ * iOS `KeypadButtonStyle`: `noise` at 60 % with a `text` 8 % ring; pressed, the fill flashes
+ * `accent` at 25 % and the key springs to 0.92.
+ */
 @Composable
 private fun DigitKey(digit: Char, onDigit: (Char) -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.92f else 1f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium),
+        label = "key",
+    )
     Box(
         modifier = Modifier
             .size(KEY_SIZE)
-            .background(CTColor.bgMsg, CircleShape)
-            .border(1.dp, CTColor.noise, CircleShape)
-            .clickable { onDigit(digit) },
+            .scale(scale)
+            .clip(CircleShape)
+            .background(if (pressed) CTColor.accent.copy(alpha = 0.25f) else CTColor.noise.copy(alpha = 0.6f))
+            .border(1.dp, CTColor.text.copy(alpha = 0.08f), CircleShape)
+            .clickable(interactionSource = interaction, indication = null) { onDigit(digit) },
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = digit.toString(), style = ctRegular(28), color = CTColor.text)
+        Text(text = digit.toString(), style = ctRegular(30), color = CTColor.text)
     }
 }
 
