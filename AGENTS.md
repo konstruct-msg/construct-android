@@ -101,6 +101,8 @@ which does all of the above. Either way the files stay untracked.
 - Status lives only in `docs/IMPLEMENTATION_PLAN.md`. Do not add a status line anywhere else —
   that is how this file, the README and the plan came to disagree.
 - Closing a task from the plan means updating the plan in the same commit.
+- **Version:** `versionName` in `app/build.gradle` is bumped by hand — minor for a build handed
+  to testers, patch for a fix build; `versionCode` is the commit count and needs nothing.
 
 ---
 

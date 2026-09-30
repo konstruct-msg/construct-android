@@ -22,8 +22,11 @@ android {
         applicationId "com.construct.messenger"
         minSdk 26
         targetSdk 35
-        versionCode 2
-        versionName "0.2.0"
+        // Name: bumped by hand — minor for a build handed to testers, patch for a fix build.
+        // Code: the commit count, so every build installs over the one before it and nobody
+        // has to remember. Sat at 2 / "0.2.0" from April to 2026-09-30 for want of either.
+        versionCode commitCount()
+        versionName "0.3.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -261,3 +264,12 @@ not start, and the reason is not on the screen.
 }
 
 tasks.named('preBuild').configure { dependsOn 'checkCoreLibrary' }
+
+/** Commits reachable from HEAD; 1 without git or in a shallow clone that cannot count. */
+int commitCount() {
+    def out = providers.exec {
+        commandLine 'git', 'rev-list', '--count', 'HEAD'
+        ignoreExitValue = true
+    }.standardOutput.asText.get().trim()
+    return out.isInteger() ? Math.max(out.toInteger(), 1) : 1
+}
