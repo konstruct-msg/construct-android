@@ -136,6 +136,7 @@
     <string name="share_copied">Скопировано</string>
     <string name="invite_copied_nth">Скопировано · %1$d</string>
     <string name="invite_share_rule">Каждое нажатие создаёт новую ссылку, код обновляется сам. Любое приглашение срабатывает один раз и живёт %1$d ч.</string>
+    <string name="invite_create_failed">Не удалось создать приглашение. Попробуйте ещё раз.</string>
     <string name="show_my_qr">Мой QR-код</string>
     <string name="scan_qr_code">Сканировать QR-код</string>
     <string name="scan_hint">Наведите камеру на QR-код приглашения Konstruct</string>

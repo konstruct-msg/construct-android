@@ -2,6 +2,15 @@ package com.construct.messenger.ui.screens.invite
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.unit.Dp
+import com.construct.messenger.ui.theme.CornerRadius
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -21,7 +30,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,11 +51,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.invite.InviteConfig
 import com.construct.messenger.ui.components.CTNavBar
-import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.InviteQrImage
 import com.construct.messenger.ui.components.inviteQrSize
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.Spacing
 import com.construct.messenger.ui.theme.ctBold
 import com.construct.messenger.ui.theme.ctRegular
@@ -98,7 +104,7 @@ fun ContactQrScreen(
             showBack = true,
             onBack = onNavigateBack,
         )
-        CTSep()
+        Rule()
 
         Column(
             modifier = Modifier
@@ -107,18 +113,18 @@ fun ContactQrScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Column(
-                modifier = Modifier.padding(vertical = Spacing.large),
+                modifier = Modifier.padding(vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(Spacing.compact),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(text = ui.displayName, style = ctBold(15), color = CTColor.text)
                 Text(
                     text = stringResource(R.string.qr_caption_trust),
-                    style = ctRegular(12),
+                    style = ctRegular(11),
                     color = CTColor.accent.copy(alpha = 0.5f),
                 )
             }
-            CTSep()
+            Rule()
 
             BoxWithConstraints(
                 modifier = Modifier
@@ -129,45 +135,22 @@ fun ContactQrScreen(
                 val size = inviteQrSize(maxWidth)
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(Spacing.large - Spacing.compact),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
-                    Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
-                        val payload = ui.payload
-                        when {
-                            payload != null -> InviteQrImage(
-                                payload = payload,
-                                size = size,
-                                contentDescription = stringResource(R.string.show_my_qr),
-                            )
-                            ui.failed -> Text(
-                                text = stringResource(R.string.qr_failed),
-                                style = ctRegular(13),
-                                color = CTColor.textDim,
-                            )
-                        }
-                    }
-                    Row(
-                        modifier = Modifier
-                            .clickable(onClick = viewModel::newCode)
-                            .padding(horizontal = Spacing.medium, vertical = Spacing.small),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = null,
-                            tint = CTColor.accent,
-                            modifier = Modifier.size(CTLayout.navIconSize),
+                    val payload = ui.payload
+                    if (payload != null) {
+                        InviteQrImage(
+                            payload = payload,
+                            size = size,
+                            contentDescription = stringResource(R.string.show_my_qr),
                         )
-                        Spacer(Modifier.width(Spacing.small))
-                        Text(
-                            text = stringResource(R.string.qr_new_code).lowercase(),
-                            style = ctRegular(13),
-                            color = CTColor.accent,
-                        )
+                    } else {
+                        QrPlaceholder(size = size + QR_CARD_PADDING * 2, failed = ui.failed)
                     }
+                    if (payload != null || ui.failed) NewCodeButton(onClick = viewModel::newCode)
                 }
             }
-            CTSep()
+            Rule()
 
             val copyLabel = when (ui.copiedCount) {
                 0 -> stringResource(R.string.invite_copy_link)
@@ -178,7 +161,7 @@ fun ContactQrScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
-                    .clickable(onClick = viewModel::copyLink),
+                    .clickable { viewModel.copyLink() },
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -188,25 +171,109 @@ fun ContactQrScreen(
                     imageVector = if (copiedAny) Icons.Default.Check else Icons.Default.Link,
                     contentDescription = null,
                     tint = tint,
-                    modifier = Modifier.size(CTLayout.navIconSize),
+                    // SF `link` leans; Material's lies flat.
+                    modifier = Modifier
+                        .size(16.dp)
+                        .rotate(if (copiedAny) 0f else -45f),
                 )
                 Spacer(Modifier.width(Spacing.small))
-                Text(text = copyLabel.uppercase(), style = ctRegular(12), color = tint)
+                Text(text = copyLabel.uppercase(), style = ctRegular(11), color = tint)
             }
-            CTSep()
+            Rule()
 
-            Text(
-                text = "> " + stringResource(
-                    R.string.invite_share_rule,
-                    (InviteConfig.TTL_SECONDS / 3600).toInt(),
-                ),
-                style = ctRegular(12),
-                color = CTColor.textDim,
-                textAlign = TextAlign.Start,
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = CTLayout.edgePad, vertical = Spacing.medium),
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = "> " + stringResource(
+                        R.string.invite_share_rule,
+                        (InviteConfig.TTL_SECONDS / 3600).toInt(),
+                    ),
+                    style = ctRegular(11),
+                    color = CTColor.textDim,
+                )
+                if (ui.copyFailed) {
+                    Text(
+                        text = "> " + stringResource(R.string.invite_create_failed),
+                        style = ctRegular(11),
+                        color = CTColor.danger,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** iOS `Rectangle().fill(Color.CT.noise).frame(height: 1)`: edge to edge. */
+@Composable
+private fun Rule() {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(CTColor.noise),
+    )
+}
+
+/** Where the code will be, or why it is not: the card's size, so nothing moves when it lands. */
+@Composable
+private fun QrPlaceholder(size: Dp, failed: Boolean) {
+    val card = RoundedCornerShape(CornerRadius.small)
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(card)
+            .background(CTColor.bgMsg)
+            .border(1.dp, CTColor.noise, card),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (failed) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Spacing.small),
+                modifier = Modifier.padding(horizontal = Spacing.large),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = CTColor.danger,
+                    modifier = Modifier.size(20.dp),
+                )
+                Text(
+                    text = stringResource(R.string.qr_failed),
+                    style = ctRegular(11),
+                    color = CTColor.textDim,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        } else {
+            CircularProgressIndicator(
+                color = CTColor.textDim,
+                strokeWidth = 2.dp,
+                modifier = Modifier.size(20.dp),
             )
         }
     }
 }
+
+/** iOS `refreshRow`: an outlined card button, accent at 40 % for the edge. */
+@Composable
+private fun NewCodeButton(onClick: () -> Unit) {
+    val card = RoundedCornerShape(CornerRadius.small)
+    Text(
+        text = stringResource(R.string.qr_new_code).lowercase(),
+        style = ctRegular(13),
+        color = CTColor.accent,
+        modifier = Modifier
+            .clip(card)
+            .background(CTColor.bgMsg)
+            .border(1.dp, CTColor.accent.copy(alpha = 0.4f), card)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = Spacing.small),
+    )
+}
+
+private val QR_CARD_PADDING = 20.dp

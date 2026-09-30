@@ -28,6 +28,8 @@ data class ContactQrUiState(
     val failed: Boolean = false,
     /** Links copied in this sitting — drives "Copied · N" (iOS `InviteShareDecision`). */
     val copiedCount: Int = 0,
+    /** The last copy minted nothing; said under the rule, the code stays. */
+    val copyFailed: Boolean = false,
 )
 
 /**
@@ -56,18 +58,22 @@ class ContactQrViewModel @Inject constructor(
     val copiedLinks: SharedFlow<String> = copied.asSharedFlow()
 
     private var rotation: Job? = null
+    private var lastCopyAtMs = 0L
 
     init {
         viewModelScope.launch { loadName() }
     }
 
+    /**
+     * The generated name at once, the username when the server gives one. It waited for the
+     * server before, and on a slow path the header stayed empty for as long as the call hung.
+     */
     private suspend fun loadName() {
         val userId = keystoreManager.getUserId() ?: return
+        state.update { it.copy(displayName = DisplayNameGenerator.generate(userId)) }
         val username = runCatching { contactsRepository.getProfile(userId) }.getOrNull()
-            ?.username?.takeIf { it.isNotBlank() }
-        state.update {
-            it.copy(displayName = username?.let { u -> "@$u" } ?: DisplayNameGenerator.generate(userId))
-        }
+            ?.username?.takeIf { it.isNotBlank() } ?: return
+        state.update { it.copy(displayName = "@$username") }
     }
 
     /** While the screen is visible: a code now, then a new one every [ROTATE_MS]. */
@@ -90,19 +96,27 @@ class ContactQrViewModel @Inject constructor(
     /** For the person the current code did not scan for — restarts the rotation clock. */
     fun newCode() {
         stopRotating()
+        state.update { it.copy(payload = null, failed = false) }
         startRotating()
     }
 
-    fun copyLink() {
+    /**
+     * Mint a fresh link for the clipboard. A tap within [COPY_DEBOUNCE_MS] of the last is the
+     * same tap (iOS `InviteShareDecision.shouldMint`). A failure is said, never swallowed — and
+     * it is the link that failed, not the code on screen.
+     */
+    fun copyLink(nowMs: Long = System.currentTimeMillis()) {
+        if (nowMs - lastCopyAtMs < COPY_DEBOUNCE_MS) return
+        lastCopyAtMs = nowMs
         viewModelScope.launch {
             try {
                 val link = contactsRepository.mintLink().deepLink
                 copied.tryEmit(link)
-                state.update { it.copy(copiedCount = it.copiedCount + 1) }
+                state.update { it.copy(copiedCount = it.copiedCount + 1, copyFailed = false) }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                state.update { it.copy(failed = true) }
+                state.update { it.copy(copyFailed = true) }
             }
         }
     }
@@ -121,5 +135,8 @@ class ContactQrViewModel @Inject constructor(
     companion object {
         /** iOS `InviteConfig.qrRotateIntervalSeconds`. */
         const val ROTATE_MS = 30_000L
+
+        /** iOS `SettingsShareLayout.copyDebounce`. */
+        const val COPY_DEBOUNCE_MS = 300L
     }
 }

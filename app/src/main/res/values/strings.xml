@@ -138,7 +138,8 @@
     <string name="invite_copy_link">Copy link</string>
     <string name="share_copied">Copied</string>
     <string name="invite_copied_nth">Copied · %1$d</string>
-    <string name="invite_share_rule">Every tap makes a new link, and the code refreshes itself. Any invite works once and expires in %1$d h.</string>
+    <string name="invite_share_rule">Every tap makes a new link, and the code refreshes itself. Any invite works once and expires in %1$dh.</string>
+    <string name="invite_create_failed">Could not create an invite. Try again.</string>
     <string name="show_my_qr">My QR code</string>
     <string name="scan_qr_code">Scan QR code</string>
     <string name="scan_hint">Point the camera at a Konstruct invite code</string>

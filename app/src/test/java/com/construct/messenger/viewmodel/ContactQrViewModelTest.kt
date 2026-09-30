@@ -94,19 +94,49 @@ class ContactQrViewModelTest {
     }
 
     @Test
-    fun `a double tap leaves the newest link on the clipboard`() = runTest {
+    fun `two taps leave the newest link on the clipboard`() = runTest {
         val vm = viewModel()
         val copied = mutableListOf<String>()
         val collector = launch { vm.copiedLinks.collect { copied += it } }
         runCurrent()
 
-        vm.copyLink()
-        vm.copyLink()
+        vm.copyLink(nowMs = 1_000)
+        vm.copyLink(nowMs = 2_000)
         advanceUntilIdle()
 
         assertEquals("link-2", copied.last())
         assertEquals(2, vm.uiState.value.copiedCount)
         collector.cancel()
+    }
+
+    /** iOS `copyDebounce`: a bounce of the finger is one tap, one link. Mutation: drop the check — this reddens. */
+    @Test
+    fun `a tap within the debounce mints nothing more`() = runTest {
+        val vm = viewModel()
+
+        vm.copyLink(nowMs = 1_000)
+        vm.copyLink(nowMs = 1_100)
+        advanceUntilIdle()
+
+        assertEquals(1, vm.uiState.value.copiedCount)
+    }
+
+    /** It was the link that failed: the code on screen still works. Mutation: set `failed` again — this reddens. */
+    @Test
+    fun `a failed copy keeps the code and says so`() = runTest {
+        val vm = viewModel()
+        vm.startRotating()
+        runCurrent()
+        val shown = vm.uiState.value.payload
+        wheneverBlocking { repo.mintLink() }.thenThrow(IllegalStateException("offline"))
+
+        vm.copyLink(nowMs = 1_000)
+        runCurrent()
+
+        assertTrue(vm.uiState.value.copyFailed)
+        assertEquals(false, vm.uiState.value.failed)
+        assertEquals(shown, vm.uiState.value.payload)
+        vm.stopRotating()
     }
 
     @Test
