@@ -195,18 +195,6 @@ class KeystoreManager @Inject constructor(
     }
 
     /**
-     * Accounts whose full device list this device has had from the server at least once. A device
-     * that appears for one of them afterwards is a security event
-     * (`decisions/a-new-device-is-the-security-event.md`); before it, devices are first sight.
-     */
-    fun deviceSetsListed(): Set<String> =
-        prefs.getStringSet(KEY_DEVICE_SETS_LISTED, emptySet()).orEmpty()
-
-    fun markDeviceSetListed(accountId: String) {
-        prefs.edit().putStringSet(KEY_DEVICE_SETS_LISTED, deviceSetsListed() + accountId.lowercase()).apply()
-    }
-
-    /**
      * The intake key each contact account handed us in its card — what our envelopes to them
      * present instead of a token. Secret-ish (it lets anyone send to them free), hence here.
      */
@@ -311,6 +299,7 @@ class KeystoreManager @Inject constructor(
         const val KEY_CONTACT_CARD_SENT_TO = "contact_card_sent_to.v2"
         const val KEY_CONTACT_CARD_SENT_TO_V1 = "contact_card_sent_to"
         const val KEY_OWN_INTAKE = "own_intake_key"
+        /** Nothing writes it since the new-device alarm went (2026-09-30); still cleared for installs that did. */
         const val KEY_DEVICE_SETS_LISTED = "device_sets_listed"
         const val KEY_PEER_INTAKE_PREFIX = "peer_intake_key:"
     }

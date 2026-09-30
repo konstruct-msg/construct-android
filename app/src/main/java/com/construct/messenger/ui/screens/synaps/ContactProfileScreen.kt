@@ -335,9 +335,6 @@ private fun SecurityNoticeBlock(notice: SecurityNotice, name: String, onVerify: 
         SecurityNotice.ADDRESS_CHANGED ->
             stringResource(R.string.address_change_banner_title) to
                 stringResource(R.string.address_change_banner_subtitle_fmt, name)
-        SecurityNotice.NEW_DEVICE ->
-            stringResource(R.string.new_device_banner_title) to
-                stringResource(R.string.new_device_banner_subtitle_fmt, name)
     }
     val control = RoundedCornerShape(CornerRadius.control)
     Column(

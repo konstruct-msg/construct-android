@@ -40,9 +40,6 @@ fun SecurityNoticeBanner(
         SecurityNotice.ADDRESS_CHANGED ->
             stringResource(R.string.address_change_banner_title) to
                 stringResource(R.string.address_change_banner_subtitle_fmt, contactName)
-        SecurityNotice.NEW_DEVICE ->
-            stringResource(R.string.new_device_banner_title) to
-                stringResource(R.string.new_device_banner_subtitle_fmt, contactName)
     }
     Column(
         modifier = Modifier
