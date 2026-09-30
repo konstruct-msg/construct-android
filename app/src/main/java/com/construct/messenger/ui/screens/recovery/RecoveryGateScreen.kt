@@ -3,6 +3,7 @@ package com.construct.messenger.ui.screens.recovery
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Key
@@ -24,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -34,10 +37,10 @@ import com.construct.messenger.recovery.RecoveryUiState
 import com.construct.messenger.recovery.RecoveryViewModel
 import com.construct.messenger.ui.components.CTButton
 import com.construct.messenger.ui.components.CTNavBar
-import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.CTTextField
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.Spacing
 import com.construct.messenger.ui.theme.ctBold
 import com.construct.messenger.ui.theme.ctRegular
@@ -58,7 +61,12 @@ fun RecoveryGated(
     if (ui.stage == RecoveryStage.Ready) {
         content()
     } else {
-        RecoveryGateScreen(ui = ui, viewModel = viewModel, dismissLabel = null, onDismiss = onBack)
+        RecoveryGateScreen(
+            ui = ui,
+            viewModel = viewModel,
+            dismissLabel = stringResource(R.string.action_cancel),
+            onDismiss = onBack,
+        )
     }
 }
 
@@ -89,7 +97,7 @@ fun RecoveryPromptScreen(
 private fun RecoveryGateScreen(
     ui: RecoveryUiState,
     viewModel: RecoveryViewModel,
-    dismissLabel: String?,
+    dismissLabel: String,
     onDismiss: () -> Unit,
 ) {
     Column(
@@ -99,27 +107,37 @@ private fun RecoveryGateScreen(
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
-        CTNavBar(
-            title = stringResource(R.string.recovery_gate_nav_title),
-            showBack = dismissLabel == null,
-            onBack = onDismiss,
-        )
-        CTSep()
+        // iOS `RecoveryGateView`: no back arrow — "Cancel" (or "Later" after registration) on the
+        // right, dim, and no rule under the bar.
+        Box(modifier = Modifier.fillMaxWidth()) {
+            CTNavBar(title = stringResource(R.string.recovery_gate_nav_title))
+            Text(
+                text = dismissLabel,
+                style = ctBold(13),
+                color = CTColor.textDim,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = Spacing.small)
+                    .clip(RoundedCornerShape(CornerRadius.small))
+                    .clickable(onClick = onDismiss)
+                    .padding(horizontal = Spacing.small, vertical = Spacing.small),
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = CTLayout.edgePad, vertical = Spacing.large),
-            verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+                .padding(CTLayout.edgePad),
+            verticalArrangement = Arrangement.spacedBy(CTLayout.sectionGap),
         ) {
             Icon(
                 imageVector = Icons.Default.Key,
                 contentDescription = null,
                 tint = CTColor.accent,
-                modifier = Modifier.size(CTLayout.navIconSizeLg),
+                modifier = Modifier.size(22.dp),
             )
-            Text(stringResource(R.string.recovery_gate_title), style = ctBold(17), color = CTColor.text)
-            Text(stringResource(R.string.recovery_gate_why), style = ctRegular(14), color = CTColor.textDim)
+            Text(stringResource(R.string.recovery_gate_title), style = ctBold(18), color = CTColor.text)
+            Text(stringResource(R.string.recovery_gate_why), style = ctRegular(13), color = CTColor.textDim)
 
             when (val stage = ui.stage) {
                 RecoveryStage.Loading, RecoveryStage.Working, RecoveryStage.Ready ->
@@ -128,7 +146,7 @@ private fun RecoveryGateScreen(
                         modifier = Modifier.align(Alignment.CenterHorizontally),
                     )
                 RecoveryStage.Explain -> {
-                    Text(stringResource(R.string.recovery_gate_setup_note), style = ctRegular(13), color = CTColor.textDim)
+                    Text(stringResource(R.string.recovery_gate_setup_note), style = ctRegular(12), color = CTColor.textDim)
                     CTButton(label = stringResource(R.string.recovery_gate_setup_action), onClick = viewModel::startSetup)
                 }
                 is RecoveryStage.ShowWords -> {
@@ -150,7 +168,7 @@ private fun RecoveryGateScreen(
                     CTButton(label = stringResource(R.string.recovery_confirm_action), onClick = viewModel::submitSetup)
                 }
                 RecoveryStage.Confirm -> {
-                    Text(stringResource(R.string.recovery_gate_confirm_note), style = ctRegular(13), color = CTColor.textDim)
+                    Text(stringResource(R.string.recovery_gate_confirm_note), style = ctRegular(12), color = CTColor.textDim)
                     CTTextField(
                         placeholder = stringResource(R.string.recovery_confirm_placeholder),
                         value = ui.confirmPhrase,
@@ -163,18 +181,6 @@ private fun RecoveryGateScreen(
                         enabled = ui.confirmPhrase.isNotBlank(),
                     )
                 }
-            }
-
-            if (dismissLabel != null) {
-                Text(
-                    text = dismissLabel,
-                    style = ctRegular(13),
-                    color = CTColor.textDim,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .clickable(onClick = onDismiss)
-                        .padding(Spacing.small),
-                )
             }
         }
     }
