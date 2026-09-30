@@ -19,8 +19,8 @@ import shared.proto.messaging.v1.Content.TextMessage
  * After decrypt the blob is untyped. Recipients sniff four formats
  * (`architecture/WIRE_FORMAT.md`): KNST frame, bare `MessageContent` proto,
  * binary profile-share, legacy UTF-8. Magic `"KNST"` answers the first
- * question. Chunk reassembly (total_chunks > 1) is a later phase — a partial
- * first chunk is not rendered as a bubble.
+ * question. A message sent as several frames reaches here already joined into one
+ * (`service/ChunkReassembler`); a lone chunk that did not is never rendered as a bubble.
  *
  * An edit or a delete-for-everyone is not a bubble. The row they name is the
  * UUID in the original message's KNST header (`e2eMessageId`), never the

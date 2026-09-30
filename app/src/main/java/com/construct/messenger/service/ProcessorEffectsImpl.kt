@@ -25,6 +25,7 @@ import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.IncomingPlaintext
+import com.construct.messenger.util.KnstFrame
 import com.construct.messenger.util.ProfileShare
 import com.construct.messenger.util.IncomingReceipt
 import com.construct.messenger.util.SenderSyncRouting
@@ -62,20 +63,22 @@ class ProcessorEffectsImpl @Inject constructor(
     private val pendingResends: PendingResends,
     private val held: HeldEnvelopes,
     private val alerts: IncomingAlerts,
+    private val chunks: ChunkReassembler,
 ) : ProcessorEffects {
 
     override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
         val accountId = sessionManager.accountIdForDevice(contactId) ?: contactId
-        val decoded = IncomingPlaintext.decode(plaintext)
+        val assembled = whole(accountId, messageId, plaintext) ?: return
+        val decoded = IncomingPlaintext.decode(assembled)
         if (decoded.knstContentType == ContentType.CONTENT_TYPE_DELIVERY_RECEIPT_VALUE) {
-            IncomingReceipt.messageIds(plaintext).forEach { markDelivered(it) }
+            IncomingReceipt.messageIds(assembled).forEach { markDelivered(it) }
             ackStore.markProcessed(messageId, accountId)
             return
         }
         if (decoded.knstContentType == ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE) {
             // Their card: the key our envelopes to them present instead of a token, and the address
             // they are named by.
-            IncomingPlaintext.knstPayload(plaintext)?.let(ContactCardPayload::read)?.let { card ->
+            IncomingPlaintext.knstPayload(assembled)?.let(ContactCardPayload::read)?.let { card ->
                 card.intakeKey?.let { intake.recordPeerKey(accountId, it) }
                 card.accountAddress?.let { addressBook.pin(accountId, it, AccountAddressSource.CARD) }
             }
@@ -116,6 +119,44 @@ class ProcessorEffectsImpl @Inject constructor(
     }
 
     /**
+     * [received] as one whole frame, or null when it was a chunk of a message not yet complete —
+     * held, and its envelope acknowledged, because the bytes are in Room now — or a frame that
+     * could never be put together.
+     */
+    private suspend fun whole(accountId: String, messageId: String, received: ByteArray): ByteArray? =
+        when (val assembly = chunks.accept(accountId, received)) {
+            is ChunkReassembler.Assembly.Ready -> assembly.plaintext
+            ChunkReassembler.Assembly.Pending -> {
+                ackStore.markProcessed(messageId, accountId)
+                null
+            }
+            is ChunkReassembler.Assembly.Invalid -> {
+                Log.w(TAG, "chunk ${messageId.take(8)}… dropped: ${assembly.reason}")
+                ackStore.markProcessed(messageId, accountId)
+                null
+            }
+        }
+
+    /**
+     * Our own copy, and whose conversation it belongs to. Two layouts arrive:
+     * - iOS, and Android since 2026-09-30: a type-23 KNST stream whose joined payload is
+     *   `SSR1 ‖ MessageContent` (`architecture/WIRE_FORMAT.md` — the header goes on before
+     *   chunking, so a long copy carries it once);
+     * - Android before that: `SSR1 ‖ KNST frame`, the header outside the frame. iOS never read it.
+     *
+     * Either way the answer is the partner and one ordinary type-1 frame. Null when a chunk was
+     * held; [NOT_ROUTED] when no header names the partner.
+     */
+    private suspend fun routeSenderSync(accountId: String, messageId: String, received: ByteArray): SenderSyncRouting.Decoded? {
+        SenderSyncRouting.decode(received)?.let { return it }
+        val plaintext = whole(accountId, messageId, received) ?: return null
+        val frame = KnstFrame.parse(plaintext) ?: return NOT_ROUTED
+        val inner = IncomingPlaintext.knstPayload(plaintext) ?: return NOT_ROUTED
+        val routed = SenderSyncRouting.decode(inner) ?: return NOT_ROUTED
+        return routed.copy(payload = KnstFrame.whole(routed.payload, KnstFrame.TYPE_E2EE_SIGNAL, frame.messageId))
+    }
+
+    /**
      * They shared their profile: the name they go by replaces the one we had, and the row says
      * they share. **Canon:** iOS `ProfileSharingManager.handleProfileMessage`. A contact we have no
      * row for is not created by it. The avatar needs media, which Android does not have yet.
@@ -137,8 +178,8 @@ class ProcessorEffectsImpl @Inject constructor(
         val accountId = sessionManager.accountIdForDevice(contactId)
             ?: keystoreManager.getUserId()
             ?: contactId
-        val routed = SenderSyncRouting.decode(plaintext)
-        if (routed == null) {
+        val routed = routeSenderSync(accountId, messageId, plaintext) ?: return
+        if (routed === NOT_ROUTED) {
             Log.w(TAG, "sender-sync without SSR1 ${messageId.take(8)}… — acking")
             ackStore.markProcessed(messageId, accountId)
             return
@@ -418,5 +459,8 @@ class ProcessorEffectsImpl @Inject constructor(
 
     private companion object {
         const val TAG = "ProcessorEffects"
+
+        /** A sender-sync copy that names no partner: nothing says whose conversation it is. */
+        val NOT_ROUTED = SenderSyncRouting.Decoded(partnerUserId = "", payload = ByteArray(0))
     }
 }

@@ -23,8 +23,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PeerDeviceEntity::class,
         ServerMessageIdEntity::class,
         PendingResendEntity::class,
+        PendingChunkEntity::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -37,6 +38,7 @@ abstract class ConstructDatabase : RoomDatabase() {
     abstract fun peerDeviceDao(): PeerDeviceDao
     abstract fun serverMessageIdDao(): ServerMessageIdDao
     abstract fun pendingResendDao(): PendingResendDao
+    abstract fun pendingChunkDao(): PendingChunkDao
 
     companion object {
         const val NAME = "construct.db"
@@ -135,6 +137,19 @@ abstract class ConstructDatabase : RoomDatabase() {
         val MIGRATION_13_14 = object : Migration(13, 14) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE users ADD COLUMN amSharingWith INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /** Chunks of a message still arriving (`service/ChunkReassembler`). */
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS pending_chunks (" +
+                        "senderId TEXT NOT NULL, messageId TEXT NOT NULL, chunkIndex INTEGER NOT NULL, " +
+                        "totalChunks INTEGER NOT NULL, plaintextLength INTEGER NOT NULL, " +
+                        "contentType INTEGER NOT NULL, payload BLOB NOT NULL, receivedAtMs INTEGER NOT NULL, " +
+                        "PRIMARY KEY(senderId, messageId, chunkIndex))",
+                )
             }
         }
     }

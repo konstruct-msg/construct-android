@@ -53,13 +53,15 @@ class ProcessorEffectsImplTest {
         val messages = FakeMessageDao()
         val chats = FakeChatDao()
         val users = FakeUserDao()
+        val acks = FakeAckStore()
+        val pendingChunks = FakePendingChunkDao()
         val effects = ProcessorEffectsImpl(
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) },
             messageDao = messages,
             chatDao = chats,
             userDao = users,
-            ackStore = FakeAckStore(),
+            ackStore = acks,
             sessionStateStore = mock(),
             sessionManager = mock(),
             sessionControl = mock(),
@@ -72,6 +74,7 @@ class ProcessorEffectsImplTest {
             pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
+            chunks = ChunkReassembler(pendingChunks),
         )
     }
 
@@ -107,6 +110,7 @@ class ProcessorEffectsImplTest {
             pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
+            chunks = ChunkReassembler(FakePendingChunkDao()),
         )
         val address = ByteArray(32) { 0x5A }
         val card = com.construct.messenger.util.KnstFrame.pack(
@@ -148,6 +152,7 @@ class ProcessorEffectsImplTest {
             pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
+            chunks = ChunkReassembler(FakePendingChunkDao()),
         )
         val address = ByteArray(32) { 0x5A }
         val card = com.construct.messenger.util.KnstFrame.pack(
@@ -218,6 +223,7 @@ class ProcessorEffectsImplTest {
             pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
+            chunks = ChunkReassembler(FakePendingChunkDao()),
         )
 
         effects.onDecrypted(peer, "msg-1", "hello".toByteArray())
@@ -258,6 +264,7 @@ class ProcessorEffectsImplTest {
             pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
+            chunks = ChunkReassembler(FakePendingChunkDao()),
         )
         val baseId = "550e8400-e29b-41d4-a716-446655440000"
         val content = MessageContent.newBuilder()
@@ -339,6 +346,56 @@ class ProcessorEffectsImplTest {
         assertEquals(1, inbox.messages.rows.size)
         assertEquals(1, inbox.chats.rows[chatId]?.unreadCount)
         assertEquals("after", inbox.chats.rows[chatId]?.lastMessageText)
+    }
+
+    /**
+     * A text too long for one frame arrives as several; it is one bubble, and only once the last
+     * frame is in. Each frame's envelope is done with as soon as its bytes are held. Mutation:
+     * return [ChunkReassembler.Assembly.Ready] for every chunk — the first frame becomes nothing
+     * and the message never appears.
+     */
+    @Test
+    fun `a message in several frames is one bubble once the last arrives`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        val id = UUID.fromString("66666666-6666-4666-8666-666666666666")
+        val long = "ж".repeat(3000)
+        val frames = KnstFrame.chunks(TextWire.encode(long), KnstFrame.TYPE_E2EE_SIGNAL, id)
+        assertEquals(2, frames.size)
+
+        inbox.effects.onDecrypted(peer, "env-c1", frames[1])
+        assertTrue(inbox.messages.rows.isEmpty())
+        assertTrue(inbox.acks.isProcessed("env-c1"))
+
+        inbox.effects.onDecrypted(peer, "env-c0", frames[0])
+        assertEquals(long, inbox.messages.rows[id.toString()]?.text)
+        assertEquals(1, inbox.messages.rows.size)
+        assertTrue(inbox.pendingChunks.rows.isEmpty())
+    }
+
+    /**
+     * iOS frames its copy to our own device as type 23 around `SSR1 ‖ content`, cut into chunks
+     * when long (`MultiDeviceSendCoordinator`). Android read only `SSR1 ‖ frame` and dropped every
+     * iOS sibling's copy as unroutable. Mutation: remove the in-frame branch of `routeSenderSync`.
+     */
+    @Test
+    fun `sender sync in the iOS layout lands in the partner's chat`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        val id = UUID.fromString("77777777-7777-4777-8777-777777777777")
+        val long = "q".repeat(5000)
+        val frames = KnstFrame.chunks(
+            SenderSyncRouting.encode(peer, TextWire.encode(long)),
+            KnstFrame.TYPE_SENDER_SYNC,
+            id,
+        )
+        assertEquals(2, frames.size)
+
+        inbox.effects.onSenderSync("sibling", "$id-ss-0123456789abcdef-c0", frames[0], 42L)
+        inbox.effects.onSenderSync("sibling", "$id-ss-0123456789abcdef-c1", frames[1], 42L)
+
+        val row = inbox.messages.rows[id.toString()]
+        assertEquals(long, row?.text)
+        assertEquals(true, row?.isSentByMe)
+        assertEquals(ConversationId.direct(myId, peer), row?.chatId)
     }
 
     @Test
@@ -457,6 +514,7 @@ class ProcessorEffectsImplTest {
             pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
+            chunks = ChunkReassembler(FakePendingChunkDao()),
         )
     }
 

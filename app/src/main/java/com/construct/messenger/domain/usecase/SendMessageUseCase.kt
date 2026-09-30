@@ -30,6 +30,7 @@ import com.construct.messenger.util.ProfileShare
 import com.construct.messenger.util.TextWire
 import com.construct.messenger.util.SenderSyncRouting
 import java.util.UUID
+import kotlin.random.Random
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -94,7 +95,7 @@ class SendMessageUseCase @Inject constructor(
         persistOutgoing(chatId, contactId, messageId, body, timestampMs, DeliveryStatus.SENDING, reply)
 
         return try {
-            val plaintext = knstText(body, messageId, reply)
+            val content = TextWire.encode(body, reply)
             // Establishment is deliberately unchanged by this: the first send to a peer we hold
             // nothing with still opens a session with the device the registry pins, and that
             // device is also the offline answer for the set below when the key server cannot be
@@ -102,9 +103,9 @@ class SendMessageUseCase @Inject constructor(
             // not this one's.
             val pinned = sessionManager.ensureSession(contactId)
             if (contactId == myId) {
-                return sendNoteToSelf(myId, messageId, timestampMs, plaintext, pinned)
+                return sendNoteToSelf(myId, messageId, timestampMs, content, pinned)
             }
-            val tally = deliverCopies(myId, contactId, messageId, timestampMs, plaintext, pinned)
+            val tally = deliverCopies(myId, contactId, messageId, timestampMs, content, pinned)
             if (tally.recipientAccepted > 0) {
                 // `sent` has always meant "in the person's mailbox", and one accepted copy puts
                 // it there. Devices that refused are named in the log, not in the row — a per
@@ -150,21 +151,18 @@ class SendMessageUseCase @Inject constructor(
         return try {
             val peer = sessionManager.ensureSessionForDevice(contactId, deviceId)
             val tag = cryptoManager.deviceCopyTag(row.id, deviceId, peer.identityPublic)
-            val wireMessageId = "${row.id}-fd-$tag"
-            val encrypted = encryptFor(deviceId, wireMessageId, knstText(row.text, row.id, reply))
-                ?: return ResendOutcome.FAILED
-            val result = sendOneCopy(
+            val result = sendFrames(
+                frames = framesOf(TextWire.encode(row.text, reply), row.id, isOwnReplica = false, partner = contactId),
+                wireIdBase = "${row.id}-fd-$tag",
+                deviceId = deviceId,
                 myId = myId,
                 accountId = contactId,
-                wireMessageId = wireMessageId,
+                localId = row.id,
                 timestampMs = row.timestamp,
-                encrypted = encrypted,
                 identityPublic = peer.identityPublic,
                 isOwnReplica = false,
             )
             val sent = result?.success == true
-            // The new copy has its own server id; an error about it must find this row too.
-            if (sent) serverMessageIds.record(result!!.messageId, row.id)
             Log.i(TAG, "resend ${messageId.take(8)}… to ${deviceId.take(8)}… — ${if (sent) "sent" else "failed"}")
             if (sent) ResendOutcome.SENT else ResendOutcome.FAILED
         } catch (e: CancellationException) {
@@ -187,9 +185,8 @@ class SendMessageUseCase @Inject constructor(
         val id = UUID.randomUUID()
         return try {
             val pinned = sessionManager.ensureSession(contactId)
-            val plaintext = KnstFrame.pack(profile.encode(), KnstFrame.TYPE_E2EE_SIGNAL, id)
             val tally = deliverCopies(
-                myId, contactId, id.toString(), System.currentTimeMillis(), plaintext, pinned, recipientsOnly = true,
+                myId, contactId, id.toString(), System.currentTimeMillis(), profile.encode(), pinned, recipientsOnly = true,
             )
             Log.i(TAG, "profile to ${contactId.take(8)}… — ${tally.recipientAccepted} device(s) took it")
             tally.recipientAccepted > 0
@@ -222,13 +219,13 @@ class SendMessageUseCase @Inject constructor(
         val editId = UUID.randomUUID().toString().lowercase()
         val timestampMs = System.currentTimeMillis()
         return try {
-            val plaintext = knst(EditWire.encode(row.id, body), editId)
+            val content = EditWire.encode(row.id, body)
             val pinned = sessionManager.ensureSession(contactId)
             if (contactId == myId) {
-                val note = sendNoteToSelf(myId, editId, timestampMs, plaintext, pinned)
+                val note = sendNoteToSelf(myId, editId, timestampMs, content, pinned)
                 if (note is SendOutcome.Failed) return SendOutcome.Failed(targetMessageId, note.reason)
             } else {
-                val tally = deliverCopies(myId, contactId, editId, timestampMs, plaintext, pinned)
+                val tally = deliverCopies(myId, contactId, editId, timestampMs, content, pinned)
                 if (tally.recipientAccepted == 0) {
                     return SendOutcome.Failed(targetMessageId, tally.lastError)
                 }
@@ -258,17 +255,17 @@ class SendMessageUseCase @Inject constructor(
         myId: String,
         messageId: String,
         timestampMs: Long,
-        plaintext: ByteArray,
+        content: ByteArray,
         pinned: SessionManager.SessionPeer,
     ): SendOutcome {
-        val encrypted = encryptFor(pinned.deviceId, messageId, plaintext)
-            ?: return SendOutcome.Failed(messageId, "no ciphertext")
-        val result = sendOneCopy(
+        val result = sendFrames(
+            frames = framesOf(content, messageId, isOwnReplica = false, partner = myId),
+            wireIdBase = messageId,
+            deviceId = pinned.deviceId,
             myId = myId,
             accountId = myId,
-            wireMessageId = messageId,
+            localId = null,
             timestampMs = timestampMs,
-            encrypted = encrypted,
             identityPublic = pinned.identityPublic,
             isOwnReplica = false,
         )
@@ -278,7 +275,7 @@ class SendMessageUseCase @Inject constructor(
         }
         messageDao.updateDeliveryStatus(messageId, DeliveryStatus.SENT.name)
         runCatching {
-            deliverCopies(myId, myId, messageId, timestampMs, plaintext, pinned)
+            deliverCopies(myId, myId, messageId, timestampMs, content, pinned)
         }.onFailure {
             Log.w(TAG, "replica fan-out failed ${messageId.take(8)}…", it)
         }
@@ -310,7 +307,7 @@ class SendMessageUseCase @Inject constructor(
         contactId: String,
         baseMessageId: String,
         timestampMs: Long,
-        plaintext: ByteArray,
+        content: ByteArray,
         pinned: SessionManager.SessionPeer,
         recipientsOnly: Boolean = false,
     ): DeliveryTally {
@@ -370,31 +367,18 @@ class SendMessageUseCase @Inject constructor(
                 lastError = "tag failed"
                 continue
             }
-            val wireMessageId = baseMessageId + if (isOwnReplica) "-ss-$tag" else "-fd-$tag"
-            val routedPlaintext = if (isOwnReplica) {
-                // SENDER_SYNC is the outer envelope type. Its encrypted body remains the same
-                // user-message KNST frame (type=1), prefixed with SSR1 for post-decrypt routing.
-                SenderSyncRouting.encode(contactId, plaintext)
-            } else {
-                plaintext
-            }
-            val encrypted = encryptFor(target.deviceId, wireMessageId, routedPlaintext)
-            if (encrypted == null) {
-                lastError = "no ciphertext"
-                continue
-            }
-            val result = sendOneCopy(
+            val result = sendFrames(
+                frames = framesOf(content, baseMessageId, isOwnReplica, partner = contactId),
+                wireIdBase = baseMessageId + if (isOwnReplica) "-ss-$tag" else "-fd-$tag",
+                deviceId = target.deviceId,
                 myId = myId,
                 accountId = accountId,
-                wireMessageId = wireMessageId,
+                localId = if (isOwnReplica) null else baseMessageId,
                 timestampMs = timestampMs,
-                encrypted = encrypted,
                 identityPublic = identity,
                 isOwnReplica = isOwnReplica,
             )
             if (result?.success == true) {
-                // Sealed, the server gives the copy its own id; a decryption error names that one.
-                if (!isOwnReplica) serverMessageIds.record(result.messageId, baseMessageId)
                 if (isOwnReplica) replicaAccepted++ else recipientAccepted++
             } else {
                 lastError = result?.errorCode?.ifEmpty { "send failed" } ?: "send failed"
@@ -608,17 +592,67 @@ class SendMessageUseCase @Inject constructor(
         }
     }
 
-    private fun knstText(text: String, messageId: String, reply: ReplyRef?): ByteArray =
-        knst(TextWire.encode(text, reply), messageId)
-
-    private fun knst(payload: ByteArray, messageId: String): ByteArray {
+    /**
+     * [content] as the frames one device receives. A recipient gets type-1 frames of the content;
+     * our own device gets type-23 frames of `SSR1 ‖ content` — iOS `MultiDeviceSendCoordinator`:
+     * the partner goes on before chunking, so a long copy carries it once. Until 2026-09-30
+     * Android put `SSR1` outside the frame, and iOS siblings could not read those copies.
+     */
+    private fun framesOf(content: ByteArray, messageId: String, isOwnReplica: Boolean, partner: String): List<ByteArray> {
         val uuid = runCatching { UUID.fromString(messageId) }.getOrElse { UUID.randomUUID() }
-        return KnstFrame.pack(payload, KnstFrame.TYPE_E2EE_SIGNAL, uuid)
+        return if (isOwnReplica) {
+            KnstFrame.chunks(SenderSyncRouting.encode(partner, content), KnstFrame.TYPE_SENDER_SYNC, uuid)
+        } else {
+            KnstFrame.chunks(content, KnstFrame.TYPE_E2EE_SIGNAL, uuid)
+        }
+    }
+
+    /**
+     * Every frame of one copy to one device, in order: `<base>` alone, else `<base>-c<n>` (iOS
+     * `DeviceDeliveryPlan.wireId`). Stops at the first frame not taken — a partial set never
+     * reassembles, and the frames after it would advance the ratchet for nothing — and returns
+     * that answer; otherwise the last one. A sealed frame gets its own id from the server, and a
+     * decryption error names that id, so each is recorded against [localId].
+     */
+    private suspend fun sendFrames(
+        frames: List<ByteArray>,
+        wireIdBase: String,
+        deviceId: String,
+        myId: String,
+        accountId: String,
+        localId: String?,
+        timestampMs: Long,
+        identityPublic: ByteArray,
+        isOwnReplica: Boolean,
+    ): MessagingService.SendResult? {
+        var last: MessagingService.SendResult? = null
+        frames.forEachIndexed { index, frame ->
+            if (index > 0) delay(Random.nextLong(CHUNK_JITTER_MIN_MS, CHUNK_JITTER_MAX_MS + 1))
+            val wireMessageId = if (frames.size <= 1) wireIdBase else "$wireIdBase-c$index"
+            val encrypted = encryptFor(deviceId, wireMessageId, frame) ?: return null
+            val result = sendOneCopy(
+                myId = myId,
+                accountId = accountId,
+                wireMessageId = wireMessageId,
+                timestampMs = timestampMs,
+                encrypted = encrypted,
+                identityPublic = identityPublic,
+                isOwnReplica = isOwnReplica,
+            )
+            if (result?.success != true) return result
+            if (localId != null) serverMessageIds.record(result.messageId, localId)
+            last = result
+        }
+        return last
     }
 
     private companion object {
         const val TAG = "SendMessageUseCase"
         const val MAX_ATTEMPTS = 3
         const val BACKOFF_MS = 400L
+
+        /** iOS `ChunkedDeliveryConfig.chunkSendJitter*`: frames of one message are not a burst. */
+        const val CHUNK_JITTER_MIN_MS = 50L
+        const val CHUNK_JITTER_MAX_MS = 200L
     }
 }

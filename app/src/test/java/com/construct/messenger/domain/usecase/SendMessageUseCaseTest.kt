@@ -16,6 +16,9 @@ import com.construct.messenger.data.local.db.ServerMessageIdEntity
 import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.ServerMessageIds
 import com.construct.messenger.util.IncomingPlaintext
+import com.construct.messenger.util.KnstFrame
+import com.construct.messenger.util.SenderSyncRouting
+import com.construct.messenger.util.TextWire
 import com.construct.messenger.util.ProfileShare
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
@@ -163,6 +166,69 @@ class SendMessageUseCaseTest {
         )
         return captor.allValues
     }
+
+    private suspend fun framesSentTo(h: Harness, device: String): List<KnstFrame.Chunk> {
+        val events = argumentCaptor<uniffi.construct_core.CfeIncomingEvent>()
+        verify(h.orchestrator, org.mockito.kotlin.atLeastOnce()).handleEvent(events.capture())
+        return events.allValues
+            .filterIsInstance<uniffi.construct_core.CfeIncomingEvent.OutgoingMessage>()
+            .filter { it.contactId == device }
+            .map { KnstFrame.parse(it.plaintext)!! }
+    }
+
+    /**
+     * A text over one frame goes as several to each device, named `-c<n>` as iOS names them, and
+     * joins back into the text. Mutation: `KnstFrame.pack` instead of `chunks` — the send throws.
+     */
+    @Test
+    fun `a long text goes as numbered frames to every device`() = runTest {
+        val h = harness()
+        val long = "x".repeat(5000)
+        val outcome = h.useCase()(peer, long)
+        assertTrue(outcome is SendOutcome.Sent)
+
+        val ids = sentMessageIds(h)
+        assertEquals(4, ids.size)
+        assertTrue(ids.any { it.endsWith("-fd-" + pinnedDevice.take(16) + "-c0") })
+        assertTrue(ids.any { it.endsWith("-fd-" + pinnedDevice.take(16) + "-c1") })
+        val frames = framesSentTo(h, pinnedDevice)
+        assertEquals(listOf(0, 1), frames.map { it.index })
+        val joined = frames.flatMap { it.payload.toList() }.toByteArray()
+        assertEquals(TextWire.encode(long).toList(), joined.toList())
+    }
+
+    /**
+     * Our own device gets what iOS sends it: type-23 frames around `SSR1 ‖ content`. Android put
+     * `SSR1` outside the frame, and an iOS sibling dropped the copy as unroutable. Mutation: frame
+     * the replica like a recipient copy — this reddens.
+     */
+    @Test
+    fun `our own device gets the partner inside a sender-sync frame`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        val ownDevice = "33333333333333333333333333333333"
+        whenever(h.sessionManager.discoverOwnDeviceBundles(myId)).thenReturn(
+            listOf(SessionManager.PeerBundle(myId, ownDevice, byteArrayOf(8), bundle = mock<BinaryKeyBundle>())),
+        )
+        whenever(h.sessionManager.ensureSessionForDevice(myId, ownDevice))
+            .thenReturn(SessionManager.SessionPeer(myId, ownDevice, byteArrayOf(8)))
+        whenever(h.crypto.deviceCopyTag(any(), eq(ownDevice), any())).thenReturn("ownownownownown0")
+        whenever(h.crypto.planSend(any(), any(), any(), any())).thenReturn(
+            listOf(
+                DeliveryTarget(pinnedDevice, DeliveryAudience.RECIPIENT),
+                DeliveryTarget(ownDevice, DeliveryAudience.OWN_REPLICA),
+            ),
+        )
+
+        h.useCase()(peer, "hello")
+
+        val frame = framesSentTo(h, ownDevice).single()
+        assertEquals(KnstFrame.TYPE_SENDER_SYNC, frame.contentType)
+        val routed = SenderSyncRouting.decode(frame.payload)!!
+        assertEquals(peer, routed.partnerUserId)
+        assertEquals(TextWire.encode("hello").toList(), routed.payload.toList())
+        assertEquals(KnstFrame.TYPE_E2EE_SIGNAL, framesSentTo(h, pinnedDevice).single().contentType)
+    }
+
 
     @Test
     fun `a successful send persists SENT`() = runTest {
