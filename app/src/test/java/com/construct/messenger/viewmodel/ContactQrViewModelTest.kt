@@ -41,7 +41,7 @@ class ContactQrViewModelTest {
         wheneverBlocking { repo.getProfile(any()) }.thenReturn(
             UserProfile(userId = userId, displayName = "", username = username.orEmpty()),
         )
-        wheneverBlocking { repo.mintQr() }.thenAnswer { invite(++minted) }
+        wheneverBlocking { repo.mintQr(any()) }.thenAnswer { invite(++minted) }
         var links = 0
         wheneverBlocking { repo.mintLink(any()) }.thenAnswer { ++links; invite(100 + links, "link-$links") }
         return ContactQrViewModel(repo, keystore)
@@ -72,7 +72,7 @@ class ContactQrViewModelTest {
         vm.stopRotating()
         advanceTimeBy(ContactQrViewModel.ROTATE_MS * 3)
         runCurrent()
-        verifyBlocking(repo, times(2)) { mintQr() }
+        verifyBlocking(repo, times(2)) { mintQr(any()) }
     }
 
     @Test
@@ -142,7 +142,7 @@ class ContactQrViewModelTest {
     @Test
     fun `a failed mint shows the failure instead of a stale code`() = runTest {
         val vm = viewModel()
-        wheneverBlocking { repo.mintQr() }.thenThrow(IllegalStateException("no identity"))
+        wheneverBlocking { repo.mintQr(any()) }.thenThrow(IllegalStateException("no identity"))
         vm.startRotating()
         runCurrent()
 

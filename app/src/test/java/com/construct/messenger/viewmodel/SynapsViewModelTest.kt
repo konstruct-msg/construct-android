@@ -68,7 +68,7 @@ private class FakeContacts : ContactsRepository {
         payload = "payload",
         deepLink = "konstruct://add?invite=payload",
     )
-    override suspend fun mintQr(): MintedInvite = mintLink(false)
+    override suspend fun mintQr(sitting: String): MintedInvite = mintLink(false)
     override suspend fun accept(raw: String): AcceptInviteResult {
         accepted += raw
         val contact = Contact("u1", "swift fox")

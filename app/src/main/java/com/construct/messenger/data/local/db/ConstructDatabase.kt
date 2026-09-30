@@ -24,7 +24,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ServerMessageIdEntity::class,
         PendingResendEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -114,6 +114,13 @@ abstract class ConstructDatabase : RoomDatabase() {
                         "`deviceId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `createdAtMs` INTEGER NOT NULL, " +
                         "`attempts` INTEGER NOT NULL, PRIMARY KEY(`messageId`, `deviceId`))",
                 )
+            }
+        }
+
+        /** Which QR showing minted a code. Existing rows: none — each stays its own row. */
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE issued_invites ADD COLUMN sitting TEXT")
             }
         }
     }

@@ -36,8 +36,9 @@ interface ContactsRepository {
     suspend fun mintLink(includeUsername: Boolean = false): MintedInvite
 
     /** A short-lived invite for a QR on screen: 300 s, no username in the signed body.
-     * Its `payload` (base64url CIv1) is what the code carries. Canon: iOS `generateQRBinary`. */
-    suspend fun mintQr(): MintedInvite
+     * Its `payload` (base64url CIv1) is what the code carries; [sitting] names the showing it
+     * belongs to. Canon: iOS `generateQRBinary` + `InviteJournal.recordQRCode`. */
+    suspend fun mintQr(sitting: String): MintedInvite
 
     /** Accept a `konstruct://add?invite=` URL or a raw base64url payload. */
     suspend fun accept(raw: String): AcceptInviteResult
@@ -94,6 +95,8 @@ data class IssuedInvite(
     val kind: String,
     val issuedAtEpochSec: Long,
     val ttlSeconds: Int,
+    /** The QR showing it belongs to; `null` for a link, or a code from before showings. */
+    val sitting: String? = null,
 ) {
     fun isLive(nowEpochSec: Long = System.currentTimeMillis() / 1000): Boolean =
         nowEpochSec < issuedAtEpochSec + ttlSeconds

@@ -6,6 +6,7 @@ import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.repository.ContactsRepository
 import com.construct.messenger.util.DisplayNameGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -58,6 +59,9 @@ class ContactQrViewModel @Inject constructor(
     val copiedLinks: SharedFlow<String> = copied.asSharedFlow()
 
     private var rotation: Job? = null
+
+    /** This visit to the screen: every code it shows is one showing in Issued invites (iOS sitting). */
+    private val sitting = UUID.randomUUID().toString()
     private var lastCopyAtMs = 0L
 
     init {
@@ -123,7 +127,7 @@ class ContactQrViewModel @Inject constructor(
 
     private suspend fun mint() {
         try {
-            val payload = contactsRepository.mintQr().payload
+            val payload = contactsRepository.mintQr(sitting).payload
             state.update { it.copy(payload = payload, failed = false) }
         } catch (e: CancellationException) {
             throw e

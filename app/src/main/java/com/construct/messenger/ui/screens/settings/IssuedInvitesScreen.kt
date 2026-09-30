@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,7 +41,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.data.repository.InviteRevocation
-import com.construct.messenger.data.repository.IssuedInvite
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
@@ -49,6 +49,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.viewmodel.IssuedAct
 import com.construct.messenger.viewmodel.IssuedInvitesUiState
 import com.construct.messenger.viewmodel.IssuedInvitesViewModel
 import java.util.Date
@@ -62,8 +63,8 @@ fun IssuedInvitesRoute(
     viewModel: IssuedInvitesViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
-    var pending by remember { mutableStateOf<IssuedInvite?>(null) }
-    pending?.let { invite ->
+    var pending by remember { mutableStateOf<IssuedAct?>(null) }
+    pending?.let { act ->
         CTConfirmDialog(
             title = stringResource(R.string.invite_revoke_confirm_title),
             message = stringResource(R.string.invite_revoke_confirm_message),
@@ -72,7 +73,7 @@ fun IssuedInvitesRoute(
             isDestructive = true,
             onConfirm = {
                 pending = null
-                viewModel.revoke(invite)
+                viewModel.revoke(act)
             },
             onDismiss = { pending = null },
         )
@@ -84,15 +85,15 @@ fun IssuedInvitesRoute(
  * What this device handed out and has not yet expired.
  *
  * **Canon:** iOS `IssuedInvitesView` — two `>` lines saying the scope and what can be revoked,
- * the last outcome, then the list. One deliberate difference: Android mints each QR as its own
- * five-minute invite and journals it, so a QR row can be revoked like a link; iOS lists a QR
- * sitting as one row it cannot revoke.
+ * the last outcome, then the list; one QR showing is one row with its count of live codes. One
+ * deliberate difference: that row can be revoked here — every live code of the showing, at most
+ * ten — where iOS offers it only for links.
  */
 @Composable
 private fun IssuedInvitesScreen(
     ui: IssuedInvitesUiState,
     onNavigateBack: () -> Unit,
-    onRevoke: (IssuedInvite) -> Unit,
+    onRevoke: (IssuedAct) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -123,21 +124,21 @@ private fun IssuedInvitesScreen(
                     color = if (outcome == InviteRevocation.UNCONFIRMED) CTColor.danger else CTColor.accent,
                 )
             }
-            if (ui.invites.isEmpty()) {
+            if (ui.acts.isEmpty()) {
                 Line(
                     text = stringResource(R.string.issued_invites_empty, TTL_HOURS),
                     modifier = Modifier.padding(vertical = CTLayout.sectionGap),
                 )
             } else {
                 CTSectionGroup {
-                    ui.invites.forEachIndexed { index, invite ->
+                    ui.acts.forEachIndexed { index, act ->
                         if (index > 0) CTSep()
                         InviteRow(
-                            invite = invite,
+                            act = act,
                             nowEpochSec = ui.nowEpochSec,
-                            revoking = ui.revokingJti == invite.jti,
-                            anyRevoking = ui.revokingJti != null,
-                            onRevoke = { onRevoke(invite) },
+                            revoking = ui.revokingId == act.id,
+                            anyRevoking = ui.revokingId != null,
+                            onRevoke = { onRevoke(act) },
                         )
                     }
                 }
@@ -148,15 +149,15 @@ private fun IssuedInvitesScreen(
 
 @Composable
 private fun InviteRow(
-    invite: IssuedInvite,
+    act: IssuedAct,
     nowEpochSec: Long,
     revoking: Boolean,
     anyRevoking: Boolean,
     onRevoke: () -> Unit,
 ) {
     val context = LocalContext.current
-    val isQr = invite.kind == "qr"
-    val time = DateFormat.getTimeFormat(context).format(Date(invite.issuedAtEpochSec * 1000))
+    val isQr = act.isQr
+    val time = DateFormat.getTimeFormat(context).format(Date(act.startedAtEpochSec * 1000))
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -171,10 +172,14 @@ private fun InviteRow(
             modifier = Modifier.width(20.dp).size(18.dp),
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            val kind = stringResource(if (isQr) R.string.issued_invite_qr else R.string.issued_invite_link)
+            val kind = if (isQr) {
+                stringResource(R.string.issued_invite_qr_fmt, act.liveJtis.size)
+            } else {
+                stringResource(R.string.issued_invite_link)
+            }
             Text(text = "${kind.uppercase()} · $time", style = ctRegular(13), color = CTColor.text)
             Text(
-                text = stringResource(R.string.issued_invite_expires, remaining(invite, nowEpochSec)),
+                text = stringResource(R.string.issued_invite_expires, remaining(act, nowEpochSec)),
                 style = ctRegular(11),
                 color = CTColor.textDim,
             )
@@ -185,21 +190,22 @@ private fun InviteRow(
             val shape = RoundedCornerShape(CornerRadius.small)
             Text(
                 text = stringResource(R.string.invite_revoke).lowercase(),
-                style = ctRegular(11),
+                style = ctRegular(13),
                 color = CTColor.danger,
                 modifier = Modifier
-                    .background(CTColor.bgMsg, shape)
-                    .border(1.dp, CTColor.danger.copy(alpha = 0.5f), shape)
+                    .clip(shape)
+                    .background(CTColor.bgMsg)
+                    .border(1.dp, CTColor.danger.copy(alpha = 0.4f), shape)
                     .clickable(enabled = !anyRevoking, onClick = onRevoke)
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                    .padding(horizontal = 20.dp, vertical = CTLayout.chromeGap),
             )
         }
     }
 }
 
 @Composable
-private fun remaining(invite: IssuedInvite, nowEpochSec: Long): String {
-    val seconds = (invite.issuedAtEpochSec + invite.ttlSeconds - nowEpochSec).coerceAtLeast(0)
+private fun remaining(act: IssuedAct, nowEpochSec: Long): String {
+    val seconds = (act.expiresAtEpochSec - nowEpochSec).coerceAtLeast(0)
     val hours = (seconds / 3600).toInt()
     val minutes = ((seconds % 3600) / 60).toInt()
     return if (hours > 0) {
@@ -234,9 +240,9 @@ private fun IssuedInvitesScreenPreview() {
     val now = 1_759_100_000L
     IssuedInvitesScreen(
         ui = IssuedInvitesUiState(
-            invites = listOf(
-                IssuedInvite("a", "link", now - 600, 43_200),
-                IssuedInvite("b", "qr", now - 60, 300),
+            acts = listOf(
+                IssuedAct("a", isQr = false, listOf("a"), now - 600, now + 42_600),
+                IssuedAct("qr:s", isQr = true, listOf("b", "c", "d"), now - 90, now + 270),
             ),
             nowEpochSec = now,
             lastOutcome = InviteRevocation.REVOKED,

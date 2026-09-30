@@ -13,6 +13,8 @@ data class IssuedInviteEntity(
     val kind: String,
     val issuedAtEpochSec: Long,
     val ttlSeconds: Int,
+    /** The QR screen visit that minted it — the codes of one showing are one row to the user. */
+    val sitting: String? = null,
 )
 
 @Dao

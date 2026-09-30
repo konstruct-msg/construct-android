@@ -76,13 +76,13 @@ class ContactsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun mintLink(includeUsername: Boolean): MintedInvite =
-        mint(kind = "link", ttlSeconds = InviteConfig.TTL_SECONDS.toInt())
+        mint(kind = "link", ttlSeconds = InviteConfig.TTL_SECONDS.toInt(), sitting = null)
 
-    override suspend fun mintQr(): MintedInvite =
-        mint(kind = "qr", ttlSeconds = InviteConfig.QR_TTL_SECONDS)
+    override suspend fun mintQr(sitting: String): MintedInvite =
+        mint(kind = "qr", ttlSeconds = InviteConfig.QR_TTL_SECONDS, sitting = sitting)
 
     /** Every invite is journalled, so it can be listed and revoked by its jti. */
-    private suspend fun mint(kind: String, ttlSeconds: Int): MintedInvite {
+    private suspend fun mint(kind: String, ttlSeconds: Int, sitting: String?): MintedInvite {
         val userId = keystoreManager.getUserId() ?: error("not authenticated")
         val deviceId = keystoreManager.getDeviceId() ?: error("no device id")
         val minted = generator.mintLink(
@@ -97,6 +97,7 @@ class ContactsRepositoryImpl @Inject constructor(
                 kind = kind,
                 issuedAtEpochSec = minted.issuedAtEpochSec,
                 ttlSeconds = minted.ttlSeconds,
+                sitting = sitting,
             ),
         )
         return minted
@@ -152,7 +153,7 @@ class ContactsRepositoryImpl @Inject constructor(
     }
 
     override val issuedInvites: Flow<List<IssuedInvite>> = issuedInviteDao.observeAll().map { rows ->
-        rows.map { IssuedInvite(it.jti, it.kind, it.issuedAtEpochSec, it.ttlSeconds) }
+        rows.map { IssuedInvite(it.jti, it.kind, it.issuedAtEpochSec, it.ttlSeconds, it.sitting) }
     }
 
     override suspend fun findByUsername(username: String): FindUserResult {
