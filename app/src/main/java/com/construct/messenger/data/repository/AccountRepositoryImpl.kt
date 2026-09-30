@@ -9,6 +9,8 @@ import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.IdentityFingerprint
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.grpc.Status
+import io.grpc.StatusException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -58,16 +60,19 @@ class AccountRepositoryImpl @Inject constructor(
             val profile = grpcClient.user.getUserProfile(
                 GetUserProfileRequest.newBuilder().setUserId(userId).build(),
             ).profile
-            val username = if (profile.hasUsername()) profile.username else ""
-            val displayName = if (profile.hasDisplayName()) profile.displayName else ""
-            prefs.edit()
-                .putString(key(KEY_USERNAME, userId), username)
-                .putString(key(KEY_DISPLAY_NAME, userId), displayName)
-                .apply()
+            // The server keeps only an HMAC of the alias and answers with neither field, so an
+            // empty answer means "not told", never "cleared" — as iOS, which keeps its own copy
+            // when the profile has none. Writing it through erased the alias after every save.
+            val username = profile.username.takeIf { profile.hasUsername() && it.isNotBlank() }
+            val displayName = profile.displayName.takeIf { profile.hasDisplayName() && it.isNotBlank() }
+            prefs.edit().apply {
+                username?.let { putString(key(KEY_USERNAME, userId), it) }
+                displayName?.let { putString(key(KEY_DISPLAY_NAME, userId), it) }
+            }.apply()
             state.update { current ->
                 current?.copy(
-                    username = username,
-                    displayName = displayName.ifBlank { DisplayNameGenerator.generate(userId) },
+                    username = username ?: current.username,
+                    displayName = displayName ?: current.displayName,
                 )
             }
         } catch (e: CancellationException) {
@@ -85,7 +90,10 @@ class AccountRepositoryImpl @Inject constructor(
             val availability = grpcClient.user.checkUsernameAvailability(
                 CheckUsernameAvailabilityRequest.newBuilder().setUsername(username).build(),
             )
-            if (!availability.available) {
+            // "taken" cannot tell whose: the alias may be ours already (set on another device,
+            // or before this install). The update is the one that knows — it refuses only a name
+            // held by someone else, with ALREADY_EXISTS.
+            if (!availability.available && availability.reason != REASON_TAKEN) {
                 return UsernameChange.Unavailable(if (availability.hasReason()) availability.reason else null)
             }
             val saved = grpcClient.user.updateUserProfile(
@@ -96,6 +104,10 @@ class AccountRepositoryImpl @Inject constructor(
             UsernameChange.Saved(saved)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: StatusException) {
+            if (e.status.code == Status.Code.ALREADY_EXISTS) return UsernameChange.Unavailable(REASON_TAKEN)
+            Log.w(TAG, "username change failed", e)
+            UsernameChange.Failed
         } catch (e: Exception) {
             Log.w(TAG, "username change failed", e)
             UsernameChange.Failed
@@ -129,5 +141,7 @@ class AccountRepositoryImpl @Inject constructor(
         const val KEY_USERNAME = "username"
         const val KEY_DISPLAY_NAME = "display_name"
         const val KEY_DISCOVERABLE = "discoverable"
+        /** CheckUsernameAvailability's reason for an alias someone holds. */
+        const val REASON_TAKEN = "taken"
     }
 }
