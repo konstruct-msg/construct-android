@@ -128,7 +128,8 @@ fun MessageInputView(
             modifier = Modifier
                 .weight(1f)
                 .heightIn(min = 44.dp)
-                .glassCapsule()
+                // iOS `InputBar.cornerRadius`: half of one line's height, kept as the text grows.
+                .glassCapsule(cornerRadius = 22.dp)
                 .padding(start = 16.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
