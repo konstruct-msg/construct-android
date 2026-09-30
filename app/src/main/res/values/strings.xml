@@ -127,6 +127,8 @@
     <string name="voice_message">Voice message</string>
     <string name="file_attachment">File</string>
     <string name="sticker">Sticker</string>
+    <string name="attachment_too_large">Too large to send: the limit is 100 MB.</string>
+    <string name="attachment_unreadable">Could not read what you picked.</string>
     <string name="open_file">Open</string>
     <string name="attach_photo_video">Photo or video</string>
     <string name="attach_file">File</string>

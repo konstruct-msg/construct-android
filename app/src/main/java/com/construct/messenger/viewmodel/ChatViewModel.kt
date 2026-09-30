@@ -94,6 +94,19 @@ class ChatViewModel @Inject constructor(
     private val _openFile = kotlinx.coroutines.flow.MutableSharedFlow<OpenFile>(extraBufferCapacity = 1)
     val openFile: kotlinx.coroutines.flow.SharedFlow<OpenFile> = _openFile
 
+    /** Something picked could not be sent at all — no row shows it, so the screen says so. */
+    enum class AttachmentProblem { TOO_LARGE, UNREADABLE }
+    private val _attachmentProblem = kotlinx.coroutines.flow.MutableSharedFlow<AttachmentProblem>(extraBufferCapacity = 1)
+    val attachmentProblem: kotlinx.coroutines.flow.SharedFlow<AttachmentProblem> = _attachmentProblem
+
+    private fun report(outcome: SendOutcome) {
+        val reason = (outcome as? SendOutcome.Failed)?.reason ?: return
+        when {
+            "too large" in reason -> _attachmentProblem.tryEmit(AttachmentProblem.TOO_LARGE)
+            "unreadable" in reason -> _attachmentProblem.tryEmit(AttachmentProblem.UNREADABLE)
+        }
+    }
+
     val uiState: StateFlow<ChatUiState> = combine(
         messagesRepository.observeContact(contactId),
         contactsRepository.contacts,
@@ -295,9 +308,13 @@ class ChatViewModel @Inject constructor(
                     draft.value = ""
                     replying.value = null
                     sending.value = false
-                    if (photos.isNotEmpty()) messagesRepository.sendPhotos(contactId, photos, text, reply)
+                    // Each started now, on its own: the files must not wait for a video to encode
+                    // and upload — leaving the chat meanwhile cancelled this coroutine, and with
+                    // it the files, which were never sent (stand, 2026-09-30).
+                    if (photos.isNotEmpty()) viewModelScope.launch { report(messagesRepository.sendPhotos(contactId, photos, text, reply)) }
                     if (picked.isNotEmpty()) {
-                        messagesRepository.sendFiles(contactId, picked.map { it.uri }, if (photos.isEmpty()) text else "")
+                        val caption = if (photos.isEmpty()) text else ""
+                        viewModelScope.launch { report(messagesRepository.sendFiles(contactId, picked.map { it.uri }, caption)) }
                     }
                     return@launch
                 }

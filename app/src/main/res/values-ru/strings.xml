@@ -124,6 +124,8 @@
     <string name="voice_message">Голосовое сообщение</string>
     <string name="file_attachment">Файл</string>
     <string name="sticker">Стикер</string>
+    <string name="attachment_too_large">Слишком большой файл: можно до 100 МБ.</string>
+    <string name="attachment_unreadable">Не удалось прочитать выбранное.</string>
     <string name="open_file">Открыть</string>
     <string name="attach_photo_video">Фото или видео</string>
     <string name="attach_file">Файл</string>

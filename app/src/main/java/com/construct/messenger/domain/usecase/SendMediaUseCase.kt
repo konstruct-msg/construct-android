@@ -73,7 +73,7 @@ class SendMediaUseCase @Inject constructor(
             throw e
         } catch (e: Exception) {
             Log.w(TAG, "photos could not be prepared", e)
-            return SendOutcome.Failed(messageId, "photo unreadable")
+            return SendOutcome.Failed(messageId, if (e is VideoPreparer.TooLarge) "video too large" else "photo unreadable")
         }
 
         val caption = caption.trim()

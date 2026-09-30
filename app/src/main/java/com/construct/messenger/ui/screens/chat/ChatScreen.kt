@@ -82,6 +82,14 @@ fun ChatScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val micDenied = stringResource(R.string.voice_mic_denied)
     val noApp = stringResource(R.string.no_app_to_open)
+    val tooLarge = stringResource(R.string.attachment_too_large)
+    val unreadable = stringResource(R.string.attachment_unreadable)
+    LaunchedEffect(Unit) {
+        viewModel.attachmentProblem.collect { problem ->
+            val text = if (problem == ChatViewModel.AttachmentProblem.TOO_LARGE) tooLarge else unreadable
+            android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
     LaunchedEffect(Unit) {
         viewModel.openFile.collect { open ->
             val view = android.content.Intent(android.content.Intent.ACTION_VIEW)
