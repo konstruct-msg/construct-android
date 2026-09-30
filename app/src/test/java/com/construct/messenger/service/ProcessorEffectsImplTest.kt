@@ -76,6 +76,7 @@ class ProcessorEffectsImplTest {
             alerts = alerts,
             chunks = ChunkReassembler(pendingChunks),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
+            contactAvatars = { _, _ -> },
         )
     }
 
@@ -113,6 +114,7 @@ class ProcessorEffectsImplTest {
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
+            contactAvatars = { _, _ -> },
         )
         val address = ByteArray(32) { 0x5A }
         val card = com.construct.messenger.util.KnstFrame.pack(
@@ -156,6 +158,7 @@ class ProcessorEffectsImplTest {
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
+            contactAvatars = { _, _ -> },
         )
         val address = ByteArray(32) { 0x5A }
         val card = com.construct.messenger.util.KnstFrame.pack(
@@ -228,6 +231,7 @@ class ProcessorEffectsImplTest {
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
+            contactAvatars = { _, _ -> },
         )
 
         effects.onDecrypted(peer, "msg-1", "hello".toByteArray())
@@ -270,6 +274,7 @@ class ProcessorEffectsImplTest {
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
+            contactAvatars = { _, _ -> },
         )
         val baseId = "550e8400-e29b-41d4-a716-446655440000"
         val content = MessageContent.newBuilder()
@@ -545,6 +550,7 @@ class ProcessorEffectsImplTest {
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
+            contactAvatars = { _, _ -> },
         )
     }
 
@@ -671,6 +677,12 @@ private class FakeUserDao : UserDao {
     }
     override suspend fun setAmSharingWith(userId: String, sharing: Boolean) {
         rows[userId]?.let { rows[userId] = it.copy(amSharingWith = sharing) }
+    }
+
+    override suspend fun sharingWithIds(): List<String> = rows.values.filter { it.amSharingWith && !it.isBlocked }.map { it.id }
+
+    override suspend fun setAvatar(userId: String, avatar: ByteArray?) {
+        rows[userId]?.let { rows[userId] = it.copy(avatarData = avatar) }
     }
 }
 

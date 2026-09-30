@@ -64,6 +64,7 @@ class ContactsRepositoryImpl @Inject constructor(
                 username = it.username,
                 securityNotice = SecurityNotice.of(it.securityNotice),
                 localName = it.localName,
+                avatar = it.avatarData,
             )
         }
     }

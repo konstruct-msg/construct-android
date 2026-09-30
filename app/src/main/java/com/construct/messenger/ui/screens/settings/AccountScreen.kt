@@ -1,6 +1,14 @@
 package com.construct.messenger.ui.screens.settings
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import com.construct.messenger.ui.components.AvatarCropDialog
+import com.construct.messenger.ui.components.AvatarViewerDialog
+import com.construct.messenger.ui.components.rememberAvatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -70,9 +78,10 @@ import kotlinx.coroutines.delay
  * **Canon:** iOS `AccountSettingsView` — flat sections with `> HEADER`, lowercase dim labels,
  * values on the right; "edit" turns the alias into a field; sign-out warns first when the
  * recovery phrase is not set up; the danger zone signs out everywhere or deletes the account.
- * Not ported: photo and editable display name (iOS re-sends the profile to contacts; Android has
- * no such path yet), backup and nearby transfer, social recovery, and iOS's "status" row, which
- * is a placeholder there.
+ * The avatar is iOS's too: tapped, it opens (or, with none, the picker does); "change photo"
+ * picks, crops square and keeps it, then sends the profile again to whoever it is shared with.
+ * Not ported: an editable display name, backup and nearby transfer, social recovery, and iOS's
+ * "status" row, which is a placeholder there.
  */
 @Composable
 fun AccountScreen(
@@ -88,6 +97,29 @@ fun AccountScreen(
     }
     // Back while editing abandons the edit, as the nav bar's back does.
     BackHandler(enabled = ui.editing) { viewModel.cancelEditing() }
+
+    // Avatar: picked → cropped → kept. iOS `AccountSettingsView` photosPicker + ImageCropView.
+    var toCrop by remember { mutableStateOf<android.net.Uri?>(null) }
+    var viewingAvatar by remember { mutableStateOf(false) }
+    val pickAvatar = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) toCrop = uri
+    }
+    val changeAvatar = { pickAvatar.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+    toCrop?.let { uri ->
+        AvatarCropDialog(
+            uri = uri,
+            onConfirm = { toCrop = null; viewModel.setAvatar(it) },
+            onCancel = { toCrop = null },
+        )
+    }
+    val avatar = ui.account?.avatar
+    if (viewingAvatar && avatar != null) {
+        AvatarViewerDialog(
+            jpeg = avatar,
+            onChange = { viewingAvatar = false; changeAvatar() },
+            onDismiss = { viewingAvatar = false },
+        )
+    }
 
     var showDelete by remember { mutableStateOf(false) }
     if (showDelete) {
@@ -137,6 +169,8 @@ fun AccountScreen(
         onSignOutAll = { askSignOut(true) },
         onDevices = onDevices,
         onDeleteAccount = { showDelete = true },
+        onAvatar = { if (avatar != null) viewingAvatar = true else changeAvatar() },
+        onChangeAvatar = changeAvatar,
     )
 }
 
@@ -151,6 +185,8 @@ private fun AccountContent(
     onSignOutAll: () -> Unit,
     onDevices: () -> Unit,
     onDeleteAccount: () -> Unit,
+    onAvatar: () -> Unit = {},
+    onChangeAvatar: () -> Unit = {},
 ) {
     val account = ui.account
     Column(
@@ -177,17 +213,31 @@ private fun AccountContent(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState()),
         ) {
-            Box(
+            // iOS `avatarHeader`: the avatar, "[change photo]" under it; both out of reach while
+            // the alias is being edited.
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 28.dp),
-                contentAlignment = Alignment.Center,
+                    .padding(vertical = 28.dp)
+                    .alpha(if (ui.editing) 0.4f else 1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 CTAvatar(
                     userId = account?.userId.orEmpty(),
                     displayName = account?.displayName.orEmpty(),
+                    image = rememberAvatar(account?.avatar),
                     // iOS `MainAvatarView` at `accountSize` draws its disc about 72pt across.
                     size = 72.dp,
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .clickable(enabled = !ui.editing, onClick = onAvatar),
+                )
+                Text(
+                    text = "[${stringResource(R.string.change_photo)}]",
+                    style = ctRegular(14),
+                    color = if (ui.editing) CTColor.textDim else CTColor.accent,
+                    modifier = Modifier.clickable(enabled = !ui.editing, onClick = onChangeAvatar),
                 )
             }
             Divider(thick = true)

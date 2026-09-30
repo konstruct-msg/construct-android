@@ -42,6 +42,13 @@ internal class FakeAccountRepository(
         return result
     }
 
+    val avatars = mutableListOf<android.graphics.Bitmap>()
+
+    override suspend fun setAvatar(picture: android.graphics.Bitmap): Boolean {
+        avatars += picture
+        return true
+    }
+
     override suspend fun setDiscoverable(enabled: Boolean): Boolean {
         if (discoverableApplies) state.value = state.value?.copy(discoverable = enabled)
         return discoverableApplies
@@ -57,7 +64,7 @@ class AccountViewModelTest {
 
     @Test
     fun `the draft is lowercased, has no spaces and stops at 20`() {
-        val vm = AccountViewModel(FakeAccountRepository(), auth, org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val vm = AccountViewModel(FakeAccountRepository(), auth, org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
         vm.startEditing()
         vm.onDraftChange("Silent Fox_With_A_Very_Long_Name")
         assertEquals("silentfox_with_a_ver", vm.uiState.value.draftUsername)
@@ -66,7 +73,7 @@ class AccountViewModelTest {
     @Test
     fun `saving an unchanged alias leaves edit mode without asking the server`() {
         val repo = FakeAccountRepository(username = "fox")
-        val vm = AccountViewModel(repo, auth, org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val vm = AccountViewModel(repo, auth, org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
         vm.startEditing()
         vm.save()
         assertFalse(vm.uiState.value.editing)
@@ -76,7 +83,7 @@ class AccountViewModelTest {
     @Test
     fun `a saved alias shows and ends editing`() {
         val repo = FakeAccountRepository()
-        val vm = AccountViewModel(repo, auth, org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val vm = AccountViewModel(repo, auth, org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
         vm.startEditing()
         vm.onDraftChange("fox")
         vm.save()
@@ -88,7 +95,7 @@ class AccountViewModelTest {
     @Test
     fun `a taken alias keeps the field open and says why`() {
         val repo = FakeAccountRepository().apply { nextUsernameResult = UsernameChange.Unavailable("taken") }
-        val vm = AccountViewModel(repo, auth, org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val vm = AccountViewModel(repo, auth, org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
         vm.startEditing()
         vm.onDraftChange("fox")
         vm.save()
@@ -99,7 +106,7 @@ class AccountViewModelTest {
 
     @Test
     fun `sign out runs once and then reports it`() = runTest {
-        val vm = AccountViewModel(FakeAccountRepository(), auth, org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val vm = AccountViewModel(FakeAccountRepository(), auth, org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
         val signedOut = CompletableDeferred<AccountEvent>()
         val collector = launch { signedOut.complete(vm.eventsFlow.first()) }
         runCurrent()

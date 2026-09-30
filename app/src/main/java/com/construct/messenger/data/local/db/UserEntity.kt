@@ -121,6 +121,12 @@ interface UserDao {
     @Query("UPDATE users SET amSharingWith = :sharing WHERE id = :userId")
     suspend fun setAmSharingWith(userId: String, sharing: Boolean)
 
+    @Query("SELECT id FROM users WHERE amSharingWith = 1 AND isBlocked = 0")
+    suspend fun sharingWithIds(): List<String>
+
+    @Query("UPDATE users SET avatarData = :avatar WHERE id = :userId")
+    suspend fun setAvatar(userId: String, avatar: ByteArray?)
+
     @Query("DELETE FROM users WHERE id = :userId")
     suspend fun delete(userId: String)
 }

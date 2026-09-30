@@ -1,5 +1,6 @@
 package com.construct.messenger.ui.screens.synaps
 
+import com.construct.messenger.ui.components.rememberAvatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -154,7 +155,7 @@ private fun ContactRow(contact: Contact, onClick: () -> Unit) {
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CTAvatar(userId = contact.userId, displayName = contact.displayName, size = 44.dp)
+        CTAvatar(userId = contact.userId, displayName = contact.displayName, image = rememberAvatar(contact.avatar), size = 44.dp)
         Spacer(Modifier.width(12.dp))
         Text(
             text = title,

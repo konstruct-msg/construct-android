@@ -59,5 +59,6 @@ private fun ChatEntity.toSummary(user: UserEntity?): ChatSummary {
         lastMessageTime = lastMessageTime,
         unreadCount = unreadCount,
         isPinned = isPinned,
+        avatar = user?.avatarData,
     )
 }

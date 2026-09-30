@@ -1,5 +1,6 @@
 package com.construct.messenger.ui.screens.settings
 
+import com.construct.messenger.ui.components.rememberAvatar
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -263,6 +264,7 @@ private fun ProfileRow(account: OwnAccount?, onClick: () -> Unit) {
         CTAvatar(
             userId = account?.userId.orEmpty(),
             displayName = account?.displayName.orEmpty(),
+            image = rememberAvatar(account?.avatar),
             size = 56.dp,
         )
         Spacer(Modifier.width(CTLayout.edgePad))

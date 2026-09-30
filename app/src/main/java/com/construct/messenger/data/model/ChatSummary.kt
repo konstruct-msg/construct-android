@@ -11,4 +11,6 @@ data class ChatSummary(
     val lastMessageTime: Long? = null,
     val unreadCount: Int = 0,
     val isPinned: Boolean = false,
+    /** Their avatar as they shared it, a JPEG; `null` = the identicon. */
+    val avatar: ByteArray? = null,
 )

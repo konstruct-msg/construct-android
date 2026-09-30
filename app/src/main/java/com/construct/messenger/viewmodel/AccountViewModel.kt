@@ -7,11 +7,13 @@ import com.construct.messenger.data.repository.AppLockRepository
 import com.construct.messenger.data.repository.AuthRepository
 import com.construct.messenger.data.repository.OwnAccount
 import com.construct.messenger.data.repository.UsernameChange
+import com.construct.messenger.domain.usecase.ShareProfileUseCase
 import com.construct.messenger.recovery.RecoveryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,6 +63,7 @@ class AccountViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val recoveryRepository: RecoveryRepository,
     private val appLock: AppLockRepository,
+    private val shareProfile: ShareProfileUseCase,
 ) : ViewModel() {
     private var deletionJob: Job? = null
 
@@ -120,6 +123,16 @@ class AccountViewModel @Inject constructor(
                 UsernameChange.Failed -> UsernameError.FAILED
             }
             state.update { it.copy(saving = false, usernameError = error, editing = error != null) }
+        }
+    }
+
+    /**
+     * [picture], cropped square, becomes our avatar; then the profile goes again to everyone it
+     * is shared with, as iOS `saveAvatar` does, in the background — leaving the screen is fine.
+     */
+    fun setAvatar(picture: android.graphics.Bitmap) {
+        viewModelScope.launch(NonCancellable) {
+            if (accountRepository.setAvatar(picture)) shareProfile.rebroadcast()
         }
     }
 

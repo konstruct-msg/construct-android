@@ -12,6 +12,8 @@ data class OwnAccount(
     val discoverable: Boolean,
     /** [com.construct.messenger.util.IdentityFingerprint]; `null` before the identity is loaded. */
     val fingerprint: String?,
+    /** The picture this account goes by, a 512 px square JPEG; `null` = the identicon. */
+    val avatar: ByteArray? = null,
 )
 
 sealed interface UsernameChange {
@@ -39,6 +41,12 @@ interface AccountRepository {
 
     /** Returns whether the change was applied. Enabling needs a username. */
     suspend fun setDiscoverable(enabled: Boolean): Boolean
+
+    /**
+     * [picture], already cropped square, becomes this account's avatar — on this device only;
+     * contacts learn it when the profile is shared. False if it could not be encoded.
+     */
+    suspend fun setAvatar(picture: android.graphics.Bitmap): Boolean
 
     companion object {
         /** iOS `MessageSizeLimits.min/maxUsernameCharacters`; the server caps at 20. */

@@ -29,7 +29,7 @@ class AccountDeletionTest {
 
     private val auth = mock<AuthRepository>()
     private val appLock = mock<AppLockRepository>()
-    private fun viewModel() = AccountViewModel(FakeAccountRepository(), auth, mock(), appLock)
+    private fun viewModel() = AccountViewModel(FakeAccountRepository(), auth, mock(), appLock, mock())
 
     @Test
     fun `aborting inside the window never reaches the server`() = runTest(dispatcher) {

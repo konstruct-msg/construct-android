@@ -2,6 +2,11 @@ package com.construct.messenger.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.graphics.Bitmap
+import com.construct.messenger.media.AvatarPreparer
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
@@ -36,6 +41,8 @@ class AccountRepositoryImpl @Inject constructor(
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
 
+    private val avatarDir = File(context.filesDir, "avatars")
+
     private val state = MutableStateFlow<OwnAccount?>(null)
     override val account: StateFlow<OwnAccount?> = state.asStateFlow()
 
@@ -55,6 +62,7 @@ class AccountRepositoryImpl @Inject constructor(
             // reason): what this device last set is the only record.
             discoverable = prefs.getBoolean(key(KEY_DISCOVERABLE, userId), false),
             fingerprint = cryptoManager.currentIdentityPublic()?.let(IdentityFingerprint::short),
+            avatar = avatarFile(userId).takeIf { it.exists() }?.readBytes(),
         )
         try {
             val profile = grpcClient.user.getUserProfile(
@@ -132,6 +140,21 @@ class AccountRepositoryImpl @Inject constructor(
             false
         }
     }
+
+    override suspend fun setAvatar(picture: Bitmap): Boolean = withContext(Dispatchers.IO) {
+        val userId = keystoreManager.getUserId() ?: return@withContext false
+        val jpeg = AvatarPreparer.encode(picture) ?: return@withContext false
+        val file = avatarFile(userId)
+        file.parentFile?.mkdirs()
+        val tmp = File(file.parentFile, "${file.name}.part")
+        tmp.writeBytes(jpeg)
+        tmp.renameTo(file)
+        state.update { it?.copy(avatar = jpeg) }
+        true
+    }
+
+    // Keyed by account id for the reason the prefs are: a new account never inherits it.
+    private fun avatarFile(userId: String) = File(avatarDir, "own-${userId.filter(Char::isLetterOrDigit)}.jpg")
 
     private fun key(name: String, userId: String) = "$name:$userId"
 

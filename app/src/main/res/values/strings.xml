@@ -122,6 +122,9 @@
     <string name="jump_to_replied_message">Jump to replied message</string>
     <string name="message_unavailable">Message not available</string>
     <string name="close">Close</string>
+    <string name="change_photo">change photo</string>
+    <string name="change_avatar">Change Photo</string>
+    <string name="crop_use_photo">Use Photo</string>
     <string name="photo">Photo</string>
     <string name="video">Video</string>
     <string name="voice_message">Voice message</string>

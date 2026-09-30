@@ -119,6 +119,9 @@
     <string name="jump_to_replied_message">Перейти к исходному сообщению</string>
     <string name="message_unavailable">Сообщение недоступно</string>
     <string name="close">Закрыть</string>
+    <string name="change_photo">изменить фото</string>
+    <string name="change_avatar">Сменить фото</string>
+    <string name="crop_use_photo">Выбрать фото</string>
     <string name="photo">Фото</string>
     <string name="video">Видео</string>
     <string name="voice_message">Голосовое сообщение</string>

@@ -544,4 +544,10 @@ private class FakeUserDao : UserDao {
     override suspend fun setAmSharingWith(userId: String, sharing: Boolean) {
         rows[userId]?.let { rows[userId] = it.copy(amSharingWith = sharing) }
     }
+
+    override suspend fun sharingWithIds(): List<String> = rows.values.filter { it.amSharingWith && !it.isBlocked }.map { it.id }
+
+    override suspend fun setAvatar(userId: String, avatar: ByteArray?) {
+        rows[userId]?.let { rows[userId] = it.copy(avatarData = avatar) }
+    }
 }

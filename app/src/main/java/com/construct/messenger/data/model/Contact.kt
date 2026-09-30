@@ -8,4 +8,6 @@ data class Contact(
     val securityNotice: SecurityNotice = SecurityNotice.NONE,
     /** The user's own name for them; [displayName] already is it when set. */
     val localName: String? = null,
+    /** Their avatar as they shared it, a JPEG; `null` = the identicon. */
+    val avatar: ByteArray? = null,
 )

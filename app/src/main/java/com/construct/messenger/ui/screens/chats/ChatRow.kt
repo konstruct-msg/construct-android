@@ -1,5 +1,6 @@
 package com.construct.messenger.ui.screens.chats
 
+import com.construct.messenger.ui.components.rememberAvatar
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import com.construct.messenger.R
@@ -70,6 +71,7 @@ fun ChatRow(
             CTAvatar(
                 userId = chat.contactId,
                 displayName = chat.displayName,
+                image = rememberAvatar(chat.avatar),
                 size = 40.dp,
             )
             Spacer(Modifier.width(CTLayout.chromeGap))

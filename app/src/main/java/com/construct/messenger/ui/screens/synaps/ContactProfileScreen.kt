@@ -1,6 +1,6 @@
 package com.construct.messenger.ui.screens.synaps
 
-import android.graphics.BitmapFactory
+import com.construct.messenger.ui.components.rememberAvatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -40,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.onClick
@@ -243,9 +242,7 @@ fun ContactProfileScreen(
 
 @Composable
 private fun AvatarHeader(ui: ContactProfileUiState) {
-    val image: ImageBitmap? = remember(ui.avatar) {
-        ui.avatar?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }
-    }
+    val image: ImageBitmap? = rememberAvatar(ui.avatar)
     Column(
         modifier = Modifier
             .fillMaxWidth()

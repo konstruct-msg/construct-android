@@ -66,6 +66,7 @@ class ProcessorEffectsImpl @Inject constructor(
     private val alerts: IncomingAlerts,
     private val chunks: ChunkReassembler,
     private val mediaPreview: MediaPreviewText,
+    private val contactAvatars: ContactAvatars,
 ) : ProcessorEffects {
 
     override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
@@ -161,13 +162,14 @@ class ProcessorEffectsImpl @Inject constructor(
     /**
      * They shared their profile: the name they go by replaces the one we had, and the row says
      * they share. **Canon:** iOS `ProfileSharingManager.handleProfileMessage`. A contact we have no
-     * row for is not created by it. The avatar needs media, which Android does not have yet.
+     * row for is not created by it. The avatar it names is fetched afterwards ([ContactAvatars]).
      * The name is theirs to choose, as on iOS: a local name the user gave still outranks it.
      */
     private suspend fun applySharedProfile(accountId: String, profile: ProfileShare) {
         val row = userDao.getById(accountId) ?: return
         val name = profile.displayName.trim()
         userDao.upsert(row.copy(displayName = name.ifEmpty { row.displayName }, isSharingWithMe = true))
+        contactAvatars.fetch(accountId, profile)
         Log.i(TAG, "profile from ${accountId.take(8)}… applied")
     }
 
