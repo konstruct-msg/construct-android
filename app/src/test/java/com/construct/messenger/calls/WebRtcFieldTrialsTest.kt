@@ -27,7 +27,8 @@ class WebRtcFieldTrialsTest {
         String(this, Charsets.ISO_8859_1).contains(text)
 
     @Test fun `every shipped WebRTC knows the post-quantum DTLS trial and its group`() {
-        for (abi in listOf("arm64-v8a", "armeabi-v7a", "x86_64")) {
+        val shipped = System.getProperty("shipped.abis")?.split(",") ?: error("shipped.abis not set — run through Gradle")
+        for (abi in shipped) {
             val lib = library(abi)
             assertTrue("$abi: WebRTC no longer knows ${WebRtcRuntime.DTLS_PQC_KEY}", lib.contains(WebRtcRuntime.DTLS_PQC_KEY))
             assertTrue("$abi: no X25519MLKEM768 in its BoringSSL", lib.contains("X25519MLKEM768"))

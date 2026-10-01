@@ -15,8 +15,11 @@ ext.grpcKotlinVersion = '1.4.1'
 ext.roomVersion = '2.8.5'
 // iOS pins the same build in `Packages/WebRTC/Package.swift` (webrtc-sdk/Specs 150.7871.01).
 ext.webrtcVersion = '150.7871.01'
-// The ABIs construct-core is built for — and so the only ones the app ships (`checkCoreLibrary`).
-ext.coreAbis = ['arm64-v8a', 'armeabi-v7a', 'x86_64']
+// The ABIs the app ships, and so the core libraries `checkCoreLibrary` requires. arm64-v8a only
+// since 2026-10-01: every tester's phone is arm64, an Apple-silicon emulator is too, and each
+// further ABI costs ~18–32 MB of core + WebRTC in the APK. Add one back here when a device needs
+// it (`./build_crypto_lib.sh` still builds all three).
+ext.coreAbis = ['arm64-v8a']
 
 android {
     namespace 'com.construct.messenger'
@@ -34,8 +37,8 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        // The ABIs the core is built for. WebRTC also ships x86, where no core exists: without
-        // this an x86 device would install the app and fail to start it.
+        // Only the ABIs we ship a core for. WebRTC brings four; a device of an ABI with no core
+        // would otherwise install the app and fail to start it.
         ndk { abiFilters(*coreAbis) }
     }
 
@@ -296,6 +299,7 @@ def webrtcAar = configurations.detachedConfiguration(
         dependencies.create("io.github.webrtc-sdk:android:${webrtcVersion}@aar"))
 tasks.withType(Test).configureEach {
     inputs.files(webrtcAar).withPropertyName('webrtcAar')
+    systemProperty 'shipped.abis', coreAbis.join(',')
     doFirst { systemProperty 'webrtc.aar', webrtcAar.singleFile.absolutePath }
 }
 

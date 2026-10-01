@@ -71,8 +71,9 @@ iOS-приложение** `construct-ios` (github.com/konstruct-msg/construct-i
 
 ## Криптоядро (construct-core)
 
-Нативная либа `libconstruct_core.so` лежит в `app/src/main/jniLibs/<abi>/`
-(`arm64-v8a`, `armeabi-v7a`, `x86_64`) и **не хранится в git**: после клона её нет, и сборка
+Нативная либа `libconstruct_core.so` лежит в `app/src/main/jniLibs/<abi>/` и **не хранится в git**.
+APK несёт только `arm64-v8a` (`coreAbis` в `app/build.gradle`, с 2026-10-01 — ради размера);
+скрипт по-прежнему собирает и `armeabi-v7a`, `x86_64`. Её нет после клона: после клона её нет, и сборка
 остановится на `checkCoreLibrary`. Два способа получить её:
 
 - без Rust: скачать готовый архив по ссылке из `construct-core.lock` и разложить `.so` и
