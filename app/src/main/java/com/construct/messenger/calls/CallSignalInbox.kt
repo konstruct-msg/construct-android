@@ -9,9 +9,8 @@ import shared.proto.signaling.v1.Webrtc.WebRTCSignal
 
 /**
  * Call signals in, after the core opened them (`CfeAction.CallSignalDecrypted`). **Canon:** iOS
- * `SessionActionExecutor` → `CallManager.handleCallSignalProto`. The call machine (C2 step 3)
- * collects [signals]; until it exists they are logged and dropped, which is what Android did
- * before, so nothing changes for a caller.
+ * `SessionActionExecutor` → `CallManager.handleCallSignalProto`. [CallManager] collects [signals]
+ * from app start; a `SharedFlow` keeps nothing for a collector that comes later.
  */
 @Singleton
 class CallSignalInbox @Inject constructor() {

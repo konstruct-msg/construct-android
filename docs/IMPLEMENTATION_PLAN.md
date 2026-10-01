@@ -103,7 +103,7 @@
 | # | Направление | Состояние | Опора |
 |---|---|---|---|
 | C1 | VEIL (обфускация транспорта) | Off/Auto/On сделаны (seed-фронт; тикет B2 открывает первый туннель, через него берётся B1 — привязанный к ключу устройства `veil/VeilAccessKey`; автомат `transport/TransportRoute` по векторам `transport_route.json`); нет манифеста/альтернатив | §5; `veil/`, JNA к `veil_start`. Выбор метода и гонка — в Rust; когда уходить с прямого пути — `TransportRoute` по общим векторам (не протокол, живёт на платформе) |
-| C2 | Звонки (WebRTC) | начато 2026-10-01: подключён `io.github.webrtc-sdk:android` 150.7871.01 — та же сборка, что iOS (`Packages/WebRTC`), с шифрованием кадров (`FrameCryptor`) и постквантовым DTLS (`WebRTC-EnableDtlsPqc`, `calls/WebRtcRuntime`); тест читает ключ из связанной библиотеки; ABI ограничены теми, что есть у ядра. Дальше — шаги §6 | §6 |
+| C2 | Звонки (WebRTC) | начато 2026-10-01: подключён `io.github.webrtc-sdk:android` 150.7871.01 — та же сборка, что iOS (`Packages/WebRTC`), с шифрованием кадров (`FrameCryptor`) и постквантовым DTLS (`WebRTC-EnableDtlsPqc`, `calls/WebRtcRuntime`); тест читает ключ из связанной библиотеки; ABI ограничены теми, что есть у ядра. Сигналинг (шаг 2) и машина состояний (шаг 3, `calls/CallManager`) готовы; дальше — медиа, шаг 4 | §6 |
 | C3 | Медиа (вложения, голосовые) | начато. Есть: сообщения в несколько KNST-кадров (отправка кусками, сборка в Room `pending_chunks`, 24 ч; копия на своё устройство в раскладке iOS); **приём фото**: альбом/фото/голосовое хранятся с сообщением (`mediaPayload`), фото скачиваются `DownloadMedia` по каналу без токена, AES-256-GCM как CryptoKit, кэш — зашифрованный блоб в `files/media`, BlurHash, мозаика iOS, полноэкранный просмотр; **отправка фото**: «+» и системный выбор фото, сжатие как iOS (≤1920, JPEG ≤4 МиБ), BlurHash, `GenerateUploadToken`+`UploadMedia` (без MIME), по 4 параллельно, пузырь сразу из локальной зашифрованной копии, переотправка медиа по DECRYPTION_ERROR; **голосовые**: запись как iOS (AAC 44,1 кГц моно 64 кбит/с, ≤300 с, волна 100 точек), полосы записи/прослушивания, пузырь с волной, воспроизведение из памяти, `codec` = `audio/m4a|id|size`. **файлы**: пузырь как iOS, по нажатию скачать → расшифровать в `cache/open` → открыть системным приложением (FileProvider, копия живёт час), распаковка raw DEFLATE от iOS, отправка через «+» → «Файл» без сжатия. **видео**: постер и длина в плитке, по нажатию скачать и играть из памяти (Media3 ExoPlayer), отправка с перекодированием в MP4 1080p H.264/AAC (Media3 Transformer), в файл уходит только ориентация кадра. Нет: выбора качества видео (720p/оригинал), расшифровки голосовых (STT), непрерывного воспроизведения, квоты кэша | канон iOS `Services/Media`, `MediaWireCodec`, `MediaMessageView`; `decisions/durable-chunk-reassembly.md` |
 | C4 | Группы (MLS) | не начато | канон iOS |
 | C5 | Synaps в виде сот | не начато | `ANDROID_ONBOARDING.md` §5.10 |
@@ -152,19 +152,29 @@ Kotlin-реализация любого решения, которое прин
 1. ✅ **WebRTC.** `io.github.webrtc-sdk:android` 150.7871.01 (версия — пара к iOS, менять вместе),
    field trial `WebRTC-EnableDtlsPqc/Enabled/` при инициализации, фабрика лениво при первом звонке.
 2. ✅ **Сигналинг** (транспорт, 2026-10-01; `calls/CallSignalTransport`, `CallSignalInbox`,
-   `SignalingClient`, `CallSignalWire`; вызывать его начнёт шаг 3). `WebRTCSignal` (`signaling/webrtc.proto`) — только по E2EE: KNST тип 12 →
-   `CfeIncomingEvent.OutgoingCallSignal`, приём — `CallSignalDecrypted` (сейчас
-   `ProcessorEffectsImpl.onCallSignal` только логирует). Запечатанно, без отката на открытую
+   `SignalingClient`, `CallSignalWire`; вызывает его `CallManager`, шаг 3). `WebRTCSignal` (`signaling/webrtc.proto`) — только по E2EE: KNST тип 12 →
+   `CfeIncomingEvent.OutgoingCallSignal`, приём — `CallSignalDecrypted` →
+   `ProcessorEffectsImpl.onCallSignal` → `CallSignalInbox`. Запечатанно, без отката на открытую
    отправку; одна цепочка отправки на звонок (порядок offer → ICE → hangup). ICE-кандидаты ещё и
    шифруются по отдельности: кадр `0x04 ‖ wire` в `IceCandidate.candidate`, пачки раз в 200 мс,
    ≤40 000 Б. Поток `SignalingService.Signal` — только ringing / connected / hangup / ping (10 с);
    SDP по потоку не ходит. `InitiateCall` до offer; `GetTurnCredentials` с кэшем до
    `expires_at − 60 с`.
-3. **Машина состояний** — перенос чистых функций `CallTypes.swift` с тестами: glare (больший
-   userId оставляет свой звонок), `callOfferDisposition`, `remoteOfferDisposition`,
-   `callHangupChannels` (hangup по E2EE и по потоку, иначе сервер считает собеседника занятым),
-   `signalingStreamClosedDisposition` (закрытый поток — не конец звонка), ожидание сессии 12 с,
-   offer после ответа 45 с, ICE restart через 2 с после `disconnected`, до 3 раз, только звонящий.
+3. ✅ **Машина состояний** (2026-10-01; `calls/CallManager`, `CallRules`, `CallState`). Чистые
+   функции `CallTypes.swift` — в `CallRules` с тестами; `CallManager` — переходы iOS `CallManager`
+   с медиа за интерфейсом `CallMedia` (реализация — шаг 4; до неё ответ на звонок кончается
+   «Accept failed»). Подписка на `CallSignalInbox` — из `KonstructApp.onCreate`. Glare (больший
+   userId оставляет свой звонок); offer держится до согласия (`remoteOfferDisposition`); hangup
+   свой — по E2EE и по потоку, чужой — только по потоку (`callHangupChannels`); закрытый поток —
+   не конец звонка; ICE restart через 2 с после `disconnected`, до 3 раз, только звонящий;
+   кандидаты — пачкой раз в 200 мс, запечатываются в очереди звонка. **Отличия от iOS, все
+   из-за отсутствия VoIP-push:** звонок начинается только с offer, поэтому ветки «ответили до
+   offer» (45 с) нет; «занят» решается на offer — второму звонящему уходит E2EE hangup BUSY, а
+   идущий звонок не заменяется (на iOS offer после push-отказа заменяет активный звонок — стоит
+   проверить там); неотвеченный входящий кончается через 90 с (TTL реестра сервера) с hangup
+   TIMEOUT. Не перенесено: ожидание сессии 12 с (ждало SESSION_RESET_INIT, которого больше нет —
+   отправка сама открывает сессию), таймаут приёма потока 2,5 с (grpc-kotlin не сообщает о
+   приёме). Имя звонящего в `InitiateCall` — пустое: вызываемый называет нас по своим контактам.
 4. **Медиа.** Unified plan, max-bundle, rtcp-mux require, `iceTransportPolicy = ALL`; ICE-серверы —
    только TURN из учётки, без неё `stun:ams.konstruct.cc:3478`; публичных STUN нет. Аудиотрек без
    видео; `AudioManager.MODE_IN_COMMUNICATION`, системный выбор маршрута.

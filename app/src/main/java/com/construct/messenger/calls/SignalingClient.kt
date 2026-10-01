@@ -33,14 +33,14 @@ import shared.proto.signaling.v1.Webrtc.TurnCredentials
 @Singleton
 class SignalingClient @Inject constructor(
     private val grpc: GrpcClient,
-) {
+) : CallSignalingPort {
     private val turn = TurnCache()
 
     /**
      * Register an outgoing call. The server checks contacts, blocks, busy and rate, keeps the call
      * 90 s, and tells the callee — by its stream or not at all; it holds no SDP.
      */
-    suspend fun initiateCall(callId: String, calleeUserId: String, callerName: String): InitiateCallResponse =
+    override suspend fun initiateCall(callId: String, calleeUserId: String, callerName: String): InitiateCallResponse =
         withTimeout(INITIATE_TIMEOUT_MS) {
             grpc.signaling.initiateCall(
                 InitiateCallRequest.newBuilder()
@@ -57,7 +57,7 @@ class SignalingClient @Inject constructor(
      * one valid set serves every call until it is about to expire. Fetching per call ran into the
      * per-user rate limit on iOS (back-to-back calls fell back to STUN and connected silent).
      */
-    suspend fun turnCredentials(callId: String?): TurnCredentials = turn.get {
+    override suspend fun turnCredentials(callId: String?): TurnCredentials = turn.get {
         withTimeout(TURN_TIMEOUT_MS) {
             grpc.signaling.getTurnCredentials(
                 GetTurnCredentialsRequest.newBuilder().apply { callId?.let(::setCallId) }.build(),
@@ -70,7 +70,7 @@ class SignalingClient @Inject constructor(
      * server sends comes out. Ends when the server closes it or the collector stops — a closed
      * stream is not a hung-up call (iOS `signalingStreamClosedDisposition`), the caller decides.
      */
-    fun stream(outbound: Channel<SignalRequest>): Flow<SignalResponse> = channelFlow {
+    override fun stream(outbound: Channel<SignalRequest>): Flow<SignalResponse> = channelFlow {
         val requests = merge(
             outbound.consumeAsFlow(),
             flow {

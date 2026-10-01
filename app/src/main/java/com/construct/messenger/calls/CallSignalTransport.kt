@@ -29,11 +29,11 @@ class CallSignalTransport @Inject constructor(
     private val sessionManager: SessionManager,
     private val cryptoManager: CryptoManager,
     private val sessions: SessionStateStore,
-) {
+) : CallSignalPort {
     private val chain = Mutex()
 
     /** [signal] to [peerAccountId]'s pinned device. True when the server took it. */
-    suspend fun send(peerAccountId: String, signal: WebRTCSignal): Boolean = chain.withLock {
+    override suspend fun send(peerAccountId: String, signal: WebRTCSignal): Boolean = chain.withLock {
         val messageId = UUID.randomUUID()
         val sent = sendMessage.sendCallSignal(peerAccountId, messageId.toString(), CallSignalWire.frame(signal, messageId))
         Log.i(TAG, "signal ${signal.signalCase} call=${signal.callId.take(8)}… to ${peerAccountId.take(8)}… — ${if (sent) "sent" else "NOT sent"}")
@@ -46,7 +46,7 @@ class CallSignalTransport @Inject constructor(
      * server forwards what it cannot read. The core pads it to a fixed block: every candidate is
      * the same size.
      */
-    suspend fun sealCandidate(peerAccountId: String, sdpMid: String, sdpMLineIndex: Int, candidate: String): IceCandidate {
+    override suspend fun sealCandidate(peerAccountId: String, sdpMid: String, sdpMLineIndex: Int, candidate: String): IceCandidate {
         val device = sessionManager.ensureSession(peerAccountId).deviceId
         val wire = cryptoManager.encryptToWire(device, candidate.toByteArray(Charsets.UTF_8))
         persist(device)
@@ -58,13 +58,22 @@ class CallSignalTransport @Inject constructor(
     }
 
     /** The candidate line inside [ice], from [deviceId]; null when it is not a frame or does not open. */
-    suspend fun openCandidate(deviceId: String, ice: IceCandidate): String? {
+    override suspend fun openCandidate(deviceId: String, ice: IceCandidate): String? {
         val wire = CallSignalFrame.decode(ice.candidate.toByteArray()) ?: return null
         return runCatching { cryptoManager.decryptWirePayload(deviceId, wire) }
             .onFailure { Log.w(TAG, "candidate from ${deviceId.take(8)}… did not open: ${it.message}") }
             .getOrNull()
             ?.also { persist(deviceId) }
             ?.toString(Charsets.UTF_8)
+    }
+
+    override suspend fun peerDevice(peerAccountId: String): String? = try {
+        sessionManager.ensureSession(peerAccountId).deviceId
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Log.w(TAG, "no session with ${peerAccountId.take(8)}…: ${e.message}")
+        null
     }
 
     /** The ratchet moved: the session is written before anything it produced is used. */
