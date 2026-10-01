@@ -31,6 +31,19 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.FormatQuote
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import com.construct.messenger.util.ReactionRules
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -71,8 +84,9 @@ import java.util.Locale
  * - Outgoing: `CTColor.accent` background.
  * - 10dp rounded corners.
  *
- * Long-press opens Reply, Edit (our own text), Copy, and Delete. Delete removes the
- * row on this phone. [replyLabel] is the quoted message's one or two lines; null
+ * Long-press opens the iOS menu in its order: the reaction quick set, Reply, Quote & Reply,
+ * Edit (our text or photo caption), Copy, Select Messages, Delete (this phone only), Retry (ours
+ * that failed). A double tap is ❤️, a leftward swipe replies. [replyLabel] is the quoted message's one or two lines; null
  * means this message is not a reply. The quote strip jumps to the original.
  *
  * @param message Message to display.
@@ -94,6 +108,12 @@ fun MessageBubble(
     onJumpToReply: () -> Unit = {},
     onReact: (String) -> Unit = {},
     onPickMoreReactions: () -> Unit = {},
+    onQuoteReply: () -> Unit = {},
+    onSelectMessages: () -> Unit = {},
+    onRetry: () -> Unit = {},
+    /** Null outside selection mode; otherwise whether this message is among the chosen. */
+    selected: Boolean? = null,
+    onToggleSelected: () -> Unit = {},
     voicePlayback: VoicePlayback = VoicePlayback(),
     onToggleVoice: () -> Unit = {},
     fileLoading: Set<String> = emptySet(),
@@ -114,8 +134,14 @@ fun MessageBubble(
     // iOS `MessageBubbleRegularView`: the bubble at most 70 % of the row (and 360), 12/8 padding,
     // 15pt text; the meta line — status, edited, time — sits under the bubble, and only under the
     // last bubble of a group, in 10pt.
+    BubbleFrame(
+        modifier = modifier,
+        selected = selected,
+        onToggleSelected = onToggleSelected,
+        onSwipeReply = onReply,
+    ) { swipe ->
     BoxWithConstraints(
-        modifier = modifier
+        modifier = swipe
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
             .padding(top = 2.dp, bottom = if (isLastInGroup) 8.dp else 2.dp),
@@ -253,7 +279,14 @@ fun MessageBubble(
                     },
                     onClick = onReply,
                 )
-                if (message.isOutgoing && message.body.isNotBlank() && message.media == null) {
+                if (message.body.isNotBlank()) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.quote_reply), style = ctRegular(14), color = CTColor.text) },
+                        leadingIcon = { Icon(Icons.Filled.FormatQuote, contentDescription = null, tint = CTColor.text) },
+                        onClick = onQuoteReply,
+                    )
+                }
+                if (message.isEditable) {
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.edit_message), style = ctRegular(14), color = CTColor.text) },
                         leadingIcon = {
@@ -272,16 +305,109 @@ fun MessageBubble(
                     )
                 }
                 DropdownMenuItem(
+                    text = { Text(stringResource(R.string.select_messages), style = ctRegular(14), color = CTColor.text) },
+                    leadingIcon = { Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = CTColor.text) },
+                    onClick = onSelectMessages,
+                )
+                HorizontalDivider(color = CTColor.noise, thickness = 0.5.dp)
+                DropdownMenuItem(
                     text = { Text(stringResource(R.string.delete), style = ctRegular(14), color = CTColor.danger) },
                     leadingIcon = {
                         Icon(Icons.Filled.Delete, contentDescription = null, tint = CTColor.danger)
                     },
                     onClick = onDelete,
                 )
+                if (message.isOutgoing && message.deliveryStatus == DeliveryStatus.FAILED) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.retry), style = ctRegular(14), color = CTColor.text) },
+                        leadingIcon = { Icon(Icons.Filled.Refresh, contentDescription = null, tint = CTColor.text) },
+                        onClick = onRetry,
+                    )
+                }
             }
         }
     }
+    }
 }
+
+/**
+ * What surrounds a bubble: in selection mode a check at the leading edge and the whole row one
+ * target that toggles it (iOS: a tap selects, the menu is off); otherwise the swipe that replies —
+ * iOS `swipeToReplyGesture`, leftwards, the bubble following at half speed up to 60 and a release
+ * past 40 committing, with the reply arrow fading in behind it.
+ */
+@Composable
+private fun BubbleFrame(
+    modifier: Modifier,
+    selected: Boolean?,
+    onToggleSelected: () -> Unit,
+    onSwipeReply: () -> Unit,
+    content: @Composable (Modifier) -> Unit,
+) {
+    if (selected != null) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .background(if (selected) CTColor.accent.copy(alpha = 0.08f) else Color.Transparent)
+                .clickable(onClick = onToggleSelected),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+                contentDescription = null,
+                tint = if (selected) CTColor.accent else CTColor.textDim,
+                modifier = Modifier.padding(start = 12.dp).size(20.dp),
+            )
+            Box(Modifier.weight(1f)) {
+                content(Modifier)
+                // Above the bubble's own gestures, so a tap anywhere toggles and nothing else.
+                Box(Modifier.matchParentSize().clickable(onClick = onToggleSelected))
+            }
+        }
+        return
+    }
+    val density = LocalDensity.current
+    val haptics = LocalHapticFeedback.current
+    var travel by remember { mutableFloatStateOf(0f) }
+    val offset = with(density) { minOf(travel * 0.5f, SWIPE_MAX.toPx()) }
+    val commit = with(density) { SWIPE_COMMIT.toPx() }
+    Box(
+        modifier = modifier.pointerInput(Unit) {
+            detectHorizontalDragGestures(
+                onDragEnd = {
+                    if (minOf(travel * 0.5f, SWIPE_MAX.toPx()) >= commit) {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onSwipeReply()
+                    }
+                    travel = 0f
+                },
+                onDragCancel = { travel = 0f },
+                onHorizontalDrag = { change, amount ->
+                    travel = (travel - amount).coerceAtLeast(0f)
+                    change.consume()
+                },
+            )
+        },
+    ) {
+        content(Modifier.offset { IntOffset(-offset.roundToInt(), 0) })
+        if (offset > with(density) { SWIPE_INDICATOR.toPx() }) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Reply,
+                contentDescription = null,
+                tint = CTColor.accent,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 8.dp)
+                    .size(16.dp)
+                    .alpha((offset / commit).coerceIn(0f, 1f)),
+            )
+        }
+    }
+}
+
+private val SWIPE_MAX = 60.dp
+private val SWIPE_COMMIT = 40.dp
+private val SWIPE_INDICATOR = 10.dp
 
 /** Canon: iOS `MessageBubbleReplyPreview` — accent rule and up to two lines. Tap jumps. */
 @Composable

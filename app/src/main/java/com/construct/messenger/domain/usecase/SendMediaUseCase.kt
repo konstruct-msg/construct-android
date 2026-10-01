@@ -101,6 +101,47 @@ class SendMediaUseCase @Inject constructor(
     }
 
     /**
+     * Retry a message no device took. Photos and files whose upload failed are still sealed under
+     * their local ids: those are uploaded now, as on the first try, and the row is rewritten with
+     * the store's ids before it is sent. A voice note whose upload failed cannot be — its id
+     * lives in `codec`, and is recorded again instead.
+     */
+    suspend fun retry(contactId: String, messageId: String): SendOutcome {
+        val row = sendMessage.failedRow(contactId, messageId) ?: return SendOutcome.Failed(messageId, "not retryable")
+        val payload = row.mediaPayload
+        if (row.mediaType == MediaWire.KIND_ALBUM && payload != null) {
+            val album = MediaAlbumMessage.parseFrom(payload)
+            if (album.itemsList.any { it.mediaId.startsWith(MediaWire.LOCAL_PREFIX) }) {
+                sendMessage.markSending(messageId)
+                val uploaded = try {
+                    coroutineScope {
+                        val gate = Semaphore(PARALLEL_UPLOADS)
+                        album.itemsList.map { item ->
+                            async {
+                                if (!item.mediaId.startsWith(MediaWire.LOCAL_PREFIX)) return@async item
+                                gate.withPermit {
+                                    val done = media.upload(item.mediaId, item.fileHash.toByteArray())
+                                    item.toBuilder().setMediaId(done.mediaId).setFileUrl(done.downloadUrl).build()
+                                }
+                            }
+                        }.awaitAll()
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "retry upload for ${messageId.take(8)}… failed", e)
+                    sendMessage.markFailed(messageId)
+                    return SendOutcome.Failed(messageId, "upload failed")
+                }
+                val bytes = album.toBuilder().clearItems().addAllItems(uploaded).build().toByteArray()
+                sendMessage.replaceMedia(messageId, MediaWire.Stored(MediaWire.KIND_ALBUM, bytes, row.text))
+                return sendMessage.retry(contactId, row.copy(mediaPayload = bytes))
+            }
+        }
+        return sendMessage.retry(contactId, row)
+    }
+
+    /**
      * Documents, as one album of files. **Canon:** iOS `MediaManager.uploadFile` +
      * `MediaWireCodec.fileAlbumContent` — each file whole, its type as the system names it (the
      * album's items say what kind it is, `MediaType` from the type as iOS maps it), its name, and

@@ -25,6 +25,7 @@ import com.construct.messenger.stealth.StealthSenderService
 import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.data.local.db.refreshChatPreview
+import com.construct.messenger.data.local.db.applyEdit
 import com.construct.messenger.util.EditWire
 import com.construct.messenger.util.KnstFrame
 import com.construct.messenger.util.MediaWire
@@ -116,6 +117,30 @@ class SendMessageUseCase @Inject constructor(
 
     suspend fun markFailed(messageId: String) {
         messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
+    }
+
+    suspend fun markSending(messageId: String) {
+        messageDao.updateDeliveryStatus(messageId, DeliveryStatus.SENDING.name)
+    }
+
+    /** One of our messages in the chat with [contactId] that no device took — what Retry may send. */
+    suspend fun failedRow(contactId: String, messageId: String): MessageEntity? {
+        val myId = keystoreManager.getUserId() ?: return null
+        val row = messageDao.getByIdIgnoreCase(messageId) ?: return null
+        return row.takeIf {
+            it.isSentByMe && it.contentType == 0 && it.chatId == ConversationId.direct(myId, contactId) &&
+                it.deliveryStatus == DeliveryStatus.FAILED.name
+        }
+    }
+
+    /**
+     * Retry ([failedRow]): the same message, under the same id, sent again — iOS
+     * `MessageRetryManager`. Its text with its quote, or its media once uploaded.
+     */
+    suspend fun retry(contactId: String, row: MessageEntity): SendOutcome {
+        val content = resendableContent(row) ?: return SendOutcome.Failed(row.id, "nothing to send")
+        messageDao.updateDeliveryStatus(row.id, DeliveryStatus.SENDING.name)
+        return deliverPrepared(contactId, row.id, row.timestamp, content)
     }
 
     /** Send [content] as the row [messageId] already written; its status follows the answer. */
@@ -253,7 +278,7 @@ class SendMessageUseCase @Inject constructor(
     }
 
     /**
-     * Edit one of our own text messages. Same fan-out as a send, different payload:
+     * Edit one of our own text messages, or a photo's caption. Same fan-out as a send, different payload:
      * `MessageContent.edit` names the row, and no new row is written. The local
      * text changes only after a recipient copy is accepted — a failure leaves the
      * original in place, as on iOS.
@@ -272,7 +297,7 @@ class SendMessageUseCase @Inject constructor(
 
         return when (val outcome = sendAction(myId, contactId, EditWire.encode(row.id, body), "edit")) {
             is SendOutcome.Sent -> {
-                messageDao.markEdited(row.id, body)
+                messageDao.applyEdit(row, body)
                 refreshChatPreview(chatDao, messageDao, row.chatId)
                 outcome
             }

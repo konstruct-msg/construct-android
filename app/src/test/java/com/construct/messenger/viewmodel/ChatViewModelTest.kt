@@ -149,6 +149,22 @@ class ChatViewModelTest {
         assertEquals(emptyList<android.net.Uri>(), viewModel.uiState.value.attachments)
         assertEquals("", viewModel.uiState.value.draft)
     }
+
+    /** iOS Quote & Reply: the selected part is the quote, the message is still the one replied to. */
+    @Test
+    fun `a selected quote replaces the preview of the reply`() = runTest {
+        val handle = SavedStateHandle()
+        handle["contactId"] = "peer-1"
+        val viewModel = ChatViewModel(handle, FakeMessagesRepository(), FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val message = Message(id = "M-1", chatId = "c", body = "one two three", isOutgoing = false)
+        viewModel.startReply(message, "two")
+        advanceUntilIdle()
+        assertEquals("m-1", viewModel.uiState.value.replyingTo?.messageId)
+        assertEquals("two", viewModel.uiState.value.replyingTo?.preview)
+        viewModel.startReply(message)
+        advanceUntilIdle()
+        assertEquals("one two three", viewModel.uiState.value.replyingTo?.preview)
+    }
 }
 
 private class FakeMessagesRepository : MessagesRepository {
@@ -194,6 +210,11 @@ private class FakeMessagesRepository : MessagesRepository {
     override suspend fun delete(contactId: String, messageId: String) {
         deleted += messageId
         flow.value = flow.value.filter { it.id != messageId }
+    }
+    val retried = mutableListOf<String>()
+    override suspend fun retry(contactId: String, messageId: String): SendOutcome {
+        retried += messageId
+        return SendOutcome.Sent(messageId)
     }
     val reacted = mutableListOf<Pair<String, String>>()
     override suspend fun react(contactId: String, messageId: String, emoji: String): Boolean {

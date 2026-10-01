@@ -118,6 +118,22 @@
     <string name="edited">edited</string>
     <string name="editing_message">Editing message</string>
     <string name="delete">Delete</string>
+    <string name="quote_reply">Quote &amp; Reply</string>
+    <string name="select_quote">Select Quote</string>
+    <string name="quote_selection_hint">Select the text you want to quote, then tap Reply.</string>
+    <string name="reply_with_selection">Reply to Selection</string>
+    <string name="select_messages">Select Messages</string>
+    <string name="delete_selected">Delete Selected</string>
+    <plurals name="messages_selected">
+        <item quantity="one">%d message selected</item>
+        <item quantity="other">%d messages selected</item>
+    </plurals>
+    <string name="search_messages">Search messages</string>
+    <plurals name="chat_search_results">
+        <item quantity="one">%d result</item>
+        <item quantity="other">%d results</item>
+    </plurals>
+    <string name="done">Done</string>
     <string name="react">React</string>
     <string name="reaction_failed">Couldn’t send the reaction</string>
     <string name="reaction_pick_more">More reactions</string>

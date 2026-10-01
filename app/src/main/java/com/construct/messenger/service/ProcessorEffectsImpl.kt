@@ -10,6 +10,7 @@ import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.ChatEntity
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.MessageEntity
+import com.construct.messenger.data.local.db.applyEdit
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.data.local.db.refreshChatPreview
@@ -470,7 +471,8 @@ class ProcessorEffectsImpl @Inject constructor(
             return
         }
         val text = edit.newText.ifEmpty { row.text }
-        messageDao.markEdited(row.id, text)
+        // iOS: `new_text` carries a photo's caption too, and the album keeps it.
+        messageDao.applyEdit(row, text)
         refreshChatPreview(chatDao, messageDao, row.chatId)
     }
 

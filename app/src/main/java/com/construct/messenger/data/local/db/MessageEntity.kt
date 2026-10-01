@@ -77,6 +77,10 @@ interface MessageDao {
     @Query("UPDATE messages SET text = :text, isEdited = 1 WHERE id = :id")
     suspend fun markEdited(id: String, text: String)
 
+    /** A photo's caption edited: the shown text and the album it is sent from again. */
+    @Query("UPDATE messages SET text = :text, mediaPayload = :mediaPayload, isEdited = 1 WHERE id = :id")
+    suspend fun markEditedMedia(id: String, text: String, mediaPayload: ByteArray)
+
     @Query("DELETE FROM messages WHERE id = :id")
     suspend fun deleteById(id: String)
 
@@ -88,6 +92,12 @@ interface MessageDao {
 
     @Query("DELETE FROM messages WHERE chatId = :chatId")
     suspend fun deleteChat(chatId: String)
+}
+
+/** Apply an edit to [row]: the text, and for a photo also the caption inside its stored album. */
+internal suspend fun MessageDao.applyEdit(row: MessageEntity, text: String) {
+    val album = com.construct.messenger.util.MediaWire.withCaption(row.mediaType, row.mediaPayload, text)
+    if (album != null) markEditedMedia(row.id, text, album) else markEdited(row.id, text)
 }
 
 /** Point the chat row at whatever message is now last. An empty transcript clears the preview. */

@@ -49,6 +49,16 @@ object MediaWire {
     class Stored(val kind: String, val bytes: ByteArray, val caption: String)
 
     /**
+     * A stored album with its caption replaced — what an edit of a photo's caption does to the row
+     * (iOS `MediaWireCodec.editedCaptionPayload`), so a later resend carries the caption shown.
+     * Null for anything but an album.
+     */
+    fun withCaption(kind: String?, bytes: ByteArray?, caption: String): ByteArray? {
+        if (kind != KIND_ALBUM || bytes == null) return null
+        return runCatching { MediaAlbumMessage.parseFrom(bytes).toBuilder().setCaption(caption).build().toByteArray() }.getOrNull()
+    }
+
+    /**
      * The media in [content], or null when it carries none. A single `media` is kept as a
      * one-item album, as iOS reads it; iOS itself only ever sends albums.
      */

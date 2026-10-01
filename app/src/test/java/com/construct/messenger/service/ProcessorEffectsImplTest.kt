@@ -669,6 +669,9 @@ private class FakeMessageDao : MessageDao {
     override suspend fun updateDeliveryStatus(messageId: String, status: String) {
         rows[messageId]?.let { rows[messageId] = it.copy(deliveryStatus = status) }
     }
+    override suspend fun markEditedMedia(id: String, text: String, mediaPayload: ByteArray) {
+        rows[id]?.let { rows[id] = it.copy(text = text, mediaPayload = mediaPayload, isEdited = true) }
+    }
     override suspend fun markEdited(id: String, text: String) {
         rows[id]?.let { rows[id] = it.copy(text = text, isEdited = true) }
     }

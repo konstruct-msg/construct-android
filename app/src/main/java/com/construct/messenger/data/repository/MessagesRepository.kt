@@ -47,6 +47,9 @@ interface MessagesRepository {
      */
     suspend fun edit(contactId: String, messageId: String, newText: String): SendOutcome
 
+    /** Send again one of ours that no device took (iOS Retry). */
+    suspend fun retry(contactId: String, messageId: String): SendOutcome
+
     /**
      * React to [messageId] with [emoji], or take the reaction off when it is the one already set
      * (iOS `localToggle`). Shown at once; put back as it was when no device took it. False when

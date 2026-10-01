@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.Message
 import com.construct.messenger.data.model.MessageMedia
 import com.construct.messenger.data.repository.MediaUnavailable
@@ -170,22 +171,28 @@ class ChatViewModel @Inject constructor(
         draft.value = value
     }
 
-    /** Quote [message] on the next send. The id is lowercased to match iOS, and the preview is its text. */
-    fun startReply(message: Message) {
+    /**
+     * Quote [message] on the next send. The id is lowercased to match iOS; the preview is its text,
+     * or [quote] — the part the user selected (iOS Quote & Reply).
+     */
+    fun startReply(message: Message, quote: String? = null) {
         if (editing.value != null) {
             editing.value = null
             draft.value = ""
         }
-        replying.value = ReplyRef.of(message.id, message.body)
+        replying.value = ReplyRef.of(message.id, quote?.takeIf { it.isNotBlank() } ?: message.body)
     }
 
     fun cancelReply() {
         replying.value = null
     }
 
-    /** Edit [message], which has to be one we sent. The field is filled with its current text. */
+    /**
+     * Edit [message], which has to be one we sent: its text, or a photo's caption. The field is
+     * filled with what it says now.
+     */
     fun startEdit(message: Message) {
-        if (!message.isOutgoing || message.body.isBlank()) return
+        if (!message.isEditable) return
         replying.value = null
         editing.value = EditTarget(message.id, message.body)
         draft.value = message.body
@@ -210,11 +217,20 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    /** Send [message] again — ours, and no device took it. */
+    fun retry(message: Message) {
+        if (!message.isOutgoing || message.deliveryStatus != DeliveryStatus.FAILED) return
+        viewModelScope.launch { report(messagesRepository.retry(contactId, message.id)) }
+    }
+
     /** Drop [message] from this phone. The peer is not told. */
-    fun delete(message: Message) {
-        if (editing.value?.messageId == message.id) cancelEdit()
-        if (replying.value?.messageId.equals(message.id, ignoreCase = true)) cancelReply()
-        viewModelScope.launch { messagesRepository.delete(contactId, message.id) }
+    fun delete(message: Message) = deleteAll(listOf(message.id))
+
+    /** Drop the messages [ids] from this phone (iOS Delete Selected). The peer is not told. */
+    fun deleteAll(ids: Collection<String>) {
+        if (editing.value?.messageId in ids) cancelEdit()
+        if (ids.any { replying.value?.messageId.equals(it, ignoreCase = true) }) cancelReply()
+        viewModelScope.launch { ids.forEach { messagesRepository.delete(contactId, it) } }
     }
 
     /** Photos from the picker join the ones already chosen (iOS allows 99 in one album). */

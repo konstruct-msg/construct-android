@@ -63,6 +63,9 @@ class MessagesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun retry(contactId: String, messageId: String): SendOutcome =
+        scope.async { sendMedia.retry(contactId, messageId) }.await()
+
     override suspend fun react(contactId: String, messageId: String, emoji: String): Boolean {
         val myId = keystoreManager.getUserId() ?: return false
         val target = messageId.lowercase()

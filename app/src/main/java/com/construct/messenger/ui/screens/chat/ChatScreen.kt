@@ -38,6 +38,9 @@ import androidx.compose.runtime.Composable
 import com.construct.messenger.ui.theme.ctRegular
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
 import com.construct.messenger.media.VoiceRecorder
@@ -116,6 +119,23 @@ fun ChatScreen(
     var menuMessageId by remember { mutableStateOf<String?>(null) }
     var jumpToId by remember { mutableStateOf<String?>(null) }
     var reactingTo by remember { mutableStateOf<Message?>(null) }
+    var quoting by remember { mutableStateOf<Message?>(null) }
+    // iOS `isEditMode`: a tap selects, the menu and the composer give way to the selection bar.
+    var selectedIds by remember { mutableStateOf<Set<String>?>(null) }
+    // iOS `isSearchActive`: search takes the nav bar's place and the transcript shows the matches.
+    var searching by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    val visible = if (searching && query.isNotBlank()) {
+        uiState.messages.filter { it.body.contains(query.trim(), ignoreCase = true) }
+    } else {
+        uiState.messages
+    }
+    androidx.activity.compose.BackHandler(enabled = selectedIds != null || searching) {
+        if (selectedIds != null) selectedIds = null else {
+            searching = false
+            query = ""
+        }
+    }
     val reactionFailed = stringResource(R.string.reaction_failed)
     LaunchedEffect(Unit) {
         viewModel.reactionFailed.collect {
@@ -141,14 +161,23 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(uiState.messages.size) {
-        if (uiState.messages.isNotEmpty() && jumpToId == null) {
-            listState.scrollToItem(uiState.messages.lastIndex)
+    LaunchedEffect(visible.size) {
+        if (visible.isNotEmpty() && jumpToId == null && !(searching && query.isNotBlank())) {
+            listState.scrollToItem(visible.lastIndex)
         }
+    }
+
+    // iOS scrolls to the first match as the query changes.
+    LaunchedEffect(query) {
+        if (searching && query.isNotBlank() && visible.isNotEmpty()) listState.scrollToItem(0)
     }
 
     LaunchedEffect(jumpToId) {
         val id = jumpToId ?: return@LaunchedEffect
+        if (searching) {
+            searching = false
+            query = ""
+        }
         val index = uiState.messages.indexOfFirst { it.id.equals(id, ignoreCase = true) }
         if (index >= 0) listState.animateScrollToItem(index)
         jumpToId = null
@@ -165,7 +194,26 @@ fun ChatScreen(
             .navigationBarsPadding()
             .imePadding()
     ) {
-        ChatNavBar(title = uiState.title, onBack = onNavigateBack, onOpenProfile = onOpenProfile)
+        if (searching) {
+            ChatSearchBar(
+                query = query,
+                onQueryChange = { query = it },
+                resultCount = visible.size,
+                onClose = {
+                    searching = false
+                    query = ""
+                },
+            )
+        } else {
+            ChatNavBar(
+                title = uiState.title,
+                onBack = onNavigateBack,
+                onOpenProfile = onOpenProfile,
+                selecting = selectedIds != null,
+                onDoneSelecting = { selectedIds = null },
+                onSearch = { searching = true },
+            )
+        }
 
         SecurityNoticeBanner(
             notice = uiState.securityNotice,
@@ -180,7 +228,7 @@ fun ChatScreen(
                 .fillMaxWidth(),
             state = listState,
         ) {
-            itemsIndexed(uiState.messages, key = { _, message -> message.id }) { index, message ->
+            itemsIndexed(visible, key = { _, message -> message.id }) { index, message ->
                 val voice = message.media as? com.construct.messenger.data.model.MessageMedia.Voice
                 val voiceId = voice?.audio?.mediaId
                 MessageBubble(
@@ -198,7 +246,7 @@ fun ChatScreen(
                     onOpenFile = viewModel::openFile,
                     loadMedia = viewModel::mediaBytes,
                     message = message,
-                    isLastInGroup = isLastInGroup(index, uiState.messages),
+                    isLastInGroup = isLastInGroup(index, visible),
                     replyLabel = replyLabel(message, uiState.messages),
                     onLongPress = { menuMessageId = message.id },
                     menuExpanded = menuMessageId == message.id,
@@ -228,8 +276,34 @@ fun ChatScreen(
                         reactingTo = message
                         menuMessageId = null
                     },
+                    onQuoteReply = {
+                        quoting = message
+                        menuMessageId = null
+                    },
+                    onSelectMessages = {
+                        searching = false
+                        query = ""
+                        selectedIds = setOf(message.id)
+                        menuMessageId = null
+                    },
+                    onRetry = {
+                        viewModel.retry(message)
+                        menuMessageId = null
+                    },
+                    selected = selectedIds?.let { message.id in it },
+                    onToggleSelected = {
+                        selectedIds = selectedIds?.let { if (message.id in it) it - message.id else it + message.id }
+                    },
                 )
             }
+        }
+
+        quoting?.let { target ->
+            QuoteSelectionSheet(
+                text = target.body,
+                onConfirm = { viewModel.startReply(target, it) },
+                onDismiss = { quoting = null },
+            )
         }
 
         reactingTo?.let { target ->
@@ -248,6 +322,16 @@ fun ChatScreen(
             viewModel.attachFiles(it)
         }
         var attachMenuOpen by remember { mutableStateOf(false) }
+        selectedIds?.let { chosen ->
+            SelectionBar(
+                count = chosen.size,
+                onDelete = {
+                    viewModel.deleteAll(chosen)
+                    selectedIds = null
+                },
+            )
+            return@Column
+        }
         MessageInputView(
             onMic = if (uiState.editingOriginal == null) {
                 {
@@ -304,7 +388,7 @@ fun ChatScreen(
                 reply.preview.ifBlank { quoteFallback(reply.mediaType) }
             },
             onCancelReply = viewModel::cancelReply,
-            editingPreview = uiState.editingOriginal,
+            editingPreview = uiState.editingOriginal?.ifBlank { stringResource(R.string.photo) },
             onCancelEdit = viewModel::cancelEdit,
         )
     }
@@ -346,11 +430,19 @@ private fun isLastInGroup(index: Int, messages: List<Message>): Boolean {
 
 /**
  * iOS `ChatNavBarView`: a floating glass capsule — back disc, the name upper-cased and tracked
- * (tapping it opens the profile). iOS's call and search buttons are not here: Android has neither
- * yet, and a button that does nothing is worse than none.
+ * (tapping it opens the profile), search on the trailing side; while messages are being selected,
+ * Done in its place. iOS's call button is not here: Android has no calls yet, and a button that
+ * does nothing is worse than none.
  */
 @Composable
-private fun ChatNavBar(title: String, onBack: () -> Unit, onOpenProfile: () -> Unit) {
+private fun ChatNavBar(
+    title: String,
+    onBack: () -> Unit,
+    onOpenProfile: () -> Unit,
+    selecting: Boolean,
+    onDoneSelecting: () -> Unit,
+    onSearch: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -388,5 +480,158 @@ private fun ChatNavBar(title: String, onBack: () -> Unit, onOpenProfile: () -> U
                 .clickable(onClick = onOpenProfile)
                 .padding(vertical = 10.dp),
         )
+        if (selecting) {
+            Text(
+                text = stringResource(R.string.done),
+                style = ctBold(14),
+                color = CTColor.accent,
+                modifier = Modifier
+                    .clickable(onClick = onDoneSelecting)
+                    .padding(horizontal = CTLayout.inlinePad, vertical = 10.dp),
+            )
+        } else {
+            Box(
+                modifier = Modifier.size(CTLayout.hitTarget).clip(CircleShape).clickable(onClick = onSearch),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Search,
+                    contentDescription = stringResource(R.string.search_messages),
+                    tint = CTColor.text,
+                    modifier = Modifier.size(CTLayout.navIconSize),
+                )
+            }
+        }
+    }
+}
+
+/** iOS `ChatSearchChromeView`: the field, a close button, and how many messages match. */
+@Composable
+private fun ChatSearchBar(query: String, onQueryChange: (String) -> Unit, resultCount: Int, onClose: () -> Unit) {
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    LaunchedEffect(Unit) { focus.requestFocus() }
+    Column(Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(CTLayout.navBarHeight)
+                .glassCapsule()
+                .padding(start = CTLayout.edgePad),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Filled.Search, contentDescription = null, tint = CTColor.textDim, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(CTLayout.inlinePad))
+            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                if (query.isEmpty()) {
+                    Text(stringResource(R.string.search_messages), style = ctRegular(14), color = CTColor.textDim)
+                }
+                androidx.compose.foundation.text.BasicTextField(
+                    value = query,
+                    onValueChange = onQueryChange,
+                    singleLine = true,
+                    textStyle = ctRegular(14).copy(color = CTColor.text),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(CTColor.accent),
+                    modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                )
+            }
+            Box(
+                modifier = Modifier.size(CTLayout.hitTarget).clip(CircleShape).clickable(onClick = onClose),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Filled.Cancel, contentDescription = stringResource(R.string.close), tint = CTColor.textDim, modifier = Modifier.size(CTLayout.navIconSize))
+            }
+        }
+        if (query.isNotEmpty()) {
+            Text(
+                text = androidx.compose.ui.res.pluralStringResource(R.plurals.chat_search_results, resultCount, resultCount),
+                style = ctRegular(12),
+                color = CTColor.textDim,
+                modifier = Modifier.padding(horizontal = CTLayout.inlinePad, vertical = 4.dp),
+            )
+        }
+    }
+}
+
+/** iOS `ChatSelectionBarView`: Delete Selected and how many are chosen, in the composer's place. */
+@Composable
+private fun SelectionBar(count: Int, onDelete: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .background(CTColor.bgMsg, androidx.compose.foundation.shape.RoundedCornerShape(com.construct.messenger.ui.theme.CornerRadius.small))
+            .height(CTLayout.controlHeight)
+            .padding(horizontal = CTLayout.edgePad),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.delete_selected).uppercase(),
+            style = ctRegular(14),
+            color = if (count > 0) CTColor.danger else CTColor.textDim,
+            modifier = Modifier
+                .clickable(enabled = count > 0, onClick = onDelete)
+                .padding(vertical = 10.dp),
+        )
+        Spacer(Modifier.weight(1f))
+        Text(
+            text = androidx.compose.ui.res.pluralStringResource(R.plurals.messages_selected, count, count),
+            style = ctRegular(12),
+            color = CTColor.textDim,
+        )
+    }
+}
+
+/**
+ * iOS `QuoteSelectionSheet`: the message's text, selectable; the selection becomes the quote of
+ * the reply. A read-only field and not a `SelectionContainer` — only a field says what is selected.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun QuoteSelectionSheet(text: String, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
+    var value by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(text)) }
+    val selected = value.text.substring(value.selection.min, value.selection.max)
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, containerColor = CTColor.bg) {
+        Column(Modifier.padding(horizontal = CTLayout.edgePad).padding(bottom = 16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.select_quote), style = ctBold(14), color = CTColor.text, modifier = Modifier.weight(1f))
+                Text(
+                    text = stringResource(R.string.reply_with_selection),
+                    style = ctBold(14),
+                    color = if (selected.isNotBlank()) CTColor.accent else CTColor.textDim,
+                    modifier = Modifier
+                        .clickable(enabled = selected.isNotBlank()) {
+                            onConfirm(selected)
+                            onDismiss()
+                        }
+                        .padding(vertical = 10.dp),
+                )
+            }
+            Text(stringResource(R.string.quote_selection_hint), style = ctRegular(12), color = CTColor.textDim)
+            Spacer(Modifier.height(CTLayout.inlinePad))
+            androidx.compose.foundation.text.BasicTextField(
+                value = value,
+                onValueChange = { value = it.copy(text = text) },
+                readOnly = true,
+                textStyle = ctRegular(15).copy(color = CTColor.text),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(CTColor.bgMsg)
+                    .padding(12.dp),
+            )
+            if (selected.isNotBlank()) {
+                Spacer(Modifier.height(CTLayout.inlinePad))
+                Row(Modifier.background(CTColor.bgMsg).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(Modifier.width(2.dp).height(28.dp).background(CTColor.accent))
+                    Text(
+                        text = selected,
+                        style = ctRegular(12),
+                        color = CTColor.textDim,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+            }
+        }
     }
 }

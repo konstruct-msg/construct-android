@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mockito.kotlin.any
@@ -255,6 +256,57 @@ class SendMessageUseCaseTest {
         val frame = framesSentTo(h, pinnedDevice).single()
         assertEquals("store-id", shared.proto.messaging.v1.Content.MessageContent.parseFrom(frame.payload).mediaAlbum.getItems(0).mediaId)
         assertEquals(ResendOutcome.NOT_OURS, h.useCase().resend(peer, pinnedDevice, staged))
+    }
+
+    /**
+     * Retry sends the failed row again under its own id and its status follows; a message that
+     * did go, or a peer's, is not retried. Mutation: drop the FAILED test in `failedRow` — a sent
+     * message goes out a second time.
+     */
+    @Test
+    fun `retry sends a failed message again under its id, and nothing else`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        val chatId = com.construct.messenger.util.ConversationId.direct(myId, peer)
+        val failed = "33333333-3333-4333-8333-333333333333"
+        val sent = "44444444-4444-4444-8444-444444444444"
+        h.messages.rows[failed] = MessageEntity(failed, chatId, "again", true, 5L, DeliveryStatus.FAILED.name)
+        h.messages.rows[sent] = MessageEntity(sent, chatId, "once", true, 6L, DeliveryStatus.SENT.name)
+
+        val useCase = h.useCase()
+        assertNull(useCase.failedRow(peer, sent))
+        val outcome = useCase.retry(peer, useCase.failedRow(peer, failed)!!)
+
+        assertEquals(SendOutcome.Sent(failed), outcome)
+        assertEquals(DeliveryStatus.SENT.name, h.messages.rows[failed]?.deliveryStatus)
+        val frame = framesSentTo(h, pinnedDevice).single()
+        assertEquals(java.util.UUID.fromString(failed), frame.messageId)
+        assertEquals("again", shared.proto.messaging.v1.Content.MessageContent.parseFrom(frame.payload).text.text)
+    }
+
+    /**
+     * iOS edits a photo's caption with `new_text`; the row keeps the album with the new caption, so
+     * a resend carries what the bubble shows. Mutation: `markEdited` for every row — the album
+     * keeps the old caption.
+     */
+    @Test
+    fun `editing a photo caption rewrites the album it is resent from`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        val chatId = com.construct.messenger.util.ConversationId.direct(myId, peer)
+        val id = "55555555-5555-4555-8555-555555555555"
+        val album = shared.proto.messaging.v1.Content.MediaAlbumMessage.newBuilder()
+            .addItems(shared.proto.messaging.v1.Content.MediaMessage.newBuilder().setMediaId("store-id").setMimeType("image/jpeg"))
+            .setCaption("old")
+            .build().toByteArray()
+        h.messages.rows[id] = MessageEntity(id, chatId, "old", true, 1L, DeliveryStatus.SENT.name, mediaType = "album", mediaPayload = album)
+
+        assertTrue(h.useCase().edit(peer, id, "new") is SendOutcome.Sent)
+
+        val row = h.messages.rows[id]!!
+        assertEquals("new", row.text)
+        assertTrue(row.isEdited)
+        assertEquals("new", shared.proto.messaging.v1.Content.MediaAlbumMessage.parseFrom(row.mediaPayload).caption)
+        val edit = shared.proto.messaging.v1.Content.MessageContent.parseFrom(framesSentTo(h, pinnedDevice).single().payload).edit
+        assertEquals("new", edit.newText.text)
     }
 
     @Test
@@ -495,6 +547,9 @@ private class FakeMessageDao : MessageDao {
     override suspend fun insert(message: MessageEntity) { rows[message.id] = message }
     override suspend fun updateDeliveryStatus(messageId: String, status: String) {
         rows[messageId]?.let { rows[messageId] = it.copy(deliveryStatus = status) }
+    }
+    override suspend fun markEditedMedia(id: String, text: String, mediaPayload: ByteArray) {
+        rows[id]?.let { rows[id] = it.copy(text = text, mediaPayload = mediaPayload, isEdited = true) }
     }
     override suspend fun markEdited(id: String, text: String) {
         rows[id]?.let { rows[id] = it.copy(text = text, isEdited = true) }

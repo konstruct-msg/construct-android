@@ -22,6 +22,17 @@ data class Message(
 ) {
     /** The emoji this account has on it, if any — what a repeat tap takes off. */
     val myReaction: String? get() = reactions.firstOrNull { it.isMine }?.emoji
+
+    /**
+     * iOS menu rule for Edit: ours, and text or a photo/video caption. Not a file or a voice note —
+     * their text is not what the bubble is about, and a voice note has none.
+     */
+    val isEditable: Boolean
+        get() = isOutgoing && when (val m = media) {
+            null -> body.isNotBlank()
+            is MessageMedia.Album -> !m.isFiles && !com.construct.messenger.util.MediaWire.isStaged(m)
+            is MessageMedia.Voice -> false
+        }
 }
 
 data class MessageReaction(val emoji: String, val isMine: Boolean)
