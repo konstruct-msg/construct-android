@@ -340,18 +340,11 @@ private fun ActionsSection(
         ActionRow(label = stringResource(R.string.contact_open_chat), color = CTColor.accent, onClick = onOpenChat)
         RowDivider()
     }
-    // iOS `disabledRow`: what it shows while calls are off.
-    ProfileRow(stringResource(R.string.profile_call_voice)) {
-        Text(
-            text = stringResource(R.string.profile_soon),
-            style = ctRegular(11),
-            color = CTColor.textDim,
-            modifier = Modifier
-                .background(CTColor.noise, RoundedCornerShape(CornerRadius.small))
-                .padding(horizontal = 7.dp, vertical = 3.dp),
-        )
+    // iOS: the voice call row, accent, only while no call is on.
+    com.construct.messenger.ui.screens.calls.rememberCallAction(ui.userId)?.let { call ->
+        ActionRow(label = stringResource(R.string.profile_call_voice), color = CTColor.accent, onClick = call)
+        RowDivider()
     }
-    RowDivider()
     // iOS: accent to share, plain to stop; the row waits while the share is in flight.
     ActionRow(
         label = stringResource(if (ui.amSharing) R.string.stop_sharing_profile else R.string.share_my_profile),

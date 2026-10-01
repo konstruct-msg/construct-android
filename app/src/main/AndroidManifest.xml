@@ -14,6 +14,13 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- Calls: the voice mode (MODE_IN_COMMUNICATION) is refused without it. Granted at install. -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Calls: a self-managed ConnectionService (Telecom knows a call is on; no call log, no dialer). -->
+    <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
+    <!-- Calls: the call keeps the microphone with the screen off. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <!-- Calls: a ringing call opens its screen over the lock screen. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
     <application
@@ -57,6 +64,29 @@
                 <data android:pathPrefix="/add/" />
             </intent-filter>
         </activity>
+        <!-- The call screen: over the lock screen for a ringing call, from the notification and the strip. -->
+        <activity
+            android:name=".CallActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:excludeFromRecents="true"
+            android:taskAffinity=".call"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.KonstructMessenger" />
+        <!-- Telecom binds it for our calls; only the system holds BIND_TELECOM_CONNECTION_SERVICE. -->
+        <service
+            android:name=".calls.CallConnectionService"
+            android:exported="true"
+            android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.ConnectionService" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".calls.CallService"
+            android:exported="false"
+            android:foregroundServiceType="phoneCall|microphone" />
         <service
             android:name=".service.MessagingForegroundService"
             android:exported="false"

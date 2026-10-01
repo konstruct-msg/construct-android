@@ -530,4 +530,31 @@
     <string name="veil_path">Path</string>
     <string name="veil_path_direct">direct</string>
     <string name="veil_path_veil">VEIL</string>
+    <!-- Calls (iOS call_*) -->
+    <string name="call_voice">voice call</string>
+    <string name="call_mute">Mute</string>
+    <string name="call_unmute">Unmute</string>
+    <string name="call_speaker">Speaker</string>
+    <string name="call_end">End Call</string>
+    <string name="call_connecting">Connecting…</string>
+    <string name="call_incoming_audio">Incoming audio call</string>
+    <string name="call_answer">Answer</string>
+    <string name="call_decline">Decline</string>
+    <string name="call_missed">Missed</string>
+    <string name="call_declined">Declined</string>
+    <string name="call_failed">Failed</string>
+    <string name="call_ended">Call Ended</string>
+    <string name="call_busy">Busy</string>
+    <string name="call_minimize">Minimize</string>
+    <string name="call_minibar_connecting">connecting</string>
+    <string name="call_reconnecting">reconnecting…</string>
+    <string name="call_e2ee_badge">end-to-end encrypted</string>
+    <string name="call_status_calling">Calling…</string>
+    <string name="call_status_connected">Connected</string>
+    <string name="call_error_not_contacts">You can only call people you are connected with.</string>
+    <string name="call_error_busy">You\'re already in a call.</string>
+    <string name="call_error_setup_failed">Couldn\'t start the call. Try again.</string>
+    <string name="call_error_no_microphone">Calls need the microphone. Allow it in Settings → Apps → Konstruct → Permissions.</string>
+    <string name="call_channel_incoming">Incoming calls</string>
+    <string name="call_channel_ongoing">Ongoing call</string>
 </resources>

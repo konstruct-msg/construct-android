@@ -23,6 +23,9 @@ object CTLayout {
     val sectionGap = 16.dp     // between sections
     val controlHeight = 42.dp  // minimum height of a tappable card row
     val hitTarget = 44.dp      // smallest thing meant to be tapped
+    val callIconSize = 24.dp   // glyph inside a call control
+    val callControlSize = 56.dp // mute / speaker discs
+    val callEndSize = 64.dp    // the end-call disc
 }
 
 /** Spacing scale. */

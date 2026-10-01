@@ -199,8 +199,15 @@ This is checkable right now and must stay that way: the manifest declares networ
 plus the Android foreground-service/notification permissions, `CAMERA` (asked for only when the
 invite scanner opens; the QR is read by CameraX + ZXing, not ML Kit), `RECORD_AUDIO` (asked for only when
 the user taps the microphone for a voice note or makes or answers a call), `MODIFY_AUDIO_SETTINGS`
-(install-time; a call's voice mode is refused without it), one non-exported
-`MessagingForegroundService`, no `<receiver>`, and no push-provider client code. On Android 13+
+(install-time; a call's voice mode is refused without it), and for calls `MANAGE_OWN_CALLS`
+(a self-managed `ConnectionService` — Telecom knows a call is on; nothing goes to the call log or
+the dialer), `FOREGROUND_SERVICE_PHONE_CALL` / `_MICROPHONE` and `USE_FULL_SCREEN_INTENT` (a
+ringing call over the lock screen). Services: the non-exported `MessagingForegroundService`, the
+non-exported `CallService` (`phoneCall|microphone`, only while a call is on), and
+`CallConnectionService` — exported because Telecom must bind it, guarded by
+`BIND_TELECOM_CONNECTION_SERVICE`, which only the system holds. No `<receiver>` (a call
+notification's buttons are service and activity intents), and no push-provider client code: a
+call arrives as its E2EE offer on our own `MessageStream`, not by a VoIP push. On Android 13+
 the app requests `POST_NOTIFICATIONS`; on Android 14+ it starts with the `remoteMessaging`
 foreground-service type. Older supported devices, including Android 11, use the ordinary
 two-argument `startForeground` path.

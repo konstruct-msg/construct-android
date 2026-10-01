@@ -534,4 +534,31 @@
     <string name="veil_path">Путь</string>
     <string name="veil_path_direct">напрямую</string>
     <string name="veil_path_veil">VEIL</string>
+    <!-- Calls (iOS call_*) -->
+    <string name="call_voice">голосовой звонок</string>
+    <string name="call_mute">Выкл. микрофон</string>
+    <string name="call_unmute">Вкл. микрофон</string>
+    <string name="call_speaker">Динамик</string>
+    <string name="call_end">Завершить</string>
+    <string name="call_connecting">Соединение…</string>
+    <string name="call_incoming_audio">Входящий аудиозвонок</string>
+    <string name="call_answer">Ответить</string>
+    <string name="call_decline">Отклонить</string>
+    <string name="call_missed">Пропущенный</string>
+    <string name="call_declined">Отклонённый</string>
+    <string name="call_failed">Не состоялся</string>
+    <string name="call_ended">Звонок завершён</string>
+    <string name="call_busy">Занято</string>
+    <string name="call_minimize">Свернуть</string>
+    <string name="call_minibar_connecting">соединение</string>
+    <string name="call_reconnecting">переподключение…</string>
+    <string name="call_e2ee_badge">сквозное шифрование</string>
+    <string name="call_status_calling">Вызов…</string>
+    <string name="call_status_connected">На связи</string>
+    <string name="call_error_not_contacts">Звонить можно только тем, с кем вы уже связаны.</string>
+    <string name="call_error_busy">Вы уже в звонке.</string>
+    <string name="call_error_setup_failed">Не удалось начать звонок. Попробуйте ещё раз.</string>
+    <string name="call_error_no_microphone">Для звонка нужен микрофон. Разрешите его в Настройки → Приложения → Konstruct → Разрешения.</string>
+    <string name="call_channel_incoming">Входящие звонки</string>
+    <string name="call_channel_ongoing">Текущий звонок</string>
 </resources>

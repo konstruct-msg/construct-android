@@ -103,7 +103,7 @@
 | # | Направление | Состояние | Опора |
 |---|---|---|---|
 | C1 | VEIL (обфускация транспорта) | Off/Auto/On сделаны (seed-фронт; тикет B2 открывает первый туннель, через него берётся B1 — привязанный к ключу устройства `veil/VeilAccessKey`; автомат `transport/TransportRoute` по векторам `transport_route.json`); нет манифеста/альтернатив | §5; `veil/`, JNA к `veil_start`. Выбор метода и гонка — в Rust; когда уходить с прямого пути — `TransportRoute` по общим векторам (не протокол, живёт на платформе) |
-| C2 | Звонки (WebRTC) | начато 2026-10-01: подключён `io.github.webrtc-sdk:android` 150.7871.01 — та же сборка, что iOS (`Packages/WebRTC`), с шифрованием кадров (`FrameCryptor`) и постквантовым DTLS (`WebRTC-EnableDtlsPqc`, `calls/WebRtcRuntime`); тест читает ключ из связанной библиотеки; ABI ограничены теми, что есть у ядра. Сигналинг (шаг 2) и машина состояний (шаг 3, `calls/CallManager`) готовы, медиа (шаг 4, `calls/WebRtcCallMedia`) — тоже; дальше — экран и системный звонок, шаг 5 | §6 |
+| C2 | Звонки (WebRTC) | начато 2026-10-01: подключён `io.github.webrtc-sdk:android` 150.7871.01 — та же сборка, что iOS (`Packages/WebRTC`), с шифрованием кадров (`FrameCryptor`) и постквантовым DTLS (`WebRTC-EnableDtlsPqc`, `calls/WebRtcRuntime`); тест читает ключ из связанной библиотеки; ABI ограничены теми, что есть у ядра. Сигналинг (шаг 2) и машина состояний (шаг 3, `calls/CallManager`) готовы, медиа (шаг 4), экран и системный звонок (шаг 5, `CallTelecom`, `CallActivity`) — тоже; осталось проверить звонок с iOS на устройстве, история звонков, PQC-4 | §6 |
 | C3 | Медиа (вложения, голосовые) | начато. Есть: сообщения в несколько KNST-кадров (отправка кусками, сборка в Room `pending_chunks`, 24 ч; копия на своё устройство в раскладке iOS); **приём фото**: альбом/фото/голосовое хранятся с сообщением (`mediaPayload`), фото скачиваются `DownloadMedia` по каналу без токена, AES-256-GCM как CryptoKit, кэш — зашифрованный блоб в `files/media`, BlurHash, мозаика iOS, полноэкранный просмотр; **отправка фото**: «+» и системный выбор фото, сжатие как iOS (≤1920, JPEG ≤4 МиБ), BlurHash, `GenerateUploadToken`+`UploadMedia` (без MIME), по 4 параллельно, пузырь сразу из локальной зашифрованной копии, переотправка медиа по DECRYPTION_ERROR; **голосовые**: запись как iOS (AAC 44,1 кГц моно 64 кбит/с, ≤300 с, волна 100 точек), полосы записи/прослушивания, пузырь с волной, воспроизведение из памяти, `codec` = `audio/m4a|id|size`. **файлы**: пузырь как iOS, по нажатию скачать → расшифровать в `cache/open` → открыть системным приложением (FileProvider, копия живёт час), распаковка raw DEFLATE от iOS, отправка через «+» → «Файл» без сжатия. **видео**: постер и длина в плитке, по нажатию скачать и играть из памяти (Media3 ExoPlayer), отправка с перекодированием в MP4 1080p H.264/AAC (Media3 Transformer), в файл уходит только ориентация кадра. Нет: выбора качества видео (720p/оригинал), расшифровки голосовых (STT), непрерывного воспроизведения, квоты кэша | канон iOS `Services/Media`, `MediaWireCodec`, `MediaMessageView`; `decisions/durable-chunk-reassembly.md` |
 | C4 | Группы (MLS) | не начато | канон iOS |
 | C5 | Synaps в виде сот | не начато | `ANDROID_ONBOARDING.md` §5.10 |
@@ -189,11 +189,21 @@ Kotlin-реализация любого решения, которое прин
    только наличием ключа trial в библиотеке. Instrumented-тесты — только на эмуляторе:
    `connectedAndroidTest` удаляет приложение вместе с аккаунтом. `scripts/verify.sh` компилирует
    androidTest (2026-10-01: `CryptoManagerInstrumentedTest` отстал от API ядра незамеченным).
-5. **Системный звонок.** Self-managed `ConnectionService` + `TelecomManager` (аналог CallKit);
-   входящий будит наш `MessageStream` в foreground-сервисе — VoIP-push не нужен (без GMS).
-   Уведомление с full-screen intent. Новые разрешения (`MANAGE_OWN_CALLS`,
-   `FOREGROUND_SERVICE_PHONE_CALL`/`_MICROPHONE`, `USE_FULL_SCREEN_INTENT`) меняют список в
-   `AGENTS.md` — в том же коммите.
+5. ✅ **Системный звонок и экран** (2026-10-01; код готов, звонок с iOS на устройстве ещё не
+   проверен). Self-managed `ConnectionService` (`calls/CallConnectionService`, `CallTelecom`) —
+   аналог CallKit: Telecom знает о звонке, ведёт маршрут звука (динамик через
+   `requestCallEndpointChange`/`setAudioRoute`), кнопки гарнитуры отвечают и кладут трубку; в журнал
+   звонков и звонилку ничего не попадает, адрес для Telecom — id звонка, не аккаунт. Если Telecom
+   отказал — звонок идёт без него. Входящий будит наш `MessageStream` (VoIP-push не нужен):
+   уведомление `CallStyle` с full-screen intent на `CallActivity` поверх блокировки, рингтон до
+   ответа; на заблокированном экране в уведомлении нет имени. Во время звонка — `CallService`
+   (`phoneCall|microphone`). Экран — iOS `InCallView` (`ui/screens/calls/CallScreen`): аватар с
+   пульсом, статус, бейдж E2EE, микрофон, динамик, отбой; входящий — ответить/отклонить; свёрнутый
+   звонок — полоска сверху (`CallMiniBar`). Кнопка звонка — в шапке чата и строка в профиле, только
+   без текущего звонка; микрофон спрашивается при первом звонке. Гудок вызова — `ToneGenerator`,
+   гаснет при ответе. Разрешения `MANAGE_OWN_CALLS`, `FOREGROUND_SERVICE_PHONE_CALL`/`_MICROPHONE`,
+   `USE_FULL_SCREEN_INTENT` — `AGENTS.md` обновлён. Не сделано: история звонков (вкладка «Звонки» —
+   заглушка; iOS `CallHistoryView`).
 6. **`PQC-4`: шифрование кадров** ключом из постквантовой сессии поверх SRTP (`FrameCryptor`,
    AES-GCM). Нужен вывод ключа в ядре и решение в `construct-docs/decisions/` — общее с iOS,
    до кода на обеих платформах (`security/PQ_COVERAGE_PLAN.md`, этап 3).

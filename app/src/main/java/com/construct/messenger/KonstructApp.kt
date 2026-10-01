@@ -28,6 +28,9 @@ class KonstructApp : Application(), ImageLoaderFactory {
     @Inject
     lateinit var calls: com.construct.messenger.calls.CallManager
 
+    @Inject
+    lateinit var callTelecom: com.construct.messenger.calls.CallTelecom
+
     /** Every `AsyncImage` in the app: message media among the images it can load. */
     override fun newImageLoader(): ImageLoader = MediaImages.loader(this, media)
 
@@ -40,5 +43,6 @@ class KonstructApp : Application(), ImageLoaderFactory {
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { stickers.seedBundled() }
         // Before any service can decrypt a call signal: the inbox keeps nothing for a late listener.
         calls.start()
+        callTelecom.start()
     }
 }

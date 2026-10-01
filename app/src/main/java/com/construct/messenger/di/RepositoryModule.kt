@@ -78,4 +78,10 @@ abstract class RepositoryModule {
     abstract fun bindDevicesRepository(
         repository: DevicesRepositoryImpl
     ): DevicesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCallsRepository(
+        repository: com.construct.messenger.data.repository.CallsRepositoryImpl
+    ): com.construct.messenger.data.repository.CallsRepository
 }

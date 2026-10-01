@@ -35,7 +35,8 @@ sealed interface CallState {
     data class Dialing(val session: CallSession) : CallState
     data class Ringing(val session: CallSession) : CallState
     data class Connecting(val session: CallSession) : CallState
-    data class Active(val session: CallSession) : CallState
+    /** [sinceMs]: when the call was first answered — what its duration counts from. */
+    data class Active(val session: CallSession, val sinceMs: Long) : CallState
     data class Ended(val session: CallSession, val reason: CallEndReason) : CallState
 }
 

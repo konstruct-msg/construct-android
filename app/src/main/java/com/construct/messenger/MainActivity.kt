@@ -12,6 +12,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -60,6 +62,9 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var appLock: AppLockRepository
 
+    @Inject
+    lateinit var calls: com.construct.messenger.data.repository.CallsRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestNotificationPermissionIfNeeded()
@@ -85,7 +90,28 @@ class MainActivity : FragmentActivity() {
                     color = CTColor.bg,
                 ) {
                     val navController = rememberNavController()
-                    KonstructNavHost(navController = navController)
+                    val call by calls.call.collectAsStateWithLifecycle()
+                    // A new call — placed from a chat, or ringing while the app is open — opens the
+                    // call screen; minimising it leaves the strip, which opens it again.
+                    LaunchedEffect(call?.callId) { if (call?.isLive == true) CallActivity.open(this@MainActivity) }
+                    androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
+                        val live = call?.takeIf { it.isLive }
+                        if (live != null) {
+                            com.construct.messenger.ui.screens.calls.CallMiniBar(live) { CallActivity.open(this@MainActivity) }
+                        }
+                        androidx.compose.foundation.layout.Box(
+                            Modifier.weight(1f).then(
+                                // The strip already sits under the status bar; the screens below must not pad for it twice.
+                                if (live != null) {
+                                    Modifier.consumeWindowInsets(androidx.compose.foundation.layout.WindowInsets.statusBars)
+                                } else {
+                                    Modifier
+                                },
+                            ),
+                        ) {
+                            KonstructNavHost(navController = navController)
+                        }
+                    }
                     SecurityNoticeHost(
                         onOpenChat = { navController.navigate(Screen.Chat.createRoute(it)) },
                     )

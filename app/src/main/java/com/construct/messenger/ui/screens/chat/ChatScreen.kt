@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -234,6 +235,7 @@ fun ChatScreen(
                 selecting = selectedIds != null,
                 onDoneSelecting = { selectedIds = null },
                 onSearch = { searching = true },
+                onCall = com.construct.messenger.ui.screens.calls.rememberCallAction(uiState.contactId),
             )
         }
 
@@ -475,8 +477,8 @@ private fun isLastInGroup(index: Int, messages: List<Message>): Boolean {
 /**
  * iOS `ChatNavBarView`: a floating glass capsule — back disc, the name upper-cased and tracked
  * (tapping it opens the profile), search on the trailing side; while messages are being selected,
- * Done in its place. iOS's call button is not here: Android has no calls yet, and a button that
- * does nothing is worse than none.
+ * Done in its place. The call button sits before search, and only while no call is on (iOS
+ * `canStartCall`).
  */
 @Composable
 private fun ChatNavBar(
@@ -486,6 +488,7 @@ private fun ChatNavBar(
     selecting: Boolean,
     onDoneSelecting: () -> Unit,
     onSearch: () -> Unit,
+    onCall: (() -> Unit)?,
 ) {
     Row(
         modifier = Modifier
@@ -534,6 +537,19 @@ private fun ChatNavBar(
                     .padding(horizontal = CTLayout.inlinePad, vertical = 10.dp),
             )
         } else {
+            if (onCall != null) {
+                Box(
+                    modifier = Modifier.size(CTLayout.hitTarget).clip(CircleShape).clickable(onClick = onCall),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Phone,
+                        contentDescription = stringResource(R.string.call_voice),
+                        tint = CTColor.text,
+                        modifier = Modifier.size(CTLayout.navIconSize),
+                    )
+                }
+            }
             Box(
                 modifier = Modifier.size(CTLayout.hitTarget).clip(CircleShape).clickable(onClick = onSearch),
                 contentAlignment = Alignment.Center,

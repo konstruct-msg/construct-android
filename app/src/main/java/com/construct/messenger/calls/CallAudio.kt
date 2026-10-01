@@ -3,7 +3,10 @@ package com.construct.messenger.calls
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
+import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.media.ToneGenerator
+import android.os.Build
 import com.construct.messenger.diagnostics.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -51,7 +54,54 @@ class CallAudio @Inject constructor(@ApplicationContext context: Context) {
         Log.i(TAG, "call audio off: mode=${manager.mode}")
     }
 
+    /**
+     * Loudspeaker, when Telecom has no connection for this call to route through (it refused the
+     * call, or the account could not be registered). With a connection, [CallTelecom] asks
+     * Telecom, which owns the route of a self-managed call.
+     */
+    @Synchronized
+    fun setSpeaker(on: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (on) {
+                manager.availableCommunicationDevices
+                    .firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+                    ?.let(manager::setCommunicationDevice)
+            } else {
+                manager.clearCommunicationDevice()
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            manager.isSpeakerphoneOn = on
+        }
+    }
+
+    private var ringback: ToneGenerator? = null
+
+    /**
+     * The caller hears the far end ringing — the country's ringback cadence on the voice stream,
+     * until the call is answered or ends. iOS `DialTonePlayer`; and iOS's lesson: it stops the
+     * moment the call is answered, or it holds the audio path the call needs.
+     */
+    @Synchronized
+    fun startRingback() {
+        if (ringback != null) return
+        ringback = runCatching { ToneGenerator(AudioManager.STREAM_VOICE_CALL, RINGBACK_VOLUME) }
+            .onFailure { Log.w(TAG, "no ringback: ${it.message}") }
+            .getOrNull()
+            ?.also { it.startTone(ToneGenerator.TONE_SUP_RINGTONE) }
+    }
+
+    @Synchronized
+    fun stopRingback() {
+        ringback?.run {
+            stopTone()
+            release()
+        }
+        ringback = null
+    }
+
     private companion object {
         const val TAG = "CallAudio"
+        const val RINGBACK_VOLUME = 60
     }
 }

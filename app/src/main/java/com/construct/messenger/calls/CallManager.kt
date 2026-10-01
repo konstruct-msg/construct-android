@@ -352,7 +352,7 @@ class CallManager internal constructor(
         if (active !== call) return
         sendAnswer(call, answer)
         call.answeredAtMs = nowMs()
-        _state.value = CallState.Active(call.session)
+        _state.value = CallState.Active(call.session, call.answeredAtMs ?: nowMs())
         // The stream carries our presence; without a ringing on it the server reaps the call
         // as callee-offline seconds after media is up.
         openStream(call)
@@ -371,7 +371,7 @@ class CallManager internal constructor(
             sendAnswer(call, answer)
             // A renegotiation does not re-stamp the answer: duration is counted from the first.
             if (call.answeredAtMs == null) call.answeredAtMs = nowMs()
-            _state.value = CallState.Active(call.session)
+            _state.value = CallState.Active(call.session, call.answeredAtMs ?: nowMs())
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -393,7 +393,7 @@ class CallManager internal constructor(
         if (active !== call) return
         // Only the first answer is the call being answered; a later one answers an ICE restart.
         if (call.answeredAtMs == null) call.answeredAtMs = nowMs()
-        _state.value = CallState.Active(call.session)
+        _state.value = CallState.Active(call.session, call.answeredAtMs ?: nowMs())
         Log.i(TAG, "answer applied ${describe(call)}")
     }
 
