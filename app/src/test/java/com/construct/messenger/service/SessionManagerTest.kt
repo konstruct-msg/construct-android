@@ -38,7 +38,9 @@ class SessionManagerTest {
 
     @Before
     fun setUp() {
-        whenever(grpcClient.key).thenReturn(keyStub)
+        // Only the token-free stub: a bundle fetched with a token names who is about to write to
+        // whom (BF-1). Mutation that reddens every init test: fetch through `grpcClient.key`.
+        whenever(grpcClient.sealedKey).thenReturn(keyStub)
         sessionManager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry)
     }
 

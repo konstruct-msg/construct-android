@@ -1084,6 +1084,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_one_time_pre
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_open_envelope(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_open_first_flight(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_open_receiving(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_open_sealed_to_device(
@@ -1111,6 +1113,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_rollback_kyb
 external fun uniffi_construct_core_checksum_method_orchestratorcore_rotate_signed_prekey(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_seal_envelope(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_seal_first_flight(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_seal_own_recovery_bundle(
 ): Short
@@ -1459,6 +1463,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_one_time_prekey_co
 ): Int
 external fun uniffi_construct_core_fn_method_orchestratorcore_open_envelope(`ptr`: Long,`envelope`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_open_first_flight(`ptr`: Long,`sealed`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_open_receiving(`ptr`: Long,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_open_sealed_to_device(`ptr`: Long,`sealedBox`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1486,6 +1492,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_rollback_kyber_spk
 external fun uniffi_construct_core_fn_method_orchestratorcore_rotate_signed_prekey(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_seal_envelope(`ptr`: Long,`contactId`: RustBuffer.ByValue,`wirePayload`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_seal_first_flight(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientIdentity`: RustBuffer.ByValue,`wirePayload`: RustBuffer.ByValue,`certificate`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_seal_own_recovery_bundle(`ptr`: Long,`vaultKey`: RustBuffer.ByValue,`createdAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -2324,6 +2332,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_open_envelope() != 45343.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_open_first_flight() != 23369.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_open_receiving() != 32397.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2364,6 +2375,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_seal_envelope() != 59409.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_seal_first_flight() != 54924.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_seal_own_recovery_bundle() != 42137.toShort()) {
@@ -5821,6 +5835,12 @@ public interface OrchestratorCoreInterface {
      */
     fun `openEnvelope`(`envelope`: kotlin.ByteArray): EnvelopeOpened?
     
+    /**
+     * Open a `SealedInner.first_flight` sealed to this device. Throws when it does not open — a
+     * Kyber prekey no longer held (`FIRST_FLIGHT_KEY_UNAVAILABLE`), or not ours.
+     */
+    fun `openFirstFlight`(`sealed`: kotlin.ByteArray): FirstFlightOpened
+    
     fun `openReceiving`(`device`: kotlin.String): ReceivingOpenResult
     
     /**
@@ -5870,6 +5890,15 @@ public interface OrchestratorCoreInterface {
      * must go with a certificate (first flight, or a session made before the envelope).
      */
     fun `sealEnvelope`(`contactId`: kotlin.String, `wirePayload`: kotlin.ByteArray): kotlin.ByteArray?
+    
+    /**
+     * Seal a first flight — a wire payload written on a session the peer has not answered yet —
+     * with the sender certificate, to `recipient_identity` (the X25519 key the session was opened
+     * to; it must derive to `contact_id`). Goes in `SealedInner.first_flight`. Null when the
+     * payload carries no handshake — not a first flight; it goes with a certificate. Throws for a
+     * first flight that cannot be sealed: never send that one any other way.
+     */
+    fun `sealFirstFlight`(`contactId`: kotlin.String, `recipientIdentity`: kotlin.ByteArray, `wirePayload`: kotlin.ByteArray, `certificate`: kotlin.ByteArray): kotlin.ByteArray?
     
     /**
      * This device's social-recovery bundle (device keys, derived device id, `created_at`) sealed
@@ -6703,6 +6732,24 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     
 
+    
+    /**
+     * Open a `SealedInner.first_flight` sealed to this device. Throws when it does not open — a
+     * Kyber prekey no longer held (`FIRST_FLIGHT_KEY_UNAVAILABLE`), or not ours.
+     */
+    @Throws(CryptoException::class)override fun `openFirstFlight`(`sealed`: kotlin.ByteArray): FirstFlightOpened {
+            return FfiConverterTypeFirstFlightOpened.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_open_first_flight(
+        it,
+        FfiConverterByteArray.lower(`sealed`),_status)
+}
+    }
+    )
+    }
+    
+
     override fun `openReceiving`(`device`: kotlin.String): ReceivingOpenResult {
             return FfiConverterTypeReceivingOpenResult.lift(
     callWithHandle {
@@ -6903,6 +6950,27 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_seal_envelope(
         it,
         FfiConverterString.lower(`contactId`),FfiConverterByteArray.lower(`wirePayload`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Seal a first flight — a wire payload written on a session the peer has not answered yet —
+     * with the sender certificate, to `recipient_identity` (the X25519 key the session was opened
+     * to; it must derive to `contact_id`). Goes in `SealedInner.first_flight`. Null when the
+     * payload carries no handshake — not a first flight; it goes with a certificate. Throws for a
+     * first flight that cannot be sealed: never send that one any other way.
+     */
+    @Throws(CryptoException::class)override fun `sealFirstFlight`(`contactId`: kotlin.String, `recipientIdentity`: kotlin.ByteArray, `wirePayload`: kotlin.ByteArray, `certificate`: kotlin.ByteArray): kotlin.ByteArray? {
+            return FfiConverterOptionalByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_seal_first_flight(
+        it,
+        FfiConverterString.lower(`contactId`),FfiConverterByteArray.lower(`recipientIdentity`),FfiConverterByteArray.lower(`wirePayload`),FfiConverterByteArray.lower(`certificate`),_status)
 }
     }
     )
@@ -8166,6 +8234,47 @@ public object FfiConverterTypeEphemeralKeyPair: FfiConverterRustBuffer<Ephemeral
     override fun write(value: EphemeralKeyPair, buf: ByteBuffer) {
             FfiConverterByteArray.write(value.`secretKey`, buf)
             FfiConverterByteArray.write(value.`publicKey`, buf)
+    }
+}
+
+
+
+/**
+ * A session's first flight opened by `OrchestratorCore.open_first_flight`
+ * (construct-docs decisions/first-flight-sealed-whole.md): handled as before — the
+ * certificate names the writer, the wire payload goes to MessageReceived.
+ */
+data class FirstFlightOpened (
+    var `certificate`: kotlin.ByteArray
+    , 
+    var `wirePayload`: kotlin.ByteArray
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFirstFlightOpened: FfiConverterRustBuffer<FirstFlightOpened> {
+    override fun read(buf: ByteBuffer): FirstFlightOpened {
+        return FirstFlightOpened(
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FirstFlightOpened) = (
+            FfiConverterByteArray.allocationSize(value.`certificate`) +
+            FfiConverterByteArray.allocationSize(value.`wirePayload`)
+    )
+
+    override fun write(value: FirstFlightOpened, buf: ByteBuffer) {
+            FfiConverterByteArray.write(value.`certificate`, buf)
+            FfiConverterByteArray.write(value.`wirePayload`, buf)
     }
 }
 

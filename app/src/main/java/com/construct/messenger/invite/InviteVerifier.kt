@@ -33,7 +33,7 @@ class InviteVerifier @Inject constructor(
                 .setUserId(invite.uuid)
                 .setConsumeOneTimePrekey(false)
                 .setDeviceId(invite.deviceId)
-            grpcClient.key.getPreKeyBundle(req.build())
+            grpcClient.sealedKey.getPreKeyBundle(req.build())
         } catch (e: Exception) {
             usedJtis.remove(invite.jti)
             Log.w(TAG, "public key fetch failed for ${invite.uuid.take(8)}…", e)

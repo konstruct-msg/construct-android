@@ -16,8 +16,10 @@ import javax.inject.Singleton
  * more, paying: an envelope that presented a credential carried no token by choice, and presenting
  * the same credential again buys the same refusal (iOS measured that loop on 2026-09-14).
  *
- * On an established session a ratchet message goes as a session envelope: sealed by the core once,
- * here, and the same envelope in a rebuild — the rebuild changes the payment, not the message.
+ * On an established session a ratchet message goes as a session envelope; before the peer has
+ * answered, a first flight goes sealed whole with our certificate. Either is sealed by the core
+ * once, here, and reused in a rebuild — the rebuild changes the payment, not the message. A first
+ * flight the core cannot seal throws out of [send]: it is not sent any other way.
  *
  * Never an identified send on this refusal. A server that could force identified sends by refusing
  * tokens could name any sender on demand; a refusal may cost budget or fail the send, not anonymity.
@@ -40,6 +42,9 @@ class SealedSend @Inject constructor(
         // [envelope], and one it boxed to the identity key goes with a certificate.
         val sessionEnvelope = envelope
             ?: if (contentType == SealedEnvelopeType.GENERIC) stealthSender.sessionEnvelope(recipientIdentityKey, encryptedPayload) else null
+        // Anything else may be a first flight — the core says which (any content type: it reads
+        // the payload); `null` is the certificate path.
+        val firstFlight = if (sessionEnvelope == null) stealthSender.firstFlight(recipientIdentityKey, encryptedPayload) else null
         suspend fun build(afterRejection: Boolean) = stealthSender.buildSealedInner(
             recipientUserId = recipientUserId,
             recipientIdentityKey = recipientIdentityKey,
@@ -47,6 +52,7 @@ class SealedSend @Inject constructor(
             contentType = contentType,
             afterCredentialRejection = afterRejection,
             sessionEnvelope = sessionEnvelope,
+            firstFlight = firstFlight,
         )
         return try {
             messagingService.sendSealedMessage(build(afterRejection = false))

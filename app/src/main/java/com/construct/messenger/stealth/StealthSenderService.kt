@@ -27,15 +27,16 @@ import uniffi.construct_core.sealedSealSenderCert
  * construct-core FFI (Phase 5: one implementation, one test suite):
  *
  *  - send: [buildSealedInner] — on an established session, the core's session envelope
- *    ([sessionEnvelope]); otherwise seal our SenderCertificate to the recipient's X25519
- *    identity key. Then the real content type and (per policy) a Privacy Pass token sealed to
+ *    ([sessionEnvelope]); a first flight sealed whole with our certificate ([firstFlight]);
+ *    otherwise seal our SenderCertificate to the recipient's X25519 identity key. Then the real content type and (per policy) a Privacy Pass token sealed to
  *    the server key;
  *  - receive: [resolveSender] — a session envelope names its writer by the session pair its tag
  *    matches; otherwise unseal and hand the certificate on, unchecked. The core checks the server
  *    signature where it matters — when the certificate opens a session — and the ratchet
  *    authenticates every message on a session that already exists.
  *
- * The session envelope: `decisions/sealed-envelope-keyed-by-the-session.md` (core 0.26.0).
+ * The session envelope: `decisions/sealed-envelope-keyed-by-the-session.md` (core 0.26.0). The
+ * first flight: `decisions/first-flight-sealed-whole.md` (core 0.27).
  */
 @Singleton
 class StealthSenderService @Inject constructor(
@@ -55,7 +56,8 @@ class StealthSenderService @Inject constructor(
 
     /** Resolved sender identity + the real content type and E2EE payload carried
      * inside SealedInner (the outer envelope's payload is empty for sealed sends).
-     * [senderCertificate] is what a first message opens its session from. A session envelope
+     * [senderCertificate] is what a first message opens its session from — out of the certificate
+     * box, or out of a first flight sealed whole with its wire payload. A session envelope
      * carries none: [envelopeSession] is the session whose tag matched, and [envelopeDevice] the
      * device it is with — the writer. */
     data class ResolvedSender(
@@ -106,7 +108,8 @@ class StealthSenderService @Inject constructor(
      *
      * With [sessionEnvelope] the inner carries it and nothing else of the message: no certificate
      * box, no `encrypted_payload` — the wire payload is inside it, and the session names the
-     * writer. No certificate is fetched for it.
+     * writer. No certificate is fetched for it. [firstFlight] replaces both the same way: the
+     * certificate and the wire payload are inside it.
      */
     suspend fun buildSealedInner(
         recipientUserId: String,
@@ -117,6 +120,8 @@ class StealthSenderService @Inject constructor(
         afterCredentialRejection: Boolean = false,
         /** A session envelope the core sealed ([sessionEnvelope], or a DECRYPTION_ERROR it built). */
         sessionEnvelope: ByteArray? = null,
+        /** A first flight the core sealed whole ([firstFlight]). */
+        firstFlight: ByteArray? = null,
     ): ByteArray {
         val deliveryTag = ByteArray(32).also(random::nextBytes)
         val builder = SealedInner.newBuilder()
@@ -130,6 +135,8 @@ class StealthSenderService @Inject constructor(
             .setDeliveryTag(ByteString.copyFrom(deliveryTag))
         if (sessionEnvelope != null) {
             builder.setSessionEnvelope(ByteString.copyFrom(sessionEnvelope))
+        } else if (firstFlight != null) {
+            builder.setFirstFlight(ByteString.copyFrom(firstFlight))
         } else {
             builder.setSenderCertCiphertext(ByteString.copyFrom(sealedSealSenderCert(getSenderCertificate(), recipientIdentityKey)))
             builder.setEncryptedPayload(ByteString.copyFrom(encryptedPayload))
@@ -170,6 +177,20 @@ class StealthSenderService @Inject constructor(
             .getOrNull()
     }
 
+    /**
+     * [wirePayload] as a first flight sealed whole with our certificate, to the device
+     * [recipientIdentityKey] names — `null` when it is not a first flight and goes with a
+     * certificate. Its PQXDH header carries our ML-KEM identity key, the same on every first
+     * flight, and beside a certificate box it let the server tie that key to the account (FF-1).
+     * Throws for a first flight the core cannot seal: that one is not sent at all.
+     * **Canon:** iOS `StealthSenderService.buildSealedInner` (the static bridge).
+     */
+    suspend fun firstFlight(recipientIdentityKey: ByteArray, wirePayload: ByteArray): ByteArray? {
+        val device = cryptoManager.deriveDeviceIdFromIdentity(recipientIdentityKey)
+        return cryptoManager.sealFirstFlight(device, recipientIdentityKey, wirePayload, getSenderCertificate())
+            ?.also { Log.d(TAG, "first flight to ${device.take(8)}… sealed whole (${it.size}B)") }
+    }
+
     /** Seals token bytes to the server key; plaintext fallback if the key isn't
      * cached yet (graceful degradation, same as iOS — relay can see the token,
      * which only weakens relay-privacy, not the anti-abuse property). */
@@ -200,15 +221,25 @@ class StealthSenderService @Inject constructor(
         return try {
             val inner = SealedInner.parseFrom(sealedInnerBytes)
             if (!inner.sessionEnvelope.isEmpty) return resolveEnvelopeSender(inner.sessionEnvelope.toByteArray())
-            if (inner.senderCertCiphertext.isEmpty) return null
-
-            val certBytes = cryptoManager.openSealedToDevice(inner.senderCertCiphertext.toByteArray())
+            val certBytes: ByteArray
+            val payload: ByteArray
+            if (!inner.firstFlight.isEmpty) {
+                // A first flight sealed whole: certificate and wire payload come out together.
+                val opened = cryptoManager.openFirstFlight(inner.firstFlight.toByteArray())
+                certBytes = opened.certificate
+                payload = opened.wirePayload
+                Log.d(TAG, "first flight opened (${payload.size}B)")
+            } else {
+                if (inner.senderCertCiphertext.isEmpty) return null
+                certBytes = cryptoManager.openSealedToDevice(inner.senderCertCiphertext.toByteArray())
+                payload = inner.encryptedPayload.toByteArray()
+            }
             val cert = SenderCertificate.parseFrom(certBytes)
 
             ResolvedSender(
                 senderId = cert.senderUserId,
                 contentType = inner.contentType,
-                encryptedPayload = inner.encryptedPayload.toByteArray(),
+                encryptedPayload = payload,
                 senderCertificate = cert.toCore(),
             )
         } catch (e: Exception) {

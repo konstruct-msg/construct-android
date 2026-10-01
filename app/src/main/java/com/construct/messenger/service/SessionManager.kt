@@ -114,7 +114,7 @@ class SessionManager @Inject constructor(
             .setUserId(accountId)
             .setConsumeOneTimePrekey(consumeOtpk)
         deviceId?.takeIf(IdentityIds::isCryptoDeviceId)?.let(request::setDeviceId)
-        val response = grpcClient.key.getPreKeyBundle(request.build())
+        val response = grpcClient.sealedKey.getPreKeyBundle(request.build())
         val identity = response.bundle.identityKey.toByteArray()
         val derivedDeviceId = cryptoManager.deriveDeviceIdFromIdentity(identity)
         require(IdentityIds.isCryptoDeviceId(derivedDeviceId)) { "invalid peer CryptoDeviceId" }
@@ -144,7 +144,7 @@ class SessionManager @Inject constructor(
         rememberAsContact: Boolean = true,
     ): List<PeerBundle> {
         val accountId = accountFor(contactId)
-        val response = grpcClient.key.getPreKeyBundles(
+        val response = grpcClient.sealedKey.getPreKeyBundles(
             GetPreKeyBundlesRequest.newBuilder()
                 .setUserId(accountId)
                 .setConsumeOneTimePrekey(false)

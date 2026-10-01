@@ -123,6 +123,14 @@ class GrpcClient @Inject constructor(
 
     // ── Sealed / unauthenticated stub (sealed channel) ─────────────────────
 
+    /**
+     * [KeyServiceCoroutineStub] on the channel with no token — for `GetPreKeyBundle(s)` only
+     * (`BF-1`). With a token the fetch right before a first sealed send names the pair the send
+     * hides, and which account took which prekey. Bundles are public keys; key-service limits an
+     * unnamed caller by IP. **Canon:** iOS `KeyServiceClient` (`performSealedRPC`).
+     */
+    val sealedKey: KeyServiceCoroutineStub get() = KeyServiceCoroutineStub(channels.sealed)
+
     /** Sealed-sender [MessagingServiceCoroutineStub] — **no** [AuthInterceptor].
      * Use for `SendSealedMessage` only (Stealth v2). */
     val sealedMessaging: MessagingServiceCoroutineStub get() = MessagingServiceCoroutineStub(channels.sealed)

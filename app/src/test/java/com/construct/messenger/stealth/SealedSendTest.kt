@@ -45,8 +45,8 @@ class SealedSendTest {
     /** Mutation: retry without afterCredentialRejection — the same credential is refused again. */
     @Test
     fun `a refusal tops up, rebuilds paying, and sends once more — sealed`() = runTest {
-        whenever(stealth.buildSealedInner(any(), any(), any(), any(), eq(false), anyOrNull())).thenReturn(byteArrayOf(1))
-        whenever(stealth.buildSealedInner(any(), any(), any(), any(), eq(true), anyOrNull())).thenReturn(byteArrayOf(2))
+        whenever(stealth.buildSealedInner(any(), any(), any(), any(), eq(false), anyOrNull(), anyOrNull())).thenReturn(byteArrayOf(1))
+        whenever(stealth.buildSealedInner(any(), any(), any(), any(), eq(true), anyOrNull(), anyOrNull())).thenReturn(byteArrayOf(2))
         whenever(messaging.sendSealedMessage(any())).thenAnswer {
             if ((it.arguments[0] as ByteArray)[0] == 1.toByte()) throw refusal("privacy_pass:missing_token") else ok
         }
@@ -56,14 +56,14 @@ class SealedSendTest {
         assertTrue(result.success)
         inOrder(tokens, stealth) {
             verify(tokens).replenish(any(), eq(false))
-            verify(stealth).buildSealedInner(any(), any(), any(), any(), eq(true), anyOrNull())
+            verify(stealth).buildSealedInner(any(), any(), any(), any(), eq(true), anyOrNull(), anyOrNull())
         }
         verify(messaging, never()).sendMessage(any(), any(), any(), any(), any(), any(), anyOrNull())
     }
 
     @Test
     fun `any other error is the caller's`() = runTest {
-        whenever(stealth.buildSealedInner(any(), any(), any(), any(), any(), anyOrNull())).thenReturn(byteArrayOf(1))
+        whenever(stealth.buildSealedInner(any(), any(), any(), any(), any(), anyOrNull(), anyOrNull())).thenReturn(byteArrayOf(1))
         whenever(messaging.sendSealedMessage(any())).thenAnswer { throw StatusException(Status.UNAVAILABLE) }
 
         val thrown = runCatching { send.send("peer", ByteArray(32), byteArrayOf(9), SealedEnvelopeType.GENERIC) }.exceptionOrNull()
@@ -78,29 +78,69 @@ class SealedSendTest {
     fun `a ratchet message goes as the core's envelope, sealed once`() = runTest {
         val envelope = byteArrayOf(0x45)
         whenever(stealth.sessionEnvelope(any(), any())).thenReturn(envelope)
-        whenever(stealth.buildSealedInner(any(), any(), any(), any(), any(), anyOrNull())).thenReturn(byteArrayOf(1))
+        whenever(stealth.buildSealedInner(any(), any(), any(), any(), any(), anyOrNull(), anyOrNull())).thenReturn(byteArrayOf(1))
         whenever(messaging.sendSealedMessage(any())).thenAnswer { throw refusal("privacy_pass:missing_token") }.thenReturn(ok)
 
         send.send("peer", ByteArray(32), byteArrayOf(9), SealedEnvelopeType.GENERIC)
 
         verify(stealth, times(1)).sessionEnvelope(any(), any())
-        verify(stealth).buildSealedInner(any(), any(), any(), any(), eq(false), eq(envelope))
-        verify(stealth).buildSealedInner(any(), any(), any(), any(), eq(true), eq(envelope))
+        verify(stealth).buildSealedInner(any(), any(), any(), any(), eq(false), eq(envelope), anyOrNull())
+        verify(stealth).buildSealedInner(any(), any(), any(), any(), eq(true), eq(envelope), anyOrNull())
     }
 
     /** A DECRYPTION_ERROR the core boxed to the identity key is not a ratchet message: it is never
      * offered for sealing, and one it already enveloped is sent as it is. */
     @Test
     fun `only a ratchet message is offered to the core for sealing`() = runTest {
-        whenever(stealth.buildSealedInner(any(), any(), any(), any(), any(), anyOrNull())).thenReturn(byteArrayOf(1))
+        whenever(stealth.buildSealedInner(any(), any(), any(), any(), any(), anyOrNull(), anyOrNull())).thenReturn(byteArrayOf(1))
         whenever(messaging.sendSealedMessage(any())).thenReturn(ok)
 
         send.send("peer", ByteArray(32), byteArrayOf(9), SealedEnvelopeType.DECRYPTION_ERROR)
         send.send("peer", ByteArray(32), ByteArray(0), SealedEnvelopeType.GENERIC, envelope = byteArrayOf(0x28))
 
         verify(stealth, never()).sessionEnvelope(any(), any())
-        verify(stealth).buildSealedInner(any(), any(), any(), eq(SealedEnvelopeType.DECRYPTION_ERROR), any(), eq(null))
-        verify(stealth).buildSealedInner(any(), any(), any(), eq(SealedEnvelopeType.GENERIC), any(), eq(byteArrayOf(0x28)))
+        verify(stealth).buildSealedInner(any(), any(), any(), eq(SealedEnvelopeType.DECRYPTION_ERROR), any(), eq(null), anyOrNull())
+        verify(stealth).buildSealedInner(any(), any(), any(), eq(SealedEnvelopeType.GENERIC), any(), eq(byteArrayOf(0x28)), anyOrNull())
+    }
+
+    /** Before the peer answers, a first flight goes sealed whole, sealed once for a rebuild too.
+     * Mutation that reddens it: drop `firstFlight` from `build`. */
+    @Test
+    fun `a first flight goes sealed whole, sealed once`() = runTest {
+        val sealed = byteArrayOf(0x22)
+        whenever(stealth.firstFlight(any(), any())).thenReturn(sealed)
+        whenever(stealth.buildSealedInner(any(), any(), any(), any(), any(), anyOrNull(), anyOrNull())).thenReturn(byteArrayOf(1))
+        whenever(messaging.sendSealedMessage(any())).thenAnswer { throw refusal("privacy_pass:missing_token") }.thenReturn(ok)
+
+        send.send("peer", ByteArray(32), byteArrayOf(9), SealedEnvelopeType.GENERIC)
+
+        verify(stealth, times(1)).firstFlight(any(), any())
+        verify(stealth).buildSealedInner(any(), any(), any(), any(), eq(false), eq(null), eq(sealed))
+        verify(stealth).buildSealedInner(any(), any(), any(), any(), eq(true), eq(null), eq(sealed))
+    }
+
+    /** A first flight the core cannot seal is not sent at all: its header names the sender.
+     * Mutation that reddens it: catch the throw and fall back to the certificate path. */
+    @Test
+    fun `a first flight that cannot be sealed is not sent`() = runTest {
+        whenever(stealth.firstFlight(any(), any())).thenAnswer { throw IllegalStateException("cannot seal") }
+
+        val thrown = runCatching { send.send("peer", ByteArray(32), byteArrayOf(9), SealedEnvelopeType.GENERIC) }.exceptionOrNull()
+
+        assertTrue(thrown is IllegalStateException)
+        verify(messaging, never()).sendSealedMessage(any())
+    }
+
+    /** An established session's envelope is never also offered as a first flight. */
+    @Test
+    fun `an envelope is not offered as a first flight`() = runTest {
+        whenever(stealth.sessionEnvelope(any(), any())).thenReturn(byteArrayOf(0x45))
+        whenever(stealth.buildSealedInner(any(), any(), any(), any(), any(), anyOrNull(), anyOrNull())).thenReturn(byteArrayOf(1))
+        whenever(messaging.sendSealedMessage(any())).thenReturn(ok)
+
+        send.send("peer", ByteArray(32), byteArrayOf(9), SealedEnvelopeType.GENERIC)
+
+        verify(stealth, never()).firstFlight(any(), any())
     }
 
     private fun refusal(description: String) = StatusException(Status.FAILED_PRECONDITION.withDescription(description))

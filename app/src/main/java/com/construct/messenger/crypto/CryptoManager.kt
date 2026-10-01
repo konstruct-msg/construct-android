@@ -248,6 +248,28 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
         orchestrator?.openEnvelope(envelope)
     }
 
+    /**
+     * Seal a first flight — a wire payload written on a session [deviceId] has not answered yet —
+     * whole, with the sender [certificate], under the handshake's hybrid key
+     * (`decisions/first-flight-sealed-whole.md`). `null` when the payload is not a first flight:
+     * it goes with a certificate. Throws for a first flight that cannot be sealed, which must not
+     * go any other way — its header names the sender. **Canon:** iOS `CryptoManager.sealFirstFlight`.
+     */
+    fun sealFirstFlight(
+        deviceId: String,
+        recipientIdentity: ByteArray,
+        wirePayload: ByteArray,
+        certificate: ByteArray,
+    ): ByteArray? = synchronized(coreLock) {
+        requireOrchestrator().sealFirstFlight(deviceId, recipientIdentity, wirePayload, certificate)
+    }
+
+    /** Open a `SealedInner.first_flight` sealed to this device: the certificate and the wire
+     * payload, as a first message always carried them. Throws when it does not open. */
+    fun openFirstFlight(sealed: ByteArray): uniffi.construct_core.FirstFlightOpened = synchronized(coreLock) {
+        requireOrchestrator().openFirstFlight(sealed)
+    }
+
     /** How late messages have arrived since start (PQR-4); `null` before the core is up. */
     fun reorderStats(): uniffi.construct_core.ReorderStats? = synchronized(coreLock) {
         orchestrator?.reorderStats()

@@ -1,6 +1,6 @@
 # Sessions — what Android does and what the core does
 
-> **Actualized 2026-10-01**, construct-core `0.26.0+cdde31584d5e` (session envelope: an established session names its writer by tag, no certificate; suite 4: a PQ key per message; a stored session from core ≤ 0.25 is refused at restore — `SESSION_PREDATES_ENVELOPE` — and dropped; the orchestrator state, which holds the envelope book, is saved beside every session). Replaces `SESSION_INITIALIZATION.md`
+> **Actualized 2026-10-01**, construct-core `0.27.1+1d5bc7ae2cad` (a first flight goes sealed whole with the certificate — `first_flight`; prekey bundles are fetched without a token; session envelope: an established session names its writer by tag, no certificate; suite 4: a PQ key per message; a stored session from core ≤ 0.25 is refused at restore — `SESSION_PREDATES_ENVELOPE` — and dropped; the orchestrator state, which holds the envelope book, is saved beside every session). Replaces `SESSION_INITIALIZATION.md`
 > and `SESSTION_LIFECYCLE.md`, which described a protocol that no longer exists (ping/ready,
 > SESSION_RESET_INIT, tie-break, heal, END_SESSION). They are in git history if you need to know
 > what was there.
