@@ -14,6 +14,7 @@ import shared.proto.services.v1.KeyServiceGrpcKt.KeyServiceCoroutineStub
 import shared.proto.services.v1.MediaServiceGrpcKt.MediaServiceCoroutineStub
 import shared.proto.services.v1.MessagingServiceGrpcKt.MessagingServiceCoroutineStub
 import shared.proto.services.v1.StickerServiceGrpcKt.StickerServiceCoroutineStub
+import shared.proto.signaling.v1.SignalingServiceGrpcKt.SignalingServiceCoroutineStub
 import shared.proto.services.v1.NotificationServiceGrpcKt.NotificationServiceCoroutineStub
 import shared.proto.services.v1.UserServiceGrpcKt.UserServiceCoroutineStub
 import shared.proto.services.v1.VeilServiceGrpcKt.VeilServiceCoroutineStub
@@ -149,6 +150,9 @@ class GrpcClient @Inject constructor(
      * (`decisions/sticker-packs-content-addressed.md`). **Canon:** iOS `StickerPackFetcher`.
      */
     val stickers: StickerServiceCoroutineStub get() = StickerServiceCoroutineStub(channels.sealed)
+
+    /** Call signalling: `InitiateCall`, TURN credentials and the `Signal` stream (`calls/SignalingClient`). */
+    val signaling: SignalingServiceCoroutineStub get() = SignalingServiceCoroutineStub(channels.auth)
 
     /** Authenticated media: minting an upload token and the upload itself. */
     val media: MediaServiceCoroutineStub get() = MediaServiceCoroutineStub(channels.auth)

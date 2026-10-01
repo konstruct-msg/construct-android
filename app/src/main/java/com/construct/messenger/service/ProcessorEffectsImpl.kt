@@ -70,6 +70,7 @@ class ProcessorEffectsImpl @Inject constructor(
     private val mediaPreview: MediaPreviewText,
     private val contactAvatars: ContactAvatars,
     private val reactions: ReactionStore,
+    private val callSignals: com.construct.messenger.calls.CallSignalInbox,
 ) : ProcessorEffects {
 
     override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
@@ -230,9 +231,26 @@ class ProcessorEffectsImpl @Inject constructor(
         ackStore.markProcessed(messageId, accountId)
     }
 
+    /**
+     * A call signal the core opened: the `WebRTCSignal` itself (the core took the frame off).
+     * From a contact who is not blocked it goes to the call machine; from anyone else it is
+     * dropped before anything reads it (iOS `handleCallSignalProto`). Acknowledged either way —
+     * it is not a message, and redelivery would only ring again.
+     */
     override suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray) {
         val accountId = sessionManager.accountIdForDevice(contactId) ?: contactId
-        Log.i(TAG, "call signal from ${accountId.take(8)}… ${messageId.take(8)}… (${protoBytes.size}B) — not wired")
+        val signal = runCatching { shared.proto.signaling.v1.Webrtc.WebRTCSignal.parseFrom(protoBytes) }.getOrNull()
+        val user = userDao.getById(accountId)
+        when {
+            signal == null || signal.callId.isEmpty() ->
+                Log.w(TAG, "call signal from ${accountId.take(8)}… ${messageId.take(8)}… does not parse — dropped")
+            !com.construct.messenger.calls.CallSignalInbox.admits(user?.isContact == true, user?.isBlocked == true) ->
+                Log.i(TAG, "call signal from ${accountId.take(8)}… — not a callable contact, dropped")
+            else -> {
+                Log.i(TAG, "call signal ${signal.signalCase} call=${signal.callId.take(8)}… from ${accountId.take(8)}…")
+                callSignals.deliver(com.construct.messenger.calls.CallSignalInbox.Incoming(accountId, contactId, signal))
+            }
+        }
         ackStore.markProcessed(messageId, accountId)
     }
 

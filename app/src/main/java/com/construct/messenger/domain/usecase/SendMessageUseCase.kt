@@ -101,6 +101,43 @@ class SendMessageUseCase @Inject constructor(
     }
 
     /**
+     * A call signal (iOS `CallManager.sendCallSignalProto`): [frame] — a `WebRTCSignal` in a type-12
+     * KNST frame — through the core's `OutgoingCallSignal` to the peer's **pinned** device, then
+     * the same send as a message: sealed while stealth is on and never sent identified then, the
+     * same retries. To the pinned device only, as on iOS: a person's second device does not ring
+     * (`decisions/a-peer-is-a-set-of-devices.md` — that is a decision of its own).
+     *
+     * True when the server took it. No row is written: a signal is not a message.
+     */
+    suspend fun sendCallSignal(peerAccountId: String, messageId: String, frame: ByteArray): Boolean {
+        val myId = keystoreManager.getUserId() ?: return false
+        if (!cryptoManager.isMessagingReady) return false
+        return try {
+            val pinned = sessionManager.ensureSession(peerAccountId)
+            val actions = orchestrator.handleEvent(CfeIncomingEvent.OutgoingCallSignal(pinned.deviceId, messageId, frame))
+            persistSessionActions(actions)
+            actions.filterIsInstance<CfeAction.NotifyError>().forEach { Log.w(TAG, "call signal: core [${it.code}] ${it.message}") }
+            val payload = actions.filterIsInstance<CfeAction.SendEncryptedMessage>().firstOrNull { it.to == pinned.deviceId }?.payload
+                ?: return false
+            val result = sendOneCopy(
+                myId = myId,
+                accountId = peerAccountId,
+                wireMessageId = messageId,
+                timestampMs = System.currentTimeMillis(),
+                encrypted = payload,
+                identityPublic = pinned.identityPublic,
+                isOwnReplica = false,
+            )
+            result?.success == true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "call signal ${messageId.take(8)}… to ${peerAccountId.take(8)}… failed", e)
+            false
+        }
+    }
+
+    /**
      * A sticker: `MessageContent.sticker`, a reference of about 40 bytes inside the ciphertext —
      * no upload, the ordinary text path (iOS `ChatSendCoordinator.sendSticker`). No quote travels
      * with it: `StickerRef` has no field for one, on iOS either.

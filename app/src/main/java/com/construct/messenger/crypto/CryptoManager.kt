@@ -296,6 +296,20 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
         orchestrator?.getAllSessionContactIds() ?: requireBootstrap().getAllSessionContactIds()
     }
 
+    /**
+     * [plaintext] encrypted on the session with [deviceId], as the bare wire payload — what an ICE
+     * candidate travels as (iOS `encryptMessage(_:forDevice:)` → `encryptToWire`). Advances the
+     * sending chain: the caller persists the session before the ciphertext leaves.
+     */
+    fun encryptToWire(deviceId: String, plaintext: ByteArray): ByteArray = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready")).encryptToWire(deviceId, plaintext)
+    }
+
+    /** A wire payload from [deviceId], opened on its session (iOS `decryptCallSignal`). Persist after. */
+    fun decryptWirePayload(deviceId: String, wirePayload: ByteArray): ByteArray = synchronized(coreLock) {
+        (orchestrator ?: error("orchestrator not ready")).decryptWirePayload(deviceId, wirePayload).plaintext
+    }
+
     fun hasSession(contactId: String): Boolean = synchronized(coreLock) {
         orchestrator?.hasSession(contactId) ?: false
     }

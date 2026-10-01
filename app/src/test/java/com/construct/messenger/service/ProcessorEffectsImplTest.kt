@@ -25,6 +25,7 @@ import uniffi.construct_core.CfeIncomingEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -56,6 +57,7 @@ class ProcessorEffectsImplTest {
         val acks = FakeAckStore()
         val pendingChunks = FakePendingChunkDao()
         val reactions = mock<com.construct.messenger.data.local.ReactionStore>()
+        val callSignals = com.construct.messenger.calls.CallSignalInbox()
         val effects = ProcessorEffectsImpl(
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) },
@@ -79,6 +81,7 @@ class ProcessorEffectsImplTest {
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = { _, _ -> },
             reactions = reactions,
+            callSignals = callSignals,
         )
     }
 
@@ -118,6 +121,7 @@ class ProcessorEffectsImplTest {
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = { _, _ -> },
             reactions = mock(),
+            callSignals = com.construct.messenger.calls.CallSignalInbox(),
         )
         val address = ByteArray(32) { 0x5A }
         val card = com.construct.messenger.util.KnstFrame.pack(
@@ -163,6 +167,7 @@ class ProcessorEffectsImplTest {
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = { _, _ -> },
             reactions = mock(),
+            callSignals = com.construct.messenger.calls.CallSignalInbox(),
         )
         val address = ByteArray(32) { 0x5A }
         val card = com.construct.messenger.util.KnstFrame.pack(
@@ -237,6 +242,7 @@ class ProcessorEffectsImplTest {
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = { _, _ -> },
             reactions = mock(),
+            callSignals = com.construct.messenger.calls.CallSignalInbox(),
         )
 
         effects.onDecrypted(peer, "msg-1", "hello".toByteArray())
@@ -281,6 +287,7 @@ class ProcessorEffectsImplTest {
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = { _, _ -> },
             reactions = mock(),
+            callSignals = com.construct.messenger.calls.CallSignalInbox(),
         )
         val baseId = "550e8400-e29b-41d4-a716-446655440000"
         val content = MessageContent.newBuilder()
@@ -362,6 +369,32 @@ class ProcessorEffectsImplTest {
         assertEquals(1, inbox.messages.rows.size)
         assertEquals(1, inbox.chats.rows[chatId]?.unreadCount)
         assertEquals("after", inbox.chats.rows[chatId]?.lastMessageText)
+    }
+
+    /**
+     * A call signal the core opened reaches the call machine when a contact sent it, and is
+     * dropped when a stranger did; acknowledged either way. Mutation: deliver without the contact
+     * check — the stranger's ring gets through.
+     */
+    @Test
+    fun `a call signal from a contact is delivered, from a stranger dropped`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.users.rows[peer] = UserEntity(id = peer, isContact = true)
+        val got = mutableListOf<com.construct.messenger.calls.CallSignalInbox.Incoming>()
+        val job = backgroundScope.launch(kotlinx.coroutines.Dispatchers.Unconfined) { inbox.callSignals.signals.collect { got += it } }
+        val signal = com.construct.messenger.calls.CallSignalWire.ringing("call-1", "dev", 1)
+
+        inbox.effects.onCallSignal(peer, "sig-1", signal.toByteArray())
+        val stranger = "cccccccc-cccc-cccc-cccc-cccccccccccc"
+        inbox.effects.onCallSignal(stranger, "sig-2", signal.toByteArray())
+
+        assertEquals(1, got.size)
+        assertEquals(peer, got[0].accountId)
+        assertEquals("call-1", got[0].signal.callId)
+        assertTrue(inbox.acks.isProcessed("sig-1"))
+        assertTrue(inbox.acks.isProcessed("sig-2"))
+        assertTrue(inbox.messages.rows.isEmpty())
+        job.cancel()
     }
 
     /**
@@ -590,6 +623,7 @@ class ProcessorEffectsImplTest {
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = { _, _ -> },
             reactions = mock(),
+            callSignals = com.construct.messenger.calls.CallSignalInbox(),
         )
     }
 

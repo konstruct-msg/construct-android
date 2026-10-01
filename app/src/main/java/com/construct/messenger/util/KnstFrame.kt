@@ -32,6 +32,8 @@ object KnstFrame {
 
     /** Our own copy to a sibling device: iOS frames `SSR1 ‖ content` with this type. */
     const val TYPE_SENDER_SYNC = 23
+    /** A `WebRTCSignal` (`calls/CallSignalWire`). Inside the ciphertext — nothing outside says "call". */
+    const val TYPE_CALL_SIGNAL = 12
 
     /** iOS `ChunkedDeliveryConfig.maxChunks`: 256 × 3770 B, a little under 1 MB of plaintext. */
     const val MAX_CHUNKS = 256

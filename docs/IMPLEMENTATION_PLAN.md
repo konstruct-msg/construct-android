@@ -151,7 +151,8 @@ Kotlin-реализация любого решения, которое прин
 **Шаги, по порядку:**
 1. ✅ **WebRTC.** `io.github.webrtc-sdk:android` 150.7871.01 (версия — пара к iOS, менять вместе),
    field trial `WebRTC-EnableDtlsPqc/Enabled/` при инициализации, фабрика лениво при первом звонке.
-2. **Сигналинг.** `WebRTCSignal` (`signaling/webrtc.proto`) — только по E2EE: KNST тип 12 →
+2. ✅ **Сигналинг** (транспорт, 2026-10-01; `calls/CallSignalTransport`, `CallSignalInbox`,
+   `SignalingClient`, `CallSignalWire`; вызывать его начнёт шаг 3). `WebRTCSignal` (`signaling/webrtc.proto`) — только по E2EE: KNST тип 12 →
    `CfeIncomingEvent.OutgoingCallSignal`, приём — `CallSignalDecrypted` (сейчас
    `ProcessorEffectsImpl.onCallSignal` только логирует). Запечатанно, без отката на открытую
    отправку; одна цепочка отправки на звонок (порядок offer → ICE → hangup). ICE-кандидаты ещё и
