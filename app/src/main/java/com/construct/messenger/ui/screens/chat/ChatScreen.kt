@@ -115,6 +115,13 @@ fun ChatScreen(
     val clipboard = LocalClipboardManager.current
     var menuMessageId by remember { mutableStateOf<String?>(null) }
     var jumpToId by remember { mutableStateOf<String?>(null) }
+    var reactingTo by remember { mutableStateOf<Message?>(null) }
+    val reactionFailed = stringResource(R.string.reaction_failed)
+    LaunchedEffect(Unit) {
+        viewModel.reactionFailed.collect {
+            android.widget.Toast.makeText(context, reactionFailed, android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
 
     // Visible means started, not merely composed: a chat left open behind the home screen is
     // not being read (iOS learned this the hard way — see ChatPresence).
@@ -213,8 +220,23 @@ fun ChatScreen(
                         menuMessageId = null
                     },
                     onJumpToReply = { jumpToId = message.replyToId },
+                    onReact = { emoji ->
+                        viewModel.react(message, emoji)
+                        menuMessageId = null
+                    },
+                    onPickMoreReactions = {
+                        reactingTo = message
+                        menuMessageId = null
+                    },
                 )
             }
+        }
+
+        reactingTo?.let { target ->
+            com.construct.messenger.ui.components.ReactionPickerSheet(
+                onPick = { viewModel.react(target, it) },
+                onDismiss = { reactingTo = null },
+            )
         }
 
         // The system photo picker: no permission, nothing but what the user picks is readable.

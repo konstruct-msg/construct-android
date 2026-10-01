@@ -270,28 +270,49 @@ class SendMessageUseCase @Inject constructor(
             ?: return SendOutcome.Failed(targetMessageId, "missing")
         if (!row.isSentByMe) return SendOutcome.Failed(targetMessageId, "not author")
 
-        val editId = UUID.randomUUID().toString().lowercase()
+        return when (val outcome = sendAction(myId, contactId, EditWire.encode(row.id, body), "edit")) {
+            is SendOutcome.Sent -> {
+                messageDao.markEdited(row.id, body)
+                refreshChatPreview(chatDao, messageDao, row.chatId)
+                outcome
+            }
+            is SendOutcome.Failed -> SendOutcome.Failed(targetMessageId, outcome.reason)
+        }
+    }
+
+    /**
+     * A reaction: `MessageContent.reaction` ([ReactionWire]) through the same fan-out as an edit,
+     * our own devices included. No row is written here — the caller has already applied it to the
+     * reaction store and puts the old one back on a failure.
+     */
+    suspend fun react(contactId: String, content: ByteArray): SendOutcome {
+        val myId = keystoreManager.getUserId() ?: return SendOutcome.Failed("", "not authenticated")
+        if (!cryptoManager.isMessagingReady) return SendOutcome.Failed("", "orchestrator not ready")
+        return sendAction(myId, contactId, content, "reaction")
+    }
+
+    /**
+     * Something said about a message already sent (an edit, a reaction), under a fresh action id.
+     * Sent when a recipient device took it — or, for a note to self, when the mailbox did.
+     */
+    private suspend fun sendAction(myId: String, contactId: String, content: ByteArray, label: String): SendOutcome {
+        val actionId = UUID.randomUUID().toString().lowercase()
         val timestampMs = System.currentTimeMillis()
         return try {
-            val content = EditWire.encode(row.id, body)
             val pinned = sessionManager.ensureSession(contactId)
             if (contactId == myId) {
-                val note = sendNoteToSelf(myId, editId, timestampMs, content, pinned)
-                if (note is SendOutcome.Failed) return SendOutcome.Failed(targetMessageId, note.reason)
+                val note = sendNoteToSelf(myId, actionId, timestampMs, content, pinned)
+                if (note is SendOutcome.Failed) return note
             } else {
-                val tally = deliverCopies(myId, contactId, editId, timestampMs, content, pinned)
-                if (tally.recipientAccepted == 0) {
-                    return SendOutcome.Failed(targetMessageId, tally.lastError)
-                }
+                val tally = deliverCopies(myId, contactId, actionId, timestampMs, content, pinned)
+                if (tally.recipientAccepted == 0) return SendOutcome.Failed(actionId, tally.lastError)
             }
-            messageDao.markEdited(row.id, body)
-            refreshChatPreview(chatDao, messageDao, row.chatId)
-            SendOutcome.Sent(editId)
+            SendOutcome.Sent(actionId)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "edit failed ${targetMessageId.take(8)}…", e)
-            SendOutcome.Failed(targetMessageId, e.message ?: "edit failed")
+            Log.e(TAG, "$label failed ${actionId.take(8)}…", e)
+            SendOutcome.Failed(actionId, e.message ?: "$label failed")
         }
     }
 

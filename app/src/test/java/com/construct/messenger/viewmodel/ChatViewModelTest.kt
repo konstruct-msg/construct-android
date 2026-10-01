@@ -195,6 +195,11 @@ private class FakeMessagesRepository : MessagesRepository {
         deleted += messageId
         flow.value = flow.value.filter { it.id != messageId }
     }
+    val reacted = mutableListOf<Pair<String, String>>()
+    override suspend fun react(contactId: String, messageId: String, emoji: String): Boolean {
+        reacted += messageId to emoji
+        return true
+    }
     override suspend fun chatShown(contactId: String) = Unit
     override fun chatHidden(contactId: String) = Unit
 }

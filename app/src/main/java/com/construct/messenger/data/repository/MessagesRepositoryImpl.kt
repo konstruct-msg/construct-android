@@ -25,7 +25,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import com.construct.messenger.data.local.ReactionStore
+import com.construct.messenger.data.local.db.ReactionDao
+import com.construct.messenger.data.model.MessageReaction
+import com.construct.messenger.util.ReactionRules
+import com.construct.messenger.util.ReactionWire
 
 @Singleton
 class MessagesRepositoryImpl @Inject constructor(
@@ -39,12 +44,44 @@ class MessagesRepositoryImpl @Inject constructor(
     private val sendMedia: SendMediaUseCase,
     private val media: MediaRepository,
     private val pickedFiles: com.construct.messenger.media.PickedFiles,
+    private val reactionDao: ReactionDao,
+    private val reactions: ReactionStore,
 ) : MessagesRepository {
 
     override fun observeContact(contactId: String): Flow<List<Message>> {
         val myId = keystoreManager.getUserId() ?: return emptyFlow()
         val chatId = ConversationId.direct(myId, contactId)
-        return messageDao.observeChat(chatId).map { rows -> rows.map { it.toModel() } }
+        val me = myId.lowercase()
+        return combine(messageDao.observeChat(chatId), reactionDao.observeChat(chatId)) { rows, reacted ->
+            val byTarget = reacted.groupBy { it.targetMessageId }
+            rows.map { row ->
+                row.toModel().copy(
+                    reactions = byTarget[row.id.lowercase()].orEmpty()
+                        .map { MessageReaction(it.emoji, isMine = it.reactorUserId == me) },
+                )
+            }
+        }
+    }
+
+    override suspend fun react(contactId: String, messageId: String, emoji: String): Boolean {
+        val myId = keystoreManager.getUserId() ?: return false
+        val target = messageId.lowercase()
+        if (!ReactionRules.isValidTargetId(target)) return false
+        val nowMs = System.currentTimeMillis()
+        val previous = reactions.current(target, myId)
+        val incoming = ReactionRules.localToggle(previous?.emoji, emoji) ?: return false
+        val (action, wireEmoji) = when (incoming) {
+            is ReactionRules.Incoming.Add -> 1 to incoming.emoji
+            ReactionRules.Incoming.Remove -> 2 to ""
+        }
+        reactions.applyIncoming(target, myId, action, wireEmoji, nowMs, nowMs, nowMs)
+        // Off the chat's scope: leaving the screen must not leave a reaction half sent.
+        val outcome = scope.async { sendMessage.react(contactId, ReactionWire.encode(target, incoming, nowMs)) }.await()
+        if (outcome is SendOutcome.Failed) {
+            reactions.restoreLocal(target, myId, previous, nowMs)
+            return false
+        }
+        return true
     }
 
     override suspend fun send(contactId: String, text: String, reply: ReplyRef?): SendOutcome {

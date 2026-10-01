@@ -29,6 +29,9 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.layout.offset
+import com.construct.messenger.util.ReactionRules
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -89,6 +92,8 @@ fun MessageBubble(
     onEdit: () -> Unit = {},
     onDelete: () -> Unit = {},
     onJumpToReply: () -> Unit = {},
+    onReact: (String) -> Unit = {},
+    onPickMoreReactions: () -> Unit = {},
     voicePlayback: VoicePlayback = VoicePlayback(),
     onToggleVoice: () -> Unit = {},
     fileLoading: Set<String> = emptySet(),
@@ -118,6 +123,13 @@ fun MessageBubble(
         val maxBubble = minOf(360.dp, maxWidth * 0.7f)
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = if (isOutgoing) Alignment.TopEnd else Alignment.TopStart) {
         Column(horizontalAlignment = if (isOutgoing) Alignment.End else Alignment.Start) {
+            // iOS `badgeOverlap`: the chip hangs below the bubble on the corner away from the time,
+            // and the row keeps room for it so it never sits on the next line.
+            Box(
+                modifier = Modifier.padding(bottom = if (message.reactions.isEmpty()) 0.dp else REACTION_OVERHANG),
+                contentAlignment = if (isOutgoing) Alignment.BottomStart else Alignment.BottomEnd,
+            ) {
+            Column(horizontalAlignment = if (isOutgoing) Alignment.End else Alignment.Start) {
             val album = (message.media as? MessageMedia.Album)?.takeUnless { it.isFiles }
             val voice = message.media as? MessageMedia.Voice
             val files = (message.media as? MessageMedia.Album)?.takeIf { it.isFiles }
@@ -133,6 +145,7 @@ fun MessageBubble(
                         indication = null,
                         onClick = {},
                         onLongClick = onLongPress,
+                        onDoubleClick = { onReact(ReactionRules.LIKE) },
                     ),
                 ) {
                     FilesBubble(files, message.body, isOutgoing, maxBubble, fileLoading, fileUnavailable, onOpenFile)
@@ -180,6 +193,8 @@ fun MessageBubble(
                         indication = null,
                         onClick = {},
                         onLongClick = onLongPress,
+                        // iOS: a double tap is the like — the first of the quick set.
+                        onDoubleClick = { onReact(ReactionRules.LIKE) },
                     )
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
@@ -199,6 +214,13 @@ fun MessageBubble(
                         color = contentColor,
                     )
                 }
+            }
+            }
+            ReactionBadgeRow(
+                reactions = message.reactions,
+                onTap = onReact,
+                modifier = Modifier.offset(y = REACTION_OVERHANG),
+            )
             }
             if (isLastInGroup) {
                 Row(
@@ -222,6 +244,8 @@ fun MessageBubble(
                 expanded = menuExpanded,
                 onDismissRequest = onDismissMenu,
             ) {
+                ReactionQuickRow(current = message.myReaction, onPick = onReact, onPickMore = onPickMoreReactions)
+                HorizontalDivider(color = CTColor.noise, thickness = 0.5.dp)
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.reply), style = ctRegular(14), color = CTColor.text) },
                     leadingIcon = {
@@ -312,6 +336,9 @@ private fun DeliveryStatusIcon(status: DeliveryStatus) {
     }
     Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(11.dp))
 }
+
+/** iOS `Reaction.badgeOverlap` — more than the bubble's padding and the last line's glyphs. */
+private val REACTION_OVERHANG = 18.dp
 
 /** SwiftUI `.green` (dark variant 0x30D158) — iOS's "delivered" colour. */
 private val SYSTEM_GREEN = Color(0xFF30D158)

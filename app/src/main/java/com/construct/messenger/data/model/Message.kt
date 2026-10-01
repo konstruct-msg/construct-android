@@ -17,5 +17,12 @@ data class Message(
     val isEdited: Boolean = false,
     /** Photos, videos, files or a voice note; [body] is then the caption, possibly empty. */
     val media: MessageMedia? = null,
-)
+    /** One per reactor, oldest first. A reaction is never a row of its own. */
+    val reactions: List<MessageReaction> = emptyList(),
+) {
+    /** The emoji this account has on it, if any — what a repeat tap takes off. */
+    val myReaction: String? get() = reactions.firstOrNull { it.isMine }?.emoji
+}
+
+data class MessageReaction(val emoji: String, val isMine: Boolean)
 

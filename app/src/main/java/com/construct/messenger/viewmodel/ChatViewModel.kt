@@ -196,6 +196,20 @@ class ChatViewModel @Inject constructor(
         draft.value = ""
     }
 
+    private val _reactionFailed = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    /** A reaction no device took; the badge has already gone back to what it was. */
+    val reactionFailed: kotlinx.coroutines.flow.SharedFlow<Unit> = _reactionFailed
+
+    /**
+     * React to [message] with [emoji] — or take it off, when it is the one already there. The
+     * badge shows at once (iOS `sendReaction`).
+     */
+    fun react(message: Message, emoji: String) {
+        viewModelScope.launch {
+            if (!messagesRepository.react(contactId, message.id, emoji)) _reactionFailed.tryEmit(Unit)
+        }
+    }
+
     /** Drop [message] from this phone. The peer is not told. */
     fun delete(message: Message) {
         if (editing.value?.messageId == message.id) cancelEdit()

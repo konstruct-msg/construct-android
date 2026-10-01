@@ -14,7 +14,7 @@ import shared.proto.messaging.v1.Content.TextMessage
 
 /**
  * Turns a decrypted Double-Ratchet plaintext into display text, or into an
- * edit / delete of a message already in the transcript.
+ * edit / delete / reaction on a message already in the transcript.
  *
  * After decrypt the blob is untyped. Recipients sniff four formats
  * (`architecture/WIRE_FORMAT.md`): KNST frame, bare `MessageContent` proto,
@@ -33,6 +33,9 @@ object IncomingPlaintext {
     /** Delete-for-everyone. Delete-for-self is not applied: it never leaves the sender's phone. */
     data class Delete(val targetMessageId: String)
 
+    /** `MessageContent.reaction` as sent — validated by `ReactionRules` where it is applied. */
+    data class Reaction(val targetMessageId: String, val actionRawValue: Int, val emoji: String, val timestampMs: Long)
+
     data class Decoded(
         val text: String,
         val knstContentType: Int,
@@ -43,6 +46,8 @@ object IncomingPlaintext {
         val e2eMessageId: String? = null,
         val edit: Edit? = null,
         val delete: Delete? = null,
+        /** Metadata on another message, never a bubble. */
+        val reaction: Reaction? = null,
         /** A contact sharing their profile — applied to their row, never a bubble. */
         val profile: ProfileShare? = null,
         /** Photos, videos, files or a voice note; [text] is then the caption, possibly empty. */
@@ -121,6 +126,11 @@ object IncomingPlaintext {
                         hidden(knstContentType, e2eMessageId).copy(delete = Delete(target))
                     }
                 }
+                content.hasReaction() -> hidden(knstContentType, e2eMessageId).copy(
+                    reaction = content.reaction.let {
+                        Reaction(it.targetMessageId, it.actionValue, it.emoji, it.timestampMs)
+                    },
+                )
                 content.hasText() && content.text.text.isNotEmpty() -> Decoded(
                     text = content.text.text,
                     knstContentType = knstContentType,

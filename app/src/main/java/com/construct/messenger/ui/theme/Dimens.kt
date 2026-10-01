@@ -22,6 +22,7 @@ object CTLayout {
     val inlinePad = 8.dp       // inline padding inside a row
     val sectionGap = 16.dp     // between sections
     val controlHeight = 42.dp  // minimum height of a tappable card row
+    val hitTarget = 44.dp      // smallest thing meant to be tapped
 }
 
 /** Spacing scale. */

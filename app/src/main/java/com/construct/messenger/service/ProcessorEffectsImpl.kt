@@ -2,6 +2,7 @@ package com.construct.messenger.service
 
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.data.local.ReactionStore
 import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
@@ -67,6 +68,7 @@ class ProcessorEffectsImpl @Inject constructor(
     private val chunks: ChunkReassembler,
     private val mediaPreview: MediaPreviewText,
     private val contactAvatars: ContactAvatars,
+    private val reactions: ReactionStore,
 ) : ProcessorEffects {
 
     override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
@@ -100,6 +102,11 @@ class ProcessorEffectsImpl @Inject constructor(
         }
         decoded.delete?.let { deletion ->
             applyDelete(deletion.targetMessageId, sentByMe = false)
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
+        decoded.reaction?.let { reaction ->
+            applyReaction(reaction, reactorUserId = accountId)
             ackStore.markProcessed(messageId, accountId)
             return
         }
@@ -196,6 +203,12 @@ class ProcessorEffectsImpl @Inject constructor(
         }
         decoded.delete?.let { deletion ->
             applyDelete(deletion.targetMessageId, sentByMe = true)
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
+        decoded.reaction?.let { reaction ->
+            // Ours, from a sibling device: the reactor is this account.
+            keystoreManager.getUserId()?.let { applyReaction(reaction, reactorUserId = it, fallbackMs = timestampMs) }
             ackStore.markProcessed(messageId, accountId)
             return
         }
@@ -466,6 +479,28 @@ class ProcessorEffectsImpl @Inject constructor(
         if (row.isSentByMe != sentByMe) return
         messageDao.deleteById(row.id)
         refreshChatPreview(chatDao, messageDao, row.chatId)
+    }
+
+    /**
+     * Metadata on the target, never a row. **Canon:** iOS `handleIncomingReaction`. Applied whether
+     * or not the message is here yet — an orphan waits for it. A malformed one is still acknowledged
+     * by the caller, so it cannot come back.
+     */
+    private suspend fun applyReaction(
+        reaction: IncomingPlaintext.Reaction,
+        reactorUserId: String,
+        fallbackMs: Long = System.currentTimeMillis(),
+    ) {
+        val decision = reactions.applyIncoming(
+            targetMessageId = reaction.targetMessageId,
+            reactorUserId = reactorUserId,
+            actionRawValue = reaction.actionRawValue,
+            emoji = reaction.emoji,
+            payloadTimestampMs = reaction.timestampMs,
+            fallbackTimestampMs = fallbackMs,
+            nowMs = System.currentTimeMillis(),
+        )
+        Log.i(TAG, "reaction on ${reaction.targetMessageId.take(8)}… from ${reactorUserId.take(8)}… $decision")
     }
 
     private companion object {

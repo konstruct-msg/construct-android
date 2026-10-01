@@ -48,6 +48,13 @@ interface MessagesRepository {
     suspend fun edit(contactId: String, messageId: String, newText: String): SendOutcome
 
     /**
+     * React to [messageId] with [emoji], or take the reaction off when it is the one already set
+     * (iOS `localToggle`). Shown at once; put back as it was when no device took it. False when
+     * nothing was sent.
+     */
+    suspend fun react(contactId: String, messageId: String, emoji: String): Boolean
+
+    /**
      * Remove [messageId] from this phone's transcript. iOS delete does not tell
      * the peer, and a `DeleteMessage` Android sent would have no consumer there.
      */

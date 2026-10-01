@@ -24,8 +24,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ServerMessageIdEntity::class,
         PendingResendEntity::class,
         PendingChunkEntity::class,
+        ReactionEntity::class,
     ],
-    version = 16,
+    version = 17,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -39,6 +40,7 @@ abstract class ConstructDatabase : RoomDatabase() {
     abstract fun serverMessageIdDao(): ServerMessageIdDao
     abstract fun pendingResendDao(): PendingResendDao
     abstract fun pendingChunkDao(): PendingChunkDao
+    abstract fun reactionDao(): ReactionDao
 
     companion object {
         const val NAME = "construct.db"
@@ -157,6 +159,18 @@ abstract class ConstructDatabase : RoomDatabase() {
         val MIGRATION_15_16 = object : Migration(15, 16) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE messages ADD COLUMN mediaPayload BLOB")
+            }
+        }
+
+        /** Reactions (`ReactionEntity`): a table of their own, never message rows. */
+        val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS reactions (" +
+                        "targetMessageId TEXT NOT NULL, reactorUserId TEXT NOT NULL, emoji TEXT NOT NULL, " +
+                        "timestampMs INTEGER NOT NULL, receivedAtMs INTEGER NOT NULL, " +
+                        "PRIMARY KEY(targetMessageId, reactorUserId))",
+                )
             }
         }
     }

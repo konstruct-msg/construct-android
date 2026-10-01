@@ -55,6 +55,7 @@ class ProcessorEffectsImplTest {
         val users = FakeUserDao()
         val acks = FakeAckStore()
         val pendingChunks = FakePendingChunkDao()
+        val reactions = mock<com.construct.messenger.data.local.ReactionStore>()
         val effects = ProcessorEffectsImpl(
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) },
@@ -77,6 +78,7 @@ class ProcessorEffectsImplTest {
             chunks = ChunkReassembler(pendingChunks),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = { _, _ -> },
+            reactions = reactions,
         )
     }
 
@@ -115,6 +117,7 @@ class ProcessorEffectsImplTest {
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = { _, _ -> },
+            reactions = mock(),
         )
         val address = ByteArray(32) { 0x5A }
         val card = com.construct.messenger.util.KnstFrame.pack(
@@ -159,6 +162,7 @@ class ProcessorEffectsImplTest {
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = { _, _ -> },
+            reactions = mock(),
         )
         val address = ByteArray(32) { 0x5A }
         val card = com.construct.messenger.util.KnstFrame.pack(
@@ -232,6 +236,7 @@ class ProcessorEffectsImplTest {
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = { _, _ -> },
+            reactions = mock(),
         )
 
         effects.onDecrypted(peer, "msg-1", "hello".toByteArray())
@@ -275,6 +280,7 @@ class ProcessorEffectsImplTest {
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = { _, _ -> },
+            reactions = mock(),
         )
         val baseId = "550e8400-e29b-41d4-a716-446655440000"
         val content = MessageContent.newBuilder()
@@ -356,6 +362,38 @@ class ProcessorEffectsImplTest {
         assertEquals(1, inbox.messages.rows.size)
         assertEquals(1, inbox.chats.rows[chatId]?.unreadCount)
         assertEquals("after", inbox.chats.rows[chatId]?.lastMessageText)
+    }
+
+    /**
+     * A reaction is metadata on its target: applied under the peer's account, never a row. From a
+     * sibling device it is ours. Mutation: drop either reaction branch — its message turns into
+     * nothing at all and the store is never called.
+     */
+    @Test
+    fun `a reaction is applied under its reactor and adds no bubble`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        val target = "22222222-2222-4222-8222-222222222222"
+        val reaction = com.construct.messenger.util.ReactionWire.encode(
+            target, com.construct.messenger.util.ReactionRules.Incoming.Add("😂"), 77,
+        )
+        inbox.effects.onDecrypted(peer, "env-r", KnstFrame.pack(reaction, KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID()))
+        verifyBlocking(inbox.reactions) {
+            applyIncoming(org.mockito.kotlin.eq(target), org.mockito.kotlin.eq(peer), org.mockito.kotlin.eq(1),
+                org.mockito.kotlin.eq("😂"), org.mockito.kotlin.eq(77L), any(), any(), any())
+        }
+        assertTrue(inbox.messages.rows.isEmpty())
+        assertTrue(inbox.acks.isProcessed("env-r"))
+
+        val id = UUID.randomUUID()
+        inbox.effects.onSenderSync(
+            "sibling", "$id-ss-0123456789abcdef",
+            KnstFrame.pack(SenderSyncRouting.encode(peer, reaction), KnstFrame.TYPE_SENDER_SYNC, id), 42L,
+        )
+        verifyBlocking(inbox.reactions) {
+            applyIncoming(org.mockito.kotlin.eq(target), org.mockito.kotlin.eq(myId), org.mockito.kotlin.eq(1),
+                org.mockito.kotlin.eq("😂"), org.mockito.kotlin.eq(77L), org.mockito.kotlin.eq(42L), any(), any())
+        }
+        assertTrue(inbox.messages.rows.isEmpty())
     }
 
     /**
@@ -551,6 +589,7 @@ class ProcessorEffectsImplTest {
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = { _, _ -> },
+            reactions = mock(),
         )
     }
 
