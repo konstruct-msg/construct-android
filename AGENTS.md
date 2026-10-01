@@ -198,7 +198,8 @@ they ask nothing of the device.
 This is checkable right now and must stay that way: the manifest declares network permissions
 plus the Android foreground-service/notification permissions, `CAMERA` (asked for only when the
 invite scanner opens; the QR is read by CameraX + ZXing, not ML Kit), `RECORD_AUDIO` (asked for only when
-the user taps the microphone for a voice note), one non-exported
+the user taps the microphone for a voice note or makes or answers a call), `MODIFY_AUDIO_SETTINGS`
+(install-time; a call's voice mode is refused without it), one non-exported
 `MessagingForegroundService`, no `<receiver>`, and no push-provider client code. On Android 13+
 the app requests `POST_NOTIFICATIONS`; on Android 14+ it starts with the `remoteMessaging`
 foreground-service type. Older supported devices, including Android 11, use the ordinary

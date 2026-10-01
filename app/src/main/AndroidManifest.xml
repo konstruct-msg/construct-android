@@ -10,8 +10,10 @@
     <!-- Scanning an invite QR only; asked for when the scanner opens. Not required: without a
          camera the invite link still works. -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <!-- Voice notes; asked for only when the user taps the microphone. -->
+    <!-- Voice notes and calls; asked for when the user taps the microphone or calls. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Calls: the voice mode (MODE_IN_COMMUNICATION) is refused without it. Granted at install. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
     <application

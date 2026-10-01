@@ -103,7 +103,7 @@
 | # | Направление | Состояние | Опора |
 |---|---|---|---|
 | C1 | VEIL (обфускация транспорта) | Off/Auto/On сделаны (seed-фронт; тикет B2 открывает первый туннель, через него берётся B1 — привязанный к ключу устройства `veil/VeilAccessKey`; автомат `transport/TransportRoute` по векторам `transport_route.json`); нет манифеста/альтернатив | §5; `veil/`, JNA к `veil_start`. Выбор метода и гонка — в Rust; когда уходить с прямого пути — `TransportRoute` по общим векторам (не протокол, живёт на платформе) |
-| C2 | Звонки (WebRTC) | начато 2026-10-01: подключён `io.github.webrtc-sdk:android` 150.7871.01 — та же сборка, что iOS (`Packages/WebRTC`), с шифрованием кадров (`FrameCryptor`) и постквантовым DTLS (`WebRTC-EnableDtlsPqc`, `calls/WebRtcRuntime`); тест читает ключ из связанной библиотеки; ABI ограничены теми, что есть у ядра. Сигналинг (шаг 2) и машина состояний (шаг 3, `calls/CallManager`) готовы; дальше — медиа, шаг 4 | §6 |
+| C2 | Звонки (WebRTC) | начато 2026-10-01: подключён `io.github.webrtc-sdk:android` 150.7871.01 — та же сборка, что iOS (`Packages/WebRTC`), с шифрованием кадров (`FrameCryptor`) и постквантовым DTLS (`WebRTC-EnableDtlsPqc`, `calls/WebRtcRuntime`); тест читает ключ из связанной библиотеки; ABI ограничены теми, что есть у ядра. Сигналинг (шаг 2) и машина состояний (шаг 3, `calls/CallManager`) готовы, медиа (шаг 4, `calls/WebRtcCallMedia`) — тоже; дальше — экран и системный звонок, шаг 5 | §6 |
 | C3 | Медиа (вложения, голосовые) | начато. Есть: сообщения в несколько KNST-кадров (отправка кусками, сборка в Room `pending_chunks`, 24 ч; копия на своё устройство в раскладке iOS); **приём фото**: альбом/фото/голосовое хранятся с сообщением (`mediaPayload`), фото скачиваются `DownloadMedia` по каналу без токена, AES-256-GCM как CryptoKit, кэш — зашифрованный блоб в `files/media`, BlurHash, мозаика iOS, полноэкранный просмотр; **отправка фото**: «+» и системный выбор фото, сжатие как iOS (≤1920, JPEG ≤4 МиБ), BlurHash, `GenerateUploadToken`+`UploadMedia` (без MIME), по 4 параллельно, пузырь сразу из локальной зашифрованной копии, переотправка медиа по DECRYPTION_ERROR; **голосовые**: запись как iOS (AAC 44,1 кГц моно 64 кбит/с, ≤300 с, волна 100 точек), полосы записи/прослушивания, пузырь с волной, воспроизведение из памяти, `codec` = `audio/m4a|id|size`. **файлы**: пузырь как iOS, по нажатию скачать → расшифровать в `cache/open` → открыть системным приложением (FileProvider, копия живёт час), распаковка raw DEFLATE от iOS, отправка через «+» → «Файл» без сжатия. **видео**: постер и длина в плитке, по нажатию скачать и играть из памяти (Media3 ExoPlayer), отправка с перекодированием в MP4 1080p H.264/AAC (Media3 Transformer), в файл уходит только ориентация кадра. Нет: выбора качества видео (720p/оригинал), расшифровки голосовых (STT), непрерывного воспроизведения, квоты кэша | канон iOS `Services/Media`, `MediaWireCodec`, `MediaMessageView`; `decisions/durable-chunk-reassembly.md` |
 | C4 | Группы (MLS) | не начато | канон iOS |
 | C5 | Synaps в виде сот | не начато | `ANDROID_ONBOARDING.md` §5.10 |
@@ -175,9 +175,21 @@ Kotlin-реализация любого решения, которое прин
    TIMEOUT. Не перенесено: ожидание сессии 12 с (ждало SESSION_RESET_INIT, которого больше нет —
    отправка сама открывает сессию), таймаут приёма потока 2,5 с (grpc-kotlin не сообщает о
    приёме). Имя звонящего в `InitiateCall` — пустое: вызываемый называет нас по своим контактам.
-4. **Медиа.** Unified plan, max-bundle, rtcp-mux require, `iceTransportPolicy = ALL`; ICE-серверы —
-   только TURN из учётки, без неё `stun:ams.konstruct.cc:3478`; публичных STUN нет. Аудиотрек без
-   видео; `AudioManager.MODE_IN_COMMUNICATION`, системный выбор маршрута.
+4. ✅ **Медиа** (2026-10-01; `calls/WebRtcCallMedia`, `CallAudio`). Unified plan, max-bundle,
+   rtcp-mux require, `iceTransportPolicy = ALL`; ICE-серверы — только TURN из учётки, без неё
+   `stun:ams.konstruct.cc:3478`; публичных STUN нет. Один аудиотрек, без видео. Кандидаты до
+   remote description ждут внутри медиа, как в iOS `WebRTCSession`. Аудио:
+   `JavaAudioDeviceModule` с аппаратными AEC/NS, источник `VOICE_COMMUNICATION`;
+   `MODE_IN_COMMUNICATION` и фокус на время звонка, маршрут выбирает система (нужно
+   `MODIFY_AUDIO_SETTINGS` — без него режим молча не ставится). Без `RECORD_AUDIO` медиа не
+   создаётся (спросить — дело экрана звонка, шаг 5). При соединении в лог идут версия DTLS, шифр и
+   SRTP. Проверено на эмуляторе loopback-тестом (`androidTest/calls/WebRtcLoopbackTest`, два пира в
+   одном процессе): DTLS 1.3, `TLS_AES_128_GCM_SHA256`, соединение за ~0,4 с. Группу обмена ключами
+   (`tlsGroup`) эта сборка в статистике не отдаёт, так что X25519MLKEM768 по факту не подтверждён —
+   только наличием ключа trial в библиотеке. Instrumented-тесты — только на эмуляторе:
+   `connectedAndroidTest` удаляет приложение вместе с аккаунтом. `CryptoManagerInstrumentedTest`
+   отстал от API ядра и не компилируется — исходники androidTest целиком не собираются, пока его не
+   починить или не удалить.
 5. **Системный звонок.** Self-managed `ConnectionService` + `TelecomManager` (аналог CallKit);
    входящий будит наш `MessageStream` в foreground-сервисе — VoIP-push не нужен (без GMS).
    Уведомление с full-screen intent. Новые разрешения (`MANAGE_OWN_CALLS`,

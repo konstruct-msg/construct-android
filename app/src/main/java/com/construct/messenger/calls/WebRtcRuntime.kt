@@ -1,7 +1,10 @@
 package com.construct.messenger.calls
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.MediaRecorder
 import org.webrtc.PeerConnectionFactory
+import org.webrtc.audio.JavaAudioDeviceModule
 
 /**
  * WebRTC, set up once. **Canon:** iOS `WebRTCRuntime` / `WebRTCFactory` / `WebRTCFieldTrials`
@@ -39,6 +42,19 @@ object WebRtcRuntime {
                 .setFieldTrials(FIELD_TRIALS)
                 .createInitializationOptions(),
         )
-        return PeerConnectionFactory.builder().createPeerConnectionFactory()
+        // The voice path: the phone's own echo canceller and noise suppressor where it has them
+        // (WebRTC falls back to its software ones where it does not), recorded as a call.
+        val audio = JavaAudioDeviceModule.builder(context)
+            .setUseHardwareAcousticEchoCanceler(true)
+            .setUseHardwareNoiseSuppressor(true)
+            .setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build(),
+            )
+            .createAudioDeviceModule()
+        return PeerConnectionFactory.builder().setAudioDeviceModule(audio).createPeerConnectionFactory()
     }
 }
