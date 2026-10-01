@@ -73,6 +73,8 @@ class MessageProcessor @Inject constructor(
             contentType = incoming.contentType.number.toUByte(),
             // What a first message opens its session from; the core checks it when it does.
             senderCertificate = incoming.senderCertificate,
+            // The session whose envelope it came in: an unreadable one is answered along that pair.
+            envelopeSession = incoming.envelopeSession,
         )
 
         // The core answers a message nothing reads with a decryption error only when it can check
@@ -236,7 +238,7 @@ class MessageProcessor @Inject constructor(
                     effects.saveSecureStore(action.slot, action.data)
                 is CfeAction.ArchiveSession -> effects.archiveSession(action.contactId)
                 is CfeAction.SendDecryptionError ->
-                    effects.sendDecryptionError(action.contactId, action.messageId, action.payload)
+                    effects.sendDecryptionError(action.contactId, action.messageId, action.payload, action.enveloped)
                 is CfeAction.SessionRetired ->
                     effects.sessionRetired(action.contactId, action.withoutOneTimePrekey)
                 is CfeAction.ResendMessage ->
@@ -312,8 +314,8 @@ interface ProcessorEffects {
     suspend fun archiveSession(contactId: String)
 
     /** We could not read [messageId] from [contactId]: send the core's sealed [payload] to that
-     * device as a DECRYPTION_ERROR. */
-    suspend fun sendDecryptionError(contactId: String, messageId: String, payload: ByteArray)
+     * device as a DECRYPTION_ERROR — a session envelope back along the pair when [enveloped]. */
+    suspend fun sendDecryptionError(contactId: String, messageId: String, payload: ByteArray, enveloped: Boolean)
 
     /** The peer could not read our current state with [contactId] and the core retired it; the
      * next send opens a new one — without a one-time prekey when [withoutOneTimePrekey]. */

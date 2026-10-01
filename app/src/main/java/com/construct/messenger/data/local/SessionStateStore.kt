@@ -11,10 +11,17 @@ import uniffi.construct_core.CfeSecureStoreSlot
  * Persistence for CFE session bytes. The Rust core names the durable object with
  * `CfeSecureStoreSlot`; Android only maps that type to a Room key. Blobs are opaque CFE binary
  * (`docs/FFI_BINARY_FORMAT.md`) and are never parsed here.
+ *
+ * Every session save writes the orchestrator state beside it, as iOS `handleStorageAction` does.
+ * The core asks for that state only where nothing else is saved, and counts on the platform for
+ * the rest. Since core 0.26.0 it holds the envelope book — a session's envelope keys — and a
+ * session restored without its pair in the book is refused (`SESSION_PREDATES_ENVELOPE`). Until
+ * 2026-10-01 nothing here exported it: every restart would have reopened every conversation.
  */
 @Singleton
 class SessionStateStore @Inject constructor(
     private val sessionStateDao: SessionStateDao,
+    private val orchestratorState: OrchestratorStateSource,
 ) {
 
     /** Persist one CFE storage action without reconstructing a string key. */
@@ -24,6 +31,9 @@ class SessionStateStore @Inject constructor(
             sessionStateDao.delete(key)
         } else {
             saveSession(key, cfeBytes)
+        }
+        if (slot is CfeSecureStoreSlot.Session) {
+            orchestratorState.snapshot()?.let { saveSession(ORCHESTRATOR_STATE_KEY, it) }
         }
     }
 
@@ -74,4 +84,10 @@ class SessionStateStore @Inject constructor(
         fun isLegacyPqKey(key: String): Boolean =
             key == "core:kyber-session-state" || key.startsWith("pq-deferred:") || key.startsWith("kyber-spk:")
     }
+}
+
+/** The core's coordination state as it stands now — `null` before the core is up. Served by
+ * `CryptoManager`. */
+fun interface OrchestratorStateSource {
+    fun snapshot(): ByteArray?
 }

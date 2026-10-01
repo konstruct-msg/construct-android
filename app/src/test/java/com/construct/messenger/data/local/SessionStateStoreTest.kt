@@ -29,7 +29,22 @@ class SessionStateStoreTest {
 
     private fun newStore(
         stateDao: FakeSessionStateDao = FakeSessionStateDao(),
-    ) = SessionStateStore(stateDao)
+    ) = SessionStateStore(stateDao) { null }
+
+    /** The envelope book is in the orchestrator state (core 0.26.0); a session saved without it is
+     * refused on the next start. Mutation that reddens it: drop the snapshot in `saveSecureStore`. */
+    @Test
+    fun `a session save writes the orchestrator state beside it`() = runTest {
+        val dao = FakeSessionStateDao()
+        val store = SessionStateStore(dao) { byteArrayOf(0x0B) }
+
+        store.saveSecureStore(CfeSecureStoreSlot.Session("dev"), byteArrayOf(1))
+        assertArrayEquals(byteArrayOf(0x0B), dao.rows.getValue(SessionStateStore.ORCHESTRATOR_STATE_KEY).cfeBytes)
+
+        dao.rows.clear()
+        store.saveSecureStore(CfeSecureStoreSlot.Session("dev"), ByteArray(0))
+        assertArrayEquals(byteArrayOf(0x0B), dao.rows.getValue(SessionStateStore.ORCHESTRATOR_STATE_KEY).cfeBytes)
+    }
 
     @Test
     fun `session blob round-trips byte-identical`() = runTest {

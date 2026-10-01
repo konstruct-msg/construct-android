@@ -130,7 +130,7 @@ class CfeTimerBridge @Inject constructor(
                 // A failed open answers the messages it gave up, and a decryption error received
                 // is answered with a retire and a resend: all three can reach this executor.
                 is CfeAction.SendDecryptionError ->
-                    effects.sendDecryptionError(action.contactId, action.messageId, action.payload)
+                    effects.sendDecryptionError(action.contactId, action.messageId, action.payload, action.enveloped)
                 is CfeAction.SessionRetired ->
                     effects.sessionRetired(action.contactId, action.withoutOneTimePrekey)
                 is CfeAction.ResendMessage -> effects.resendMessage(action.contactId, action.messageId)

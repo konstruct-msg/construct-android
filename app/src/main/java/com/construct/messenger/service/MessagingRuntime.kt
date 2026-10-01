@@ -265,7 +265,8 @@ class MessagingRuntime @Inject constructor(
             // DECRYPTION_ERROR (28): the peer could not read something we sent it. The core opens
             // it and answers — retire our current state when the error names it, resend the named
             // message once, or nothing when it is stale. Canon: iOS
-            // `SessionCoordinator.messageRouter(_:receivedDecryptionError:payload:)`.
+            // `SessionCoordinator.messageRouter(_:receivedDecryptionError:payload:opened:)`. Out of a
+            // session envelope the payload is the error itself (`opened`), not a box to open.
             ContentType.CONTENT_TYPE_DECRYPTION_ERROR -> {
                 val device = message.senderDeviceId
                 if (device.isEmpty()) {
@@ -274,7 +275,11 @@ class MessagingRuntime @Inject constructor(
                 } else {
                     runCatching {
                         cryptoManager.handleEvent(
-                            CfeIncomingEvent.DecryptionErrorReceived(device, message.encryptedPayload),
+                            CfeIncomingEvent.DecryptionErrorReceived(
+                                device,
+                                message.encryptedPayload,
+                                opened = message.envelopeSession != null,
+                            ),
                         )
                     }.onSuccess { actions ->
                         Log.i(TAG, "DECRYPTION_ERROR from ${device.take(8)}… — ${if (actions.isEmpty()) "stale, nothing to do" else "${actions.size} action(s)"}")

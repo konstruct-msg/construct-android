@@ -7,6 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import shared.proto.core.v1.EnvelopeOuterClass.Envelope
@@ -37,7 +38,7 @@ class MessageRouterTest {
         .build()
 
     @Test
-    fun `identified envelope normalizes with sender and payload`() {
+    fun `identified envelope normalizes with sender and payload`() = runBlocking<Unit> {
         val msg = normalizeEnvelope(identifiedEnvelope()) { error("no sealed resolution expected") }
 
         requireNotNull(msg)
@@ -48,13 +49,13 @@ class MessageRouterTest {
     }
 
     @Test
-    fun `identified envelope without sender is dropped`() {
+    fun `identified envelope without sender is dropped`() = runBlocking<Unit> {
         val envelope = identifiedEnvelope().toBuilder().clearSender().build()
         assertNull(normalizeEnvelope(envelope) { null })
     }
 
     @Test
-    fun `sealed envelope takes identity content type and payload from resolver`() {
+    fun `sealed envelope takes identity content type and payload from resolver`() = runBlocking<Unit> {
         val msg = normalizeEnvelope(sealedEnvelope()) { inner ->
             assertTrue(byteArrayOf(9, 9).contentEquals(inner))
             StealthSenderService.ResolvedSender(
@@ -71,8 +72,29 @@ class MessageRouterTest {
         assertTrue(msg.viaSealedSender)
     }
 
+    /** A session envelope: the session names the writer, the opened body is the payload.
+     * Mutation that reddens it: drop `envelopeSession` / `envelopeDevice` in `normalizeEnvelope`. */
     @Test
-    fun `unresolvable sealed envelope is dropped`() {
+    fun `a session envelope carries its session and its writer's device`() = runBlocking<Unit> {
+        val msg = normalizeEnvelope(sealedEnvelope()) {
+            StealthSenderService.ResolvedSender(
+                senderId = "bob",
+                contentType = ContentType.CONTENT_TYPE_DECRYPTION_ERROR,
+                encryptedPayload = byteArrayOf(5),
+                envelopeSession = "5e55",
+                envelopeDevice = "dev-b",
+            )
+        }
+
+        requireNotNull(msg)
+        assertEquals("5e55", msg.envelopeSession)
+        assertEquals("dev-b", msg.senderDeviceId)
+        assertNull(msg.senderCertificate)
+        assertTrue(msg.contentType.isControl())
+    }
+
+    @Test
+    fun `unresolvable sealed envelope is dropped`() = runBlocking<Unit> {
         assertNull(normalizeEnvelope(sealedEnvelope()) { null })
     }
 
@@ -119,7 +141,7 @@ class MessageRouterTest {
      * while a real one had none (stand, 2026-09-27). Mutation that reddens it: pass the payload
      * through unwrapped, or drop the certificate. */
     @Test
-    fun `a sender sync is unwrapped with its certificate`() {
+    fun `a sender sync is unwrapped with its certificate`() = runBlocking<Unit> {
         val wire = byteArrayOf(4, 4, 4)
         val msg = normalizeEnvelope(syncEnvelope(OwnDeviceCopy.wrap(certificate.toByteArray(), wire))) {
             error("no sealed resolution expected")
@@ -134,7 +156,7 @@ class MessageRouterTest {
     /** A sender without a certificate still sends; the copy parses and opens on a session the
      * sibling already holds. */
     @Test
-    fun `a sender sync without a certificate still parses`() {
+    fun `a sender sync without a certificate still parses`() = runBlocking<Unit> {
         val wire = byteArrayOf(4, 4, 4)
         val msg = normalizeEnvelope(syncEnvelope(OwnDeviceCopy.wrap(null, wire))) { null }
 
@@ -147,7 +169,7 @@ class MessageRouterTest {
     /** The format before 2026-09-27 — a bare wire payload — is not a copy (early alpha, no
      * compatibility kept). */
     @Test
-    fun `a bare wire payload is not a sender sync`() {
+    fun `a bare wire payload is not a sender sync`() = runBlocking<Unit> {
         assertNull(OwnDeviceCopy.unwrap(byteArrayOf()))
         assertNull(normalizeEnvelope(syncEnvelope(byteArrayOf())) { null })
     }

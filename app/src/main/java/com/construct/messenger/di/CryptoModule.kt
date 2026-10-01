@@ -1,6 +1,7 @@
 package com.construct.messenger.di
 
 import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.data.local.OrchestratorStateSource
 import com.construct.messenger.service.IncomingAlerts
 import com.construct.messenger.service.MessageNotifier
 import com.construct.messenger.service.OrchestratorGateway
@@ -29,6 +30,10 @@ abstract class CryptoModule {
     @Binds
     @Singleton
     abstract fun bindProcessorEffects(impl: ProcessorEffectsImpl): ProcessorEffects
+
+    @Binds
+    @Singleton
+    abstract fun bindOrchestratorStateSource(impl: CryptoManager): OrchestratorStateSource
 
     @Binds
     @Singleton

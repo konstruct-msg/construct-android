@@ -1082,6 +1082,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_new_mls_stor
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_one_time_prekey_count(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_open_envelope(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_open_receiving(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_open_sealed_to_device(
@@ -1107,6 +1109,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_retire_sessi
 external fun uniffi_construct_core_checksum_method_orchestratorcore_rollback_kyber_spk_rotation(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_rotate_signed_prekey(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_seal_envelope(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_seal_own_recovery_bundle(
 ): Short
@@ -1453,6 +1457,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_new_mls_store(`ptr
 ): Long
 external fun uniffi_construct_core_fn_method_orchestratorcore_one_time_prekey_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
+external fun uniffi_construct_core_fn_method_orchestratorcore_open_envelope(`ptr`: Long,`envelope`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_open_receiving(`ptr`: Long,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_open_sealed_to_device(`ptr`: Long,`sealedBox`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1478,6 +1484,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_retire_session(`pt
 external fun uniffi_construct_core_fn_method_orchestratorcore_rollback_kyber_spk_rotation(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_orchestratorcore_rotate_signed_prekey(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_seal_envelope(`ptr`: Long,`contactId`: RustBuffer.ByValue,`wirePayload`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_seal_own_recovery_bundle(`ptr`: Long,`vaultKey`: RustBuffer.ByValue,`createdAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -2313,6 +2321,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_one_time_prekey_count() != 21478.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_open_envelope() != 45343.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_open_receiving() != 32397.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2350,6 +2361,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_rotate_signed_prekey() != 11331.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_seal_envelope() != 59409.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_seal_own_recovery_bundle() != 42137.toShort()) {
@@ -5802,6 +5816,11 @@ public interface OrchestratorCoreInterface {
     
     fun `oneTimePrekeyCount`(): kotlin.UInt
     
+    /**
+     * Who wrote `envelope`, by its tag, and its opened body; null when no pair matches.
+     */
+    fun `openEnvelope`(`envelope`: kotlin.ByteArray): EnvelopeOpened?
+    
     fun `openReceiving`(`device`: kotlin.String): ReceivingOpenResult
     
     /**
@@ -5845,6 +5864,12 @@ public interface OrchestratorCoreInterface {
     fun `rollbackKyberSpkRotation`()
     
     fun `rotateSignedPrekey`(): RotatedSpkBundle
+    
+    /**
+     * Seal a wire payload just encrypted for `contact_id` as a session envelope; null when it
+     * must go with a certificate (first flight, or a session made before the envelope).
+     */
+    fun `sealEnvelope`(`contactId`: kotlin.String, `wirePayload`: kotlin.ByteArray): kotlin.ByteArray?
     
     /**
      * This device's social-recovery bundle (device keys, derived device id, `created_at`) sealed
@@ -6662,6 +6687,22 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     
 
+    
+    /**
+     * Who wrote `envelope`, by its tag, and its opened body; null when no pair matches.
+     */override fun `openEnvelope`(`envelope`: kotlin.ByteArray): EnvelopeOpened? {
+            return FfiConverterOptionalTypeEnvelopeOpened.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_open_envelope(
+        it,
+        FfiConverterByteArray.lower(`envelope`),_status)
+}
+    }
+    )
+    }
+    
+
     override fun `openReceiving`(`device`: kotlin.String): ReceivingOpenResult {
             return FfiConverterTypeReceivingOpenResult.lift(
     callWithHandle {
@@ -6845,6 +6886,23 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_rotate_signed_prekey(
         it,
         _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Seal a wire payload just encrypted for `contact_id` as a session envelope; null when it
+     * must go with a certificate (first flight, or a session made before the envelope).
+     */override fun `sealEnvelope`(`contactId`: kotlin.String, `wirePayload`: kotlin.ByteArray): kotlin.ByteArray? {
+            return FfiConverterOptionalByteArray.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_seal_envelope(
+        it,
+        FfiConverterString.lower(`contactId`),FfiConverterByteArray.lower(`wirePayload`),_status)
 }
     }
     )
@@ -8017,6 +8075,61 @@ public object FfiConverterTypeEnergyMetrics: FfiConverterRustBuffer<EnergyMetric
             FfiConverterULong.write(value.`dummiesSent`, buf)
             FfiConverterULong.write(value.`coalescedCount`, buf)
             FfiConverterULong.write(value.`batterySkipped`, buf)
+    }
+}
+
+
+
+/**
+ * A session envelope opened by `OrchestratorCore.open_envelope`
+ * (construct-docs decisions/sealed-envelope-keyed-by-the-session.md).
+ */
+data class EnvelopeOpened (
+    var `contactId`: kotlin.String
+    , 
+    var `sessionId`: kotlin.String
+    , 
+    var `kind`: kotlin.UByte
+    , 
+    var `body`: kotlin.ByteArray
+    , 
+    var `retired`: kotlin.Boolean
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeEnvelopeOpened: FfiConverterRustBuffer<EnvelopeOpened> {
+    override fun read(buf: ByteBuffer): EnvelopeOpened {
+        return EnvelopeOpened(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: EnvelopeOpened) = (
+            FfiConverterString.allocationSize(value.`contactId`) +
+            FfiConverterString.allocationSize(value.`sessionId`) +
+            FfiConverterUByte.allocationSize(value.`kind`) +
+            FfiConverterByteArray.allocationSize(value.`body`) +
+            FfiConverterBoolean.allocationSize(value.`retired`)
+    )
+
+    override fun write(value: EnvelopeOpened, buf: ByteBuffer) {
+            FfiConverterString.write(value.`contactId`, buf)
+            FfiConverterString.write(value.`sessionId`, buf)
+            FfiConverterUByte.write(value.`kind`, buf)
+            FfiConverterByteArray.write(value.`body`, buf)
+            FfiConverterBoolean.write(value.`retired`, buf)
     }
 }
 
@@ -10154,11 +10267,14 @@ sealed class CfeAction {
      * We could not read `message_id` from `contact_id`: send `payload` to that device as a
      * DECRYPTION_ERROR (content type 28) envelope, sealed-sender, and acknowledge the message.
      * The core built and sealed `payload`; one per unread message.
+     * `enveloped`: `payload` is a session envelope — send it as the sealed inner's envelope with
+     * no certificate; otherwise it is the X25519 box, sent as before.
      */
     data class SendDecryptionError(
         val `contactId`: kotlin.String, 
         val `messageId`: kotlin.String, 
-        val `payload`: kotlin.ByteArray) : CfeAction()
+        val `payload`: kotlin.ByteArray, 
+        val `enveloped`: kotlin.Boolean) : CfeAction()
         
     {
         
@@ -10332,6 +10448,7 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
+                FfiConverterBoolean.read(buf),
                 )
             16 -> CfeAction.SessionRetired(
                 FfiConverterString.read(buf),
@@ -10488,6 +10605,7 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 + FfiConverterString.allocationSize(value.`contactId`)
                 + FfiConverterString.allocationSize(value.`messageId`)
                 + FfiConverterByteArray.allocationSize(value.`payload`)
+                + FfiConverterBoolean.allocationSize(value.`enveloped`)
             )
         }
         is CfeAction.SessionRetired -> {
@@ -10650,6 +10768,7 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`payload`, buf)
+                FfiConverterBoolean.write(value.`enveloped`, buf)
                 Unit
             }
             is CfeAction.SessionRetired -> {
@@ -10718,12 +10837,17 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
  */
 sealed class CfeIncomingEvent {
     
+    /**
+     * `envelope_session`: the session whose envelope the message came in (`open_envelope`),
+     * set instead of `sender_certificate`.
+     */
     data class MessageReceived(
         val `messageId`: kotlin.String, 
         val `from`: kotlin.String, 
         val `data`: kotlin.ByteArray, 
         val `contentType`: kotlin.UByte, 
-        val `senderCertificate`: SenderCertificate?) : CfeIncomingEvent()
+        val `senderCertificate`: SenderCertificate?, 
+        val `envelopeSession`: kotlin.String?) : CfeIncomingEvent()
         
     {
         
@@ -10846,10 +10970,12 @@ sealed class CfeIncomingEvent {
      * A DECRYPTION_ERROR (content type 28) arrived from `contact_id` — the device its sender
      * certificate names; `payload` is the envelope's sealed box. Answered with `SessionRetired` +
      * `ResendMessage`, `ResendMessage` alone, or nothing when the error is stale.
+     * `opened`: `payload` came out of a session envelope and is the error itself.
      */
     data class DecryptionErrorReceived(
         val `contactId`: kotlin.String, 
-        val `payload`: kotlin.ByteArray) : CfeIncomingEvent()
+        val `payload`: kotlin.ByteArray, 
+        val `opened`: kotlin.Boolean) : CfeIncomingEvent()
         
     {
         
@@ -10874,6 +11000,7 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterByteArray.read(buf),
                 FfiConverterUByte.read(buf),
                 FfiConverterOptionalTypeSenderCertificate.read(buf),
+                FfiConverterOptionalString.read(buf),
                 )
             2 -> CfeIncomingEvent.OutgoingMessage(
                 FfiConverterString.read(buf),
@@ -10917,6 +11044,7 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
             13 -> CfeIncomingEvent.DecryptionErrorReceived(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
+                FfiConverterBoolean.read(buf),
                 )
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
@@ -10932,6 +11060,7 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 + FfiConverterByteArray.allocationSize(value.`data`)
                 + FfiConverterUByte.allocationSize(value.`contentType`)
                 + FfiConverterOptionalTypeSenderCertificate.allocationSize(value.`senderCertificate`)
+                + FfiConverterOptionalString.allocationSize(value.`envelopeSession`)
             )
         }
         is CfeIncomingEvent.OutgoingMessage -> {
@@ -11025,6 +11154,7 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 4UL
                 + FfiConverterString.allocationSize(value.`contactId`)
                 + FfiConverterByteArray.allocationSize(value.`payload`)
+                + FfiConverterBoolean.allocationSize(value.`opened`)
             )
         }
     }
@@ -11038,6 +11168,7 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 FfiConverterByteArray.write(value.`data`, buf)
                 FfiConverterUByte.write(value.`contentType`, buf)
                 FfiConverterOptionalTypeSenderCertificate.write(value.`senderCertificate`, buf)
+                FfiConverterOptionalString.write(value.`envelopeSession`, buf)
                 Unit
             }
             is CfeIncomingEvent.OutgoingMessage -> {
@@ -11107,6 +11238,7 @@ public object FfiConverterTypeCfeIncomingEvent : FfiConverterRustBuffer<CfeIncom
                 buf.putInt(13)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterByteArray.write(value.`payload`, buf)
+                FfiConverterBoolean.write(value.`opened`, buf)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
@@ -12665,6 +12797,38 @@ public object FfiConverterOptionalByteArray: FfiConverterRustBuffer<kotlin.ByteA
         } else {
             buf.put(1)
             FfiConverterByteArray.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeEnvelopeOpened: FfiConverterRustBuffer<EnvelopeOpened?> {
+    override fun read(buf: ByteBuffer): EnvelopeOpened? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeEnvelopeOpened.read(buf)
+    }
+
+    override fun allocationSize(value: EnvelopeOpened?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeEnvelopeOpened.allocationSize(value)
+        }
+    }
+
+    override fun write(value: EnvelopeOpened?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeEnvelopeOpened.write(value, buf)
         }
     }
 }

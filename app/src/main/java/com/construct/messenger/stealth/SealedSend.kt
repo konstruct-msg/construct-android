@@ -16,6 +16,9 @@ import javax.inject.Singleton
  * more, paying: an envelope that presented a credential carried no token by choice, and presenting
  * the same credential again buys the same refusal (iOS measured that loop on 2026-09-14).
  *
+ * On an established session a ratchet message goes as a session envelope: sealed by the core once,
+ * here, and the same envelope in a rebuild — the rebuild changes the payment, not the message.
+ *
  * Never an identified send on this refusal. A server that could force identified sends by refusing
  * tokens could name any sender on demand; a refusal may cost budget or fail the send, not anonymity.
  */
@@ -30,13 +33,20 @@ class SealedSend @Inject constructor(
         recipientIdentityKey: ByteArray,
         encryptedPayload: ByteArray,
         contentType: SealedEnvelopeType,
+        /** A session envelope the core already sealed: a DECRYPTION_ERROR answered along a pair. */
+        envelope: ByteArray? = null,
     ): MessagingService.SendResult {
+        // Only a wire payload is offered to the core: a DECRYPTION_ERROR it sealed arrives as
+        // [envelope], and one it boxed to the identity key goes with a certificate.
+        val sessionEnvelope = envelope
+            ?: if (contentType == SealedEnvelopeType.GENERIC) stealthSender.sessionEnvelope(recipientIdentityKey, encryptedPayload) else null
         suspend fun build(afterRejection: Boolean) = stealthSender.buildSealedInner(
             recipientUserId = recipientUserId,
             recipientIdentityKey = recipientIdentityKey,
             encryptedPayload = encryptedPayload,
             contentType = contentType,
             afterCredentialRejection = afterRejection,
+            sessionEnvelope = sessionEnvelope,
         )
         return try {
             messagingService.sendSealedMessage(build(afterRejection = false))

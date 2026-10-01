@@ -27,6 +27,12 @@ import shared.proto.core.v1.EnvelopeOuterClass.ContentType
  *
  * Stealth: sealed with `SealedInner.content_type = DECRYPTION_ERROR`, fail-closed — no identity key
  * means no send, never an identified control envelope.
+ *
+ * Since core 0.26.0 the core seals most errors back along the session pair the unread message came
+ * by (`enveloped`): the payload is then a session envelope, sent as the sealed inner's envelope
+ * with a generic type, so the server cannot tell an error from a message. It goes sealed whatever
+ * the stealth policy — an envelope means nothing outside a sealed inner
+ * (`decisions/sealed-envelope-keyed-by-the-session.md` §3).
  */
 @Singleton
 class SessionControlUseCase @Inject constructor(
@@ -37,7 +43,7 @@ class SessionControlUseCase @Inject constructor(
     private val sealedSend: SealedSend,
 ) {
     /** Send the core's sealed [payload] to [deviceId] as a DECRYPTION_ERROR. */
-    suspend fun sendDecryptionError(deviceId: String, payload: ByteArray): Boolean {
+    suspend fun sendDecryptionError(deviceId: String, payload: ByteArray, enveloped: Boolean): Boolean {
         val target = sessionManager.resolveTarget(deviceId) ?: run {
             Log.w(TAG, "DECRYPTION_ERROR skipped — no account for device ${deviceId.take(8)}…")
             return false
@@ -49,7 +55,15 @@ class SessionControlUseCase @Inject constructor(
         val identity = target.identityPublic
 
         val result = try {
-            if (stealthPolicy.shouldUseSealedSender()) {
+            if (enveloped) {
+                sealedSend.send(
+                    recipientUserId = accountId,
+                    recipientIdentityKey = identity,
+                    encryptedPayload = ByteArray(0),
+                    contentType = SealedEnvelopeType.GENERIC,
+                    envelope = payload,
+                )
+            } else if (stealthPolicy.shouldUseSealedSender()) {
                 if (identity.isEmpty()) {
                     Log.w(TAG, "DECRYPTION_ERROR stealth-on, no identity key for ${deviceId.take(8)}… — not sent identified")
                     return false
@@ -76,7 +90,7 @@ class SessionControlUseCase @Inject constructor(
             return false
         }
         if (!result.success) Log.w(TAG, "DECRYPTION_ERROR rejected ${result.errorCode}")
-        else Log.i(TAG, "DECRYPTION_ERROR sent to ${deviceId.take(8)}…")
+        else Log.i(TAG, "DECRYPTION_ERROR sent to ${deviceId.take(8)}…${if (enveloped) " (enveloped)" else ""}")
         return result.success
     }
 

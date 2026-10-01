@@ -1,5 +1,6 @@
 package com.construct.messenger.crypto
 
+import com.construct.messenger.data.local.OrchestratorStateSource
 import com.construct.messenger.service.OrchestratorGateway
 import uniffi.construct_core.BinaryKeyBundle
 import uniffi.construct_core.CfeAction
@@ -55,7 +56,7 @@ import javax.inject.Singleton
  * (CFE — 16-byte header + MessagePack), never JSON/base64. See AGENTS.md.
  */
 @Singleton
-class CryptoManager @Inject constructor() : OrchestratorGateway {
+class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorStateSource {
 
     private val coreLock = Any()
 
@@ -231,6 +232,22 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
             core.openReceiving(device)
         }
 
+    /**
+     * [wirePayload], just encrypted for [deviceId], sealed as a session envelope — or `null` when
+     * it must go with a certificate: the session's first flight (the peer has no session to find
+     * a tag in yet), or a session made before the envelope. The core decides
+     * (`decisions/sealed-envelope-keyed-by-the-session.md`). **Canon:** iOS `CryptoManager.sealEnvelope`.
+     */
+    fun sealEnvelope(deviceId: String, wirePayload: ByteArray): ByteArray? = synchronized(coreLock) {
+        orchestrator?.sealEnvelope(deviceId, wirePayload)
+    }
+
+    /** Who wrote a session envelope, found by its tag, and its opened body; `null` when no pair
+     * this device holds matches. */
+    fun openEnvelope(envelope: ByteArray): uniffi.construct_core.EnvelopeOpened? = synchronized(coreLock) {
+        orchestrator?.openEnvelope(envelope)
+    }
+
     /** How late messages have arrived since start (PQR-4); `null` before the core is up. */
     fun reorderStats(): uniffi.construct_core.ReorderStats? = synchronized(coreLock) {
         orchestrator?.reorderStats()
@@ -312,6 +329,12 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
         (orchestrator ?: error("orchestrator not ready — setLocalUserId first"))
             .exportOrchestratorState()
             
+    }
+
+    override fun snapshot(): ByteArray? = synchronized(coreLock) {
+        runCatching { orchestrator?.exportOrchestratorState() }
+            .onFailure { com.construct.messenger.diagnostics.Log.e("CryptoManager", "orchestrator state export failed", it) }
+            .getOrNull()
     }
 
     fun importOrchestratorState(bytes: ByteArray) = synchronized(coreLock) {

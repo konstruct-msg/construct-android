@@ -321,8 +321,9 @@ class SessionManager @Inject constructor(
      * Each stored session into the core, one at a time; returns the devices whose blob it refused.
      * One refusal must not cost the rest — the loop used to stop at the first throw. A refused
      * blob is unusable for good (corrupt, another device's, or a format the core no longer reads:
-     * since 0.24.0 every suite-3 session), and the device simply has no session: the next send
-     * opens one. **Canon:** iOS `restoreSessionFromArchive`, which deletes it.
+     * since 0.24.0 every suite-3 session, since 0.26.0 every session without envelope keys —
+     * `SESSION_PREDATES_ENVELOPE`), and the device simply has no session: the next send opens
+     * one. Each conversation renews once with a handshake. **Canon:** iOS `restoreSessionFromArchive`, which deletes it.
      */
     fun importSessions(sessions: Map<String, ByteArray>): List<String> =
         sessions.mapNotNull { (contactId, bytes) ->

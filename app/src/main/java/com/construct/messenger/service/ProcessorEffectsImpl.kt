@@ -254,9 +254,9 @@ class ProcessorEffectsImpl @Inject constructor(
         sessionStateStore.saveSecureStore(CfeSecureStoreSlot.Session(contactId), ByteArray(0))
     }
 
-    override suspend fun sendDecryptionError(contactId: String, messageId: String, payload: ByteArray) {
+    override suspend fun sendDecryptionError(contactId: String, messageId: String, payload: ByteArray, enveloped: Boolean) {
         Log.i(TAG, "could not read ${messageId.take(8)}… from ${contactId.take(8)}… — telling its writer")
-        sessionControl.sendDecryptionError(contactId, payload)
+        sessionControl.sendDecryptionError(contactId, payload, enveloped)
     }
 
     override suspend fun sessionRetired(contactId: String, withoutOneTimePrekey: Boolean) {

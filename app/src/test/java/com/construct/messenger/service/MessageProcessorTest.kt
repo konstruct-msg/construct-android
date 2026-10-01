@@ -3,9 +3,13 @@ package com.construct.messenger.service
 import com.construct.messenger.crypto.CryptoManager
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import uniffi.construct_core.CfeAction
@@ -47,8 +51,8 @@ class MessageProcessorTest {
         override suspend fun onSenderSync(contactId: String, messageId: String, plaintext: ByteArray, timestampMs: Long) {
             calls += "onSenderSync:$contactId:$messageId"
         }
-        override suspend fun sendDecryptionError(contactId: String, messageId: String, payload: ByteArray) {
-            calls += "decryptionError:$contactId:$messageId"
+        override suspend fun sendDecryptionError(contactId: String, messageId: String, payload: ByteArray, enveloped: Boolean) {
+            calls += "decryptionError:$contactId:$messageId" + if (enveloped) ":enveloped" else ""
         }
         override suspend fun sessionRetired(contactId: String, withoutOneTimePrekey: Boolean) {
             calls += "retired:$contactId:$withoutOneTimePrekey"
@@ -147,7 +151,7 @@ class MessageProcessorTest {
         val outcome = processor.route(
             listOf(
                 CfeAction.PersistAck("m1", 1uL),
-                CfeAction.SendDecryptionError("bob", "m1", byteArrayOf(9)),
+                CfeAction.SendDecryptionError("bob", "m1", byteArrayOf(9), enveloped = false),
                 CfeAction.NotifyError("decrypt_failed", "AEAD decryption failed"),
             ),
             incoming(),
@@ -216,6 +220,35 @@ class MessageProcessorTest {
         assertEquals(ProcessingOutcome.Processed, outcome)
         assertTrue(gateway.events.first() is CfeIncomingEvent.MessageReceived)
         assertTrue(effects.calls.contains("onDecrypted:alice:m1"))
+    }
+
+    /** A message out of a session envelope names its writer by the session, not a certificate: the
+     * device comes from the matched pair and the session goes to the core, so an unreadable one
+     * is answered along that pair. Mutation that reddens it: drop `envelopeSession` from the
+     * event, or resolve the device from the account. */
+    @Test
+    fun `an enveloped message reaches the core from its pair's device, naming its session`() = runBlocking<Unit> {
+        val gateway = FakeGateway(mutableListOf(listOf(CfeAction.MessageDecrypted("d", "m1", byteArrayOf(9)))))
+        val processor = MessageProcessor(gateway, RecordingEffects(), sessionManager, timerBridge, cryptoManager, held, mock())
+
+        processor.process(incoming().copy(viaSealedSender = true, envelopeSession = "5e55", envelopeDevice = "22222222222222222222222222222222"))
+
+        val event = gateway.events.first() as CfeIncomingEvent.MessageReceived
+        assertEquals("22222222222222222222222222222222", event.from)
+        assertEquals("5e55", event.envelopeSession)
+        assertNull(event.senderCertificate)
+        verify(sessionManager, never()).resolveDeviceId(any())
+    }
+
+    /** The core's answer along the pair is sent as it says — an envelope. */
+    @Test
+    fun `a decryption error the core sealed into an envelope is sent as one`() = runBlocking {
+        val effects = RecordingEffects()
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held, mock())
+
+        processor.route(listOf(CfeAction.SendDecryptionError("bob", "m1", byteArrayOf(9), enveloped = true)), incoming())
+
+        assertTrue(effects.calls.contains("decryptionError:bob:m1:enveloped"))
     }
 
     @Test

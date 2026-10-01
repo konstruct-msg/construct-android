@@ -6,6 +6,7 @@ import android.util.Base64
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
+import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.construct.messenger.invite.AccountAddress
 import com.construct.messenger.invite.AccountAddressBook
 import com.google.protobuf.ByteString
@@ -25,12 +26,16 @@ import uniffi.construct_core.sealedSealSenderCert
  * Mirrors iOS `StealthSenderService`, with all crypto delegated to
  * construct-core FFI (Phase 5: one implementation, one test suite):
  *
- *  - send: [buildSealedInner] — seal our SenderCertificate to the recipient's
- *    X25519 identity key, attach the real content type and (per policy) a
- *    Privacy Pass token sealed to the server key;
- *  - receive: [resolveSender] — unseal and hand the certificate on, unchecked. The core checks
- *    the server signature where it matters — when the certificate opens a session — and the
- *    ratchet authenticates every message on a session that already exists.
+ *  - send: [buildSealedInner] — on an established session, the core's session envelope
+ *    ([sessionEnvelope]); otherwise seal our SenderCertificate to the recipient's X25519
+ *    identity key. Then the real content type and (per policy) a Privacy Pass token sealed to
+ *    the server key;
+ *  - receive: [resolveSender] — a session envelope names its writer by the session pair its tag
+ *    matches; otherwise unseal and hand the certificate on, unchecked. The core checks the server
+ *    signature where it matters — when the certificate opens a session — and the ratchet
+ *    authenticates every message on a session that already exists.
+ *
+ * The session envelope: `decisions/sealed-envelope-keyed-by-the-session.md` (core 0.26.0).
  */
 @Singleton
 class StealthSenderService @Inject constructor(
@@ -42,6 +47,7 @@ class StealthSenderService @Inject constructor(
     private val wallet: TokenWalletService,
     private val addressBook: AccountAddressBook,
     private val intake: IntakeCredentials,
+    private val peerDevices: PeerDeviceRegistry,
 ) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
@@ -49,15 +55,19 @@ class StealthSenderService @Inject constructor(
 
     /** Resolved sender identity + the real content type and E2EE payload carried
      * inside SealedInner (the outer envelope's payload is empty for sealed sends).
-     * [senderCertificate] is what a first message opens its session from. */
+     * [senderCertificate] is what a first message opens its session from. A session envelope
+     * carries none: [envelopeSession] is the session whose tag matched, and [envelopeDevice] the
+     * device it is with — the writer. */
     data class ResolvedSender(
         val senderId: String,
         val contentType: ContentType,
         val encryptedPayload: ByteArray,
         val senderCertificate: uniffi.construct_core.SenderCertificate? = null,
+        val envelopeSession: String? = null,
+        val envelopeDevice: String? = null,
     ) {
-        /** The device that wrote the message, as its certificate names it; empty without one. */
-        val senderDeviceId: String get() = senderCertificate?.deviceId.orEmpty()
+        /** The device that wrote the message, as its certificate or its session names it. */
+        val senderDeviceId: String get() = senderCertificate?.deviceId ?: envelopeDevice.orEmpty()
     }
 
     // ── Sender certificate (from identity-service, 24h TTL) ────────────────
@@ -93,6 +103,10 @@ class StealthSenderService @Inject constructor(
      * Builds SealedInner proto bytes for a sealed send. SealedInner is plaintext to the relay, so
      * [contentType] is limited to [SealedEnvelopeType]; the real type rides in KNST byte 5.
      * Caller checks [StealthPolicy.shouldUseSealedSender] first.
+     *
+     * With [sessionEnvelope] the inner carries it and nothing else of the message: no certificate
+     * box, no `encrypted_payload` — the wire payload is inside it, and the session names the
+     * writer. No certificate is fetched for it.
      */
     suspend fun buildSealedInner(
         recipientUserId: String,
@@ -101,13 +115,9 @@ class StealthSenderService @Inject constructor(
         contentType: SealedEnvelopeType,
         /** The server refused this envelope's credential once: pay this time (see [SealedSend]). */
         afterCredentialRejection: Boolean = false,
+        /** A session envelope the core sealed ([sessionEnvelope], or a DECRYPTION_ERROR it built). */
+        sessionEnvelope: ByteArray? = null,
     ): ByteArray {
-        val certBytes = getSenderCertificate()
-        val sealedCert = sealedSealSenderCert(
-            certBytes,
-            recipientIdentityKey,
-        )
-
         val deliveryTag = ByteArray(32).also(random::nextBytes)
         val builder = SealedInner.newBuilder()
             // By their address when this device knows it, by the server's id otherwise. Only this
@@ -116,10 +126,14 @@ class StealthSenderService @Inject constructor(
             .setRecipientUserId(
                 AccountAddress.recipientField(recipientUserId, addressBook.of(recipientUserId)),
             )
-            .setSenderCertCiphertext(ByteString.copyFrom(sealedCert))
-            .setEncryptedPayload(ByteString.copyFrom(encryptedPayload))
             .setContentType(contentType.proto)
             .setDeliveryTag(ByteString.copyFrom(deliveryTag))
+        if (sessionEnvelope != null) {
+            builder.setSessionEnvelope(ByteString.copyFrom(sessionEnvelope))
+        } else {
+            builder.setSenderCertCiphertext(ByteString.copyFrom(sealedSealSenderCert(getSenderCertificate(), recipientIdentityKey)))
+            builder.setEncryptedPayload(ByteString.copyFrom(encryptedPayload))
+        }
 
         // A credential the recipient issued, instead of a token. Keyed by the account id, not
         // the address above: the server resolves the address to that id before it checks it.
@@ -141,6 +155,19 @@ class StealthSenderService @Inject constructor(
         }
 
         return builder.build().toByteArray()
+    }
+
+    /**
+     * [wirePayload], a ratchet message to the device [recipientIdentityKey] names, as a session
+     * envelope — `null` when it goes with a certificate (a first flight, or a session older than
+     * the envelope). **Canon:** iOS `StealthSenderService.buildSealedInner` (the static bridge).
+     */
+    fun sessionEnvelope(recipientIdentityKey: ByteArray, wirePayload: ByteArray): ByteArray? {
+        val device = runCatching { cryptoManager.deriveDeviceIdFromIdentity(recipientIdentityKey) }.getOrNull()
+            ?: return null
+        return runCatching { cryptoManager.sealEnvelope(device, wirePayload) }
+            .onFailure { Log.w(TAG, "session envelope for ${device.take(8)}… not sealed — certificate path", it) }
+            .getOrNull()
     }
 
     /** Seals token bytes to the server key; plaintext fallback if the key isn't
@@ -169,9 +196,10 @@ class StealthSenderService @Inject constructor(
      * a session, is the core's (`SenderCertificate::identity_for_opening`), with one rule on both
      * platforms: `decisions/first-message-opens-without-the-server.md`.
      */
-    fun resolveSender(sealedInnerBytes: ByteArray): ResolvedSender? {
+    suspend fun resolveSender(sealedInnerBytes: ByteArray): ResolvedSender? {
         return try {
             val inner = SealedInner.parseFrom(sealedInnerBytes)
+            if (!inner.sessionEnvelope.isEmpty) return resolveEnvelopeSender(inner.sessionEnvelope.toByteArray())
             if (inner.senderCertCiphertext.isEmpty) return null
 
             val certBytes = cryptoManager.openSealedToDevice(inner.senderCertCiphertext.toByteArray())
@@ -189,6 +217,43 @@ class StealthSenderService @Inject constructor(
         }
     }
 
+    /**
+     * A session envelope names its writer by the session pair its tag matches, which the core
+     * finds. The kind byte inside says whether the body is a wire payload or a DECRYPTION_ERROR;
+     * the outer content type is generic for both, so the server cannot tell them apart.
+     * **Canon:** iOS `StealthSenderService.resolveEnvelopeSender`.
+     */
+    private suspend fun resolveEnvelopeSender(envelope: ByteArray): ResolvedSender? {
+        val opened = cryptoManager.openEnvelope(envelope) ?: run {
+            // Not ours, or from a session this device never held — the same drop as a box that
+            // does not open.
+            Log.e(TAG, "no session envelope pair matched")
+            return null
+        }
+        // A peer's device, or one of our own (SENDER_SYNC): both are in the device registry,
+        // recorded when the session with it was opened.
+        val account = peerDevices.accountIdForDevice(opened.contactId) ?: run {
+            Log.e(TAG, "envelope writer ${opened.contactId.take(8)}… is in no known account")
+            return null
+        }
+        if (opened.retired) {
+            Log.i(TAG, "envelope from ${opened.contactId.take(8)}… on a session no longer held — the core answers it")
+        } else {
+            Log.d(TAG, "envelope from ${opened.contactId.take(8)}… kind=${opened.kind}")
+        }
+        return ResolvedSender(
+            senderId = account,
+            contentType = if (opened.kind == ENVELOPE_KIND_DECRYPTION_ERROR) {
+                ContentType.CONTENT_TYPE_DECRYPTION_ERROR
+            } else {
+                ContentType.CONTENT_TYPE_UNSPECIFIED
+            },
+            encryptedPayload = opened.body,
+            envelopeSession = opened.sessionId,
+            envelopeDevice = opened.contactId,
+        )
+    }
+
     /** The server keys a sender certificate is checked against — handed to the core before each
      * open, since the fetched key can arrive or rotate while the app runs. */
     fun trustedServerKeys(): List<ByteArray> = listOfNotNull(serverKeys.bundleVerificationKey())
@@ -199,5 +264,7 @@ class StealthSenderService @Inject constructor(
         const val KEY_CERT = "sender_cert"
         const val KEY_CERT_EXPIRY = "sender_cert_expiry"
         const val CERT_EXPIRY_LEEWAY_S = 300L
+        /** `EnvelopeOpened.kind`: 1 = ratchet wire payload, 2 = DECRYPTION_ERROR. */
+        val ENVELOPE_KIND_DECRYPTION_ERROR: UByte = 2u
     }
 }

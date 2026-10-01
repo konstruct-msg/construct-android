@@ -65,7 +65,10 @@ class MessageRouter @Inject constructor(
      * [senderCertificate] is the certificate the message came with — unsealed from a sealed
      * envelope, or carried in the clear by a SENDER_SYNC (`OwnDeviceCopy`) — unchecked. It names
      * the device that wrote the message ([senderDeviceId]) and is the only thing a first message
-     * opens a session from; the core checks its signature when it does. */
+     * opens a session from; the core checks its signature when it does.
+     *
+     * A session envelope carries no certificate: [envelopeSession] is the session whose tag
+     * matched — handed to the core with the message — and [envelopeDevice] the device it is with. */
     data class IncomingMessage(
         val messageId: String,
         val senderId: String,
@@ -74,8 +77,10 @@ class MessageRouter @Inject constructor(
         val timestampMs: Long,
         val viaSealedSender: Boolean,
         val senderCertificate: SenderCertificate? = null,
+        val envelopeSession: String? = null,
+        val envelopeDevice: String? = null,
     ) {
-        val senderDeviceId: String get() = senderCertificate?.deviceId.orEmpty()
+        val senderDeviceId: String get() = senderCertificate?.deviceId ?: envelopeDevice.orEmpty()
     }
 
     private val _routed = MutableSharedFlow<RoutedEvent>(
@@ -113,9 +118,9 @@ class MessageRouter @Inject constructor(
     }
 
     /** Feed a catch-up envelope (pending-messages unary) through the same path as the stream. */
-    fun ingest(envelope: Envelope) = route(envelope)
+    suspend fun ingest(envelope: Envelope) = route(envelope)
 
-    private fun route(envelope: Envelope) {
+    private suspend fun route(envelope: Envelope) {
         val messageId = envelope.messageId
         if (messageId.isNotEmpty() && seenMessageIds.put(messageId, Unit) != null) {
             Log.d(TAG, "duplicate message ${messageId.take(8)}… — dropped")
@@ -131,7 +136,7 @@ class MessageRouter @Inject constructor(
         _routed.tryEmit(event)
     }
 
-    private fun normalize(envelope: Envelope): IncomingMessage? =
+    private suspend fun normalize(envelope: Envelope): IncomingMessage? =
         normalizeEnvelope(envelope) { stealthSender.resolveSender(it) }
 
     private companion object {
@@ -144,9 +149,9 @@ class MessageRouter @Inject constructor(
  * Collapses sealed and identified envelopes into one [MessageRouter.IncomingMessage]
  * shape. Pure function (resolution injected) — unit-tested without Hilt/transport.
  */
-internal fun normalizeEnvelope(
+internal suspend fun normalizeEnvelope(
     envelope: Envelope,
-    resolveSealed: (ByteArray) -> StealthSenderService.ResolvedSender?,
+    resolveSealed: suspend (ByteArray) -> StealthSenderService.ResolvedSender?,
 ): MessageRouter.IncomingMessage? {
     if (envelope.hasSealedSender()) {
         val inner = envelope.sealedSender.sealedInner.toByteArray()
@@ -162,6 +167,8 @@ internal fun normalizeEnvelope(
             timestampMs = envelope.timestamp,
             viaSealedSender = true,
             senderCertificate = resolved.senderCertificate,
+            envelopeSession = resolved.envelopeSession,
+            envelopeDevice = resolved.envelopeDevice,
         )
     }
 

@@ -14,6 +14,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -44,8 +45,8 @@ class SealedSendTest {
     /** Mutation: retry without afterCredentialRejection — the same credential is refused again. */
     @Test
     fun `a refusal tops up, rebuilds paying, and sends once more — sealed`() = runTest {
-        whenever(stealth.buildSealedInner(any(), any(), any(), any(), eq(false))).thenReturn(byteArrayOf(1))
-        whenever(stealth.buildSealedInner(any(), any(), any(), any(), eq(true))).thenReturn(byteArrayOf(2))
+        whenever(stealth.buildSealedInner(any(), any(), any(), any(), eq(false), anyOrNull())).thenReturn(byteArrayOf(1))
+        whenever(stealth.buildSealedInner(any(), any(), any(), any(), eq(true), anyOrNull())).thenReturn(byteArrayOf(2))
         whenever(messaging.sendSealedMessage(any())).thenAnswer {
             if ((it.arguments[0] as ByteArray)[0] == 1.toByte()) throw refusal("privacy_pass:missing_token") else ok
         }
@@ -55,20 +56,51 @@ class SealedSendTest {
         assertTrue(result.success)
         inOrder(tokens, stealth) {
             verify(tokens).replenish(any(), eq(false))
-            verify(stealth).buildSealedInner(any(), any(), any(), any(), eq(true))
+            verify(stealth).buildSealedInner(any(), any(), any(), any(), eq(true), anyOrNull())
         }
         verify(messaging, never()).sendMessage(any(), any(), any(), any(), any(), any(), anyOrNull())
     }
 
     @Test
     fun `any other error is the caller's`() = runTest {
-        whenever(stealth.buildSealedInner(any(), any(), any(), any(), any())).thenReturn(byteArrayOf(1))
+        whenever(stealth.buildSealedInner(any(), any(), any(), any(), any(), anyOrNull())).thenReturn(byteArrayOf(1))
         whenever(messaging.sendSealedMessage(any())).thenAnswer { throw StatusException(Status.UNAVAILABLE) }
 
         val thrown = runCatching { send.send("peer", ByteArray(32), byteArrayOf(9), SealedEnvelopeType.GENERIC) }.exceptionOrNull()
 
         assertTrue(thrown is StatusException)
         verify(tokens, never()).replenish(any(), any())
+    }
+
+    /** On an established session the core's envelope goes, sealed once: the rebuild after a refusal
+     * changes the payment, not the message. Mutation that reddens it: seal inside `build`. */
+    @Test
+    fun `a ratchet message goes as the core's envelope, sealed once`() = runTest {
+        val envelope = byteArrayOf(0x45)
+        whenever(stealth.sessionEnvelope(any(), any())).thenReturn(envelope)
+        whenever(stealth.buildSealedInner(any(), any(), any(), any(), any(), anyOrNull())).thenReturn(byteArrayOf(1))
+        whenever(messaging.sendSealedMessage(any())).thenAnswer { throw refusal("privacy_pass:missing_token") }.thenReturn(ok)
+
+        send.send("peer", ByteArray(32), byteArrayOf(9), SealedEnvelopeType.GENERIC)
+
+        verify(stealth, times(1)).sessionEnvelope(any(), any())
+        verify(stealth).buildSealedInner(any(), any(), any(), any(), eq(false), eq(envelope))
+        verify(stealth).buildSealedInner(any(), any(), any(), any(), eq(true), eq(envelope))
+    }
+
+    /** A DECRYPTION_ERROR the core boxed to the identity key is not a ratchet message: it is never
+     * offered for sealing, and one it already enveloped is sent as it is. */
+    @Test
+    fun `only a ratchet message is offered to the core for sealing`() = runTest {
+        whenever(stealth.buildSealedInner(any(), any(), any(), any(), any(), anyOrNull())).thenReturn(byteArrayOf(1))
+        whenever(messaging.sendSealedMessage(any())).thenReturn(ok)
+
+        send.send("peer", ByteArray(32), byteArrayOf(9), SealedEnvelopeType.DECRYPTION_ERROR)
+        send.send("peer", ByteArray(32), ByteArray(0), SealedEnvelopeType.GENERIC, envelope = byteArrayOf(0x28))
+
+        verify(stealth, never()).sessionEnvelope(any(), any())
+        verify(stealth).buildSealedInner(any(), any(), any(), eq(SealedEnvelopeType.DECRYPTION_ERROR), any(), eq(null))
+        verify(stealth).buildSealedInner(any(), any(), any(), eq(SealedEnvelopeType.GENERIC), any(), eq(byteArrayOf(0x28)))
     }
 
     private fun refusal(description: String) = StatusException(Status.FAILED_PRECONDITION.withDescription(description))

@@ -580,7 +580,7 @@ class ProcessorEffectsImplTest {
         val bridge: CfeTimerBridge = mock()
         val acks = FakeAckStore()
         val errors = listOf<CfeAction>(
-            CfeAction.SendDecryptionError(contactId = "dev", messageId = "q-1", payload = byteArrayOf(1)),
+            CfeAction.SendDecryptionError(contactId = "dev", messageId = "q-1", payload = byteArrayOf(1), enveloped = false),
         )
         val failed = ReceivingOpenUseCase.Outcome.Failed(listOf("q-1"), listOf("q-2"), "AEAD", errors)
 
