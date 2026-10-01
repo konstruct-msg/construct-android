@@ -16,6 +16,11 @@ import shared.proto.messaging.v1.Content.VoiceMessage
 object MediaWire {
     const val KIND_ALBUM = "album"
     const val KIND_VOICE = "voice"
+    /** `mediaPayload` holds the `StickerRef` as received — the pack, the index, the emoji. */
+    const val KIND_STICKER = "sticker"
+
+    fun sticker(ref: com.construct.messenger.stickers.StickerReference) =
+        Stored(KIND_STICKER, ref.toWire().toByteArray(), "")
 
     /** An item of ours not yet in the store is named this, then the store's id once uploaded. */
     const val LOCAL_PREFIX = "local-"
@@ -23,6 +28,7 @@ object MediaWire {
     fun isStaged(media: MessageMedia): Boolean = when (media) {
         is MessageMedia.Album -> media.items.any { it.mediaId.startsWith(LOCAL_PREFIX) }
         is MessageMedia.Voice -> media.audio.mediaId.startsWith(LOCAL_PREFIX)
+        is MessageMedia.Sticker -> false
     }
 
     /** iOS `protoMediaType`: gif animated, other images images, video, audio, else a file. */
@@ -42,6 +48,7 @@ object MediaWire {
         when (kind) {
             KIND_ALBUM -> MessageContent.newBuilder().setMediaAlbum(MediaAlbumMessage.parseFrom(bytes))
             KIND_VOICE -> MessageContent.newBuilder().setVoice(VoiceMessage.parseFrom(bytes))
+            KIND_STICKER -> MessageContent.newBuilder().setSticker(shared.proto.messaging.v1.Content.StickerRef.parseFrom(bytes))
             else -> null
         }?.build()?.toByteArray()
     }.getOrNull()
@@ -83,6 +90,9 @@ object MediaWire {
                 KIND_ALBUM -> MessageMedia.Album(MediaAlbumMessage.parseFrom(bytes).itemsList.mapNotNull(::item))
                     .takeIf { it.items.isNotEmpty() }
                 KIND_VOICE -> voice(VoiceMessage.parseFrom(bytes))
+                KIND_STICKER -> com.construct.messenger.stickers.StickerReference
+                    .fromWire(shared.proto.messaging.v1.Content.StickerRef.parseFrom(bytes))
+                    ?.let(MessageMedia::Sticker)
                 else -> null
             }
         }.getOrNull()

@@ -8,6 +8,7 @@ import com.construct.messenger.media.MediaImages
 import javax.inject.Inject
 import com.construct.messenger.diagnostics.Diagnostics
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.launch
 
 /**
  * Application class — Hilt's dependency-injection root.
@@ -21,6 +22,9 @@ class KonstructApp : Application(), ImageLoaderFactory {
     @Inject
     lateinit var media: MediaRepository
 
+    @Inject
+    lateinit var stickers: com.construct.messenger.stickers.StickerStore
+
     /** Every `AsyncImage` in the app: message media among the images it can load. */
     override fun newImageLoader(): ImageLoader = MediaImages.loader(this, media)
 
@@ -28,5 +32,8 @@ class KonstructApp : Application(), ImageLoaderFactory {
         // Before super: Hilt builds the graph there, and its first log lines belong in the file.
         Diagnostics.install(this)
         super.onCreate()
+        // The packs in the APK, into the sticker store — once each, off the main thread (iOS
+        // seeds on every launch too; a pack already there costs one file check).
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { stickers.seedBundled() }
     }
 }

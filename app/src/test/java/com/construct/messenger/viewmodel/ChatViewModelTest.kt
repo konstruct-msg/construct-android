@@ -212,6 +212,7 @@ private class FakeMessagesRepository : MessagesRepository {
         deleted += messageId
         flow.value = flow.value.filter { it.id != messageId }
     }
+    override suspend fun sendSticker(contactId: String, ref: com.construct.messenger.stickers.StickerReference) = SendOutcome.Sent("s")
     val retried = mutableListOf<String>()
     override suspend fun retry(contactId: String, messageId: String): SendOutcome {
         retried += messageId

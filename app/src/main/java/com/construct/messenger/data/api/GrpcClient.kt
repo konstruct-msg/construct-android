@@ -13,6 +13,7 @@ import shared.proto.services.v1.InviteServiceGrpcKt.InviteServiceCoroutineStub
 import shared.proto.services.v1.KeyServiceGrpcKt.KeyServiceCoroutineStub
 import shared.proto.services.v1.MediaServiceGrpcKt.MediaServiceCoroutineStub
 import shared.proto.services.v1.MessagingServiceGrpcKt.MessagingServiceCoroutineStub
+import shared.proto.services.v1.StickerServiceGrpcKt.StickerServiceCoroutineStub
 import shared.proto.services.v1.NotificationServiceGrpcKt.NotificationServiceCoroutineStub
 import shared.proto.services.v1.UserServiceGrpcKt.UserServiceCoroutineStub
 import shared.proto.services.v1.VeilServiceGrpcKt.VeilServiceCoroutineStub
@@ -141,6 +142,13 @@ class GrpcClient @Inject constructor(
      * fetched each blob, and so who received whose upload; iOS sends one (TODO in the vault).
      */
     val publicMedia: MediaServiceCoroutineStub get() = MediaServiceCoroutineStub(channels.sealed)
+
+    /**
+     * [StickerServiceCoroutineStub] on the channel with no token. Packs are public and the same for
+     * everyone; a token would attach an account to every fetch for nothing
+     * (`decisions/sticker-packs-content-addressed.md`). **Canon:** iOS `StickerPackFetcher`.
+     */
+    val stickers: StickerServiceCoroutineStub get() = StickerServiceCoroutineStub(channels.sealed)
 
     /** Authenticated media: minting an upload token and the upload itself. */
     val media: MediaServiceCoroutineStub get() = MediaServiceCoroutineStub(channels.auth)

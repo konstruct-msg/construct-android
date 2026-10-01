@@ -1,6 +1,7 @@
 package com.construct.messenger.util
 
 import com.construct.messenger.data.model.ReplyRef
+import com.construct.messenger.stickers.StickerReference
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.UUID
@@ -131,6 +132,17 @@ object IncomingPlaintext {
                         Reaction(it.targetMessageId, it.actionValue, it.emoji, it.timestampMs)
                     },
                 )
+                // A reference, never pixels. One that fails the wire rules is a corrupt message:
+                // not shown, not stored (iOS `StickerReference(wire:)`).
+                content.hasSticker() -> StickerReference.fromWire(content.sticker)?.let { ref ->
+                    Decoded(
+                        text = "",
+                        knstContentType = knstContentType,
+                        isUserVisible = true,
+                        e2eMessageId = e2eMessageId,
+                        media = MediaWire.sticker(ref),
+                    )
+                } ?: hidden(knstContentType, e2eMessageId)
                 content.hasText() && content.text.text.isNotEmpty() -> Decoded(
                     text = content.text.text,
                     knstContentType = knstContentType,

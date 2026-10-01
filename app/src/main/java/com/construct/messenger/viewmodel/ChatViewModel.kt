@@ -180,7 +180,14 @@ class ChatViewModel @Inject constructor(
             editing.value = null
             draft.value = ""
         }
-        replying.value = ReplyRef.of(message.id, quote?.takeIf { it.isNotBlank() } ?: message.body)
+        // iOS quotes a sticker as "😍 Sticker" with media type STICKER (`buildQuoted`).
+        val mediaType = if (message.media is MessageMedia.Sticker) "MEDIA_TYPE_STICKER" else null
+        replying.value = ReplyRef.of(message.id, quote?.takeIf { it.isNotBlank() } ?: message.body, mediaType)
+    }
+
+    /** A sticker from the picker, sent at once (iOS `sendSticker`); the composer is left as it is. */
+    fun sendSticker(ref: com.construct.messenger.stickers.StickerReference) {
+        viewModelScope.launch { report(messagesRepository.sendSticker(contactId, ref)) }
     }
 
     fun cancelReply() {

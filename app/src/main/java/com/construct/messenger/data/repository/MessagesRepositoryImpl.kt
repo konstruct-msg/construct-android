@@ -46,6 +46,7 @@ class MessagesRepositoryImpl @Inject constructor(
     private val pickedFiles: com.construct.messenger.media.PickedFiles,
     private val reactionDao: ReactionDao,
     private val reactions: ReactionStore,
+    private val stickers: com.construct.messenger.stickers.StickerStore,
 ) : MessagesRepository {
 
     override fun observeContact(contactId: String): Flow<List<Message>> {
@@ -61,6 +62,13 @@ class MessagesRepositoryImpl @Inject constructor(
                 )
             }
         }
+    }
+
+    override suspend fun sendSticker(contactId: String, ref: com.construct.messenger.stickers.StickerReference): SendOutcome {
+        stickers.recordUsed(ref)
+        val outcome = sendMessage.sendSticker(contactId, ref)
+        if (outcome is SendOutcome.Sent) runCatching { sendContactCard.sendIfOwed(contactId) }
+        return outcome
     }
 
     override suspend fun retry(contactId: String, messageId: String): SendOutcome =

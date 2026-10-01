@@ -39,6 +39,7 @@ import com.construct.messenger.ui.theme.ctRegular
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.material3.DropdownMenuItem
@@ -119,6 +120,11 @@ fun ChatScreen(
     var menuMessageId by remember { mutableStateOf<String?>(null) }
     var jumpToId by remember { mutableStateOf<String?>(null) }
     var reactingTo by remember { mutableStateOf<Message?>(null) }
+    val stickersVm: com.construct.messenger.viewmodel.StickersViewModel = hiltViewModel()
+    // Read so the transcript recomposes when a pack lands and an emoji becomes its picture.
+    val stickerGeneration by stickersVm.generation.collectAsStateWithLifecycle()
+    var pickingSticker by remember { mutableStateOf(false) }
+    val stickerWord = stringResource(R.string.sticker)
     val saved = stringResource(R.string.media_saved)
     val saveFailed = stringResource(R.string.media_save_failed)
     LaunchedEffect(Unit) {
@@ -268,9 +274,12 @@ fun ChatScreen(
                     menuExpanded = menuMessageId == message.id,
                     onDismissMenu = { menuMessageId = null },
                     onReply = {
-                        viewModel.startReply(message)
+                        val sticker = message.media as? com.construct.messenger.data.model.MessageMedia.Sticker
+                        viewModel.startReply(message, sticker?.let { "${it.ref.emoji} $stickerWord" })
                         menuMessageId = null
                     },
+                    stickerFile = { ref -> stickerGeneration.let { stickersVm.file(ref) } },
+                    onStickerMissing = stickersVm::ensure,
                     onCopy = {
                         clipboard.setText(AnnotatedString(message.body))
                         menuMessageId = null
@@ -321,6 +330,14 @@ fun ChatScreen(
                 text = target.body,
                 onConfirm = { viewModel.startReply(target, it) },
                 onDismiss = { quoting = null },
+            )
+        }
+
+        if (pickingSticker) {
+            com.construct.messenger.ui.components.StickerPickerSheet(
+                stickers = stickersVm,
+                onSend = viewModel::sendSticker,
+                onDismiss = { pickingSticker = false },
             )
         }
 
@@ -384,6 +401,15 @@ fun ChatScreen(
                         onClick = {
                             attachMenuOpen = false
                             pickPhotos.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+                        },
+                    )
+                    // iOS: stickers are the picker sheet's tab next to Gallery; here the sheet is a menu.
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.media_picker_tab_stickers), style = ctRegular(14), color = CTColor.text) },
+                        leadingIcon = { Icon(Icons.Outlined.EmojiEmotions, null, tint = CTColor.text) },
+                        onClick = {
+                            attachMenuOpen = false
+                            pickingSticker = true
                         },
                     )
                     DropdownMenuItem(

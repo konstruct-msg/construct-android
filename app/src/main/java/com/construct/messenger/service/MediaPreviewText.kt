@@ -23,6 +23,8 @@ class AndroidMediaPreviewText @Inject constructor(
         if (media.caption.isNotBlank()) return media.caption
         return when (val decoded = MediaWire.decode(media.kind, media.bytes)) {
             is MessageMedia.Voice -> context.getString(R.string.voice_message)
+            // iOS `LocalMessagePayload`: "😍 Sticker" — the emoji the reference carries.
+            is MessageMedia.Sticker -> "${decoded.ref.emoji} ${context.getString(R.string.sticker)}"
             is MessageMedia.Album -> when {
                 !decoded.isFiles -> context.getString(R.string.photo)
                 decoded.items.size == 1 -> decoded.items[0].filename ?: context.getString(R.string.file_attachment)

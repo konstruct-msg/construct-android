@@ -113,6 +113,8 @@ fun MessageBubble(
     onRetry: () -> Unit = {},
     onSaveMedia: (com.construct.messenger.data.model.MediaItem) -> Unit = {},
     onShareMedia: (com.construct.messenger.data.model.MediaItem) -> Unit = {},
+    stickerFile: (com.construct.messenger.stickers.StickerReference) -> java.io.File? = { null },
+    onStickerMissing: (com.construct.messenger.stickers.StickerReference) -> Unit = {},
     /** Null outside selection mode; otherwise whether this message is among the chosen. */
     selected: Boolean? = null,
     onToggleSelected: () -> Unit = {},
@@ -161,7 +163,17 @@ fun MessageBubble(
             val album = (message.media as? MessageMedia.Album)?.takeUnless { it.isFiles }
             val voice = message.media as? MessageMedia.Voice
             val files = (message.media as? MessageMedia.Album)?.takeIf { it.isFiles }
-            if (files != null) {
+            val sticker = message.media as? MessageMedia.Sticker
+            if (sticker != null) {
+                // iOS: the sticker stands alone, no bubble; a reply to it shows above.
+                StickerBubble(
+                    ref = sticker.ref,
+                    file = stickerFile(sticker.ref),
+                    onMissing = { onStickerMissing(sticker.ref) },
+                    onLongPress = onLongPress,
+                    onDoubleTap = { onReact(ReactionRules.LIKE) },
+                )
+            } else if (files != null) {
                 if (replyLabel != null) {
                     Box(Modifier.widthIn(max = maxBubble)) {
                         ReplyQuoteStrip(replyLabel, quoteBar, quoteColor, onJumpToReply, onLongPress)

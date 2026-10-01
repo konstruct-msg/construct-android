@@ -101,6 +101,22 @@ class SendMessageUseCase @Inject constructor(
     }
 
     /**
+     * A sticker: `MessageContent.sticker`, a reference of about 40 bytes inside the ciphertext —
+     * no upload, the ordinary text path (iOS `ChatSendCoordinator.sendSticker`). No quote travels
+     * with it: `StickerRef` has no field for one, on iOS either.
+     */
+    suspend fun sendSticker(contactId: String, ref: com.construct.messenger.stickers.StickerReference): SendOutcome {
+        val myId = keystoreManager.getUserId() ?: return SendOutcome.Failed("", "not authenticated")
+        if (!cryptoManager.isMessagingReady) return SendOutcome.Failed("", "orchestrator not ready")
+        val messageId = UUID.randomUUID().toString().lowercase()
+        val timestampMs = System.currentTimeMillis()
+        val chatId = ConversationId.direct(myId, contactId)
+        persistOutgoing(chatId, contactId, messageId, "", timestampMs, DeliveryStatus.SENDING, null, MediaWire.sticker(ref))
+        val content = shared.proto.messaging.v1.Content.MessageContent.newBuilder().setSticker(ref.toWire()).build().toByteArray()
+        return deliver(myId, contactId, messageId, timestampMs, content)
+    }
+
+    /**
      * An outgoing message with media, shown before it is sent: the row the bubble reads, in
      * SENDING, while its media uploads (`SendMediaUseCase`). [media] names the staged copies.
      */

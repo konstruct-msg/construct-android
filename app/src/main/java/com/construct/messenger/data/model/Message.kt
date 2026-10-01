@@ -31,7 +31,7 @@ data class Message(
         get() = isOutgoing && when (val m = media) {
             null -> body.isNotBlank()
             is MessageMedia.Album -> !m.isFiles && !com.construct.messenger.util.MediaWire.isStaged(m)
-            is MessageMedia.Voice -> false
+            is MessageMedia.Voice, is MessageMedia.Sticker -> false
         }
 }
 

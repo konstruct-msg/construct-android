@@ -139,6 +139,20 @@
     <string name="media_saved">Сохранено в галерею</string>
     <string name="media_save_failed">Не удалось сохранить</string>
     <string name="media_share">Поделиться</string>
+    <string name="media_picker_tab_stickers">Стикеры</string>
+    <string name="sticker_picker_recent">Недавние</string>
+    <string name="sticker_catalog_empty">Наборов стикеров пока нет.</string>
+    <string name="sticker_picker_more_packs">Ещё наборы</string>
+    <string name="sticker_get">Добавить</string>
+    <plurals name="sticker_pack_count">
+        <item quantity="one">%d стикер</item>
+        <item quantity="few">%d стикера</item>
+        <item quantity="many">%d стикеров</item>
+        <item quantity="other">%d стикера</item>
+    </plurals>
+    <string name="sticker_install_failed">Не удалось установить — попробуйте ещё раз</string>
+    <string name="sticker_catalog_failed">Не удалось загрузить наборы.</string>
+    <string name="sticker_pack_remove">Убрать набор</string>
     <string name="react">Реакция</string>
     <string name="reaction_failed">Не удалось отправить реакцию</string>
     <string name="reaction_pick_more">Все реакции</string>

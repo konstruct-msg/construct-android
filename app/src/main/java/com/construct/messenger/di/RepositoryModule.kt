@@ -45,6 +45,12 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindStickersRepository(
+        impl: com.construct.messenger.stickers.StickerStore,
+    ): com.construct.messenger.data.repository.StickersRepository
+
+    @Binds
+    @Singleton
     abstract fun bindMediaRepository(
         repository: MediaRepositoryImpl
     ): MediaRepository

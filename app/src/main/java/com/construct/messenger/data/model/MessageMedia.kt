@@ -18,6 +18,9 @@ sealed interface MessageMedia {
 
     /** A voice note: one AAC blob, its length, and the waveform drawn for it (0–255 each). */
     data class Voice(val audio: MediaItem, val waveform: List<Int>) : MessageMedia
+
+    /** A sticker: a reference into a public pack, never pixels (`stickers/StickerStore`). */
+    data class Sticker(val ref: com.construct.messenger.stickers.StickerReference) : MessageMedia
 }
 
 class MediaItem(

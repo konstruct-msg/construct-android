@@ -50,6 +50,9 @@ interface MessagesRepository {
      */
     suspend fun edit(contactId: String, messageId: String, newText: String): SendOutcome
 
+    /** Send [ref], a sticker from a pack on this phone. Recorded among the recents. */
+    suspend fun sendSticker(contactId: String, ref: com.construct.messenger.stickers.StickerReference): SendOutcome
+
     /** Send again one of ours that no device took (iOS Retry). */
     suspend fun retry(contactId: String, messageId: String): SendOutcome
 

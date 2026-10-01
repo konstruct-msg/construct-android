@@ -138,6 +138,18 @@
     <string name="media_saved">Saved to gallery</string>
     <string name="media_save_failed">Couldn’t save</string>
     <string name="media_share">Share</string>
+    <string name="media_picker_tab_stickers">Stickers</string>
+    <string name="sticker_picker_recent">Recent</string>
+    <string name="sticker_catalog_empty">No sticker packs yet.</string>
+    <string name="sticker_picker_more_packs">More packs</string>
+    <string name="sticker_get">Get</string>
+    <plurals name="sticker_pack_count">
+        <item quantity="one">%d sticker</item>
+        <item quantity="other">%d stickers</item>
+    </plurals>
+    <string name="sticker_install_failed">Could not install — try again</string>
+    <string name="sticker_catalog_failed">Could not load packs.</string>
+    <string name="sticker_pack_remove">Remove pack</string>
     <string name="react">React</string>
     <string name="reaction_failed">Couldn’t send the reaction</string>
     <string name="reaction_pick_more">More reactions</string>
