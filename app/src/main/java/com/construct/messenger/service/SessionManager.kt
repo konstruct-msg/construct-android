@@ -317,9 +317,23 @@ class SessionManager @Inject constructor(
     fun exportSessions(): Map<String, ByteArray> =
         cryptoManager.getAllSessionContactIds().associateWith { cryptoManager.exportSessionBytes(it) }
 
-    fun importSessions(sessions: Map<String, ByteArray>) {
-        sessions.forEach { (contactId, bytes) -> cryptoManager.importSessionBytes(contactId, bytes) }
-    }
+    /**
+     * Each stored session into the core, one at a time; returns the devices whose blob it refused.
+     * One refusal must not cost the rest — the loop used to stop at the first throw. A refused
+     * blob is unusable for good (corrupt, another device's, or a format the core no longer reads:
+     * since 0.24.0 every suite-3 session), and the device simply has no session: the next send
+     * opens one. **Canon:** iOS `restoreSessionFromArchive`, which deletes it.
+     */
+    fun importSessions(sessions: Map<String, ByteArray>): List<String> =
+        sessions.mapNotNull { (contactId, bytes) ->
+            try {
+                cryptoManager.importSessionBytes(contactId, bytes)
+                null
+            } catch (e: Exception) {
+                Log.e(TAG, "session for ${contactId.take(12)}… not restored (unusable — dropped): ${e.message}")
+                contactId
+            }
+        }
 
     fun removeSession(contactId: String): Boolean = cryptoManager.removeSession(contactId)
 
@@ -341,7 +355,7 @@ class SessionManager @Inject constructor(
 /// Proto `CryptoSuite` enum → the core's SuiteID (`suite_id.rs`): 1 = CLASSIC
 /// (X25519+ChaCha20), 2 = PQ_HYBRID. Mirrors iOS `KeyServiceClient.parseSuiteId` — see
 /// construct-docs decision `crypto-suite-extensibility.md`. The raw proto value is NOT the core id
-/// (proto classic = 10 → core would reject it as InvalidSuiteId). Suite 3 (PQ_RATCHET) is never
+/// (proto classic = 10 → core would reject it as InvalidSuiteId). Suite 4 (PQ_RATCHET) is never
 /// produced from a bundle: PQXDH v2 cores open every session on it.
 private fun PreKeyBundle.coreSuiteId(): UShort = when (cryptoSuite) {
     CryptoSuite.CRYPTO_SUITE_CLASSIC_X25519_CHACHA20 -> 1u

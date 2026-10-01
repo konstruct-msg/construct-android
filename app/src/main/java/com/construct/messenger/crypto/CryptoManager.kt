@@ -231,6 +231,11 @@ class CryptoManager @Inject constructor() : OrchestratorGateway {
             core.openReceiving(device)
         }
 
+    /** How late messages have arrived since start (PQR-4); `null` before the core is up. */
+    fun reorderStats(): uniffi.construct_core.ReorderStats? = synchronized(coreLock) {
+        orchestrator?.reorderStats()
+    }
+
     fun sessionHealth(contactId: String): uniffi.construct_core.SessionHealthReport? = synchronized(coreLock) {
         orchestrator?.getSessionHealth(contactId)
     }

@@ -28,6 +28,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -83,6 +84,8 @@ class MessagingRuntime @Inject constructor(
     private val pendingResends: PendingResends,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val reorder = ReorderDiagnostics(cryptoManager::reorderStats)
+    private var reorderJob: Job? = null
     private var refreshJob: Job? = null
     private val startMutex = Mutex()
 
@@ -139,6 +142,15 @@ class MessagingRuntime @Inject constructor(
             }
         }
 
+        if (reorderJob?.isActive != true) {
+            reorderJob = scope.launch {
+                while (true) {
+                    runCatching { reorder.sample() }
+                    delay(REORDER_SAMPLE_MS)
+                }
+            }
+        }
+
         isStarted = true
         Log.i(TAG, "messaging runtime started")
         launchBackgroundBootstrap()
@@ -152,6 +164,8 @@ class MessagingRuntime @Inject constructor(
         processorJob = null
         subscriptionJob?.cancel()
         subscriptionJob = null
+        reorderJob?.cancel()
+        reorderJob = null
         isStarted = false
     }
 
@@ -179,11 +193,11 @@ class MessagingRuntime @Inject constructor(
                     IdentityIds.isCryptoDeviceId(it.removePrefix(SessionStateStore.SESSION_KEY_PREFIX))
             }
             .mapKeys { (key, _) -> key.removePrefix(SessionStateStore.SESSION_KEY_PREFIX) }
-        if (sessions.isNotEmpty()) {
-            runCatching { sessionManager.importSessions(sessions) }
-                .onFailure { Log.e(TAG, "session import failed (${sessions.size} blobs)", it) }
-        }
-        Log.i(TAG, "restored ${sessions.size} session blob(s) and core snapshots")
+        val refused = sessionManager.importSessions(sessions)
+        // Left on disk, a refused blob would be refused again on every start — and iOS learned
+        // that an unusable one can resurrect a stale session later (2026-08-17).
+        refused.forEach { runCatching { sessionStateStore.removeSession(SessionStateStore.SESSION_KEY_PREFIX + it) } }
+        Log.i(TAG, "restored ${sessions.size - refused.size} of ${sessions.size} session blob(s) and core snapshots")
     }
 
     private suspend fun drainPending() {
@@ -324,6 +338,8 @@ class MessagingRuntime @Inject constructor(
 
     private companion object {
         const val TAG = "MessagingRuntime"
+        /** iOS `RuntimeDiagnostics.Config.sampleInterval`. */
+        const val REORDER_SAMPLE_MS = 30_000L
     }
 }
 

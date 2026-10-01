@@ -1,6 +1,6 @@
 # Sessions — what Android does and what the core does
 
-> **Actualized 2026-09-28**, construct-core `0.22.0+88b7de8`. Replaces `SESSION_INITIALIZATION.md`
+> **Actualized 2026-10-01**, construct-core `0.25.0+d3dd9f22c209` (suite 4: a PQ key per message; a stored suite-3 session is refused at restore and dropped). Replaces `SESSION_INITIALIZATION.md`
 > and `SESSTION_LIFECYCLE.md`, which described a protocol that no longer exists (ping/ready,
 > SESSION_RESET_INIT, tie-break, heal, END_SESSION). They are in git history if you need to know
 > what was there.

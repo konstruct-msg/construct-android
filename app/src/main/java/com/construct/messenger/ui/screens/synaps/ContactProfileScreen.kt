@@ -493,7 +493,9 @@ private fun LocalNameDialog(current: String, onSave: (String) -> Unit, onClear: 
 private fun suiteName(suiteId: Int): String = when (suiteId) {
     1 -> "X25519 · ChaCha20-Poly1305"
     2 -> "PQ Hybrid · X25519+ML-KEM-768 · ML-DSA-65"
-    3 -> "X25519 · ChaCha20-Poly1305 · PQ Ratchet (ML-KEM-768)"
+    3 -> "X25519 · ChaCha20-Poly1305 · PQ Ratchet v1 (retired)"
+    // PQ_RATCHET since core 0.24.0 (PQR-2); iOS still names only 1–3 (construct-docs TODO).
+    4 -> "X25519 · ChaCha20-Poly1305 · PQ Ratchet (ML-KEM-768)"
     else -> "Suite $suiteId"
 }
 

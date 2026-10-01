@@ -611,6 +611,9 @@ internal open class UniffiForeignFutureResultVoid(
 internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
     fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultVoid.UniffiByValue,)
 }
+internal interface UniffiCallbackInterfaceLocalStoreObserverMethod0 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`change`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
 internal interface UniffiCallbackInterfacePlatformBridgeMethod0 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`key`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
@@ -628,6 +631,25 @@ internal interface UniffiCallbackInterfacePlatformBridgeMethod4 : com.sun.jna.Ca
 }
 internal interface UniffiCallbackInterfacePowProgressCallbackMethod0 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`currentNonce`: Long,`attempts`: Long,`estimatedProgress`: Float,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
+@Structure.FieldOrder("uniffiFree", "uniffiClone", "onChange")
+internal open class UniffiVTableCallbackInterfaceLocalStoreObserver(
+    @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+    @JvmField internal var `uniffiClone`: UniffiCallbackInterfaceClone? = null,
+    @JvmField internal var `onChange`: UniffiCallbackInterfaceLocalStoreObserverMethod0? = null,
+) : Structure() {
+    class UniffiByValue(
+        `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+        `uniffiClone`: UniffiCallbackInterfaceClone? = null,
+        `onChange`: UniffiCallbackInterfaceLocalStoreObserverMethod0? = null,
+    ): UniffiVTableCallbackInterfaceLocalStoreObserver(`uniffiFree`,`uniffiClone`,`onChange`,), Structure.ByValue
+
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceLocalStoreObserver) {
+        `uniffiFree` = other.`uniffiFree`
+        `uniffiClone` = other.`uniffiClone`
+        `onChange` = other.`onChange`
+    }
+
 }
 @Structure.FieldOrder("uniffiFree", "uniffiClone", "saveToSecureStore", "loadFromSecureStore", "persistRecord", "queryRecord", "logEvent")
 internal open class UniffiVTableCallbackInterfacePlatformBridge(
@@ -733,6 +755,16 @@ external fun uniffi_construct_core_checksum_func_generate_mnemonic(
 external fun uniffi_construct_core_checksum_func_generate_private_keys(
 ): Short
 external fun uniffi_construct_core_checksum_func_heartbeat_interval_ms(
+): Short
+external fun uniffi_construct_core_checksum_func_history_discovery_instance_name(
+): Short
+external fun uniffi_construct_core_checksum_func_history_discovery_tag(
+): Short
+external fun uniffi_construct_core_checksum_func_history_max_blob_bytes(
+): Short
+external fun uniffi_construct_core_checksum_func_history_qr_fingerprint(
+): Short
+external fun uniffi_construct_core_checksum_func_history_reply_len(
 ): Short
 external fun uniffi_construct_core_checksum_func_hybrid_public_key_from_private(
 ): Short
@@ -850,6 +882,94 @@ external fun uniffi_construct_core_checksum_method_classiccryptocore_set_local_u
 ): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_sign_bundle_data(
 ): Short
+external fun uniffi_construct_core_checksum_method_historyreceiver_accept(
+): Short
+external fun uniffi_construct_core_checksum_method_historyreceiver_end_of_input(
+): Short
+external fun uniffi_construct_core_checksum_method_historyreceiver_feed(
+): Short
+external fun uniffi_construct_core_checksum_method_historyreceiver_need(
+): Short
+external fun uniffi_construct_core_checksum_method_historysender_accept_reply(
+): Short
+external fun uniffi_construct_core_checksum_method_historysender_begin_media(
+): Short
+external fun uniffi_construct_core_checksum_method_historysender_finish(
+): Short
+external fun uniffi_construct_core_checksum_method_historysender_first_frame(
+): Short
+external fun uniffi_construct_core_checksum_method_historysender_push_media(
+): Short
+external fun uniffi_construct_core_checksum_method_historysender_push_records(
+): Short
+external fun uniffi_construct_core_checksum_method_historysender_snapshot_id(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_all_peer_devices(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_calls(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_chat(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_chats(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_contact(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_contacts(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_delete_chat(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_delete_contact(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_delete_message(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_delete_reaction(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_edit_message(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_forget_server_message_ids_before(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_get(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_insert_message(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_local_message_id(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_message(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_messages_before(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_peer_device(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_peer_devices(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_put(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_reactions(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_record_peer_device(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_record_server_message_id(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_remove(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_retain_peer_devices(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_search(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_delivery_status(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_observer(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_upsert_call(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_upsert_chat(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_upsert_contact(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_upsert_reaction(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_wipe(
+): Short
 external fun uniffi_construct_core_checksum_method_mlsstore_add_member(
 ): Short
 external fun uniffi_construct_core_checksum_method_mlsstore_create_group(
@@ -928,6 +1048,12 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_has_session(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_history_file_channel_key(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_history_offer_file(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_history_offer_nearby(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_history_receive(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_hybrid_signature_public_key(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_import_hybrid_signature_private_key(
@@ -974,6 +1100,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_remove_sessi
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_reopen_session(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_reorder_stats(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_retire_session(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_rollback_kyber_spk_rotation(
@@ -1018,9 +1146,15 @@ external fun uniffi_construct_core_checksum_method_trafficprotectionmanager_shou
 ): Short
 external fun uniffi_construct_core_checksum_method_trafficprotectionmanager_update_battery_level(
 ): Short
+external fun uniffi_construct_core_checksum_constructor_localstore_in_memory(
+): Short
+external fun uniffi_construct_core_checksum_constructor_localstore_new(
+): Short
 external fun uniffi_construct_core_checksum_constructor_rustackstore_new(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_trafficprotectionmanager_new(
+): Short
+external fun uniffi_construct_core_checksum_method_localstoreobserver_on_change(
 ): Short
 external fun uniffi_construct_core_checksum_method_platformbridge_save_to_secure_store(
 ): Short
@@ -1050,6 +1184,7 @@ internal object UniffiLib {
 
     init {
         Native.register(UniffiLib::class.java, findLibraryName(componentName = "construct_core"))
+        uniffiCallbackInterfaceLocalStoreObserver.register(this)
         uniffiCallbackInterfacePlatformBridge.register(this)
         uniffiCallbackInterfacePowProgressCallback.register(this)
         
@@ -1094,6 +1229,110 @@ external fun uniffi_construct_core_fn_method_classiccryptocore_set_local_user_id
 ): Unit
 external fun uniffi_construct_core_fn_method_classiccryptocore_sign_bundle_data(`ptr`: Long,`bundleDataJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_clone_historyreceiver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_free_historyreceiver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_historyreceiver_accept(`ptr`: Long,`known`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_historyreceiver_end_of_input(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_historyreceiver_feed(`ptr`: Long,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_historyreceiver_need(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Int
+external fun uniffi_construct_core_fn_clone_historysender(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_free_historysender(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_historysender_accept_reply(`ptr`: Long,`reply`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_historysender_begin_media(`ptr`: Long,`mediaId`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,`byteLen`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_historysender_finish(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_historysender_first_frame(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_historysender_push_media(`ptr`: Long,`piece`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_historysender_push_records(`ptr`: Long,`records`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_historysender_snapshot_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_clone_localstore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_free_localstore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_constructor_localstore_in_memory(`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_constructor_localstore_new(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_method_localstore_all_peer_devices(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_calls(`ptr`: Long,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_chat(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_chats(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_contact(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_contacts(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_delete_chat(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_localstore_delete_contact(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_localstore_delete_message(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_localstore_delete_reaction(`ptr`: Long,`targetMessageId`: RustBuffer.ByValue,`reactorUserId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_localstore_edit_message(`ptr`: Long,`id`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`searchText`: RustBuffer.ByValue,`editedAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_forget_server_message_ids_before(`ptr`: Long,`cutoff`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_method_localstore_get(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_insert_message(`ptr`: Long,`message`: RustBuffer.ByValue,`searchText`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_local_message_id(`ptr`: Long,`serverId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_message(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_messages_before(`ptr`: Long,`chatId`: RustBuffer.ByValue,`beforeOrderKey`: RustBuffer.ByValue,`beforeId`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_peer_device(`ptr`: Long,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_peer_devices(`ptr`: Long,`accountId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_put(`ptr`: Long,`key`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_localstore_reactions(`ptr`: Long,`targetMessageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_record_peer_device(`ptr`: Long,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_record_server_message_id(`ptr`: Long,`serverId`: RustBuffer.ByValue,`localId`: RustBuffer.ByValue,`recordedAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_localstore_remove(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_localstore_retain_peer_devices(`ptr`: Long,`accountId`: RustBuffer.ByValue,`active`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_search(`ptr`: Long,`query`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_set_delivery_status(`ptr`: Long,`id`: RustBuffer.ByValue,`status`: Short,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_observer(`ptr`: Long,`observer`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_localstore_upsert_call(`ptr`: Long,`call`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_localstore_upsert_chat(`ptr`: Long,`chat`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_localstore_upsert_contact(`ptr`: Long,`contact`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_localstore_upsert_reaction(`ptr`: Long,`reaction`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_localstore_wipe(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_construct_core_fn_clone_mlsstore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_free_mlsstore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1180,6 +1419,12 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_has_session(`ptr`:
 ): Byte
 external fun uniffi_construct_core_fn_method_orchestratorcore_history_file_channel_key(`ptr`: Long,`senderEphPub`: RustBuffer.ByValue,`kemKeyId`: Int,`kemCiphertext`: RustBuffer.ByValue,`snapshotId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_history_offer_file(`ptr`: Long,`userId`: RustBuffer.ByValue,`peer`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_method_orchestratorcore_history_offer_nearby(`ptr`: Long,`userId`: RustBuffer.ByValue,`peer`: RustBuffer.ByValue,`skip`: Byte,`pinnedReceiverIdentity`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_method_orchestratorcore_history_receive(`ptr`: Long,`userId`: RustBuffer.ByValue,`fromFile`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): Long
 external fun uniffi_construct_core_fn_method_orchestratorcore_hybrid_signature_public_key(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_import_hybrid_signature_private_key(`ptr`: Long,`privBytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1225,6 +1470,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_prune_one_time_pre
 external fun uniffi_construct_core_fn_method_orchestratorcore_remove_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_orchestratorcore_reopen_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_reorder_stats(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_retire_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1282,6 +1529,8 @@ external fun uniffi_construct_core_fn_method_trafficprotectionmanager_should_sen
 ): Byte
 external fun uniffi_construct_core_fn_method_trafficprotectionmanager_update_battery_level(`ptr`: Long,`level`: Float,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_init_callback_vtable_localstoreobserver(`vtable`: UniffiVTableCallbackInterfaceLocalStoreObserver,
+): Unit
 external fun uniffi_construct_core_fn_init_callback_vtable_platformbridge(`vtable`: UniffiVTableCallbackInterfacePlatformBridge,
 ): Unit
 external fun uniffi_construct_core_fn_init_callback_vtable_powprogresscallback(`vtable`: UniffiVTableCallbackInterfacePowProgressCallback,
@@ -1318,6 +1567,16 @@ external fun uniffi_construct_core_fn_func_generate_private_keys(uniffi_out_err:
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_heartbeat_interval_ms(`baseIntervalSec`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_construct_core_fn_func_history_discovery_instance_name(`tag`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_history_discovery_tag(`userIdDashed`: RustBuffer.ByValue,`deviceIdHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_history_max_blob_bytes(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_func_history_qr_fingerprint(`identityPublic`: RustBuffer.ByValue,`hybridPublic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_history_reply_len(uniffi_out_err: UniffiRustCallStatus, 
+): Int
 external fun uniffi_construct_core_fn_func_hybrid_public_key_from_private(`privateKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_hybrid_sign(`privateKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1565,6 +1824,21 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_heartbeat_interval_ms() != 51594.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_history_discovery_instance_name() != 37477.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_history_discovery_tag() != 23862.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_history_max_blob_bytes() != 49495.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_history_qr_fingerprint() != 57416.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_history_reply_len() != 56152.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_hybrid_public_key_from_private() != 12004.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1739,6 +2013,138 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_sign_bundle_data() != 43516.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_historyreceiver_accept() != 5082.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_historyreceiver_end_of_input() != 37985.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_historyreceiver_feed() != 49701.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_historyreceiver_need() != 47648.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_historysender_accept_reply() != 31752.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_historysender_begin_media() != 36878.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_historysender_finish() != 17872.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_historysender_first_frame() != 36364.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_historysender_push_media() != 59892.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_historysender_push_records() != 60933.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_historysender_snapshot_id() != 18376.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_all_peer_devices() != 59848.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_calls() != 50631.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_chat() != 45451.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_chats() != 2703.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_contact() != 43265.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_contacts() != 43939.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_delete_chat() != 62753.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_delete_contact() != 25391.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_delete_message() != 53751.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_delete_reaction() != 1671.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_edit_message() != 48649.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_forget_server_message_ids_before() != 29537.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_get() != 50579.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_insert_message() != 2107.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_local_message_id() != 42048.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_message() != 63926.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_messages_before() != 61408.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_peer_device() != 48056.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_peer_devices() != 14816.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_put() != 58855.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_reactions() != 33658.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_record_peer_device() != 19683.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_record_server_message_id() != 7632.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_remove() != 30144.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_retain_peer_devices() != 39765.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_search() != 46550.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_delivery_status() != 61504.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_observer() != 60987.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_upsert_call() != 6097.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_upsert_chat() != 50948.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_upsert_contact() != 27336.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_upsert_reaction() != 33013.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_wipe() != 12838.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_mlsstore_add_member() != 60309.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1856,6 +2262,15 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_history_file_channel_key() != 35330.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_history_offer_file() != 50870.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_history_offer_nearby() != 33978.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_history_receive() != 10000.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_hybrid_signature_public_key() != 3228.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1925,6 +2340,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_reopen_session() != 45402.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_reorder_stats() != 53206.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_retire_session() != 42727.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1991,10 +2409,19 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_trafficprotectionmanager_update_battery_level() != 31087.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_constructor_localstore_in_memory() != 10006.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_constructor_localstore_new() != 34198.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_constructor_rustackstore_new() != 64675.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_constructor_trafficprotectionmanager_new() != 21642.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstoreobserver_on_change() != 28445.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_platformbridge_save_to_secure_store() != 64407.toShort()) {
@@ -2252,6 +2679,29 @@ public object FfiConverterUShort: FfiConverter<UShort, Short> {
 /**
  * @suppress
  */
+public object FfiConverterShort: FfiConverter<Short, Short> {
+    override fun lift(value: Short): Short {
+        return value
+    }
+
+    override fun read(buf: ByteBuffer): Short {
+        return buf.getShort()
+    }
+
+    override fun lower(value: Short): Short {
+        return value
+    }
+
+    override fun allocationSize(value: Short) = 2UL
+
+    override fun write(value: Short, buf: ByteBuffer) {
+        buf.putShort(value)
+    }
+}
+
+/**
+ * @suppress
+ */
 public object FfiConverterUInt: FfiConverter<UInt, Int> {
     override fun lift(value: Int): UInt {
         return value.toUInt()
@@ -2269,6 +2719,29 @@ public object FfiConverterUInt: FfiConverter<UInt, Int> {
 
     override fun write(value: UInt, buf: ByteBuffer) {
         buf.putInt(value.toInt())
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterInt: FfiConverter<Int, Int> {
+    override fun lift(value: Int): Int {
+        return value
+    }
+
+    override fun read(buf: ByteBuffer): Int {
+        return buf.getInt()
+    }
+
+    override fun lower(value: Int): Int {
+        return value
+    }
+
+    override fun allocationSize(value: Int) = 4UL
+
+    override fun write(value: Int, buf: ByteBuffer) {
+        buf.putInt(value)
     }
 }
 
@@ -3070,6 +3543,1546 @@ public object FfiConverterTypeClassicCryptoCore: FfiConverter<ClassicCryptoCore,
 
 //
 /**
+ * The new device's end. Read exactly `need()` bytes, `feed` them, act on the status.
+ */
+public interface HistoryReceiverInterface {
+    
+    /**
+     * After `AwaitKeys`: the directory's keys for that device and the QR pin. Returns the reply
+     * to write back (nearby), or nothing (file, or a verified skip).
+     */
+    fun `accept`(`known`: HistoryKnownKeys, `pin`: HistoryPin): kotlin.ByteArray?
+    
+    /**
+     * The socket closed or the file ended: `Truncated` unless the stream finished.
+     */
+    fun `endOfInput`()
+    
+    fun `feed`(`data`: kotlin.ByteArray): HistoryStep
+    
+    fun `need`(): kotlin.UInt
+    
+    companion object
+}
+
+/**
+ * The new device's end. Read exactly `need()` bytes, `feed` them, act on the status.
+ */
+open class HistoryReceiver: Disposable, AutoCloseable, HistoryReceiverInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_construct_core_fn_free_historyreceiver(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_construct_core_fn_clone_historyreceiver(handle, status)
+        }
+    }
+
+    
+    /**
+     * After `AwaitKeys`: the directory's keys for that device and the QR pin. Returns the reply
+     * to write back (nearby), or nothing (file, or a verified skip).
+     */
+    @Throws(HistoryException::class)override fun `accept`(`known`: HistoryKnownKeys, `pin`: HistoryPin): kotlin.ByteArray? {
+            return FfiConverterOptionalByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(HistoryException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_historyreceiver_accept(
+        it,
+        FfiConverterTypeHistoryKnownKeys.lower(`known`),FfiConverterTypeHistoryPin.lower(`pin`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The socket closed or the file ended: `Truncated` unless the stream finished.
+     */
+    @Throws(HistoryException::class)override fun `endOfInput`()
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(HistoryException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_historyreceiver_end_of_input(
+        it,
+        _status)
+}
+    }
+    
+    
+
+    
+    @Throws(HistoryException::class)override fun `feed`(`data`: kotlin.ByteArray): HistoryStep {
+            return FfiConverterTypeHistoryStep.lift(
+    callWithHandle {
+    uniffiRustCallWithError(HistoryException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_historyreceiver_feed(
+        it,
+        FfiConverterByteArray.lower(`data`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `need`(): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_historyreceiver_need(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
+
+
+    
+    
+    /**
+     * @suppress
+     */
+    companion object
+    
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHistoryReceiver: FfiConverter<HistoryReceiver, Long> {
+    override fun lower(value: HistoryReceiver): Long {
+        return value.uniffiCloneHandle()
+    }
+
+    override fun lift(value: Long): HistoryReceiver {
+        return HistoryReceiver(UniffiWithHandle, value)
+    }
+
+    override fun read(buf: ByteBuffer): HistoryReceiver {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: HistoryReceiver) = 8UL
+
+    override fun write(value: HistoryReceiver, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+//
+/**
+ * The offering device's end. Every call returns bytes to write verbatim: frames, sealed
+ * chunks, the EOF — the platform never frames.
+ */
+public interface HistorySenderInterface {
+    
+    fun `acceptReply`(`reply`: kotlin.ByteArray)
+    
+    fun `beginMedia`(`mediaId`: kotlin.String, `mimeType`: kotlin.String, `byteLen`: kotlin.ULong): kotlin.ByteArray
+    
+    /**
+     * End record, last chunk, EOF.
+     */
+    fun `finish`(): kotlin.ByteArray
+    
+    fun `firstFrame`(): kotlin.ByteArray
+    
+    /**
+     * The next piece of the blob, in any size; exactly `byte_len` in all.
+     */
+    fun `pushMedia`(`piece`: kotlin.ByteArray): kotlin.ByteArray
+    
+    /**
+     * A batch of transcript records; returns every chunk they completed.
+     */
+    fun `pushRecords`(`records`: List<HistoryRecordOut>): kotlin.ByteArray
+    
+    /**
+     * The snapshot id the manifest must carry.
+     */
+    fun `snapshotId`(): kotlin.ByteArray
+    
+    companion object
+}
+
+/**
+ * The offering device's end. Every call returns bytes to write verbatim: frames, sealed
+ * chunks, the EOF — the platform never frames.
+ */
+open class HistorySender: Disposable, AutoCloseable, HistorySenderInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_construct_core_fn_free_historysender(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_construct_core_fn_clone_historysender(handle, status)
+        }
+    }
+
+    
+    @Throws(HistoryException::class)override fun `acceptReply`(`reply`: kotlin.ByteArray)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(HistoryException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_historysender_accept_reply(
+        it,
+        FfiConverterByteArray.lower(`reply`),_status)
+}
+    }
+    
+    
+
+    
+    @Throws(HistoryException::class)override fun `beginMedia`(`mediaId`: kotlin.String, `mimeType`: kotlin.String, `byteLen`: kotlin.ULong): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(HistoryException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_historysender_begin_media(
+        it,
+        FfiConverterString.lower(`mediaId`),FfiConverterString.lower(`mimeType`),FfiConverterULong.lower(`byteLen`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * End record, last chunk, EOF.
+     */
+    @Throws(HistoryException::class)override fun `finish`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(HistoryException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_historysender_finish(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `firstFrame`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_historysender_first_frame(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The next piece of the blob, in any size; exactly `byte_len` in all.
+     */
+    @Throws(HistoryException::class)override fun `pushMedia`(`piece`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(HistoryException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_historysender_push_media(
+        it,
+        FfiConverterByteArray.lower(`piece`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * A batch of transcript records; returns every chunk they completed.
+     */
+    @Throws(HistoryException::class)override fun `pushRecords`(`records`: List<HistoryRecordOut>): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(HistoryException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_historysender_push_records(
+        it,
+        FfiConverterSequenceTypeHistoryRecordOut.lower(`records`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The snapshot id the manifest must carry.
+     */override fun `snapshotId`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_historysender_snapshot_id(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
+
+
+    
+    
+    /**
+     * @suppress
+     */
+    companion object
+    
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHistorySender: FfiConverter<HistorySender, Long> {
+    override fun lower(value: HistorySender): Long {
+        return value.uniffiCloneHandle()
+    }
+
+    override fun lift(value: Long): HistorySender {
+        return HistorySender(UniffiWithHandle, value)
+    }
+
+    override fun read(buf: ByteBuffer): HistorySender {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: HistorySender) = 8UL
+
+    override fun write(value: HistorySender, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+//
+public interface LocalStoreInterface {
+    
+    fun `allPeerDevices`(): List<LocalPeerDevice>
+    
+    fun `calls`(`limit`: kotlin.UInt): List<LocalCall>
+    
+    fun `chat`(`id`: kotlin.String): LocalChat?
+    
+    /**
+     * Pinned first, then most recent, chats with no message last.
+     */
+    fun `chats`(): List<LocalChat>
+    
+    fun `contact`(`id`: kotlin.String): LocalContact?
+    
+    /**
+     * People marked as contacts, by the name shown for them.
+     */
+    fun `contacts`(): List<LocalContact>
+    
+    fun `deleteChat`(`id`: kotlin.String)
+    
+    /**
+     * Takes the contact's chats and their messages with it.
+     */
+    fun `deleteContact`(`id`: kotlin.String)
+    
+    fun `deleteMessage`(`id`: kotlin.String)
+    
+    fun `deleteReaction`(`targetMessageId`: kotlin.String, `reactorUserId`: kotlin.String)
+    
+    fun `editMessage`(`id`: kotlin.String, `body`: kotlin.ByteArray, `searchText`: kotlin.String?, `editedAt`: kotlin.Long): kotlin.Boolean
+    
+    fun `forgetServerMessageIdsBefore`(`cutoff`: kotlin.Long): kotlin.ULong
+    
+    fun `get`(`key`: kotlin.String): kotlin.ByteArray?
+    
+    /**
+     * `search_text` is what the message says, for the full-text index; null for media/control.
+     */
+    fun `insertMessage`(`message`: LocalMessage, `searchText`: kotlin.String?): LocalInsert
+    
+    fun `localMessageId`(`serverId`: kotlin.String): kotlin.String?
+    
+    fun `message`(`id`: kotlin.String): LocalMessage?
+    
+    /**
+     * Up to `limit` messages just before (`before_order_key`, `before_id`) — both null for the
+     * newest page — oldest first.
+     */
+    fun `messagesBefore`(`chatId`: kotlin.String, `beforeOrderKey`: kotlin.String?, `beforeId`: kotlin.String?, `limit`: kotlin.UInt): List<LocalMessage>
+    
+    fun `peerDevice`(`deviceId`: kotlin.String): LocalPeerDevice?
+    
+    /**
+     * Oldest first; devices first seen in the same millisecond by id.
+     */
+    fun `peerDevices`(`accountId`: kotlin.String): List<LocalPeerDevice>
+    
+    fun `put`(`key`: kotlin.String, `value`: kotlin.ByteArray)
+    
+    fun `reactions`(`targetMessageId`: kotlin.String): List<LocalReaction>
+    
+    /**
+     * An id already known keeps its first account.
+     */
+    fun `recordPeerDevice`(`device`: LocalPeerDevice): LocalInsert
+    
+    /**
+     * The server's id of a sealed copy we sent → our message id; lowercase, kept 30 days.
+     */
+    fun `recordServerMessageId`(`serverId`: kotlin.String, `localId`: kotlin.String, `recordedAt`: kotlin.Long)
+    
+    fun `remove`(`key`: kotlin.String)
+    
+    /**
+     * Forget devices the server no longer lists; an empty list forgets nothing. Returns the removed.
+     */
+    fun `retainPeerDevices`(`accountId`: kotlin.String, `active`: List<kotlin.String>): List<kotlin.String>
+    
+    /**
+     * Messages whose text contains `query` (one phrase, three characters at least), newest first.
+     */
+    fun `search`(`query`: kotlin.String, `limit`: kotlin.UInt): List<LocalSearchHit>
+    
+    fun `setDeliveryStatus`(`id`: kotlin.String, `status`: kotlin.Short): kotlin.Boolean
+    
+    fun `setObserver`(`observer`: LocalStoreObserver?)
+    
+    fun `upsertCall`(`call`: LocalCall)
+    
+    fun `upsertChat`(`chat`: LocalChat)
+    
+    fun `upsertContact`(`contact`: LocalContact)
+    
+    fun `upsertReaction`(`reaction`: LocalReaction)
+    
+    /**
+     * Close and delete every file of the store. Every later call is `Closed`. The platform
+     * deletes the key.
+     */
+    fun `wipe`()
+    
+    companion object
+}
+
+open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+    /**
+     * Open — creating if absent — the store at `path` under `key`. A key that does not open it
+     * is `WrongKey`, never a fresh empty store.
+     */
+    constructor(`path`: kotlin.String, `key`: kotlin.ByteArray) :
+        this(UniffiWithHandle, 
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_constructor_localstore_new(
+    
+        FfiConverterString.lower(`path`),FfiConverterByteArray.lower(`key`),_status)
+}
+    )
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_construct_core_fn_free_localstore(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_construct_core_fn_clone_localstore(handle, status)
+        }
+    }
+
+    
+    @Throws(LocalStoreException::class)override fun `allPeerDevices`(): List<LocalPeerDevice> {
+            return FfiConverterSequenceTypeLocalPeerDevice.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_all_peer_devices(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `calls`(`limit`: kotlin.UInt): List<LocalCall> {
+            return FfiConverterSequenceTypeLocalCall.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_calls(
+        it,
+        FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `chat`(`id`: kotlin.String): LocalChat? {
+            return FfiConverterOptionalTypeLocalChat.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_chat(
+        it,
+        FfiConverterString.lower(`id`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Pinned first, then most recent, chats with no message last.
+     */
+    @Throws(LocalStoreException::class)override fun `chats`(): List<LocalChat> {
+            return FfiConverterSequenceTypeLocalChat.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_chats(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `contact`(`id`: kotlin.String): LocalContact? {
+            return FfiConverterOptionalTypeLocalContact.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_contact(
+        it,
+        FfiConverterString.lower(`id`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * People marked as contacts, by the name shown for them.
+     */
+    @Throws(LocalStoreException::class)override fun `contacts`(): List<LocalContact> {
+            return FfiConverterSequenceTypeLocalContact.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_contacts(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `deleteChat`(`id`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_delete_chat(
+        it,
+        FfiConverterString.lower(`id`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * Takes the contact's chats and their messages with it.
+     */
+    @Throws(LocalStoreException::class)override fun `deleteContact`(`id`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_delete_contact(
+        it,
+        FfiConverterString.lower(`id`),_status)
+}
+    }
+    
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `deleteMessage`(`id`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_delete_message(
+        it,
+        FfiConverterString.lower(`id`),_status)
+}
+    }
+    
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `deleteReaction`(`targetMessageId`: kotlin.String, `reactorUserId`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_delete_reaction(
+        it,
+        FfiConverterString.lower(`targetMessageId`),FfiConverterString.lower(`reactorUserId`),_status)
+}
+    }
+    
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `editMessage`(`id`: kotlin.String, `body`: kotlin.ByteArray, `searchText`: kotlin.String?, `editedAt`: kotlin.Long): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_edit_message(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterByteArray.lower(`body`),FfiConverterOptionalString.lower(`searchText`),FfiConverterLong.lower(`editedAt`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `forgetServerMessageIdsBefore`(`cutoff`: kotlin.Long): kotlin.ULong {
+            return FfiConverterULong.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_forget_server_message_ids_before(
+        it,
+        FfiConverterLong.lower(`cutoff`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `get`(`key`: kotlin.String): kotlin.ByteArray? {
+            return FfiConverterOptionalByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_get(
+        it,
+        FfiConverterString.lower(`key`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * `search_text` is what the message says, for the full-text index; null for media/control.
+     */
+    @Throws(LocalStoreException::class)override fun `insertMessage`(`message`: LocalMessage, `searchText`: kotlin.String?): LocalInsert {
+            return FfiConverterTypeLocalInsert.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_insert_message(
+        it,
+        FfiConverterTypeLocalMessage.lower(`message`),FfiConverterOptionalString.lower(`searchText`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `localMessageId`(`serverId`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_local_message_id(
+        it,
+        FfiConverterString.lower(`serverId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `message`(`id`: kotlin.String): LocalMessage? {
+            return FfiConverterOptionalTypeLocalMessage.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_message(
+        it,
+        FfiConverterString.lower(`id`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Up to `limit` messages just before (`before_order_key`, `before_id`) — both null for the
+     * newest page — oldest first.
+     */
+    @Throws(LocalStoreException::class)override fun `messagesBefore`(`chatId`: kotlin.String, `beforeOrderKey`: kotlin.String?, `beforeId`: kotlin.String?, `limit`: kotlin.UInt): List<LocalMessage> {
+            return FfiConverterSequenceTypeLocalMessage.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_messages_before(
+        it,
+        FfiConverterString.lower(`chatId`),FfiConverterOptionalString.lower(`beforeOrderKey`),FfiConverterOptionalString.lower(`beforeId`),FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `peerDevice`(`deviceId`: kotlin.String): LocalPeerDevice? {
+            return FfiConverterOptionalTypeLocalPeerDevice.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_peer_device(
+        it,
+        FfiConverterString.lower(`deviceId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Oldest first; devices first seen in the same millisecond by id.
+     */
+    @Throws(LocalStoreException::class)override fun `peerDevices`(`accountId`: kotlin.String): List<LocalPeerDevice> {
+            return FfiConverterSequenceTypeLocalPeerDevice.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_peer_devices(
+        it,
+        FfiConverterString.lower(`accountId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `put`(`key`: kotlin.String, `value`: kotlin.ByteArray)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_put(
+        it,
+        FfiConverterString.lower(`key`),FfiConverterByteArray.lower(`value`),_status)
+}
+    }
+    
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `reactions`(`targetMessageId`: kotlin.String): List<LocalReaction> {
+            return FfiConverterSequenceTypeLocalReaction.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_reactions(
+        it,
+        FfiConverterString.lower(`targetMessageId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * An id already known keeps its first account.
+     */
+    @Throws(LocalStoreException::class)override fun `recordPeerDevice`(`device`: LocalPeerDevice): LocalInsert {
+            return FfiConverterTypeLocalInsert.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_record_peer_device(
+        it,
+        FfiConverterTypeLocalPeerDevice.lower(`device`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The server's id of a sealed copy we sent → our message id; lowercase, kept 30 days.
+     */
+    @Throws(LocalStoreException::class)override fun `recordServerMessageId`(`serverId`: kotlin.String, `localId`: kotlin.String, `recordedAt`: kotlin.Long)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_record_server_message_id(
+        it,
+        FfiConverterString.lower(`serverId`),FfiConverterString.lower(`localId`),FfiConverterLong.lower(`recordedAt`),_status)
+}
+    }
+    
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `remove`(`key`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_remove(
+        it,
+        FfiConverterString.lower(`key`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * Forget devices the server no longer lists; an empty list forgets nothing. Returns the removed.
+     */
+    @Throws(LocalStoreException::class)override fun `retainPeerDevices`(`accountId`: kotlin.String, `active`: List<kotlin.String>): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_retain_peer_devices(
+        it,
+        FfiConverterString.lower(`accountId`),FfiConverterSequenceString.lower(`active`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Messages whose text contains `query` (one phrase, three characters at least), newest first.
+     */
+    @Throws(LocalStoreException::class)override fun `search`(`query`: kotlin.String, `limit`: kotlin.UInt): List<LocalSearchHit> {
+            return FfiConverterSequenceTypeLocalSearchHit.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_search(
+        it,
+        FfiConverterString.lower(`query`),FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `setDeliveryStatus`(`id`: kotlin.String, `status`: kotlin.Short): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_delivery_status(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterShort.lower(`status`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `setObserver`(`observer`: LocalStoreObserver?)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_observer(
+        it,
+        FfiConverterOptionalTypeLocalStoreObserver.lower(`observer`),_status)
+}
+    }
+    
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `upsertCall`(`call`: LocalCall)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_upsert_call(
+        it,
+        FfiConverterTypeLocalCall.lower(`call`),_status)
+}
+    }
+    
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `upsertChat`(`chat`: LocalChat)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_upsert_chat(
+        it,
+        FfiConverterTypeLocalChat.lower(`chat`),_status)
+}
+    }
+    
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `upsertContact`(`contact`: LocalContact)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_upsert_contact(
+        it,
+        FfiConverterTypeLocalContact.lower(`contact`),_status)
+}
+    }
+    
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `upsertReaction`(`reaction`: LocalReaction)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_upsert_reaction(
+        it,
+        FfiConverterTypeLocalReaction.lower(`reaction`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * Close and delete every file of the store. Every later call is `Closed`. The platform
+     * deletes the key.
+     */
+    @Throws(LocalStoreException::class)override fun `wipe`()
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_wipe(
+        it,
+        _status)
+}
+    }
+    
+    
+
+    
+
+    
+
+
+    
+    companion object {
+        
+    /**
+     * A store in memory only, under the same encryption path. Tests and previews.
+     */
+    @Throws(LocalStoreException::class) fun `inMemory`(`key`: kotlin.ByteArray): LocalStore {
+            return FfiConverterTypeLocalStore.lift(
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_constructor_localstore_in_memory(
+    
+        FfiConverterByteArray.lower(`key`),_status)
+}
+    )
+    }
+    
+
+        
+    }
+    
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalStore: FfiConverter<LocalStore, Long> {
+    override fun lower(value: LocalStore): Long {
+        return value.uniffiCloneHandle()
+    }
+
+    override fun lift(value: Long): LocalStore {
+        return LocalStore(UniffiWithHandle, value)
+    }
+
+    override fun read(buf: ByteBuffer): LocalStore {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: LocalStore) = 8UL
+
+    override fun write(value: LocalStore, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+//
+/**
  * Device-level MLS store (RFC 9420): ONE long-lived OpenMLS storage holding
  * all group states plus key-package private material. A Welcome can only be
  * decrypted by the store that generated the KeyPackage it addresses, so key
@@ -3729,6 +5742,24 @@ public interface OrchestratorCoreInterface {
      */
     fun `historyFileChannelKey`(`senderEphPub`: kotlin.ByteArray, `kemKeyId`: kotlin.UInt, `kemCiphertext`: kotlin.ByteArray, `snapshotId`: kotlin.ByteArray): kotlin.ByteArray
     
+    /**
+     * Offer history as a CTHF file for `peer`: write `first_frame()`, then stream.
+     */
+    fun `historyOfferFile`(`userId`: kotlin.ByteArray, `peer`: HistoryPeerKeys): HistorySender
+    
+    /**
+     * Offer history over the local network to the device `peer` names. Write
+     * `first_frame()`, read `HISTORY_REPLY_LEN` bytes into `accept_reply`, then stream. A skip
+     * is the same signed opening and nothing after it. `pinned_receiver_identity` is the new
+     * device's identity from a Flow B QR, when this side scanned one.
+     */
+    fun `historyOfferNearby`(`userId`: kotlin.ByteArray, `peer`: HistoryPeerKeys, `skip`: kotlin.Boolean, `pinnedReceiverIdentity`: kotlin.ByteArray?): HistorySender
+    
+    /**
+     * Receive history, over the local network or from a file.
+     */
+    fun `historyReceive`(`userId`: kotlin.ByteArray, `fromFile`: kotlin.Boolean): HistoryReceiver
+    
     fun `hybridSignaturePublicKey`(): kotlin.ByteArray?
     
     fun `importHybridSignaturePrivateKey`(`privBytes`: kotlin.ByteArray)
@@ -3796,6 +5827,11 @@ public interface OrchestratorCoreInterface {
     fun `removeSession`(`contactId`: kotlin.String): kotlin.Boolean
     
     fun `reopenSession`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String
+    
+    /**
+     * How late messages have arrived since the process started (PQR-4).
+     */
+    fun `reorderStats`(): ReorderStats
     
     /**
      * The person reset the session with `contact_id`: the current state is retired locally and
@@ -4370,6 +6406,59 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     
 
+    
+    /**
+     * Offer history as a CTHF file for `peer`: write `first_frame()`, then stream.
+     */
+    @Throws(HistoryException::class)override fun `historyOfferFile`(`userId`: kotlin.ByteArray, `peer`: HistoryPeerKeys): HistorySender {
+            return FfiConverterTypeHistorySender.lift(
+    callWithHandle {
+    uniffiRustCallWithError(HistoryException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_history_offer_file(
+        it,
+        FfiConverterByteArray.lower(`userId`),FfiConverterTypeHistoryPeerKeys.lower(`peer`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Offer history over the local network to the device `peer` names. Write
+     * `first_frame()`, read `HISTORY_REPLY_LEN` bytes into `accept_reply`, then stream. A skip
+     * is the same signed opening and nothing after it. `pinned_receiver_identity` is the new
+     * device's identity from a Flow B QR, when this side scanned one.
+     */
+    @Throws(HistoryException::class)override fun `historyOfferNearby`(`userId`: kotlin.ByteArray, `peer`: HistoryPeerKeys, `skip`: kotlin.Boolean, `pinnedReceiverIdentity`: kotlin.ByteArray?): HistorySender {
+            return FfiConverterTypeHistorySender.lift(
+    callWithHandle {
+    uniffiRustCallWithError(HistoryException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_history_offer_nearby(
+        it,
+        FfiConverterByteArray.lower(`userId`),FfiConverterTypeHistoryPeerKeys.lower(`peer`),FfiConverterBoolean.lower(`skip`),FfiConverterOptionalByteArray.lower(`pinnedReceiverIdentity`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Receive history, over the local network or from a file.
+     */override fun `historyReceive`(`userId`: kotlin.ByteArray, `fromFile`: kotlin.Boolean): HistoryReceiver {
+            return FfiConverterTypeHistoryReceiver.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_history_receive(
+        it,
+        FfiConverterByteArray.lower(`userId`),FfiConverterBoolean.lower(`fromFile`),_status)
+}
+    }
+    )
+    }
+    
+
     override fun `hybridSignaturePublicKey`(): kotlin.ByteArray? {
             return FfiConverterOptionalByteArray.lift(
     callWithHandle {
@@ -4694,6 +6783,22 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_reopen_session(
         it,
         FfiConverterString.lower(`contactId`),FfiConverterTypeBinaryKeyBundle.lower(`recipientBundle`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * How late messages have arrived since the process started (PQR-4).
+     */override fun `reorderStats`(): ReorderStats {
+            return FfiConverterTypeReorderStats.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_reorder_stats(
+        it,
+        _status)
 }
     }
     )
@@ -5954,6 +8059,170 @@ public object FfiConverterTypeEphemeralKeyPair: FfiConverterRustBuffer<Ephemeral
 
 
 /**
+ * The keys the directory holds for the device a frame names. Checked against the frame's own,
+ * and the signature is verified with these.
+ */
+data class HistoryKnownKeys (
+    var `identityPublic`: kotlin.ByteArray
+    , 
+    var `hybridPublic`: kotlin.ByteArray
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHistoryKnownKeys: FfiConverterRustBuffer<HistoryKnownKeys> {
+    override fun read(buf: ByteBuffer): HistoryKnownKeys {
+        return HistoryKnownKeys(
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: HistoryKnownKeys) = (
+            FfiConverterByteArray.allocationSize(value.`identityPublic`) +
+            FfiConverterByteArray.allocationSize(value.`hybridPublic`)
+    )
+
+    override fun write(value: HistoryKnownKeys, buf: ByteBuffer) {
+            FfiConverterByteArray.write(value.`identityPublic`, buf)
+            FfiConverterByteArray.write(value.`hybridPublic`, buf)
+    }
+}
+
+
+
+/**
+ * The other device's keys from our own account's directory entry (`GetPreKeyBundles`).
+ */
+data class HistoryPeerKeys (
+    var `identityPublic`: kotlin.ByteArray
+    , 
+    var `hybridPublic`: kotlin.ByteArray
+    , 
+    var `kyberPrekeyPublic`: kotlin.ByteArray
+    , 
+    var `kyberPrekeyId`: kotlin.UInt
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHistoryPeerKeys: FfiConverterRustBuffer<HistoryPeerKeys> {
+    override fun read(buf: ByteBuffer): HistoryPeerKeys {
+        return HistoryPeerKeys(
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: HistoryPeerKeys) = (
+            FfiConverterByteArray.allocationSize(value.`identityPublic`) +
+            FfiConverterByteArray.allocationSize(value.`hybridPublic`) +
+            FfiConverterByteArray.allocationSize(value.`kyberPrekeyPublic`) +
+            FfiConverterUInt.allocationSize(value.`kyberPrekeyId`)
+    )
+
+    override fun write(value: HistoryPeerKeys, buf: ByteBuffer) {
+            FfiConverterByteArray.write(value.`identityPublic`, buf)
+            FfiConverterByteArray.write(value.`hybridPublic`, buf)
+            FfiConverterByteArray.write(value.`kyberPrekeyPublic`, buf)
+            FfiConverterUInt.write(value.`kyberPrekeyId`, buf)
+    }
+}
+
+
+
+/**
+ * One transcript record to send: its type (0x01 manifest … 0x07 call) and protobuf bytes.
+ */
+data class HistoryRecordOut (
+    var `recordType`: kotlin.UByte
+    , 
+    var `proto`: kotlin.ByteArray
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHistoryRecordOut: FfiConverterRustBuffer<HistoryRecordOut> {
+    override fun read(buf: ByteBuffer): HistoryRecordOut {
+        return HistoryRecordOut(
+            FfiConverterUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: HistoryRecordOut) = (
+            FfiConverterUByte.allocationSize(value.`recordType`) +
+            FfiConverterByteArray.allocationSize(value.`proto`)
+    )
+
+    override fun write(value: HistoryRecordOut, buf: ByteBuffer) {
+            FfiConverterUByte.write(value.`recordType`, buf)
+            FfiConverterByteArray.write(value.`proto`, buf)
+    }
+}
+
+
+
+data class HistoryStep (
+    var `events`: List<HistoryEvent>
+    , 
+    var `status`: HistoryStatus
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHistoryStep: FfiConverterRustBuffer<HistoryStep> {
+    override fun read(buf: ByteBuffer): HistoryStep {
+        return HistoryStep(
+            FfiConverterSequenceTypeHistoryEvent.read(buf),
+            FfiConverterTypeHistoryStatus.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: HistoryStep) = (
+            FfiConverterSequenceTypeHistoryEvent.allocationSize(value.`events`) +
+            FfiConverterTypeHistoryStatus.allocationSize(value.`status`)
+    )
+
+    override fun write(value: HistoryStep, buf: ByteBuffer) {
+            FfiConverterSequenceTypeHistoryEvent.write(value.`events`, buf)
+            FfiConverterTypeHistoryStatus.write(value.`status`, buf)
+    }
+}
+
+
+
+/**
  * Hybrid signature keypair (Ed25519 + ML-DSA-65).
  * Used for post-quantum identity key bundles.
  */
@@ -6119,6 +8388,544 @@ public object FfiConverterTypeKyberPrekeyUpload: FfiConverterRustBuffer<KyberPre
             FfiConverterULong.write(value.`createdAt`, buf)
             FfiConverterByteArray.write(value.`signature`, buf)
             FfiConverterByteArray.write(value.`hybridSignature`, buf)
+    }
+}
+
+
+
+data class LocalCall (
+    var `id`: kotlin.String
+    , 
+    var `peerUserId`: kotlin.String
+    , 
+    var `peerName`: kotlin.String
+    , 
+    var `direction`: kotlin.Short
+    , 
+    var `status`: kotlin.Short
+    , 
+    var `startedAt`: kotlin.Long?
+    , 
+    var `endedAt`: kotlin.Long?
+    , 
+    var `durationSeconds`: kotlin.Int
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalCall: FfiConverterRustBuffer<LocalCall> {
+    override fun read(buf: ByteBuffer): LocalCall {
+        return LocalCall(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterShort.read(buf),
+            FfiConverterShort.read(buf),
+            FfiConverterOptionalLong.read(buf),
+            FfiConverterOptionalLong.read(buf),
+            FfiConverterInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalCall) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`peerUserId`) +
+            FfiConverterString.allocationSize(value.`peerName`) +
+            FfiConverterShort.allocationSize(value.`direction`) +
+            FfiConverterShort.allocationSize(value.`status`) +
+            FfiConverterOptionalLong.allocationSize(value.`startedAt`) +
+            FfiConverterOptionalLong.allocationSize(value.`endedAt`) +
+            FfiConverterInt.allocationSize(value.`durationSeconds`)
+    )
+
+    override fun write(value: LocalCall, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterString.write(value.`peerUserId`, buf)
+            FfiConverterString.write(value.`peerName`, buf)
+            FfiConverterShort.write(value.`direction`, buf)
+            FfiConverterShort.write(value.`status`, buf)
+            FfiConverterOptionalLong.write(value.`startedAt`, buf)
+            FfiConverterOptionalLong.write(value.`endedAt`, buf)
+            FfiConverterInt.write(value.`durationSeconds`, buf)
+    }
+}
+
+
+
+data class LocalChat (
+    var `id`: kotlin.String
+    , 
+    var `peerId`: kotlin.String
+    , 
+    var `lastMessageText`: kotlin.String?
+    , 
+    var `lastMessageTime`: kotlin.Long?
+    , 
+    var `sessionId`: kotlin.String?
+    , 
+    var `isPinned`: kotlin.Boolean
+    , 
+    var `isMuted`: kotlin.Boolean
+    , 
+    var `unreadCount`: kotlin.Int
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalChat: FfiConverterRustBuffer<LocalChat> {
+    override fun read(buf: ByteBuffer): LocalChat {
+        return LocalChat(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalLong.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalChat) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`peerId`) +
+            FfiConverterOptionalString.allocationSize(value.`lastMessageText`) +
+            FfiConverterOptionalLong.allocationSize(value.`lastMessageTime`) +
+            FfiConverterOptionalString.allocationSize(value.`sessionId`) +
+            FfiConverterBoolean.allocationSize(value.`isPinned`) +
+            FfiConverterBoolean.allocationSize(value.`isMuted`) +
+            FfiConverterInt.allocationSize(value.`unreadCount`)
+    )
+
+    override fun write(value: LocalChat, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterString.write(value.`peerId`, buf)
+            FfiConverterOptionalString.write(value.`lastMessageText`, buf)
+            FfiConverterOptionalLong.write(value.`lastMessageTime`, buf)
+            FfiConverterOptionalString.write(value.`sessionId`, buf)
+            FfiConverterBoolean.write(value.`isPinned`, buf)
+            FfiConverterBoolean.write(value.`isMuted`, buf)
+            FfiConverterInt.write(value.`unreadCount`, buf)
+    }
+}
+
+
+
+data class LocalContact (
+    var `id`: kotlin.String
+    , 
+    var `username`: kotlin.String
+    , 
+    var `displayName`: kotlin.String
+    , 
+    var `localAlias`: kotlin.String?
+    , 
+    var `avatar`: kotlin.ByteArray?
+    , 
+    var `publicKey`: kotlin.String?
+    , 
+    var `knownIdentityKey`: kotlin.ByteArray?
+    , 
+    var `accountAddress`: kotlin.ByteArray?
+    , 
+    var `isContact`: kotlin.Boolean
+    , 
+    var `isBlocked`: kotlin.Boolean
+    , 
+    var `isSharingWithMe`: kotlin.Boolean
+    , 
+    var `amISharingWith`: kotlin.Boolean
+    , 
+    var `sharedWithMeAt`: kotlin.Long?
+    , 
+    var `addedAt`: kotlin.Long?
+    , 
+    var `ktStatus`: kotlin.Short
+    , 
+    var `hybridCapable`: kotlin.Boolean
+    , 
+    var `securityNotice`: kotlin.Short
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalContact: FfiConverterRustBuffer<LocalContact> {
+    override fun read(buf: ByteBuffer): LocalContact {
+        return LocalContact(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterOptionalLong.read(buf),
+            FfiConverterOptionalLong.read(buf),
+            FfiConverterShort.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterShort.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalContact) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`username`) +
+            FfiConverterString.allocationSize(value.`displayName`) +
+            FfiConverterOptionalString.allocationSize(value.`localAlias`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`avatar`) +
+            FfiConverterOptionalString.allocationSize(value.`publicKey`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`knownIdentityKey`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`accountAddress`) +
+            FfiConverterBoolean.allocationSize(value.`isContact`) +
+            FfiConverterBoolean.allocationSize(value.`isBlocked`) +
+            FfiConverterBoolean.allocationSize(value.`isSharingWithMe`) +
+            FfiConverterBoolean.allocationSize(value.`amISharingWith`) +
+            FfiConverterOptionalLong.allocationSize(value.`sharedWithMeAt`) +
+            FfiConverterOptionalLong.allocationSize(value.`addedAt`) +
+            FfiConverterShort.allocationSize(value.`ktStatus`) +
+            FfiConverterBoolean.allocationSize(value.`hybridCapable`) +
+            FfiConverterShort.allocationSize(value.`securityNotice`)
+    )
+
+    override fun write(value: LocalContact, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterString.write(value.`username`, buf)
+            FfiConverterString.write(value.`displayName`, buf)
+            FfiConverterOptionalString.write(value.`localAlias`, buf)
+            FfiConverterOptionalByteArray.write(value.`avatar`, buf)
+            FfiConverterOptionalString.write(value.`publicKey`, buf)
+            FfiConverterOptionalByteArray.write(value.`knownIdentityKey`, buf)
+            FfiConverterOptionalByteArray.write(value.`accountAddress`, buf)
+            FfiConverterBoolean.write(value.`isContact`, buf)
+            FfiConverterBoolean.write(value.`isBlocked`, buf)
+            FfiConverterBoolean.write(value.`isSharingWithMe`, buf)
+            FfiConverterBoolean.write(value.`amISharingWith`, buf)
+            FfiConverterOptionalLong.write(value.`sharedWithMeAt`, buf)
+            FfiConverterOptionalLong.write(value.`addedAt`, buf)
+            FfiConverterShort.write(value.`ktStatus`, buf)
+            FfiConverterBoolean.write(value.`hybridCapable`, buf)
+            FfiConverterShort.write(value.`securityNotice`, buf)
+    }
+}
+
+
+
+data class LocalMessage (
+    var `id`: kotlin.String
+    , 
+    var `chatId`: kotlin.String
+    , 
+    var `fromUserId`: kotlin.String
+    , 
+    var `toUserId`: kotlin.String
+    , 
+    var `isSentByMe`: kotlin.Boolean
+    , 
+    var `timestamp`: kotlin.Long
+    , 
+    var `orderKey`: kotlin.String
+    , 
+    var `body`: kotlin.ByteArray
+    , 
+    var `contentType`: kotlin.Short
+    , 
+    var `deliveryStatus`: kotlin.Short
+    , 
+    var `retryCount`: kotlin.Short
+    , 
+    var `suiteId`: kotlin.Short
+    , 
+    var `isEdited`: kotlin.Boolean
+    , 
+    var `editedAt`: kotlin.Long?
+    , 
+    var `replyToMessageId`: kotlin.String?
+    , 
+    var `replyToContent`: kotlin.String?
+    , 
+    var `transcriptText`: kotlin.String?
+    , 
+    var `transcriptLanguage`: kotlin.String?
+    , 
+    var `transcriptGeneratedAt`: kotlin.Long?
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalMessage: FfiConverterRustBuffer<LocalMessage> {
+    override fun read(buf: ByteBuffer): LocalMessage {
+        return LocalMessage(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterShort.read(buf),
+            FfiConverterShort.read(buf),
+            FfiConverterShort.read(buf),
+            FfiConverterShort.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterOptionalLong.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalMessage) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`chatId`) +
+            FfiConverterString.allocationSize(value.`fromUserId`) +
+            FfiConverterString.allocationSize(value.`toUserId`) +
+            FfiConverterBoolean.allocationSize(value.`isSentByMe`) +
+            FfiConverterLong.allocationSize(value.`timestamp`) +
+            FfiConverterString.allocationSize(value.`orderKey`) +
+            FfiConverterByteArray.allocationSize(value.`body`) +
+            FfiConverterShort.allocationSize(value.`contentType`) +
+            FfiConverterShort.allocationSize(value.`deliveryStatus`) +
+            FfiConverterShort.allocationSize(value.`retryCount`) +
+            FfiConverterShort.allocationSize(value.`suiteId`) +
+            FfiConverterBoolean.allocationSize(value.`isEdited`) +
+            FfiConverterOptionalLong.allocationSize(value.`editedAt`) +
+            FfiConverterOptionalString.allocationSize(value.`replyToMessageId`) +
+            FfiConverterOptionalString.allocationSize(value.`replyToContent`) +
+            FfiConverterOptionalString.allocationSize(value.`transcriptText`) +
+            FfiConverterOptionalString.allocationSize(value.`transcriptLanguage`) +
+            FfiConverterOptionalLong.allocationSize(value.`transcriptGeneratedAt`)
+    )
+
+    override fun write(value: LocalMessage, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterString.write(value.`chatId`, buf)
+            FfiConverterString.write(value.`fromUserId`, buf)
+            FfiConverterString.write(value.`toUserId`, buf)
+            FfiConverterBoolean.write(value.`isSentByMe`, buf)
+            FfiConverterLong.write(value.`timestamp`, buf)
+            FfiConverterString.write(value.`orderKey`, buf)
+            FfiConverterByteArray.write(value.`body`, buf)
+            FfiConverterShort.write(value.`contentType`, buf)
+            FfiConverterShort.write(value.`deliveryStatus`, buf)
+            FfiConverterShort.write(value.`retryCount`, buf)
+            FfiConverterShort.write(value.`suiteId`, buf)
+            FfiConverterBoolean.write(value.`isEdited`, buf)
+            FfiConverterOptionalLong.write(value.`editedAt`, buf)
+            FfiConverterOptionalString.write(value.`replyToMessageId`, buf)
+            FfiConverterOptionalString.write(value.`replyToContent`, buf)
+            FfiConverterOptionalString.write(value.`transcriptText`, buf)
+            FfiConverterOptionalString.write(value.`transcriptLanguage`, buf)
+            FfiConverterOptionalLong.write(value.`transcriptGeneratedAt`, buf)
+    }
+}
+
+
+
+data class LocalPeerDevice (
+    var `deviceId`: kotlin.String
+    , 
+    var `accountId`: kotlin.String
+    , 
+    var `identityKey`: kotlin.ByteArray
+    , 
+    var `firstSeenAt`: kotlin.Long
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalPeerDevice: FfiConverterRustBuffer<LocalPeerDevice> {
+    override fun read(buf: ByteBuffer): LocalPeerDevice {
+        return LocalPeerDevice(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalPeerDevice) = (
+            FfiConverterString.allocationSize(value.`deviceId`) +
+            FfiConverterString.allocationSize(value.`accountId`) +
+            FfiConverterByteArray.allocationSize(value.`identityKey`) +
+            FfiConverterLong.allocationSize(value.`firstSeenAt`)
+    )
+
+    override fun write(value: LocalPeerDevice, buf: ByteBuffer) {
+            FfiConverterString.write(value.`deviceId`, buf)
+            FfiConverterString.write(value.`accountId`, buf)
+            FfiConverterByteArray.write(value.`identityKey`, buf)
+            FfiConverterLong.write(value.`firstSeenAt`, buf)
+    }
+}
+
+
+
+data class LocalReaction (
+    var `targetMessageId`: kotlin.String
+    , 
+    var `reactorUserId`: kotlin.String
+    , 
+    var `emoji`: kotlin.String
+    , 
+    var `timestampMs`: kotlin.Long
+    , 
+    var `receivedAt`: kotlin.Long?
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalReaction: FfiConverterRustBuffer<LocalReaction> {
+    override fun read(buf: ByteBuffer): LocalReaction {
+        return LocalReaction(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterOptionalLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalReaction) = (
+            FfiConverterString.allocationSize(value.`targetMessageId`) +
+            FfiConverterString.allocationSize(value.`reactorUserId`) +
+            FfiConverterString.allocationSize(value.`emoji`) +
+            FfiConverterLong.allocationSize(value.`timestampMs`) +
+            FfiConverterOptionalLong.allocationSize(value.`receivedAt`)
+    )
+
+    override fun write(value: LocalReaction, buf: ByteBuffer) {
+            FfiConverterString.write(value.`targetMessageId`, buf)
+            FfiConverterString.write(value.`reactorUserId`, buf)
+            FfiConverterString.write(value.`emoji`, buf)
+            FfiConverterLong.write(value.`timestampMs`, buf)
+            FfiConverterOptionalLong.write(value.`receivedAt`, buf)
+    }
+}
+
+
+
+data class LocalSearchHit (
+    var `messageId`: kotlin.String
+    , 
+    var `chatId`: kotlin.String
+    , 
+    var `timestamp`: kotlin.Long
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalSearchHit: FfiConverterRustBuffer<LocalSearchHit> {
+    override fun read(buf: ByteBuffer): LocalSearchHit {
+        return LocalSearchHit(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalSearchHit) = (
+            FfiConverterString.allocationSize(value.`messageId`) +
+            FfiConverterString.allocationSize(value.`chatId`) +
+            FfiConverterLong.allocationSize(value.`timestamp`)
+    )
+
+    override fun write(value: LocalSearchHit, buf: ByteBuffer) {
+            FfiConverterString.write(value.`messageId`, buf)
+            FfiConverterString.write(value.`chatId`, buf)
+            FfiConverterLong.write(value.`timestamp`, buf)
+    }
+}
+
+
+
+data class LocalStoreChange (
+    var `table`: LocalStoreTable
+    , 
+    var `ids`: List<kotlin.String>
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalStoreChange: FfiConverterRustBuffer<LocalStoreChange> {
+    override fun read(buf: ByteBuffer): LocalStoreChange {
+        return LocalStoreChange(
+            FfiConverterTypeLocalStoreTable.read(buf),
+            FfiConverterSequenceString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalStoreChange) = (
+            FfiConverterTypeLocalStoreTable.allocationSize(value.`table`) +
+            FfiConverterSequenceString.allocationSize(value.`ids`)
+    )
+
+    override fun write(value: LocalStoreChange, buf: ByteBuffer) {
+            FfiConverterTypeLocalStoreTable.write(value.`table`, buf)
+            FfiConverterSequenceString.write(value.`ids`, buf)
     }
 }
 
@@ -6678,6 +9485,66 @@ public object FfiConverterTypeRegistrationBundleFields: FfiConverterRustBuffer<R
 
 
 /**
+ * How late messages arrive, for this process (PQR-4, construct-docs TODO 64.3). Local
+ * diagnostics for the platform's log: never sent anywhere.
+ */
+data class ReorderStats (
+    var `decrypted`: kotlin.ULong
+    , 
+    var `previousEpoch`: kotlin.ULong
+    , 
+    var `olderEpoch`: kotlin.ULong
+    , 
+    var `maxEpochLag`: kotlin.UInt
+    , 
+    var `maxSkipDepth`: kotlin.UInt
+    , 
+    var `evictedEpochFailures`: kotlin.ULong
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeReorderStats: FfiConverterRustBuffer<ReorderStats> {
+    override fun read(buf: ByteBuffer): ReorderStats {
+        return ReorderStats(
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ReorderStats) = (
+            FfiConverterULong.allocationSize(value.`decrypted`) +
+            FfiConverterULong.allocationSize(value.`previousEpoch`) +
+            FfiConverterULong.allocationSize(value.`olderEpoch`) +
+            FfiConverterUInt.allocationSize(value.`maxEpochLag`) +
+            FfiConverterUInt.allocationSize(value.`maxSkipDepth`) +
+            FfiConverterULong.allocationSize(value.`evictedEpochFailures`)
+    )
+
+    override fun write(value: ReorderStats, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`decrypted`, buf)
+            FfiConverterULong.write(value.`previousEpoch`, buf)
+            FfiConverterULong.write(value.`olderEpoch`, buf)
+            FfiConverterUInt.write(value.`maxEpochLag`, buf)
+            FfiConverterUInt.write(value.`maxSkipDepth`, buf)
+            FfiConverterULong.write(value.`evictedEpochFailures`, buf)
+    }
+}
+
+
+
+/**
  * Result of a signed pre-key rotation.
  */
 data class RotatedSpkBundle (
@@ -6974,6 +9841,8 @@ data class WirePayload (
     var `kemIdentity`: kotlin.ByteArray? = null 
     , 
     var `identityProofCiphertext`: kotlin.ByteArray? = null 
+    , 
+    var `pqKeyIndex`: kotlin.UInt = 0u 
     
 ){
     
@@ -7001,6 +9870,7 @@ public object FfiConverterTypeWirePayload: FfiConverterRustBuffer<WirePayload> {
             FfiConverterBoolean.read(buf),
             FfiConverterOptionalByteArray.read(buf),
             FfiConverterOptionalByteArray.read(buf),
+            FfiConverterUInt.read(buf),
         )
     }
 
@@ -7017,7 +9887,8 @@ public object FfiConverterTypeWirePayload: FfiConverterRustBuffer<WirePayload> {
             FfiConverterByteArray.allocationSize(value.`pqRatchetField`) +
             FfiConverterBoolean.allocationSize(value.`pqxdhV2`) +
             FfiConverterOptionalByteArray.allocationSize(value.`kemIdentity`) +
-            FfiConverterOptionalByteArray.allocationSize(value.`identityProofCiphertext`)
+            FfiConverterOptionalByteArray.allocationSize(value.`identityProofCiphertext`) +
+            FfiConverterUInt.allocationSize(value.`pqKeyIndex`)
     )
 
     override fun write(value: WirePayload, buf: ByteBuffer) {
@@ -7034,6 +9905,7 @@ public object FfiConverterTypeWirePayload: FfiConverterRustBuffer<WirePayload> {
             FfiConverterBoolean.write(value.`pqxdhV2`, buf)
             FfiConverterOptionalByteArray.write(value.`kemIdentity`, buf)
             FfiConverterOptionalByteArray.write(value.`identityProofCiphertext`, buf)
+            FfiConverterUInt.write(value.`pqKeyIndex`, buf)
     }
 }
 
@@ -8466,6 +11338,523 @@ public object FfiConverterTypeDeliveryAudience: FfiConverterRustBuffer<DeliveryA
 
 
 
+
+
+/**
+ * Why a transfer was refused. Each case's message is the spec's name for it (`record_order`,
+ * `qr_pin_mismatch`, …) — log that, map the case to what a person reads.
+ */
+sealed class HistoryException(message: String): kotlin.Exception(message) {
+        
+        class Malformed(message: String) : HistoryException(message)
+        
+        class Truncated(message: String) : HistoryException(message)
+        
+        class UnknownVersion(message: String) : HistoryException(message)
+        
+        class UserMismatch(message: String) : HistoryException(message)
+        
+        class RecordOrder(message: String) : HistoryException(message)
+        
+        class EnvelopeManifestMismatch(message: String) : HistoryException(message)
+        
+        class V1RefusedForHistory(message: String) : HistoryException(message)
+        
+        class IdentityMismatch(message: String) : HistoryException(message)
+        
+        class KemKeyIdMismatch(message: String) : HistoryException(message)
+        
+        class QrPinMismatch(message: String) : HistoryException(message)
+        
+        class QrPinAbsent(message: String) : HistoryException(message)
+        
+        class NoHybridKey(message: String) : HistoryException(message)
+        
+        class SignatureInvalid(message: String) : HistoryException(message)
+        
+        class ChunkOpenFailed(message: String) : HistoryException(message)
+        
+        class LocalKeysUnavailable(message: String) : HistoryException(message)
+        
+
+    companion object ErrorHandler : UniffiRustCallStatusErrorHandler<HistoryException> {
+        override fun lift(error_buf: RustBuffer.ByValue): HistoryException = FfiConverterTypeHistoryError.lift(error_buf)
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHistoryError : FfiConverterRustBuffer<HistoryException> {
+    override fun read(buf: ByteBuffer): HistoryException {
+        
+            return when(buf.getInt()) {
+            1 -> HistoryException.Malformed(FfiConverterString.read(buf))
+            2 -> HistoryException.Truncated(FfiConverterString.read(buf))
+            3 -> HistoryException.UnknownVersion(FfiConverterString.read(buf))
+            4 -> HistoryException.UserMismatch(FfiConverterString.read(buf))
+            5 -> HistoryException.RecordOrder(FfiConverterString.read(buf))
+            6 -> HistoryException.EnvelopeManifestMismatch(FfiConverterString.read(buf))
+            7 -> HistoryException.V1RefusedForHistory(FfiConverterString.read(buf))
+            8 -> HistoryException.IdentityMismatch(FfiConverterString.read(buf))
+            9 -> HistoryException.KemKeyIdMismatch(FfiConverterString.read(buf))
+            10 -> HistoryException.QrPinMismatch(FfiConverterString.read(buf))
+            11 -> HistoryException.QrPinAbsent(FfiConverterString.read(buf))
+            12 -> HistoryException.NoHybridKey(FfiConverterString.read(buf))
+            13 -> HistoryException.SignatureInvalid(FfiConverterString.read(buf))
+            14 -> HistoryException.ChunkOpenFailed(FfiConverterString.read(buf))
+            15 -> HistoryException.LocalKeysUnavailable(FfiConverterString.read(buf))
+            else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
+        }
+        
+    }
+
+    override fun allocationSize(value: HistoryException): ULong {
+        return 4UL
+    }
+
+    override fun write(value: HistoryException, buf: ByteBuffer) {
+        when(value) {
+            is HistoryException.Malformed -> {
+                buf.putInt(1)
+                Unit
+            }
+            is HistoryException.Truncated -> {
+                buf.putInt(2)
+                Unit
+            }
+            is HistoryException.UnknownVersion -> {
+                buf.putInt(3)
+                Unit
+            }
+            is HistoryException.UserMismatch -> {
+                buf.putInt(4)
+                Unit
+            }
+            is HistoryException.RecordOrder -> {
+                buf.putInt(5)
+                Unit
+            }
+            is HistoryException.EnvelopeManifestMismatch -> {
+                buf.putInt(6)
+                Unit
+            }
+            is HistoryException.V1RefusedForHistory -> {
+                buf.putInt(7)
+                Unit
+            }
+            is HistoryException.IdentityMismatch -> {
+                buf.putInt(8)
+                Unit
+            }
+            is HistoryException.KemKeyIdMismatch -> {
+                buf.putInt(9)
+                Unit
+            }
+            is HistoryException.QrPinMismatch -> {
+                buf.putInt(10)
+                Unit
+            }
+            is HistoryException.QrPinAbsent -> {
+                buf.putInt(11)
+                Unit
+            }
+            is HistoryException.NoHybridKey -> {
+                buf.putInt(12)
+                Unit
+            }
+            is HistoryException.SignatureInvalid -> {
+                buf.putInt(13)
+                Unit
+            }
+            is HistoryException.ChunkOpenFailed -> {
+                buf.putInt(14)
+                Unit
+            }
+            is HistoryException.LocalKeysUnavailable -> {
+                buf.putInt(15)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+
+}
+
+
+
+/**
+ * What the receiver hands back, in stream order. A transcript record is its protobuf bytes,
+ * already checked against the protocol rules: decode it straight into the store. Media arrives
+ * in pieces — append each to the file.
+ */
+sealed class HistoryEvent {
+    
+    data class Record(
+        val `recordType`: kotlin.UByte, 
+        val `proto`: kotlin.ByteArray) : HistoryEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    data class Skipped(
+        val `recordType`: kotlin.UByte) : HistoryEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    data class MediaStart(
+        val `mediaId`: kotlin.String, 
+        val `mimeType`: kotlin.String, 
+        val `byteLen`: kotlin.ULong) : HistoryEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    data class MediaBytes(
+        val `data`: kotlin.ByteArray) : HistoryEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    object MediaEnd : HistoryEvent()
+    
+    
+    object End : HistoryEvent()
+    
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHistoryEvent : FfiConverterRustBuffer<HistoryEvent>{
+    override fun read(buf: ByteBuffer): HistoryEvent {
+        return when(buf.getInt()) {
+            1 -> HistoryEvent.Record(
+                FfiConverterUByte.read(buf),
+                FfiConverterByteArray.read(buf),
+                )
+            2 -> HistoryEvent.Skipped(
+                FfiConverterUByte.read(buf),
+                )
+            3 -> HistoryEvent.MediaStart(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterULong.read(buf),
+                )
+            4 -> HistoryEvent.MediaBytes(
+                FfiConverterByteArray.read(buf),
+                )
+            5 -> HistoryEvent.MediaEnd
+            6 -> HistoryEvent.End
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: HistoryEvent) = when(value) {
+        is HistoryEvent.Record -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUByte.allocationSize(value.`recordType`)
+                + FfiConverterByteArray.allocationSize(value.`proto`)
+            )
+        }
+        is HistoryEvent.Skipped -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUByte.allocationSize(value.`recordType`)
+            )
+        }
+        is HistoryEvent.MediaStart -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`mediaId`)
+                + FfiConverterString.allocationSize(value.`mimeType`)
+                + FfiConverterULong.allocationSize(value.`byteLen`)
+            )
+        }
+        is HistoryEvent.MediaBytes -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterByteArray.allocationSize(value.`data`)
+            )
+        }
+        is HistoryEvent.MediaEnd -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is HistoryEvent.End -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: HistoryEvent, buf: ByteBuffer) {
+        when(value) {
+            is HistoryEvent.Record -> {
+                buf.putInt(1)
+                FfiConverterUByte.write(value.`recordType`, buf)
+                FfiConverterByteArray.write(value.`proto`, buf)
+                Unit
+            }
+            is HistoryEvent.Skipped -> {
+                buf.putInt(2)
+                FfiConverterUByte.write(value.`recordType`, buf)
+                Unit
+            }
+            is HistoryEvent.MediaStart -> {
+                buf.putInt(3)
+                FfiConverterString.write(value.`mediaId`, buf)
+                FfiConverterString.write(value.`mimeType`, buf)
+                FfiConverterULong.write(value.`byteLen`, buf)
+                Unit
+            }
+            is HistoryEvent.MediaBytes -> {
+                buf.putInt(4)
+                FfiConverterByteArray.write(value.`data`, buf)
+                Unit
+            }
+            is HistoryEvent.MediaEnd -> {
+                buf.putInt(5)
+                Unit
+            }
+            is HistoryEvent.End -> {
+                buf.putInt(6)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * What the link QR pinned for the other device.
+ */
+sealed class HistoryPin {
+    
+    /**
+     * Flow A: SHA256(identity ‖ hybrid) of the offering device (`history_qr_fingerprint`).
+     */
+    data class Fingerprint(
+        val `fingerprint`: kotlin.ByteArray) : HistoryPin()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Flow B, or a file outside the link session: the directory is the only pin.
+     */
+    object BundleOnly : HistoryPin()
+    
+    
+    /**
+     * Nothing pins the other device: refused.
+     */
+    object Absent : HistoryPin()
+    
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHistoryPin : FfiConverterRustBuffer<HistoryPin>{
+    override fun read(buf: ByteBuffer): HistoryPin {
+        return when(buf.getInt()) {
+            1 -> HistoryPin.Fingerprint(
+                FfiConverterByteArray.read(buf),
+                )
+            2 -> HistoryPin.BundleOnly
+            3 -> HistoryPin.Absent
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: HistoryPin) = when(value) {
+        is HistoryPin.Fingerprint -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterByteArray.allocationSize(value.`fingerprint`)
+            )
+        }
+        is HistoryPin.BundleOnly -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is HistoryPin.Absent -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: HistoryPin, buf: ByteBuffer) {
+        when(value) {
+            is HistoryPin.Fingerprint -> {
+                buf.putInt(1)
+                FfiConverterByteArray.write(value.`fingerprint`, buf)
+                Unit
+            }
+            is HistoryPin.BundleOnly -> {
+                buf.putInt(2)
+                Unit
+            }
+            is HistoryPin.Absent -> {
+                buf.putInt(3)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+sealed class HistoryStatus {
+    
+    /**
+     * Read `need()` more bytes and feed them.
+     */
+    object NeedMore : HistoryStatus()
+    
+    
+    /**
+     * Fetch the keys of `sender_device_id` from our own account's directory, then `accept`.
+     */
+    data class AwaitKeys(
+        val `senderDeviceId`: kotlin.String) : HistoryStatus()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * A verified skip: nothing follows.
+     */
+    object Skipped : HistoryStatus()
+    
+    
+    /**
+     * Ended with End and EOF. Commit.
+     */
+    object Done : HistoryStatus()
+    
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHistoryStatus : FfiConverterRustBuffer<HistoryStatus>{
+    override fun read(buf: ByteBuffer): HistoryStatus {
+        return when(buf.getInt()) {
+            1 -> HistoryStatus.NeedMore
+            2 -> HistoryStatus.AwaitKeys(
+                FfiConverterString.read(buf),
+                )
+            3 -> HistoryStatus.Skipped
+            4 -> HistoryStatus.Done
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: HistoryStatus) = when(value) {
+        is HistoryStatus.NeedMore -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is HistoryStatus.AwaitKeys -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`senderDeviceId`)
+            )
+        }
+        is HistoryStatus.Skipped -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is HistoryStatus.Done -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: HistoryStatus, buf: ByteBuffer) {
+        when(value) {
+            is HistoryStatus.NeedMore -> {
+                buf.putInt(1)
+                Unit
+            }
+            is HistoryStatus.AwaitKeys -> {
+                buf.putInt(2)
+                FfiConverterString.write(value.`senderDeviceId`, buf)
+                Unit
+            }
+            is HistoryStatus.Skipped -> {
+                buf.putInt(3)
+                Unit
+            }
+            is HistoryStatus.Done -> {
+                buf.putInt(4)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
 /**
  * Whether to open a session with a device right now. See orchestration::initiation_plan.
  */
@@ -8507,6 +11896,140 @@ public object FfiConverterTypeInitiationDecision: FfiConverterRustBuffer<Initiat
     override fun allocationSize(value: InitiationDecision) = 4UL
 
     override fun write(value: InitiationDecision, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
+enum class LocalInsert {
+    
+    INSERTED,
+    ALREADY_PRESENT;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalInsert: FfiConverterRustBuffer<LocalInsert> {
+    override fun read(buf: ByteBuffer) = try {
+        LocalInsert.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: LocalInsert) = 4UL
+
+    override fun write(value: LocalInsert, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
+
+sealed class LocalStoreException(message: String): kotlin.Exception(message) {
+        
+        class WrongKey(message: String) : LocalStoreException(message)
+        
+        class KeyLength(message: String) : LocalStoreException(message)
+        
+        class SchemaTooNew(message: String) : LocalStoreException(message)
+        
+        class Closed(message: String) : LocalStoreException(message)
+        
+        class Storage(message: String) : LocalStoreException(message)
+        
+
+    companion object ErrorHandler : UniffiRustCallStatusErrorHandler<LocalStoreException> {
+        override fun lift(error_buf: RustBuffer.ByValue): LocalStoreException = FfiConverterTypeLocalStoreError.lift(error_buf)
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalStoreError : FfiConverterRustBuffer<LocalStoreException> {
+    override fun read(buf: ByteBuffer): LocalStoreException {
+        
+            return when(buf.getInt()) {
+            1 -> LocalStoreException.WrongKey(FfiConverterString.read(buf))
+            2 -> LocalStoreException.KeyLength(FfiConverterString.read(buf))
+            3 -> LocalStoreException.SchemaTooNew(FfiConverterString.read(buf))
+            4 -> LocalStoreException.Closed(FfiConverterString.read(buf))
+            5 -> LocalStoreException.Storage(FfiConverterString.read(buf))
+            else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
+        }
+        
+    }
+
+    override fun allocationSize(value: LocalStoreException): ULong {
+        return 4UL
+    }
+
+    override fun write(value: LocalStoreException, buf: ByteBuffer) {
+        when(value) {
+            is LocalStoreException.WrongKey -> {
+                buf.putInt(1)
+                Unit
+            }
+            is LocalStoreException.KeyLength -> {
+                buf.putInt(2)
+                Unit
+            }
+            is LocalStoreException.SchemaTooNew -> {
+                buf.putInt(3)
+                Unit
+            }
+            is LocalStoreException.Closed -> {
+                buf.putInt(4)
+                Unit
+            }
+            is LocalStoreException.Storage -> {
+                buf.putInt(5)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+
+}
+
+
+
+
+enum class LocalStoreTable {
+    
+    CONTACTS,
+    CHATS,
+    MESSAGES,
+    REACTIONS,
+    CALLS,
+    PEER_DEVICES;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalStoreTable: FfiConverterRustBuffer<LocalStoreTable> {
+    override fun read(buf: ByteBuffer) = try {
+        LocalStoreTable.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: LocalStoreTable) = 4UL
+
+    override fun write(value: LocalStoreTable, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
@@ -8711,6 +12234,69 @@ public object FfiConverterTypeReceivingInitKind: FfiConverterRustBuffer<Receivin
 }
 
 
+
+
+
+
+
+/**
+ * Told after every committed write, on the writing thread, never under the store's lock.
+ */
+public interface LocalStoreObserver {
+    
+    fun `onChange`(`change`: LocalStoreChange)
+    
+    companion object
+}
+
+
+
+// Put the implementation in an object so we don't pollute the top-level namespace
+internal object uniffiCallbackInterfaceLocalStoreObserver {
+    internal object `onChange`: UniffiCallbackInterfaceLocalStoreObserverMethod0 {
+        override fun callback(`uniffiHandle`: Long,`change`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypeLocalStoreObserver.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`onChange`(
+                    FfiConverterTypeLocalStoreChange.lift(`change`),
+                )
+            }
+            val writeReturn = { _: Unit -> Unit }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
+        override fun callback(handle: Long) {
+            FfiConverterTypeLocalStoreObserver.handleMap.remove(handle)
+        }
+    }
+
+    internal object uniffiClone: UniffiCallbackInterfaceClone {
+        override fun callback(handle: Long): Long {
+            return FfiConverterTypeLocalStoreObserver.handleMap.clone(handle)
+        }
+    }
+
+    internal var vtable = UniffiVTableCallbackInterfaceLocalStoreObserver.UniffiByValue(
+        uniffiFree,
+        uniffiClone,
+        `onChange`,
+    )
+
+    // Registers the foreign callback with the Rust side.
+    // This method is generated for each callback interface.
+    internal fun register(lib: UniffiLib) {
+        lib.uniffi_construct_core_fn_init_callback_vtable_localstoreobserver(vtable)
+    }
+}
+
+/**
+ * The ffiConverter which transforms the Callbacks in to handles to pass to Rust.
+ *
+ * @suppress
+ */
+public object FfiConverterTypeLocalStoreObserver: FfiConverterCallbackInterface<LocalStoreObserver>()
 
 
 
@@ -8993,6 +12579,38 @@ public object FfiConverterOptionalULong: FfiConverterRustBuffer<kotlin.ULong?> {
 /**
  * @suppress
  */
+public object FfiConverterOptionalLong: FfiConverterRustBuffer<kotlin.Long?> {
+    override fun read(buf: ByteBuffer): kotlin.Long? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterLong.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.Long?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterLong.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.Long?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterLong.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?> {
     override fun read(buf: ByteBuffer): kotlin.String? {
         if (buf.get().toInt() == 0) {
@@ -9089,6 +12707,134 @@ public object FfiConverterOptionalTypeKyberPrekeyUpload: FfiConverterRustBuffer<
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeLocalChat: FfiConverterRustBuffer<LocalChat?> {
+    override fun read(buf: ByteBuffer): LocalChat? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeLocalChat.read(buf)
+    }
+
+    override fun allocationSize(value: LocalChat?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeLocalChat.allocationSize(value)
+        }
+    }
+
+    override fun write(value: LocalChat?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeLocalChat.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeLocalContact: FfiConverterRustBuffer<LocalContact?> {
+    override fun read(buf: ByteBuffer): LocalContact? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeLocalContact.read(buf)
+    }
+
+    override fun allocationSize(value: LocalContact?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeLocalContact.allocationSize(value)
+        }
+    }
+
+    override fun write(value: LocalContact?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeLocalContact.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeLocalMessage: FfiConverterRustBuffer<LocalMessage?> {
+    override fun read(buf: ByteBuffer): LocalMessage? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeLocalMessage.read(buf)
+    }
+
+    override fun allocationSize(value: LocalMessage?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeLocalMessage.allocationSize(value)
+        }
+    }
+
+    override fun write(value: LocalMessage?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeLocalMessage.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeLocalPeerDevice: FfiConverterRustBuffer<LocalPeerDevice?> {
+    override fun read(buf: ByteBuffer): LocalPeerDevice? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeLocalPeerDevice.read(buf)
+    }
+
+    override fun allocationSize(value: LocalPeerDevice?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeLocalPeerDevice.allocationSize(value)
+        }
+    }
+
+    override fun write(value: LocalPeerDevice?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeLocalPeerDevice.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeSenderCertificate: FfiConverterRustBuffer<SenderCertificate?> {
     override fun read(buf: ByteBuffer): SenderCertificate? {
         if (buf.get().toInt() == 0) {
@@ -9143,6 +12889,38 @@ public object FfiConverterOptionalTypeSessionHealthReport: FfiConverterRustBuffe
         } else {
             buf.put(1)
             FfiConverterTypeSessionHealthReport.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeLocalStoreObserver: FfiConverterRustBuffer<LocalStoreObserver?> {
+    override fun read(buf: ByteBuffer): LocalStoreObserver? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeLocalStoreObserver.read(buf)
+    }
+
+    override fun allocationSize(value: LocalStoreObserver?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeLocalStoreObserver.allocationSize(value)
+        }
+    }
+
+    override fun write(value: LocalStoreObserver?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeLocalStoreObserver.write(value, buf)
         }
     }
 }
@@ -9269,6 +13047,34 @@ public object FfiConverterSequenceTypeDeliveryTarget: FfiConverterRustBuffer<Lis
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeHistoryRecordOut: FfiConverterRustBuffer<List<HistoryRecordOut>> {
+    override fun read(buf: ByteBuffer): List<HistoryRecordOut> {
+        val len = buf.getInt()
+        return List<HistoryRecordOut>(len) {
+            FfiConverterTypeHistoryRecordOut.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<HistoryRecordOut>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeHistoryRecordOut.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<HistoryRecordOut>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeHistoryRecordOut.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeKyberPrekeyUpload: FfiConverterRustBuffer<List<KyberPrekeyUpload>> {
     override fun read(buf: ByteBuffer): List<KyberPrekeyUpload> {
         val len = buf.getInt()
@@ -9287,6 +13093,202 @@ public object FfiConverterSequenceTypeKyberPrekeyUpload: FfiConverterRustBuffer<
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeKyberPrekeyUpload.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalCall: FfiConverterRustBuffer<List<LocalCall>> {
+    override fun read(buf: ByteBuffer): List<LocalCall> {
+        val len = buf.getInt()
+        return List<LocalCall>(len) {
+            FfiConverterTypeLocalCall.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalCall>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalCall.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalCall>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalCall.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalChat: FfiConverterRustBuffer<List<LocalChat>> {
+    override fun read(buf: ByteBuffer): List<LocalChat> {
+        val len = buf.getInt()
+        return List<LocalChat>(len) {
+            FfiConverterTypeLocalChat.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalChat>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalChat.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalChat>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalChat.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalContact: FfiConverterRustBuffer<List<LocalContact>> {
+    override fun read(buf: ByteBuffer): List<LocalContact> {
+        val len = buf.getInt()
+        return List<LocalContact>(len) {
+            FfiConverterTypeLocalContact.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalContact>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalContact.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalContact>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalContact.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalMessage: FfiConverterRustBuffer<List<LocalMessage>> {
+    override fun read(buf: ByteBuffer): List<LocalMessage> {
+        val len = buf.getInt()
+        return List<LocalMessage>(len) {
+            FfiConverterTypeLocalMessage.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalMessage>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalMessage.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalMessage>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalMessage.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalPeerDevice: FfiConverterRustBuffer<List<LocalPeerDevice>> {
+    override fun read(buf: ByteBuffer): List<LocalPeerDevice> {
+        val len = buf.getInt()
+        return List<LocalPeerDevice>(len) {
+            FfiConverterTypeLocalPeerDevice.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalPeerDevice>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalPeerDevice.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalPeerDevice>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalPeerDevice.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalReaction: FfiConverterRustBuffer<List<LocalReaction>> {
+    override fun read(buf: ByteBuffer): List<LocalReaction> {
+        val len = buf.getInt()
+        return List<LocalReaction>(len) {
+            FfiConverterTypeLocalReaction.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalReaction>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalReaction.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalReaction>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalReaction.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalSearchHit: FfiConverterRustBuffer<List<LocalSearchHit>> {
+    override fun read(buf: ByteBuffer): List<LocalSearchHit> {
+        val len = buf.getInt()
+        return List<LocalSearchHit>(len) {
+            FfiConverterTypeLocalSearchHit.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalSearchHit>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalSearchHit.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalSearchHit>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalSearchHit.write(it, buf)
         }
     }
 }
@@ -9343,6 +13345,34 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeCfeAction.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeHistoryEvent: FfiConverterRustBuffer<List<HistoryEvent>> {
+    override fun read(buf: ByteBuffer): List<HistoryEvent> {
+        val len = buf.getInt()
+        return List<HistoryEvent>(len) {
+            FfiConverterTypeHistoryEvent.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<HistoryEvent>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeHistoryEvent.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<HistoryEvent>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeHistoryEvent.write(it, buf)
         }
     }
 } fun `batteryAwareJitterMs`(`baseMs`: kotlin.ULong, `maxJitterMs`: kotlin.ULong, `batteryLevel`: kotlin.Float): kotlin.ULong {
@@ -9515,6 +13545,63 @@ public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<Cfe
     UniffiLib.uniffi_construct_core_fn_func_heartbeat_interval_ms(
     
         FfiConverterULong.lower(`baseIntervalSec`),_status)
+}
+    )
+    }
+    
+ fun `historyDiscoveryInstanceName`(`tag`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_history_discovery_instance_name(
+    
+        FfiConverterString.lower(`tag`),_status)
+}
+    )
+    }
+    
+ fun `historyDiscoveryTag`(`userIdDashed`: kotlin.String, `deviceIdHex`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_history_discovery_tag(
+    
+        FfiConverterString.lower(`userIdDashed`),FfiConverterString.lower(`deviceIdHex`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The largest media file a snapshot carries. An encoder leaves a file of this size or more
+         * out (and counts it) rather than fail the stream: the core refuses the record.
+         */ fun `historyMaxBlobBytes`(): kotlin.ULong {
+            return FfiConverterULong.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_history_max_blob_bytes(
+    
+        _status)
+}
+    )
+    }
+    
+ fun `historyQrFingerprint`(`identityPublic`: kotlin.ByteArray, `hybridPublic`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_history_qr_fingerprint(
+    
+        FfiConverterByteArray.lower(`identityPublic`),FfiConverterByteArray.lower(`hybridPublic`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Bytes the receiver's reply takes on the local network.
+         */ fun `historyReplyLen`(): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_history_reply_len(
+    
+        _status)
 }
     )
     }

@@ -175,7 +175,10 @@ build_target() {
   local ar_cargo_var="CARGO_TARGET_${target_env}_AR"
   local rc
   set +e
-  env "$cc_var=$cc" "$cxx_var=$cxx" "$ar_var=$NDK_TOOLCHAIN/llvm-ar" \
+  # RANLIB: the vendored OpenSSL the store needs since core 0.23.0 calls `<triple>-ranlib`,
+  # which today's NDK no longer ships; cc-rs hands openssl-src this one instead.
+  local ranlib_var="RANLIB_${target_u}"
+  env "$cc_var=$cc" "$cxx_var=$cxx" "$ar_var=$NDK_TOOLCHAIN/llvm-ar" "$ranlib_var=$NDK_TOOLCHAIN/llvm-ranlib" \
     "$linker_var=$cc" "$ar_cargo_var=$NDK_TOOLCHAIN/llvm-ar" \
     cargo build --lib --target "$target" --features "$FEATURES" $CARGO_FLAGS 2>&1 \
     | grep -E "^error|^warning\[|Compiling|Finished"
