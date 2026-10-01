@@ -102,7 +102,7 @@
 | # | Направление | Состояние | Опора |
 |---|---|---|---|
 | C1 | VEIL (обфускация транспорта) | Off/Auto/On сделаны (seed-фронт; тикет B2 открывает первый туннель, через него берётся B1 — привязанный к ключу устройства `veil/VeilAccessKey`; автомат `transport/TransportRoute` по векторам `transport_route.json`); нет манифеста/альтернатив | §5; `veil/`, JNA к `veil_start`. Выбор метода и гонка — в Rust; когда уходить с прямого пути — `TransportRoute` по общим векторам (не протокол, живёт на платформе) |
-| C2 | Звонки (WebRTC) | не начато | §6 |
+| C2 | Звонки (WebRTC) | начато 2026-10-01: подключён `io.github.webrtc-sdk:android` 150.7871.01 — та же сборка, что iOS (`Packages/WebRTC`), с шифрованием кадров (`FrameCryptor`) и постквантовым DTLS (`WebRTC-EnableDtlsPqc`, `calls/WebRtcRuntime`); тест читает ключ из связанной библиотеки; ABI ограничены теми, что есть у ядра. Дальше — шаги §6 | §6 |
 | C3 | Медиа (вложения, голосовые) | начато. Есть: сообщения в несколько KNST-кадров (отправка кусками, сборка в Room `pending_chunks`, 24 ч; копия на своё устройство в раскладке iOS); **приём фото**: альбом/фото/голосовое хранятся с сообщением (`mediaPayload`), фото скачиваются `DownloadMedia` по каналу без токена, AES-256-GCM как CryptoKit, кэш — зашифрованный блоб в `files/media`, BlurHash, мозаика iOS, полноэкранный просмотр; **отправка фото**: «+» и системный выбор фото, сжатие как iOS (≤1920, JPEG ≤4 МиБ), BlurHash, `GenerateUploadToken`+`UploadMedia` (без MIME), по 4 параллельно, пузырь сразу из локальной зашифрованной копии, переотправка медиа по DECRYPTION_ERROR; **голосовые**: запись как iOS (AAC 44,1 кГц моно 64 кбит/с, ≤300 с, волна 100 точек), полосы записи/прослушивания, пузырь с волной, воспроизведение из памяти, `codec` = `audio/m4a|id|size`. **файлы**: пузырь как iOS, по нажатию скачать → расшифровать в `cache/open` → открыть системным приложением (FileProvider, копия живёт час), распаковка raw DEFLATE от iOS, отправка через «+» → «Файл» без сжатия. **видео**: постер и длина в плитке, по нажатию скачать и играть из памяти (Media3 ExoPlayer), отправка с перекодированием в MP4 1080p H.264/AAC (Media3 Transformer), в файл уходит только ориентация кадра. Нет: выбора качества видео (720p/оригинал), расшифровки голосовых (STT), непрерывного воспроизведения, квоты кэша | канон iOS `Services/Media`, `MediaWireCodec`, `MediaMessageView`; `decisions/durable-chunk-reassembly.md` |
 | C4 | Группы (MLS) | не начато | канон iOS |
 | C5 | Synaps в виде сот | не начато | `ANDROID_ONBOARDING.md` §5.10 |
@@ -144,13 +144,47 @@ Kotlin-реализация любого решения, которое прин
 
 ## 6. Звонки (C2)
 
-- TURN-учётки — короткоживущие, из `SignalingService.GetTurnCredentials(callId)`; статический
-  секрет у клиента не хранится.
-- Сигналинг идёт через E2EE-поток (content type 12).
-- Системный UI — `ConnectionService` + `TelecomManager` (аналог CallKit).
-- Уроки iOS: аудиосессию настраивать до того, как система её активирует; гасить локальный
-  гудок, как только соединение установлено; системный выбор аудиомаршрута вместо тумблера
-  «динамик».
+Канон — iOS `Services/Calls` (`CallManager`, `CallTypes`, `WebRTCSession`, `CallSignalCrypto`).
+Только аудио, один звонок за раз, как на iOS (видео там выключено: `CallsFeature.isVideoEnabled`).
+
+**Шаги, по порядку:**
+1. ✅ **WebRTC.** `io.github.webrtc-sdk:android` 150.7871.01 (версия — пара к iOS, менять вместе),
+   field trial `WebRTC-EnableDtlsPqc/Enabled/` при инициализации, фабрика лениво при первом звонке.
+2. **Сигналинг.** `WebRTCSignal` (`signaling/webrtc.proto`) — только по E2EE: KNST тип 12 →
+   `CfeIncomingEvent.OutgoingCallSignal`, приём — `CallSignalDecrypted` (сейчас
+   `ProcessorEffectsImpl.onCallSignal` только логирует). Запечатанно, без отката на открытую
+   отправку; одна цепочка отправки на звонок (порядок offer → ICE → hangup). ICE-кандидаты ещё и
+   шифруются по отдельности: кадр `0x04 ‖ wire` в `IceCandidate.candidate`, пачки раз в 200 мс,
+   ≤40 000 Б. Поток `SignalingService.Signal` — только ringing / connected / hangup / ping (10 с);
+   SDP по потоку не ходит. `InitiateCall` до offer; `GetTurnCredentials` с кэшем до
+   `expires_at − 60 с`.
+3. **Машина состояний** — перенос чистых функций `CallTypes.swift` с тестами: glare (больший
+   userId оставляет свой звонок), `callOfferDisposition`, `remoteOfferDisposition`,
+   `callHangupChannels` (hangup по E2EE и по потоку, иначе сервер считает собеседника занятым),
+   `signalingStreamClosedDisposition` (закрытый поток — не конец звонка), ожидание сессии 12 с,
+   offer после ответа 45 с, ICE restart через 2 с после `disconnected`, до 3 раз, только звонящий.
+4. **Медиа.** Unified plan, max-bundle, rtcp-mux require, `iceTransportPolicy = ALL`; ICE-серверы —
+   только TURN из учётки, без неё `stun:ams.konstruct.cc:3478`; публичных STUN нет. Аудиотрек без
+   видео; `AudioManager.MODE_IN_COMMUNICATION`, системный выбор маршрута.
+5. **Системный звонок.** Self-managed `ConnectionService` + `TelecomManager` (аналог CallKit);
+   входящий будит наш `MessageStream` в foreground-сервисе — VoIP-push не нужен (без GMS).
+   Уведомление с full-screen intent. Новые разрешения (`MANAGE_OWN_CALLS`,
+   `FOREGROUND_SERVICE_PHONE_CALL`/`_MICROPHONE`, `USE_FULL_SCREEN_INTENT`) меняют список в
+   `AGENTS.md` — в том же коммите.
+6. **`PQC-4`: шифрование кадров** ключом из постквантовой сессии поверх SRTP (`FrameCryptor`,
+   AES-GCM). Нужен вывод ключа в ядре и решение в `construct-docs/decisions/` — общее с iOS,
+   до кода на обеих платформах (`security/PQ_COVERAGE_PLAN.md`, этап 3).
+
+**Открытые вопросы:**
+- Звонит только закреплённое устройство собеседника (на iOS так же: второе устройство не звонит,
+  `ACCEPTED_ELSEWHERE` никто не шлёт) — отдельное решение (`decisions/a-peer-is-a-set-of-devices`).
+- Размер APK: WebRTC добавляет ~30 МБ (12 arm64 + 7 armv7 + 16 x86_64). Варианты — раздельные
+  APK по ABI или без x86_64 в сборке для тестировщиков.
+- Hangup, когда нет ни E2EE, ни потока, держит занятость на сервере до TTL 90 с (на iOS не решено).
+
+Уроки iOS, которые переносятся: системе отдавать аудио, а не включать его самим; гасить гудок,
+как только пошёл звук; не выключать аудио вручную в конце звонка; при глэре и конце звонка
+сообщать системе, иначе следующий звонок не начнётся.
 
 ---
 

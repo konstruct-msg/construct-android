@@ -13,6 +13,10 @@ ext.protobufVersion = '3.25.5'
 ext.grpcVersion = '1.65.1'
 ext.grpcKotlinVersion = '1.4.1'
 ext.roomVersion = '2.8.5'
+// iOS pins the same build in `Packages/WebRTC/Package.swift` (webrtc-sdk/Specs 150.7871.01).
+ext.webrtcVersion = '150.7871.01'
+// The ABIs construct-core is built for — and so the only ones the app ships (`checkCoreLibrary`).
+ext.coreAbis = ['arm64-v8a', 'armeabi-v7a', 'x86_64']
 
 android {
     namespace 'com.construct.messenger'
@@ -29,6 +33,10 @@ android {
         versionName "0.8.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // The ABIs the core is built for. WebRTC also ships x86, where no core exists: without
+        // this an x86 device would install the app and fail to start it.
+        ndk { abiFilters(*coreAbis) }
     }
 
     // The release key and its passwords live in ~/.gradle/gradle.properties, never in git
@@ -135,6 +143,11 @@ dependencies {
     implementation "androidx.media3:media3-ui:${media3Version}"
     implementation "androidx.media3:media3-transformer:${media3Version}"
     implementation "androidx.media3:media3-effect:${media3Version}"
+    // Calls (C2): webrtc-sdk's WebRTC, the same line iOS links (`Packages/WebRTC`, 150.7871.01) —
+    // frame encryption (`FrameCryptor`, for PQC-4) and the post-quantum DTLS field trial
+    // (`calls/WebRtcRuntime`). Plain libwebrtc with Java bindings: no Play Services, no
+    // permissions in its manifest. Move both platforms together.
+    implementation "io.github.webrtc-sdk:android:${webrtcVersion}"
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-core:5.12.0'
     testImplementation 'org.mockito.kotlin:mockito-kotlin:5.4.0'
@@ -190,7 +203,7 @@ protobuf {
 //
 // The stamp lives inside the library (`CONSTRUCT_CORE_VERSION` in construct-core/src/lib.rs),
 // which is what makes it survive being copied into jniLibs with nothing else.
-ext.coreAbis = ['arm64-v8a', 'armeabi-v7a', 'x86_64']
+// (coreAbis is set at the top of this file: abiFilters in defaultConfig needs it first.)
 
 /** The NUL-terminated `CONSTRUCT_CORE_VERSION=…` stamp, or null when the file carries none. */
 static String coreStampOf(File lib) {
@@ -272,6 +285,19 @@ not start, and the reason is not on the screen.
 }
 
 tasks.named('preBuild').configure { dependsOn 'checkCoreLibrary' }
+
+// ── The WebRTC the app links ─────────────────────────────────────────────────
+//
+// The field trial that turns on post-quantum DTLS is a string WebRTC reads at start-up; a build
+// that renamed or dropped it would fail nowhere and leave calls on X25519 alone. The unit test
+// `WebRtcFieldTrialsTest` reads the linked library for the key, as iOS `WebRTCFieldTrialsTests`
+// reads its xcframework — so the AAR is handed to the tests.
+def webrtcAar = configurations.detachedConfiguration(
+        dependencies.create("io.github.webrtc-sdk:android:${webrtcVersion}@aar"))
+tasks.withType(Test).configureEach {
+    inputs.files(webrtcAar).withPropertyName('webrtcAar')
+    doFirst { systemProperty 'webrtc.aar', webrtcAar.singleFile.absolutePath }
+}
 
 /** Commits reachable from HEAD; 1 without git or in a shallow clone that cannot count. */
 int commitCount() {

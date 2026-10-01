@@ -19,3 +19,6 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+# WebRTC (calls): its native code calls back into org.webrtc by name over JNI, and the AAR ships
+# no consumer rules. Without this a minified build loses the classes the first call needs.
+-keep class org.webrtc.** { *; }
