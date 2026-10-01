@@ -254,6 +254,42 @@ class ChatViewModel @Inject constructor(
         files.value = (files.value + added).take(MAX_ATTACHMENTS)
     }
 
+    private val _galleryResult = kotlinx.coroutines.flow.MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
+    /** A save to the gallery finished: true when the file is there. */
+    val galleryResult: kotlinx.coroutines.flow.SharedFlow<Boolean> = _galleryResult
+
+    /** The viewer's Save: [item] into the phone's gallery. */
+    fun saveToGallery(item: com.construct.messenger.data.model.MediaItem) {
+        viewModelScope.launch {
+            val saved = try {
+                messagesRepository.saveToGallery(item)
+                true
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                false
+            }
+            _galleryResult.tryEmit(saved)
+        }
+    }
+
+    private val _shareFile = kotlinx.coroutines.flow.MutableSharedFlow<OpenFile>(extraBufferCapacity = 1)
+    /** A photo or video ready to hand to the share sheet (iOS viewer's "…"). */
+    val shareFile: kotlinx.coroutines.flow.SharedFlow<OpenFile> = _shareFile
+
+    fun share(item: com.construct.messenger.data.model.MediaItem) {
+        viewModelScope.launch {
+            try {
+                val name = item.filename?.takeIf { it.isNotBlank() } ?: if (item.isVideo) "video.mp4" else "photo.jpg"
+                _shareFile.tryEmit(OpenFile(messagesRepository.openable(item, name), item.mimeType))
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _galleryResult.tryEmit(false)
+            }
+        }
+    }
+
     /** The decrypted bytes of [item], for a video about to play. */
     suspend fun mediaBytes(item: com.construct.messenger.data.model.MediaItem): ByteArray = messagesRepository.mediaBytes(item)
 

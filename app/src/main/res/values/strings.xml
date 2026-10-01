@@ -134,6 +134,10 @@
         <item quantity="other">%d results</item>
     </plurals>
     <string name="done">Done</string>
+    <string name="media_save">Save to gallery</string>
+    <string name="media_saved">Saved to gallery</string>
+    <string name="media_save_failed">Couldn’t save</string>
+    <string name="media_share">Share</string>
     <string name="react">React</string>
     <string name="reaction_failed">Couldn’t send the reaction</string>
     <string name="reaction_pick_more">More reactions</string>

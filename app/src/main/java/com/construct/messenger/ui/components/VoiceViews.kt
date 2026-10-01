@@ -148,6 +148,7 @@ fun VoiceBubble(
     maxWidth: Dp,
     onToggle: () -> Unit,
     onLongPress: () -> Unit,
+    onDoubleTap: (() -> Unit)? = null,
 ) {
     val shape = RoundedCornerShape(10.dp)
     val tint = if (outgoing) CTColor.outMsgText else CTColor.accent
@@ -169,6 +170,7 @@ fun VoiceBubble(
                 indication = null,
                 onClick = {},
                 onLongClick = onLongPress,
+                onDoubleClick = onDoubleTap,
             )
             .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,

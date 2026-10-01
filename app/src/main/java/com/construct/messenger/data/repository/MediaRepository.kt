@@ -39,6 +39,14 @@ interface MediaRepository {
     suspend fun upload(localId: String, sha256: ByteArray): MediaService.Uploaded
 
     /**
+     * [item], a photo or video, decrypted into the shared gallery (`Pictures/Konstruct`,
+     * `Movies/Konstruct`) — the iOS viewer's "Save Image". Android 10 and later only: there it
+     * needs no permission; before it, writing there would ask for storage, and the viewer offers
+     * Share instead.
+     */
+    suspend fun saveToGallery(item: MediaItem)
+
+    /**
      * [item], a received file, decrypted into a file another app can be handed: a content URI
      * for [name], readable only through the grant that goes with it. The copy is deleted an hour
      * later, when the next file is opened, or when the app starts.
@@ -109,6 +117,41 @@ class MediaRepositoryImpl @Inject constructor(
         }
         @Suppress("UNREACHABLE_CODE")
         error("unreachable")
+    }
+
+    override suspend fun saveToGallery(item: MediaItem) = withContext(Dispatchers.IO) {
+        check(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) { "needs Android 10" }
+        val plain = bytes(item)
+        val video = item.isVideo
+        val collection = if (video) {
+            android.provider.MediaStore.Video.Media.getContentUri(android.provider.MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        } else {
+            android.provider.MediaStore.Images.Media.getContentUri(android.provider.MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        }
+        val mime = item.mimeType.ifBlank { if (video) "video/mp4" else "image/jpeg" }
+        val name = item.filename?.takeIf { it.isNotBlank() }?.let(FileContent::safeName)
+            ?: "konstruct-${System.currentTimeMillis()}.${android.webkit.MimeTypeMap.getSingleton().getExtensionFromMimeType(mime) ?: "jpg"}"
+        val values = android.content.ContentValues().apply {
+            put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, name)
+            put(android.provider.MediaStore.MediaColumns.MIME_TYPE, mime)
+            put(
+                android.provider.MediaStore.MediaColumns.RELATIVE_PATH,
+                (if (video) android.os.Environment.DIRECTORY_MOVIES else android.os.Environment.DIRECTORY_PICTURES) + "/Konstruct",
+            )
+            put(android.provider.MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+        val resolver = appContext.contentResolver
+        val uri = resolver.insert(collection, values) ?: error("gallery refused the file")
+        try {
+            resolver.openOutputStream(uri)?.use { it.write(plain) } ?: error("no output stream")
+            resolver.update(uri, android.content.ContentValues().apply {
+                put(android.provider.MediaStore.MediaColumns.IS_PENDING, 0)
+            }, null, null)
+        } catch (e: Exception) {
+            resolver.delete(uri, null, null)
+            throw e
+        }
+        Unit
     }
 
     override suspend fun openable(item: MediaItem, name: String): android.net.Uri = withContext(Dispatchers.IO) {

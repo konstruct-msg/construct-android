@@ -119,6 +119,22 @@ fun ChatScreen(
     var menuMessageId by remember { mutableStateOf<String?>(null) }
     var jumpToId by remember { mutableStateOf<String?>(null) }
     var reactingTo by remember { mutableStateOf<Message?>(null) }
+    val saved = stringResource(R.string.media_saved)
+    val saveFailed = stringResource(R.string.media_save_failed)
+    LaunchedEffect(Unit) {
+        viewModel.galleryResult.collect { ok ->
+            android.widget.Toast.makeText(context, if (ok) saved else saveFailed, android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+    LaunchedEffect(Unit) {
+        viewModel.shareFile.collect { file ->
+            val send = android.content.Intent(android.content.Intent.ACTION_SEND)
+                .setType(file.mime)
+                .putExtra(android.content.Intent.EXTRA_STREAM, file.uri)
+                .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            context.startActivity(android.content.Intent.createChooser(send, null))
+        }
+    }
     var quoting by remember { mutableStateOf<Message?>(null) }
     // iOS `isEditMode`: a tap selects, the menu and the composer give way to the selection bar.
     var selectedIds by remember { mutableStateOf<Set<String>?>(null) }
@@ -286,6 +302,8 @@ fun ChatScreen(
                         selectedIds = setOf(message.id)
                         menuMessageId = null
                     },
+                    onSaveMedia = viewModel::saveToGallery,
+                    onShareMedia = viewModel::share,
                     onRetry = {
                         viewModel.retry(message)
                         menuMessageId = null

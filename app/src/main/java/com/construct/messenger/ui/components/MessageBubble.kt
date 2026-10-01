@@ -111,6 +111,8 @@ fun MessageBubble(
     onQuoteReply: () -> Unit = {},
     onSelectMessages: () -> Unit = {},
     onRetry: () -> Unit = {},
+    onSaveMedia: (com.construct.messenger.data.model.MediaItem) -> Unit = {},
+    onShareMedia: (com.construct.messenger.data.model.MediaItem) -> Unit = {},
     /** Null outside selection mode; otherwise whether this message is among the chosen. */
     selected: Boolean? = null,
     onToggleSelected: () -> Unit = {},
@@ -184,6 +186,7 @@ fun MessageBubble(
                     maxWidth = maxBubble,
                     onToggle = onToggleVoice,
                     onLongPress = onLongPress,
+                    onDoubleTap = { onReact(ReactionRules.LIKE) },
                 )
             } else if (album != null) {
                 // iOS: photos stand on their own, no bubble; the quote above, the caption below.
@@ -193,7 +196,12 @@ fun MessageBubble(
                         ReplyQuoteStrip(replyLabel, quoteBar, quoteColor, onJumpToReply, onLongPress)
                     }
                 }
-                MediaAlbumView(album = album, onOpen = { viewing = it }, onLongPress = onLongPress)
+                MediaAlbumView(
+                    album = album,
+                    onOpen = { viewing = it },
+                    onLongPress = onLongPress,
+                    onDoubleTap = { onReact(ReactionRules.LIKE) },
+                )
                 if (message.body.isNotBlank()) {
                     Text(
                         text = message.body,
@@ -202,7 +210,15 @@ fun MessageBubble(
                         modifier = Modifier.widthIn(max = 260.dp).padding(top = 2.dp),
                     )
                 }
-                viewing?.let { MediaViewer(album, it, onDismiss = { viewing = null }, loadVideo = loadMedia) }
+                viewing?.let {
+                    MediaViewer(
+                        album, it,
+                        onDismiss = { viewing = null },
+                        loadVideo = loadMedia,
+                        onSave = onSaveMedia,
+                        onShare = onShareMedia,
+                    )
+                }
             } else Column(
                 modifier = Modifier
                     .widthIn(max = maxBubble)

@@ -24,6 +24,7 @@ class ContactAvatarsTest {
         override suspend fun stage(localId: String, blob: ByteArray) = error("not here")
         override suspend fun upload(localId: String, sha256: ByteArray): MediaService.Uploaded = error("not here")
         override suspend fun openable(item: MediaItem, name: String): android.net.Uri = error("not here")
+        override suspend fun saveToGallery(item: MediaItem) = error("not here")
     }
 
     private fun profile(key: ByteArray? = ByteArray(32) { 7 }, type: String? = "image/jpeg") = ProfileShare(

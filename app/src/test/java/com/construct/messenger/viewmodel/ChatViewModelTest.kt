@@ -191,6 +191,7 @@ private class FakeMessagesRepository : MessagesRepository {
     override fun describe(uri: android.net.Uri) = "a.pdf" to 10L
     override suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>) = SendOutcome.Sent("v")
     override suspend fun mediaBytes(item: com.construct.messenger.data.model.MediaItem) = ByteArray(0)
+    override suspend fun saveToGallery(item: com.construct.messenger.data.model.MediaItem) = Unit
     override suspend fun sendPhotos(contactId: String, uris: List<android.net.Uri>, caption: String, reply: ReplyRef?): SendOutcome {
         photos += uris to caption
         return SendOutcome.Sent("p-${photos.size}")

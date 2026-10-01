@@ -28,6 +28,7 @@ class SendMediaUseCaseTest {
         val staged = linkedMapOf<String, ByteArray>()
         override suspend fun bytes(item: MediaItem) = error("not read here")
         override suspend fun openable(item: MediaItem, name: String): Uri = error("not opened here")
+        override suspend fun saveToGallery(item: MediaItem) = error("not here")
         override suspend fun stage(localId: String, blob: ByteArray) { staged[localId] = blob }
         override suspend fun upload(localId: String, sha256: ByteArray): MediaService.Uploaded {
             if (fail) throw io.grpc.StatusException(io.grpc.Status.UNAVAILABLE)

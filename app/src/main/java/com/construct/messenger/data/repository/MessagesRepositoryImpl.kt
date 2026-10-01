@@ -117,6 +117,8 @@ class MessagesRepositoryImpl @Inject constructor(
 
     override fun describe(uri: Uri): Pair<String, Long> = pickedFiles.describe(uri)
 
+    override suspend fun saveToGallery(item: com.construct.messenger.data.model.MediaItem) = media.saveToGallery(item)
+
     override suspend fun mediaBytes(item: com.construct.messenger.data.model.MediaItem): ByteArray = media.bytes(item)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,6 +30,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
@@ -87,6 +90,8 @@ fun MediaAlbumView(
     album: MessageMedia.Album,
     onOpen: (Int) -> Unit,
     onLongPress: () -> Unit,
+    /** iOS: a double tap on a photo is the like, as on any bubble. */
+    onDoubleTap: (() -> Unit)? = null,
 ) {
     val items = album.items
     val shape = RoundedCornerShape(CornerRadius.control)
@@ -94,13 +99,13 @@ fun MediaAlbumView(
     if (items.size == 1) {
         val item = items[0]
         val width = SINGLE_WIDTH
-        Tile(item, width, width / aspect(item), box, { onOpen(0) }, onLongPress)
+        Tile(item, width, width / aspect(item), box, { onOpen(0) }, onLongPress, onDoubleTap)
         return
     }
     val w = ALBUM_WIDTH
     val half = (w - GAP) / 2
     @Composable
-    fun tile(i: Int, tw: Dp, th: Dp) = Tile(items[i], tw, th, Modifier, { onOpen(i) }, onLongPress)
+    fun tile(i: Int, tw: Dp, th: Dp) = Tile(items[i], tw, th, Modifier, { onOpen(i) }, onLongPress, onDoubleTap)
     Column(box.width(w), verticalArrangement = Arrangement.spacedBy(GAP)) {
         when (items.size) {
             2 -> Row(horizontalArrangement = Arrangement.spacedBy(GAP)) { tile(0, half, half); tile(1, half, half) }
@@ -152,6 +157,7 @@ private fun Tile(
     modifier: Modifier,
     onTap: () -> Unit,
     onLongPress: () -> Unit,
+    onDoubleTap: (() -> Unit)?,
 ) {
     val preview = rememberPreview(item)
     var attempt by remember { mutableIntStateOf(0) }
@@ -164,6 +170,7 @@ private fun Tile(
                 indication = null,
                 onClick = onTap,
                 onLongClick = onLongPress,
+                onDoubleClick = onDoubleTap,
             ),
         contentAlignment = Alignment.Center,
     ) {
@@ -284,6 +291,8 @@ fun MediaViewer(
     startIndex: Int,
     onDismiss: () -> Unit,
     loadVideo: suspend (MediaItem) -> ByteArray,
+    onSave: ((MediaItem) -> Unit)? = null,
+    onShare: ((MediaItem) -> Unit)? = null,
 ) {
     val photos = album.items.filter { it.isImage || it.isVideo }
     if (photos.isEmpty()) return
@@ -299,7 +308,7 @@ fun MediaViewer(
                 if (item.isVideo) VideoPage(item, active = pager.currentPage == page, load = loadVideo) else ZoomableImage(item)
             }
             Row(
-                modifier = Modifier.statusBarsPadding().padding(8.dp),
+                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onDismiss) {
@@ -311,6 +320,21 @@ fun MediaViewer(
                         style = ctRegular(14),
                         color = Color.White,
                     )
+                }
+                Spacer(Modifier.weight(1f))
+                // iOS keeps both behind "…" (the share sheet holds Save Image); Android has no
+                // save in its share sheet, so Save is its own button. Before Android 10 saving
+                // would need a storage permission, and Share is the way out.
+                val current = photos[pager.currentPage]
+                if (onSave != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    IconButton(onClick = { onSave(current) }) {
+                        Icon(Icons.Filled.Download, contentDescription = stringResource(R.string.media_save), tint = Color.White)
+                    }
+                }
+                if (onShare != null) {
+                    IconButton(onClick = { onShare(current) }) {
+                        Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.media_share), tint = Color.White)
+                    }
                 }
             }
         }
