@@ -187,9 +187,8 @@ Kotlin-реализация любого решения, которое прин
    одном процессе): DTLS 1.3, `TLS_AES_128_GCM_SHA256`, соединение за ~0,4 с. Группу обмена ключами
    (`tlsGroup`) эта сборка в статистике не отдаёт, так что X25519MLKEM768 по факту не подтверждён —
    только наличием ключа trial в библиотеке. Instrumented-тесты — только на эмуляторе:
-   `connectedAndroidTest` удаляет приложение вместе с аккаунтом. `CryptoManagerInstrumentedTest`
-   отстал от API ядра и не компилируется — исходники androidTest целиком не собираются, пока его не
-   починить или не удалить.
+   `connectedAndroidTest` удаляет приложение вместе с аккаунтом. `scripts/verify.sh` компилирует
+   androidTest (2026-10-01: `CryptoManagerInstrumentedTest` отстал от API ядра незамеченным).
 5. **Системный звонок.** Self-managed `ConnectionService` + `TelecomManager` (аналог CallKit);
    входящий будит наш `MessageStream` в foreground-сервисе — VoIP-push не нужен (без GMS).
    Уведомление с full-screen intent. Новые разрешения (`MANAGE_OWN_CALLS`,

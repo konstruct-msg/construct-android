@@ -96,9 +96,12 @@ n=$(git rev-list --count "$SINCE..HEAD" 2>/dev/null || echo 0)
   || fail "three questions" "no server/withhold/boundary answers in:$missing"
 
 # ── 5. Compile and unit tests ──────────────────────────────────────────────────
+# The instrumented tests are compiled too, not run (they need a device — and an emulator: on a
+# phone `connectedAndroidTest` uninstalls the app afterwards). Uncompiled, they fell behind the
+# core's API for weeks and nothing said so.
 step "compile + unit tests"
 rm -rf app/build/test-results/testDebugUnitTest
-if ./gradlew -q --console=plain :app:compileDebugKotlin :app:testDebugUnitTest > "$OUT/gradle.txt" 2>&1; then
+if ./gradlew -q --console=plain :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin :app:testDebugUnitTest > "$OUT/gradle.txt" 2>&1; then
   gradle_ok=1; else gradle_ok=0; fi
 counts=$(find app/build/test-results/testDebugUnitTest -name '*.xml' 2>/dev/null \
   | xargs grep -ho 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' 2>/dev/null \

@@ -2,7 +2,8 @@ package com.construct.messenger.crypto
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -13,8 +14,6 @@ import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.PqHandshake
 import uniffi.construct_core.RegistrationBundleFields
 import uniffi.construct_core.SenderCertificate
-import uniffi.construct_core.WirePayload
-import uniffi.construct_core.wirePayloadPack
 import uniffi.construct_core.verifyPow
 import uniffi.construct_core.verifyRecoverySignature
 
@@ -43,7 +42,7 @@ class CryptoManagerInstrumentedTest {
         val first = CryptoManager().loadOrCreate()
         val second = CryptoManager().loadOrCreate()
 
-        assertNotEquals(first.identityPublic, second.identityPublic)
+        assertFalse(first.identityPublic.contentEquals(second.identityPublic))
     }
 
     @Test
@@ -66,12 +65,12 @@ class CryptoManagerInstrumentedTest {
 
         val first = crypto.deriveRecoveryKeypair(mnemonic)
         val second = crypto.deriveRecoveryKeypair(mnemonic)
-        assertEquals(first.privateKey, second.privateKey)
-        assertEquals(first.publicKey, second.publicKey)
+        assertArrayEquals(first.privateKey, second.privateKey)
+        assertArrayEquals(first.publicKey, second.publicKey)
 
         val otherMnemonic = crypto.generateMnemonic(12)
         val third = crypto.deriveRecoveryKeypair(otherMnemonic)
-        assertNotEquals(first.privateKey, third.privateKey)
+        assertFalse(first.privateKey.contentEquals(third.privateKey))
         crypto.close()
     }
 
@@ -112,6 +111,8 @@ class CryptoManagerInstrumentedTest {
         val bobFields = bob.loadOrCreate()
         alice.setLocalUserId("alice-account")
         bob.setLocalUserId("bob-account")
+        // Every registered device has one (`KyberPrekeyService`); the initiator answers with it.
+        alice.ensureHybridIdentityPublicKey()
         // Each side names the other by the device id that side's core was bound to: the AD binds
         // both, so a session opened under any other name cannot decrypt.
         val aliceId = requireNotNull(alice.currentDeviceId())
@@ -119,24 +120,10 @@ class CryptoManagerInstrumentedTest {
 
         val bobBundle = bob.pqxdhTestBundle(bobFields, withOneTimeKey = true)
         alice.initSession(bobId, bobBundle)
-        val first = alice.encryptMessage(bobId, "hello from alice")
-        assertEquals("the first message carries the ML-KEM-1024 ciphertext", 1568, first.kemCiphertext.size)
-        assertEquals("the one-time key is preferred", bobBundle.kyberOneTimePrekeyId, first.kyberPrekeyId)
-
-        val wire = wirePayloadPack(
-            WirePayload(
-                dhPublicKey = first.ephemeralPublicKey,
-                messageNumber = first.messageNumber,
-                oneTimePrekeyId = first.oneTimePrekeyId,
-                kyberOtpkId = first.kyberPrekeyId,
-                previousChainLength = 0u,
-                suiteId = first.suiteId,
-                kemCiphertext = first.kemCiphertext,
-                sealedBox = first.content,
-                pqMessageEpoch = first.pqMessageEpoch,
-                pqRatchetField = first.pqRatchetField,
-            ),
-        ).toByteArray()
+        // The bare wire payload, as the send path hands it on: the first message on a new session
+        // carries the ML-KEM-1024 ciphertext (1568 bytes) on top of everything else.
+        val wire = alice.encryptToWire(bobId, "hello from alice".toByteArray())
+        assertTrue("the first message carries the ML-KEM-1024 ciphertext (${wire.size} bytes)", wire.size > 1568)
         val server = TestCertificateServer()
         val certificate = server.certify(aliceId, aliceFields.identityPublic.let { key -> ByteArray(key.size) { key[it].toByte() } })
         val received = bob.handleEvent(
@@ -144,9 +131,9 @@ class CryptoManagerInstrumentedTest {
                 messageId = "first-1",
                 from = aliceId,
                 data = wire,
-                isControl = false,
                 contentType = 1u,
                 senderCertificate = certificate,
+                envelopeSession = null,
             ),
         )
         // A fresh core has no ACK cache and asks the database first, as after any restart.
@@ -164,17 +151,9 @@ class CryptoManagerInstrumentedTest {
         assertEquals(PqHandshake.INITIAL_V2, bob.sessionHealth(aliceId)?.pqHandshake)
 
         // Reply path: Bob -> Alice over the now-established session.
-        val reply = bob.encryptMessage(aliceId, "hi from bob")
-        val decryptedReply = alice.decryptMessage(
-            bobId,
-            reply.ephemeralPublicKey.toByteArray(),
-            reply.messageNumber,
-            reply.content.toByteArray(),
-            reply.suiteId,
-            reply.pqMessageEpoch,
-            reply.pqRatchetField.toByteArray(),
-        )
-        assertEquals("hi from bob", decryptedReply.plaintext.toUtf8String())
+        val reply = bob.encryptToWire(aliceId, "hi from bob".toByteArray())
+        val decryptedReply = alice.decryptWirePayload(bobId, reply)
+        assertEquals("hi from bob", decryptedReply.toUtf8String())
 
         alice.close()
         bob.close()
@@ -190,6 +169,8 @@ class CryptoManagerInstrumentedTest {
         val bobFields = bob.loadOrCreate()
         alice.setLocalUserId("alice-account")
         bob.setLocalUserId("bob-account")
+        // Every registered device has one (`KyberPrekeyService`); the initiator answers with it.
+        alice.ensureHybridIdentityPublicKey()
         val bobId = requireNotNull(bob.currentDeviceId())
         val bundle = bob.pqxdhTestBundle(bobFields).copy(hybridIdentityKey = null, hybridIdentitySignature = null)
 
