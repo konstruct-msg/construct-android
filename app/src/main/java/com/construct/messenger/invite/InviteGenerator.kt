@@ -33,7 +33,7 @@ class InviteGenerator @Inject constructor(
             issuedAtEpochSec = invite.ts,
             ttlSeconds = invite.ttl,
             payload = payload,
-            deepLink = "${InviteConfig.DEEP_LINK_SCHEME}?invite=$payload",
+            deepLink = InviteConfig.shareLink(payload, server),
         )
     }
 

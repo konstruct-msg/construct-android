@@ -171,6 +171,12 @@ data class InviteObject(
                 val end = raw.indexOf('&', start).let { if (it < 0) raw.length else it }
                 return raw.substring(start, end)
             }
+            // The path form iOS `InviteVerifier` also accepts: https://konstruct.cc/add/<payload>.
+            val path = raw.indexOf("/add/")
+            if (path >= 0 && InviteConfig.isInviteLink(raw)) {
+                return raw.substring(path + "/add/".length).substringBefore('?').substringBefore('#').trimEnd('/')
+                    .takeIf { it.isNotEmpty() }
+            }
             return null
         }
     }

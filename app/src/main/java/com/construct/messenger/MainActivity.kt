@@ -128,7 +128,7 @@ class MainActivity : FragmentActivity() {
 
     private fun captureInvite(intent: Intent?) {
         val data = intent?.data?.toString() ?: return
-        if (data.startsWith("konstruct://add")) {
+        if (com.construct.messenger.invite.InviteConfig.isInviteLink(data)) {
             pendingInvites.offer(data)
         }
     }

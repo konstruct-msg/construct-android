@@ -40,7 +40,7 @@ interface ContactsRepository {
      * belongs to. Canon: iOS `generateQRBinary` + `InviteJournal.recordQRCode`. */
     suspend fun mintQr(sitting: String): MintedInvite
 
-    /** Accept a `konstruct://add?invite=` URL or a raw base64url payload. */
+    /** Accept a `konstruct://add?invite=` or `https://konstruct.cc/add?invite=` URL, or a raw base64url payload. */
     suspend fun accept(raw: String): AcceptInviteResult
 
     /** Pre-burn [jti] so an unused invite cannot be redeemed. */

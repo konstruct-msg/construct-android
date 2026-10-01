@@ -41,6 +41,19 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="konstruct" android:host="add" />
             </intent-filter>
+            <!-- The link iOS and Android share: https://konstruct.cc/add?invite=…. Verified by
+                 konstruct.cc/.well-known/assetlinks.json; until then Android opens the page, and
+                 the page hands over to konstruct://add. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="konstruct.cc" />
+                <data android:host="web.konstruct.cc" />
+                <data android:path="/add" />
+                <data android:pathPrefix="/add/" />
+            </intent-filter>
         </activity>
         <service
             android:name=".service.MessagingForegroundService"
