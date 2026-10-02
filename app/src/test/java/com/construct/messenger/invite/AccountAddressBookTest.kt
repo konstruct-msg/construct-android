@@ -88,6 +88,17 @@ class AccountAddressBookTest {
         override fun observeBlocked(): Flow<List<UserEntity>> = MutableStateFlow(rows.values.filter { it.isBlocked })
         override fun observeById(userId: String): Flow<UserEntity?> = MutableStateFlow(rows[userId])
         override suspend fun getById(userId: String) = rows[userId]
+        override suspend fun pendingAvatarIds(): List<String> = rows.values.filter { it.pendingAvatarRef != null }.map { it.id }
+        override suspend fun clearPendingAvatar(userId: String, stored: ByteArray): Int {
+            val row = rows[userId]?.takeIf { it.pendingAvatarRef.contentEquals(stored) } ?: return 0
+            rows[userId] = row.copy(pendingAvatarRef = null, pendingAvatarSinceMs = null)
+            return 1
+        }
+        override suspend fun completePendingAvatar(userId: String, stored: ByteArray, avatar: ByteArray): Int {
+            val row = rows[userId]?.takeIf { it.pendingAvatarRef.contentEquals(stored) } ?: return 0
+            rows[userId] = row.copy(avatarData = avatar, pendingAvatarRef = null, pendingAvatarSinceMs = null)
+            return 1
+        }
         override suspend fun upsert(user: UserEntity) { rows[user.id] = user }
         override suspend fun delete(userId: String) { rows.remove(userId) }
         override suspend fun setSecurityNotice(userId: String, code: Int) {

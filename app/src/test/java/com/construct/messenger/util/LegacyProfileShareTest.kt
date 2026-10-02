@@ -9,7 +9,7 @@ import org.junit.Test
  * The vectors are iOS `ProfileShareData.toBinaryData` output, produced by its own code
  * (construct-messenger `ProtocolTypes.swift`), so a drift on either side reddens here.
  */
-class ProfileShareTest {
+class LegacyProfileShareTest {
 
     private fun hex(s: String) = s.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 
@@ -20,12 +20,12 @@ class ProfileShareTest {
 
     @Test
     fun `encodes a name-only profile exactly as iOS`() {
-        assertArrayEquals(nameOnly, ProfileShare("Костя", timestampSec = 1_790_770_000).encode())
+        assertArrayEquals(nameOnly, LegacyProfileShare("Костя", timestampSec = 1_790_770_000).encode())
     }
 
     @Test
     fun `decodes an iOS profile with an avatar`() {
-        val p = ProfileShare.decode(withAvatar)!!
+        val p = LegacyProfileShare.decode(withAvatar)!!
         assertEquals("Kostya", p.displayName)
         assertEquals("m1", p.avatarMediaId)
         assertEquals("https://x/y", p.avatarMediaUrl)
@@ -37,7 +37,7 @@ class ProfileShareTest {
     /** Peer-controlled bytes: a cut anywhere is "not a profile", never a crash. */
     @Test
     fun `a truncated or foreign payload is not a profile`() {
-        for (n in 0 until withAvatar.size) assertNull("cut at $n", ProfileShare.decode(withAvatar.copyOf(n)))
-        assertNull(ProfileShare.decode("hello".toByteArray()))
+        for (n in 0 until withAvatar.size) assertNull("cut at $n", LegacyProfileShare.decode(withAvatar.copyOf(n)))
+        assertNull(LegacyProfileShare.decode("hello".toByteArray()))
     }
 }

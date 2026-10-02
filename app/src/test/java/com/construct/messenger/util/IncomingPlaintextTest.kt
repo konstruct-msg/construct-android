@@ -197,13 +197,13 @@ class IncomingPlaintextTest {
      */
     @Test
     fun `a shared profile in a frame is a profile, not a bubble`() {
-        val profile = ProfileShare("Kostya", timestampSec = 0x01010101)
+        val profile = LegacyProfileShare("Kostya", timestampSec = 0x01010101)
         val frame = KnstFrame.pack(profile.encode(), KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID())
 
         val decoded = IncomingPlaintext.decode(frame)
 
         assertEquals(false, decoded.isUserVisible)
-        assertEquals("Kostya", decoded.profile?.displayName)
+        assertEquals("Kostya", decoded.legacyProfile?.displayName)
     }
 
 }

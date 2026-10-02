@@ -83,6 +83,9 @@ class MessagingRuntime @Inject constructor(
     private val transportRouter: TransportRouter,
     private val pendingResends: PendingResends,
     private val deviceMetadata: DeviceMetadataPublisher,
+    private val contactAvatars: ContactAvatars,
+    // Lazy: the profile is sent through the send path, which reaches back into the runtime.
+    private val shareProfile: dagger.Lazy<com.construct.messenger.domain.usecase.ShareProfileUseCase>,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val reorder = ReorderDiagnostics(cryptoManager::reorderStats)
@@ -245,6 +248,9 @@ class MessagingRuntime @Inject constructor(
                         timerBridge.onNetworkReconnected()
                         // Resends the network refused; the core will not ask for them again.
                         pendingResends.drainSoon()
+                        // Profiles: avatars that did not arrive, and a rebroadcast whose avatar did not upload.
+                        contactAvatars.retryPending()
+                        shareProfile.get().rebroadcastIfOwed()
                     }
                     Log.i(TAG, "stream connected=${event.connected}")
                 }

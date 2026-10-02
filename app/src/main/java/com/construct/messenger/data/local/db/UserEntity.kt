@@ -40,6 +40,12 @@ data class UserEntity(
     val localAlias: String? = null,
     /** This device sent them our profile and has not stopped sharing (iOS `amISharingWith`). */
     val amSharingWith: Boolean = false,
+    /** `edited_at_ms` of the last typed profile applied from them (content type 29); 0 = none. */
+    val profileEditedAtMs: Long = 0,
+    /** The avatar their profile named and that has not arrived yet: `AvatarRef` bytes, or null. */
+    val pendingAvatarRef: ByteArray? = null,
+    /** When [pendingAvatarRef] was set — after the media store's 7 days it is dropped. */
+    val pendingAvatarSinceMs: Long? = null,
 ) {
     // ByteArray field: structural equality must be explicit.
     override fun equals(other: Any?): Boolean {
@@ -56,7 +62,10 @@ data class UserEntity(
             accountAddress.contentEquals(other.accountAddress) &&
             securityNotice == other.securityNotice &&
             localAlias == other.localAlias &&
-            amSharingWith == other.amSharingWith
+            amSharingWith == other.amSharingWith &&
+            profileEditedAtMs == other.profileEditedAtMs &&
+            pendingAvatarRef.contentEquals(other.pendingAvatarRef) &&
+            pendingAvatarSinceMs == other.pendingAvatarSinceMs
     }
 
     override fun hashCode(): Int {
@@ -72,6 +81,9 @@ data class UserEntity(
         result = 31 * result + securityNotice
         result = 31 * result + (localAlias?.hashCode() ?: 0)
         result = 31 * result + amSharingWith.hashCode()
+        result = 31 * result + profileEditedAtMs.hashCode()
+        result = 31 * result + pendingAvatarRef.contentHashCode()
+        result = 31 * result + (pendingAvatarSinceMs?.hashCode() ?: 0)
         return result
     }
 }
@@ -126,6 +138,21 @@ interface UserDao {
 
     @Query("UPDATE users SET avatarData = :avatar WHERE id = :userId")
     suspend fun setAvatar(userId: String, avatar: ByteArray?)
+
+    /** Rows whose profile named an avatar that has not arrived (`ContactAvatars.retryPending`). */
+    @Query("SELECT id FROM users WHERE pendingAvatarRef IS NOT NULL")
+    suspend fun pendingAvatarIds(): List<String>
+
+    /**
+     * The avatar arrived, or will never: drop the reference — only if it is still [stored], since a
+     * newer profile may have named another while this one downloaded. Returns rows changed.
+     */
+    @Query("UPDATE users SET pendingAvatarRef = NULL, pendingAvatarSinceMs = NULL WHERE id = :userId AND pendingAvatarRef = :stored")
+    suspend fun clearPendingAvatar(userId: String, stored: ByteArray): Int
+
+    /** The download landed: the avatar and the cleared reference in one statement, under the same guard. */
+    @Query("UPDATE users SET avatarData = :avatar, pendingAvatarRef = NULL, pendingAvatarSinceMs = NULL WHERE id = :userId AND pendingAvatarRef = :stored")
+    suspend fun completePendingAvatar(userId: String, stored: ByteArray, avatar: ByteArray): Int
 
     @Query("DELETE FROM users WHERE id = :userId")
     suspend fun delete(userId: String)

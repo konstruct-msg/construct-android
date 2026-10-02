@@ -27,7 +27,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ReactionEntity::class,
         CallRecordEntity::class,
     ],
-    version = 18,
+    version = 19,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -185,6 +185,18 @@ abstract class ConstructDatabase : RoomDatabase() {
                         "incoming INTEGER NOT NULL, status TEXT NOT NULL, startedAtMs INTEGER NOT NULL, " +
                         "endedAtMs INTEGER NOT NULL, durationSeconds INTEGER NOT NULL, PRIMARY KEY(id))",
                 )
+            }
+        }
+
+        /**
+         * Typed profiles (content type 29): the version applied, and the avatar still to fetch.
+         * Existing rows: nothing typed applied, nothing pending.
+         */
+        val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE users ADD COLUMN profileEditedAtMs INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE users ADD COLUMN pendingAvatarRef BLOB")
+                db.execSQL("ALTER TABLE users ADD COLUMN pendingAvatarSinceMs INTEGER")
             }
         }
     }

@@ -22,11 +22,13 @@ import kotlinx.coroutines.launch
  * "Share my profile" / "Stop sharing profile" on a contact's card. **Canon:** iOS
  * `UserProfileView.handleShareToggle` and `ProfileShareViewModel`.
  *
- * Sharing sends the name this account goes by and its avatar, end to end, to every device of
- * theirs; it is marked shared only once a device took it. The avatar goes as iOS sends it: sealed
- * under a fresh key, uploaded to the media store, and named in the profile with that key — the
- * store holds a blob it cannot open. An avatar that fails to upload is left out, not the profile.
- * Stopping sends nothing — it is the mark alone, as on iOS: what they already received stays theirs.
+ * Sharing sends a typed profile (content type 29, [ProfileShare]) to every device of theirs; it is
+ * marked shared only once a device took it. It carries the version our name or avatar last
+ * changed ([AccountRepository.profileVersion]), so a contact applies it only if newer, and the
+ * avatar in one of three states: uploaded → set; we have none → removed, so a contact holding an old
+ * one clears it; the upload failed → unchanged, so contacts keep what they have and the rebroadcast
+ * is owed ([rebroadcastIfOwed]). The avatar goes sealed under a fresh key; the store holds a blob it
+ * cannot open. Stopping sends nothing — what they already received stays theirs.
  */
 @Singleton
 class ShareProfileUseCase @Inject constructor(
@@ -40,8 +42,8 @@ class ShareProfileUseCase @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     suspend fun share(contactId: String): Boolean {
-        val profile = profile(withAvatar = uploadAvatar()) ?: return false
-        val sent = sendMessage.shareProfile(contactId, profile)
+        val profile = profile() ?: return false
+        val sent = sendMessage.shareProfile(contactId, profile.encoded())
         if (sent) userDao.setAmSharingWith(contactId, true)
         return sent
     }
@@ -51,52 +53,56 @@ class ShareProfileUseCase @Inject constructor(
     }
 
     /**
-     * The profile again to everyone it is shared with — after the avatar changed. **Canon:** iOS
-     * `rebroadcastProfileToSharedContacts`, except that the avatar is uploaded once for all of
-     * them rather than once each.
+     * The profile again to everyone it is shared with — after the name or avatar changed. **Canon:**
+     * iOS `rebroadcastProfileToSharedContacts`: prepared once, the avatar uploaded once for all.
      */
     fun rebroadcast() {
-        scope.launch {
-            val contacts = userDao.sharingWithIds()
-            if (contacts.isEmpty()) return@launch
-            val profile = profile(withAvatar = uploadAvatar()) ?: return@launch
-            for (contactId in contacts) {
-                val sent = sendMessage.shareProfile(contactId, profile)
-                Log.i(TAG, "profile rebroadcast to ${contactId.take(8)}… ${if (sent) "taken" else "not taken"}")
+        scope.launch { rebroadcastNow() }
+    }
+
+    /** The rebroadcast an earlier one owed (its avatar did not upload). On every stream connect. */
+    fun rebroadcastIfOwed() {
+        if (!account.profileRebroadcastOwed) return
+        account.profileRebroadcastOwed = false
+        Log.i(TAG, "profile rebroadcast owed from a failed avatar upload — sending again")
+        rebroadcast()
+    }
+
+    internal suspend fun rebroadcastNow() {
+        val contacts = userDao.sharingWithIds()
+        if (contacts.isEmpty()) return
+        val payload = profile()?.encoded() ?: return
+        for (contactId in contacts) {
+            val sent = sendMessage.shareProfile(contactId, payload)
+            Log.i(TAG, "profile rebroadcast to ${contactId.take(8)}… ${if (sent) "taken" else "not taken"}")
+        }
+    }
+
+    internal suspend fun profile(): ProfileShare? {
+        val myId = keystoreManager.getUserId() ?: return null
+        val own = account.account.value
+        val name = own?.displayName?.takeIf { it.isNotBlank() } ?: DisplayNameGenerator.generate(myId)
+        val avatar = when (val jpeg = own?.avatar) {
+            null -> ProfileShare.Avatar.Removed
+            else -> uploadAvatar(jpeg)?.let(ProfileShare.Avatar::Set) ?: run {
+                account.profileRebroadcastOwed = true
+                ProfileShare.Avatar.Unchanged
             }
         }
+        return ProfileShare(displayName = name, editedAtMs = account.profileVersion(), avatar = avatar)
     }
 
-    private fun profile(withAvatar: UploadedAvatar?): ProfileShare? {
-        val myId = keystoreManager.getUserId() ?: return null
-        val name = account.account.value?.displayName?.takeIf { it.isNotBlank() }
-            ?: DisplayNameGenerator.generate(myId)
-        return ProfileShare(
-            displayName = name,
-            avatarMediaId = withAvatar?.mediaId,
-            avatarMediaUrl = withAvatar?.url,
-            avatarMediaKey = withAvatar?.key,
-            avatarMediaType = withAvatar?.let { AVATAR_TYPE },
-            timestampSec = System.currentTimeMillis() / 1000,
-        )
-    }
-
-    private class UploadedAvatar(val mediaId: String, val url: String, val key: ByteArray)
-
-    private suspend fun uploadAvatar(): UploadedAvatar? {
-        val jpeg = account.account.value?.avatar ?: return null
-        return try {
-            val sealed = MediaCrypto.seal(jpeg)
-            val localId = MediaWire.LOCAL_PREFIX + UUID.randomUUID()
-            media.stage(localId, sealed.blob)
-            val uploaded = media.upload(localId, sealed.sha256)
-            UploadedAvatar(uploaded.mediaId, uploaded.downloadUrl, sealed.key)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.w(TAG, "avatar upload failed — profile goes without it", e)
-            null
-        }
+    private suspend fun uploadAvatar(jpeg: ByteArray): ProfileShare.AvatarRef? = try {
+        val sealed = MediaCrypto.seal(jpeg)
+        val localId = MediaWire.LOCAL_PREFIX + UUID.randomUUID()
+        media.stage(localId, sealed.blob)
+        val uploaded = media.upload(localId, sealed.sha256)
+        ProfileShare.AvatarRef(uploaded.mediaId, uploaded.downloadUrl, sealed.key, AVATAR_TYPE)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Log.w(TAG, "avatar upload failed — profile goes with the avatar unchanged, rebroadcast owed", e)
+        null
     }
 
     private companion object {

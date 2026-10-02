@@ -50,6 +50,7 @@ object DatabaseModule {
                 ConstructDatabase.MIGRATION_15_16,
                 ConstructDatabase.MIGRATION_16_17,
                 ConstructDatabase.MIGRATION_17_18,
+                ConstructDatabase.MIGRATION_18_19,
             )
             .fallbackToDestructiveMigrationFrom(1, 2, 3)
             .build()

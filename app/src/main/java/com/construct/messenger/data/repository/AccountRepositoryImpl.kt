@@ -129,8 +129,30 @@ class AccountRepositoryImpl @Inject constructor(
             else putString(key(KEY_DISPLAY_NAME_CHOSEN, userId), chosen)
         }.apply()
         val shown = shownDisplayName(userId)
+        if (shown != state.value?.displayName) markProfileEdited(userId)
         state.update { it?.copy(displayName = shown) }
         return shown
+    }
+
+    override fun profileVersion(): Long {
+        val userId = keystoreManager.getUserId() ?: return 0
+        val held = prefs.getLong(key(KEY_PROFILE_EDITED_AT, userId), 0)
+        return if (held > 0) held else markProfileEdited(userId)
+    }
+
+    override var profileRebroadcastOwed: Boolean
+        get() = keystoreManager.getUserId()?.let { prefs.getBoolean(key(KEY_REBROADCAST_OWED, it), false) } ?: false
+        set(value) {
+            val userId = keystoreManager.getUserId() ?: return
+            prefs.edit().putBoolean(key(KEY_REBROADCAST_OWED, userId), value).apply()
+        }
+
+    /** Our name or avatar changed now. Never earlier than the version held: a clock set back must not make a new profile look old. */
+    private fun markProfileEdited(userId: String): Long {
+        val held = prefs.getLong(key(KEY_PROFILE_EDITED_AT, userId), 0)
+        val stamp = maxOf(System.currentTimeMillis(), held + 1)
+        prefs.edit().putLong(key(KEY_PROFILE_EDITED_AT, userId), stamp).apply()
+        return stamp
     }
 
     /**
@@ -169,6 +191,7 @@ class AccountRepositoryImpl @Inject constructor(
         val tmp = File(file.parentFile, "${file.name}.part")
         tmp.writeBytes(jpeg)
         tmp.renameTo(file)
+        markProfileEdited(userId)
         state.update { it?.copy(avatar = jpeg) }
         true
     }
@@ -184,6 +207,8 @@ class AccountRepositoryImpl @Inject constructor(
         const val KEY_USERNAME = "username"
         const val KEY_DISPLAY_NAME = "display_name"
         const val KEY_DISPLAY_NAME_CHOSEN = "display_name_chosen"
+        const val KEY_PROFILE_EDITED_AT = "profile_edited_at_ms"
+        const val KEY_REBROADCAST_OWED = "profile_rebroadcast_owed"
         const val KEY_DISCOVERABLE = "discoverable"
         /** CheckUsernameAvailability's reason for an alias someone holds. */
         const val REASON_TAKEN = "taken"

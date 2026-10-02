@@ -56,6 +56,9 @@ internal class FakeAccountRepository(
         return shown
     }
 
+    override fun profileVersion(): Long = 1
+    override var profileRebroadcastOwed: Boolean = false
+
     val avatars = mutableListOf<android.graphics.Bitmap>()
 
     override suspend fun setAvatar(picture: android.graphics.Bitmap): Boolean {

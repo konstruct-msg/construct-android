@@ -462,22 +462,24 @@ class SendMessageUseCaseTest {
     }
 
     /**
-     * B8: our profile goes to every device of theirs as a frame their reader takes for a profile,
-     * not to our own devices, and leaves no row. Mutation: send it as a text body — this reddens.
+     * B8: our profile goes to every device of theirs as a type-29 frame holding the `ProfileShare`,
+     * not to our own devices, and leaves no row. Mutation: frame it as type 1 — this reddens.
      */
     @Test
     fun `a shared profile reaches every device of theirs and no one else`() = runTest {
         val h = harness()
         val events = argumentCaptor<uniffi.construct_core.CfeIncomingEvent>()
 
-        val ok = h.useCase().shareProfile(peer, ProfileShare("jolly mammoth", timestampSec = 1))
+        val profile = ProfileShare("jolly mammoth", 5, ProfileShare.Avatar.Removed)
+        val ok = h.useCase().shareProfile(peer, profile.encoded())
 
         assertTrue(ok)
         assertEquals(2, sentMessageIds(h).size)
         verify(h.orchestrator, times(2)).handleEvent(events.capture())
         events.allValues.forEach { event ->
             val plaintext = (event as uniffi.construct_core.CfeIncomingEvent.OutgoingMessage).plaintext
-            assertEquals("jolly mammoth", IncomingPlaintext.decode(plaintext).profile?.displayName)
+            assertEquals(29, plaintext[5].toInt())
+            assertEquals(profile, IncomingPlaintext.knstPayload(plaintext)?.let(ProfileShare::read))
         }
         verify(h.sessionManager, times(0)).discoverOwnDeviceBundles(any())
         assertTrue(h.messages.rows.isEmpty())
@@ -588,6 +590,17 @@ private class FakeUserDao : UserDao {
     override fun observeBlocked(): Flow<List<UserEntity>> = MutableStateFlow(rows.values.filter { it.isBlocked })
     override fun observeById(userId: String): Flow<UserEntity?> = MutableStateFlow(rows[userId])
     override suspend fun getById(userId: String) = rows[userId]
+    override suspend fun pendingAvatarIds(): List<String> = rows.values.filter { it.pendingAvatarRef != null }.map { it.id }
+    override suspend fun clearPendingAvatar(userId: String, stored: ByteArray): Int {
+        val row = rows[userId]?.takeIf { it.pendingAvatarRef.contentEquals(stored) } ?: return 0
+        rows[userId] = row.copy(pendingAvatarRef = null, pendingAvatarSinceMs = null)
+        return 1
+    }
+    override suspend fun completePendingAvatar(userId: String, stored: ByteArray, avatar: ByteArray): Int {
+        val row = rows[userId]?.takeIf { it.pendingAvatarRef.contentEquals(stored) } ?: return 0
+        rows[userId] = row.copy(avatarData = avatar, pendingAvatarRef = null, pendingAvatarSinceMs = null)
+        return 1
+    }
     override suspend fun upsert(user: UserEntity) { rows[user.id] = user }
     override suspend fun delete(userId: String) { rows.remove(userId) }
     override suspend fun setSecurityNotice(userId: String, code: Int) {

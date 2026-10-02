@@ -47,6 +47,19 @@ interface AccountRepository {
      */
     suspend fun setDisplayName(raw: String): String?
 
+    /**
+     * The version our profile goes out with (`ProfileShare.edited_at_ms`): when the name or avatar
+     * last changed here, never the send time, so a profile sent again is not newer. A profile never
+     * stamped — edited before the stamp existed — is stamped now, once.
+     */
+    fun profileVersion(): Long
+
+    /**
+     * A rebroadcast went out without the avatar because its upload failed: contacts kept the old
+     * one, and the profile is owed again. Read and cleared on the next stream connect.
+     */
+    var profileRebroadcastOwed: Boolean
+
     /** Returns whether the change was applied. Enabling needs a username. */
     suspend fun setDiscoverable(enabled: Boolean): Boolean
 

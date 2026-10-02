@@ -29,7 +29,6 @@ import com.construct.messenger.data.local.db.applyEdit
 import com.construct.messenger.util.EditWire
 import com.construct.messenger.util.KnstFrame
 import com.construct.messenger.util.MediaWire
-import com.construct.messenger.util.ProfileShare
 import com.construct.messenger.util.TextWire
 import com.construct.messenger.util.SenderSyncRouting
 import java.util.UUID
@@ -306,19 +305,21 @@ class SendMessageUseCase @Inject constructor(
     }
 
     /**
-     * Our profile to every device of [contactId] — the name we go by (iOS
-     * `ProfileShareViewModel.shareProfile`): the binary [ProfileShare] as an ordinary type-1 KNST
-     * body under a fresh id, per device, as a message is. Not to our own devices, as on iOS: it is
-     * about us, they already know. No row is written. True when a device of theirs took it.
+     * Our profile to every device of [contactId] (iOS `ProfileShareViewModel.deliver`): [payload],
+     * a `ProfileShare`, as a content-type-29 KNST frame under a fresh id, per device, as a message
+     * is — the type lives inside the ciphertext; the envelope stays generic. Not to our own devices,
+     * as on iOS: it is about us, they already know. No row is written. True when a device of theirs
+     * took it.
      */
-    suspend fun shareProfile(contactId: String, profile: ProfileShare): Boolean {
+    suspend fun shareProfile(contactId: String, payload: ByteArray): Boolean {
         val myId = keystoreManager.getUserId() ?: return false
         if (!cryptoManager.isMessagingReady || contactId == myId) return false
         val id = UUID.randomUUID()
         return try {
             val pinned = sessionManager.ensureSession(contactId)
             val tally = deliverCopies(
-                myId, contactId, id.toString(), System.currentTimeMillis(), profile.encode(), pinned, recipientsOnly = true,
+                myId, contactId, id.toString(), System.currentTimeMillis(), payload, pinned,
+                recipientsOnly = true, contentType = ContentType.CONTENT_TYPE_PROFILE_VALUE,
             )
             Log.i(TAG, "profile to ${contactId.take(8)}… — ${tally.recipientAccepted} device(s) took it")
             tally.recipientAccepted > 0
@@ -463,6 +464,8 @@ class SendMessageUseCase @Inject constructor(
         content: ByteArray,
         pinned: SessionManager.SessionPeer,
         recipientsOnly: Boolean = false,
+        /** What a recipient's frames say they carry; an ordinary message is type 1. */
+        contentType: Int = KnstFrame.TYPE_E2EE_SIGNAL,
     ): DeliveryTally {
         val ourDeviceId = cryptoManager.currentDeviceId()
             ?: return DeliveryTally(0, 0, "no device id")
@@ -521,7 +524,7 @@ class SendMessageUseCase @Inject constructor(
                 continue
             }
             val result = sendFrames(
-                frames = framesOf(content, baseMessageId, isOwnReplica, partner = contactId),
+                frames = framesOf(content, baseMessageId, isOwnReplica, partner = contactId, contentType),
                 wireIdBase = baseMessageId + if (isOwnReplica) "-ss-$tag" else "-fd-$tag",
                 deviceId = target.deviceId,
                 myId = myId,
@@ -755,12 +758,18 @@ class SendMessageUseCase @Inject constructor(
      * the partner goes on before chunking, so a long copy carries it once. Until 2026-09-30
      * Android put `SSR1` outside the frame, and iOS siblings could not read those copies.
      */
-    private fun framesOf(content: ByteArray, messageId: String, isOwnReplica: Boolean, partner: String): List<ByteArray> {
+    private fun framesOf(
+        content: ByteArray,
+        messageId: String,
+        isOwnReplica: Boolean,
+        partner: String,
+        contentType: Int = KnstFrame.TYPE_E2EE_SIGNAL,
+    ): List<ByteArray> {
         val uuid = runCatching { UUID.fromString(messageId) }.getOrElse { UUID.randomUUID() }
         return if (isOwnReplica) {
             KnstFrame.chunks(SenderSyncRouting.encode(partner, content), KnstFrame.TYPE_SENDER_SYNC, uuid)
         } else {
-            KnstFrame.chunks(content, KnstFrame.TYPE_E2EE_SIGNAL, uuid)
+            KnstFrame.chunks(content, contentType, uuid)
         }
     }
 

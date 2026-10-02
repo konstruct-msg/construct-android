@@ -49,8 +49,11 @@ object IncomingPlaintext {
         val delete: Delete? = null,
         /** Metadata on another message, never a bubble. */
         val reaction: Reaction? = null,
-        /** A contact sharing their profile — applied to their row, never a bubble. */
-        val profile: ProfileShare? = null,
+        /**
+         * A contact's profile in the untyped v1 layout — applied to their row, never a bubble.
+         * Read for one release after type 29 (`ProfileShare`); nothing sends it any more.
+         */
+        val legacyProfile: LegacyProfileShare? = null,
         /** Photos, videos, files or a voice note; [text] is then the caption, possibly empty. */
         val media: MediaWire.Stored? = null,
     )
@@ -66,12 +69,12 @@ object IncomingPlaintext {
             // iOS `decodeAssembled`: MessageContent, then a binary profile, then text. A profile
             // read as text was hidden only while its timestamp bytes happened not to be UTF-8.
             return decodePayload(payload, type, e2e)
-                ?: ProfileShare.decode(payload)?.let { hidden(type, e2e).copy(profile = it) }
+                ?: LegacyProfileShare.decode(payload)?.let { hidden(type, e2e).copy(legacyProfile = it) }
                 ?: framedText(payload, type, e2e)
                 ?: hidden(type, e2e)
         }
         decodePayload(plaintext, knstContentType = 0, e2eMessageId = null)?.let { return it }
-        ProfileShare.decode(plaintext)?.let { return hidden(0, null).copy(profile = it) }
+        LegacyProfileShare.decode(plaintext)?.let { return hidden(0, null).copy(legacyProfile = it) }
         val utf8 = plaintext.toString(Charsets.UTF_8)
         return Decoded(utf8, knstContentType = 0, isUserVisible = utf8.isNotEmpty())
     }
@@ -223,6 +226,8 @@ object IncomingPlaintext {
         ContentType.CONTENT_TYPE_SESSION_RESET_INIT_VALUE,
         ContentType.CONTENT_TYPE_SESSION_PING_VALUE,
         ContentType.CONTENT_TYPE_SESSION_READY_VALUE,
+        // A `ProfileShare`, read where it is applied — never as a message's content.
+        ContentType.CONTENT_TYPE_PROFILE_VALUE,
         -> true
         else -> false
     }

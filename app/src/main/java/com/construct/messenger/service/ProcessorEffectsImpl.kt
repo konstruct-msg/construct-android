@@ -106,8 +106,19 @@ class ProcessorEffectsImpl @Inject constructor(
             ackStore.markProcessed(messageId, accountId)
             return
         }
-        decoded.profile?.let { profile ->
-            applySharedProfile(accountId, profile)
+        if (decoded.knstContentType == ContentType.CONTENT_TYPE_PROFILE_VALUE) {
+            // Their profile, typed (iOS `handleFramedSideChannel` → `ProfileSharingManager.apply`).
+            val profile = IncomingPlaintext.knstPayload(assembled)?.let(ProfileShare::read)
+            if (profile == null) {
+                Log.w(TAG, "profile ${messageId.take(8)}… does not parse — dropped")
+            } else {
+                applyProfile(accountId) { row, now -> ContactProfiles.typed(row, profile, now) }
+            }
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
+        decoded.legacyProfile?.let { profile ->
+            applyProfile(accountId) { row, now -> ContactProfiles.legacy(row, profile, now) }
             ackStore.markProcessed(messageId, accountId)
             return
         }
@@ -183,16 +194,20 @@ class ProcessorEffectsImpl @Inject constructor(
     }
 
     /**
-     * They shared their profile: the name they go by replaces the one we had, and the row says
-     * they share. **Canon:** iOS `ProfileSharingManager.handleProfileMessage`. A contact we have no
-     * row for is not created by it. The avatar it names is fetched afterwards ([ContactAvatars]).
-     * The name is theirs to choose, as on iOS: a local name the user gave still outranks it.
+     * They shared their profile ([ContactProfiles] decides what it changes). A contact we have no
+     * row for is not created by it; the avatar it names is fetched afterwards ([ContactAvatars]).
      */
-    private suspend fun applySharedProfile(accountId: String, profile: ProfileShare) {
-        val row = userDao.getById(accountId) ?: return
-        val name = profile.displayName.trim()
-        userDao.upsert(row.copy(displayName = name.ifEmpty { row.displayName }, isSharingWithMe = true))
-        contactAvatars.fetch(accountId, profile)
+    private suspend fun applyProfile(accountId: String, decide: (UserEntity, Long) -> ContactProfiles.Applied?) {
+        val row = userDao.getById(accountId) ?: run {
+            Log.w(TAG, "profile from ${accountId.take(8)}… for a contact we do not hold — ignored")
+            return
+        }
+        val applied = decide(row, System.currentTimeMillis()) ?: run {
+            Log.i(TAG, "profile from ${accountId.take(8)}… not newer than the one held — ignored")
+            return
+        }
+        userDao.upsert(applied.row)
+        if (applied.fetchAvatar) contactAvatars.fetchPending(accountId)
         Log.i(TAG, "profile from ${accountId.take(8)}… applied")
     }
 

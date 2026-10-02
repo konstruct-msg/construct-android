@@ -30,6 +30,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import com.construct.messenger.util.ProfileShare
+import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import org.junit.Test
 import java.util.UUID
 import shared.proto.messaging.v1.Content.MessageContent
@@ -58,6 +60,7 @@ class ProcessorEffectsImplTest {
         val pendingChunks = FakePendingChunkDao()
         val reactions = mock<com.construct.messenger.data.local.ReactionStore>()
         val callSignals = com.construct.messenger.calls.CallSignalInbox()
+        val avatars = RecordingAvatars()
         val effects = ProcessorEffectsImpl(
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) },
@@ -79,7 +82,7 @@ class ProcessorEffectsImplTest {
             alerts = alerts,
             chunks = ChunkReassembler(pendingChunks),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
-            contactAvatars = { _, _ -> },
+            contactAvatars = avatars,
             reactions = reactions,
             callSignals = callSignals,
         )
@@ -119,7 +122,7 @@ class ProcessorEffectsImplTest {
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
-            contactAvatars = { _, _ -> },
+            contactAvatars = RecordingAvatars(),
             reactions = mock(),
             callSignals = com.construct.messenger.calls.CallSignalInbox(),
         )
@@ -165,7 +168,7 @@ class ProcessorEffectsImplTest {
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
-            contactAvatars = { _, _ -> },
+            contactAvatars = RecordingAvatars(),
             reactions = mock(),
             callSignals = com.construct.messenger.calls.CallSignalInbox(),
         )
@@ -240,7 +243,7 @@ class ProcessorEffectsImplTest {
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
-            contactAvatars = { _, _ -> },
+            contactAvatars = RecordingAvatars(),
             reactions = mock(),
             callSignals = com.construct.messenger.calls.CallSignalInbox(),
         )
@@ -285,7 +288,7 @@ class ProcessorEffectsImplTest {
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
-            contactAvatars = { _, _ -> },
+            contactAvatars = RecordingAvatars(),
             reactions = mock(),
             callSignals = com.construct.messenger.calls.CallSignalInbox(),
         )
@@ -323,7 +326,7 @@ class ProcessorEffectsImplTest {
         val inbox = Inbox(alerts, myId)
         inbox.users.rows[peer] = UserEntity(id = peer, displayName = "quick hotfix", isContact = true, localAlias = "Kostya")
         val frame = KnstFrame.pack(
-            com.construct.messenger.util.ProfileShare("Konstantin", timestampSec = 1).encode(),
+            com.construct.messenger.util.LegacyProfileShare("Konstantin", timestampSec = 1).encode(),
             KnstFrame.TYPE_E2EE_SIGNAL,
             UUID.randomUUID(),
         )
@@ -334,6 +337,77 @@ class ProcessorEffectsImplTest {
         assertEquals("Konstantin", row.displayName)
         assertTrue(row.isSharingWithMe)
         assertEquals("Kostya", row.localAlias)
+        assertTrue(inbox.messages.rows.isEmpty())
+    }
+
+    private fun typedProfile(name: String, editedAtMs: Long, avatar: ProfileShare.Avatar) =
+        KnstFrame.pack(ProfileShare(name, editedAtMs, avatar).encoded(), ContentType.CONTENT_TYPE_PROFILE_VALUE, UUID.randomUUID())
+
+    private val avatarRef = ProfileShare.AvatarRef("m-1", "https://media.example/m-1", ByteArray(32) { 3 }, "image/jpeg")
+
+    /**
+     * Type 29: applied by version, the avatar by its state, no bubble. Mutation: compare `>=` —
+     * the replayed profile renames again and this reddens.
+     */
+    @Test
+    fun `a typed profile applies only when newer, and names its avatar to fetch`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.users.rows[peer] = UserEntity(id = peer, displayName = "quick hotfix", isContact = true)
+
+        inbox.effects.onDecrypted(peer, "p1", typedProfile("Konstantin", 20, ProfileShare.Avatar.Set(avatarRef)))
+        var row = inbox.users.rows[peer]!!
+        assertEquals("Konstantin", row.displayName)
+        assertTrue(row.isSharingWithMe)
+        assertEquals(20L, row.profileEditedAtMs)
+        assertEquals(avatarRef, ProfileShare.AvatarRef.fromStored(row.pendingAvatarRef!!))
+        assertEquals(listOf(peer), inbox.avatars.fetched)
+
+        // The same version again, then an older one: neither changes anything.
+        inbox.effects.onDecrypted(peer, "p2", typedProfile("Old Name", 20, ProfileShare.Avatar.Removed))
+        inbox.effects.onDecrypted(peer, "p3", typedProfile("Older Name", 19, ProfileShare.Avatar.Removed))
+        row = inbox.users.rows[peer]!!
+        assertEquals("Konstantin", row.displayName)
+        assertTrue(row.pendingAvatarRef != null)
+
+        assertTrue(inbox.messages.rows.isEmpty())
+        assertTrue(listOf("p1", "p2", "p3").all { inbox.acks.isProcessed(it) })
+    }
+
+    /** `removed` clears the avatar and anything still pending — the hole TODO 92 found. */
+    @Test
+    fun `a typed profile with the avatar removed clears it`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.users.rows[peer] = UserEntity(
+            id = peer, isContact = true, avatarData = byteArrayOf(1), profileEditedAtMs = 5,
+            pendingAvatarRef = avatarRef.stored(), pendingAvatarSinceMs = 1,
+        )
+        inbox.effects.onDecrypted(peer, "p1", typedProfile("K", 6, ProfileShare.Avatar.Removed))
+        val row = inbox.users.rows[peer]!!
+        assertNull(row.avatarData)
+        assertNull(row.pendingAvatarRef)
+        assertTrue(inbox.avatars.fetched.isEmpty())
+    }
+
+    @Test
+    fun `a typed profile from someone with no row adds no one`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.effects.onDecrypted(peer, "p1", typedProfile("Stranger", 1, ProfileShare.Avatar.Unchanged))
+        assertTrue(inbox.users.rows.isEmpty())
+        assertTrue(inbox.acks.isProcessed("p1"))
+    }
+
+    /** The v1 layout carries no version: once a typed profile is held it could put an older name back. */
+    @Test
+    fun `an untyped profile is ignored once a typed one is held`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.users.rows[peer] = UserEntity(id = peer, displayName = "Konstantin", isContact = true, profileEditedAtMs = 20)
+        val frame = KnstFrame.pack(
+            com.construct.messenger.util.LegacyProfileShare("quick hotfix", timestampSec = 99).encode(),
+            KnstFrame.TYPE_E2EE_SIGNAL,
+            UUID.randomUUID(),
+        )
+        inbox.effects.onDecrypted(peer, "p1", frame)
+        assertEquals("Konstantin", inbox.users.rows[peer]!!.displayName)
         assertTrue(inbox.messages.rows.isEmpty())
     }
 
@@ -647,7 +721,7 @@ class ProcessorEffectsImplTest {
             alerts = alerts,
             chunks = ChunkReassembler(FakePendingChunkDao()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
-            contactAvatars = { _, _ -> },
+            contactAvatars = RecordingAvatars(),
             reactions = mock(),
             callSignals = com.construct.messenger.calls.CallSignalInbox(),
         )
@@ -762,8 +836,19 @@ private class FakeChatDao : ChatDao {
     override suspend fun delete(chatId: String) { rows.remove(chatId) }
 }
 
-private class FakeUserDao : UserDao {
+internal class FakeUserDao : UserDao {
     val rows = linkedMapOf<String, UserEntity>()
+    override suspend fun pendingAvatarIds(): List<String> = rows.values.filter { it.pendingAvatarRef != null }.map { it.id }
+    override suspend fun clearPendingAvatar(userId: String, stored: ByteArray): Int {
+        val row = rows[userId]?.takeIf { it.pendingAvatarRef.contentEquals(stored) } ?: return 0
+        rows[userId] = row.copy(pendingAvatarRef = null, pendingAvatarSinceMs = null)
+        return 1
+    }
+    override suspend fun completePendingAvatar(userId: String, stored: ByteArray, avatar: ByteArray): Int {
+        val row = rows[userId]?.takeIf { it.pendingAvatarRef.contentEquals(stored) } ?: return 0
+        rows[userId] = row.copy(avatarData = avatar, pendingAvatarRef = null, pendingAvatarSinceMs = null)
+        return 1
+    }
     override fun observeContacts(): Flow<List<UserEntity>> = MutableStateFlow(rows.values.filter { it.isContact })
     override fun observeAll(): Flow<List<UserEntity>> = MutableStateFlow(rows.values.toList())
     override fun observeBlocked(): Flow<List<UserEntity>> = MutableStateFlow(rows.values.filter { it.isBlocked })
@@ -802,4 +887,11 @@ private class FakeAlerts : IncomingAlerts {
     override fun isChatVisible(contactId: String) = contactId == visible
     override fun onUnseenMessage(contactId: String) { raised += contactId }
     override fun clear(contactId: String) = Unit
+}
+
+/** Which rows had a pending avatar fetch started. */
+internal class RecordingAvatars : ContactAvatars {
+    val fetched = mutableListOf<String>()
+    override fun fetchPending(accountId: String) { fetched += accountId }
+    override fun retryPending() = Unit
 }

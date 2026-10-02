@@ -1,99 +1,120 @@
 package com.construct.messenger.util
 
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
+import com.google.protobuf.ByteString
+import com.google.protobuf.InvalidProtocolBufferException
+import shared.proto.core.v1.EnvelopeOuterClass
 
 /**
- * A contact's profile, sent to us inside the E2E channel when they share it: the name they go by
- * and, from iOS, an avatar in the media store.
+ * The payload of content type 29 (`ProfileShare` in construct-protos `core/envelope.proto`): who
+ * the sender is to this contact, by its own account. **Canon:** iOS `ProfileShare`.
  *
- * **Canon:** iOS `ProfileShareData.toBinaryData` / `fromBinaryData`, byte for byte — version 0x01,
- * the name as u16-LE length + UTF-8, then four optional fields (a presence byte, then u16-LE length
- * + bytes), then the timestamp as i64 LE. It travels as the payload of an ordinary KNST frame
- * (type 1), which is why a reader must try it before reading the payload as text.
- *
- * Android has no media yet, so the avatar fields are carried but not fetched.
+ * Until 2026-10-02 a profile had no type. It was recognised by whether a plaintext parsed as the
+ * hand-written v1 layout ([LegacyProfileShare]); its timestamp was the send time, so a resent old
+ * profile looked new; and "no avatar" meant both "removed" and "upload failed". How a payload
+ * reads and when it applies are fixed for both clients by `knst_profile_share.json`.
+ * `decisions/profile-share-is-a-typed-versioned-state.md`
  */
 data class ProfileShare(
     val displayName: String,
-    val avatarMediaId: String? = null,
-    val avatarMediaUrl: String? = null,
-    val avatarMediaKey: ByteArray? = null,
-    val avatarMediaType: String? = null,
-    val timestampSec: Long,
+    /** When the sender last changed its name or avatar, ms since the epoch. Not the send time. */
+    val editedAtMs: Long,
+    val avatar: Avatar,
 ) {
-    fun encode(): ByteArray {
-        val out = java.io.ByteArrayOutputStream()
-        fun u16(n: Int) {
-            out.write(n and 0xFF)
-            out.write((n shr 8) and 0xFF)
+    /** An avatar in the media store, sealed under [mediaKey]. */
+    class AvatarRef(val mediaId: String, val mediaUrl: String, val mediaKey: ByteArray, val mimeType: String) {
+        fun stored(): ByteArray = proto().toByteArray()
+
+        fun proto(): EnvelopeOuterClass.AvatarRef = EnvelopeOuterClass.AvatarRef.newBuilder()
+            .setMediaId(mediaId)
+            .setMediaUrl(mediaUrl)
+            .setMediaKey(ByteString.copyFrom(mediaKey))
+            .setMimeType(mimeType)
+            .build()
+
+        override fun equals(other: Any?): Boolean =
+            other is AvatarRef && mediaId == other.mediaId && mediaUrl == other.mediaUrl &&
+                mediaKey.contentEquals(other.mediaKey) && mimeType == other.mimeType
+
+        override fun hashCode(): Int = mediaId.hashCode()
+
+        companion object {
+            const val KEY_BYTES = 32
+
+            /** What a contact row keeps as its pending avatar. Null for bytes that are not usable. */
+            fun fromStored(bytes: ByteArray): AvatarRef? = try {
+                from(EnvelopeOuterClass.AvatarRef.parseFrom(bytes))
+            } catch (_: InvalidProtocolBufferException) {
+                null
+            }
+
+            /** A key that is not 32 bytes makes the reference unusable. */
+            fun from(ref: EnvelopeOuterClass.AvatarRef): AvatarRef? {
+                if (ref.mediaKey.size() != KEY_BYTES) return null
+                return AvatarRef(ref.mediaId, ref.mediaUrl, ref.mediaKey.toByteArray(), ref.mimeType)
+            }
         }
-        fun bytes(b: ByteArray) {
-            u16(b.size)
-            out.write(b)
-        }
-        fun optional(b: ByteArray?) {
-            out.write(if (b != null) 1 else 0)
-            if (b != null) bytes(b)
-        }
-        out.write(VERSION)
-        bytes(displayName.toByteArray(Charsets.UTF_8))
-        optional(avatarMediaId?.toByteArray(Charsets.UTF_8))
-        optional(avatarMediaUrl?.toByteArray(Charsets.UTF_8))
-        optional(avatarMediaKey)
-        optional(avatarMediaType?.toByteArray(Charsets.UTF_8))
-        out.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(timestampSec).array())
-        return out.toByteArray()
     }
 
-    override fun equals(other: Any?): Boolean =
-        other is ProfileShare &&
-            displayName == other.displayName &&
-            avatarMediaId == other.avatarMediaId &&
-            avatarMediaUrl == other.avatarMediaUrl &&
-            avatarMediaKey.contentEquals(other.avatarMediaKey) &&
-            avatarMediaType == other.avatarMediaType &&
-            timestampSec == other.timestampSec
+    sealed interface Avatar {
+        /** Download this and replace the avatar. */
+        data class Set(val ref: AvatarRef) : Avatar
+        /** The sender has no avatar now: clear it. */
+        data object Removed : Avatar
+        /** Not changed by this profile, or the sender could not upload it: keep what is held. */
+        data object Unchanged : Avatar
+    }
 
-    override fun hashCode(): Int = displayName.hashCode() * 31 + timestampSec.hashCode()
+    /** What a receiver does with the avatar it holds once a profile is applied. */
+    sealed interface AvatarAction {
+        data class Download(val ref: AvatarRef) : AvatarAction
+        data object Clear : AvatarAction
+        data object Keep : AvatarAction
+    }
+
+    fun encoded(): ByteArray {
+        val builder = EnvelopeOuterClass.ProfileShare.newBuilder()
+            .setDisplayName(displayName)
+            .setEditedAtMs(editedAtMs)
+        when (avatar) {
+            is Avatar.Set -> builder.setAvatarSet(avatar.ref.proto())
+            Avatar.Removed -> builder.setAvatarRemoved(true)
+            Avatar.Unchanged -> Unit
+        }
+        return builder.build().toByteArray()
+    }
+
+    /**
+     * Whether to apply this profile over the one held, and what then happens to the avatar. Null:
+     * ignore it whole — it is not newer, so a resend, a redelivery or a reordered queue cannot put
+     * an older name or avatar back. Equal is not newer: the same profile twice applies once.
+     * [heldEditedAtMs] 0 means nothing typed has been applied.
+     */
+    fun decision(heldEditedAtMs: Long): AvatarAction? {
+        if (heldEditedAtMs > 0 && java.lang.Long.compareUnsigned(editedAtMs, heldEditedAtMs) <= 0) return null
+        return when (avatar) {
+            is Avatar.Set -> AvatarAction.Download(avatar.ref)
+            Avatar.Removed -> AvatarAction.Clear
+            Avatar.Unchanged -> AvatarAction.Keep
+        }
+    }
 
     companion object {
-        private const val VERSION = 0x01
-
-        /**
-         * Null unless [data] is a whole v1 profile. Peer-controlled bytes: every length is checked
-         * against what is left, and the name must be valid UTF-8, as iOS requires.
-         */
-        fun decode(data: ByteArray): ProfileShare? {
-            if (data.size <= 1 || data[0].toInt() != VERSION) return null
-            var at = 1
-            fun take(): ByteArray? {
-                if (at + 2 > data.size) return null
-                val len = (data[at].toInt() and 0xFF) or ((data[at + 1].toInt() and 0xFF) shl 8)
-                at += 2
-                if (at + len > data.size) return null
-                return data.copyOfRange(at, at + len).also { at += len }
+        /** Null when [payload] is not a `ProfileShare`. */
+        fun read(payload: ByteArray): ProfileShare? {
+            val proto = try {
+                EnvelopeOuterClass.ProfileShare.parseFrom(payload)
+            } catch (_: InvalidProtocolBufferException) {
+                return null
             }
-            fun utf8(b: ByteArray): String? = runCatching {
-                Charsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(b)).toString()
-            }.getOrNull()
-            // iOS reads a field marked present but cut short as absent and carries on; here the
-            // whole payload is refused instead. Whatever iOS writes parses the same either way.
-            var cut = false
-            fun optional(): ByteArray? {
-                if (at >= data.size) return null.also { cut = true }
-                val present = data[at++].toInt() == 1
-                return if (present) take() ?: null.also { cut = true } else null
+            val avatar = when (proto.avatarCase) {
+                // A key of the wrong length is read as no change, not as a broken profile.
+                EnvelopeOuterClass.ProfileShare.AvatarCase.AVATAR_SET ->
+                    AvatarRef.from(proto.avatarSet)?.let(Avatar::Set) ?: Avatar.Unchanged
+                EnvelopeOuterClass.ProfileShare.AvatarCase.AVATAR_REMOVED ->
+                    if (proto.avatarRemoved) Avatar.Removed else Avatar.Unchanged
+                else -> Avatar.Unchanged
             }
-            val name = take()?.let(::utf8) ?: return null
-            val mediaId = optional()?.let(::utf8)
-            val mediaUrl = optional()?.let(::utf8)
-            val mediaKey = optional()
-            val mediaType = optional()?.let(::utf8)
-            if (cut) return null
-            if (at + 8 > data.size) return null
-            val ts = ByteBuffer.wrap(data, at, 8).order(ByteOrder.LITTLE_ENDIAN).long
-            return ProfileShare(name, mediaId, mediaUrl, mediaKey, mediaType, ts)
+            return ProfileShare(proto.displayName, proto.editedAtMs, avatar)
         }
     }
 }
