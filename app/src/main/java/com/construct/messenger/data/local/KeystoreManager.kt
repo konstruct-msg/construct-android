@@ -160,6 +160,7 @@ class KeystoreManager @Inject constructor(
             .remove(KEY_CONTACT_CARD_SENT_TO_V1)
             .remove(KEY_OWN_INTAKE)
             .remove(KEY_DEVICE_SETS_LISTED)
+            .remove(KEY_DEVICE_METADATA_PUBLISHED_FOR)
             .remove(KEY_VEIL_ACCESS_SEED)
             .apply()
         val wiped = listOf(
@@ -209,6 +210,18 @@ class KeystoreManager @Inject constructor(
     }
 
     /** This device's intake key for our account, or null before one is minted. */
+    /**
+     * The device set this device's description was last sealed for (iOS `publishedForKey`).
+     * Leaves with the account: a stale set after a re-registration would match the new account's
+     * and keep it from publishing at all.
+     */
+    fun deviceMetadataPublishedFor(): Set<String> =
+        prefs.getStringSet(KEY_DEVICE_METADATA_PUBLISHED_FOR, null).orEmpty().toSet()
+
+    fun saveDeviceMetadataPublishedFor(deviceIds: Set<String>) {
+        prefs.edit().putStringSet(KEY_DEVICE_METADATA_PUBLISHED_FOR, deviceIds.toSet()).apply()
+    }
+
     fun ownIntakeKey(): ByteArray? =
         prefs.getString(KEY_OWN_INTAKE, null)?.let { Base64.decode(it, Base64.NO_WRAP) }
 
@@ -301,6 +314,7 @@ class KeystoreManager @Inject constructor(
         const val KEY_OWN_INTAKE = "own_intake_key"
         /** Nothing writes it since the new-device alarm went (2026-09-30); still cleared for installs that did. */
         const val KEY_DEVICE_SETS_LISTED = "device_sets_listed"
+        const val KEY_DEVICE_METADATA_PUBLISHED_FOR = "device_metadata_published_for"
         const val KEY_PEER_INTAKE_PREFIX = "peer_intake_key:"
     }
 }

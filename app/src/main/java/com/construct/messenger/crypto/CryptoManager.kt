@@ -27,6 +27,7 @@ import uniffi.construct_core.deriveRecoveryKeypair
 import uniffi.construct_core.generateMnemonic
 import uniffi.construct_core.mnemonicToSeed
 import uniffi.construct_core.planSend as planSendTargets
+import uniffi.construct_core.sealToDeviceKey as sealToDeviceKeyCore
 import uniffi.construct_core.signRecoveryChallenge
 import uniffi.construct_core.validateMnemonic
 import uniffi.construct_core.verifyInviteSignature
@@ -190,6 +191,14 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
     fun openSealedToDevice(sealedBox: ByteArray): ByteArray = synchronized(coreLock) {
         requireOrchestrator().openSealedToDevice(sealedBox)
     }
+
+    /**
+     * Seals [plaintext] to a device's X25519 identity key — this device's description for one
+     * sibling (iOS `DeviceMetadataService.seal`). The counterpart of [openSealedToDevice]; it uses
+     * no secret of ours, so no core state is involved. Throws on a key of the wrong shape.
+     */
+    fun sealToDeviceKey(plaintext: ByteArray, deviceIdentityPublic: ByteArray): ByteArray =
+        sealToDeviceKeyCore(plaintext, deviceIdentityPublic)
 
     // ── Sessions / messages (orchestrator once logged in) ───────────────────
 

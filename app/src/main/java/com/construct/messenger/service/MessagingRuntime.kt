@@ -82,6 +82,7 @@ class MessagingRuntime @Inject constructor(
     private val authSession: AuthSessionManager,
     private val transportRouter: TransportRouter,
     private val pendingResends: PendingResends,
+    private val deviceMetadata: DeviceMetadataPublisher,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val reorder = ReorderDiagnostics(cryptoManager::reorderStats)
@@ -338,6 +339,8 @@ class MessagingRuntime @Inject constructor(
             }
             runCatching { rotateSignedPreKey.rotateIfNeeded() }
                 .onFailure { Log.w(TAG, "SPK rotation failed", it) }
+            // The own device set is known from here on; it is what invalidates the description.
+            deviceMetadata.publishIfNeeded()
         }
     }
 
