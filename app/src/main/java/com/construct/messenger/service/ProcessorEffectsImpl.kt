@@ -75,42 +75,23 @@ class ProcessorEffectsImpl @Inject constructor(
 
     override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
         val accountId = sessionManager.accountIdForDevice(contactId) ?: contactId
+        if (isBlocked(accountId)) {
+            // Decrypt-but-suppress, as iOS `SECURITY[block_drop]`: the ratchet has advanced, so an
+            // unblock resumes the session; nothing is stored, notified or receipted — a receipt
+            // would tell the blocked peer it arrived. The server's block does not see a sealed
+            // sender, so this drop is the block. Until 2026-10-02 Android had only the server's.
+            Log.i(TAG, "SECURITY[block_drop]: suppressed message ${messageId.take(8)}… from blocked ${accountId.take(8)}…")
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
         val assembled = whole(accountId, messageId, plaintext) ?: return
         val decoded = IncomingPlaintext.decode(assembled)
-        if (decoded.knstContentType == ContentType.CONTENT_TYPE_DELIVERY_RECEIPT_VALUE) {
-            IncomingReceipt.messageIds(assembled).forEach { markDelivered(it) }
-            ackStore.markProcessed(messageId, accountId)
-            return
-        }
-        if (decoded.knstContentType == ContentType.CONTENT_TYPE_CALL_SIGNAL_VALUE) {
-            // The core names a framed call signal itself since 0.29 and hands it over as
-            // `CallSignalDecrypted` with the frame's body (TODO 94), so a decrypted message never
-            // arrives here carrying one. If one does, the core and this app disagree about the
-            // frame: say so and drop it — a call signal is never a bubble. iOS
-            // `handleFramedSideChannel`. Until 2026-10-02 (core 0.28) this branch was the only
-            // way a sealed signal reached the call machine.
-            Log.e(TAG, "call signal frame ${messageId.take(8)}… reached the message path — the core should have named it")
-            ackStore.markProcessed(messageId, accountId)
-            return
-        }
-        if (decoded.knstContentType == ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE) {
-            // Their card: the key our envelopes to them present instead of a token, and the address
-            // they are named by.
-            IncomingPlaintext.knstPayload(assembled)?.let(ContactCardPayload::read)?.let { card ->
-                card.intakeKey?.let { intake.recordPeerKey(accountId, it) }
-                card.accountAddress?.let { addressBook.pin(accountId, it, AccountAddressSource.CARD) }
-            }
-            ackStore.markProcessed(messageId, accountId)
-            return
-        }
-        if (decoded.knstContentType == ContentType.CONTENT_TYPE_PROFILE_VALUE) {
-            // Their profile, typed (iOS `handleFramedSideChannel` → `ProfileSharingManager.apply`).
-            val profile = IncomingPlaintext.knstPayload(assembled)?.let(ProfileShare::read)
-            if (profile == null) {
-                Log.w(TAG, "profile ${messageId.take(8)}… does not parse — dropped")
-            } else {
-                applyProfile(accountId) { row, now -> ContactProfiles.typed(row, profile, now) }
-            }
+        if (decoded.knstContentType in CORE_NAMED_CONTROL_TYPES) {
+            // The core names every silent control frame itself since 0.30 (`ControlFrameDecrypted`,
+            // and `CallSignalDecrypted` since 0.29), so a decrypted message never arrives here
+            // carrying one. If one does, the core and this app disagree about the frame: say so and
+            // drop it — a control payload is never a bubble. iOS `MessageRouter`, the body path.
+            Log.e(TAG, "control frame type=${decoded.knstContentType} ${messageId.take(8)}… reached the message path — the core should have named it")
             ackStore.markProcessed(messageId, accountId)
             return
         }
@@ -256,6 +237,59 @@ class ProcessorEffectsImpl @Inject constructor(
         )
         ackStore.markProcessed(messageId, accountId)
     }
+
+    /**
+     * A silent control frame the core named from byte 5 of its KNST frame (core 0.30): [body] is
+     * without the header. **Canon:** iOS `MessageRouter.handleControlFrames`.
+     *
+     * Filed by **account**: the core names the peer by the device whose session opened it, and the
+     * receipt, the card's intake key and address and the profile are all kept by account. A blocked
+     * contact's frames are dropped as its messages are. Recorded processed either way.
+     */
+    override suspend fun onControlFrame(contactId: String, messageId: String, contentType: Int, body: ByteArray) {
+        val accountId = sessionManager.accountIdForDevice(contactId) ?: contactId
+        if (isBlocked(accountId)) {
+            Log.i(TAG, "SECURITY[block_drop]: suppressed control frame ${messageId.take(8)}… from blocked ${accountId.take(8)}…")
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
+        Log.d(TAG, "control frame type=$contentType ${messageId.take(8)}… from ${accountId.take(8)}…")
+        when (contentType) {
+            ContentType.CONTENT_TYPE_DELIVERY_RECEIPT_VALUE ->
+                IncomingReceipt.messageIds(body).forEach { markDelivered(it) }
+            ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE -> {
+                // Their card: the key our envelopes to them present instead of a token, and the
+                // address they are named by.
+                val card = ContactCardPayload.read(body)
+                if (card == null) {
+                    Log.w(TAG, "contact card ${messageId.take(8)}… does not parse — dropped")
+                } else {
+                    card.intakeKey?.let { intake.recordPeerKey(accountId, it) }
+                    card.accountAddress?.let { addressBook.pin(accountId, it, AccountAddressSource.CARD) }
+                }
+            }
+            ContentType.CONTENT_TYPE_PROFILE_VALUE -> {
+                // Applied only if newer than the one held ([ContactProfiles]).
+                val profile = ProfileShare.read(body)
+                if (profile == null) {
+                    Log.w(TAG, "profile ${messageId.take(8)}… does not parse — dropped")
+                } else {
+                    applyProfile(accountId) { row, now -> ContactProfiles.typed(row, profile, now) }
+                }
+            }
+            // A liveness probe: decrypting it exercised the ratchet, which was the point.
+            ContentType.CONTENT_TYPE_HEARTBEAT_VALUE -> Log.d(TAG, "heartbeat from ${accountId.take(8)}…")
+            // Ping / ready from a build before 2026-09-27: they closed a confirm window that no
+            // longer exists.
+            ContentType.CONTENT_TYPE_SESSION_PING_VALUE, ContentType.CONTENT_TYPE_SESSION_READY_VALUE ->
+                Log.i(TAG, "session control type=$contentType from ${accountId.take(8)}… discarded — nothing waits for it")
+            // The core hands a call signal over as `CallSignalDecrypted`, never as a control frame.
+            else -> Log.e(TAG, "control frame type=$contentType from ${accountId.take(8)}… has no handler — dropped")
+        }
+        ackStore.markProcessed(messageId, accountId)
+    }
+
+    private suspend fun isBlocked(accountId: String): Boolean = userDao.getById(accountId)?.isBlocked == true
 
     /**
      * A call signal the core opened: the `WebRTCSignal` itself (the core took the frame off).
@@ -554,5 +588,20 @@ class ProcessorEffectsImpl @Inject constructor(
 
         /** A sender-sync copy that names no partner: nothing says whose conversation it is. */
         val NOT_ROUTED = SenderSyncRouting.Decoded(partnerUserId = "", payload = ByteArray(0))
+
+        /**
+         * The frame types the core names itself — `CallSignalDecrypted` (12, core 0.29) and
+         * `ControlFrameDecrypted` (the rest, core 0.30) — so none may reach the message path.
+         * construct-protos `knst_content_types.json`, `silent_control`.
+         */
+        val CORE_NAMED_CONTROL_TYPES = setOf(
+            ContentType.CONTENT_TYPE_CALL_SIGNAL_VALUE,
+            ContentType.CONTENT_TYPE_HEARTBEAT_VALUE,
+            ContentType.CONTENT_TYPE_DELIVERY_RECEIPT_VALUE,
+            ContentType.CONTENT_TYPE_SESSION_PING_VALUE,
+            ContentType.CONTENT_TYPE_SESSION_READY_VALUE,
+            ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE,
+            ContentType.CONTENT_TYPE_PROFILE_VALUE,
+        )
     }
 }

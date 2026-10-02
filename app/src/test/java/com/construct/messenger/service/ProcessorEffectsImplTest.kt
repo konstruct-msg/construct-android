@@ -61,6 +61,8 @@ class ProcessorEffectsImplTest {
         val reactions = mock<com.construct.messenger.data.local.ReactionStore>()
         val callSignals = com.construct.messenger.calls.CallSignalInbox()
         val avatars = RecordingAvatars()
+        val sessionManager = mock<SessionManager>()
+        val sendReceipt = mock<com.construct.messenger.domain.usecase.SendReceiptUseCase>()
         val effects = ProcessorEffectsImpl(
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) },
@@ -69,9 +71,9 @@ class ProcessorEffectsImplTest {
             userDao = users,
             ackStore = acks,
             sessionStateStore = mock(),
-            sessionManager = mock(),
+            sessionManager = sessionManager,
             sessionControl = mock(),
-            sendReceiptUseCase = mock(),
+            sendReceiptUseCase = sendReceipt,
             sendContactCard = mock(),
             addressBook = mock(),
             intake = mock(),
@@ -90,7 +92,7 @@ class ProcessorEffectsImplTest {
 
     /**
      * A contact card from a contact files their address on their row; the card is not a bubble.
-     * Mutation: drop the card branch in `onDecrypted` — this reddens.
+     * Mutation: drop the card branch in `onControlFrame` — this reddens.
      */
     @Test
     fun `a contact card pins the sender's address`() = runTest {
@@ -127,12 +129,8 @@ class ProcessorEffectsImplTest {
             callSignals = com.construct.messenger.calls.CallSignalInbox(),
         )
         val address = ByteArray(32) { 0x5A }
-        val card = com.construct.messenger.util.KnstFrame.pack(
-            com.construct.messenger.invite.ContactCardPayload(accountAddress = address).encoded(),
-            shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE,
-            java.util.UUID.randomUUID(),
-        )
-        effects.onDecrypted(peer, "card-1", card)
+        val card = com.construct.messenger.invite.ContactCardPayload(accountAddress = address).encoded()
+        effects.onControlFrame(peer, "card-1", shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE, card)
         org.junit.Assert.assertArrayEquals(address, users.rows[peer]?.accountAddress)
         org.junit.Assert.assertTrue("a card is not a bubble", messages.rows.isEmpty())
     }
@@ -173,12 +171,8 @@ class ProcessorEffectsImplTest {
             callSignals = com.construct.messenger.calls.CallSignalInbox(),
         )
         val address = ByteArray(32) { 0x5A }
-        val card = com.construct.messenger.util.KnstFrame.pack(
-            com.construct.messenger.invite.ContactCardPayload(intakeKey = ByteArray(32) { 7 }, accountAddress = address).encoded(),
-            shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE,
-            java.util.UUID.randomUUID(),
-        )
-        effects.onDecrypted(peer, "card-1", card)
+        val card = com.construct.messenger.invite.ContactCardPayload(intakeKey = ByteArray(32) { 7 }, accountAddress = address).encoded()
+        effects.onControlFrame(peer, "card-1", shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE, card)
         org.mockito.kotlin.verify(intake).recordPeerKey(org.mockito.kotlin.eq(peer), org.mockito.kotlin.argThat { size == 32 && all { it == 7.toByte() } })
     }
 
@@ -340,8 +334,9 @@ class ProcessorEffectsImplTest {
         assertTrue(inbox.messages.rows.isEmpty())
     }
 
-    private fun typedProfile(name: String, editedAtMs: Long, avatar: ProfileShare.Avatar) =
-        KnstFrame.pack(ProfileShare(name, editedAtMs, avatar).encoded(), ContentType.CONTENT_TYPE_PROFILE_VALUE, UUID.randomUUID())
+    /** A profile as the core names it (core 0.30): `ControlFrameDecrypted`, body without the header. */
+    private suspend fun Inbox.profile(messageId: String, name: String, editedAtMs: Long, avatar: ProfileShare.Avatar) =
+        effects.onControlFrame(peer, messageId, ContentType.CONTENT_TYPE_PROFILE_VALUE, ProfileShare(name, editedAtMs, avatar).encoded())
 
     private val avatarRef = ProfileShare.AvatarRef("m-1", "https://media.example/m-1", ByteArray(32) { 3 }, "image/jpeg")
 
@@ -354,7 +349,7 @@ class ProcessorEffectsImplTest {
         val inbox = Inbox(alerts, myId)
         inbox.users.rows[peer] = UserEntity(id = peer, displayName = "quick hotfix", isContact = true)
 
-        inbox.effects.onDecrypted(peer, "p1", typedProfile("Konstantin", 20, ProfileShare.Avatar.Set(avatarRef)))
+        inbox.profile("p1", "Konstantin", 20, ProfileShare.Avatar.Set(avatarRef))
         var row = inbox.users.rows[peer]!!
         assertEquals("Konstantin", row.displayName)
         assertTrue(row.isSharingWithMe)
@@ -363,8 +358,8 @@ class ProcessorEffectsImplTest {
         assertEquals(listOf(peer), inbox.avatars.fetched)
 
         // The same version again, then an older one: neither changes anything.
-        inbox.effects.onDecrypted(peer, "p2", typedProfile("Old Name", 20, ProfileShare.Avatar.Removed))
-        inbox.effects.onDecrypted(peer, "p3", typedProfile("Older Name", 19, ProfileShare.Avatar.Removed))
+        inbox.profile("p2", "Old Name", 20, ProfileShare.Avatar.Removed)
+        inbox.profile("p3", "Older Name", 19, ProfileShare.Avatar.Removed)
         row = inbox.users.rows[peer]!!
         assertEquals("Konstantin", row.displayName)
         assertTrue(row.pendingAvatarRef != null)
@@ -381,7 +376,7 @@ class ProcessorEffectsImplTest {
             id = peer, isContact = true, avatarData = byteArrayOf(1), profileEditedAtMs = 5,
             pendingAvatarRef = avatarRef.stored(), pendingAvatarSinceMs = 1,
         )
-        inbox.effects.onDecrypted(peer, "p1", typedProfile("K", 6, ProfileShare.Avatar.Removed))
+        inbox.profile("p1", "K", 6, ProfileShare.Avatar.Removed)
         val row = inbox.users.rows[peer]!!
         assertNull(row.avatarData)
         assertNull(row.pendingAvatarRef)
@@ -391,7 +386,7 @@ class ProcessorEffectsImplTest {
     @Test
     fun `a typed profile from someone with no row adds no one`() = runTest {
         val inbox = Inbox(alerts, myId)
-        inbox.effects.onDecrypted(peer, "p1", typedProfile("Stranger", 1, ProfileShare.Avatar.Unchanged))
+        inbox.profile("p1", "Stranger", 1, ProfileShare.Avatar.Unchanged)
         assertTrue(inbox.users.rows.isEmpty())
         assertTrue(inbox.acks.isProcessed("p1"))
     }
@@ -472,28 +467,92 @@ class ProcessorEffectsImplTest {
     }
 
     /**
-     * Since core 0.29 the core names a framed call signal (`CallSignalDecrypted`), so one arriving
-     * as a decrypted message means the core and the app disagree about the frame: it is dropped
-     * and acknowledged — never rung, never a bubble. Mutation: route it to `onCallSignal` again,
-     * as the 0.28 workaround did — it rings, and this reddens.
+     * Since core 0.29/0.30 the core names every silent control frame (`CallSignalDecrypted`,
+     * `ControlFrameDecrypted`), so one arriving as a decrypted message means the core and the app
+     * disagree about the frame: dropped and acknowledged — never rung, never applied, never a
+     * bubble. Mutation: handle a type-12 or type-29 frame on the message path again, as before
+     * 0.29/0.30 — it rings or renames, and this reddens.
      */
     @Test
-    fun `a call signal framed in a decrypted message is dropped, not rung`() = runTest {
+    fun `a control frame in a decrypted message is dropped, not handled`() = runTest {
         val inbox = Inbox(alerts, myId)
-        inbox.users.rows[peer] = UserEntity(id = peer, isContact = true)
+        inbox.users.rows[peer] = UserEntity(id = peer, displayName = "before", isContact = true)
         val got = mutableListOf<com.construct.messenger.calls.CallSignalInbox.Incoming>()
         val job = backgroundScope.launch(kotlinx.coroutines.Dispatchers.Unconfined) { inbox.callSignals.signals.collect { got += it } }
-        val frame = com.construct.messenger.calls.CallSignalWire.frame(
+        val signal = com.construct.messenger.calls.CallSignalWire.frame(
             com.construct.messenger.calls.CallSignalWire.ringing("call-1", "dev", 1),
             UUID.fromString("22222222-2222-4222-8222-222222222222"),
         )
+        val profile = KnstFrame.pack(
+            ProfileShare("after", 9, ProfileShare.Avatar.Removed).encoded(), ContentType.CONTENT_TYPE_PROFILE_VALUE, UUID.randomUUID(),
+        )
 
-        inbox.effects.onDecrypted(peer, "env-1", frame)
+        inbox.effects.onDecrypted(peer, "env-1", signal)
+        inbox.effects.onDecrypted(peer, "env-2", profile)
 
         assertTrue(got.isEmpty())
+        assertEquals("before", inbox.users.rows[peer]?.displayName)
         assertTrue(inbox.acks.isProcessed("env-1"))
+        assertTrue(inbox.acks.isProcessed("env-2"))
         assertTrue(inbox.messages.rows.isEmpty())
         job.cancel()
+    }
+
+    /**
+     * The core names the peer of a control frame by the device whose session opened it; the
+     * profile lands on the account. Mutation: file it under the action's contact id — no row
+     * matches the device, nothing is renamed, this reddens (iOS lost every call signal this way
+     * with 0.29, construct-ios #49).
+     */
+    @Test
+    fun `a control frame named by a device lands on its account`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.users.rows[peer] = UserEntity(id = peer, displayName = "before", isContact = true)
+        val device = "dddddddd-dddd-dddd-dddd-dddddddddddd"
+        org.mockito.kotlin.wheneverBlocking { inbox.sessionManager.accountIdForDevice(device) }.thenReturn(peer)
+
+        inbox.effects.onControlFrame(device, "p1", ContentType.CONTENT_TYPE_PROFILE_VALUE, ProfileShare("after", 9, ProfileShare.Avatar.Removed).encoded())
+
+        assertEquals("after", inbox.users.rows[peer]?.displayName)
+        assertTrue(inbox.acks.isProcessed("p1"))
+    }
+
+    /**
+     * A blocked contact reaches nothing: its control frames are not applied and its messages not
+     * stored or receipted, both acknowledged so the queue drains. Mutation: drop either block
+     * check — the profile renames or the bubble appears, and this reddens.
+     */
+    @Test
+    fun `a blocked contact's frames and messages are dropped`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.users.rows[peer] = UserEntity(id = peer, displayName = "before", isContact = true, isBlocked = true)
+
+        inbox.effects.onControlFrame(peer, "p1", ContentType.CONTENT_TYPE_PROFILE_VALUE, ProfileShare("after", 9, ProfileShare.Avatar.Removed).encoded())
+        inbox.effects.onDecrypted(peer, "m1", "hi".toByteArray())
+
+        assertEquals("before", inbox.users.rows[peer]?.displayName)
+        assertTrue(inbox.messages.rows.isEmpty())
+        assertTrue(inbox.acks.isProcessed("p1"))
+        assertTrue(inbox.acks.isProcessed("m1"))
+        org.mockito.kotlin.verifyNoInteractions(inbox.sendReceipt)
+    }
+
+    /** A receipt the core named marks our message delivered. */
+    @Test
+    fun `a receipt frame marks our message delivered`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.messages.rows["ours-1"] = com.construct.messenger.data.local.db.MessageEntity(
+            id = "ours-1", chatId = "c", text = "x", isSentByMe = true, timestamp = 1,
+            deliveryStatus = com.construct.messenger.data.model.DeliveryStatus.SENT.name,
+        )
+        val receipt = shared.proto.signaling.v1.Presence.DeliveryReceipt.newBuilder()
+            .setDirect(shared.proto.signaling.v1.Presence.DirectReceipt.newBuilder().addMessageIds("ours-1"))
+            .build().toByteArray()
+
+        inbox.effects.onControlFrame(peer, "r1", ContentType.CONTENT_TYPE_DELIVERY_RECEIPT_VALUE, receipt)
+
+        assertEquals(com.construct.messenger.data.model.DeliveryStatus.DELIVERED.name, inbox.messages.rows["ours-1"]?.deliveryStatus)
+        assertTrue(inbox.acks.isProcessed("r1"))
     }
 
     /**

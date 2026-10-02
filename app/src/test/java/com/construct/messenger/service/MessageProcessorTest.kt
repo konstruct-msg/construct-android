@@ -41,6 +41,7 @@ class MessageProcessorTest {
             calls += "onDecrypted:$contactId:$messageId"
         }
         override suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray) { calls += "onCallSignal:$messageId" }
+        override suspend fun onControlFrame(contactId: String, messageId: String, contentType: Int, body: ByteArray) { calls += "onControlFrame:$contentType:$messageId" }
         override suspend fun sendReceipt(messageId: String, toUserId: String, status: String) { calls += "receipt:$messageId:$status" }
         override suspend fun notifyNewMessage(chatId: String, preview: String) { calls += "notify:$chatId" }
         override suspend fun markDelivered(messageId: String) { calls += "markDelivered:$messageId" }
@@ -101,6 +102,23 @@ class MessageProcessorTest {
         assertTrue(effects.calls.contains("onDecrypted:alice:m1"))
         assertTrue(effects.calls.contains("receipt:m1:delivered"))
         assertTrue(effects.calls.contains("notify:chat1"))
+    }
+
+    /**
+     * A control frame the core named (core 0.30) goes to its handler and is not receipted — a
+     * receipt for a receipt would never end. Mutation: route it like a call signal, with a
+     * receipt — this reddens.
+     */
+    @Test
+    fun `a control frame is handled and not receipted`() = runBlocking {
+        val effects = RecordingEffects()
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held, mock())
+
+        val outcome = processor.route(listOf(CfeAction.ControlFrameDecrypted("alice", "m1", 14u, byteArrayOf(1))), incoming())
+
+        assertEquals(ProcessingOutcome.Processed, outcome)
+        assertTrue(effects.calls.contains("onControlFrame:14:m1"))
+        assertTrue(effects.calls.none { it.startsWith("receipt:") })
     }
 
     @Test

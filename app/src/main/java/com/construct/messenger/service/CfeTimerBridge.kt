@@ -140,8 +140,15 @@ class CfeTimerBridge @Inject constructor(
                 // Routed by the envelope kept while it waited: a drained SENDER_SYNC is our own
                 // copy, and `MessageDecrypted` does not say so.
                 is CfeAction.MessageDecrypted -> effects.deliverDecrypted(action, held.take(action.messageId))
-                is CfeAction.CallSignalDecrypted ->
+                is CfeAction.CallSignalDecrypted -> {
+                    held.take(action.messageId)
                     effects.onCallSignal(action.contactId, action.messageId, action.protoBytes)
+                }
+                // A control frame that waited behind an open: handled like one that did not.
+                is CfeAction.ControlFrameDecrypted -> {
+                    held.take(action.messageId)
+                    effects.onControlFrame(action.contactId, action.messageId, action.contentType.toInt(), action.body)
+                }
                 is CfeAction.DuplicateDropped -> effects.markProcessed(action.messageId, "")
                 is CfeAction.MalformedDropped -> effects.markProcessed(action.messageId, "")
                 is CfeAction.MarkMessageDelivered -> effects.markDelivered(action.messageId)

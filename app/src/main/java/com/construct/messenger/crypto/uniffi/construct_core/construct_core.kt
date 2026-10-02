@@ -10491,6 +10491,23 @@ sealed class CfeAction {
     }
     
     /**
+     * A silent control frame other than a call signal (13, 14, 25, 26, 27, 29), named by byte 5
+     * of its KNST frame; `body` is without the header. Never a chat message: handle by
+     * `content_type` and record the message processed.
+     */
+    data class ControlFrameDecrypted(
+        val `contactId`: kotlin.String, 
+        val `messageId`: kotlin.String, 
+        val `contentType`: kotlin.UByte, 
+        val `body`: kotlin.ByteArray) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
      * Platform must query its persistent ACK store for `message_id` and reply with `AckDbResult`.
      */
     data class CheckAckInDb(
@@ -10606,7 +10623,13 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            25 -> CfeAction.CheckAckInDb(
+            25 -> CfeAction.ControlFrameDecrypted(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterUByte.read(buf),
+                FfiConverterByteArray.read(buf),
+                )
+            26 -> CfeAction.CheckAckInDb(
                 FfiConverterString.read(buf),
                 )
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
@@ -10803,6 +10826,16 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 + FfiConverterByteArray.allocationSize(value.`protoBytes`)
             )
         }
+        is CfeAction.ControlFrameDecrypted -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`contactId`)
+                + FfiConverterString.allocationSize(value.`messageId`)
+                + FfiConverterUByte.allocationSize(value.`contentType`)
+                + FfiConverterByteArray.allocationSize(value.`body`)
+            )
+        }
         is CfeAction.CheckAckInDb -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
@@ -10955,8 +10988,16 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterByteArray.write(value.`protoBytes`, buf)
                 Unit
             }
-            is CfeAction.CheckAckInDb -> {
+            is CfeAction.ControlFrameDecrypted -> {
                 buf.putInt(25)
+                FfiConverterString.write(value.`contactId`, buf)
+                FfiConverterString.write(value.`messageId`, buf)
+                FfiConverterUByte.write(value.`contentType`, buf)
+                FfiConverterByteArray.write(value.`body`, buf)
+                Unit
+            }
+            is CfeAction.CheckAckInDb -> {
+                buf.putInt(26)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }

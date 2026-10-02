@@ -160,6 +160,12 @@ class MessageProcessor @Inject constructor(
                     effects.sendReceipt(incoming.messageId, incoming.senderId, "delivered")
                     return ProcessingOutcome.Processed
                 }
+                // A receipt, a card, a profile, a heartbeat — named by the core from the KNST frame
+                // (core 0.30). Never a bubble, never receipted.
+                is CfeAction.ControlFrameDecrypted -> {
+                    executeSideEffects(actions, incoming)
+                    return ProcessingOutcome.Processed
+                }
                 is CfeAction.MessageQueuedPendingInit -> {
                     // The core queued it behind an open already under way; the open's drain
                     // decrypts it, and routes it by the envelope kept here.
@@ -238,6 +244,10 @@ class MessageProcessor @Inject constructor(
                 )
                 is CfeAction.CallSignalDecrypted ->
                     effects.onCallSignal(action.contactId, action.messageId, action.protoBytes)
+                is CfeAction.ControlFrameDecrypted -> {
+                    if (action.messageId != incoming.messageId) held.take(action.messageId)
+                    effects.onControlFrame(action.contactId, action.messageId, action.contentType.toInt(), action.body)
+                }
                 is CfeAction.SendReceipt -> effects.sendReceipt(action.messageId, incoming.senderId, action.status)
                 is CfeAction.NotifyNewMessage -> effects.notifyNewMessage(action.chatId, action.preview)
                 is CfeAction.MarkMessageDelivered -> effects.markDelivered(action.messageId)
@@ -316,6 +326,7 @@ interface ProcessorEffects {
     suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray)
     suspend fun onSenderSync(contactId: String, messageId: String, plaintext: ByteArray, timestampMs: Long) = Unit
     suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray)
+    suspend fun onControlFrame(contactId: String, messageId: String, contentType: Int, body: ByteArray)
     suspend fun sendReceipt(messageId: String, toUserId: String, status: String)
     suspend fun notifyNewMessage(chatId: String, preview: String)
     suspend fun markDelivered(messageId: String)
