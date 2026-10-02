@@ -398,6 +398,32 @@ class ProcessorEffectsImplTest {
     }
 
     /**
+     * A sealed call signal comes as an ordinary decrypted message — the core knows only the
+     * envelope's GENERIC type — and the frame's type 12 sends it to the call machine. iOS seals
+     * every call signal, so this is how all of them arrive. Mutation: drop the call-signal branch
+     * in `onDecrypted` — nothing is delivered (observed on a device, 2026-10-02).
+     */
+    @Test
+    fun `a call signal framed in a decrypted message reaches the call machine`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.users.rows[peer] = UserEntity(id = peer, isContact = true)
+        val got = mutableListOf<com.construct.messenger.calls.CallSignalInbox.Incoming>()
+        val job = backgroundScope.launch(kotlinx.coroutines.Dispatchers.Unconfined) { inbox.callSignals.signals.collect { got += it } }
+        val frame = com.construct.messenger.calls.CallSignalWire.frame(
+            com.construct.messenger.calls.CallSignalWire.ringing("call-1", "dev", 1),
+            UUID.fromString("22222222-2222-4222-8222-222222222222"),
+        )
+
+        inbox.effects.onDecrypted(peer, "env-1", frame)
+
+        assertEquals(1, got.size)
+        assertEquals("call-1", got[0].signal.callId)
+        assertTrue(inbox.acks.isProcessed("env-1"))
+        assertTrue(inbox.messages.rows.isEmpty())
+        job.cancel()
+    }
+
+    /**
      * A reaction is metadata on its target: applied under the peer's account, never a row. From a
      * sibling device it is ours. Mutation: drop either reaction branch — its message turns into
      * nothing at all and the store is never called.

@@ -82,6 +82,20 @@ class ProcessorEffectsImpl @Inject constructor(
             ackStore.markProcessed(messageId, accountId)
             return
         }
+        if (decoded.knstContentType == ContentType.CONTENT_TYPE_CALL_SIGNAL_VALUE) {
+            // A sealed call signal: the envelope's type is GENERIC, so the core cannot tell it from
+            // a message and hands it over decrypted; the real type is the frame's. iOS
+            // `handleFramedSideChannel`. Without this every signal from iOS was dropped as a
+            // non-visible message — the phone rang there, and the answer never landed here.
+            val payload = IncomingPlaintext.knstPayload(assembled)
+            if (payload == null) {
+                Log.w(TAG, "call signal frame ${messageId.take(8)}… is truncated — dropped")
+                ackStore.markProcessed(messageId, accountId)
+            } else {
+                onCallSignal(contactId, messageId, payload)
+            }
+            return
+        }
         if (decoded.knstContentType == ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE) {
             // Their card: the key our envelopes to them present instead of a token, and the address
             // they are named by.
