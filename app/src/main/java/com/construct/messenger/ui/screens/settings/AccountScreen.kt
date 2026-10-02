@@ -40,6 +40,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -113,25 +117,11 @@ fun AccountScreen(
         )
     }
     val avatar = ui.account?.avatar
-    var confirmRemove by remember { mutableStateOf(false) }
     if (viewingAvatar && avatar != null) {
         AvatarViewerDialog(
             jpeg = avatar,
             onChange = { viewingAvatar = false; changeAvatar() },
             onDismiss = { viewingAvatar = false },
-            onRemove = { confirmRemove = true },
-        )
-    }
-    // Asked first: contacts it is shared with lose the picture too, and the next one is a new upload.
-    if (confirmRemove) {
-        CTConfirmDialog(
-            title = stringResource(R.string.remove_avatar_confirm_title),
-            message = stringResource(R.string.remove_avatar_confirm_message),
-            confirmLabel = stringResource(R.string.remove_avatar),
-            dismissLabel = stringResource(R.string.action_cancel),
-            isDestructive = true,
-            onConfirm = { confirmRemove = false; viewingAvatar = false; viewModel.removeAvatar() },
-            onDismiss = { confirmRemove = false },
         )
     }
 
@@ -186,6 +176,7 @@ fun AccountScreen(
         onDeleteAccount = { showDelete = true },
         onAvatar = { if (avatar != null) viewingAvatar = true else changeAvatar() },
         onChangeAvatar = changeAvatar,
+        onRemoveAvatar = viewModel::removeAvatar,
     )
 }
 
@@ -203,6 +194,7 @@ private fun AccountContent(
     onDeleteAccount: () -> Unit,
     onAvatar: () -> Unit = {},
     onChangeAvatar: () -> Unit = {},
+    onRemoveAvatar: () -> Unit = {},
 ) {
     val account = ui.account
     Column(
@@ -249,12 +241,34 @@ private fun AccountContent(
                         .clip(CircleShape)
                         .clickable(enabled = !ui.editing, onClick = onAvatar),
                 )
-                Text(
-                    text = "[${stringResource(R.string.change_photo)}]",
-                    style = ctRegular(14),
-                    color = if (ui.editing) CTColor.textDim else CTColor.accent,
-                    modifier = Modifier.clickable(enabled = !ui.editing, onClick = onChangeAvatar),
-                )
+                // iOS: with a photo set, a menu — choose another, or remove it; without one, the picker.
+                var photoMenu by remember { mutableStateOf(false) }
+                Box {
+                    Text(
+                        text = "[${stringResource(R.string.change_photo)}]",
+                        style = ctRegular(14),
+                        color = if (ui.editing) CTColor.textDim else CTColor.accent,
+                        modifier = Modifier.clickable(enabled = !ui.editing) {
+                            if (account?.avatar != null) photoMenu = true else onChangeAvatar()
+                        },
+                    )
+                    DropdownMenu(
+                        expanded = photoMenu,
+                        onDismissRequest = { photoMenu = false },
+                        modifier = Modifier.background(CTColor.outMsgBg),
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.choose_photo), style = ctRegular(14), color = CTColor.text) },
+                            leadingIcon = { Icon(Icons.Outlined.Image, contentDescription = null, tint = CTColor.text) },
+                            onClick = { photoMenu = false; onChangeAvatar() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.remove_photo), style = ctRegular(14), color = CTColor.danger) },
+                            leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = CTColor.danger) },
+                            onClick = { photoMenu = false; onRemoveAvatar() },
+                        )
+                    }
+                }
             }
             Divider(thick = true)
 
