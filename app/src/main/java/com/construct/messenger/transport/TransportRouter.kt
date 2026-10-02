@@ -58,7 +58,11 @@ class TransportRouter @Inject constructor(
         scope.launch { events.events.collect { send(it) } }
         watchNetwork()
         Log.i(TAG, "route starts ${state.value} (mode ${veil.modeState.value})")
-        if (state.value == State.VeilProbing) scope.launch { mutex.withLock { beginProxyStart() } }
+        if (state.value == State.VeilProbing) {
+            scope.launch { mutex.withLock { beginProxyStart() } }
+        } else {
+            scope.launch { veil.prepareFront() }
+        }
     }
 
     suspend fun setMode(mode: VeilMode) {

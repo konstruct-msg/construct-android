@@ -40,6 +40,7 @@ class VeilProxy @Inject constructor(
     private val capabilities: VeilCapabilities,
     private val authSession: AuthSessionManager,
     private val fronts: VeilFrontStore,
+    private val provisioner: VeilFrontProvisioner,
 ) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val mode = MutableStateFlow(loadMode())
@@ -64,9 +65,11 @@ class VeilProxy @Inject constructor(
     suspend fun start(): StartResult {
         // The capability is issued over whatever path currently carries unary calls; an expired
         // token would be refused.
-        // No front is bundled (`VeilFrontStore`): with none learned there is nothing to dial, and
-        // that is said plainly rather than thrown.
-        val relay = fronts.preferred() ?: return failed(null, NO_FRONT)
+        // No front is bundled (`VeilFrontStore`). With none learned, ask the server over the path
+        // that works now; failing that there is nothing to dial, said plainly rather than thrown.
+        val relay = fronts.preferred()
+            ?: run { provisioner.ensureFront(); fronts.preferred() }
+            ?: return failed(null, NO_FRONT)
         authSession.ensureFresh()
         // Key-bound when there is one — `veil_start` then signs with `veil_sk` and ignores the
         // bearer field. The bearer one is still what opens the first tunnel on a new device.
@@ -89,6 +92,15 @@ class VeilProxy @Inject constructor(
         val relay = fronts.preferred() ?: return
         authSession.ensureFresh()
         capabilities.renewKeyBound(relay)
+    }
+
+    /**
+     * Learn a front while the direct path still works, so VEIL has one when it is needed. No-op
+     * with VEIL off or a front known; rate-limited in [VeilFrontProvisioner].
+     */
+    suspend fun prepareFront() {
+        if (mode.value == VeilMode.OFF) return
+        provisioner.ensureFront()
     }
 
     fun stop() {
