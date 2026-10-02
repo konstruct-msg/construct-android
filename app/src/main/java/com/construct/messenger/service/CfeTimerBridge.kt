@@ -143,6 +143,7 @@ class CfeTimerBridge @Inject constructor(
                 is CfeAction.CallSignalDecrypted ->
                     effects.onCallSignal(action.contactId, action.messageId, action.protoBytes)
                 is CfeAction.DuplicateDropped -> effects.markProcessed(action.messageId, "")
+                is CfeAction.MalformedDropped -> effects.markProcessed(action.messageId, "")
                 is CfeAction.MarkMessageDelivered -> effects.markDelivered(action.messageId)
                 is CfeAction.NotifyNewMessage -> effects.notifyNewMessage(action.chatId, action.preview)
                 is CfeAction.SendReceipt -> effects.sendReceipt(action.messageId, "", action.status)

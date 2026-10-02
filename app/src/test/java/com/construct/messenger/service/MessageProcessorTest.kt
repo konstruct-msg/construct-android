@@ -121,6 +121,22 @@ class MessageProcessorTest {
     }
 
     @Test
+    fun `a malformed message is recorded and passed, with no delivered receipt`() = runBlocking {
+        val effects = RecordingEffects()
+        val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held, mock())
+
+        val outcome = processor.route(
+            // The core's order: the verdict, then the NotifyError that keeps the reason for the log.
+            listOf(CfeAction.MalformedDropped("m1"), CfeAction.NotifyError("PARSE", "bad suite")),
+            incoming(),
+        )
+
+        assertEquals(ProcessingOutcome.Acked, outcome)
+        assertTrue(effects.calls.contains("markProcessed:m1"))
+        assertTrue("garbage is not delivered", effects.calls.none { it.startsWith("receipt:") })
+    }
+
+    @Test
     fun `an empty ack follow-up replaces the check instead of keeping it`() = runBlocking {
         val effects = RecordingEffects().apply { ackedInDb = true }
         whenever(sessionManager.resolveDeviceId("alice")).thenReturn("11111111111111111111111111111111")

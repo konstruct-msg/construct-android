@@ -10341,6 +10341,19 @@ sealed class CfeAction {
         companion object
     }
     
+    /**
+     * A message whose payload does not parse (garbage, or a retired suite): it can never open.
+     * Terminal: record it as processed and advance the stream cursor past it. Nothing is sent.
+     */
+    data class MalformedDropped(
+        val `messageId`: kotlin.String) : CfeAction()
+        
+    {
+        
+
+        companion object
+    }
+    
     data class OpenReceiving(
         val `contactId`: kotlin.String) : CfeAction()
         
@@ -10540,57 +10553,60 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
             11 -> CfeAction.DuplicateDropped(
                 FfiConverterString.read(buf),
                 )
-            12 -> CfeAction.OpenReceiving(
+            12 -> CfeAction.MalformedDropped(
                 FfiConverterString.read(buf),
                 )
-            13 -> CfeAction.SendEncryptedMessage(
+            13 -> CfeAction.OpenReceiving(
+                FfiConverterString.read(buf),
+                )
+            14 -> CfeAction.SendEncryptedMessage(
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterUByte.read(buf),
                 )
-            14 -> CfeAction.SendReceipt(
+            15 -> CfeAction.SendReceipt(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            15 -> CfeAction.SendDecryptionError(
+            16 -> CfeAction.SendDecryptionError(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 FfiConverterBoolean.read(buf),
                 )
-            16 -> CfeAction.SessionRetired(
+            17 -> CfeAction.SessionRetired(
                 FfiConverterString.read(buf),
                 FfiConverterBoolean.read(buf),
                 )
-            17 -> CfeAction.ResendMessage(
+            18 -> CfeAction.ResendMessage(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            18 -> CfeAction.NotifyNewMessage(
+            19 -> CfeAction.NotifyNewMessage(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            19 -> CfeAction.NotifySessionCreated(
+            20 -> CfeAction.NotifySessionCreated(
                 FfiConverterString.read(buf),
                 )
-            20 -> CfeAction.NotifyError(
+            21 -> CfeAction.NotifyError(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            21 -> CfeAction.ScheduleTimer(
+            22 -> CfeAction.ScheduleTimer(
                 FfiConverterString.read(buf),
                 FfiConverterULong.read(buf),
                 )
-            22 -> CfeAction.CancelTimer(
+            23 -> CfeAction.CancelTimer(
                 FfiConverterString.read(buf),
                 )
-            23 -> CfeAction.CallSignalDecrypted(
+            24 -> CfeAction.CallSignalDecrypted(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
                 )
-            24 -> CfeAction.CheckAckInDb(
+            25 -> CfeAction.CheckAckInDb(
                 FfiConverterString.read(buf),
                 )
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
@@ -10676,6 +10692,13 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
             )
         }
         is CfeAction.DuplicateDropped -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`messageId`)
+            )
+        }
+        is CfeAction.MalformedDropped -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
@@ -10853,13 +10876,18 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
-            is CfeAction.OpenReceiving -> {
+            is CfeAction.MalformedDropped -> {
                 buf.putInt(12)
+                FfiConverterString.write(value.`messageId`, buf)
+                Unit
+            }
+            is CfeAction.OpenReceiving -> {
+                buf.putInt(13)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.SendEncryptedMessage -> {
-                buf.putInt(13)
+                buf.putInt(14)
                 FfiConverterString.write(value.`to`, buf)
                 FfiConverterByteArray.write(value.`payload`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
@@ -10867,13 +10895,13 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 Unit
             }
             is CfeAction.SendReceipt -> {
-                buf.putInt(14)
+                buf.putInt(15)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterString.write(value.`status`, buf)
                 Unit
             }
             is CfeAction.SendDecryptionError -> {
-                buf.putInt(15)
+                buf.putInt(16)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`payload`, buf)
@@ -10881,54 +10909,54 @@ public object FfiConverterTypeCfeAction : FfiConverterRustBuffer<CfeAction>{
                 Unit
             }
             is CfeAction.SessionRetired -> {
-                buf.putInt(16)
+                buf.putInt(17)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterBoolean.write(value.`withoutOneTimePrekey`, buf)
                 Unit
             }
             is CfeAction.ResendMessage -> {
-                buf.putInt(17)
+                buf.putInt(18)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }
             is CfeAction.NotifyNewMessage -> {
-                buf.putInt(18)
+                buf.putInt(19)
                 FfiConverterString.write(value.`chatId`, buf)
                 FfiConverterString.write(value.`preview`, buf)
                 Unit
             }
             is CfeAction.NotifySessionCreated -> {
-                buf.putInt(19)
+                buf.putInt(20)
                 FfiConverterString.write(value.`contactId`, buf)
                 Unit
             }
             is CfeAction.NotifyError -> {
-                buf.putInt(20)
+                buf.putInt(21)
                 FfiConverterString.write(value.`code`, buf)
                 FfiConverterString.write(value.`message`, buf)
                 Unit
             }
             is CfeAction.ScheduleTimer -> {
-                buf.putInt(21)
+                buf.putInt(22)
                 FfiConverterString.write(value.`timerId`, buf)
                 FfiConverterULong.write(value.`delayMs`, buf)
                 Unit
             }
             is CfeAction.CancelTimer -> {
-                buf.putInt(22)
+                buf.putInt(23)
                 FfiConverterString.write(value.`timerId`, buf)
                 Unit
             }
             is CfeAction.CallSignalDecrypted -> {
-                buf.putInt(23)
+                buf.putInt(24)
                 FfiConverterString.write(value.`contactId`, buf)
                 FfiConverterString.write(value.`messageId`, buf)
                 FfiConverterByteArray.write(value.`protoBytes`, buf)
                 Unit
             }
             is CfeAction.CheckAckInDb -> {
-                buf.putInt(24)
+                buf.putInt(25)
                 FfiConverterString.write(value.`messageId`, buf)
                 Unit
             }

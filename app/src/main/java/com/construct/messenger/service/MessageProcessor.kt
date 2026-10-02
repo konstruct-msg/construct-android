@@ -192,6 +192,15 @@ class MessageProcessor @Inject constructor(
                     effects.markProcessed(incoming.messageId, incoming.senderId)
                     return ProcessingOutcome.Acked
                 }
+                is CfeAction.MalformedDropped -> {
+                    // Its payload does not parse — garbage, or a suite this core no longer reads —
+                    // so it can never open and names no state a decryption error could carry
+                    // (core 0.28.0). Recorded and passed; no receipt, it was not delivered.
+                    Log.i(TAG, "malformed ${incoming.messageId.take(8)}… — dropped")
+                    executeSideEffects(actions, incoming)
+                    effects.markProcessed(incoming.messageId, incoming.senderId)
+                    return ProcessingOutcome.Acked
+                }
                 is CfeAction.OpenReceiving -> {
                     // The message carries a handshake header the held session (if any) cannot
                     // read: the core queued it and asks for an open. Nothing is fetched — the
@@ -245,6 +254,8 @@ class MessageProcessor @Inject constructor(
                     effects.resendMessage(action.contactId, action.messageId)
                 is CfeAction.DuplicateDropped ->
                     Log.d(TAG, "duplicate ${action.messageId.take(8)}… — routing records it")
+                is CfeAction.MalformedDropped ->
+                    Log.d(TAG, "malformed ${action.messageId.take(8)}… — routing records it")
                 is CfeAction.NotifySessionCreated ->
                     Log.i(TAG, "session created ${action.contactId.take(8)}…")
                 is CfeAction.NotifyError ->
