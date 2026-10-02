@@ -38,6 +38,7 @@ internal class FakeAccountRepository(
     val usernameCalls = mutableListOf<String>()
 
     override suspend fun refresh() = Unit
+    override fun cachedUsername(): String? = state.value?.username?.takeIf { it.isNotEmpty() }
 
     override suspend fun changeUsername(raw: String): UsernameChange {
         usernameCalls += raw

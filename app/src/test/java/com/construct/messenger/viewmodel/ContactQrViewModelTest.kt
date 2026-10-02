@@ -43,7 +43,7 @@ class ContactQrViewModelTest {
         )
         wheneverBlocking { repo.mintQr(any()) }.thenAnswer { invite(++minted) }
         var links = 0
-        wheneverBlocking { repo.mintLink(any()) }.thenAnswer { ++links; invite(100 + links, "link-$links") }
+        wheneverBlocking { repo.mintLink() }.thenAnswer { ++links; invite(100 + links, "link-$links") }
         return ContactQrViewModel(repo, keystore)
     }
 

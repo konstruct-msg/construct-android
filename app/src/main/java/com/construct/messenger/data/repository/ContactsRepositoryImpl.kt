@@ -51,6 +51,7 @@ class ContactsRepositoryImpl @Inject constructor(
     private val grpcClient: GrpcClient,
     private val issuedInviteDao: IssuedInviteDao,
     private val addressBook: AccountAddressBook,
+    private val accountRepository: AccountRepository,
 ) : ContactsRepository {
 
     private val incoming = MutableStateFlow<List<IncomingContactRequest>>(emptyList())
@@ -80,22 +81,19 @@ class ContactsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun mintLink(includeUsername: Boolean): MintedInvite =
-        mint(kind = "link", ttlSeconds = InviteConfig.TTL_SECONDS.toInt(), sitting = null)
+    override suspend fun mintLink(): MintedInvite = journal("link", sitting = null) { userId, deviceId ->
+        generator.mintLink(userId = userId, deviceId = deviceId, ttlSeconds = InviteConfig.TTL_SECONDS.toInt())
+    }
 
-    override suspend fun mintQr(sitting: String): MintedInvite =
-        mint(kind = "qr", ttlSeconds = InviteConfig.QR_TTL_SECONDS, sitting = sitting)
+    override suspend fun mintQr(sitting: String): MintedInvite = journal("qr", sitting) { userId, deviceId ->
+        generator.mintQr(userId = userId, deviceId = deviceId, username = accountRepository.cachedUsername())
+    }
 
     /** Every invite is journalled, so it can be listed and revoked by its jti. */
-    private suspend fun mint(kind: String, ttlSeconds: Int, sitting: String?): MintedInvite {
+    private suspend fun journal(kind: String, sitting: String?, mint: (String, String) -> MintedInvite): MintedInvite {
         val userId = keystoreManager.getUserId() ?: error("not authenticated")
         val deviceId = keystoreManager.getDeviceId() ?: error("no device id")
-        val minted = generator.mintLink(
-            userId = userId,
-            deviceId = deviceId,
-            username = null,
-            ttlSeconds = ttlSeconds,
-        )
+        val minted = mint(userId, deviceId)
         issuedInviteDao.upsert(
             IssuedInviteEntity(
                 jti = minted.jti,

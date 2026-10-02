@@ -108,9 +108,9 @@ class OnboardingViewModelTest {
 
 private class FakeOnboardingContacts : com.construct.messenger.data.repository.ContactsRepository {
     override val contacts = MutableStateFlow<List<com.construct.messenger.data.model.Contact>>(emptyList())
-    override suspend fun mintLink(includeUsername: Boolean) =
+    override suspend fun mintLink() =
         com.construct.messenger.invite.MintedInvite("j", 0, 300, "p", "l")
-    override suspend fun mintQr(sitting: String): com.construct.messenger.invite.MintedInvite = mintLink(false)
+    override suspend fun mintQr(sitting: String): com.construct.messenger.invite.MintedInvite = mintLink()
     override suspend fun accept(raw: String) =
         com.construct.messenger.data.repository.AcceptInviteResult.Failed("unused")
     override suspend fun revoke(jti: String) = com.construct.messenger.data.repository.InviteRevocation.UNCONFIRMED

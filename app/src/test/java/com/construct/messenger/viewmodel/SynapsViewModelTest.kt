@@ -61,14 +61,14 @@ class SynapsViewModelTest {
 private class FakeContacts : ContactsRepository {
     override val contacts = MutableStateFlow<List<Contact>>(emptyList())
     val accepted = mutableListOf<String>()
-    override suspend fun mintLink(includeUsername: Boolean) = MintedInvite(
+    override suspend fun mintLink() = MintedInvite(
         jti = "jti",
         issuedAtEpochSec = 1,
         ttlSeconds = 300,
         payload = "payload",
         deepLink = "konstruct://add?invite=payload",
     )
-    override suspend fun mintQr(sitting: String): MintedInvite = mintLink(false)
+    override suspend fun mintQr(sitting: String): MintedInvite = mintLink()
     override suspend fun accept(raw: String): AcceptInviteResult {
         accepted += raw
         val contact = Contact("u1", "swift fox")

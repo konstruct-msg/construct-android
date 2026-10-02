@@ -89,6 +89,11 @@ class AccountRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun cachedUsername(): String? {
+        val userId = keystoreManager.getUserId() ?: return null
+        return prefs.getString(key(KEY_USERNAME, userId), null)?.takeIf { it.isNotBlank() }
+    }
+
     override suspend fun changeUsername(raw: String): UsernameChange {
         val userId = keystoreManager.getUserId() ?: return UsernameChange.Failed
         val username = raw.trim().removePrefix("@").lowercase()

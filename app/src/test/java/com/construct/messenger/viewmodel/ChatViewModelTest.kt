@@ -229,9 +229,9 @@ private class FakeMessagesRepository : MessagesRepository {
 
 private class FakeContactsRepository : ContactsRepository {
     override val contacts = MutableStateFlow<List<Contact>>(emptyList())
-    override suspend fun mintLink(includeUsername: Boolean): MintedInvite =
+    override suspend fun mintLink(): MintedInvite =
         MintedInvite("j", 0, 300, "p", "konstruct://add?invite=p")
-    override suspend fun mintQr(sitting: String): MintedInvite = mintLink(false)
+    override suspend fun mintQr(sitting: String): MintedInvite = mintLink()
     override suspend fun accept(raw: String): AcceptInviteResult =
         AcceptInviteResult.Failed("unused")
     override suspend fun revoke(jti: String) = com.construct.messenger.data.repository.InviteRevocation.UNCONFIRMED

@@ -36,6 +36,9 @@ interface AccountRepository {
 
     suspend fun refresh()
 
+    /** Our alias as this device last knew it, without asking the server; null when none is set. */
+    fun cachedUsername(): String?
+
     /** Trims, lowercases, checks availability, then sets it on the server. */
     suspend fun changeUsername(raw: String): UsernameChange
 

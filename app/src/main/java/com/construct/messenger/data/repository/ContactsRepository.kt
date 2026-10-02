@@ -33,9 +33,10 @@ interface ContactsRepository {
     /** Blocked people: out of [contacts], listed apart so they can be unblocked. */
     val blocked: Flow<List<Contact>> get() = kotlinx.coroutines.flow.emptyFlow()
 
-    suspend fun mintLink(includeUsername: Boolean = false): MintedInvite
+    /** An invite for the HTTPS link a person shares — never with our username (`InviteGenerator.linkUsername`). */
+    suspend fun mintLink(): MintedInvite
 
-    /** A short-lived invite for a QR on screen: 300 s, no username in the signed body.
+    /** A short-lived invite for a QR on screen: 300 s, our username in the signed body.
      * Its `payload` (base64url CIv1) is what the code carries; [sitting] names the showing it
      * belongs to. Canon: iOS `generateQRBinary` + `InviteJournal.recordQRCode`. */
     suspend fun mintQr(sitting: String): MintedInvite
