@@ -55,6 +55,7 @@ class CallManager internal constructor(
     private val inbox: CallSignalInbox,
     private val scope: CoroutineScope,
     private val nowMs: () -> Long,
+    private val history: CallHistoryPort = CallHistoryPort.None,
 ) {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Inject
@@ -64,10 +65,12 @@ class CallManager internal constructor(
         peers: CallPeers,
         mediaFactory: CallMedia.Factory,
         inbox: CallSignalInbox,
+        history: CallHistoryPort,
     ) : this(
         signals, signaling, peers, mediaFactory, inbox,
         CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1)),
         System::currentTimeMillis,
+        history,
     )
 
     private val _state = MutableStateFlow<CallState>(CallState.Idle)
@@ -702,6 +705,14 @@ class CallManager internal constructor(
         _quality.value = CallQuality.GOOD
         val endedState = CallState.Ended(call.session, reason)
         _state.value = endedState
+        val endedAt = nowMs()
+        history.record(
+            call.session,
+            CallHistoryRules.status(call.session.isIncoming, reason, call.answeredAtMs != null),
+            call.startedAtMs,
+            endedAt,
+            CallHistoryRules.durationSeconds(call.answeredAtMs, endedAt),
+        )
         scope.launch {
             delay(CallTiming.ENDED_AUTO_CLEAR_MS)
             if (_state.value == endedState) _state.value = CallState.Idle
@@ -717,6 +728,7 @@ class CallManager internal constructor(
     private class Outgoing(val build: suspend () -> List<WebRTCSignal>, val done: CompletableDeferred<Boolean>)
 
     private inner class ActiveCall(val session: CallSession) {
+        val startedAtMs = nowMs()
         val outbox = Channel<Outgoing>(Channel.UNLIMITED)
         var peerDevice: String? = null
         var turn: TurnCredentials? = null

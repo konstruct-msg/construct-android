@@ -196,7 +196,6 @@
     </plurals>
 
     <!-- Calls -->
-    <string name="calls_empty_title">No calls yet</string>
     <!-- Invite QR (canon: iOS ContactQRCodeView / QRScannerView) -->
     <string name="invite_title">invite</string>
     <string name="qr_caption_trust">this code is an invitation to connect.</string>
@@ -541,6 +540,20 @@
     <string name="call_incoming_audio">Incoming audio call</string>
     <string name="call_answer">Answer</string>
     <string name="call_decline">Decline</string>
+    <string name="calls_recents">Recents</string>
+    <string name="calls_clear">Clear</string>
+    <string name="calls_clear_confirm">Clear all recent calls?</string>
+    <string name="calls_filter_all">All</string>
+    <string name="calls_filter_missed">Missed</string>
+    <string name="calls_empty">No recent calls</string>
+    <string name="calls_empty_missed">No missed calls</string>
+    <string name="calls_section_today">Today</string>
+    <string name="calls_section_yesterday">Yesterday</string>
+    <string name="calls_section_earlier">Earlier</string>
+    <string name="calls_section_older">Older</string>
+    <string name="call_outgoing">Outgoing</string>
+    <string name="call_incoming">Incoming</string>
+    <string name="call_call_back">Call Back</string>
     <string name="call_missed">Missed</string>
     <string name="call_declined">Declined</string>
     <string name="call_failed">Failed</string>

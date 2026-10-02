@@ -98,10 +98,12 @@ class CallManagerTest {
         val signaling = FakeSignaling()
         val inbox = CallSignalInbox()
         val media = mutableListOf<FakeMedia>()
+        val history = mutableListOf<Triple<String, CallRecordStatus, Int>>()
         val calls = CallManager(
             signals, signaling, FakePeers(myId, setOf(peer, third)),
             CallMedia.Factory { role, _, listener -> FakeMedia(role, listener).also { media += it } },
             inbox, test.backgroundScope, { test.testScheduler.currentTime },
+            { session, status, _, _, seconds -> history += Triple(session.id, status, seconds) },
         )
 
         init {
@@ -133,6 +135,24 @@ class CallManagerTest {
 
     private fun Rig.outgoingCallId(): String = (state as? CallState.Dialing ?: state as CallState.Active).let {
         (it as? CallState.Dialing)?.session?.id ?: (it as CallState.Active).session.id
+    }
+
+    @Test
+    fun `an ended call goes to the history once — declined, or answered with its length`() = runTest {
+        val rig = Rig(this)
+        rig.deliver(offer("c1"))
+        rig.calls.end()
+        runCurrent()
+        assertEquals(listOf(Triple("c1", CallRecordStatus.DECLINED, 0)), rig.history)
+
+        advanceTimeBy(CallTiming.ENDED_AUTO_CLEAR_MS + 1)
+        rig.deliver(offer("c2"))
+        rig.calls.answer()
+        runCurrent()
+        advanceTimeBy(65_000)
+        rig.deliver(hangup("c2"))
+        assertEquals(Triple("c2", CallRecordStatus.COMPLETED, 65), rig.history.last())
+        assertEquals(2, rig.history.size)
     }
 
     @Test

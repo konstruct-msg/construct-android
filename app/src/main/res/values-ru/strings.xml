@@ -200,7 +200,6 @@
     </plurals>
 
     <!-- Calls -->
-    <string name="calls_empty_title">Пока нет звонков</string>
     <!-- QR приглашения (канон: iOS ContactQRCodeView / QRScannerView) -->
     <string name="invite_title">пригласить</string>
     <string name="qr_caption_trust">этот код — приглашение связаться.</string>
@@ -545,6 +544,20 @@
     <string name="call_incoming_audio">Входящий аудиозвонок</string>
     <string name="call_answer">Ответить</string>
     <string name="call_decline">Отклонить</string>
+    <string name="calls_recents">Недавние</string>
+    <string name="calls_clear">Очистить</string>
+    <string name="calls_clear_confirm">Очистить историю звонков?</string>
+    <string name="calls_filter_all">Все</string>
+    <string name="calls_filter_missed">Пропущенные</string>
+    <string name="calls_empty">Нет недавних звонков</string>
+    <string name="calls_empty_missed">Нет пропущенных звонков</string>
+    <string name="calls_section_today">Сегодня</string>
+    <string name="calls_section_yesterday">Вчера</string>
+    <string name="calls_section_earlier">Ранее</string>
+    <string name="calls_section_older">Старые</string>
+    <string name="call_outgoing">Исходящий</string>
+    <string name="call_incoming">Входящий</string>
+    <string name="call_call_back">Перезвонить</string>
     <string name="call_missed">Пропущенный</string>
     <string name="call_declined">Отклонённый</string>
     <string name="call_failed">Не состоялся</string>

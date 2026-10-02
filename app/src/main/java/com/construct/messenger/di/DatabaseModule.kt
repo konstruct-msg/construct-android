@@ -6,6 +6,7 @@ import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.PersistentAckStore
 import com.construct.messenger.data.local.db.AckDao
 import com.construct.messenger.data.local.db.ChatDao
+import com.construct.messenger.data.local.db.CallRecordDao
 import com.construct.messenger.data.local.db.ConstructDatabase
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.SessionStateDao
@@ -48,6 +49,7 @@ object DatabaseModule {
                 ConstructDatabase.MIGRATION_14_15,
                 ConstructDatabase.MIGRATION_15_16,
                 ConstructDatabase.MIGRATION_16_17,
+                ConstructDatabase.MIGRATION_17_18,
             )
             .fallbackToDestructiveMigrationFrom(1, 2, 3)
             .build()
@@ -84,6 +86,9 @@ object DatabaseModule {
 
     @Provides
     fun provideReactionDao(db: ConstructDatabase): ReactionDao = db.reactionDao()
+
+    @Provides
+    fun provideCallRecordDao(db: ConstructDatabase): CallRecordDao = db.callRecordDao()
 
     @Provides
     @Singleton

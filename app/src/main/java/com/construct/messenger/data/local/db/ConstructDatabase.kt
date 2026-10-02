@@ -25,8 +25,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PendingResendEntity::class,
         PendingChunkEntity::class,
         ReactionEntity::class,
+        CallRecordEntity::class,
     ],
-    version = 17,
+    version = 18,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -41,6 +42,7 @@ abstract class ConstructDatabase : RoomDatabase() {
     abstract fun pendingResendDao(): PendingResendDao
     abstract fun pendingChunkDao(): PendingChunkDao
     abstract fun reactionDao(): ReactionDao
+    abstract fun callRecordDao(): CallRecordDao
 
     companion object {
         const val NAME = "construct.db"
@@ -170,6 +172,18 @@ abstract class ConstructDatabase : RoomDatabase() {
                         "targetMessageId TEXT NOT NULL, reactorUserId TEXT NOT NULL, emoji TEXT NOT NULL, " +
                         "timestampMs INTEGER NOT NULL, receivedAtMs INTEGER NOT NULL, " +
                         "PRIMARY KEY(targetMessageId, reactorUserId))",
+                )
+            }
+        }
+
+        /** Call history (`CallRecordEntity`). Starts empty: calls before it were not kept. */
+        val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS call_records (" +
+                        "id TEXT NOT NULL, peerUserId TEXT NOT NULL, peerName TEXT NOT NULL, " +
+                        "incoming INTEGER NOT NULL, status TEXT NOT NULL, startedAtMs INTEGER NOT NULL, " +
+                        "endedAtMs INTEGER NOT NULL, durationSeconds INTEGER NOT NULL, PRIMARY KEY(id))",
                 )
             }
         }
