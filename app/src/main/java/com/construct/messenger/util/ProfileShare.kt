@@ -71,6 +71,14 @@ data class ProfileShare(
         data object Keep : AvatarAction
     }
 
+    /**
+     * The name this profile carries, if the sender chose one. Null for none: empty, or only the
+     * name generated from [senderId] — what Android sent until 2026-10-02 when its user had set no
+     * name. The receiver then shows the username. **Canon:** iOS `ProfileShare.chosenName`.
+     */
+    fun chosenName(senderId: String): String? =
+        displayName.trim().takeUnless { it.isEmpty() || DisplayNameGenerator.isGenerated(it, senderId) }
+
     fun encoded(): ByteArray {
         val builder = EnvelopeOuterClass.ProfileShare.newBuilder()
             .setDisplayName(displayName)

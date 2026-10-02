@@ -38,6 +38,20 @@ class ShareProfileUseCaseTest {
         assertEquals("soft lion", profile.displayName)
     }
 
+    /**
+     * Our generated name never goes out — a contact computes it for itself and took it for a name
+     * we chose (TODO 102); our username goes instead, else nothing. Mutation: send the generated
+     * name again — reddens.
+     */
+    @Test
+    fun `a generated name goes as the username, or as no name`() = runBlocking {
+        val generated = com.construct.messenger.util.DisplayNameGenerator.generate("u1")
+        val account = FakeAccountRepository(username = "alice").apply { state.value = state.value!!.copy(displayName = generated) }
+        assertEquals("alice", useCase(account).profile()!!.displayName)
+        account.state.value = account.state.value!!.copy(username = "")
+        assertEquals("", useCase(account).profile()!!.displayName)
+    }
+
     @Test
     fun `an uploaded avatar goes as set, under a whole key`() = runBlocking {
         val account = FakeAccountRepository().apply { state.value = state.value!!.copy(avatar = ByteArray(64) { 5 }) }

@@ -81,7 +81,11 @@ class ShareProfileUseCase @Inject constructor(
     internal suspend fun profile(): ProfileShare? {
         val myId = keystoreManager.getUserId() ?: return null
         val own = account.account.value
-        val name = own?.displayName?.takeIf { it.isNotBlank() } ?: DisplayNameGenerator.generate(myId)
+        // Only a name we chose, or our username — never the generated one, which a contact computes
+        // for itself and took for a name we picked (TODO 102). iOS `ProfileShareViewModel`.
+        val name = own?.displayName?.trim()?.takeUnless { it.isEmpty() || DisplayNameGenerator.isGenerated(it, myId) }
+            ?: own?.username?.takeIf { it.isNotBlank() }
+            ?: ""
         val avatar = when (val jpeg = own?.avatar) {
             null -> ProfileShare.Avatar.Removed
             else -> uploadAvatar(jpeg)?.let(ProfileShare.Avatar::Set) ?: run {

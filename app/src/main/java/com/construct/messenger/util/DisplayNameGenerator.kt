@@ -73,6 +73,14 @@ object DisplayNameGenerator {
     }
 
     /** First 6 hex chars of the SHA-256 of [userId] (e.g. `"a3f8c2"`). */
+    /**
+     * Whether [name] is only the name generated from [userId] — something any client computes for
+     * itself, so it says nothing about what the person chose to be called. Ignores case: iOS
+     * capitalises it. **Canon:** iOS `DisplayNameGenerator.isGenerated`.
+     */
+    fun isGenerated(name: String, userId: String): Boolean =
+        name.trim().equals(generate(userId), ignoreCase = true)
+
     fun generateShortId(userId: String): String =
         sha256(userId).take(3).joinToString("") { "%02x".format(it) }
 

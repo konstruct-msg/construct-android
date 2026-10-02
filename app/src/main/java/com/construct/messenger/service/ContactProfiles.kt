@@ -1,6 +1,7 @@
 package com.construct.messenger.service
 
 import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.LegacyProfileShare
 import com.construct.messenger.util.ProfileShare
 
@@ -19,7 +20,10 @@ internal object ContactProfiles {
     fun typed(row: UserEntity, profile: ProfileShare, nowMs: Long): Applied? {
         val action = profile.decision(row.profileEditedAtMs) ?: return null
         val named = row.copy(
-            displayName = profile.displayName.trim().ifEmpty { row.displayName },
+            // A profile is the sender's whole state at its version: no chosen name means none, so a
+            // name shared earlier goes and the username shows — never the generated name, which
+            // until 2026-10-02 replaced the username a QR invite had given.
+            displayName = profile.chosenName(row.id).orEmpty(),
             isSharingWithMe = true,
             profileEditedAtMs = profile.editedAtMs,
         )
@@ -40,7 +44,9 @@ internal object ContactProfiles {
      */
     fun legacy(row: UserEntity, profile: LegacyProfileShare, nowMs: Long): Applied? {
         if (row.profileEditedAtMs != 0L) return null
-        val named = row.copy(displayName = profile.displayName.trim().ifEmpty { row.displayName }, isSharingWithMe = true)
+        // The generated name is no name: the one held stays (`ProfileShare.chosenName`).
+        val shared = profile.displayName.trim().takeUnless { DisplayNameGenerator.isGenerated(it, row.id) }.orEmpty()
+        val named = row.copy(displayName = shared.ifEmpty { row.displayName }, isSharingWithMe = true)
         val ref = legacyAvatar(profile) ?: return Applied(named, fetchAvatar = false)
         return Applied(named.copy(pendingAvatarRef = ref.stored(), pendingAvatarSinceMs = nowMs), fetchAvatar = true)
     }

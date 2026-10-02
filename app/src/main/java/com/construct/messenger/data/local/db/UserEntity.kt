@@ -95,10 +95,14 @@ val UserEntity.localName: String?
 /**
  * The name to show for [userId]: the one the user gave them, the name they shared, their
  * username, then the name generated from the id. **Canon:** iOS `User.resolvedDisplayName`.
+ *
+ * A generated name held in `displayName` is skipped, not shown: it stands for "no name", and
+ * showing it hid a username the contact did have. Rows are created with it, and until 2026-10-02 a
+ * profile carrying it overwrote the username from the invite — this repairs both.
  */
 fun UserEntity?.resolvedName(userId: String): String =
     this?.localName
-        ?: this?.displayName?.takeIf { it.isNotBlank() }
+        ?: this?.displayName?.takeIf { it.isNotBlank() && !DisplayNameGenerator.isGenerated(it, userId) }
         ?: this?.username?.takeIf { it.isNotBlank() }
         ?: DisplayNameGenerator.generate(userId)
 
