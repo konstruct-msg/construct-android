@@ -234,7 +234,7 @@ class ContactsRepositoryImpl @Inject constructor(
                 val row = userDao.getById(fromUserId) ?: return@let
                 userDao.upsert(
                     row.copy(
-                        displayName = profile.displayName.ifBlank { row.displayName },
+                        displayName = ContactNames.offered(row, profile.displayName) ?: row.displayName,
                         username = profile.username.ifBlank { row.username },
                     ),
                 )
@@ -288,7 +288,7 @@ class ContactsRepositoryImpl @Inject constructor(
 
     private suspend fun persistContact(userId: String, invite: InviteObject, identityPublic: ByteArray) {
         val existing = userDao.getById(userId)
-        val display = invite.un?.takeIf { it.isNotBlank() }
+        val display = ContactNames.offered(existing, invite.un)
             ?: existing?.displayName?.takeIf { it.isNotBlank() }
             ?: DisplayNameGenerator.generate(userId)
         userDao.upsert(
@@ -329,4 +329,19 @@ internal fun InviteObject.toProto(): InviteToken {
         .setAddr(ByteString.copyFrom(addr))
     if (!un.isNullOrEmpty()) b.un = un
     return b.build()
+}
+
+/**
+ * The name a contact goes by, when something other than the contact offers one — the server's
+ * profile on accepting a request, the username in an invite. **Canon:** iOS
+ * `User+DisplayName.applyServerUsername`, which leaves the name alone while `isSharingWithMe`.
+ *
+ * A contact who shares their profile named themselves end to end; a server's or an invite's name
+ * would quietly replace that until their next profile came. Null: keep what the row has.
+ */
+internal object ContactNames {
+    fun offered(existing: UserEntity?, name: String?): String? {
+        if (existing?.isSharingWithMe == true) return null
+        return name?.trim()?.takeIf { it.isNotEmpty() }
+    }
 }
