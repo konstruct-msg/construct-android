@@ -33,7 +33,7 @@ class CallSignalWireTest {
         val frame = CallSignalWire.frame(signal, id)
         assertEquals(12, frame[5].toInt())
         assertEquals(KnstFrame.TYPE_CALL_SIGNAL, frame[5].toInt())
-        assertArrayEquals(signal.toByteArray(), IncomingPlaintext.knstPayload(frame))
+        assertArrayEquals(signal.toByteArray(), com.construct.messenger.util.KnstFrame.parse(frame)?.body())
         assertFalse("a call signal is never a bubble", IncomingPlaintext.decode(frame).isUserVisible)
     }
 

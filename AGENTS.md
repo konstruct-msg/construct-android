@@ -55,7 +55,14 @@ so the mismatch is caught on the machine that can fix it rather than at start-up
 core a diff someone approves instead of something that happens quietly.
 
 Take the `.so` and `construct_core.kt` from the **same** build — the published archive contains
-both, and the lock only pins the library.
+both, and the lock only pins the library. `scripts/fetch_core.sh` installs the build the lock names.
+
+**The unit tests call the real core.** Since 2026-10-02 (core 0.31, the KNST frame codec) the JVM
+tests load the same build for the machine they run on, from `app/src/test/host/<os>-<cpu>/` —
+JNA's resource prefix, the layout construct-core's archive ships under `host/`. Not in git either;
+`checkHostCoreLibrary` holds its stamp to the lock before any test runs, so tests never check one
+core while the app ships another. Do not replace a core call with a Kotlin stand-in to make a test
+easier: that is how the two drift.
 
 ### Rust core integration
 

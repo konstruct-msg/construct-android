@@ -296,6 +296,30 @@ if $BUILD_ARM64; then verify_lib "arm64-v8a"; fi
 if $BUILD_ARMV7; then verify_lib "armeabi-v7a"; fi
 if $BUILD_X86; then verify_lib "x86_64"; fi
 
+# ── То же ядро для этой машины — его грузят unit-тесты ───────────────────────
+#
+# JVM-тесты вызывают настоящее ядро, а не заглушку (`checkHostCoreLibrary` в app/build.gradle).
+# Те же features, что у .so; кладётся под префикс ресурсов JNA, как в архиве релиза (`host/`).
+hdr "Ядро для unit-тестов (хост)"
+case "$(uname -s)" in Darwin) HOST_OS=darwin; HOST_EXT=dylib ;; Linux) HOST_OS=linux; HOST_EXT=so ;; *) HOST_OS="" ;; esac
+case "$(uname -m)" in arm64|aarch64) HOST_CPU=aarch64 ;; x86_64|amd64) HOST_CPU=x86-64 ;; *) HOST_CPU="" ;; esac
+if [ -n "$HOST_OS" ] && [ -n "$HOST_CPU" ]; then
+  cd "$CORE_PATH"
+  set +e
+  # AR без NDK: llvm-ar из NDK выше экспортирован для Android-таргетов.
+  env -u AR cargo build --lib --features "$FEATURES" $CARGO_FLAGS 2>&1 | grep -E "^error|Finished"
+  rc=${PIPESTATUS[0]}
+  set -e
+  [ "$rc" -eq 0 ] || fail "cargo build для хоста упал (rc=$rc)"
+  HOST_DIR="$APP_DIR/src/test/host/$HOST_OS-$HOST_CPU"
+  rm -rf "$APP_DIR/src/test/host"
+  mkdir -p "$HOST_DIR"
+  cp "$CORE_PATH/target/$BUILD_DIR/libconstruct_core.$HOST_EXT" "$HOST_DIR/"
+  ok "libconstruct_core.$HOST_EXT → src/test/host/$HOST_OS-$HOST_CPU"
+else
+  warn "Хост $(uname -s)/$(uname -m) не знаю — unit-тестам ядро не положено"
+fi
+
 # ── Запись пары «этот APK — это ядро» ────────────────────────────────────────
 #
 # Библиотек в git нет, поэтому без этой строки репозиторий перестал бы помнить, какое именно

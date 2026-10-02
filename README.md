@@ -76,12 +76,14 @@ APK несёт только `arm64-v8a` (`coreAbis` в `app/build.gradle`, с 20
 скрипт по-прежнему собирает и `armeabi-v7a`, `x86_64`. После клона её нет, и сборка
 остановится на `checkCoreLibrary`. Два способа получить её:
 
-- без Rust: скачать готовый архив по ссылке из `construct-core.lock` и разложить `.so` и
-  `construct_core.kt` из **одного** архива;
+- без Rust: `scripts/fetch_core.sh` — скачивает опубликованную сборку, которую называет
+  `construct-core.lock`, и раскладывает `.so`, `construct_core.kt` и ядро для unit-тестов;
 - из исходников: `construct-core` рядом (`~/Code/construct-core`), Rust + NDK, затем скрипт ниже.
 
 `construct-core.lock` называет версию ядра, с которой собирается приложение; `checkCoreLibrary`
-сверяет её со штампом внутри каждой `.so`.
+сверяет её со штампом внутри каждой `.so`. Unit-тесты на JVM вызывают **настоящее** ядро — ту же
+сборку для этой машины (`app/src/test/host/<os>-<cpu>/`, тоже не в git); `checkHostCoreLibrary`
+сверяет и его штамп.
 
 Пересборка под все ABI и генерация Kotlin-биндингов локально:
 

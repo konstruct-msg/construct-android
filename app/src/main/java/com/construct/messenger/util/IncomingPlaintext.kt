@@ -2,9 +2,6 @@ package com.construct.messenger.util
 
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.stickers.StickerReference
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.util.UUID
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import shared.proto.messaging.v1.Content.DeleteScope
 import shared.proto.messaging.v1.Content.MediaType
@@ -60,12 +57,16 @@ object IncomingPlaintext {
 
     fun decode(plaintext: ByteArray): Decoded {
         if (isKnst(plaintext)) {
-            val type = plaintext[5].toInt() and 0xFF
-            val e2e = readMessageId(plaintext)
-            if (type.isControlType() || !isSingleCompleteChunk(plaintext)) {
+            // Read by the core since 0.31 (`KnstFrame.parse`). Magic it cannot read as a v1 frame
+            // is never a bubble: it is not text either.
+            val frame = KnstFrame.parse(plaintext) ?: return hidden(0, null)
+            val type = frame.contentType
+            // The nil id is not an identity: a frame that never set one falls back to the envelope id.
+            val e2e = frame.messageId.toString().takeUnless { it == NIL_MESSAGE_ID }
+            if (type.isControlType() || frame.index != 0 || frame.total > 1) {
                 return hidden(type, e2e)
             }
-            val payload = knstPayload(plaintext) ?: return hidden(type, e2e)
+            val payload = frame.body() ?: return hidden(type, e2e)
             // iOS `decodeAssembled`: MessageContent, then a binary profile, then text. A profile
             // read as text was hidden only while its timestamp bytes happened not to be UTF-8.
             return decodePayload(payload, type, e2e)
@@ -173,19 +174,6 @@ object IncomingPlaintext {
             null
         }
 
-    private fun isSingleCompleteChunk(bytes: ByteArray): Boolean {
-        val chunkIndex = u16(bytes, 22)
-        val totalChunks = u16(bytes, 24)
-        return chunkIndex == 0 && totalChunks <= 1
-    }
-
-    internal fun knstPayload(bytes: ByteArray): ByteArray? {
-        val declared = u32(bytes, 26)
-        val end = HEADER_SIZE + declared
-        if (end > bytes.size) return null
-        return bytes.copyOfRange(HEADER_SIZE, end)
-    }
-
     /** The quote iOS put on the text. An empty message id is not a reply. */
     private fun replyOf(text: TextMessage): ReplyRef? {
         if (!text.hasQuoted()) return null
@@ -204,17 +192,6 @@ object IncomingPlaintext {
         return ReplyRef.of(quoted.messageId, preview, media)
     }
 
-    /**
-     * KNST bytes 6..21, big-endian UUID, lowercase. The nil id is not an identity:
-     * a frame that never set one must fall back to the envelope id.
-     */
-    private fun readMessageId(bytes: ByteArray): String? {
-        if (bytes.size < 22) return null
-        val buf = ByteBuffer.wrap(bytes, 6, 16).order(ByteOrder.BIG_ENDIAN)
-        val id = UUID(buf.long, buf.long).toString()
-        return id.takeUnless { it == NIL_MESSAGE_ID }
-    }
-
     private fun Int.isControlType(): Boolean = when (this) {
         ContentType.CONTENT_TYPE_CALL_SIGNAL_VALUE,
         ContentType.CONTENT_TYPE_HEARTBEAT_VALUE,
@@ -231,15 +208,6 @@ object IncomingPlaintext {
         -> true
         else -> false
     }
-
-    private fun u16(bytes: ByteArray, offset: Int): Int =
-        ((bytes[offset].toInt() and 0xFF) shl 8) or (bytes[offset + 1].toInt() and 0xFF)
-
-    private fun u32(bytes: ByteArray, offset: Int): Int =
-        ((bytes[offset].toInt() and 0xFF) shl 24) or
-            ((bytes[offset + 1].toInt() and 0xFF) shl 16) or
-            ((bytes[offset + 2].toInt() and 0xFF) shl 8) or
-            (bytes[offset + 3].toInt() and 0xFF)
 
     const val HEADER_SIZE = 30
     private const val NIL_MESSAGE_ID = "00000000-0000-0000-0000-000000000000"

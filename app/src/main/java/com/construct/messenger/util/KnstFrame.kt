@@ -1,12 +1,16 @@
 package com.construct.messenger.util
 
-import java.nio.ByteBuffer
 import java.util.UUID
+import uniffi.construct_core.knstEncodeChunks
+import uniffi.construct_core.knstFrameWhole
+import uniffi.construct_core.knstParse
 
 /**
- * KNST wire frame — 30-byte header + payload.
+ * KNST wire frame — 30-byte header + payload, written and read by the core since 0.31
+ * (`knst_encode_chunks`, `knst_frame_whole`, `knst_parse`; TODO 94 step 3a). One writer for iOS,
+ * Android and the TUI; the format is fixed by construct-protos `knst_frame.json`.
  *
- * **Canon:** iOS `ChunkedMessageCodec.frameWhole` / `architecture/WIRE_FORMAT.md`.
+ * **Canon:** iOS `ChunkedMessageCodec` / `architecture/WIRE_FORMAT.md`.
  * Layout:
  * ```
  * [0..3]   magic "KNST"
@@ -18,9 +22,9 @@ import java.util.UUID
  * [26..29] plaintext_length BE
  * ```
  *
- * [pack] is one whole frame and refuses a payload over [MAX_PAYLOAD] rather than truncating it;
- * [chunks] cuts any payload up to [MAX_CHUNKS] frames, as iOS `ChunkedMessageCodec.encodeChunks`
- * does. Receiving puts them back together in `service/ChunkReassembler`.
+ * Until 2026-10-02 this object wrote and read the header itself. [MAX_PAYLOAD] and [MAX_CHUNKS]
+ * stay here because callers budget by them; `KnstFrameConformanceTest` holds them to the vectors
+ * the core splits by. Receiving puts chunks back together in `service/ChunkReassembler`.
  */
 object KnstFrame {
     const val HEADER_SIZE = IncomingPlaintext.HEADER_SIZE
@@ -38,6 +42,7 @@ object KnstFrame {
     /** iOS `ChunkedDeliveryConfig.maxChunks`: 256 × 3770 B, a little under 1 MB of plaintext. */
     const val MAX_CHUNKS = 256
 
+    /** One whole frame; refuses a payload over [MAX_PAYLOAD] rather than truncating it. */
     fun pack(payload: ByteArray, contentType: Int, messageId: UUID): ByteArray {
         require(payload.size <= MAX_PAYLOAD) {
             "KNST payload ${payload.size} exceeds $MAX_PAYLOAD — use chunks()"
@@ -50,22 +55,19 @@ object KnstFrame {
      * [MAX_PAYLOAD]: it is how a reassembled message is handed on as the single frame it was.
      */
     fun whole(payload: ByteArray, contentType: Int, messageId: UUID): ByteArray =
-        frame(payload, 0, payload.size, contentType, messageId, index = 0, total = 1, length = payload.size)
+        checkNotNull(knstFrameWhole(payload, contentType.toUByte(), messageId.toString())) {
+            "the core refused a frame for $messageId"
+        }
 
     /**
      * [payload] as frames of at most [MAX_PAYLOAD] bytes each; one frame when it fits, identical
      * to [pack]. Every frame carries the whole length and the same id, so a reader can tell when
      * it holds them all.
      */
-    fun chunks(payload: ByteArray, contentType: Int, messageId: UUID): List<ByteArray> {
-        val total = maxOf(1, (payload.size + MAX_PAYLOAD - 1) / MAX_PAYLOAD)
-        require(total <= MAX_CHUNKS) { "KNST payload ${payload.size} needs $total chunks, over $MAX_CHUNKS" }
-        return List(total) { i ->
-            val start = i * MAX_PAYLOAD
-            val end = minOf(start + MAX_PAYLOAD, payload.size)
-            frame(payload, start, end, contentType, messageId, index = i, total = total, length = payload.size)
+    fun chunks(payload: ByteArray, contentType: Int, messageId: UUID): List<ByteArray> =
+        requireNotNull(knstEncodeChunks(payload, contentType.toUByte(), messageId.toString())) {
+            "KNST payload ${payload.size} needs more than $MAX_CHUNKS chunks"
         }
-    }
 
     /** One frame's header, read. Null for anything that is not a v1 KNST frame. */
     data class Chunk(
@@ -73,62 +75,27 @@ object KnstFrame {
         val messageId: UUID,
         val index: Int,
         val total: Int,
+        /** The whole message's length, declared by every chunk of it. */
         val length: Int,
+        /** Everything after the header. */
         val payload: ByteArray,
-    )
+    ) {
+        /**
+         * The body of a single-chunk frame: the first [length] bytes, padding cut off. Null when
+         * the declared length runs past what the frame holds.
+         */
+        fun body(): ByteArray? = if (length in 0..payload.size) payload.copyOf(length) else null
+    }
 
     fun parse(bytes: ByteArray): Chunk? {
-        if (!IncomingPlaintext.isKnst(bytes) || bytes[4] != VERSION) return null
-        val buf = ByteBuffer.wrap(bytes)
-        val id = UUID(buf.getLong(6), buf.getLong(14))
-        val index = buf.getShort(22).toInt() and 0xFFFF
-        val total = buf.getShort(24).toInt() and 0xFFFF
-        val length = buf.getInt(26)
+        val frame = knstParse(bytes) ?: return null
         return Chunk(
-            contentType = bytes[5].toInt() and 0xFF,
-            messageId = id,
-            index = index,
-            total = total,
-            length = length,
-            payload = bytes.copyOfRange(HEADER_SIZE, bytes.size),
+            contentType = frame.contentType.toInt(),
+            messageId = UUID.fromString(frame.messageId),
+            index = frame.chunkIndex.toInt(),
+            total = frame.totalChunks.toInt(),
+            length = frame.plaintextLength.toLong().coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+            payload = frame.payload,
         )
-    }
-
-    private fun frame(
-        payload: ByteArray,
-        start: Int,
-        end: Int,
-        contentType: Int,
-        messageId: UUID,
-        index: Int,
-        total: Int,
-        length: Int,
-    ): ByteArray {
-        val out = ByteArray(HEADER_SIZE + (end - start))
-        out[0] = 'K'.code.toByte()
-        out[1] = 'N'.code.toByte()
-        out[2] = 'S'.code.toByte()
-        out[3] = 'T'.code.toByte()
-        out[4] = VERSION
-        out[5] = contentType.toByte()
-        val idBytes = uuidBytes(messageId)
-        System.arraycopy(idBytes, 0, out, 6, 16)
-        out[22] = (index ushr 8).toByte()
-        out[23] = index.toByte()
-        out[24] = (total ushr 8).toByte()
-        out[25] = total.toByte()
-        out[26] = (length ushr 24).toByte()
-        out[27] = (length ushr 16).toByte()
-        out[28] = (length ushr 8).toByte()
-        out[29] = length.toByte()
-        System.arraycopy(payload, start, out, HEADER_SIZE, end - start)
-        return out
-    }
-
-    fun uuidBytes(id: UUID): ByteArray {
-        val buf = ByteBuffer.allocate(16)
-        buf.putLong(id.mostSignificantBits)
-        buf.putLong(id.leastSignificantBits)
-        return buf.array()
     }
 }

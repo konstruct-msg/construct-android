@@ -22,3 +22,6 @@ local.properties
 # 2.6 MB for every other tracked file put together. History purged that day; run
 # ./build_crypto_lib.sh after a fresh clone. Same rule as the iOS xcframeworks.
 app/src/main/jniLibs/
+
+# The same core built for the machine running the JVM unit tests (scripts/fetch_core.sh).
+app/src/test/host/

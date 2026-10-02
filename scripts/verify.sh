@@ -48,10 +48,19 @@ step "core pairing"
 want=$(grep -m1 '^CONSTRUCT_CORE_VERSION=' construct-core.lock | cut -d= -f2)
 bad=""
 for so in app/src/main/jniLibs/*/libconstruct_core.so; do
-  [ -f "$so" ] || { bad="no .so in app/src/main/jniLibs (see README: the core is not in git)"; break; }
+  [ -f "$so" ] || { bad="no .so in app/src/main/jniLibs (scripts/fetch_core.sh; the core is not in git)"; break; }
   got=$(strings -a "$so" | grep -o -m1 'CONSTRUCT_CORE_VERSION=.*' | cut -d= -f2)
   [ "$got" = "$want" ] || bad="$bad $(basename "$(dirname "$so")")=$got"
 done
+# The same core for this machine, which the unit tests below load (app/src/test/host/).
+host=0
+for lib in app/src/test/host/*/libconstruct_core.*; do
+  [ -f "$lib" ] || continue
+  host=$((host + 1))
+  got=$(strings -a "$lib" | grep -o -m1 'CONSTRUCT_CORE_VERSION=.*' | cut -d= -f2)
+  [ "$got" = "$want" ] || bad="$bad host/$(basename "$(dirname "$lib")")=$got"
+done
+[ "$host" -gt 0 ] || bad="$bad no host library in app/src/test/host (scripts/fetch_core.sh)"
 [ -z "$bad" ] && pass "core pairing ($want)" || fail "core pairing" "lock says $want;$bad"
 
 # ── 2. Nothing requires Google Play Services ───────────────────────────────────

@@ -166,7 +166,7 @@ class ProcessorEffectsImpl @Inject constructor(
         SenderSyncRouting.decode(received)?.let { return it }
         val plaintext = whole(accountId, messageId, received) ?: return null
         val frame = KnstFrame.parse(plaintext) ?: return NOT_ROUTED
-        val inner = IncomingPlaintext.knstPayload(plaintext) ?: return NOT_ROUTED
+        val inner = frame.body() ?: return NOT_ROUTED
         val routed = SenderSyncRouting.decode(inner) ?: return NOT_ROUTED
         return routed.copy(payload = KnstFrame.whole(routed.payload, KnstFrame.TYPE_E2EE_SIGNAL, frame.messageId))
     }

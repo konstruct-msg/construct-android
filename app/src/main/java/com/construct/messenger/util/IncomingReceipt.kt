@@ -19,17 +19,10 @@ object IncomingReceipt {
         }.getOrDefault(emptyList())
     }
 
+    /** A bare payload as is; a frame's body as the core reads it. */
     private fun payloadOf(plaintext: ByteArray): ByteArray? {
         if (!IncomingPlaintext.isKnst(plaintext)) return plaintext
-        if (plaintext.size < IncomingPlaintext.HEADER_SIZE + 4) return null
-        val declared =
-            ((plaintext[26].toInt() and 0xFF) shl 24) or
-                ((plaintext[27].toInt() and 0xFF) shl 16) or
-                ((plaintext[28].toInt() and 0xFF) shl 8) or
-                (plaintext[29].toInt() and 0xFF)
-        val end = IncomingPlaintext.HEADER_SIZE + declared
-        if (end > plaintext.size) return null
-        return plaintext.copyOfRange(IncomingPlaintext.HEADER_SIZE, end)
+        return KnstFrame.parse(plaintext)?.body()
     }
 
     private fun parseJson(payload: ByteArray): List<String> = runCatching {

@@ -89,6 +89,9 @@ dependencies {
     // JNA — required by UniFFI-generated Kotlin bindings (crypto/uniffi/...).
     // The @aar variant bundles the native libjnidispatch.so for Android ABIs.
     implementation 'net.java.dev.jna:jna:5.14.0@aar'
+    // The desktop jar: the @aar carries libjnidispatch for Android ABIs only, and the unit tests
+    // load the core for the machine they run on (app/src/test/host/, `checkHostCoreLibrary`).
+    testImplementation 'net.java.dev.jna:jna:5.14.0'
     implementation 'androidx.core:core-ktx:1.10.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.6.1'
@@ -274,9 +277,9 @@ The native core in app/src/main/jniLibs is not the one this app is paired with.
 ${problems.join('\n')}
 
 Fix it one of two ways:
+  • scripts/fetch_core.sh          — installs the published build the lock names (libraries,
+                                     bindings and the host library the unit tests load)
   • ./build_crypto_lib.sh          — builds from your local construct-core and rewrites the lock
-  • download the published build   — https://github.com/konstruct-msg/construct-core/releases/download/latest/construct-core-android.tar.gz
-                                     then copy jniLibs/ AND kotlin/uniffi/ from the same archive
 
 Take the .so and the Kotlin bindings from the same build. UniFFI verifies its interface
 checksums when the library loads, so a mismatched pair does not fail at the call — the app does
@@ -288,6 +291,52 @@ not start, and the reason is not on the screen.
 }
 
 tasks.named('preBuild').configure { dependsOn 'checkCoreLibrary' }
+
+// ── The core the unit tests load ─────────────────────────────────────────────
+//
+// The JVM tests call the same core the app ships, built for the machine they run on — not a Kotlin
+// stand-in. JNA finds it on the test classpath under its own resource prefix (`darwin-aarch64/`,
+// `linux-x86-64/`), which is how construct-core's archive lays out `host/` (construct-core #22).
+// Like jniLibs it is not in git; `scripts/fetch_core.sh` installs it, and this check holds it to
+// the lock, so a test run never checks one core while the app ships another.
+android.sourceSets.test.resources.srcDirs += 'src/test/host'
+
+/** JNA's `Platform.RESOURCE_PREFIX` for this machine. */
+static String jnaHostPrefix() {
+    String os = System.getProperty('os.name').toLowerCase()
+    String arch = System.getProperty('os.arch').toLowerCase()
+    String cpu = (arch == 'aarch64' || arch == 'arm64') ? 'aarch64' : (arch == 'amd64' || arch == 'x86_64') ? 'x86-64' : arch
+    return (os.contains('mac') ? 'darwin' : os.contains('linux') ? 'linux' : os) + '-' + cpu
+}
+
+tasks.register('checkHostCoreLibrary') {
+    group = 'verification'
+    description = 'Refuses to run unit tests against a host core other than the one construct-core.lock names.'
+
+    File lock = rootProject.file('construct-core.lock')
+    String prefix = jnaHostPrefix()
+    File dir = file("src/test/host/$prefix")
+    inputs.file(lock)
+    outputs.upToDateWhen { false }
+
+    doLast {
+        String expected = lock.readLines().find { it.trim().startsWith('CONSTRUCT_CORE_VERSION=') }?.trim()
+        File lib = ['libconstruct_core.dylib', 'libconstruct_core.so'].collect { new File(dir, it) }.find { it.exists() }
+        String problem = lib == null ? 'missing' : (coreStampOf(lib) ?: 'carries no CONSTRUCT_CORE_VERSION stamp')
+        if (lib == null || coreStampOf(lib) != expected) {
+            throw new GradleException("""
+The core the unit tests load (app/src/test/host/$prefix) is not the one this app is paired with.
+
+  construct-core.lock expects: $expected
+  $prefix: $problem
+
+Run scripts/fetch_core.sh — it installs the published build the lock names, host library included.
+""".stripIndent())
+        }
+    }
+}
+
+tasks.withType(Test).configureEach { dependsOn 'checkHostCoreLibrary' }
 
 // ── The WebRTC the app links ─────────────────────────────────────────────────
 //

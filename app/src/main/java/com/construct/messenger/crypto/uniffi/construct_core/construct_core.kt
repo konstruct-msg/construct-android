@@ -782,6 +782,12 @@ external fun uniffi_construct_core_checksum_func_is_dummy_message(
 ): Short
 external fun uniffi_construct_core_checksum_func_jittered_interval_ms(
 ): Short
+external fun uniffi_construct_core_checksum_func_knst_encode_chunks(
+): Short
+external fun uniffi_construct_core_checksum_func_knst_frame_whole(
+): Short
+external fun uniffi_construct_core_checksum_func_knst_parse(
+): Short
 external fun uniffi_construct_core_checksum_func_mldsa65_keygen(
 ): Short
 external fun uniffi_construct_core_checksum_func_mldsa65_sign(
@@ -1609,6 +1615,12 @@ external fun uniffi_construct_core_fn_func_is_dummy_message(`data`: RustBuffer.B
 ): Byte
 external fun uniffi_construct_core_fn_func_jittered_interval_ms(`baseMs`: Long,`jitterMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_construct_core_fn_func_knst_encode_chunks(`payload`: RustBuffer.ByValue,`contentType`: Byte,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_knst_frame_whole(`payload`: RustBuffer.ByValue,`contentType`: Byte,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_knst_parse(`frame`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_mldsa65_keygen(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_mldsa65_sign(`secretKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1877,6 +1889,15 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_jittered_interval_ms() != 6840.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_knst_encode_chunks() != 7537.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_knst_frame_whole() != 59193.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_knst_parse() != 40094.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_mldsa65_keygen() != 58411.toShort()) {
@@ -8560,6 +8581,67 @@ public object FfiConverterTypeInitiationContext: FfiConverterRustBuffer<Initiati
 
 
 /**
+ * A parsed KNST frame. `message_id` is the dashed lowercase UUID; `payload` is everything after
+ * the header — for a control frame (`total_chunks == 1`) the body is its first
+ * `plaintext_length` bytes.
+ */
+data class KnstFrame (
+    var `contentType`: kotlin.UByte
+    , 
+    var `messageId`: kotlin.String
+    , 
+    var `chunkIndex`: kotlin.UShort
+    , 
+    var `totalChunks`: kotlin.UShort
+    , 
+    var `plaintextLength`: kotlin.UInt
+    , 
+    var `payload`: kotlin.ByteArray
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeKnstFrame: FfiConverterRustBuffer<KnstFrame> {
+    override fun read(buf: ByteBuffer): KnstFrame {
+        return KnstFrame(
+            FfiConverterUByte.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterUShort.read(buf),
+            FfiConverterUShort.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: KnstFrame) = (
+            FfiConverterUByte.allocationSize(value.`contentType`) +
+            FfiConverterString.allocationSize(value.`messageId`) +
+            FfiConverterUShort.allocationSize(value.`chunkIndex`) +
+            FfiConverterUShort.allocationSize(value.`totalChunks`) +
+            FfiConverterUInt.allocationSize(value.`plaintextLength`) +
+            FfiConverterByteArray.allocationSize(value.`payload`)
+    )
+
+    override fun write(value: KnstFrame, buf: ByteBuffer) {
+            FfiConverterUByte.write(value.`contentType`, buf)
+            FfiConverterString.write(value.`messageId`, buf)
+            FfiConverterUShort.write(value.`chunkIndex`, buf)
+            FfiConverterUShort.write(value.`totalChunks`, buf)
+            FfiConverterUInt.write(value.`plaintextLength`, buf)
+            FfiConverterByteArray.write(value.`payload`, buf)
+    }
+}
+
+
+
+/**
  * One ML-KEM-1024 Kyber prekey to upload (PQXDH v2). Both signatures are over
  * `"KonstruktX3DH-v1" || 0x00 0x11 || created_at (u64 BE) || public_key`; upload `created_at`
  * with the key — the signatures cover it.
@@ -13017,6 +13099,38 @@ public object FfiConverterOptionalTypeEnvelopeOpened: FfiConverterRustBuffer<Env
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeKnstFrame: FfiConverterRustBuffer<KnstFrame?> {
+    override fun read(buf: ByteBuffer): KnstFrame? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeKnstFrame.read(buf)
+    }
+
+    override fun allocationSize(value: KnstFrame?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeKnstFrame.allocationSize(value)
+        }
+    }
+
+    override fun write(value: KnstFrame?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeKnstFrame.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeKyberPrekeyUpload: FfiConverterRustBuffer<KyberPrekeyUpload?> {
     override fun read(buf: ByteBuffer): KyberPrekeyUpload? {
         if (buf.get().toInt() == 0) {
@@ -13295,6 +13409,38 @@ public object FfiConverterOptionalTypePowProgressCallback: FfiConverterRustBuffe
         } else {
             buf.put(1)
             FfiConverterTypePowProgressCallback.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalSequenceByteArray: FfiConverterRustBuffer<List<kotlin.ByteArray>?> {
+    override fun read(buf: ByteBuffer): List<kotlin.ByteArray>? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterSequenceByteArray.read(buf)
+    }
+
+    override fun allocationSize(value: List<kotlin.ByteArray>?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterSequenceByteArray.allocationSize(value)
+        }
+    }
+
+    override fun write(value: List<kotlin.ByteArray>?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterSequenceByteArray.write(value, buf)
         }
     }
 }
@@ -14043,6 +14189,48 @@ public object FfiConverterSequenceTypeHistoryEvent: FfiConverterRustBuffer<List<
     UniffiLib.uniffi_construct_core_fn_func_jittered_interval_ms(
     
         FfiConverterULong.lower(`baseMs`),FfiConverterULong.lower(`jitterMs`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * `payload` split into frames of at most 3770 bytes, each carrying the whole body's length;
+         * an empty body is one frame. Null when it needs more than 256 frames, or `message_id` is not
+         * a UUID.
+         */ fun `knstEncodeChunks`(`payload`: kotlin.ByteArray, `contentType`: kotlin.UByte, `messageId`: kotlin.String): List<kotlin.ByteArray>? {
+            return FfiConverterOptionalSequenceByteArray.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_knst_encode_chunks(
+    
+        FfiConverterByteArray.lower(`payload`),FfiConverterUByte.lower(`contentType`),FfiConverterString.lower(`messageId`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * One frame holding the whole payload — a control carrier, never split. Null when
+         * `message_id` is not a UUID.
+         */ fun `knstFrameWhole`(`payload`: kotlin.ByteArray, `contentType`: kotlin.UByte, `messageId`: kotlin.String): kotlin.ByteArray? {
+            return FfiConverterOptionalByteArray.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_knst_frame_whole(
+    
+        FfiConverterByteArray.lower(`payload`),FfiConverterUByte.lower(`contentType`),FfiConverterString.lower(`messageId`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The header and payload of a frame; null when `frame` is not one (magic, version, length).
+         */ fun `knstParse`(`frame`: kotlin.ByteArray): KnstFrame? {
+            return FfiConverterOptionalTypeKnstFrame.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_knst_parse(
+    
+        FfiConverterByteArray.lower(`frame`),_status)
 }
     )
     }

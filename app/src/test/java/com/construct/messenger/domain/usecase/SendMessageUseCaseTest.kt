@@ -479,7 +479,7 @@ class SendMessageUseCaseTest {
         events.allValues.forEach { event ->
             val plaintext = (event as uniffi.construct_core.CfeIncomingEvent.OutgoingMessage).plaintext
             assertEquals(29, plaintext[5].toInt())
-            assertEquals(profile, IncomingPlaintext.knstPayload(plaintext)?.let(ProfileShare::read))
+            assertEquals(profile, KnstFrame.parse(plaintext)?.body()?.let(ProfileShare::read))
         }
         verify(h.sessionManager, times(0)).discoverOwnDeviceBundles(any())
         assertTrue(h.messages.rows.isEmpty())
