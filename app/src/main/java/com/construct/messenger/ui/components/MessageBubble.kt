@@ -188,7 +188,7 @@ fun MessageBubble(
                         onDoubleClick = { onReact(ReactionRules.LIKE) },
                     ),
                 ) {
-                    FilesBubble(files, message.body, isOutgoing, maxBubble, fileLoading, fileUnavailable, onOpenFile)
+                    FilesBubble(files, message.body, isOutgoing, maxBubble, fileLoading, fileUnavailable, onOpenFile, onLongPress)
                 }
             } else if (voice != null) {
                 VoiceBubble(

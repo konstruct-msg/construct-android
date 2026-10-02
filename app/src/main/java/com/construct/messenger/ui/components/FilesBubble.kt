@@ -1,9 +1,11 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.construct.messenger.ui.components
 
 import android.text.format.Formatter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -61,6 +63,8 @@ fun FilesBubble(
     loading: Set<String>,
     unavailable: Set<String>,
     onOpen: (MediaItem) -> Unit,
+    /** The message menu. The rows take the touch, so a long press must be theirs to pass on. */
+    onLongPress: () -> Unit = {},
 ) {
     val shape = RoundedCornerShape(10.dp)
     val tint = if (outgoing) CTColor.outMsgText else CTColor.accent
@@ -79,7 +83,10 @@ fun FilesBubble(
         album.items.forEach { item ->
             val staged = item.mediaId.startsWith(MediaWire.LOCAL_PREFIX)
             Row(
-                modifier = Modifier.fillMaxWidth().clickable(enabled = !staged && item.mediaId !in unavailable) { onOpen(item) },
+                modifier = Modifier.fillMaxWidth().combinedClickable(
+                    onClick = { if (!staged && item.mediaId !in unavailable) onOpen(item) },
+                    onLongClick = onLongPress,
+                ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(iconFor(item.filename), null, tint = tint, modifier = Modifier.width(32.dp).size(22.dp))
