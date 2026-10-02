@@ -65,6 +65,9 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var calls: com.construct.messenger.data.repository.CallsRepository
 
+    @Inject
+    lateinit var veilConfig: com.construct.messenger.veil.VeilConfigImporter
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestNotificationPermissionIfNeeded()
@@ -156,6 +159,14 @@ class MainActivity : FragmentActivity() {
         val data = intent?.data?.toString() ?: return
         if (com.construct.messenger.invite.InviteConfig.isInviteLink(data)) {
             pendingInvites.offer(data)
+        } else if (com.construct.messenger.veil.VeilConfigLink.isLink(data)) {
+            // Said either way: a tapped link that does nothing visible reads as a broken link.
+            val outcome = veilConfig.redeem(data)
+            android.widget.Toast.makeText(
+                this,
+                com.construct.messenger.veil.VeilConfigImporter.messageOf(outcome),
+                android.widget.Toast.LENGTH_LONG,
+            ).show()
         }
     }
 

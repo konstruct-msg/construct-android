@@ -525,6 +525,11 @@
     <string name="veil_front">Front</string>
     <string name="veil_latency">Latency</string>
     <string name="veil_last_error">Last error</string>
+    <string name="veil_config_import_ok">VEIL access configured</string>
+    <string name="veil_import_err_malformed">Invalid configuration code</string>
+    <string name="veil_import_err_signature">Configuration signature is invalid</string>
+    <string name="veil_import_err_expired">This configuration has expired — request a new one</string>
+    <string name="veil_no_front">No VEIL front. Open a VEIL configuration link or scan its QR code.</string>
     <string name="censorship_protection_footer_auto">Turns on automatically when blocking is detected. Setup happens in the background.</string>
     <string name="veil_mode_off">Off</string>
     <string name="veil_mode_auto">Auto</string>

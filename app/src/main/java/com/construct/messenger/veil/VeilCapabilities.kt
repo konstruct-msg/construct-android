@@ -11,25 +11,6 @@ import kotlinx.coroutines.sync.Mutex
 import shared.proto.services.v1.VeilServiceOuterClass.IssueVeilCapabilityRequest
 import shared.proto.services.v1.VeilServiceOuterClass.IssueVeilCapabilityResponse
 
-/** A front this client may dial: its address, the TLS name it presents, and its pinned key. */
-data class VeilRelay(val address: String, val sni: String, val spkiHex: String)
-
-/**
- * The bundled fronts. **Canon:** iOS `VEILConfig.seedRelays` — same address, SNI and pin; a
- * rotated relay cert changes both files. Trusted because they ship inside the signed app.
- * Android learns no other front yet: the signed manifest and `alternates` are iOS-only so far,
- * and without them nothing here needs a signature check.
- */
-object VeilSeeds {
-    val relays: List<VeilRelay> = listOf(
-        VeilRelay(
-            address = "api.divany-kresla.uk:443",
-            sni = "api.divany-kresla.uk",
-            spkiHex = "5621e47a745614de08efb054b01388f3bcf32c763ecf5f0aeaeb6b0785ff6861",
-        ),
-    )
-}
-
 /**
  * The per-user veil-front capabilities: the relay's proof that this account may use it. Issued by
  * `VeilService.IssueVeilCapability` over whatever path works — direct, before the network is
@@ -139,9 +120,9 @@ class VeilCapabilities @Inject constructor(
 
         /**
          * Why the bearer [response] must not be stored for [relay], or null. The server may name
-         * the relay it answers for, and pins travel with it; a front this app does not ship is
-         * refused rather than learned, as is a pin other than the bundled one — the answer arrived
-         * over a path the censor may sit on. Canon: the pin half of iOS `VeilRelayTrust`. The blob
+         * the relay it answers for, and pins travel with it; an answer for another front is
+         * refused rather than learned, as is a pin other than the one this front was learned with
+         * ([VeilFrontStore]) — the answer arrived over a path the censor may sit on. Canon: the pin half of iOS `VeilRelayTrust`. The blob
          * must carry the issuer's signature, as the relay will require.
          */
         internal fun rejectionOf(
@@ -186,7 +167,7 @@ class VeilCapabilities @Inject constructor(
             response.relayAddress.isNotEmpty() && response.relayAddress != relay.address ->
                 "answered for ${response.relayAddress}"
             response.spki.isNotEmpty() && !response.spki.equals(relay.spkiHex, ignoreCase = true) ->
-                "pin ${response.spki.take(12)}… is not the bundled one"
+                "pin ${response.spki.take(12)}… is not the pinned one"
             response.sni.isNotEmpty() && response.sni != relay.sni -> "SNI ${response.sni}"
             else -> null
         }

@@ -47,6 +47,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.veil.VeilMode
+import com.construct.messenger.veil.VeilProxy
 import com.construct.messenger.viewmodel.NetworkUiState
 import com.construct.messenger.viewmodel.NetworkViewModel
 import kotlinx.coroutines.delay
@@ -226,7 +227,11 @@ private fun TransportDetail(ui: NetworkUiState) {
     }
     ui.info.lastError?.let { error ->
         Text(
-            text = stringResource(R.string.veil_last_error) + ": " + error,
+            text = if (error == VeilProxy.NO_FRONT) {
+                stringResource(R.string.veil_no_front)
+            } else {
+                stringResource(R.string.veil_last_error) + ": " + error
+            },
             style = ctRegular(11),
             color = CTColor.danger,
             modifier = Modifier.padding(horizontal = CTLayout.edgePad * 2, vertical = 8.dp),

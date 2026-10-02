@@ -50,6 +50,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="konstruct" android:host="add" />
             </intent-filter>
+            <!-- A VEIL front handed over outside the server: konstruct://veil-config?d=<signed blob>. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="konstruct" android:host="veil-config" />
+            </intent-filter>
             <!-- The link iOS and Android share: https://konstruct.cc/add?invite=…, verified by
                  konstruct.cc/.well-known/assetlinks.json. konstruct.cc only: Android 11 and older
                  verify a filter as a whole, and web.konstruct.cc (in the iOS entitlement) does not

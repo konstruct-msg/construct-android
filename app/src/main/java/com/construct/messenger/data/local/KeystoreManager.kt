@@ -78,6 +78,16 @@ class KeystoreManager @Inject constructor(
             .apply()
     }
 
+    /**
+     * The VEIL fronts learned from signed config links, as [com.construct.messenger.veil.VeilFrontStore]
+     * encodes them. Not wiped by [clearTokens]: a front is the device's way out, not the account's.
+     */
+    fun veilLearnedFronts(): String? = prefs.getString(KEY_VEIL_LEARNED_FRONTS, null)
+
+    fun saveVeilLearnedFronts(encoded: String) {
+        prefs.edit().putString(KEY_VEIL_LEARNED_FRONTS, encoded).commit()
+    }
+
     /** The 32-byte Ed25519 seed of this device's veil access key ([com.construct.messenger.veil.VeilAccessKey]). */
     fun veilAccessSeed(): ByteArray? =
         prefs.getString(KEY_VEIL_ACCESS_SEED, null)?.let { Base64.decode(it, Base64.NO_WRAP) }
@@ -300,6 +310,7 @@ class KeystoreManager @Inject constructor(
         const val KEY_VEIL_CAPABILITY_V2_PREFIX = "veil_capability_v2:"
         const val KEY_VEIL_CAPABILITY_V2_EXP_PREFIX = "veil_capability_v2_exp:"
         const val KEY_VEIL_ACCESS_SEED = "veil_access_seed"
+        const val KEY_VEIL_LEARNED_FRONTS = "veil_learned_fronts"
         const val KEY_PIN_HASH = "app_pin_hash"
         const val KEY_PIN_SALT = "app_pin_salt"
         const val KEY_PIN_VERSION = "app_pin_hash_version"

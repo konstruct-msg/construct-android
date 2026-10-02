@@ -39,6 +39,7 @@ class VeilProxy @Inject constructor(
     @ApplicationContext private val context: Context,
     private val capabilities: VeilCapabilities,
     private val authSession: AuthSessionManager,
+    private val fronts: VeilFrontStore,
 ) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val mode = MutableStateFlow(loadMode())
@@ -63,8 +64,10 @@ class VeilProxy @Inject constructor(
     suspend fun start(): StartResult {
         // The capability is issued over whatever path currently carries unary calls; an expired
         // token would be refused.
+        // No front is bundled (`VeilFrontStore`): with none learned there is nothing to dial, and
+        // that is said plainly rather than thrown.
+        val relay = fronts.preferred() ?: return failed(null, NO_FRONT)
         authSession.ensureFresh()
-        val relay = VeilSeeds.relays.first()
         // Key-bound when there is one — `veil_start` then signs with `veil_sk` and ignores the
         // bearer field. The bearer one is still what opens the first tunnel on a new device.
         val keyBound = capabilities.currentKeyBound(relay)
@@ -83,8 +86,9 @@ class VeilProxy @Inject constructor(
      * it. Throttled in [VeilCapabilities.renewKeyBound].
      */
     suspend fun renewKeyBound() {
+        val relay = fronts.preferred() ?: return
         authSession.ensureFresh()
-        capabilities.renewKeyBound(VeilSeeds.relays.first())
+        capabilities.renewKeyBound(relay)
     }
 
     fun stop() {
@@ -94,10 +98,10 @@ class VeilProxy @Inject constructor(
 
     fun isAlive(): Boolean = runCatching { VeilLib.INSTANCE.veil_is_alive() != 0 }.getOrDefault(false)
 
-    private fun failed(relay: VeilRelay, reason: String): StartResult {
-        Log.e(TAG, "VEIL start via ${relay.address} failed: $reason")
+    private fun failed(relay: VeilRelay?, reason: String): StartResult {
+        Log.e(TAG, "VEIL start via ${relay?.address ?: "no front"} failed: $reason")
         info.value = VeilStartInfo(lastError = reason)
-        return StartResult.Failed(relay.address, reason)
+        return StartResult.Failed(relay?.address, reason)
     }
 
     private class Outcome(val port: Int, val method: VeilMethod?, val latencyMs: Int, val error: String?)
@@ -138,11 +142,13 @@ class VeilProxy @Inject constructor(
     private fun loadMode(): VeilMode =
         prefs.getString(KEY_MODE, null)?.let { runCatching { VeilMode.valueOf(it) }.getOrNull() } ?: VeilMode.AUTO
 
-    private companion object {
-        const val TAG = "VEIL"
-        const val PREFS = "veil_prefs"
-        const val KEY_MODE = "mode"
-        const val SCORES_FILE = "veil_scores.sqlite"
-        const val ERROR_BUFFER = 512
+    companion object {
+        /** [StartResult.Failed.reason] when no front has been learned; the Network screen names it. */
+        const val NO_FRONT = "no VEIL front: import a veil-config link"
+        private const val TAG = "VEIL"
+        private const val PREFS = "veil_prefs"
+        private const val KEY_MODE = "mode"
+        private const val SCORES_FILE = "veil_scores.sqlite"
+        private const val ERROR_BUFFER = 512
     }
 }

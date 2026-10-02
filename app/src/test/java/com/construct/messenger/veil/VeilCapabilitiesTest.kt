@@ -9,13 +9,14 @@ import org.junit.Test
 import shared.proto.services.v1.VeilServiceOuterClass.IssueVeilCapabilityResponse
 
 /**
- * The capability answer arrives over a path a censor may sit on; only the bundled front, with its
- * bundled pin, is accepted, and only a blob the issuer signed. Canon: the pin half of iOS
+ * The capability answer arrives over a path a censor may sit on; only the front asked about, with
+ * the pin it was learned with, is accepted, and only a blob the issuer signed. Canon: the pin half of iOS
  * `VeilRelayTrust`, and iOS `VeilCapabilityV2Bootstrapper` for the key-bound checks.
  */
 class VeilCapabilitiesTest {
 
-    private val seed = VeilSeeds.relays.first()
+    /** A learned front — any well-formed one; none is bundled. */
+    private val seed = VeilRelay("front.example.test:443", "front.example.test", "ab".repeat(32))
 
     private fun answer(block: IssueVeilCapabilityResponse.Builder.() -> Unit = {}) =
         IssueVeilCapabilityResponse.newBuilder()
@@ -42,7 +43,7 @@ class VeilCapabilitiesTest {
         VeilCapabilities.keyBoundRejectionOf(seed, response, pk, VeilCapabilityBlobTest.ISSUER, VeilCapabilityBlobTest.NOW)
 
     @Test
-    fun `the bundled front with its pin is accepted`() {
+    fun `the front with its pin is accepted`() {
         assertNull(rejection(answer()))
         // Fields the server leaves out are not a mismatch.
         assertNull(rejection(answer { clearRelayAddress(); clearSpki(); clearSni() }))

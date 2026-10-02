@@ -75,6 +75,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.Spacing
 import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.QrScannerViewModel
+import com.construct.messenger.veil.VeilConfigLink
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
 import com.google.zxing.NotFoundException
@@ -119,7 +120,7 @@ fun QrScannerScreen(
             ScannerViewport(
                 onNotAnInvite = { notAnInvite = true },
                 onInvite = { link ->
-                    viewModel.deliver(link)
+                    viewModel.deliver(link)?.let { context.toast(it) }
                     onScanned()
                 },
             )
@@ -179,7 +180,7 @@ fun QrScannerScreen(
                         if (text.isEmpty()) {
                             emptyClipboard = true
                         } else {
-                            viewModel.deliver(text)
+                            viewModel.deliver(text)?.let { context.toast(it) }
                             onScanned()
                         }
                     }
@@ -225,7 +226,8 @@ private fun ScannerViewport(onNotAnInvite: () -> Unit, onInvite: (String) -> Uni
             analysis.setAnalyzer(analysisExecutor) { image ->
                 val scan = image.use { decodeQr(it) }
                 if (scan == null || done.get()) return@setAnalyzer
-                val link = InviteQr.linkFromScan(scan.first, scan.second)
+                val link = scan.first.trim().takeIf(VeilConfigLink::isLink)
+                    ?: InviteQr.linkFromScan(scan.first, scan.second)
                 mainExecutor.execute {
                     if (link == null) {
                         onNotAnInvite()
@@ -353,3 +355,6 @@ private fun Context.openAppSettings() {
 }
 
 private const val TAG = "QrScanner"
+
+private fun android.content.Context.toast(message: Int) =
+    android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show()
