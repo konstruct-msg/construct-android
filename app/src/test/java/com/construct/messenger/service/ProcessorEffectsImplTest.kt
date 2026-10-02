@@ -472,13 +472,13 @@ class ProcessorEffectsImplTest {
     }
 
     /**
-     * A sealed call signal comes as an ordinary decrypted message — the core knows only the
-     * envelope's GENERIC type — and the frame's type 12 sends it to the call machine. iOS seals
-     * every call signal, so this is how all of them arrive. Mutation: drop the call-signal branch
-     * in `onDecrypted` — nothing is delivered (observed on a device, 2026-10-02).
+     * Since core 0.29 the core names a framed call signal (`CallSignalDecrypted`), so one arriving
+     * as a decrypted message means the core and the app disagree about the frame: it is dropped
+     * and acknowledged — never rung, never a bubble. Mutation: route it to `onCallSignal` again,
+     * as the 0.28 workaround did — it rings, and this reddens.
      */
     @Test
-    fun `a call signal framed in a decrypted message reaches the call machine`() = runTest {
+    fun `a call signal framed in a decrypted message is dropped, not rung`() = runTest {
         val inbox = Inbox(alerts, myId)
         inbox.users.rows[peer] = UserEntity(id = peer, isContact = true)
         val got = mutableListOf<com.construct.messenger.calls.CallSignalInbox.Incoming>()
@@ -490,8 +490,7 @@ class ProcessorEffectsImplTest {
 
         inbox.effects.onDecrypted(peer, "env-1", frame)
 
-        assertEquals(1, got.size)
-        assertEquals("call-1", got[0].signal.callId)
+        assertTrue(got.isEmpty())
         assertTrue(inbox.acks.isProcessed("env-1"))
         assertTrue(inbox.messages.rows.isEmpty())
         job.cancel()
