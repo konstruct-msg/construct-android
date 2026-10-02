@@ -367,6 +367,7 @@
     <string name="account_username">username</string>
     <string name="account_username_hint">ваш уникальный публичный идентификатор. нажмите чтобы изменить.</string>
     <string name="account_display_name">отображаемое имя</string>
+    <string name="account_display_name_hint">видно вашим контактам. имя пользователя остаётся постоянным.</string>
     <string name="identity_fingerprint">отпечаток</string>
     <string name="identity_fingerprint_copied">скопировано</string>
     <string name="identity_fingerprint_unknown">ещё не загружен</string>

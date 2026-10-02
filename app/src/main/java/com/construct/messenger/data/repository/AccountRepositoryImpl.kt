@@ -55,8 +55,7 @@ class AccountRepositoryImpl @Inject constructor(
         // Cached first: Settings should not show an empty identity while the network answers.
         state.value = OwnAccount(
             userId = userId,
-            displayName = prefs.getString(key(KEY_DISPLAY_NAME, userId), null)
-                ?.takeIf { it.isNotBlank() } ?: DisplayNameGenerator.generate(userId),
+            displayName = shownDisplayName(userId),
             username = prefs.getString(key(KEY_USERNAME, userId), null).orEmpty(),
             // The server does not return this flag (iOS keeps it in UserDefaults for the same
             // reason): what this device last set is the only record.
@@ -80,7 +79,7 @@ class AccountRepositoryImpl @Inject constructor(
             state.update { current ->
                 current?.copy(
                     username = username ?: current.username,
-                    displayName = displayName ?: current.displayName,
+                    displayName = shownDisplayName(userId),
                 )
             }
         } catch (e: CancellationException) {
@@ -121,6 +120,27 @@ class AccountRepositoryImpl @Inject constructor(
             UsernameChange.Failed
         }
     }
+
+    override suspend fun setDisplayName(raw: String): String? {
+        val userId = keystoreManager.getUserId() ?: return null
+        val chosen = raw.trim().take(AccountRepository.DISPLAY_NAME_MAX).trimEnd()
+        prefs.edit().apply {
+            if (chosen.isEmpty()) remove(key(KEY_DISPLAY_NAME_CHOSEN, userId))
+            else putString(key(KEY_DISPLAY_NAME_CHOSEN, userId), chosen)
+        }.apply()
+        val shown = shownDisplayName(userId)
+        state.update { it?.copy(displayName = shown) }
+        return shown
+    }
+
+    /**
+     * The name chosen here, else the server's, else the generated one. The chosen one is kept
+     * apart from the server's so a refresh cannot undo a rename the server never heard of.
+     */
+    private fun shownDisplayName(userId: String): String =
+        prefs.getString(key(KEY_DISPLAY_NAME_CHOSEN, userId), null)?.takeIf { it.isNotBlank() }
+            ?: prefs.getString(key(KEY_DISPLAY_NAME, userId), null)?.takeIf { it.isNotBlank() }
+            ?: DisplayNameGenerator.generate(userId)
 
     override suspend fun setDiscoverable(enabled: Boolean): Boolean {
         val current = state.value ?: return false
@@ -163,6 +183,7 @@ class AccountRepositoryImpl @Inject constructor(
         const val PREFS_FILE = "account_prefs"
         const val KEY_USERNAME = "username"
         const val KEY_DISPLAY_NAME = "display_name"
+        const val KEY_DISPLAY_NAME_CHOSEN = "display_name_chosen"
         const val KEY_DISCOVERABLE = "discoverable"
         /** CheckUsernameAvailability's reason for an alias someone holds. */
         const val REASON_TAKEN = "taken"

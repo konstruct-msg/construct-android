@@ -165,6 +165,7 @@ fun AccountScreen(
         onEdit = viewModel::startEditing,
         onSave = viewModel::save,
         onDraftChange = viewModel::onDraftChange,
+        onDisplayNameDraftChange = viewModel::onDisplayNameDraftChange,
         onSignOut = { askSignOut(false) },
         onSignOutAll = { askSignOut(true) },
         onDevices = onDevices,
@@ -181,6 +182,7 @@ private fun AccountContent(
     onEdit: () -> Unit,
     onSave: () -> Unit,
     onDraftChange: (String) -> Unit,
+    onDisplayNameDraftChange: (String) -> Unit = {},
     onSignOut: () -> Unit,
     onSignOutAll: () -> Unit,
     onDevices: () -> Unit,
@@ -248,9 +250,7 @@ private fun AccountContent(
             RowDivider()
             SearchableRow(searchable = account?.discoverable == true)
             RowDivider()
-            InfoRow(label = stringResource(R.string.account_display_name)) {
-                Text(account?.displayName.orEmpty(), style = ctRegular(14), color = CTColor.text)
-            }
+            DisplayNameRow(ui = ui, onDraftChange = onDisplayNameDraftChange, onEdit = onEdit)
             RowDivider()
             CopyRow(
                 label = stringResource(R.string.identity_fingerprint),
@@ -393,6 +393,44 @@ private fun UsernameRow(ui: AccountUiState, onDraftChange: (String) -> Unit, onE
                 text = if (error != null) stringResource(error.message()) else stringResource(R.string.account_username_hint),
                 style = ctRegular(11),
                 color = if (error != null) CTColor.danger else CTColor.textDim,
+            )
+        }
+    }
+}
+
+/** iOS `profileEditableRow(display_name)`: the name contacts see, edited with the alias. */
+@Composable
+private fun DisplayNameRow(ui: AccountUiState, onDraftChange: (String) -> Unit, onEdit: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (ui.editing) Modifier else Modifier.clickable(onClick = onEdit))
+            .padding(horizontal = ROW_H_PAD, vertical = ROW_V_PAD),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.account_display_name),
+                style = ctRegular(14),
+                color = CTColor.textDim,
+                modifier = Modifier.weight(1f),
+            )
+            if (!ui.editing) {
+                Text(ui.account?.displayName.orEmpty(), style = ctRegular(14), color = CTColor.text)
+            }
+        }
+        if (ui.editing) {
+            Spacer(Modifier.height(8.dp))
+            CTTextField(
+                placeholder = stringResource(R.string.account_display_name),
+                value = ui.draftDisplayName,
+                onValueChange = onDraftChange,
+            )
+        } else {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.account_display_name_hint),
+                style = ctRegular(11),
+                color = CTColor.textDim,
             )
         }
     }

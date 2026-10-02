@@ -30,6 +30,7 @@ data class AccountUiState(
     val account: OwnAccount? = null,
     val editing: Boolean = false,
     val draftUsername: String = "",
+    val draftDisplayName: String = "",
     val saving: Boolean = false,
     val usernameError: UsernameError? = null,
     val signingOut: Boolean = false,
@@ -52,10 +53,11 @@ sealed interface AccountEvent {
 }
 
 /**
- * The Account screen: alias, fingerprint, account id, sign-out.
+ * The Account screen: alias, display name, fingerprint, account id, sign-out.
  *
- * **Canon:** iOS `AccountSettingsView`. Editing is a mode — "edit" opens the alias for change,
- * "save" checks it and leaves the mode only when the server took it.
+ * **Canon:** iOS `AccountSettingsView`. Editing is a mode — "edit" opens the alias and the display
+ * name for change, "save" keeps the name, checks the alias and leaves the mode only when the
+ * server took it.
  */
 @HiltViewModel
 class AccountViewModel @Inject constructor(
@@ -93,7 +95,12 @@ class AccountViewModel @Inject constructor(
 
     fun startEditing() {
         state.update {
-            it.copy(editing = true, draftUsername = it.account?.username.orEmpty(), usernameError = null)
+            it.copy(
+                editing = true,
+                draftUsername = it.account?.username.orEmpty(),
+                draftDisplayName = it.account?.displayName.orEmpty(),
+                usernameError = null,
+            )
         }
     }
 
@@ -107,22 +114,48 @@ class AccountViewModel @Inject constructor(
         state.update { it.copy(draftUsername = cleaned, usernameError = null) }
     }
 
+    fun onDisplayNameDraftChange(value: String) {
+        state.update { it.copy(draftDisplayName = value.take(AccountRepository.DISPLAY_NAME_MAX)) }
+    }
+
+    /**
+     * The name first, then the alias, as iOS `saveProfileEdits`. A new name goes again to everyone
+     * the profile is shared with — iOS `saveDisplayName` — in the background, like the avatar.
+     */
     fun save() {
         val current = state.value
         if (current.saving) return
-        if (current.draftUsername == current.account?.username) {
+        val nameChanged = current.draftDisplayName.trim() != current.account?.displayName
+        val usernameChanged = current.draftUsername != current.account?.username
+        if (!nameChanged && !usernameChanged) {
             cancelEditing()
             return
         }
         state.update { it.copy(saving = true, usernameError = null) }
         viewModelScope.launch {
-            val error = when (accountRepository.changeUsername(current.draftUsername)) {
-                is UsernameChange.Saved -> null
-                UsernameChange.InvalidLength -> UsernameError.LENGTH
-                is UsernameChange.Unavailable -> UsernameError.UNAVAILABLE
-                UsernameChange.Failed -> UsernameError.FAILED
+            if (nameChanged) {
+                val before = current.account?.displayName
+                val shown = accountRepository.setDisplayName(current.draftDisplayName)
+                if (shown != null && shown != before) shareProfile.rebroadcast()
             }
-            state.update { it.copy(saving = false, usernameError = error, editing = error != null) }
+            val error = if (!usernameChanged) {
+                null
+            } else {
+                when (accountRepository.changeUsername(current.draftUsername)) {
+                    is UsernameChange.Saved -> null
+                    UsernameChange.InvalidLength -> UsernameError.LENGTH
+                    is UsernameChange.Unavailable -> UsernameError.UNAVAILABLE
+                    UsernameChange.Failed -> UsernameError.FAILED
+                }
+            }
+            state.update {
+                it.copy(
+                    saving = false,
+                    usernameError = error,
+                    editing = error != null,
+                    draftDisplayName = it.account?.displayName.orEmpty(),
+                )
+            }
         }
     }
 

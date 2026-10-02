@@ -363,6 +363,7 @@
     <string name="account_username">username</string>
     <string name="account_username_hint">your unique public identifier. tap to change.</string>
     <string name="account_display_name">display name</string>
+    <string name="account_display_name_hint">shown to your contacts. username stays permanent.</string>
     <string name="identity_fingerprint">fingerprint</string>
     <string name="identity_fingerprint_copied">copied</string>
     <string name="identity_fingerprint_unknown">not loaded yet</string>

@@ -4,6 +4,10 @@ import com.construct.messenger.data.repository.AccountRepository
 import com.construct.messenger.data.repository.AuthRepository
 import com.construct.messenger.data.repository.OwnAccount
 import com.construct.messenger.data.repository.UsernameChange
+import com.construct.messenger.domain.usecase.ShareProfileUseCase
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import com.construct.messenger.test.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,6 +44,16 @@ internal class FakeAccountRepository(
         val result = nextUsernameResult ?: UsernameChange.Saved(raw)
         if (result is UsernameChange.Saved) state.value = state.value?.copy(username = result.username)
         return result
+    }
+
+    val displayNameCalls = mutableListOf<String>()
+
+    /** As the real one: blank goes back to the generated name. */
+    override suspend fun setDisplayName(raw: String): String? {
+        displayNameCalls += raw
+        val shown = raw.trim().ifEmpty { "soft lion" }
+        state.value = state.value?.copy(displayName = shown)
+        return shown
     }
 
     val avatars = mutableListOf<android.graphics.Bitmap>()
@@ -102,6 +116,42 @@ class AccountViewModelTest {
         assertTrue(vm.uiState.value.editing)
         assertEquals(UsernameError.UNAVAILABLE, vm.uiState.value.usernameError)
         assertEquals("fox", vm.uiState.value.draftUsername)
+    }
+
+    @Test
+    fun `a new display name is kept and goes to everyone the profile is shared with`() {
+        val repo = FakeAccountRepository(username = "fox")
+        val share = mock<ShareProfileUseCase>()
+        val vm = AccountViewModel(repo, auth, mock(), mock(), share)
+        vm.startEditing()
+        assertEquals("soft lion", vm.uiState.value.draftDisplayName)
+        vm.onDisplayNameDraftChange("  Silver Fox ")
+        vm.save()
+        assertFalse(vm.uiState.value.editing)
+        assertEquals("Silver Fox", vm.uiState.value.account?.displayName)
+        assertTrue("the alias was not changed", repo.usernameCalls.isEmpty())
+        verify(share).rebroadcast()
+    }
+
+    @Test
+    fun `a name that ends up the same is not sent again`() {
+        val repo = FakeAccountRepository(username = "fox")
+        val share = mock<ShareProfileUseCase>()
+        val vm = AccountViewModel(repo, auth, mock(), mock(), share)
+        vm.startEditing()
+        vm.onDisplayNameDraftChange("   ")
+        vm.save()
+        assertFalse(vm.uiState.value.editing)
+        assertEquals("soft lion", vm.uiState.value.account?.displayName)
+        verify(share, never()).rebroadcast()
+    }
+
+    @Test
+    fun `the display name draft stops at 50`() {
+        val vm = AccountViewModel(FakeAccountRepository(), auth, mock(), mock(), mock())
+        vm.startEditing()
+        vm.onDisplayNameDraftChange("x".repeat(80))
+        assertEquals(50, vm.uiState.value.draftDisplayName.length)
     }
 
     @Test

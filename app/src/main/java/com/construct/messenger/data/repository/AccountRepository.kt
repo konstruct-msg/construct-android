@@ -39,6 +39,14 @@ interface AccountRepository {
     /** Trims, lowercases, checks availability, then sets it on the server. */
     suspend fun changeUsername(raw: String): UsernameChange
 
+    /**
+     * [raw], trimmed and cut at [DISPLAY_NAME_MAX], becomes the name contacts see. It stays on this
+     * device and reaches them only inside the shared profile, as on iOS (`saveDisplayName`): the
+     * server is never told. Blank goes back to the server's name, else the generated one. Returns
+     * the name now shown; `null` while signed out.
+     */
+    suspend fun setDisplayName(raw: String): String?
+
     /** Returns whether the change was applied. Enabling needs a username. */
     suspend fun setDiscoverable(enabled: Boolean): Boolean
 
@@ -51,5 +59,8 @@ interface AccountRepository {
     companion object {
         /** iOS `MessageSizeLimits.min/maxUsernameCharacters`; the server caps at 20. */
         val USERNAME_LENGTH = 3..20
+
+        /** iOS `MessageSizeLimits.maxDisplayNameCharacters`. */
+        const val DISPLAY_NAME_MAX = 50
     }
 }
