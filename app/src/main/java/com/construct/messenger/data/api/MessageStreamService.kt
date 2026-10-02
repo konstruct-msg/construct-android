@@ -169,7 +169,7 @@ class MessageStreamService @Inject constructor(
                 if (midSession) TransportRoute.StreamFailure.MID_SESSION_UNKNOWN else TransportRoute.StreamFailure.TRANSPORT_UNKNOWN
             }
         }
-        if (via is TransportRoute.Target.Veil && !veil.isAlive()) {
+        if (localProxyGone(failure, via, veil::isAlive)) {
             // The local proxy is gone: that is a hard relay failure, and it rotates.
             transportEvents.post(TransportRoute.Event.RpcFailed(TransportRoute.RpcFailure.STALE_LOCAL_PROXY, via, foreground = true))
             return
@@ -289,4 +289,19 @@ class MessageStreamService @Inject constructor(
         const val INITIAL_BACKOFF_MS = 1_000L
         const val MAX_BACKOFF_MS = 30_000L
     }
+}
+
+/**
+ * Whether a stream that ended over VEIL ended because the local proxy is gone. A refused loopback
+ * connection says so by itself; [proxyAlive] (`veil_is_alive`) is asked only otherwise — it answers
+ * from the coordinator's session, not the listener, and on iOS said "alive" with the socket closed
+ * after a suspension (TODO 102). Trusted alone, a dead proxy would be reconnected to forever rather
+ * than replaced. Unary RPCs already rotate on a refused connection (`RouteObservingInterceptor`).
+ */
+internal fun localProxyGone(failure: Throwable?, via: TransportRoute.Target, proxyAlive: () -> Boolean): Boolean {
+    if (via !is TransportRoute.Target.Veil) return false
+    if (failure != null &&
+        RouteObservingInterceptor.classify(Status.fromThrowable(failure), via) == TransportRoute.RpcFailure.STALE_LOCAL_PROXY
+    ) return true
+    return !proxyAlive()
 }
