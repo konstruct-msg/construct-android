@@ -33,7 +33,7 @@ android {
         // Code: the commit count, so every build installs over the one before it and nobody
         // has to remember. Sat at 2 / "0.2.0" from April to 2026-09-30 for want of either.
         versionCode commitCount()
-        versionName "0.10.0"
+        versionName "0.10.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
