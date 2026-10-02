@@ -56,6 +56,7 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.construct.messenger.R
+import com.construct.messenger.ui.theme.CTColor
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -174,10 +175,10 @@ private fun androidx.compose.foundation.layout.RowScope.CropButton(label: String
 
 /**
  * Our avatar, whole. **Canon:** iOS `AvatarViewerSheet` — the picture fitted on black, "Close"
- * and "Change Photo" above it.
+ * and "Change Photo" above it; "remove avatar" below, as iOS Desktop offers it.
  */
 @Composable
-fun AvatarViewerDialog(jpeg: ByteArray, onChange: () -> Unit, onDismiss: () -> Unit) {
+fun AvatarViewerDialog(jpeg: ByteArray, onChange: () -> Unit, onDismiss: () -> Unit, onRemove: (() -> Unit)? = null) {
     val image = remember(jpeg) { BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size)?.asImageBitmap() }
     Dialog(
         onDismissRequest = onDismiss,
@@ -202,6 +203,15 @@ fun AvatarViewerDialog(jpeg: ByteArray, onChange: () -> Unit, onDismiss: () -> U
                 Box(Modifier.weight(1f))
                 TextButton(onClick = onChange) {
                     Text(stringResource(R.string.change_avatar), color = Color.White, fontSize = 17.sp)
+                }
+            }
+            if (onRemove != null) {
+                TextButton(
+                    onClick = onRemove,
+                    // Clear of the gesture bar: a decor-less dialog gets no bottom inset here.
+                    modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 48.dp),
+                ) {
+                    Text(stringResource(R.string.remove_avatar), color = CTColor.danger, fontSize = 17.sp)
                 }
             }
         }

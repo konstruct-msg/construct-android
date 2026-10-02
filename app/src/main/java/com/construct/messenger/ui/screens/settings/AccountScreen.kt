@@ -113,11 +113,25 @@ fun AccountScreen(
         )
     }
     val avatar = ui.account?.avatar
+    var confirmRemove by remember { mutableStateOf(false) }
     if (viewingAvatar && avatar != null) {
         AvatarViewerDialog(
             jpeg = avatar,
             onChange = { viewingAvatar = false; changeAvatar() },
             onDismiss = { viewingAvatar = false },
+            onRemove = { confirmRemove = true },
+        )
+    }
+    // Asked first: contacts it is shared with lose the picture too, and the next one is a new upload.
+    if (confirmRemove) {
+        CTConfirmDialog(
+            title = stringResource(R.string.remove_avatar_confirm_title),
+            message = stringResource(R.string.remove_avatar_confirm_message),
+            confirmLabel = stringResource(R.string.remove_avatar),
+            dismissLabel = stringResource(R.string.action_cancel),
+            isDestructive = true,
+            onConfirm = { confirmRemove = false; viewingAvatar = false; viewModel.removeAvatar() },
+            onDismiss = { confirmRemove = false },
         )
     }
 

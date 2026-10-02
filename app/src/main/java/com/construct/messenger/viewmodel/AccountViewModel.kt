@@ -169,6 +169,16 @@ class AccountViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Our avatar goes; then the profile goes again to everyone it is shared with, carrying
+     * "removed", so they clear it too (iOS Desktop `removeAvatar`).
+     */
+    fun removeAvatar() {
+        viewModelScope.launch(NonCancellable) {
+            if (accountRepository.removeAvatar()) shareProfile.rebroadcast()
+        }
+    }
+
     /** [allDevices]: the server ends every session of the account, this one included. */
     fun signOut(allDevices: Boolean = false) {
         if (state.value.signingOut) return

@@ -196,6 +196,16 @@ class AccountRepositoryImpl @Inject constructor(
         true
     }
 
+    override suspend fun removeAvatar(): Boolean = withContext(Dispatchers.IO) {
+        val userId = keystoreManager.getUserId() ?: return@withContext false
+        val file = avatarFile(userId)
+        if (!file.exists()) return@withContext false
+        file.delete()
+        markProfileEdited(userId)
+        state.update { it?.copy(avatar = null) }
+        true
+    }
+
     // Keyed by account id for the reason the prefs are: a new account never inherits it.
     private fun avatarFile(userId: String) = File(avatarDir, "own-${userId.filter(Char::isLetterOrDigit)}.jpg")
 

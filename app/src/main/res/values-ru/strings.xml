@@ -172,6 +172,9 @@
     <string name="close">Закрыть</string>
     <string name="change_photo">изменить фото</string>
     <string name="change_avatar">Сменить фото</string>
+    <string name="remove_avatar">Удалить аватар</string>
+    <string name="remove_avatar_confirm_title">Удалить аватар?</string>
+    <string name="remove_avatar_confirm_message">Контакты, с которыми вы делитесь профилем, будут видеть ваш значок вместо фото.</string>
     <string name="crop_use_photo">Выбрать фото</string>
     <string name="photo">Фото</string>
     <string name="video">Видео</string>

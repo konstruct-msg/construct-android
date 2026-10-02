@@ -69,6 +69,12 @@ interface AccountRepository {
      */
     suspend fun setAvatar(picture: android.graphics.Bitmap): Boolean
 
+    /**
+     * No avatar any more — the identicon again. Contacts learn it when the profile goes out: it
+     * carries "removed" and they clear the one they hold. False when there was none.
+     */
+    suspend fun removeAvatar(): Boolean
+
     companion object {
         /** iOS `MessageSizeLimits.min/maxUsernameCharacters`; the server caps at 20. */
         val USERNAME_LENGTH = 3..20

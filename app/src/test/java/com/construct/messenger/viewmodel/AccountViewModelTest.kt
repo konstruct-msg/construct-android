@@ -61,6 +61,12 @@ internal class FakeAccountRepository(
 
     val avatars = mutableListOf<android.graphics.Bitmap>()
 
+    override suspend fun removeAvatar(): Boolean {
+        val had = state.value?.avatar != null
+        state.value = state.value?.copy(avatar = null)
+        return had
+    }
+
     override suspend fun setAvatar(picture: android.graphics.Bitmap): Boolean {
         avatars += picture
         return true
@@ -147,6 +153,20 @@ class AccountViewModelTest {
         assertFalse(vm.uiState.value.editing)
         assertEquals("soft lion", vm.uiState.value.account?.displayName)
         verify(share, never()).rebroadcast()
+    }
+
+    /** The profile goes again, carrying "removed" (ShareProfileUseCaseTest), so contacts clear it. */
+    @Test
+    fun `removing the avatar sends the profile again, and with none there is nothing to send`() {
+        val repo = FakeAccountRepository().apply { state.value = state.value!!.copy(avatar = byteArrayOf(1)) }
+        val share = mock<ShareProfileUseCase>()
+        val vm = AccountViewModel(repo, auth, mock(), mock(), share)
+        vm.removeAvatar()
+        assertNull(vm.uiState.value.account?.avatar)
+        verify(share).rebroadcast()
+
+        vm.removeAvatar()
+        verify(share, org.mockito.kotlin.times(1)).rebroadcast()
     }
 
     @Test
