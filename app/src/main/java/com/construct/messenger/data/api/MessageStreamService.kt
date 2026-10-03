@@ -13,7 +13,6 @@ import javax.inject.Singleton
 import kotlin.math.min
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.coroutineScope
@@ -28,7 +27,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import shared.proto.core.v1.EnvelopeOuterClass.Envelope
-import shared.proto.services.v1.MessagingServiceOuterClass.Heartbeat
 import shared.proto.services.v1.MessagingServiceOuterClass.MessageStreamRequest
 import shared.proto.services.v1.MessagingServiceOuterClass.SubscribeRequest
 import shared.proto.signaling.v1.Presence.DeliveryReceipt
@@ -188,25 +186,17 @@ class MessageStreamService @Inject constructor(
         // guarantees the server sees it even if collection starts late).
         outbound.tryEmit(subscribeFrame())
 
-        val scope = CoroutineScope(SupervisorJob())
-        val heartbeatJob = scope.launch {
-            while (isActive) {
-                delay(HEARTBEAT_INTERVAL_MS)
-                outbound.tryEmit(
-                    MessageStreamRequest.newBuilder()
-                        .setHeartbeat(
-                            Heartbeat.newBuilder().setTimestamp(System.currentTimeMillis()),
-                        )
-                        .build(),
-                )
-            }
-        }
-
-        // Every heartbeat is answered, so a stream with no inbound frame for STALE_AFTER_MS is
-        // dead even though TCP still calls it established — a censoring middlebox or a dropped
-        // NAT mapping swallows the traffic and no RST ever arrives. Without this the stream sat
-        // on such a socket indefinitely (seen on a RU network, 2026-09-24). Canon: iOS
-        // heartbeat watchdog, NetworkTiming.swift ("heartbeatInterval × multiplier = ~60s").
+        // No heartbeat from this side: the server sends one every 30 s on every stream
+        // (messaging-service `stream_heartbeat_interval_secs`) and answers ours with nothing more
+        // than an ack, so ours only doubled the radio's wake-ups — on a mobile network each keeps
+        // the radio up for seconds after it (testers, battery, 2026-10-03). Its arrival is what the
+        // watchdog below waits for. iOS still sends its own; it holds no stream in the background.
+        //
+        // A stream with no inbound frame for STALE_AFTER_MS is dead even though TCP still calls it
+        // established — a censoring middlebox or a dropped NAT mapping swallows the traffic and no
+        // RST ever arrives. Without this the stream sat on such a socket indefinitely (seen on a RU
+        // network, 2026-09-24). Canon: iOS heartbeat watchdog, NetworkTiming.swift
+        // ("heartbeatInterval × multiplier = ~60s").
         // A new connection replays from the committed cursor; whatever was tracked on the last one
         // is re-tracked from that replay.
         cursorTracker.reset()
@@ -214,10 +204,12 @@ class MessageStreamService @Inject constructor(
         try {
             coroutineScope {
                 launch {
+                    // Sleeps until the stream would turn stale, not on a short tick: a wake-up
+                    // every few seconds for nothing is what the battery pays for.
                     while (isActive) {
-                        delay(WATCHDOG_CHECK_MS)
                         val silentMs = SystemClock.elapsedRealtime() - lastInboundAt
                         if (silentMs > STALE_AFTER_MS) throw StaleStreamException(silentMs)
+                        delay(STALE_AFTER_MS - silentMs + 1)
                     }
                 }
                 collectStream(outbound, attempt) { lastInboundAt = SystemClock.elapsedRealtime() }
@@ -225,7 +217,6 @@ class MessageStreamService @Inject constructor(
                 coroutineContext.cancelChildren()
             }
         } finally {
-            heartbeatJob.cancel()
             _isConnected.value = false
         }
     }
@@ -283,9 +274,7 @@ class MessageStreamService @Inject constructor(
 
     private companion object {
         const val TAG = "MessageStream"
-        const val HEARTBEAT_INTERVAL_MS = 25_000L
         const val STALE_AFTER_MS = 60_000L
-        const val WATCHDOG_CHECK_MS = 5_000L
         const val INITIAL_BACKOFF_MS = 1_000L
         const val MAX_BACKOFF_MS = 30_000L
     }
