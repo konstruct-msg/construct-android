@@ -1,5 +1,6 @@
 package com.construct.messenger.stealth
 
+import com.construct.messenger.crypto.ServerTrust
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
@@ -285,9 +286,9 @@ class StealthSenderService @Inject constructor(
         )
     }
 
-    /** The server keys a sender certificate is checked against — handed to the core before each
-     * open, since the fetched key can arrive or rotate while the app runs. */
-    fun trustedServerKeys(): List<ByteArray> = listOfNotNull(serverKeys.bundleVerificationKey())
+    /** What a sender certificate is judged by — handed to the core before each open, since the
+     * fetched key and the delegations can arrive or rotate while the app runs. */
+    fun serverTrust(): ServerTrust = serverKeys.trust()
 
     private companion object {
         const val TAG = "StealthSender"

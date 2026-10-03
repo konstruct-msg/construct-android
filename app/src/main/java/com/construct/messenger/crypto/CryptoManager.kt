@@ -229,17 +229,27 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
      * this itself; a message no held state reads needs it too — the core seals a decryption error
      * only to a writer whose certificate it can check, and with no keys it answers nothing.
      */
-    fun setTrustedServerKeys(trustedServerKeys: List<ByteArray>) = synchronized(coreLock) {
-        orchestrator?.setTrustedServerKeys(trustedServerKeys)
+    fun setServerTrust(trust: ServerTrust) = synchronized(coreLock) {
+        orchestrator?.let { handOver(it, trust) }
         Unit
     }
 
-    fun openReceiving(device: String, trustedServerKeys: List<ByteArray>): ReceivingOpenResult =
+    fun openReceiving(device: String, trust: ServerTrust): ReceivingOpenResult =
         synchronized(coreLock) {
             val core = orchestrator ?: error("orchestrator not ready — setLocalUserId first")
-            core.setTrustedServerKeys(trustedServerKeys)
+            handOver(core, trust)
             core.openReceiving(device)
         }
+
+    /**
+     * The Ed25519 key, then the delegations of the server's hybrid keys. The core keeps only
+     * delegations a root pinned in its build signed, so where they came from does not matter, and
+     * one it already holds is kept once. **Canon:** iOS `CryptoManager.handOverTrustedServerKeys`.
+     */
+    private fun handOver(core: OrchestratorCore, trust: ServerTrust) {
+        core.setTrustedServerKeys(trust.keys)
+        core.admitServerDelegations(trust.delegations)
+    }
 
     /**
      * [wirePayload], just encrypted for [deviceId], sealed as a session envelope — or `null` when

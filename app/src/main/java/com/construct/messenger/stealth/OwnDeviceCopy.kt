@@ -62,4 +62,7 @@ fun EnvelopeOuterClass.SenderCertificate.toCore(): SenderCertificate = SenderCer
     issuedAt = issuedAt,
     expiresAt = expiresAt,
     signature = serverSignature.toByteArray(),
+    // Empty from a server that does not sign with a delegated key yet; then Ed25519 decides.
+    serverKid = serverKid.toByteArray(),
+    serverSignatureHybrid = serverSignatureHybrid.toByteArray(),
 )

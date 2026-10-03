@@ -1004,11 +1004,15 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_ack_is_proce
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_ack_mark_processed(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_admit_server_delegations(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_begin_kyber_spk_rotation(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_build_hybrid_identity_bind_message(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_build_x3dh_sign_message(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_certificate_verdict(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_commit_kyber_spk_rotation(
 ): Short
@@ -1135,6 +1139,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_sign_hybrid(
 external fun uniffi_construct_core_checksum_method_orchestratorcore_sign_hybrid_prekey(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_sign_with_device_key(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_verify_kt_proofs(
 ): Short
 external fun uniffi_construct_core_checksum_method_rustackstore_cache_len(
 ): Short
@@ -1383,11 +1389,15 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_ack_is_processed(`
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_ack_mark_processed(`ptr`: Long,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_method_orchestratorcore_admit_server_delegations(`ptr`: Long,`delegations`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Int
 external fun uniffi_construct_core_fn_method_orchestratorcore_begin_kyber_spk_rotation(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_build_hybrid_identity_bind_message(`ptr`: Long,`hybridPublicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_build_x3dh_sign_message(`ptr`: Long,`suiteId`: Byte,`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_certificate_verdict(`ptr`: Long,`certificate`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_commit_kyber_spk_rotation(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
@@ -1514,6 +1524,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_sign_hybrid(`ptr`:
 external fun uniffi_construct_core_fn_method_orchestratorcore_sign_hybrid_prekey(`ptr`: Long,`suiteId`: Byte,`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_sign_with_device_key(`ptr`: Long,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_verify_kt_proofs(`ptr`: Long,`deviceId`: RustBuffer.ByValue,`identityKey`: RustBuffer.ByValue,`identityProof`: RustBuffer.ByValue,`hybridIdentityKey`: RustBuffer.ByValue,`hybridProof`: RustBuffer.ByValue,`treeHead`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_clone_rustackstore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
@@ -2224,6 +2236,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_ack_mark_processed() != 13454.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_admit_server_delegations() != 9633.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_begin_kyber_spk_rotation() != 57721.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2231,6 +2246,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_build_x3dh_sign_message() != 28178.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_certificate_verdict() != 10591.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_commit_kyber_spk_rotation() != 27935.toShort()) {
@@ -2420,6 +2438,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_sign_with_device_key() != 47610.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_verify_kt_proofs() != 62141.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_rustackstore_cache_len() != 41894.toShort()) {
@@ -5684,6 +5705,8 @@ public interface OrchestratorCoreInterface {
      */
     fun `ackMarkProcessed`(`messageId`: kotlin.String)
     
+    fun `admitServerDelegations`(`delegations`: List<kotlin.ByteArray>): kotlin.UInt
+    
     /**
      * Start a Kyber SPK rotation (with the classic SPK): the key to upload. Calling it again
      * before commit/rollback returns the same key, so a retried upload uploads the same key.
@@ -5693,6 +5716,8 @@ public interface OrchestratorCoreInterface {
     fun `buildHybridIdentityBindMessage`(`hybridPublicKey`: kotlin.ByteArray): kotlin.ByteArray
     
     fun `buildX3dhSignMessage`(`suiteId`: kotlin.UByte, `publicKey`: kotlin.ByteArray): kotlin.ByteArray
+    
+    fun `certificateVerdict`(`certificate`: SenderCertificate): CertificateVerdict
     
     /**
      * The server confirmed the upload. Returns false if nothing was pending.
@@ -5944,6 +5969,8 @@ public interface OrchestratorCoreInterface {
      */
     fun `signWithDeviceKey`(`message`: kotlin.ByteArray): kotlin.ByteArray
     
+    fun `verifyKtProofs`(`deviceId`: kotlin.String, `identityKey`: kotlin.ByteArray, `identityProof`: KtInclusionProof, `hybridIdentityKey`: kotlin.ByteArray?, `hybridProof`: KtInclusionProof?, `treeHead`: KtSignedTreeHead?): KtVerdicts
+    
     companion object
 }
 
@@ -6084,6 +6111,19 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     
     
 
+    override fun `admitServerDelegations`(`delegations`: List<kotlin.ByteArray>): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_admit_server_delegations(
+        it,
+        FfiConverterSequenceByteArray.lower(`delegations`),_status)
+}
+    }
+    )
+    }
+    
+
     
     /**
      * Start a Kyber SPK rotation (with the classic SPK): the key to upload. Calling it again
@@ -6122,6 +6162,19 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_build_x3dh_sign_message(
         it,
         FfiConverterUByte.lower(`suiteId`),FfiConverterByteArray.lower(`publicKey`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `certificateVerdict`(`certificate`: SenderCertificate): CertificateVerdict {
+            return FfiConverterTypeCertificateVerdict.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_certificate_verdict(
+        it,
+        FfiConverterTypeSenderCertificate.lower(`certificate`),_status)
 }
     }
     )
@@ -7095,6 +7148,19 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_sign_with_device_key(
         it,
         FfiConverterByteArray.lower(`message`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `verifyKtProofs`(`deviceId`: kotlin.String, `identityKey`: kotlin.ByteArray, `identityProof`: KtInclusionProof, `hybridIdentityKey`: kotlin.ByteArray?, `hybridProof`: KtInclusionProof?, `treeHead`: KtSignedTreeHead?): KtVerdicts {
+            return FfiConverterTypeKtVerdicts.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_verify_kt_proofs(
+        it,
+        FfiConverterString.lower(`deviceId`),FfiConverterByteArray.lower(`identityKey`),FfiConverterTypeKtInclusionProof.lower(`identityProof`),FfiConverterOptionalByteArray.lower(`hybridIdentityKey`),FfiConverterOptionalTypeKtInclusionProof.lower(`hybridProof`),FfiConverterOptionalTypeKtSignedTreeHead.lower(`treeHead`),_status)
 }
     }
     )
@@ -8641,6 +8707,139 @@ public object FfiConverterTypeKnstFrame: FfiConverterRustBuffer<KnstFrame> {
 
 
 
+data class KtInclusionProof (
+    var `leafIndex`: kotlin.ULong
+    , 
+    var `treeSize`: kotlin.ULong
+    , 
+    var `rootHash`: kotlin.ByteArray
+    , 
+    var `proofHashes`: List<kotlin.ByteArray>
+    , 
+    var `treeHeadSignature`: kotlin.ByteArray
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeKtInclusionProof: FfiConverterRustBuffer<KtInclusionProof> {
+    override fun read(buf: ByteBuffer): KtInclusionProof {
+        return KtInclusionProof(
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterSequenceByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: KtInclusionProof) = (
+            FfiConverterULong.allocationSize(value.`leafIndex`) +
+            FfiConverterULong.allocationSize(value.`treeSize`) +
+            FfiConverterByteArray.allocationSize(value.`rootHash`) +
+            FfiConverterSequenceByteArray.allocationSize(value.`proofHashes`) +
+            FfiConverterByteArray.allocationSize(value.`treeHeadSignature`)
+    )
+
+    override fun write(value: KtInclusionProof, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`leafIndex`, buf)
+            FfiConverterULong.write(value.`treeSize`, buf)
+            FfiConverterByteArray.write(value.`rootHash`, buf)
+            FfiConverterSequenceByteArray.write(value.`proofHashes`, buf)
+            FfiConverterByteArray.write(value.`treeHeadSignature`, buf)
+    }
+}
+
+
+
+data class KtSignedTreeHead (
+    var `treeSize`: kotlin.ULong
+    , 
+    var `rootHash`: kotlin.ByteArray
+    , 
+    var `kid`: kotlin.ByteArray
+    , 
+    var `signature`: kotlin.ByteArray
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeKtSignedTreeHead: FfiConverterRustBuffer<KtSignedTreeHead> {
+    override fun read(buf: ByteBuffer): KtSignedTreeHead {
+        return KtSignedTreeHead(
+            FfiConverterULong.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: KtSignedTreeHead) = (
+            FfiConverterULong.allocationSize(value.`treeSize`) +
+            FfiConverterByteArray.allocationSize(value.`rootHash`) +
+            FfiConverterByteArray.allocationSize(value.`kid`) +
+            FfiConverterByteArray.allocationSize(value.`signature`)
+    )
+
+    override fun write(value: KtSignedTreeHead, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`treeSize`, buf)
+            FfiConverterByteArray.write(value.`rootHash`, buf)
+            FfiConverterByteArray.write(value.`kid`, buf)
+            FfiConverterByteArray.write(value.`signature`, buf)
+    }
+}
+
+
+
+data class KtVerdicts (
+    var `identity`: KtVerdict
+    , 
+    var `hybrid`: KtVerdict?
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeKtVerdicts: FfiConverterRustBuffer<KtVerdicts> {
+    override fun read(buf: ByteBuffer): KtVerdicts {
+        return KtVerdicts(
+            FfiConverterTypeKtVerdict.read(buf),
+            FfiConverterOptionalTypeKtVerdict.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: KtVerdicts) = (
+            FfiConverterTypeKtVerdict.allocationSize(value.`identity`) +
+            FfiConverterOptionalTypeKtVerdict.allocationSize(value.`hybrid`)
+    )
+
+    override fun write(value: KtVerdicts, buf: ByteBuffer) {
+            FfiConverterTypeKtVerdict.write(value.`identity`, buf)
+            FfiConverterOptionalTypeKtVerdict.write(value.`hybrid`, buf)
+    }
+}
+
+
+
 /**
  * One ML-KEM-1024 Kyber prekey to upload (PQXDH v2). Both signatures are over
  * `"KonstruktX3DH-v1" || 0x00 0x11 || created_at (u64 BE) || public_key`; upload `created_at`
@@ -9906,6 +10105,10 @@ data class SenderCertificate (
     var `expiresAt`: kotlin.Long
     , 
     var `signature`: kotlin.ByteArray
+    , 
+    var `serverKid`: kotlin.ByteArray
+    , 
+    var `serverSignatureHybrid`: kotlin.ByteArray
     
 ){
     
@@ -9927,6 +10130,8 @@ public object FfiConverterTypeSenderCertificate: FfiConverterRustBuffer<SenderCe
             FfiConverterLong.read(buf),
             FfiConverterLong.read(buf),
             FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
         )
     }
 
@@ -9937,7 +10142,9 @@ public object FfiConverterTypeSenderCertificate: FfiConverterRustBuffer<SenderCe
             FfiConverterString.allocationSize(value.`deviceId`) +
             FfiConverterLong.allocationSize(value.`issuedAt`) +
             FfiConverterLong.allocationSize(value.`expiresAt`) +
-            FfiConverterByteArray.allocationSize(value.`signature`)
+            FfiConverterByteArray.allocationSize(value.`signature`) +
+            FfiConverterByteArray.allocationSize(value.`serverKid`) +
+            FfiConverterByteArray.allocationSize(value.`serverSignatureHybrid`)
     )
 
     override fun write(value: SenderCertificate, buf: ByteBuffer) {
@@ -9948,6 +10155,8 @@ public object FfiConverterTypeSenderCertificate: FfiConverterRustBuffer<SenderCe
             FfiConverterLong.write(value.`issuedAt`, buf)
             FfiConverterLong.write(value.`expiresAt`, buf)
             FfiConverterByteArray.write(value.`signature`, buf)
+            FfiConverterByteArray.write(value.`serverKid`, buf)
+            FfiConverterByteArray.write(value.`serverSignatureHybrid`, buf)
     }
 }
 
@@ -10286,6 +10495,38 @@ public object FfiConverterTypeAckCheckResult: FfiConverterRustBuffer<AckCheckRes
     override fun allocationSize(value: AckCheckResult) = 4UL
 
     override fun write(value: AckCheckResult, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
+enum class CertificateVerdict {
+    
+    VOUCHED,
+    NO_KEY,
+    BAD_SIGNATURE,
+    EXPIRED;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCertificateVerdict: FfiConverterRustBuffer<CertificateVerdict> {
+    override fun read(buf: ByteBuffer) = try {
+        CertificateVerdict.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: CertificateVerdict) = 4UL
+
+    override fun write(value: CertificateVerdict, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
@@ -12297,6 +12538,39 @@ public object FfiConverterTypeInitiationDecision: FfiConverterRustBuffer<Initiat
 
 
 
+enum class KtVerdict {
+    
+    VERIFIED,
+    UNAVAILABLE,
+    MALFORMED_PROOF,
+    INCLUSION_PROOF_INVALID,
+    SIGNATURE_INVALID;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeKtVerdict: FfiConverterRustBuffer<KtVerdict> {
+    override fun read(buf: ByteBuffer) = try {
+        KtVerdict.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: KtVerdict) = 4UL
+
+    override fun write(value: KtVerdict, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
 enum class LocalInsert {
     
     INSERTED,
@@ -13131,6 +13405,70 @@ public object FfiConverterOptionalTypeKnstFrame: FfiConverterRustBuffer<KnstFram
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeKtInclusionProof: FfiConverterRustBuffer<KtInclusionProof?> {
+    override fun read(buf: ByteBuffer): KtInclusionProof? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeKtInclusionProof.read(buf)
+    }
+
+    override fun allocationSize(value: KtInclusionProof?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeKtInclusionProof.allocationSize(value)
+        }
+    }
+
+    override fun write(value: KtInclusionProof?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeKtInclusionProof.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeKtSignedTreeHead: FfiConverterRustBuffer<KtSignedTreeHead?> {
+    override fun read(buf: ByteBuffer): KtSignedTreeHead? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeKtSignedTreeHead.read(buf)
+    }
+
+    override fun allocationSize(value: KtSignedTreeHead?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeKtSignedTreeHead.allocationSize(value)
+        }
+    }
+
+    override fun write(value: KtSignedTreeHead?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeKtSignedTreeHead.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeKyberPrekeyUpload: FfiConverterRustBuffer<KyberPrekeyUpload?> {
     override fun read(buf: ByteBuffer): KyberPrekeyUpload? {
         if (buf.get().toInt() == 0) {
@@ -13345,6 +13683,38 @@ public object FfiConverterOptionalTypeSessionHealthReport: FfiConverterRustBuffe
         } else {
             buf.put(1)
             FfiConverterTypeSessionHealthReport.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeKtVerdict: FfiConverterRustBuffer<KtVerdict?> {
+    override fun read(buf: ByteBuffer): KtVerdict? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeKtVerdict.read(buf)
+    }
+
+    override fun allocationSize(value: KtVerdict?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeKtVerdict.allocationSize(value)
+        }
+    }
+
+    override fun write(value: KtVerdict?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeKtVerdict.write(value, buf)
         }
     }
 }

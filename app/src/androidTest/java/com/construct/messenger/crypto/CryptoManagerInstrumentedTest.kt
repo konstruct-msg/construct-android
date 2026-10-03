@@ -142,7 +142,7 @@ class CryptoManagerInstrumentedTest {
             ?: received
         assertTrue("no session: the core asks for an open", asked.any { it is CfeAction.OpenReceiving && it.contactId == aliceId })
 
-        val opened = bob.openReceiving(aliceId, listOf(server.verifyingKey))
+        val opened = bob.openReceiving(aliceId, ServerTrust(listOf(server.verifyingKey), emptyList()))
         assertEquals(aliceId, opened.openedDevice)
         val decrypted = opened.actions.filterIsInstance<CfeAction.MessageDecrypted>().single()
         assertEquals("first-1", decrypted.messageId)
@@ -253,6 +253,6 @@ private class TestCertificateServer {
             write(java.nio.ByteBuffer.allocate(16).putLong(issued).putLong(expires).array())
         }.toByteArray()
         val signature = core.signBundleData(payload)
-        return SenderCertificate(account, domain, identityKey, deviceId, issued, expires, signature)
+        return SenderCertificate(account, domain, identityKey, deviceId, issued, expires, signature, ByteArray(0), ByteArray(0))
     }
 }

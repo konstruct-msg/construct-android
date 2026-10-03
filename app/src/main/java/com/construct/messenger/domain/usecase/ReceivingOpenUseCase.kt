@@ -70,7 +70,7 @@ class ReceivingOpenUseCase @Inject constructor(
         }
         return try {
             if (!cryptoManager.isMessagingReady) return Outcome.Unreachable
-            val result = cryptoManager.openReceiving(device, stealthSender.trustedServerKeys())
+            val result = cryptoManager.openReceiving(device, stealthSender.serverTrust())
             // First: the open burned a Kyber one-time key. Until this blob is stored, a restart
             // brings the key back and a replay of the message would open again.
             result.kyberPrekeys?.let { blob -> kyberPrekeys.persist(ByteArray(blob.size) { blob[it].toByte() }) }

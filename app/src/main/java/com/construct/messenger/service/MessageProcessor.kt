@@ -82,7 +82,7 @@ class MessageProcessor @Inject constructor(
         // receiving open, so after a restart a message on a forgotten state (a deleted chat or
         // contact) was dropped with no answer, and its writer never resent it. iOS hands them
         // over at the same point, before an open, and has the same gap.
-        cryptoManager.setTrustedServerKeys(listOfNotNull(serverKeys.bundleVerificationKey()))
+        cryptoManager.setServerTrust(serverKeys.trust())
         var actions = try {
             orchestrator.handleEvent(event)
         } catch (e: Exception) {

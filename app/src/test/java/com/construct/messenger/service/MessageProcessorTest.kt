@@ -372,6 +372,8 @@ class MessageProcessorTest {
         issuedAt = 1_000L,
         expiresAt = 2_000L,
         signature = ByteArray(64),
+        serverKid = ByteArray(0),
+        serverSignatureHybrid = ByteArray(0),
     )
 
     /** The certificate names the ratchet, and it travels to the core with the message — the only
