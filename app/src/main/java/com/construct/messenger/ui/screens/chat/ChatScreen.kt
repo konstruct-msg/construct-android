@@ -211,6 +211,16 @@ fun ChatScreen(
         }
     }
 
+    // The keyboard (imePadding) and a growing composer shrink the viewport, and a list keeps its
+    // top: the newest message went under the keyboard until the next send (testers, 2026-10-03).
+    // While following, the tail stays at the bottom through every frame of the inset — iOS gets
+    // this from `.defaultScrollAnchor(.bottom)`. Reading history is left where it is.
+    val lastIndex by androidx.compose.runtime.rememberUpdatedState(visible.lastIndex)
+    LaunchedEffect(listState) {
+        androidx.compose.runtime.snapshotFlow { listState.layoutInfo.viewportSize.height }
+            .collect { if (following && lastIndex >= 0) listState.scrollToEnd(lastIndex) }
+    }
+
     // iOS scrolls to the first match as the query changes.
     LaunchedEffect(query) {
         if (searching && query.isNotBlank() && visible.isNotEmpty()) listState.scrollToItem(0)
