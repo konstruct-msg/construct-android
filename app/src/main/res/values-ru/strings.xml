@@ -583,4 +583,5 @@
     <string name="call_error_no_microphone">Для звонка нужен микрофон. Разрешите его в Настройки → Приложения → Konstruct → Разрешения.</string>
     <string name="call_channel_incoming">Входящие звонки</string>
     <string name="call_channel_ongoing">Текущий звонок</string>
+    <string name="scroll_to_newest">К последнему сообщению</string>
 </resources>

@@ -1,6 +1,8 @@
 package com.construct.messenger.ui.screens.chat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import androidx.compose.ui.unit.sp
 import com.construct.messenger.ui.components.glassCapsule
 import com.construct.messenger.ui.theme.CTLayout
@@ -39,6 +42,7 @@ import androidx.compose.runtime.Composable
 import com.construct.messenger.ui.theme.ctRegular
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material.icons.filled.Cancel
@@ -117,6 +121,23 @@ fun ChatScreen(
         if (granted) startRecording() else android.widget.Toast.makeText(context, micDenied, android.widget.Toast.LENGTH_LONG).show()
     }
     val listState = rememberLazyListState()
+    // iOS `ChatViewport.mode`: following the newest message, or reading history (TranscriptFollow).
+    var following by remember { mutableStateOf(true) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val nearBottomSlack = with(androidx.compose.ui.platform.LocalDensity.current) { NEAR_BOTTOM.roundToPx() }
+    LaunchedEffect(listState) {
+        androidx.compose.runtime.snapshotFlow {
+            val info = listState.layoutInfo
+            val last = info.visibleItemsInfo.lastOrNull()
+            TranscriptFollow.nearBottom(last?.index, last?.let { it.offset + it.size } ?: 0, info.totalItemsCount, info.viewportEndOffset, nearBottomSlack) to
+                listState.isScrollInProgress
+        }.collect { (near, scrolling) -> following = TranscriptFollow.next(following, near, scrolling) }
+    }
+    // Sending is an explicit return to the newest message, as on iOS: whoever sent something
+    // means to see it land, even from deep in history.
+    fun followNext() {
+        following = true
+    }
     val clipboard = LocalClipboardManager.current
     var menuMessageId by remember { mutableStateOf<String?>(null) }
     var jumpToId by remember { mutableStateOf<String?>(null) }
@@ -185,8 +206,8 @@ fun ChatScreen(
     }
 
     LaunchedEffect(visible.size) {
-        if (visible.isNotEmpty() && jumpToId == null && !(searching && query.isNotBlank())) {
-            listState.scrollToItem(visible.lastIndex)
+        if (following && visible.isNotEmpty() && jumpToId == null && !(searching && query.isNotBlank())) {
+            listState.scrollToEnd(visible.lastIndex)
         }
     }
 
@@ -246,10 +267,13 @@ fun ChatScreen(
             onAcknowledge = viewModel::acknowledgeSecurityNotice,
         )
 
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
+        ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
             state = listState,
         ) {
             itemsIndexed(visible, key = { _, message -> message.id }) { index, message ->
@@ -326,6 +350,18 @@ fun ChatScreen(
                 )
             }
         }
+        if (!following && selectedIds == null && !(searching && query.isNotBlank())) {
+            JumpToNewestButton(
+                onClick = {
+                    following = true
+                    scope.launch { listState.scrollToEnd(visible.lastIndex, animated = true) }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(CTLayout.edgePad),
+            )
+        }
+        }
 
         quoting?.let { target ->
             QuoteSelectionSheet(
@@ -338,7 +374,7 @@ fun ChatScreen(
         if (pickingSticker) {
             com.construct.messenger.ui.components.StickerPickerSheet(
                 stickers = stickersVm,
-                onSend = viewModel::sendSticker,
+                onSend = { followNext(); viewModel.sendSticker(it) },
                 onDismiss = { pickingSticker = false },
             )
         }
@@ -384,7 +420,7 @@ fun ChatScreen(
                     { VoiceComposerBar(true, r.durationMs, r.recent, viewModel::cancelRecording, viewModel::stopRecording) }
                 }
                 is VoiceRecorder.State.Recorded -> {
-                    { VoiceComposerBar(false, r.durationMs, r.waveform, viewModel::cancelRecording, viewModel::sendRecording) }
+                    { VoiceComposerBar(false, r.durationMs, r.waveform, viewModel::cancelRecording, { followNext(); viewModel.sendRecording() }) }
                 }
                 VoiceRecorder.State.Idle -> null
             },
@@ -428,7 +464,7 @@ fun ChatScreen(
             onRemoveAttachment = viewModel::removeAttachment,
             value = uiState.draft,
             onValueChange = viewModel::onDraftChange,
-            onSend = viewModel::send,
+            onSend = { followNext(); viewModel.send() },
             replyPreview = uiState.replyingTo?.let { reply ->
                 reply.preview.ifBlank { quoteFallback(reply.mediaType) }
             },
@@ -692,5 +728,41 @@ private fun QuoteSelectionSheet(text: String, onConfirm: (String) -> Unit, onDis
                 }
             }
         }
+    }
+}
+
+private val NEAR_BOTTOM = 60.dp
+
+/**
+ * To the end of the last row, not its top: `scrollToItem` puts a row's top at the viewport's, and
+ * a message taller than the screen then shows its beginning — the jump control stayed up.
+ */
+private suspend fun androidx.compose.foundation.lazy.LazyListState.scrollToEnd(lastIndex: Int, animated: Boolean = false) {
+    if (lastIndex < 0) return
+    if (animated) animateScrollToItem(lastIndex) else scrollToItem(lastIndex)
+    val info = layoutInfo
+    val last = info.visibleItemsInfo.lastOrNull { it.index == lastIndex } ?: return
+    val below = (last.offset + last.size - info.viewportEndOffset).toFloat()
+    if (below <= 0f) return
+    if (animated) animateScrollBy(below) else scrollBy(below)
+}
+
+/** iOS `ChatView` jump control: `chevron.down` in accent on a round surface, `scroll_to_newest`. */
+@Composable
+private fun JumpToNewestButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val label = stringResource(R.string.scroll_to_newest)
+    Box(
+        modifier = modifier
+            .size(CTLayout.controlHeight)
+            .background(CTColor.bgMsg, CircleShape)
+            .clickable(onClickLabel = label, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            Icons.Filled.KeyboardArrowDown,
+            contentDescription = label,
+            tint = CTColor.accent,
+            modifier = Modifier.size(CTLayout.callIconSize),
+        )
     }
 }

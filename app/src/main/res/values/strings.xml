@@ -579,4 +579,5 @@
     <string name="call_error_no_microphone">Calls need the microphone. Allow it in Settings → Apps → Konstruct → Permissions.</string>
     <string name="call_channel_incoming">Incoming calls</string>
     <string name="call_channel_ongoing">Ongoing call</string>
+    <string name="scroll_to_newest">Jump to newest</string>
 </resources>
