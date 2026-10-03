@@ -103,14 +103,24 @@ class RecoveryViewModel @Inject constructor(
         }
         state.update { it.copy(stage = RecoveryStage.Working, errorRes = null) }
         viewModelScope.launch {
-            try {
+            val outcome = try {
                 repository.setUp(quiz.words)
-                state.update { it.copy(stage = RecoveryStage.Ready) }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                state.update {
-                    it.copy(stage = quiz, errorRes = com.construct.messenger.R.string.recovery_setup_failed)
+                SetUpOutcome.FAILED
+            }
+            state.update {
+                when (outcome) {
+                    SetUpOutcome.DONE -> it.copy(stage = RecoveryStage.Ready)
+                    // A key from an earlier attempt is the account's for good: only that phrase
+                    // opens it now, so ask for it instead of offering these words again.
+                    SetUpOutcome.OTHER_PHRASE_SET -> it.copy(
+                        stage = RecoveryStage.Confirm,
+                        errorRes = com.construct.messenger.R.string.recovery_setup_other_phrase,
+                    )
+                    // The same words stay: a retry either sets them or finds them set.
+                    SetUpOutcome.FAILED -> it.copy(stage = quiz, errorRes = com.construct.messenger.R.string.recovery_setup_failed)
                 }
             }
         }

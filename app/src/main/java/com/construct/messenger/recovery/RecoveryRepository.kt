@@ -4,7 +4,10 @@ import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.invite.AccountAddress
+import com.construct.messenger.diagnostics.Log
 import com.google.protobuf.ByteString
+import io.grpc.Status
+import kotlinx.coroutines.CancellationException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -16,6 +19,30 @@ data class RecoveryStatus(val isSetup: Boolean, val fingerprint: String?)
 
 /** Why a phrase was not accepted on this device. */
 enum class ConfirmFailure { INVALID_PHRASE, NOT_SET_UP, OTHER_ACCOUNT }
+
+/** How setting up a phrase ended. */
+enum class SetUpOutcome {
+    /** The account's key is this phrase's; the device keeps the address. */
+    DONE,
+    /** The account already has a key from another phrase — set by an earlier attempt. */
+    OTHER_PHRASE_SET,
+    /** Nothing is known to have been set: the connection, or the server, failed. */
+    FAILED,
+}
+
+/**
+ * What a failed `SetRecoveryKey` actually left on the server, read from the status asked
+ * afterwards. A key is set once and never changed (identity-service), so a call whose answer was
+ * lost — a dropped connection, a route switch — may still have set it: a retry then meets
+ * ALREADY_EXISTS. Shown as "check the connection", that sent testers round in circles, and a new
+ * phrase never fitted while the first attempt's did (2026-10-03). [status] null: not even the
+ * status could be read.
+ */
+internal fun afterFailedSetUp(status: RecoveryStatus?, publicKey: ByteArray): SetUpOutcome {
+    val fingerprint = status?.fingerprint
+    if (status == null || !status.isSetup || fingerprint == null) return SetUpOutcome.FAILED
+    return if (AccountAddress.matchesServerFingerprint(publicKey, fingerprint)) SetUpOutcome.DONE else SetUpOutcome.OTHER_PHRASE_SET
+}
 
 /**
  * The recovery phrase: set it up for the account, or teach this device the account's address
@@ -44,8 +71,11 @@ class RecoveryRepository @Inject constructor(
         )
     }
 
-    /** Registers [words] as the account's recovery key and keeps the address it gives. */
-    suspend fun setUp(words: List<String>) {
+    /**
+     * Registers [words] as the account's recovery key and keeps the address it gives. A failure is
+     * checked against what the server now holds ([afterFailedSetUp]) before it is reported.
+     */
+    suspend fun setUp(words: List<String>): SetUpOutcome {
         val userId = keystoreManager.getUserId() ?: error("not authenticated")
         val keypair = cryptoManager.deriveRecoveryKeypair(words.joinToString(" "))
         val timestamp = System.currentTimeMillis() / 1000
@@ -55,14 +85,30 @@ class RecoveryRepository @Inject constructor(
             "CONSTRUCT_RECOVERY_SETUP:$userId:$timestamp",
         )
         val publicKey = keypair.publicKey
-        grpcClient.auth.setRecoveryKey(
-            SetRecoveryKeyRequest.newBuilder()
-                .setRecoveryPublicKey(ByteString.copyFrom(publicKey))
-                .setSetupSignature(ByteString.copyFrom(signature))
-                .setTimestamp(timestamp)
-                .build(),
-        )
-        keystoreManager.saveOwnAccountAddress(publicKey)
+        val failure = try {
+            grpcClient.auth.withDeadlineAfter(STATUS_TIMEOUT_SECONDS, TimeUnit.SECONDS).setRecoveryKey(
+                SetRecoveryKeyRequest.newBuilder()
+                    .setRecoveryPublicKey(ByteString.copyFrom(publicKey))
+                    .setSetupSignature(ByteString.copyFrom(signature))
+                    .setTimestamp(timestamp)
+                    .build(),
+            )
+            null
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            e
+        }
+        val outcome = if (failure == null) {
+            SetUpOutcome.DONE
+        } else {
+            // The code and the server's words, never the phrase or a key.
+            val status = Status.fromThrowable(failure)
+            Log.w(TAG, "recovery setup refused: ${status.code} — ${status.description}")
+            afterFailedSetUp(runCatching { status() }.getOrNull(), publicKey)
+        }
+        if (outcome == SetUpOutcome.DONE) keystoreManager.saveOwnAccountAddress(publicKey)
+        return outcome
     }
 
     /**
@@ -87,6 +133,7 @@ class RecoveryRepository @Inject constructor(
 
     companion object {
         const val PHRASE_WORDS = 12
+        private const val TAG = "Recovery"
     }
 }
 

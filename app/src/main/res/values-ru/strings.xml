@@ -417,6 +417,7 @@
     <string name="recovery_quiz_word_n">Слово №%1$d</string>
     <string name="recovery_quiz_failed">Слова не совпадают. Проверьте, что вы записали.</string>
     <string name="recovery_setup_failed">Не удалось сохранить фразу восстановления. Проверьте соединение и попробуйте ещё раз.</string>
+    <string name="recovery_setup_other_phrase">У аккаунта уже есть фраза восстановления из прошлой попытки. Введите фразу, которую записали тогда, — новые слова не подойдут.</string>
     <string name="recovery_confirm_placeholder">12 слов через пробел</string>
     <string name="recovery_confirm_action">Подтвердить</string>
     <string name="recovery_confirm_invalid_phrase">Это не фраза из 12 слов. Проверьте написание каждого слова.</string>

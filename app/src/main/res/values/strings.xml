@@ -413,6 +413,7 @@
     <string name="recovery_quiz_word_n">Word #%1$d</string>
     <string name="recovery_quiz_failed">Those words don\'t match. Check what you wrote down.</string>
     <string name="recovery_setup_failed">Couldn\'t save the recovery phrase. Check the connection and try again.</string>
+    <string name="recovery_setup_other_phrase">This account already has a recovery phrase from an earlier attempt. Enter the phrase you wrote down then — the new words will not work.</string>
     <string name="recovery_confirm_placeholder">12 words, separated by spaces</string>
     <string name="recovery_confirm_action">Confirm</string>
     <string name="recovery_confirm_invalid_phrase">That isn\'t a valid 12-word phrase. Check the spelling of each word.</string>
