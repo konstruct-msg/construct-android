@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.localName
 import com.construct.messenger.data.local.db.resolvedName
+import com.construct.messenger.data.model.ContactTrustAlert
+import com.construct.messenger.data.model.KtStatus
 import com.construct.messenger.data.model.SecurityNotice
 import com.construct.messenger.data.repository.SessionSecurity
 import com.construct.messenger.data.repository.SessionSecurityRepository
@@ -36,7 +38,8 @@ data class ContactProfileUiState(
     val fingerprint: String? = null,
     val avatar: ByteArray? = null,
     val isBlocked: Boolean = false,
-    val securityNotice: SecurityNotice = SecurityNotice.NONE,
+    /** Their security event, or a failed KT proof. */
+    val trustAlert: ContactTrustAlert? = null,
     /** Null until the core has been asked. */
     val session: SessionSecurity? = null,
     /** The row is gone — deleted here or never existed. The screen leaves. */
@@ -97,7 +100,7 @@ class ContactProfileViewModel @Inject constructor(
                 fingerprint = (row.identityPublic ?: sessionState?.identityPublic)?.let(IdentityFingerprint::short),
                 avatar = row.avatarData,
                 isBlocked = row.isBlocked,
-                securityNotice = SecurityNotice.of(row.securityNotice),
+                trustAlert = ContactTrustAlert.of(SecurityNotice.of(row.securityNotice), KtStatus.of(row.ktStatus)),
                 session = sessionState,
                 busy = isBusy,
                 reportAccepted = report,

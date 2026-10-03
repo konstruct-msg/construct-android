@@ -584,4 +584,12 @@
     <string name="call_channel_incoming">Входящие звонки</string>
     <string name="call_channel_ongoing">Текущий звонок</string>
     <string name="scroll_to_newest">К последнему сообщению</string>
+    <string name="kt_verified">подтверждено</string>
+    <string name="kt_warning">внимание</string>
+    <string name="key_change_banner_title_failed">Проверка личности не удалась</string>
+    <string name="key_change_banner_subtitle_failed">Не удалось подтвердить ключ этого человека в журнале прозрачности. По возможности проверьте лично.</string>
+    <string name="kt_section">прозрачность ключей</string>
+    <string name="kt_status">merkle-лог</string>
+    <string name="kt_no_data">нет данных</string>
+    <string name="kt_last_failure_at">последний сбой: %1$s</string>
 </resources>

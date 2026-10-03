@@ -11,7 +11,8 @@ import com.construct.messenger.data.repository.MediaUnavailable
 import com.construct.messenger.media.VoicePlayer
 import com.construct.messenger.media.VoiceRecorder
 import com.construct.messenger.data.model.ReplyRef
-import com.construct.messenger.data.model.SecurityNotice
+import com.construct.messenger.data.model.ContactTrustAlert
+import com.construct.messenger.data.model.KtStatus
 import com.construct.messenger.data.repository.ContactsRepository
 import com.construct.messenger.data.repository.MessagesRepository
 import com.construct.messenger.domain.usecase.SendOutcome
@@ -38,7 +39,10 @@ data class ChatUiState(
     /** Text of the message being edited, shown in the bar. Null when the next send is a new message. */
     val editingOriginal: String? = null,
     /** Their unacknowledged security event; the banner shows while it is not NONE. */
-    val securityNotice: SecurityNotice = SecurityNotice.NONE,
+    /** What to warn about: their security event, or a failed KT proof. */
+    val trustAlert: ContactTrustAlert? = null,
+    /** The key server's proof for their key verified; the nav bar marks it. */
+    val ktVerified: Boolean = false,
     /** Name for the banner — alias or generated, never the raw id. */
     val contactName: String = "",
     /** Photos picked for the next message, in order; its text is then their caption. */
@@ -128,7 +132,8 @@ class ChatViewModel @Inject constructor(
             draft = draftText,
             replyingTo = reply,
             editingOriginal = edit?.original,
-            securityNotice = contact?.securityNotice ?: SecurityNotice.NONE,
+            trustAlert = contact?.trustAlert,
+            ktVerified = contact?.ktStatus == KtStatus.VERIFIED,
             contactName = contact?.let { it.localName ?: if (it.username.isNotBlank()) "@${it.username}" else it.displayName }
                 ?: DisplayNameGenerator.generate(contactId),
             attachments = photos,

@@ -64,6 +64,7 @@ class ContactsRepositoryImpl @Inject constructor(
                 displayName = it.resolvedName(it.id),
                 username = it.username,
                 securityNotice = SecurityNotice.of(it.securityNotice),
+                ktStatus = com.construct.messenger.data.model.KtStatus.of(it.ktStatus),
                 localName = it.localName,
                 avatar = it.avatarData,
             )

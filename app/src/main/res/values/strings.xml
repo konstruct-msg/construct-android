@@ -580,4 +580,12 @@
     <string name="call_channel_incoming">Incoming calls</string>
     <string name="call_channel_ongoing">Ongoing call</string>
     <string name="scroll_to_newest">Jump to newest</string>
+    <string name="kt_verified">verified</string>
+    <string name="kt_warning">warning</string>
+    <string name="key_change_banner_title_failed">Identity check failed</string>
+    <string name="key_change_banner_subtitle_failed">We could not confirm this person\'s security key with the transparency log. Verify in person if you can.</string>
+    <string name="kt_section">key transparency</string>
+    <string name="kt_status">merkle log</string>
+    <string name="kt_no_data">no data</string>
+    <string name="kt_last_failure_at">last failure: %1$s</string>
 </resources>

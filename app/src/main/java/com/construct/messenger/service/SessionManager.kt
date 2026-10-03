@@ -32,6 +32,7 @@ class SessionManager @Inject constructor(
     private val grpcClient: GrpcClient,
     private val userDao: UserDao,
     private val peerDeviceRegistry: PeerDeviceRegistry,
+    private val contactKt: com.construct.messenger.security.ContactKt,
 ) {
 
     suspend fun hasSession(contactId: String): Boolean {
@@ -123,6 +124,7 @@ class SessionManager @Inject constructor(
         }
         peerDeviceRegistry.record(accountId, derivedDeviceId, identity)
         rememberIdentity(accountId, identity)
+        contactKt.judge(accountId, response)
         return PeerBundle(
             accountId = accountId,
             deviceId = derivedDeviceId,

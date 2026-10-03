@@ -46,6 +46,9 @@ data class UserEntity(
     val pendingAvatarRef: ByteArray? = null,
     /** When [pendingAvatarRef] was set — after the media store's 7 days it is dropped. */
     val pendingAvatarSinceMs: Long? = null,
+    /** The last Key Transparency verdict on their bundle ([com.construct.messenger.data.model.KtStatus]).
+     * Rewritten by every bundle fetch that carries a proof. */
+    val ktStatus: Int = 0,
 ) {
     // ByteArray field: structural equality must be explicit.
     override fun equals(other: Any?): Boolean {
@@ -65,7 +68,8 @@ data class UserEntity(
             amSharingWith == other.amSharingWith &&
             profileEditedAtMs == other.profileEditedAtMs &&
             pendingAvatarRef.contentEquals(other.pendingAvatarRef) &&
-            pendingAvatarSinceMs == other.pendingAvatarSinceMs
+            pendingAvatarSinceMs == other.pendingAvatarSinceMs &&
+            ktStatus == other.ktStatus
     }
 
     override fun hashCode(): Int {
@@ -84,6 +88,7 @@ data class UserEntity(
         result = 31 * result + profileEditedAtMs.hashCode()
         result = 31 * result + pendingAvatarRef.contentHashCode()
         result = 31 * result + (pendingAvatarSinceMs?.hashCode() ?: 0)
+        result = 31 * result + ktStatus
         return result
     }
 }
@@ -129,6 +134,9 @@ interface UserDao {
 
     @Query("UPDATE users SET securityNotice = :code WHERE id = :userId")
     suspend fun setSecurityNotice(userId: String, code: Int)
+
+    @Query("UPDATE users SET ktStatus = :code WHERE id = :userId")
+    suspend fun setKtStatus(userId: String, code: Int)
 
     /** Its own statement, so no upsert of a row read earlier can carry an older alias back. */
     @Query("UPDATE users SET localAlias = :alias WHERE id = :userId")

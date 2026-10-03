@@ -914,6 +914,7 @@ internal class FakeUserDao : UserDao {
     override suspend fun getById(userId: String) = rows[userId]
     override suspend fun upsert(user: UserEntity) { rows[user.id] = user }
     override suspend fun delete(userId: String) { rows.remove(userId) }
+    override suspend fun setKtStatus(userId: String, code: Int) = Unit
     override suspend fun setSecurityNotice(userId: String, code: Int) {
         rows[userId]?.let { rows[userId] = it.copy(securityNotice = code) }
     }

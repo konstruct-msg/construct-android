@@ -42,6 +42,8 @@ import androidx.compose.runtime.Composable
 import com.construct.messenger.ui.theme.ctRegular
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.GppMaybe
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.EmojiEmotions
@@ -267,11 +269,14 @@ fun ChatScreen(
                 onDoneSelecting = { selectedIds = null },
                 onSearch = { searching = true },
                 onCall = com.construct.messenger.ui.screens.calls.rememberCallAction(uiState.contactId),
+                alerted = uiState.trustAlert != null,
+                ktVerified = uiState.ktVerified,
+                onVerify = onOpenSafetyNumbers,
             )
         }
 
         SecurityNoticeBanner(
-            notice = uiState.securityNotice,
+            alert = uiState.trustAlert,
             contactName = uiState.contactName,
             onVerify = onOpenSafetyNumbers,
             onAcknowledge = viewModel::acknowledgeSecurityNotice,
@@ -534,6 +539,9 @@ private fun ChatNavBar(
     onDoneSelecting: () -> Unit,
     onSearch: () -> Unit,
     onCall: (() -> Unit)?,
+    alerted: Boolean,
+    ktVerified: Boolean,
+    onVerify: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -560,18 +568,21 @@ private fun ChatNavBar(
             )
         }
         Spacer(Modifier.width(CTLayout.inlinePad))
-        Text(
-            text = title.uppercase(),
-            style = ctBold(14),
-            color = CTColor.text,
-            letterSpacing = 4.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .weight(1f)
-                .clickable(onClick = onOpenProfile)
-                .padding(vertical = 10.dp),
-        )
+        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = title.uppercase(),
+                style = ctBold(14),
+                color = CTColor.text,
+                letterSpacing = 4.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .clickable(onClick = onOpenProfile)
+                    .padding(vertical = 10.dp),
+            )
+            KtBadge(alerted = alerted, verified = ktVerified, onAlertTap = onVerify)
+        }
         if (selecting) {
             Text(
                 text = stringResource(R.string.done),
@@ -773,6 +784,38 @@ private fun JumpToNewestButton(onClick: () -> Unit, modifier: Modifier = Modifie
             contentDescription = label,
             tint = CTColor.accent,
             modifier = Modifier.size(CTLayout.callIconSize),
+        )
+    }
+}
+
+/**
+ * Beside the name: a red shield while there is something to warn about (tap → safety numbers),
+ * else an accent check when the key server's proof for their key verified.
+ * **Canon:** iOS `ChatNavBarView.ktBadge`.
+ */
+@Composable
+private fun KtBadge(alerted: Boolean, verified: Boolean, onAlertTap: () -> Unit) {
+    when {
+        alerted -> Box(
+            modifier = Modifier
+                .padding(start = CTLayout.inlinePad)
+                .size(CTLayout.hitTarget * 0.7f)
+                .clip(CircleShape)
+                .clickable(onClickLabel = stringResource(R.string.key_change_verify), onClick = onAlertTap),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Filled.GppMaybe,
+                contentDescription = stringResource(R.string.kt_warning),
+                tint = CTColor.danger,
+                modifier = Modifier.size(CTLayout.navIconSize),
+            )
+        }
+        verified -> Icon(
+            Icons.Filled.CheckCircle,
+            contentDescription = stringResource(R.string.kt_verified),
+            tint = CTColor.accent,
+            modifier = Modifier.padding(start = CTLayout.inlinePad).size(14.dp),
         )
     }
 }

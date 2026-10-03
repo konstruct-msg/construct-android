@@ -1,5 +1,7 @@
 package com.construct.messenger.ui.screens.settings
 
+import androidx.compose.material.icons.filled.Tag
+import com.construct.messenger.security.KtTally
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -65,6 +67,7 @@ import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.CTSettingsRow
 import com.construct.messenger.ui.components.CTStatus
+import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.CTStatusBadge
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTLayout
@@ -128,8 +131,8 @@ fun SecurityScreen(
  *
  * **Canon:** iOS `SecurityView` — one flat list, blocks divided by a separator, each with its
  * hint beneath. Order: PIN (biometrics, lock delay, off), recovery phrase, Lockdown, sender
- * anonymity, issued invites, discovery. Not ported: the duress PIN (a separate step — it erases
- * the account); key transparency, which Android does not have.
+ * anonymity, issued invites, key transparency, discovery. Not ported: the duress PIN (a
+ * separate step — it erases the account).
  */
 @Composable
 private fun SecurityContent(
@@ -203,6 +206,9 @@ private fun SecurityContent(
                 disclosure = true,
                 modifier = Modifier.fillMaxWidth().clickable(onClick = onIssuedInvites),
             )
+            CTSep()
+
+            KtSection(ui.kt)
             CTSep()
 
             DiscoveryRow(ui = ui, onChange = onDiscoverable)
@@ -472,4 +478,34 @@ private fun SecurityContentPreview() {
         onIssuedInvites = {},
         onDiscoverable = {},
     )
+}
+
+/**
+ * What the key server's proofs said, over every contact's bundle this device fetched.
+ * **Canon:** iOS `KTStatusSection` — red after a failure until three verifications in a row.
+ */
+@Composable
+private fun KtSection(kt: KtTally) {
+    val (status, label, tint) = when {
+        kt.failures > 0 -> Triple(CTStatus.WARNING, stringResource(R.string.kt_warning), CTColor.danger)
+        kt.verified > 0 -> Triple(CTStatus.OK, stringResource(R.string.kt_verified), CTColor.accent)
+        else -> Triple(CTStatus.UNKNOWN, stringResource(R.string.kt_no_data), CTColor.textDim)
+    }
+    CTSettingsSectionHeader(stringResource(R.string.kt_section))
+    SecurityRow(vertical = CTLayout.chromeGap) {
+        RowIcon(Icons.Default.Tag, tint)
+        Text(
+            text = stringResource(R.string.kt_status),
+            style = ctRegular(13),
+            color = CTColor.text,
+            modifier = Modifier.weight(1f),
+        )
+        CTStatusBadge(status = status, size = 12.dp)
+        Text(text = label, style = ctRegular(11), color = tint, modifier = Modifier.padding(start = 6.dp))
+    }
+    val failedAt = kt.lastFailedAtMs
+    if (kt.failures > 0 && failedAt != null) {
+        val ago = android.text.format.DateUtils.getRelativeTimeSpanString(failedAt).toString()
+        Hint(stringResource(R.string.kt_last_failure_at, ago), color = CTColor.danger.copy(alpha = 0.8f))
+    }
 }

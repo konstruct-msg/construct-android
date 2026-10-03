@@ -9,6 +9,9 @@ import uniffi.construct_core.computeSafetyNumber
 import uniffi.construct_core.ClassicCryptoCore
 import uniffi.construct_core.DeliveryTarget
 import uniffi.construct_core.KyberPrekeyUpload
+import uniffi.construct_core.KtInclusionProof
+import uniffi.construct_core.KtSignedTreeHead
+import uniffi.construct_core.KtVerdicts
 import uniffi.construct_core.OrchestratorCore
 import uniffi.construct_core.OtpkPair
 import uniffi.construct_core.PowSolution
@@ -240,6 +243,24 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
             handOver(core, trust)
             core.openReceiving(device)
         }
+
+    /**
+     * The core's verdicts on a bundle's KT proofs, against the server keys and delegations in
+     * [trust]; null when there is no core to ask. **Canon:** iOS `CryptoManager.verifyKtProofs`.
+     */
+    fun verifyKtProofs(
+        deviceId: String,
+        identityKey: ByteArray,
+        identityProof: KtInclusionProof,
+        hybridIdentityKey: ByteArray?,
+        hybridProof: KtInclusionProof?,
+        treeHead: KtSignedTreeHead?,
+        trust: ServerTrust,
+    ): KtVerdicts? = synchronized(coreLock) {
+        val core = orchestrator ?: return null
+        handOver(core, trust)
+        core.verifyKtProofs(deviceId, identityKey, identityProof, hybridIdentityKey, hybridProof, treeHead)
+    }
 
     /**
      * The Ed25519 key, then the delegations of the server's hybrid keys. The core keeps only

@@ -1,5 +1,7 @@
 package com.construct.messenger.viewmodel
 
+import com.construct.messenger.security.KtLog
+import com.construct.messenger.security.KtTally
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -28,6 +30,8 @@ data class SecurityUiState(
     val recovery: RecoveryStatus? = null,
     val lockdown: Lockdown = Lockdown(),
     val senderAnonymity: Boolean = true,
+    /** Every KT verdict this device reached on contacts' bundles. */
+    val kt: KtTally = KtTally(),
 )
 
 /**
@@ -43,6 +47,7 @@ class SecurityViewModel @Inject constructor(
     private val recoveryRepository: RecoveryRepository,
     private val securitySettings: SecuritySettingsRepository,
     private val contactsRepository: ContactsRepository,
+    private val ktLog: KtLog,
 ) : ViewModel() {
     private val state = MutableStateFlow(SecurityUiState())
     val uiState: StateFlow<SecurityUiState> = state.asStateFlow()
@@ -63,6 +68,7 @@ class SecurityViewModel @Inject constructor(
             securitySettings.lockdown.collect { lockdown -> state.update { it.copy(lockdown = lockdown) } }
         }
         state.update { it.copy(senderAnonymity = securitySettings.senderAnonymity) }
+        viewModelScope.launch { ktLog.tally.collect { kt -> state.update { it.copy(kt = kt) } } }
     }
 
     /** Again on return from the phrase setup, which may have just set it up. */

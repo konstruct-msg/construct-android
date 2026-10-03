@@ -1,5 +1,7 @@
 package com.construct.messenger.ui.screens.chats
 
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.filled.GppMaybe
 import com.construct.messenger.ui.components.rememberAvatar
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -85,9 +87,17 @@ fun ChatRow(
                         color = CTColor.text,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f, fill = false),
                     )
-                    Spacer(Modifier.width(4.dp))
+                    if (chat.alerted) {
+                        Icon(
+                            androidx.compose.material.icons.Icons.Filled.GppMaybe,
+                            contentDescription = stringResource(R.string.kt_warning),
+                            tint = CTColor.danger,
+                            modifier = Modifier.padding(start = 4.dp).size(13.dp),
+                        )
+                    }
+                    Spacer(Modifier.weight(1f).widthIn(min = 4.dp))
                     chat.lastMessageTime?.let { time ->
                         Text(
                             text = rowTimestamp(context, time),

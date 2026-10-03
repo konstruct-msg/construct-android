@@ -64,5 +64,7 @@ class SecurityViewModelTest {
         account: AccountRepository,
         settings: SecuritySettingsRepository = securitySettings(),
         contacts: ContactsRepository = mock(),
-    ) = SecurityViewModel(account, mock(), settings, contacts)
+    ) = SecurityViewModel(account, mock(), settings, contacts, mock<com.construct.messenger.security.KtLog>().also {
+        org.mockito.kotlin.whenever(it.tally).thenReturn(kotlinx.coroutines.flow.MutableStateFlow(com.construct.messenger.security.KtTally()))
+    })
 }

@@ -27,7 +27,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ReactionEntity::class,
         CallRecordEntity::class,
     ],
-    version = 19,
+    version = 20,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -197,6 +197,13 @@ abstract class ConstructDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE users ADD COLUMN profileEditedAtMs INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE users ADD COLUMN pendingAvatarRef BLOB")
                 db.execSQL("ALTER TABLE users ADD COLUMN pendingAvatarSinceMs INTEGER")
+            }
+        }
+
+        /** The last Key Transparency verdict per contact. Existing rows: not verified yet. */
+        val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE users ADD COLUMN ktStatus INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

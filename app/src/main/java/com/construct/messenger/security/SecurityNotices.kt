@@ -1,6 +1,7 @@
 package com.construct.messenger.security
 
 import com.construct.messenger.data.local.ChatPresence
+import com.construct.messenger.data.model.KtStatus
 import com.construct.messenger.data.model.SecurityNotice
 import com.construct.messenger.data.local.db.UserDao
 import javax.inject.Inject
@@ -31,7 +32,15 @@ class SecurityNotices @Inject constructor(
         }
     }
 
+    /**
+     * The user saw the warning. A failed KT proof goes back to "not verified", not to verified:
+     * iOS `KeyChangeUX.acknowledgeKeyChange` writes `.verified` there, which shows the verified
+     * mark for a proof that never passed. The next fetch with a proof writes the real verdict.
+     */
     suspend fun acknowledge(userId: String) {
         userDao.setSecurityNotice(userId, SecurityNotice.NONE.code)
+        if (userDao.getById(userId)?.ktStatus == KtStatus.FAILED.code) {
+            userDao.setKtStatus(userId, KtStatus.UNVERIFIED.code)
+        }
     }
 }

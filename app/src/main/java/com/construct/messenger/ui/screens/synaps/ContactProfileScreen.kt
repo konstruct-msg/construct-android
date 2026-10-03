@@ -54,7 +54,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.BuildConfig
 import com.construct.messenger.R
-import com.construct.messenger.data.model.SecurityNotice
+import com.construct.messenger.data.model.ContactTrustAlert
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
@@ -368,8 +368,8 @@ private fun ActionsSection(
 private fun SecuritySection(ui: ContactProfileUiState, onSafetyNumbers: () -> Unit, onAcknowledge: () -> Unit) {
     SectionHeader(stringResource(R.string.profile_security))
     RowDivider()
-    if (ui.securityNotice != SecurityNotice.NONE) {
-        SecurityNoticeBlock(ui.securityNotice, ui.name, onVerify = onSafetyNumbers, onAcknowledge = onAcknowledge)
+    ui.trustAlert?.let { alert ->
+        SecurityNoticeBlock(alert, ui.name, onVerify = onSafetyNumbers, onAcknowledge = onAcknowledge)
         RowDivider()
     }
     val session = ui.session
@@ -400,13 +400,8 @@ private fun SecuritySection(ui: ContactProfileUiState, onSafetyNumbers: () -> Un
 
 /** iOS `keyChangeWarningBlock`: stays until they verify or acknowledge it. */
 @Composable
-private fun SecurityNoticeBlock(notice: SecurityNotice, name: String, onVerify: () -> Unit, onAcknowledge: () -> Unit) {
-    val (title, body) = when (notice) {
-        SecurityNotice.NONE -> return
-        SecurityNotice.ADDRESS_CHANGED ->
-            stringResource(R.string.address_change_banner_title) to
-                stringResource(R.string.address_change_banner_subtitle_fmt, name)
-    }
+private fun SecurityNoticeBlock(alert: ContactTrustAlert, name: String, onVerify: () -> Unit, onAcknowledge: () -> Unit) {
+    val (title, body) = com.construct.messenger.ui.screens.chat.trustAlertText(alert, name)
     val control = RoundedCornerShape(CornerRadius.control)
     Column(
         modifier = Modifier

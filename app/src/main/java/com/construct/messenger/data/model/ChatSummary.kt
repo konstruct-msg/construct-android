@@ -13,4 +13,6 @@ data class ChatSummary(
     val isPinned: Boolean = false,
     /** Their avatar as they shared it, a JPEG; `null` = the identicon. */
     val avatar: ByteArray? = null,
+    /** Something to warn about for this contact; the row marks it with a shield (iOS `ChatRowView`). */
+    val alerted: Boolean = false,
 )

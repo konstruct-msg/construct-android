@@ -60,5 +60,9 @@ private fun ChatEntity.toSummary(user: UserEntity?): ChatSummary {
         unreadCount = unreadCount,
         isPinned = isPinned,
         avatar = user?.avatarData,
+        alerted = user != null && com.construct.messenger.data.model.ContactTrustAlert.of(
+            com.construct.messenger.data.model.SecurityNotice.of(user.securityNotice),
+            com.construct.messenger.data.model.KtStatus.of(user.ktStatus),
+        ) != null,
     )
 }
