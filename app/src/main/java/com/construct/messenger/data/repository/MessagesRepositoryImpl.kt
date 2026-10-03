@@ -95,15 +95,20 @@ class MessagesRepositoryImpl @Inject constructor(
         return true
     }
 
-    override suspend fun send(contactId: String, text: String, reply: ReplyRef?): SendOutcome {
-        val outcome = sendMessage(contactId, text, reply)
-        // The first time we write to a device, it gets our card too (the other trigger is
-        // hearing from it). After the message, so a control envelope never delays the bubble.
-        if (outcome is SendOutcome.Sent) {
-            runCatching { sendContactCard.sendIfOwed(contactId) }
-        }
-        return outcome
-    }
+    /**
+     * On a scope of its own, as photos are: the composer is cleared at once, so leaving the chat
+     * right after a send is the ordinary case, and must not leave the bubble SENDING for good.
+     */
+    override suspend fun send(contactId: String, text: String, reply: ReplyRef?): SendOutcome =
+        scope.async {
+            val outcome = sendMessage(contactId, text, reply)
+            // The first time we write to a device, it gets our card too (the other trigger is
+            // hearing from it). After the message, so a control envelope never delays the bubble.
+            if (outcome is SendOutcome.Sent) {
+                runCatching { sendContactCard.sendIfOwed(contactId) }
+            }
+            outcome
+        }.await()
 
     /** On a scope of its own: leaving the chat must not cancel an upload half done. */
     override suspend fun sendPhotos(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef?): SendOutcome =
@@ -132,7 +137,7 @@ class MessagesRepositoryImpl @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override suspend fun edit(contactId: String, messageId: String, newText: String): SendOutcome =
-        sendMessage.edit(contactId, messageId, newText)
+        scope.async { sendMessage.edit(contactId, messageId, newText) }.await()
 
     override suspend fun delete(contactId: String, messageId: String) {
         val myId = keystoreManager.getUserId() ?: return

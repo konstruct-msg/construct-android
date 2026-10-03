@@ -429,7 +429,6 @@ fun ChatScreen(
             value = uiState.draft,
             onValueChange = viewModel::onDraftChange,
             onSend = viewModel::send,
-            enabled = !uiState.sending,
             replyPreview = uiState.replyingTo?.let { reply ->
                 reply.preview.ifBlank { quoteFallback(reply.mediaType) }
             },

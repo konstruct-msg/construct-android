@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 data class ChatUiState(
@@ -32,7 +33,6 @@ data class ChatUiState(
     val title: String,
     val messages: List<Message> = emptyList(),
     val draft: String = "",
-    val sending: Boolean = false,
     /** The message the composer is quoting. Null when the next send is not a reply. */
     val replyingTo: ReplyRef? = null,
     /** Text of the message being edited, shown in the bar. Null when the next send is a new message. */
@@ -80,7 +80,6 @@ class ChatViewModel @Inject constructor(
     val contactId: String = requireNotNull(savedStateHandle.get<String>("contactId"))
 
     private val draft = MutableStateFlow("")
-    private val sending = MutableStateFlow(false)
     private val replying = MutableStateFlow<ReplyRef?>(null)
     private val editing = MutableStateFlow<EditTarget?>(null)
     private val attachments = MutableStateFlow<List<Uri>>(emptyList())
@@ -112,9 +111,8 @@ class ChatViewModel @Inject constructor(
         messagesRepository.observeContact(contactId),
         contactsRepository.contacts,
         draft,
-        sending,
         combine(replying, editing, attachments, files) { reply, edit, photos, picked -> Composer(reply, edit, photos, picked) },
-    ) { messages, contacts, draftText, isSending, composer ->
+    ) { messages, contacts, draftText, composer ->
         val (reply, edit, photos, picked) = composer
         val contact = contacts.find { it.userId == contactId }
         val title = when {
@@ -128,7 +126,6 @@ class ChatViewModel @Inject constructor(
             title = title,
             messages = messages,
             draft = draftText,
-            sending = isSending,
             replyingTo = reply,
             editingOriginal = edit?.original,
             securityNotice = contact?.securityNotice ?: SecurityNotice.NONE,
@@ -362,47 +359,54 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    /**
+     * The composer is free at once, as on iOS (`ChatView.onSend` clears before the send ends): the
+     * bubble, SENDING then SENT or FAILED with its retry, is the send's progress. Waiting for the
+     * server with the text locked in the field read as a send that hung (testers, 2026-10-03) —
+     * over VEIL or a slow network the answer takes seconds.
+     */
     fun send() {
-        val text = draft.value.trim()
+        val typed = draft.value
+        val text = typed.trim()
         val photos = attachments.value
         val picked = files.value
-        if ((text.isEmpty() && photos.isEmpty() && picked.isEmpty()) || sending.value) return
+        if (text.isEmpty() && photos.isEmpty() && picked.isEmpty()) return
         val reply = replying.value
         val edit = editing.value
-        sending.value = true
+        draft.value = ""
+        replying.value = null
+        editing.value = null
+        if ((photos.isNotEmpty() || picked.isNotEmpty()) && edit == null) {
+            // Photos and files go as two messages, the text with the first. Each started now, on
+            // its own: the files must not wait for a video to encode and upload — leaving the chat
+            // meanwhile cancelled this coroutine, and with it the files, which were never sent
+            // (stand, 2026-09-30).
+            attachments.value = emptyList()
+            files.value = emptyList()
+            if (photos.isNotEmpty()) viewModelScope.launch { report(messagesRepository.sendPhotos(contactId, photos, text, reply)) }
+            if (picked.isNotEmpty()) {
+                val caption = if (photos.isEmpty()) text else ""
+                viewModelScope.launch { report(messagesRepository.sendFiles(contactId, picked.map { it.uri }, caption)) }
+            }
+            return
+        }
         viewModelScope.launch {
-            try {
-                if ((photos.isNotEmpty() || picked.isNotEmpty()) && edit == null) {
-                    // The bubble is in the transcript before the uploads end; the composer
-                    // is free again at once, as on iOS. Photos and files go as two messages,
-                    // the text with the first.
-                    attachments.value = emptyList()
-                    files.value = emptyList()
-                    draft.value = ""
-                    replying.value = null
-                    sending.value = false
-                    // Each started now, on its own: the files must not wait for a video to encode
-                    // and upload — leaving the chat meanwhile cancelled this coroutine, and with
-                    // it the files, which were never sent (stand, 2026-09-30).
-                    if (photos.isNotEmpty()) viewModelScope.launch { report(messagesRepository.sendPhotos(contactId, photos, text, reply)) }
-                    if (picked.isNotEmpty()) {
-                        val caption = if (photos.isEmpty()) text else ""
-                        viewModelScope.launch { report(messagesRepository.sendFiles(contactId, picked.map { it.uri }, caption)) }
-                    }
-                    return@launch
-                }
-                val outcome = if (edit != null) {
-                    messagesRepository.edit(contactId, edit.messageId, text)
-                } else {
-                    messagesRepository.send(contactId, text, reply)
-                }
-                if (outcome is SendOutcome.Sent) {
-                    draft.value = ""
-                    replying.value = null
-                    editing.value = null
-                }
-            } finally {
-                sending.value = false
+            val outcome = try {
+                if (edit != null) messagesRepository.edit(contactId, edit.messageId, text)
+                else messagesRepository.send(contactId, text, reply)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                SendOutcome.Failed("", e.message ?: "send failed")
+            }
+            // A failed send has its FAILED bubble to retry from. A failed edit, or a send refused
+            // before it wrote a row, has nothing on screen: the text goes back into the composer,
+            // unless the user has started on something else meanwhile.
+            val lost = outcome is SendOutcome.Failed && (edit != null || outcome.messageId.isEmpty())
+            if (lost && draft.value.isEmpty() && replying.value == null && editing.value == null) {
+                draft.value = typed
+                replying.value = reply
+                editing.value = edit
             }
         }
     }

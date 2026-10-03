@@ -53,6 +53,42 @@ class ChatViewModelTest {
         assertTrue(viewModel.uiState.value.messages.single().isOutgoing)
     }
 
+    /**
+     * The field is empty while the send is still on the wire (testers, 2026-10-03: the text sat in
+     * a locked field until the server answered). Mutation: clear only on Sent — this reddens.
+     */
+    @Test
+    fun `the composer is free before the send ends`() = runTest {
+        val messages = FakeMessagesRepository().also { it.gate = kotlinx.coroutines.CompletableDeferred() }
+        val handle = SavedStateHandle().apply { set("contactId", "peer-1") }
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        viewModel.startReply(Message(id = "q", chatId = "peer-1", body = "quoted", isOutgoing = false))
+        viewModel.onDraftChange("hello")
+        viewModel.send()
+        advanceUntilIdle()
+
+        assertEquals("", viewModel.uiState.value.draft)
+        assertNull(viewModel.uiState.value.replyingTo)
+        assertEquals("hello", messages.sent.single().text)
+        viewModel.onDraftChange("next")
+        messages.gate!!.complete(Unit)
+        advanceUntilIdle()
+        assertEquals("next", viewModel.uiState.value.draft)
+    }
+
+    /** Refused before a row was written, nothing on screen holds the text: it comes back. */
+    @Test
+    fun `a send refused before any bubble gives the text back`() = runTest {
+        val messages = FakeMessagesRepository().also { it.refuseSend = true }
+        val handle = SavedStateHandle().apply { set("contactId", "peer-1") }
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        viewModel.onDraftChange("hello ")
+        viewModel.send()
+        advanceUntilIdle()
+
+        assertEquals("hello ", viewModel.uiState.value.draft)
+    }
+
     @Test
     fun sendCarriesTheReplyAndClearsTheBar() = runTest {
         val messages = FakeMessagesRepository()
@@ -171,8 +207,12 @@ private class FakeMessagesRepository : MessagesRepository {
     val sent = mutableListOf<Sent>()
     private val flow = MutableStateFlow<List<Message>>(emptyList())
     override fun observeContact(contactId: String): Flow<List<Message>> = flow.asStateFlow()
+    var gate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+    var refuseSend = false
     override suspend fun send(contactId: String, text: String, reply: ReplyRef?): SendOutcome {
         sent += Sent(contactId, text, reply)
+        if (refuseSend) return SendOutcome.Failed("", "not authenticated")
+        gate?.await()
         flow.value = flow.value + Message(
             id = "m-${sent.size}",
             chatId = contactId,
