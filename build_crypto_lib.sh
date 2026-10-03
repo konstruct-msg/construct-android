@@ -307,7 +307,11 @@ if [ -n "$HOST_OS" ] && [ -n "$HOST_CPU" ]; then
   cd "$CORE_PATH"
   set +e
   # AR без NDK: llvm-ar из NDK выше экспортирован для Android-таргетов.
-  env -u AR cargo build --lib --features "$FEATURES" $CARGO_FLAGS 2>&1 | grep -E "^error|Finished"
+  # Без strip: с тулчейна 2026-09 strip на macOS портит dylib — dlopen отвечает
+  # "mis-aligned LINKEDIT string pool", и JNA не грузит ядро ни в одном тесте (тот же дефект,
+  # что `[profile.release.build-override]` в Cargo.toml ядра). Библиотека хоста не уходит
+  # никуда дальше тестов; .so для Android по-прежнему stripped.
+  env -u AR CARGO_PROFILE_RELEASE_STRIP=false cargo build --lib --features "$FEATURES" $CARGO_FLAGS 2>&1 | grep -E "^error|Finished"
   rc=${PIPESTATUS[0]}
   set -e
   [ "$rc" -eq 0 ] || fail "cargo build для хоста упал (rc=$rc)"
