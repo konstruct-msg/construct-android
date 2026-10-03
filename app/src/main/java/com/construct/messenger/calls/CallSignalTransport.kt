@@ -1,6 +1,7 @@
 package com.construct.messenger.calls
 
 import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.data.api.MessageStreamService
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.domain.usecase.SendMessageUseCase
@@ -29,8 +30,13 @@ class CallSignalTransport @Inject constructor(
     private val sessionManager: SessionManager,
     private val cryptoManager: CryptoManager,
     private val sessions: SessionStateStore,
+    // Lazy: the stream feeds the processor that feeds the call machine that holds this.
+    private val stream: dagger.Lazy<MessageStreamService>,
 ) : CallSignalPort {
     private val chain = Mutex()
+
+    /** Signals arrive on the message stream; ask it to prove it is alive. */
+    override fun checkInbound() = stream.get().probe()
 
     /** [signal] to [peerAccountId]'s pinned device. True when the server took it. */
     override suspend fun send(peerAccountId: String, signal: WebRTCSignal): Boolean = chain.withLock {

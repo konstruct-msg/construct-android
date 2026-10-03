@@ -524,6 +524,9 @@ class CallManager internal constructor(
             restartPending = call.iceRestartInFlight || call.iceRestart != null,
             attempts = call.iceRestartAttempts,
         )
+        // Media dropping is often the peer hanging up: its HANGUP comes down the message stream,
+        // which may itself have died unnoticed. Make the stream prove itself now.
+        signals.checkInbound()
         when (decision) {
             CallRules.IceRestartDisposition.CALLEE_WAITS -> Log.i(TAG, "ICE disconnected — the caller restarts")
             CallRules.IceRestartDisposition.SKIP -> Log.i(TAG, "ICE disconnected — no restart (attempts=${call.iceRestartAttempts})")

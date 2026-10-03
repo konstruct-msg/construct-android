@@ -47,6 +47,10 @@ class CallManagerTest {
         override suspend fun openCandidate(deviceId: String, ice: IceCandidate): String? =
             ice.candidate.toStringUtf8().takeIf { it.startsWith("sealed:") }?.removePrefix("sealed:")
         override suspend fun peerDevice(peerAccountId: String): String = "dev-$peerAccountId"
+        var inboundChecks = 0
+        override fun checkInbound() {
+            inboundChecks += 1
+        }
     }
 
     private class FakeSignaling : CallSignalingPort {
@@ -391,6 +395,25 @@ class CallManagerTest {
         calleeMedia.listener.onQuality(CallQuality.RECONNECTING)
         advanceTimeBy(CallTiming.ICE_RESTART_GRACE_MS + 1)
         assertTrue("restartIce" !in calleeMedia.log)
+    }
+
+    /**
+     * Media dropping is often the peer hanging up, and the HANGUP comes down a stream that may
+     * have died unnoticed (2026-10-03: 51 s late, the call hung until ICE gave up). Mutation: do
+     * not check the stream on a disconnect — reddens.
+     */
+    @Test
+    fun `media dropping makes the signal path prove it is alive`() = runTest {
+        val callee = Rig(this)
+        callee.deliver(offer("c1"))
+        callee.calls.answer()
+        runCurrent()
+        val media = callee.media.single()
+        media.listener.onConnected()
+        assertEquals(0, callee.signals.inboundChecks)
+        media.listener.onQuality(CallQuality.RECONNECTING)
+        runCurrent()
+        assertEquals(1, callee.signals.inboundChecks)
     }
 
     @Test

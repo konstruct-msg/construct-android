@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import shared.proto.core.v1.EnvelopeOuterClass.Envelope
+import shared.proto.services.v1.MessagingServiceOuterClass.Heartbeat
 import shared.proto.services.v1.MessagingServiceOuterClass.MessageStreamRequest
 import shared.proto.services.v1.MessagingServiceOuterClass.SubscribeRequest
 import shared.proto.signaling.v1.Presence.DeliveryReceipt
@@ -176,6 +177,20 @@ class MessageStreamService @Inject constructor(
         transportEvents.post(TransportRoute.Event.StreamFailed(method, kind, via))
     }
 
+    private val probes = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    /**
+     * Prove the stream is alive now rather than when the watchdog would notice: send a heartbeat,
+     * which the server answers at once, and end the stream as stale if nothing arrives within
+     * [PROBE_TIMEOUT_MS]. For a moment that cannot wait a minute — a call whose media just
+     * dropped, where the peer's HANGUP is about to be sent down this stream. Seen 2026-10-03: a
+     * direct stream swallowed mid-call, the HANGUP arrived 51 s late, the call hung until ICE
+     * gave up. A probe on a dead stream reconnects it, and Auto moves to VEIL on the way.
+     */
+    fun probe() {
+        probes.tryEmit(Unit)
+    }
+
     private suspend fun runStreamOnce(attempt: Int) {
         val outbound = MutableSharedFlow<MessageStreamRequest>(
             replay = 1,
@@ -203,6 +218,21 @@ class MessageStreamService @Inject constructor(
         var lastInboundAt = SystemClock.elapsedRealtime()
         try {
             coroutineScope {
+                launch {
+                    probes.collect {
+                        val sentAt = SystemClock.elapsedRealtime()
+                        outbound.tryEmit(
+                            MessageStreamRequest.newBuilder()
+                                .setHeartbeat(Heartbeat.newBuilder().setTimestamp(System.currentTimeMillis()))
+                                .build(),
+                        )
+                        delay(PROBE_TIMEOUT_MS)
+                        if (lastInboundAt < sentAt) {
+                            Log.w(TAG, "probe unanswered for ${PROBE_TIMEOUT_MS}ms — stream is dead")
+                            throw StaleStreamException(SystemClock.elapsedRealtime() - lastInboundAt)
+                        }
+                    }
+                }
                 launch {
                     // Sleeps until the stream would turn stale, not on a short tick: a wake-up
                     // every few seconds for nothing is what the battery pays for.
@@ -275,6 +305,7 @@ class MessageStreamService @Inject constructor(
     private companion object {
         const val TAG = "MessageStream"
         const val STALE_AFTER_MS = 60_000L
+        const val PROBE_TIMEOUT_MS = 8_000L
         const val INITIAL_BACKOFF_MS = 1_000L
         const val MAX_BACKOFF_MS = 30_000L
     }

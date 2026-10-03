@@ -88,6 +88,12 @@ interface CallSignalPort {
     suspend fun openCandidate(deviceId: String, ice: IceCandidate): String?
     /** The device of [peerAccountId] call signals go to — what a candidate from them opens on. */
     suspend fun peerDevice(peerAccountId: String): String?
+
+    /**
+     * The path signals arrive on may have died without a word — a middlebox swallowing an
+     * established stream sends no RST. Check it now rather than when its watchdog notices.
+     */
+    fun checkInbound() {}
 }
 
 /** What the machine needs from [SignalingClient]. */
