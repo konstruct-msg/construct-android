@@ -297,8 +297,9 @@ tasks.named('preBuild').configure { dependsOn 'checkCoreLibrary' }
 // ── The core the unit tests load ─────────────────────────────────────────────
 //
 // The JVM tests call the same core the app ships, built for the machine they run on — not a Kotlin
-// stand-in. JNA finds it on the test classpath under its own resource prefix (`darwin-aarch64/`,
-// `linux-x86-64/`), which is how construct-core's archive lays out `host/` (construct-core #22).
+// stand-in. It lives under JNA's resource prefix (`darwin-aarch64/`, `linux-x86-64/`), as
+// construct-core's archive lays out `host/` (construct-core #22); the tests are pointed at that
+// directory by `jna.library.path` below, and it stays a resource directory too.
 // Like jniLibs it is not in git; `scripts/fetch_core.sh` installs it, and this check holds it to
 // the lock, so a test run never checks one core while the app ships another.
 android.sourceSets.test.resources.srcDirs += 'src/test/host'
@@ -338,7 +339,14 @@ Run scripts/fetch_core.sh — it installs the published build the lock names, ho
     }
 }
 
-tasks.withType(Test).configureEach { dependsOn 'checkHostCoreLibrary' }
+tasks.withType(Test).configureEach {
+    dependsOn 'checkHostCoreLibrary'
+    // Straight from the directory, not through the classpath: AGP drops `.so` files from the
+    // unit tests' Java resources (a `.dylib` passes), so on Linux JNA found no core and every
+    // test that touched it failed — CI's first run, 2026-10-04. checkHostCoreLibrary holds this
+    // same file to the lock.
+    systemProperty 'jna.library.path', file("src/test/host/${jnaHostPrefix()}").absolutePath
+}
 
 // ── The WebRTC the app links ─────────────────────────────────────────────────
 //
