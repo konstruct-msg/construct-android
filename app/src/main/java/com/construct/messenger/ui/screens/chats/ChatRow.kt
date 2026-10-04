@@ -1,6 +1,5 @@
 package com.construct.messenger.ui.screens.chats
 
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.filled.GppMaybe
 import com.construct.messenger.ui.components.rememberAvatar
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -79,25 +78,31 @@ fun ChatRow(
             Spacer(Modifier.width(CTLayout.chromeGap))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // iOS `resolvedDisplayName`: the name as given, never upper-cased; the
-                    // username only when there is no name.
-                    Text(
-                        text = chat.displayName.ifBlank { chat.username },
-                        style = ctBold(13),
-                        color = CTColor.text,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    if (chat.alerted) {
-                        Icon(
-                            androidx.compose.material.icons.Icons.Filled.GppMaybe,
-                            contentDescription = stringResource(R.string.kt_warning),
-                            tint = CTColor.danger,
-                            modifier = Modifier.padding(start = 4.dp).size(13.dp),
+                    // The name takes all the room the time leaves, so a long name runs to the
+                    // time and the time sits on the trailing edge whatever the name's length.
+                    // (A weighted spacer beside a weighted name split the room in half: long
+                    // names were cut at the middle, short ones left the time short of the edge.)
+                    Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                        // iOS `resolvedDisplayName`: the name as given, never upper-cased; the
+                        // username only when there is no name.
+                        Text(
+                            text = chat.displayName.ifBlank { chat.username },
+                            style = ctBold(13),
+                            color = CTColor.text,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
                         )
+                        if (chat.alerted) {
+                            Icon(
+                                androidx.compose.material.icons.Icons.Filled.GppMaybe,
+                                contentDescription = stringResource(R.string.kt_warning),
+                                tint = CTColor.danger,
+                                modifier = Modifier.padding(start = 4.dp).size(13.dp),
+                            )
+                        }
                     }
-                    Spacer(Modifier.weight(1f).widthIn(min = 4.dp))
+                    Spacer(Modifier.width(4.dp))
                     chat.lastMessageTime?.let { time ->
                         Text(
                             text = rowTimestamp(context, time),
