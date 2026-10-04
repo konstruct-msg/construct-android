@@ -5,12 +5,11 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
@@ -39,14 +38,18 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import com.construct.messenger.R
 import com.construct.messenger.ui.theme.CTColor
 
 /**
  * The mic button, which also offers the camera. **Canon:** iOS `MicModeButton` — a tap records a
- * voice message, as it always has. Held, it opens a two-segment switch — camera | mic, the mic
- * under the finger — and the finger, without lifting, slides to the one it wants; releasing on a
- * segment starts that recording, releasing away from the switch starts nothing.
+ * voice message, as it always has. Held, it opens a two-segment switch — the camera above, the
+ * mic under the finger — and the finger, without lifting, slides up to the camera; releasing on a
+ * segment starts that recording, releasing away from the switch starts nothing. Upwards, not
+ * leftwards as on iOS: the owner's call (2026-10-04) — a thumb on the mic slides up naturally,
+ * and the switch does not cover the field.
  *
  * Both choices are on screen at the moment of choosing and nothing is remembered between presses:
  * a tap is always the voice message, so the camera never comes on unasked.
@@ -116,17 +119,22 @@ fun MicModeButton(size: Dp, onVoice: () -> Unit, onVideoNote: () -> Unit) {
             modifier = Modifier.size(size).padding(2.dp).alpha(if (open) 0f else 1f),
         )
         if (open) {
-            // Grows leftwards from the button's trailing edge, over the field.
-            Row(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .wrapContentWidth(Alignment.End, unbounded = true)
-                    .height(MicSwitch.HEIGHT)
-                    .background(CTColor.bgMsg, CircleShape),
-                verticalAlignment = Alignment.CenterVertically,
+            // Grows upwards from the button's bottom edge, over the transcript. A popup, because
+            // the composer's capsule clips what its children draw outside it. Not focusable: the
+            // press that opened it stays with the button, which reads where the finger goes.
+            Popup(
+                alignment = Alignment.BottomCenter,
+                properties = PopupProperties(focusable = false, clippingEnabled = false),
             ) {
-                Segment(Icons.Filled.Videocam, choice == MicSwitch.Mode.VIDEO_NOTE)
-                Segment(Icons.Filled.Mic, choice == MicSwitch.Mode.VOICE)
+                Column(
+                    modifier = Modifier
+                        .width(MicSwitch.THICKNESS)
+                        .background(CTColor.bgMsg, CircleShape),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Segment(Icons.Filled.Videocam, choice == MicSwitch.Mode.VIDEO_NOTE)
+                    Segment(Icons.Filled.Mic, choice == MicSwitch.Mode.VOICE)
+                }
             }
         }
     }
@@ -136,8 +144,8 @@ fun MicModeButton(size: Dp, onVoice: () -> Unit, onVideoNote: () -> Unit) {
 private fun Segment(icon: androidx.compose.ui.graphics.vector.ImageVector, chosen: Boolean) {
     Box(
         modifier = Modifier
-            .width(MicSwitch.SEGMENT)
-            .height(MicSwitch.HEIGHT)
+            .width(MicSwitch.THICKNESS)
+            .height(MicSwitch.SEGMENT)
             .padding(2.dp)
             .background(if (chosen) CTColor.accent else androidx.compose.ui.graphics.Color.Transparent, CircleShape),
         contentAlignment = Alignment.Center,
@@ -151,18 +159,20 @@ object MicSwitch {
     enum class Mode { VOICE, VIDEO_NOTE }
 
     const val PRESS_DELAY_MS = 350L
+    /** Each segment's length along the switch. */
     val SEGMENT = 52.dp
-    val HEIGHT = 36.dp
+    /** The switch's width across. */
+    val THICKNESS = 40.dp
 
     /** How far past the switch a finger may drift and still choose; beyond it, release cancels. */
     val CANCEL_MARGIN = 44.dp
 
     /** Which segment is under ([x], [y]) in the button's own coordinates — the switch grows
-     * leftwards from its trailing edge — or null when the finger has left it. */
+     * upwards from its bottom edge — or null when the finger has left it. */
     fun mode(x: Float, y: Float, size: Float, segment: Float, margin: Float): Mode? {
-        val right = size
-        val left = size - 2 * segment
-        if (x <= left - margin || x >= right + margin || y <= -margin || y >= size + margin) return null
-        return if (x < right - segment) Mode.VIDEO_NOTE else Mode.VOICE
+        val bottom = size
+        val top = size - 2 * segment
+        if (y <= top - margin || y >= bottom + margin || x <= -margin || x >= size + margin) return null
+        return if (y < bottom - segment) Mode.VIDEO_NOTE else Mode.VOICE
     }
 }

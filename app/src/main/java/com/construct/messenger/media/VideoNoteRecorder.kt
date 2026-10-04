@@ -97,7 +97,10 @@ class VideoNoteRecorder(private val context: Context) {
     @SuppressLint("MissingPermission") // The screen holds CAMERA and RECORD_AUDIO before it opens this.
     @OptIn(ExperimentalPersistentRecording::class)
     private fun record() {
-        val out = File(File(context.cacheDir, "video").apply { mkdirs() }, "note_${UUID.randomUUID()}.mp4")
+        val dir = File(context.cacheDir, "video").apply { mkdirs() }
+        // One recording at a time: any other note file was left by a process that died mid-way.
+        dir.listFiles { f -> f.name.startsWith(NOTE_PREFIX) }?.forEach { it.delete() }
+        val out = File(dir, "$NOTE_PREFIX${UUID.randomUUID()}.mp4")
         file = out
         val done = CompletableDeferred<Boolean>()
         finalized = done
@@ -171,6 +174,7 @@ class VideoNoteRecorder(private val context: Context) {
 
     companion object {
         private const val TAG = "VideoNoteRecorder"
+        private const val NOTE_PREFIX = "note_"
 
         /** The longest note (iOS `maxDuration`). Longer goes through attachments as a video. */
         const val MAX_DURATION_MS = 60_000L

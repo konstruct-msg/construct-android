@@ -5,13 +5,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-/** **Canon:** iOS `MicModeButton.mode(at:buttonSize:)` — the switch grows leftwards from the button. */
+/** **Canon:** iOS `MicModeButton.mode(at:buttonSize:)`, turned upright — the switch grows upwards from the button. */
 class MicSwitchTest {
     private val size = 28f
     private val segment = 52f
     private val margin = 44f
 
-    private fun at(x: Float, y: Float = 14f) = MicSwitch.mode(x, y, size, segment, margin)
+    private fun at(y: Float, x: Float = 14f) = MicSwitch.mode(x, y, size, segment, margin)
 
     @Test
     fun `the mic is under the finger where the press began`() {
@@ -19,9 +19,9 @@ class MicSwitchTest {
         assertEquals(MicSwitch.Mode.VOICE, at(size - segment + 1))
     }
 
-    /** Mutation: swap the segments — sliding left would record a voice message. */
+    /** Mutation: swap the segments — sliding up would record a voice message. */
     @Test
-    fun `sliding left reaches the camera`() {
+    fun `sliding up reaches the camera`() {
         assertEquals(MicSwitch.Mode.VIDEO_NOTE, at(size - segment - 1))
         assertEquals(MicSwitch.Mode.VIDEO_NOTE, at(size - 2 * segment))
     }
@@ -31,8 +31,8 @@ class MicSwitchTest {
     fun `far from the switch is no choice`() {
         assertNull(at(size - 2 * segment - margin - 1))
         assertNull(at(size + margin + 1))
-        assertNull(at(14f, -margin - 1))
-        assertNull(at(14f, size + margin + 1))
+        assertNull(at(14f, x = -margin - 1))
+        assertNull(at(14f, x = size + margin + 1))
     }
 
     @Test
