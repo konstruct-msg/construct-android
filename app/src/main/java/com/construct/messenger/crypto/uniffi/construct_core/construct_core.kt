@@ -788,6 +788,8 @@ external fun uniffi_construct_core_checksum_func_knst_frame_whole(
 ): Short
 external fun uniffi_construct_core_checksum_func_knst_parse(
 ): Short
+external fun uniffi_construct_core_checksum_func_media_max_plaintext_len(
+): Short
 external fun uniffi_construct_core_checksum_func_mldsa65_keygen(
 ): Short
 external fun uniffi_construct_core_checksum_func_mldsa65_sign(
@@ -797,6 +799,8 @@ external fun uniffi_construct_core_checksum_func_mldsa65_verify(
 external fun uniffi_construct_core_checksum_func_mlkem1024_encapsulate(
 ): Short
 external fun uniffi_construct_core_checksum_func_mnemonic_to_seed(
+): Short
+external fun uniffi_construct_core_checksum_func_open_media(
 ): Short
 external fun uniffi_construct_core_checksum_func_plan_initiation(
 ): Short
@@ -821,6 +825,8 @@ external fun uniffi_construct_core_checksum_func_receiving_init_kind(
 external fun uniffi_construct_core_checksum_func_recommended_send_delay_ms(
 ): Short
 external fun uniffi_construct_core_checksum_func_registration_bundle_fields_from_keys(
+): Short
+external fun uniffi_construct_core_checksum_func_seal_media(
 ): Short
 external fun uniffi_construct_core_checksum_func_seal_to_device_key(
 ): Short
@@ -1633,6 +1639,8 @@ external fun uniffi_construct_core_fn_func_knst_frame_whole(`payload`: RustBuffe
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_knst_parse(`frame`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_media_max_plaintext_len(uniffi_out_err: UniffiRustCallStatus, 
+): Long
 external fun uniffi_construct_core_fn_func_mldsa65_keygen(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_mldsa65_sign(`secretKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1642,6 +1650,8 @@ external fun uniffi_construct_core_fn_func_mldsa65_verify(`publicKey`: RustBuffe
 external fun uniffi_construct_core_fn_func_mlkem1024_encapsulate(`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_mnemonic_to_seed(`mnemonic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_open_media(`key`: RustBuffer.ByValue,`blob`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_plan_initiation(`context`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1666,6 +1676,8 @@ external fun uniffi_construct_core_fn_func_receiving_init_kind(`carrier`: RustBu
 external fun uniffi_construct_core_fn_func_recommended_send_delay_ms(`isHighPriority`: Byte,`batteryLevel`: Float,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_func_registration_bundle_fields_from_keys(`keys`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_seal_media(`plaintext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_seal_to_device_key(`plaintext`: RustBuffer.ByValue,`deviceIdentityPublic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1912,6 +1924,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_knst_parse() != 40094.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_media_max_plaintext_len() != 42441.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_mldsa65_keygen() != 58411.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1925,6 +1940,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_mnemonic_to_seed() != 49697.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_open_media() != 63953.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_plan_initiation() != 61324.toShort()) {
@@ -1961,6 +1979,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_registration_bundle_fields_from_keys() != 32194.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_seal_media() != 21220.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_seal_to_device_key() != 27604.toShort()) {
@@ -8646,11 +8667,6 @@ public object FfiConverterTypeInitiationContext: FfiConverterRustBuffer<Initiati
 
 
 
-/**
- * A parsed KNST frame. `message_id` is the dashed lowercase UUID; `payload` is everything after
- * the header — for a control frame (`total_chunks == 1`) the body is its first
- * `plaintext_length` bytes.
- */
 data class KnstFrame (
     var `contentType`: kotlin.UByte
     , 
@@ -10086,6 +10102,53 @@ public object FfiConverterTypeRotatedSpkBundle: FfiConverterRustBuffer<RotatedSp
             FfiConverterUInt.write(value.`keyId`, buf)
             FfiConverterByteArray.write(value.`publicKey`, buf)
             FfiConverterByteArray.write(value.`signature`, buf)
+    }
+}
+
+
+
+/**
+ * A parsed KNST frame. `message_id` is the dashed lowercase UUID; `payload` is everything after
+ * the header — for a control frame (`total_chunks == 1`) the body is its first
+ * `plaintext_length` bytes.
+ * See `seal_media`.
+ */
+data class SealedMedia (
+    var `key`: kotlin.ByteArray
+    , 
+    var `blob`: kotlin.ByteArray
+    , 
+    var `sha256`: kotlin.ByteArray
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSealedMedia: FfiConverterRustBuffer<SealedMedia> {
+    override fun read(buf: ByteBuffer): SealedMedia {
+        return SealedMedia(
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SealedMedia) = (
+            FfiConverterByteArray.allocationSize(value.`key`) +
+            FfiConverterByteArray.allocationSize(value.`blob`) +
+            FfiConverterByteArray.allocationSize(value.`sha256`)
+    )
+
+    override fun write(value: SealedMedia, buf: ByteBuffer) {
+            FfiConverterByteArray.write(value.`key`, buf)
+            FfiConverterByteArray.write(value.`blob`, buf)
+            FfiConverterByteArray.write(value.`sha256`, buf)
     }
 }
 
@@ -14607,6 +14670,19 @@ public object FfiConverterSequenceTypeHistoryEvent: FfiConverterRustBuffer<List<
     
 
         /**
+         * The largest file `seal_media` takes — check before encoding or uploading anything.
+         */ fun `mediaMaxPlaintextLen`(): kotlin.ULong {
+            return FfiConverterULong.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_media_max_plaintext_len(
+    
+        _status)
+}
+    )
+    }
+    
+
+        /**
          * Generate an ML-DSA-65 keypair (post-quantum signature scheme, NIST FIPS 204).
          */
     @Throws(CryptoException::class) fun `mldsa65Keygen`(): MldsaKeyPair {
@@ -14668,6 +14744,22 @@ public object FfiConverterSequenceTypeHistoryEvent: FfiConverterRustBuffer<List<
     UniffiLib.uniffi_construct_core_fn_func_mnemonic_to_seed(
     
         FfiConverterString.lower(`mnemonic`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The file in `blob`. Throws `InvalidKeyData` for a key that is not 32 bytes,
+         * `DecryptionFailed` when the blob does not open with it, `InvalidCiphertext` when it opens
+         * but is not well formed.
+         */
+    @Throws(CryptoException::class) fun `openMedia`(`key`: kotlin.ByteArray, `blob`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_open_media(
+    
+        FfiConverterByteArray.lower(`key`),FfiConverterByteArray.lower(`blob`),_status)
 }
     )
     }
@@ -14845,6 +14937,21 @@ public object FfiConverterSequenceTypeHistoryEvent: FfiConverterRustBuffer<List<
     UniffiLib.uniffi_construct_core_fn_func_registration_bundle_fields_from_keys(
     
         FfiConverterByteArray.lower(`keys`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * A fresh key, the blob to upload, and the blob's SHA-256 for the message.
+         * Throws `EncryptionFailed` when `plaintext` is longer than `media_max_plaintext_len()`.
+         */
+    @Throws(CryptoException::class) fun `sealMedia`(`plaintext`: kotlin.ByteArray): SealedMedia {
+            return FfiConverterTypeSealedMedia.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_seal_media(
+    
+        FfiConverterByteArray.lower(`plaintext`),_status)
 }
     )
     }

@@ -50,7 +50,8 @@ class PickedFiles @Inject constructor(
     }
 
     companion object {
-        /** The store takes 100 MiB of ciphertext; the seal adds 28 bytes. */
-        const val MAX_BYTES = 100L * 1024 * 1024 - MediaCrypto.OVERHEAD
+        /** What the core seals: the store takes a 100 000 000-byte blob (the well-known says so),
+         * less the seal's own bytes. Not 100 MiB — that was 4 857 600 bytes over. */
+        val MAX_BYTES: Long get() = MediaCrypto.maxPlaintextBytes
     }
 }

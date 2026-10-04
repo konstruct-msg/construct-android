@@ -22,6 +22,8 @@ import org.mockito.kotlin.whenever
 import shared.proto.messaging.v1.Content.MediaType
 import shared.proto.messaging.v1.Content.MessageContent
 
+private fun sha256(bytes: ByteArray): ByteArray = java.security.MessageDigest.getInstance("SHA-256").digest(bytes)
+
 class SendMediaUseCaseTest {
 
     private class FakeMedia(val fail: Boolean = false) : MediaRepository {
@@ -32,7 +34,7 @@ class SendMediaUseCaseTest {
         override suspend fun stage(localId: String, blob: ByteArray) { staged[localId] = blob }
         override suspend fun upload(localId: String, sha256: ByteArray): MediaService.Uploaded {
             if (fail) throw io.grpc.StatusException(io.grpc.Status.UNAVAILABLE)
-            assertTrue(sha256.contentEquals(MediaCrypto.sha256(staged.getValue(localId))))
+            assertTrue(sha256.contentEquals(sha256(staged.getValue(localId))))
             return MediaService.Uploaded("store-${staged.keys.indexOf(localId)}", "grpc://media/MediaService/DownloadMedia")
         }
     }
@@ -74,7 +76,7 @@ class SendMediaUseCaseTest {
         assertEquals(MediaType.MEDIA_TYPE_IMAGE, first.mediaType)
         assertEquals("image/jpeg", first.mimeType)
         assertEquals(blob.size.toLong(), first.fileSize)
-        assertTrue(first.fileHash.toByteArray().contentEquals(MediaCrypto.sha256(blob)))
+        assertTrue(first.fileHash.toByteArray().contentEquals(sha256(blob)))
         assertEquals(100, MediaCrypto.open(blob, first.encryptionKey.toByteArray()).size)
         assertEquals(1920, first.dimensions.width)
         assertEquals("LEHV6nWB2yk8pyo0adR*.7kCMdnj", first.blurhash)
