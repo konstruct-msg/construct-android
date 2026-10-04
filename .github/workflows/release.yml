@@ -91,11 +91,11 @@ jobs:
           apk=app/build/outputs/apk/release/app-release.apk
           [ -f "$apk" ] || { echo "::error::no app-release.apk (unsigned builds are named app-release-unsigned.apk)"; exit 1; }
           apksigner="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
-          # Every signer the APK names, whatever this apksigner calls it ("Signer #1", or by its
+          # Every signer the APK names, whatever this apksigner calls it ("Signer #1", "V2 Signer:", or by its
           # SDK range in newer build-tools); exactly one, and the pinned one.
           certs=$("$apksigner" verify --verbose --print-certs "$apk")
           echo "$certs" | grep -E 'Verified using|SHA-256 digest' || true
-          got=$(echo "$certs" | sed -nE 's/^Signer.* certificate SHA-256 digest: ([0-9a-f]+)$/\1/p' | sort -u)
+          got=$(echo "$certs" | sed -nE 's/^(V[0-9.]+ )?Signer.* certificate SHA-256 digest: ([0-9a-f]+)$/\2/p' | sort -u)
           if [ "$got" != "$SIGNER_SHA256" ]; then
             echo "::error::signed by ${got:-nothing}, expected $SIGNER_SHA256"
             exit 1
