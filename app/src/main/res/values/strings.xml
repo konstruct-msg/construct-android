@@ -421,7 +421,7 @@
     <string name="recovery_write_down">Write these 12 words down, in order.</string>
     <string name="recovery_never_share">Never share them. Anyone with these words can take over your account.</string>
     <string name="recovery_words_written">I wrote them down</string>
-    <string name="recovery_quiz_prompt">Enter three of the words to confirm you have them.</string>
+    <string name="recovery_quiz_prompt">For each number, pick the word you wrote down.</string>
     <string name="recovery_quiz_word_n">Word #%1$d</string>
     <string name="recovery_quiz_failed">Those words don\'t match. Check what you wrote down.</string>
     <string name="recovery_setup_failed">Couldn\'t save the recovery phrase. Check the connection and try again.</string>
@@ -600,4 +600,16 @@
     <string name="kt_status">merkle log</string>
     <string name="kt_no_data">no data</string>
     <string name="kt_last_failure_at">last failure: %1$s</string>
+    <!-- Recovery key made silently, copied later (decisions/recovery-key-backup-is-deferred-not-skipped.md) -->
+    <string name="recovery_backup_auth_reason">Show your recovery key</string>
+    <string name="recovery_backup_intro_title">Save your recovery key</string>
+    <string name="recovery_backup_intro_body">Konstruct has no phone number or email for you. This key is the only way back into your account if you lose every device. Write the 12 words down and keep them somewhere safe.</string>
+    <string name="recovery_backup_show">Show the key</string>
+    <string name="recovery_backup_pending_title">Recovery key not saved</string>
+    <string name="recovery_backup_pending_subtitle">Write down your recovery key — it is the only way back if you lose every device.</string>
+    <string name="recovery_backup_pending">Not saved yet</string>
+    <string name="recovery_backup_unlock_failed">The key did not open. Try again.</string>
+    <string name="recovery_backup_lost_title">Recovery key lost on this device</string>
+    <string name="recovery_backup_lost_body">The screen lock was removed before the key was saved, and Android erased it. Your account works, but if you lose every device it cannot be brought back. Nobody can restore the key, including us.</string>
+    <string name="recovery_backup_lost">Lost on this device</string>
 </resources>

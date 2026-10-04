@@ -1,5 +1,6 @@
 package com.construct.messenger.data.repository
 
+import com.construct.messenger.recovery.RecoveryPhraseVault
 import android.content.Context
 import android.content.Intent
 import com.construct.messenger.diagnostics.Log
@@ -44,6 +45,7 @@ class AuthRepositoryImpl @Inject constructor(
     private val authSession: AuthSessionManager,
     private val messagingRuntime: MessagingRuntime,
     private val grpcClient: GrpcClient,
+    private val recoveryVault: RecoveryPhraseVault,
 ) : AuthRepository {
 
     private val mutableAuthState = MutableStateFlow(
@@ -165,6 +167,11 @@ class AuthRepositoryImpl @Inject constructor(
         context.stopService(Intent(context, MessagingForegroundService::class.java))
         authSession.clearSession()
         keystoreManager.clearTokens()
+        // The recovery phrase still waiting for its copy goes with the account: the next one on
+        // this device must not find it. Sign-out warned first while the copy was owed. (An ended
+        // session keeps it — clearTokens does not touch it.) Deletion erases all app data.
+        recoveryVault.forgetPending()
+        recoveryVault.forgetHeld()
         cryptoManager.close()
         mutableAuthState.value = AuthState()
     }

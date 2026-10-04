@@ -34,7 +34,8 @@ data class AccountUiState(
     val saving: Boolean = false,
     val usernameError: UsernameError? = null,
     val signingOut: Boolean = false,
-    /** True once the server said the recovery phrase is not set up — sign-out warns first. */
+    /** True once the server said the recovery phrase is not set up, or a silently made one is
+     * not copied yet — sign-out warns first. */
     val recoveryMissing: Boolean = false,
     val deletion: Deletion = Deletion.Idle,
 )
@@ -89,7 +90,8 @@ class AccountViewModel @Inject constructor(
             } catch (e: Exception) {
                 null
             }
-            state.update { it.copy(recoveryMissing = setUp == false) }
+            // A silent key not yet copied warns as a missing one does (iOS `needsBackup`).
+            state.update { it.copy(recoveryMissing = setUp == false || recoveryRepository.copyOwed()) }
         }
     }
 

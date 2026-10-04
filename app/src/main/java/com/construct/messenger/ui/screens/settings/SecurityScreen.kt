@@ -61,6 +61,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.data.repository.Lockdown
+import com.construct.messenger.recovery.HeldPhrase
 import com.construct.messenger.recovery.RecoveryStatus
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
@@ -168,7 +169,7 @@ private fun SecurityContent(
             PinBlock(lock = lock, onPin = onPin, onBiometric = onBiometric, onLockDelay = onLockDelay)
             CTSep()
 
-            RecoveryRow(recovery = ui.recovery, onClick = onRecovery)
+            RecoveryRow(recovery = ui.recovery, held = ui.recoveryHeld, onClick = onRecovery)
             Hint(stringResource(R.string.security_recovery_hint))
             CTSep()
 
@@ -320,11 +321,22 @@ private val LockDelay.label: Int
     }
 
 @Composable
-private fun RecoveryRow(recovery: RecoveryStatus?, onClick: () -> Unit) {
+private fun RecoveryRow(recovery: RecoveryStatus?, held: HeldPhrase, onClick: () -> Unit) {
     SecurityRow(modifier = Modifier.clickable(onClick = onClick)) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(text = stringResource(R.string.security_recovery_title), style = ctRegular(13), color = CTColor.text)
             when {
+                // iOS: a silent key not yet copied says so instead of its fingerprint.
+                held == HeldPhrase.HELD -> Text(
+                    text = stringResource(R.string.recovery_backup_pending),
+                    style = ctRegular(11),
+                    color = CTColor.warning,
+                )
+                held == HeldPhrase.LOST -> Text(
+                    text = stringResource(R.string.recovery_backup_lost),
+                    style = ctRegular(11),
+                    color = CTColor.danger,
+                )
                 recovery?.isSetup == true && recovery.fingerprint != null -> Text(
                     text = recovery.fingerprint,
                     style = ctRegular(11),

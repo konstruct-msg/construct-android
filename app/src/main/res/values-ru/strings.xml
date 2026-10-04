@@ -425,7 +425,7 @@
     <string name="recovery_write_down">Запишите эти 12 слов по порядку.</string>
     <string name="recovery_never_share">Никому их не показывайте. Тот, у кого есть эти слова, может забрать аккаунт.</string>
     <string name="recovery_words_written">Слова записаны</string>
-    <string name="recovery_quiz_prompt">Введите три слова, чтобы подтвердить, что они у вас есть.</string>
+    <string name="recovery_quiz_prompt">Для каждого номера выберите слово, которое вы записали.</string>
     <string name="recovery_quiz_word_n">Слово №%1$d</string>
     <string name="recovery_quiz_failed">Слова не совпадают. Проверьте, что вы записали.</string>
     <string name="recovery_setup_failed">Не удалось сохранить фразу восстановления. Проверьте соединение и попробуйте ещё раз.</string>
@@ -604,4 +604,16 @@
     <string name="kt_status">merkle-лог</string>
     <string name="kt_no_data">нет данных</string>
     <string name="kt_last_failure_at">последний сбой: %1$s</string>
+    <!-- Ключ восстановления создаётся молча, копия позже (decisions/recovery-key-backup-is-deferred-not-skipped.md) -->
+    <string name="recovery_backup_auth_reason">Показать ключ восстановления</string>
+    <string name="recovery_backup_intro_title">Сохраните ключ восстановления</string>
+    <string name="recovery_backup_intro_body">У Конструкта нет вашего телефона и почты. Этот ключ — единственный способ вернуть аккаунт, если вы потеряете все устройства. Запишите 12 слов и храните их в надёжном месте.</string>
+    <string name="recovery_backup_show">Показать ключ</string>
+    <string name="recovery_backup_pending_title">Ключ восстановления не сохранён</string>
+    <string name="recovery_backup_pending_subtitle">Запишите ключ восстановления — это единственный способ вернуть аккаунт, если пропадут все устройства.</string>
+    <string name="recovery_backup_pending">Ещё не сохранён</string>
+    <string name="recovery_backup_unlock_failed">Ключ не открылся. Попробуйте ещё раз.</string>
+    <string name="recovery_backup_lost_title">Ключ восстановления пропал с устройства</string>
+    <string name="recovery_backup_lost_body">Блокировку экрана сняли до того, как ключ был сохранён, и Android его стёр. Аккаунт работает, но если пропадут все устройства, вернуть его будет нельзя. Восстановить ключ не сможет никто, включая нас.</string>
+    <string name="recovery_backup_lost">Пропал с устройства</string>
 </resources>

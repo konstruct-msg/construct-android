@@ -67,7 +67,7 @@ import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.ctBold
 import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.SettingsViewModel
-import com.construct.messenger.recovery.RecoveryStage
+import com.construct.messenger.recovery.HeldPhrase
 import com.construct.messenger.recovery.RecoveryViewModel
 
 /** Callbacks for the rows that open another app screen. */
@@ -103,8 +103,9 @@ fun SettingsRoute(
         account = ui.account,
         connection = ui.connection,
         navigation = navigation,
-        // Loading says nothing yet; only a known "not set up" shows the banner.
-        recoveryMissing = recovery.stage == RecoveryStage.Explain || recovery.stage == RecoveryStage.Confirm,
+        // Loading says nothing yet; a known "not set up", or a silent key not yet copied, shows it.
+        recoveryMissing = recovery.needsBackup,
+        recoveryHeld = recovery.held,
     )
 }
 
@@ -123,6 +124,7 @@ fun SettingsScreen(
     connection: ConnectionStatus,
     navigation: SettingsNavigation,
     recoveryMissing: Boolean = false,
+    recoveryHeld: HeldPhrase = HeldPhrase.NONE,
 ) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE) }
@@ -149,6 +151,7 @@ fun SettingsScreen(
             // iOS: the warning is first, above the identity.
             if (recoveryMissing && !bannerDismissed) {
                 RecoveryBanner(
+                    held = recoveryHeld,
                     onSetUp = navigation.onRecoverySetup,
                     onDismiss = {
                         bannerDismissed = true
@@ -308,9 +311,18 @@ internal fun ConnectionStatus.toStatus(): CTStatus = when (this) {
     ConnectionStatus.UNKNOWN -> CTStatus.UNKNOWN
 }
 
-/** iOS `SettingsView.recoveryBanner`: the phrase is missing, set it up or put this away. */
+/**
+ * iOS `SettingsView.recoveryBanner`: the phrase is missing, set it up or put this away. A key made
+ * silently and not yet copied is the common case since 2026-10-04; "not configured" is left for
+ * devices that could not make one.
+ */
 @Composable
-private fun RecoveryBanner(onSetUp: () -> Unit, onDismiss: () -> Unit) {
+private fun RecoveryBanner(held: HeldPhrase, onSetUp: () -> Unit, onDismiss: () -> Unit) {
+    val (title, subtitle) = when (held) {
+        HeldPhrase.HELD -> R.string.recovery_backup_pending_title to R.string.recovery_backup_pending_subtitle
+        HeldPhrase.LOST -> R.string.recovery_backup_lost_title to R.string.recovery_backup_lost_body
+        HeldPhrase.NONE -> R.string.recovery_banner_title to R.string.recovery_banner_subtitle
+    }
     Row(
         modifier = Modifier
             .padding(horizontal = CTLayout.edgePad)
@@ -330,26 +342,29 @@ private fun RecoveryBanner(onSetUp: () -> Unit, onDismiss: () -> Unit) {
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                text = stringResource(R.string.recovery_banner_title).uppercase(),
+                text = stringResource(title).uppercase(),
                 style = ctBold(11),
                 color = CTColor.danger,
             )
             Text(
-                text = stringResource(R.string.recovery_banner_subtitle),
+                text = stringResource(subtitle),
                 style = ctRegular(12),
                 color = CTColor.textDim,
             )
-            Row(
-                modifier = Modifier.clickable(onClick = onSetUp).padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(text = stringResource(R.string.recovery_banner_action), style = ctBold(11), color = CTColor.accent)
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = CTColor.accent,
-                    modifier = Modifier.size(14.dp),
-                )
+            // Lost: there is nothing left to set up, only the fact to state.
+            if (held != HeldPhrase.LOST) {
+                Row(
+                    modifier = Modifier.clickable(onClick = onSetUp).padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(text = stringResource(R.string.recovery_banner_action), style = ctBold(11), color = CTColor.accent)
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = CTColor.accent,
+                        modifier = Modifier.size(14.dp),
+                    )
+                }
             }
         }
         Icon(

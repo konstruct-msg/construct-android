@@ -9,6 +9,8 @@ import com.construct.messenger.data.repository.AccountRepository
 import com.construct.messenger.data.repository.ContactsRepository
 import com.construct.messenger.data.repository.Lockdown
 import com.construct.messenger.data.repository.SecuritySettingsRepository
+import com.construct.messenger.recovery.HeldPhrase
+import com.construct.messenger.recovery.RecoveryPhraseVault
 import com.construct.messenger.recovery.RecoveryRepository
 import com.construct.messenger.recovery.RecoveryStatus
 import kotlinx.coroutines.CancellationException
@@ -28,6 +30,8 @@ data class SecurityUiState(
     val failed: Boolean = false,
     /** Null until the server answered; then whether the phrase is set up, and its fingerprint. */
     val recovery: RecoveryStatus? = null,
+    /** A silently made phrase waiting here for its copy (or lost before it was made). */
+    val recoveryHeld: HeldPhrase = HeldPhrase.NONE,
     val lockdown: Lockdown = Lockdown(),
     val senderAnonymity: Boolean = true,
     /** Every KT verdict this device reached on contacts' bundles. */
@@ -45,6 +49,7 @@ data class SecurityUiState(
 class SecurityViewModel @Inject constructor(
     private val accountRepository: AccountRepository,
     private val recoveryRepository: RecoveryRepository,
+    private val recoveryVault: RecoveryPhraseVault,
     private val securitySettings: SecuritySettingsRepository,
     private val contactsRepository: ContactsRepository,
     private val ktLog: KtLog,
@@ -73,6 +78,8 @@ class SecurityViewModel @Inject constructor(
 
     /** Again on return from the phrase setup, which may have just set it up. */
     fun refreshRecovery() {
+        val held = recoveryRepository.userId()?.let(recoveryVault::held) ?: HeldPhrase.NONE
+        state.update { it.copy(recoveryHeld = held) }
         viewModelScope.launch {
             val status = try {
                 recoveryRepository.status()

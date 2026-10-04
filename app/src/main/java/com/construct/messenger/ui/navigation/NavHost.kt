@@ -1,7 +1,6 @@
 package com.construct.messenger.ui.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -13,8 +12,11 @@ import com.construct.messenger.ui.screens.onboarding.RestoreAccountScreen
 import com.construct.messenger.ui.screens.synaps.ContactProfileScreen
 import com.construct.messenger.ui.screens.invite.ContactQrScreen
 import com.construct.messenger.ui.screens.invite.QrScannerScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.construct.messenger.recovery.RecoveryKeyLaunchViewModel
 import com.construct.messenger.ui.screens.recovery.RecoveryGated
 import com.construct.messenger.ui.screens.recovery.RecoveryPromptScreen
+import com.construct.messenger.ui.screens.recovery.RecoverySetupScreen
 import com.construct.messenger.ui.screens.main.MainTabView
 import com.construct.messenger.ui.screens.onboarding.ExistingIdentityScreen
 import com.construct.messenger.ui.screens.onboarding.OnboardingScreen
@@ -114,8 +116,8 @@ fun KonstructNavHost(
                     if (fromSettings) {
                         navController.popBackStack()
                     } else {
-                        // Registration stays one step; the recovery phrase is asked for here,
-                        // before anyone reaches for an invite (which waits on it).
+                        // Registration stays one step. The recovery key is made here without a
+                        // screen; the setup shows only when it could not be (no screen lock).
                         navController.navigate(Screen.RecoveryPrompt.route) {
                             popUpTo(Screen.Orientation.route) { inclusive = true }
                             launchSingleTop = true
@@ -133,6 +135,8 @@ fun KonstructNavHost(
                 }
             )
         ) { backStackEntry ->
+            // Every launch of a signed-in account makes the recovery key if it is missing.
+            hiltViewModel<RecoveryKeyLaunchViewModel>()
             MainTabView(
                 startTab = backStackEntry.arguments?.getInt("startTab") ?: 0,
                 onNavigateToChat = { contactId ->
@@ -174,8 +178,9 @@ fun KonstructNavHost(
                 },
             )
         }
-        // Both invite surfaces wait on the recovery phrase: an invite names the account's
-        // address, and this device learns it only from the phrase.
+        // Both invite surfaces need the account's address. Since the silent key (2026-10-04) the
+        // device usually knows it already; the gate stays for one that does not — no screen lock
+        // at registration, or a key set on another device.
         composable(Screen.InviteQr.route) {
             RecoveryGated(onBack = { navController.popBackStack() }) {
                 ContactQrScreen(onNavigateBack = { navController.popBackStack() })
@@ -295,10 +300,8 @@ fun KonstructNavHost(
             DiagnosticsScreen(onNavigateBack = { navController.popBackStack() })
         }
         composable(Screen.RecoverySetup.route) {
-            // The gate's own flow; once the device knows the address there is nothing left here.
-            RecoveryGated(onBack = { navController.popBackStack() }) {
-                LaunchedEffect(Unit) { navController.popBackStack() }
-            }
+            // The copy of a silently made key, or the gate's own flow when there is none.
+            RecoverySetupScreen(onDone = { navController.popBackStack() })
         }
     }
 }

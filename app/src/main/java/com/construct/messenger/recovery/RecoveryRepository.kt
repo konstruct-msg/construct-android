@@ -56,8 +56,16 @@ class RecoveryRepository @Inject constructor(
     private val grpcClient: GrpcClient,
     private val cryptoManager: CryptoManager,
     private val keystoreManager: KeystoreManager,
+    private val vault: RecoveryPhraseVault,
 ) {
     fun hasOwnAddress(): Boolean = keystoreManager.getOwnAccountAddress() != null
+
+    fun ownAddress(): ByteArray? = keystoreManager.getOwnAccountAddress()
+
+    /** A silently made phrase still waits here for its copy — or was lost before it was made. */
+    fun copyOwed(): Boolean = keystoreManager.getUserId()?.let { vault.held(it) != HeldPhrase.NONE } == true
+
+    fun publicKeyOf(phrase: String): ByteArray = cryptoManager.deriveRecoveryKeypair(phrase).publicKey
 
     fun newPhrase(): List<String> = cryptoManager.generateMnemonic(PHRASE_WORDS).split(" ")
 
@@ -77,7 +85,17 @@ class RecoveryRepository @Inject constructor(
      */
     suspend fun setUp(words: List<String>): SetUpOutcome {
         val userId = keystoreManager.getUserId() ?: error("not authenticated")
-        val keypair = cryptoManager.deriveRecoveryKeypair(words.joinToString(" "))
+        val (outcome, publicKey) = send(words.joinToString(" "), userId)
+        if (outcome == SetUpOutcome.DONE) keystoreManager.saveOwnAccountAddress(publicKey)
+        return outcome
+    }
+
+    /**
+     * Signs and sends `SetRecoveryKey` for [phrase]; the outcome and the public key. Keeps nothing:
+     * the silent path ([RecoveryKeyProvisioner]) stores the address itself, after the vault.
+     */
+    suspend fun send(phrase: String, userId: String): Pair<SetUpOutcome, ByteArray> {
+        val keypair = cryptoManager.deriveRecoveryKeypair(phrase)
         val timestamp = System.currentTimeMillis() / 1000
         // The message iOS signs, byte for byte; identity-service checks it.
         val signature = cryptoManager.signWithRecoveryKey(
@@ -107,9 +125,12 @@ class RecoveryRepository @Inject constructor(
             Log.w(TAG, "recovery setup refused: ${status.code} — ${status.description}")
             afterFailedSetUp(runCatching { status() }.getOrNull(), publicKey)
         }
-        if (outcome == SetUpOutcome.DONE) keystoreManager.saveOwnAccountAddress(publicKey)
-        return outcome
+        return outcome to publicKey
     }
+
+    fun saveOwnAddress(publicKey: ByteArray) = keystoreManager.saveOwnAccountAddress(publicKey)
+
+    fun userId(): String? = keystoreManager.getUserId()
 
     /**
      * Learns the account's address from [phrase], checked against the fingerprint the server

@@ -197,6 +197,31 @@ class KeystoreManager @Inject constructor(
         prefs.edit().putString(KEY_ACCOUNT_ADDRESS, Base64.encodeToString(key, Base64.NO_WRAP)).commit()
     }
 
+    /**
+     * A slot of [com.construct.messenger.recovery.RecoveryPhraseVault]: the value and the account
+     * it belongs to. Not cleared by [clearTokens] — an ended session is not the account leaving
+     * this device, and a phrase dropped then could be the only one; sign-out wipes it explicitly.
+     * Written with `commit()`: the pending phrase must be on disk before its key is sent.
+     */
+    fun recoveryPhraseSlot(slot: String): Pair<String, String>? {
+        val value = prefs.getString(KEY_RECOVERY_PREFIX + slot, null) ?: return null
+        val account = prefs.getString(KEY_RECOVERY_PREFIX + slot + KEY_RECOVERY_ACCOUNT_SUFFIX, null) ?: return null
+        return value to account
+    }
+
+    fun saveRecoveryPhraseSlot(slot: String, value: String, account: String): Boolean =
+        prefs.edit()
+            .putString(KEY_RECOVERY_PREFIX + slot, value)
+            .putString(KEY_RECOVERY_PREFIX + slot + KEY_RECOVERY_ACCOUNT_SUFFIX, account)
+            .commit()
+
+    fun deleteRecoveryPhraseSlot(slot: String) {
+        prefs.edit()
+            .remove(KEY_RECOVERY_PREFIX + slot)
+            .remove(KEY_RECOVERY_PREFIX + slot + KEY_RECOVERY_ACCOUNT_SUFFIX)
+            .commit()
+    }
+
     /** Forget the stored address: the server names another key for this account
      * ([com.construct.messenger.invite.OwnAccountAddress]). */
     fun deleteOwnAccountAddress() {
@@ -332,6 +357,8 @@ class KeystoreManager @Inject constructor(
         const val KEY_PRIVATE_KEYS = "private_keys_cfe"
         const val KEY_KYBER_PREKEYS = "kyber_prekeys_cfe"
         const val KEY_ACCOUNT_ADDRESS = "account_address"
+        const val KEY_RECOVERY_PREFIX = "recovery_phrase."
+        const val KEY_RECOVERY_ACCOUNT_SUFFIX = ".account"
         const val KEY_CONTACT_CARD_SENT_TO = "contact_card_sent_to.v2"
         const val KEY_CONTACT_CARD_SENT_TO_V1 = "contact_card_sent_to"
         const val KEY_OWN_INTAKE = "own_intake_key"
