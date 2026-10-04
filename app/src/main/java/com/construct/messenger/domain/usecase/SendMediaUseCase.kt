@@ -50,30 +50,41 @@ class SendMediaUseCase @Inject constructor(
     /**
      * A recorded video note: the video path with the mark (`MediaMessage.presentation`), the centre
      * 3:4 at 720×960. The placeholder carries the mark too, so the uploading row is already the
-     * note. **Canon:** iOS `MediaAttachment(presentation: .videoNote)`. The recording is deleted.
+     * note. **Canon:** iOS `MediaAttachment(presentation: .videoNote)`. The segments are deleted.
      */
-    suspend fun videoNote(contactId: String, recording: java.io.File): SendOutcome =
+    suspend fun videoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake): SendOutcome =
         try {
-            photos(contactId, listOf(Uri.fromFile(recording)), "", null, videoNote = true)
+            photos(contactId, emptyList(), "", null, note = take)
         } finally {
-            recording.delete()
+            take.delete()
         }
 
-    suspend fun photos(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef?, videoNote: Boolean = false): SendOutcome {
-        require(uris.isNotEmpty())
+    suspend fun photos(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef?): SendOutcome =
+        photos(contactId, uris, caption, reply, note = null)
+
+    private suspend fun photos(
+        contactId: String,
+        uris: List<Uri>,
+        caption: String,
+        reply: ReplyRef?,
+        note: com.construct.messenger.media.VideoNoteTake?,
+    ): SendOutcome {
+        require(uris.isNotEmpty() || note != null)
         val messageId = UUID.randomUUID().toString().lowercase()
         val timestampMs = System.currentTimeMillis()
 
         val staged = try {
             withContext(Dispatchers.Default) {
+                if (note != null) {
+                    val localId = MediaWire.LOCAL_PREFIX + UUID.randomUUID()
+                    val video = videos.prepareNote(note)
+                    val sealed = MediaCrypto.seal(video.mp4)
+                    media.stage(localId, sealed.blob)
+                    return@withContext listOf(Staged(localId, sealed, video = video, note = true))
+                }
                 uris.map { uri ->
                     val localId = MediaWire.LOCAL_PREFIX + UUID.randomUUID()
-                    if (videoNote) {
-                        val video = videos.prepareNote(uri)
-                        val sealed = MediaCrypto.seal(video.mp4)
-                        media.stage(localId, sealed.blob)
-                        Staged(localId, sealed, video = video, note = true)
-                    } else if (videos.isVideo(uri)) {
+                    if (videos.isVideo(uri)) {
                         val video = videos.prepare(uri)
                         val sealed = MediaCrypto.seal(video.mp4)
                         media.stage(localId, sealed.blob)

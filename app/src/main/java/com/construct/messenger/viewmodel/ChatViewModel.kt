@@ -182,9 +182,15 @@ class ChatViewModel @Inject constructor(
             editing.value = null
             draft.value = ""
         }
-        // iOS quotes a sticker as "😍 Sticker" with media type STICKER (`buildQuoted`).
-        val mediaType = if (message.media is MessageMedia.Sticker) "MEDIA_TYPE_STICKER" else null
-        replying.value = ReplyRef.of(message.id, quote?.takeIf { it.isNotBlank() } ?: message.body, mediaType)
+        // iOS quotes media by its kind (`buildQuoted`): a sticker, a voice note, an album by its
+        // first item. A video note is a video on the wire and a note here.
+        val media = message.media
+        replying.value = ReplyRef.of(
+            message.id,
+            quote?.takeIf { it.isNotBlank() } ?: message.body,
+            ReplyRef.mediaTypeOf(media),
+            videoNote = (media as? MessageMedia.Album)?.videoNote != null,
+        )
     }
 
     /** A sticker from the picker, sent at once (iOS `sendSticker`); the composer is left as it is. */
@@ -332,8 +338,8 @@ class ChatViewModel @Inject constructor(
     fun cancelRecording() = recorder.cancel()
 
     /** A recorded video note, sent in the background like a voice note; the file goes with it. */
-    fun sendVideoNote(recording: java.io.File) {
-        viewModelScope.launch { messagesRepository.sendVideoNote(contactId, recording) }
+    fun sendVideoNote(take: com.construct.messenger.media.VideoNoteTake) {
+        viewModelScope.launch { messagesRepository.sendVideoNote(contactId, take) }
     }
 
     fun sendRecording() {

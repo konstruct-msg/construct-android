@@ -37,8 +37,8 @@ interface MessagesRepository {
     /** Send a recorded voice note; [recording] is taken over (and deleted once sealed). */
     suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>): SendOutcome
 
-    /** A recorded video note; the file is deleted once handed over. */
-    suspend fun sendVideoNote(contactId: String, recording: java.io.File): SendOutcome
+    /** A recorded video note; its files are deleted once handed over. */
+    suspend fun sendVideoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake): SendOutcome
 
     /** [item] decrypted into the phone's gallery (Android 10+). Throws when it could not be. */
     suspend fun saveToGallery(item: com.construct.messenger.data.model.MediaItem)

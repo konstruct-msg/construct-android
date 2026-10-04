@@ -187,6 +187,8 @@
     <string name="video_note_switch_camera">Сменить камеру</string>
     <string name="video_note_camera_unavailable">Камера или микрофон недоступны</string>
     <string name="video_note_cancel">Отменить запись</string>
+    <string name="video_note_trim_start">Начало</string>
+    <string name="video_note_trim_end">Конец</string>
     <string name="voice_message">Голосовое сообщение</string>
     <string name="file_attachment">Файл</string>
     <string name="sticker">Стикер</string>

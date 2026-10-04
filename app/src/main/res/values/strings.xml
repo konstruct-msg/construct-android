@@ -184,6 +184,8 @@
     <string name="video_note_switch_camera">Switch camera</string>
     <string name="video_note_camera_unavailable">Camera or microphone unavailable</string>
     <string name="video_note_cancel">Cancel recording</string>
+    <string name="video_note_trim_start">Trim start</string>
+    <string name="video_note_trim_end">Trim end</string>
     <string name="voice_message">Voice message</string>
     <string name="file_attachment">File</string>
     <string name="sticker">Sticker</string>

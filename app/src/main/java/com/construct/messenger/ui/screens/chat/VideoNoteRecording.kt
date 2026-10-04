@@ -33,6 +33,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,10 +53,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.construct.messenger.R
 import com.construct.messenger.media.VideoNoteRecorder
+import com.construct.messenger.media.VideoNoteTake
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.ctRegular
-import java.io.File
 import kotlinx.coroutines.launch
 
 /**
@@ -64,15 +65,24 @@ import kotlinx.coroutines.launch
  * composer's place a bar with cancel, the timer, pause/resume, camera switch and send. Recording
  * starts as soon as the camera is up; it stops by itself at 60 s.
  *
+ * Paused (or stopped at 60 s), the viewfinder gives way to the recording so far, playing with sound
+ * on a loop over the kept stretch, with a strip of frames and a handle at each end to trim it
+ * (iOS `VideoNoteReviewView`). The send keeps that stretch; resuming drops the trim.
+ *
  * Shown only once the screen holds CAMERA and RECORD_AUDIO.
  */
 @Composable
-fun VideoNoteRecordingOverlay(onSend: (File) -> Unit, onClose: () -> Unit) {
+fun VideoNoteRecordingOverlay(onSend: (VideoNoteTake) -> Unit, onClose: () -> Unit) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val recorder = remember { VideoNoteRecorder(context.applicationContext) }
     val phase by recorder.phase.collectAsState()
     val elapsed by recorder.elapsedMs.collectAsState()
+    val segments by recorder.segments.collectAsState()
+    // The kept stretch of the joined recording; null is all of it. Recording again drops it.
+    var trim by remember { mutableStateOf<LongRange?>(null) }
+    LaunchedEffect(phase) { if (phase == VideoNoteRecorder.Phase.RECORDING) trim = null }
+    val reviewing = (phase == VideoNoteRecorder.Phase.PAUSED || phase == VideoNoteRecorder.Phase.LIMIT) && segments.isNotEmpty()
     val scope = rememberCoroutineScope()
     var handedOver by remember { mutableStateOf(false) }
     // Read in the activity's window: inside the dialog the navigation bar's inset arrives as 0
@@ -88,7 +98,7 @@ fun VideoNoteRecordingOverlay(onSend: (File) -> Unit, onClose: () -> Unit) {
         if (handedOver) return
         handedOver = true
         scope.launch {
-            recorder.finish()?.let { (file, _) -> onSend(file) }
+            recorder.finish()?.let { onSend(it.copy(trimMs = trim)) }
             onClose()
         }
     }
@@ -138,7 +148,22 @@ fun VideoNoteRecordingOverlay(onSend: (File) -> Unit, onClose: () -> Unit) {
                             },
                             modifier = Modifier.fillMaxSize(),
                         )
+                        // Over the viewfinder, which stays bound: resuming needs no new camera.
+                        if (reviewing) ReviewLoop(segments, trim, Modifier.fillMaxSize())
                     }
+                }
+                if (reviewing) {
+                    val total = segments.sumOf { it.durationMs }
+                    TrimBar(
+                        segments = segments,
+                        durationMs = total,
+                        range = trim ?: (0L..total),
+                        onRange = { trim = it.takeUnless { r -> r.first == 0L && r.last == total } },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .width(width)
+                            .padding(bottom = 12.dp),
+                    )
                 }
             }
             RecordingBar(
@@ -182,10 +207,9 @@ private fun RecordingBar(
             Spacer(Modifier.width(4.dp))
         }
         Text(
-            text = if (phase == VideoNoteRecorder.Phase.PAUSED) {
-                stringResource(R.string.video_note_paused)
-            } else {
-                VideoNoteClock.format(elapsedMs)
+            text = when (phase) {
+                VideoNoteRecorder.Phase.PAUSED -> stringResource(R.string.video_note_paused)
+                else -> VideoNoteClock.format(elapsedMs)
             },
             style = ctRegular(14),
             color = CTColor.text,

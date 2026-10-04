@@ -94,14 +94,16 @@ class SendMediaUseCaseTest {
         val send: SendMessageUseCase = mock()
         whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
         val notes: com.construct.messenger.media.VideoPreparer = mock()
-        whenever(notes.prepareNote(org.mockito.kotlin.anyOrNull())).thenReturn(
+        whenever(notes.prepareNote(any())).thenReturn(
             com.construct.messenger.media.VideoPreparer.Prepared(ByteArray(300) { 2 }, 720, 960, 4_000, ByteArray(10), "LEHV6nWB2yk8pyo0adR*.7kCMdnj"),
         )
         val file = java.io.File.createTempFile("note", ".mp4").apply { writeBytes(ByteArray(10)) }
+        val take = com.construct.messenger.media.VideoNoteTake(listOf(com.construct.messenger.media.VideoNoteTake.Segment(file, 4_000)), 500L..3_500L)
 
-        SendMediaUseCase(images, pickedFiles, notes, media, send).videoNote("peer", file)
+        SendMediaUseCase(images, pickedFiles, notes, media, send).videoNote("peer", take)
 
         verify(notes, never()).prepare(org.mockito.kotlin.anyOrNull())
+        verify(notes).prepareNote(take)
         val shown = argumentCaptor<MediaWire.Stored>()
         verify(send).persistMedia(eq("peer"), any(), any(), shown.capture(), eq(null))
         val placeholder = MediaWire.decode(shown.firstValue.kind, shown.firstValue.bytes) as com.construct.messenger.data.model.MessageMedia.Album

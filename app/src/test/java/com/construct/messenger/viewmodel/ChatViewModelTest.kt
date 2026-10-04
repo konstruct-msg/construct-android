@@ -230,7 +230,7 @@ private class FakeMessagesRepository : MessagesRepository {
     override suspend fun openable(item: com.construct.messenger.data.model.MediaItem, name: String): android.net.Uri = org.mockito.kotlin.mock()
     override fun describe(uri: android.net.Uri) = "a.pdf" to 10L
     override suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>) = SendOutcome.Sent("v")
-    override suspend fun sendVideoNote(contactId: String, recording: java.io.File) = SendOutcome.Sent("n")
+    override suspend fun sendVideoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake) = SendOutcome.Sent("n")
     override suspend fun mediaBytes(item: com.construct.messenger.data.model.MediaItem) = ByteArray(0)
     override suspend fun saveToGallery(item: com.construct.messenger.data.model.MediaItem) = Unit
     override suspend fun sendPhotos(contactId: String, uris: List<android.net.Uri>, caption: String, reply: ReplyRef?): SendOutcome {

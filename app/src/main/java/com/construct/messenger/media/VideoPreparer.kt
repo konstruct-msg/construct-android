@@ -62,20 +62,74 @@ class VideoPreparer @Inject constructor(
 
     fun isVideo(uri: Uri): Boolean = context.contentResolver.getType(uri)?.startsWith("video/") == true
 
-    suspend fun prepare(uri: Uri): Prepared = prepare(uri, note = false)
+    suspend fun prepare(uri: Uri): Prepared {
+        val (w, h) = displaySize(uri)
+        val landscape = w >= h
+        val (boxW, boxH) = if (landscape) LONG to SHORT else SHORT to LONG
+        // Fit within 1920×1080 the way the picture stands; smaller videos keep their size.
+        val fit = if (w > boxW || h > boxH) listOf(Presentation.createForWidthAndHeight(boxW, boxH, Presentation.LAYOUT_SCALE_TO_FIT)) else emptyList()
+        val item = EditedMediaItem.Builder(androidx.media3.common.MediaItem.fromUri(uri))
+            .setEffects(Effects(emptyList(), frameCap(uri) + fit))
+            .build()
+        val (outW, outH) = VideoEncoding.fit(w, h, boxW, boxH)
+        return encode(listOf(item), outW, outH)
+    }
 
     /**
-     * A recorded video note: the centre 3:4 of the upright frame — what the viewfinder showed —
-     * at 720×960. **Canon:** iOS `MediaManager.videoNoteRender`.
+     * A recorded video note: its segments joined, the kept stretch of them (cut to the frame — the
+     * trim rides into this one encode, iOS `transcodeVideo(timeRange:)`), the centre 3:4 of the
+     * upright frame — what the viewfinder showed — at 720×960. **Canon:** iOS `videoNoteRender`.
      */
-    suspend fun prepareNote(uri: Uri): Prepared = prepare(uri, note = true)
+    suspend fun prepareNote(take: VideoNoteTake): Prepared {
+        // Effects see the upright frame: the crop is the centre of what stood in the viewfinder.
+        val crop = Presentation.createForWidthAndHeight(NOTE_W, NOTE_H, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP)
+        val items = VideoNoteTrim.clips(take.segments.map { it.durationMs }, take.trimMs).map { (i, range) ->
+            val uri = Uri.fromFile(take.segments[i].file)
+            val media = androidx.media3.common.MediaItem.Builder()
+                .setUri(uri)
+                .setClippingConfiguration(
+                    androidx.media3.common.MediaItem.ClippingConfiguration.Builder()
+                        .setStartPositionMs(range.first)
+                        .setEndPositionMs(range.last)
+                        .build(),
+                )
+                .build()
+            EditedMediaItem.Builder(media).setEffects(Effects(emptyList(), frameCap(uri) + crop)).build()
+        }
+        require(items.isNotEmpty()) { "nothing kept" }
+        return encode(items, NOTE_W, NOTE_H)
+    }
 
-    private suspend fun prepare(uri: Uri, note: Boolean): Prepared {
+    /** iOS `maxSentFrameRate`: at most 30 frames a second. Only a faster source is touched — at
+     * 30 the drop effect could lose frames to timestamp jitter. */
+    @OptIn(UnstableApi::class)
+    private fun frameCap(uri: Uri): List<androidx.media3.common.Effect> =
+        if (VideoEncoding.needsFrameCap(sourceFps(uri))) {
+            listOf(androidx.media3.effect.FrameDropEffect.createDefaultFrameDropEffect(VideoEncoding.MAX_FPS))
+        } else {
+            emptyList()
+        }
+
+    private fun sourceFps(uri: Uri): Float? {
+        val ex = android.media.MediaExtractor()
+        return try {
+            ex.setDataSource(context, uri, null)
+            (0 until ex.trackCount).map(ex::getTrackFormat)
+                .firstOrNull { it.getString(android.media.MediaFormat.KEY_MIME)?.startsWith("video/") == true }
+                ?.takeIf { it.containsKey(android.media.MediaFormat.KEY_FRAME_RATE) }
+                ?.let { runCatching { it.getInteger(android.media.MediaFormat.KEY_FRAME_RATE).toFloat() }.getOrElse { _ -> it.getFloat(android.media.MediaFormat.KEY_FRAME_RATE) } }
+        } catch (e: Exception) {
+            null
+        } finally {
+            ex.release()
+        }
+    }
+
+    private suspend fun encode(items: List<EditedMediaItem>, outW: Int, outH: Int): Prepared {
         val dir = File(context.cacheDir, "video").apply { mkdirs() }
         val out = File(dir, "v_${UUID.randomUUID()}.mp4")
         try {
-            val (w, h) = displaySize(uri)
-            transcode(uri, out, w, h, note)
+            transcode(items, out, outW, outH)
             if (out.length() > PickedFiles.MAX_BYTES) throw TooLarge()
             val retriever = MediaMetadataRetriever()
             try {
@@ -117,21 +171,9 @@ class VideoPreparer @Inject constructor(
     }
 
     @OptIn(UnstableApi::class)
-    private suspend fun transcode(uri: Uri, out: File, width: Int, height: Int, note: Boolean) = withContext(Dispatchers.Main) {
-        // Fit within 1920×1080 the way the picture stands; smaller videos keep their size. A note
-        // is cropped to its centre 3:4 and filled into 720×960 (effects see the upright frame).
-        val landscape = width >= height
-        val (boxW, boxH) = if (landscape) LONG to SHORT else SHORT to LONG
-        val effects = when {
-            note -> Effects(emptyList(), listOf(Presentation.createForWidthAndHeight(NOTE_W, NOTE_H, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP)))
-            width > boxW || height > boxH ->
-                Effects(emptyList(), listOf(Presentation.createForWidthAndHeight(boxW, boxH, Presentation.LAYOUT_SCALE_TO_FIT)))
-            else -> Effects.EMPTY
-        }
-        val item = EditedMediaItem.Builder(androidx.media3.common.MediaItem.fromUri(uri)).setEffects(effects).build()
-        val (outW, outH) = if (note) NOTE_W to NOTE_H else VideoEncoding.fit(width, height, boxW, boxH)
+    private suspend fun transcode(items: List<EditedMediaItem>, out: File, outW: Int, outH: Int) = withContext(Dispatchers.Main) {
         val mime = VideoEncoding.mimeFor(hevcFits = VideoEncoding.hevcEncodes(outW, outH))
-        val composition = Composition.Builder(EditedMediaItemSequence.Builder(item).build())
+        val composition = Composition.Builder(EditedMediaItemSequence.Builder(items).build())
             .apply {
                 // KEEP_HDR (the default) would send 10-bit HDR where the device can encode it.
                 if (android.os.Build.VERSION.SDK_INT >= 29) setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL)
@@ -200,6 +242,12 @@ class VideoPreparer @Inject constructor(
  */
 object VideoEncoding {
     const val DEFAULT_FPS = 30f
+
+    /** iOS `maxSentFrameRate`. */
+    const val MAX_FPS = 30f
+
+    /** Whether a source at [fps] is thinned to [MAX_FPS]; unknown is left alone. */
+    fun needsFrameCap(fps: Float?): Boolean = fps != null && fps > MAX_FPS + 1
     const val HEVC_SHARE = 0.5
 
     /**

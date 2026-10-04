@@ -94,14 +94,21 @@ class VideoPreparerInstrumentedTest {
         source.delete()
     }
 
-    /** A note is the centre 3:4 of the frame at 720×960, whatever the source's shape. */
+    /**
+     * A note is its segments joined, cut to the kept stretch, the centre 3:4 at 720×960, whatever
+     * the source's shape: two 3 s segments trimmed to 1.0–4.5 s send 3.5 s.
+     */
     @Test
-    fun aNoteIsTheCentreThreeByFourAt720x960(): Unit = runBlocking {
-        val source = h264Source()
-        val prepared = VideoPreparer(context, ImagePreparer(context)).prepareNote(Uri.fromFile(source))
+    fun aNoteIsTheKeptStretchOfItsSegmentsAt720x960(): Unit = runBlocking {
+        val a = h264Source()
+        val b = File(context.cacheDir, "source2.mp4").also { a.copyTo(it, overwrite = true) }
+        val take = VideoNoteTake(listOf(VideoNoteTake.Segment(a, 3_000), VideoNoteTake.Segment(b, 3_000)), 1_000L..4_500L)
+        val prepared = VideoPreparer(context, ImagePreparer(context)).prepareNote(take)
+        Log.i("VideoPreparerTest", "note ${prepared.durationMs} ms, ${prepared.width}x${prepared.height}")
         assertEquals(720, prepared.width)
         assertEquals(960, prepared.height)
-        source.delete()
+        assertTrue("kept ${prepared.durationMs} ms", prepared.durationMs in 3_300..3_700)
+        take.delete()
     }
 }
 

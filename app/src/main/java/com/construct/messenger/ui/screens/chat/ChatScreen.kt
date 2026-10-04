@@ -496,7 +496,7 @@ fun ChatScreen(
             onValueChange = viewModel::onDraftChange,
             onSend = { followNext(); viewModel.send() },
             replyPreview = uiState.replyingTo?.let { reply ->
-                reply.preview.ifBlank { quoteFallback(reply.mediaType) }
+                reply.preview.ifBlank { quoteFallback(reply.mediaType, reply.videoNote) }
             },
             onCancelReply = viewModel::cancelReply,
             editingPreview = uiState.editingOriginal?.ifBlank { stringResource(R.string.photo) },
@@ -520,13 +520,22 @@ private fun replyLabel(message: Message, transcript: List<Message>): String? {
     val quotedId = message.replyToId ?: return null
     val preview = message.replyPreview?.takeIf { it.isNotBlank() }
     if (preview != null) return preview
-    val local = transcript.firstOrNull { it.id.equals(quotedId, ignoreCase = true) }?.body
+    val quoted = transcript.firstOrNull { it.id.equals(quotedId, ignoreCase = true) }
+    val local = quoted?.body
     if (!local.isNullOrBlank()) return local
-    return quoteFallback(message.replyMediaType)
+    // The wire names a note a video; the quoted row here knows better (iOS, locally only).
+    val note = (quoted?.media as? com.construct.messenger.data.model.MessageMedia.Album)?.videoNote != null
+    return quoteFallback(message.replyMediaType, note)
 }
 
 @Composable
-private fun quoteFallback(mediaType: String?): String = when (mediaType) {
+private fun quoteFallback(mediaType: String?, videoNote: Boolean = false): String = when {
+    videoNote -> stringResource(R.string.video_note)
+    else -> quoteKind(mediaType)
+}
+
+@Composable
+private fun quoteKind(mediaType: String?): String = when (mediaType) {
     "MEDIA_TYPE_IMAGE", "MEDIA_TYPE_ANIMATED" -> stringResource(R.string.photo)
     "MEDIA_TYPE_VIDEO" -> stringResource(R.string.video)
     "MEDIA_TYPE_AUDIO" -> stringResource(R.string.voice_message)
