@@ -105,6 +105,10 @@ which does all of the above. Either way the files stay untracked.
   delivery or start-up). It exists because this repo's breakages were mostly not test failures —
   commits that never compiled behind `checkCoreLibrary`, a `.so` from another core build, a core
   action with no executor. Its first run caught a commit whose tests no longer compiled.
+- **CI** (`.github/workflows/ci.yml`) runs `scripts/verify.sh` on every push and PR with the core
+  the lock names. **A release APK** is built by pushing a tag `v<versionName>` (or running
+  `release.yml` by hand): signed with the key from the repository secrets and refused unless the
+  signer is the pinned certificate; a tag leaves a draft release, which a person publishes.
 - Status lives only in `docs/IMPLEMENTATION_PLAN.md`. Do not add a status line anywhere else —
   that is how this file, the README and the plan came to disagree.
 - Closing a task from the plan means updating the plan in the same commit.

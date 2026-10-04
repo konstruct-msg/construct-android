@@ -1,0 +1,67 @@
+# Every push and pull request: the same checks as scripts/verify.sh, on the core the lock names.
+#
+# Why it exists (docs/IMPLEMENTATION_PLAN.md A3, construct-docs TODO 67): checkCoreLibrary stops
+# Gradle before the compiler when the .so is missing, so without the core a commit was never
+# compiled at all — and the .so is not in git. Here it is fetched from the published release the
+# lock names, the build this repository is paired with.
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # versionCode is the commit count, and the commit checks read a range.
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Core from the lock
+        run: scripts/fetch_core.sh
+
+      - name: Verify
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # The commits this run is about: a PR's own, or what this push added.
+          if [ "$EVENT" = pull_request ]; then
+            since="origin/$BASE_REF"
+          elif [ -n "$BEFORE" ] && ! echo "$BEFORE" | grep -qE '^0+$' && git cat-file -e "$BEFORE" 2>/dev/null; then
+            since="$BEFORE"
+          else
+            since="HEAD~1"
+          fi
+          scripts/verify.sh --since "$since"
+
+      - name: Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-logs
+          path: |
+            app/build/verify
+            app/build/reports/tests
+          retention-days: 14
