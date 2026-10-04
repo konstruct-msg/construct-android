@@ -38,7 +38,13 @@ class KeystoreManager @Inject constructor(
 
     /** Saves the token set returned by [RegisterUseCase][com.construct.messenger.domain.usecase.RegisterUseCase]/[LoginUseCase][com.construct.messenger.domain.usecase.LoginUseCase], plus the device id used to obtain them. */
     fun saveTokens(tokens: AuthTokensResponse, deviceId: String) {
-        prefs.edit()
+        val edit = prefs.edit()
+        // An address belongs to one account. Tokens for another one, without a sign-out between,
+        // must not inherit it: it would go into every card and invite (construct-docs TODO 109).
+        if (prefs.getString(KEY_USER_ID, null).let { it != null && it != tokens.userId }) {
+            edit.remove(KEY_ACCOUNT_ADDRESS)
+        }
+        edit
             .putString(KEY_ACCESS_TOKEN, tokens.accessToken)
             .putString(KEY_REFRESH_TOKEN, tokens.refreshToken)
             .putString(KEY_USER_ID, tokens.userId)
@@ -189,6 +195,12 @@ class KeystoreManager @Inject constructor(
      */
     fun saveOwnAccountAddress(key: ByteArray) {
         prefs.edit().putString(KEY_ACCOUNT_ADDRESS, Base64.encodeToString(key, Base64.NO_WRAP)).commit()
+    }
+
+    /** Forget the stored address: the server names another key for this account
+     * ([com.construct.messenger.invite.OwnAccountAddress]). */
+    fun deleteOwnAccountAddress() {
+        prefs.edit().remove(KEY_ACCOUNT_ADDRESS).commit()
     }
 
     /**

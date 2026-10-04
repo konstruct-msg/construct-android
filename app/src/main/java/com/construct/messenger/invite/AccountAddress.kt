@@ -38,4 +38,25 @@ object AccountAddress {
         if (digits.length < 32) return false
         return hexEncode(key).startsWith(digits)
     }
+
+    /** What the server's fingerprint says about the address this device holds. */
+    enum class OwnVerdict {
+        /** Nothing stored. */
+        ABSENT,
+        /** Stored, and the server's key for the account is its prefix. */
+        CONFIRMED,
+        /** Stored, and the server names another key: it came from a different account's phrase. */
+        FOREIGN,
+        /** Stored, and the server reports no key to compare with. */
+        UNCONFIRMED,
+    }
+
+    /** Pure, so the rule is testable apart from the store and the network. **Canon:** iOS
+     * `AccountAddress.verdict`. */
+    fun verdict(stored: ByteArray?, serverFingerprint: String?): OwnVerdict = when {
+        stored == null || stored.size != LENGTH -> OwnVerdict.ABSENT
+        serverFingerprint == null -> OwnVerdict.UNCONFIRMED
+        matchesServerFingerprint(stored, serverFingerprint) -> OwnVerdict.CONFIRMED
+        else -> OwnVerdict.FOREIGN
+    }
 }

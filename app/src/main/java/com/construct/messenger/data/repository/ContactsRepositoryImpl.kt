@@ -19,6 +19,7 @@ import com.construct.messenger.invite.InviteGenerator
 import com.construct.messenger.invite.InviteObject
 import com.construct.messenger.invite.InviteVerifier
 import com.construct.messenger.invite.MintedInvite
+import com.construct.messenger.invite.OwnAccountAddress
 import com.construct.messenger.util.DisplayNameGenerator
 import com.google.protobuf.ByteString
 import io.grpc.Status
@@ -52,6 +53,7 @@ class ContactsRepositoryImpl @Inject constructor(
     private val issuedInviteDao: IssuedInviteDao,
     private val addressBook: AccountAddressBook,
     private val accountRepository: AccountRepository,
+    private val ownAddress: OwnAccountAddress,
 ) : ContactsRepository {
 
     private val incoming = MutableStateFlow<List<IncomingContactRequest>>(emptyList())
@@ -92,6 +94,8 @@ class ContactsRepositoryImpl @Inject constructor(
 
     /** Every invite is journalled, so it can be listed and revoked by its jti. */
     private suspend fun journal(kind: String, sitting: String?, mint: (String, String) -> MintedInvite): MintedInvite {
+        // A stored address the server names as another account's is deleted, and the mint refuses.
+        ownAddress.checkBeforeInvite()
         val userId = keystoreManager.getUserId() ?: error("not authenticated")
         val deviceId = keystoreManager.getDeviceId() ?: error("no device id")
         val minted = mint(userId, deviceId)

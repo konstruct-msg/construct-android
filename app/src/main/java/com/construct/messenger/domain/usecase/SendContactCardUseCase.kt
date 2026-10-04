@@ -6,6 +6,7 @@ import com.construct.messenger.data.api.MessagingService
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.invite.ContactCardPayload
+import com.construct.messenger.invite.OwnAccountAddress
 import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
@@ -22,8 +23,8 @@ import uniffi.construct_core.CfeIncomingEvent
 
 /**
  * Our contact card (KNST type 27) to a contact's device that does not have it yet: this account's
- * address, so they name us by key rather than by server id. Android mints no intake key, so the
- * card carries the address alone.
+ * address, so they name us by key rather than by server id — and only an address the server
+ * confirms is this account's ([OwnAccountAddress]).
  *
  * Sent once per device — when we first hear from it and when we first write to it, whichever
  * comes first. **Canon:** iOS `OutboundSessionService.sendContactCard`; decision
@@ -42,10 +43,9 @@ class SendContactCardUseCase @Inject constructor(
     private val sealedSend: SealedSend,
     private val intake: IntakeCredentials,
     private val sessionStateStore: SessionStateStore,
+    private val ownAddress: OwnAccountAddress,
 ) {
     suspend fun sendIfOwed(contactId: String) {
-        // The key always, the address when this device has seen the phrase.
-        val address = keystoreManager.getOwnAccountAddress()
         val target = sessionManager.resolveTarget(contactId) ?: return
         val deviceId = target.deviceId
         if (deviceId.lowercase() in keystoreManager.contactCardSentTo()) return
@@ -54,6 +54,9 @@ class SendContactCardUseCase @Inject constructor(
         val ik = target.identityPublic
         if (ik.isEmpty()) return
 
+        // The key always, the address only when the server confirms it is this account's: a
+        // contact pins the first one it gets (TODO 109).
+        val address = ownAddress.forCard()
         val cardId = UUID.randomUUID()
         val plaintext = KnstFrame.pack(
             ContactCardPayload(intakeKey = intake.ownKey(), accountAddress = address).encoded(),
