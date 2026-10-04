@@ -93,6 +93,15 @@ class MainActivity : FragmentActivity() {
                     color = CTColor.bg,
                 ) {
                     val navController = rememberNavController()
+                    // An invite tapped while a screen is open above the tabs — a link in a chat:
+                    // back to the tabs, where Synaps redeems it. Before the tabs exist (cold
+                    // start, onboarding) it waits for them.
+                    val invite by pendingInvites.pending.collectAsStateWithLifecycle()
+                    LaunchedEffect(invite) {
+                        if (invite != null && runCatching { navController.getBackStackEntry(Screen.Main.route) }.isSuccess) {
+                            navController.popBackStack(Screen.Main.route, inclusive = false)
+                        }
+                    }
                     val call by calls.call.collectAsStateWithLifecycle()
                     // A new call — placed from a chat, or ringing while the app is open — opens the
                     // call screen; minimising it leaves the strip, which opens it again.

@@ -215,10 +215,13 @@ fun MessageBubble(
                     onDoubleTap = { onReact(ReactionRules.LIKE) },
                 )
                 if (message.body.isNotBlank()) {
-                    Text(
+                    LinkedText(
                         text = message.body,
                         style = ctMessage(12),
                         color = CTColor.text,
+                        linkColor = CTColor.accent,
+                        onLongPress = onLongPress,
+                        onDoubleTap = { onReact(ReactionRules.LIKE) },
                         modifier = Modifier.widthIn(max = 260.dp).padding(top = 2.dp),
                     )
                 }
@@ -262,10 +265,14 @@ fun MessageBubble(
                     )
                 }
                 if (message.body.isNotBlank() || message.media == null) {
-                    Text(
+                    LinkedText(
                         text = message.body,
                         style = ctMessage(15),
                         color = contentColor,
+                        // iOS: links in the accent on an incoming bubble, in the text colour on ours.
+                        linkColor = if (isOutgoing) contentColor else CTColor.accent,
+                        onLongPress = onLongPress,
+                        onDoubleTap = { onReact(ReactionRules.LIKE) },
                     )
                 }
             }
