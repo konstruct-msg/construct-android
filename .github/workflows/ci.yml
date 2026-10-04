@@ -33,7 +33,9 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - uses: android-actions/setup-android@v3
+      # The runner image carries the Android SDK (ANDROID_HOME) with its licences accepted; AGP
+      # fetches a missing platform itself. android-actions/setup-android@v3 failed asking
+      # sdkmanager for the removed 'tools' package (2026-10-04).
 
       - uses: gradle/actions/setup-gradle@v4
 
