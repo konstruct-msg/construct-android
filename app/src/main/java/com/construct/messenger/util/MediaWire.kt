@@ -115,6 +115,8 @@ object MediaWire {
             blurhash = if (m.hasBlurhash()) m.blurhash.ifEmpty { null } else null,
             thumbnail = if (m.hasThumbnail()) m.thumbnail.toByteArray().takeIf { it.isNotEmpty() } else null,
             filename = if (m.hasFilename()) m.filename.ifEmpty { null } else null,
+            // A value this build does not know reads as UNRECOGNIZED: the ordinary bubble.
+            isVideoNote = m.presentation == shared.proto.messaging.v1.Content.MediaPresentation.MEDIA_PRESENTATION_VIDEO_NOTE,
         )
     }
 

@@ -293,6 +293,8 @@ fun MediaViewer(
     loadVideo: suspend (MediaItem) -> ByteArray,
     onSave: ((MediaItem) -> Unit)? = null,
     onShare: ((MediaItem) -> Unit)? = null,
+    /** Start the video at once, with sound — a video note opened from its bubble. */
+    autoPlay: Boolean = false,
 ) {
     val photos = album.items.filter { it.isImage || it.isVideo }
     if (photos.isEmpty()) return
@@ -305,7 +307,7 @@ fun MediaViewer(
         Box(Modifier.fillMaxSize().background(Color.Black)) {
             HorizontalPager(state = pager, modifier = Modifier.fillMaxSize()) { page ->
                 val item = photos[page]
-                if (item.isVideo) VideoPage(item, active = pager.currentPage == page, load = loadVideo) else ZoomableImage(item)
+                if (item.isVideo) VideoPage(item, active = pager.currentPage == page, load = loadVideo, autoPlay = autoPlay) else ZoomableImage(item)
             }
             Row(
                 modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp),
@@ -348,7 +350,7 @@ fun MediaViewer(
  */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
-private fun VideoPage(item: MediaItem, active: Boolean, load: suspend (MediaItem) -> ByteArray) {
+private fun VideoPage(item: MediaItem, active: Boolean, load: suspend (MediaItem) -> ByteArray, autoPlay: Boolean = false) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val preview = rememberPreview(item)
     var bytes by remember { mutableStateOf<ByteArray?>(null) }
@@ -357,28 +359,30 @@ private fun VideoPage(item: MediaItem, active: Boolean, load: suspend (MediaItem
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val unavailable = stringResource(R.string.media_unavailable)
     val failed = stringResource(R.string.failed_to_load)
+    fun fetch() {
+        loading = true
+        failure = null
+        scope.launch {
+            try {
+                bytes = load(item)
+            } catch (e: MediaUnavailable) {
+                failure = unavailable
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                failure = failed
+            } finally {
+                loading = false
+            }
+        }
+    }
+    androidx.compose.runtime.LaunchedEffect(item.mediaId) { if (autoPlay && bytes == null && !loading) fetch() }
     val data = bytes
     if (data == null) {
         Box(
             Modifier
                 .fillMaxSize()
-                .clickable(enabled = !loading) {
-                    loading = true
-                    failure = null
-                    scope.launch {
-                        try {
-                            bytes = load(item)
-                        } catch (e: MediaUnavailable) {
-                            failure = unavailable
-                        } catch (e: kotlinx.coroutines.CancellationException) {
-                            throw e
-                        } catch (e: Exception) {
-                            failure = failed
-                        } finally {
-                            loading = false
-                        }
-                    }
-                },
+                .clickable(enabled = !loading) { fetch() },
             contentAlignment = Alignment.Center,
         ) {
             preview?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }

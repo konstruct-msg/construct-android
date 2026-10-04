@@ -177,6 +177,8 @@
     <string name="crop_use_photo">Выбрать фото</string>
     <string name="photo">Фото</string>
     <string name="video">Видео</string>
+    <string name="video_note">Видеозаметка</string>
+    <string name="video_note_muted">Без звука — нажмите, чтобы смотреть со звуком</string>
     <string name="voice_message">Голосовое сообщение</string>
     <string name="file_attachment">Файл</string>
     <string name="sticker">Стикер</string>

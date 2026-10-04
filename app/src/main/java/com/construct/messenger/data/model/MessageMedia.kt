@@ -14,6 +14,14 @@ sealed interface MessageMedia {
         /** iOS `looksLikeFileAlbum`: nothing in it is a picture, a video or audio. */
         val isFiles: Boolean
             get() = items.isNotEmpty() && items.none { it.isImage || it.isVideo || it.mimeType.startsWith("audio/") }
+
+        /**
+         * The video note this album is, if it is one: a single video marked so. The mark on
+         * anything else is ignored and the ordinary bubble shown — what an older client does with
+         * it. **Canon:** iOS `MediaMessageView.isVideoNote`.
+         */
+        val videoNote: MediaItem?
+            get() = items.singleOrNull()?.takeIf { it.isVideo && it.isVideoNote }
     }
 
     /** A voice note: one AAC blob, its length, and the waveform drawn for it (0–255 each). */
@@ -39,6 +47,9 @@ class MediaItem(
     /** A small JPEG to show until the item is fetched; iOS sends it for videos, and photos without a BlurHash. */
     val thumbnail: ByteArray? = null,
     val filename: String? = null,
+    /** `MediaMessage.presentation` is VIDEO_NOTE: a short video recorded in the chat, shown as a
+     * note ([MessageMedia.Album.videoNote]). */
+    val isVideoNote: Boolean = false,
 ) {
     val isImage: Boolean get() = mimeType.startsWith("image/")
     val isVideo: Boolean get() = mimeType.startsWith("video/")

@@ -208,12 +208,23 @@ fun MessageBubble(
                         ReplyQuoteStrip(replyLabel, quoteBar, quoteColor, onJumpToReply, onLongPress)
                     }
                 }
-                MediaAlbumView(
-                    album = album,
-                    onOpen = { viewing = it },
-                    onLongPress = onLongPress,
-                    onDoubleTap = { onReact(ReactionRules.LIKE) },
-                )
+                val note = album.videoNote
+                if (note != null) {
+                    VideoNoteBubble(
+                        item = note,
+                        load = loadMedia,
+                        onOpen = { viewing = 0 },
+                        onLongPress = onLongPress,
+                        onDoubleTap = { onReact(ReactionRules.LIKE) },
+                    )
+                } else {
+                    MediaAlbumView(
+                        album = album,
+                        onOpen = { viewing = it },
+                        onLongPress = onLongPress,
+                        onDoubleTap = { onReact(ReactionRules.LIKE) },
+                    )
+                }
                 if (message.body.isNotBlank()) {
                     LinkedText(
                         text = message.body,
@@ -232,6 +243,8 @@ fun MessageBubble(
                         loadVideo = loadMedia,
                         onSave = onSaveMedia,
                         onShare = onShareMedia,
+                        // A note opens playing, with sound (iOS: tap → gallery with sound).
+                        autoPlay = note != null,
                     )
                 }
             } else Column(
