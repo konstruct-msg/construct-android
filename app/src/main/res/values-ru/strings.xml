@@ -179,6 +179,14 @@
     <string name="video">Видео</string>
     <string name="video_note">Видеозаметка</string>
     <string name="video_note_muted">Без звука — нажмите, чтобы смотреть со звуком</string>
+    <string name="video_note_record">Записать видеозаметку</string>
+    <string name="video_note_pause">Пауза</string>
+    <string name="video_note_resume">Продолжить запись</string>
+    <string name="video_note_paused">Пауза</string>
+    <string name="video_note_send">Отправить видеозаметку</string>
+    <string name="video_note_switch_camera">Сменить камеру</string>
+    <string name="video_note_camera_unavailable">Камера или микрофон недоступны</string>
+    <string name="video_note_cancel">Отменить запись</string>
     <string name="voice_message">Голосовое сообщение</string>
     <string name="file_attachment">Файл</string>
     <string name="sticker">Стикер</string>

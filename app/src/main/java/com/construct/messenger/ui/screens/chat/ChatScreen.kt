@@ -122,6 +122,20 @@ fun ChatScreen(
     val askMic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) startRecording() else android.widget.Toast.makeText(context, micDenied, android.widget.Toast.LENGTH_LONG).show()
     }
+    // A video note: the camera and the microphone, asked for the first time one is recorded.
+    var recordingNote by remember { mutableStateOf(false) }
+    val noteUnavailable = stringResource(R.string.video_note_camera_unavailable)
+    val askNote = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
+        if (granted.values.all { it }) recordingNote = true
+        else android.widget.Toast.makeText(context, noteUnavailable, android.widget.Toast.LENGTH_LONG).show()
+    }
+    fun startVideoNote() {
+        val needed = arrayOf(android.Manifest.permission.CAMERA, android.Manifest.permission.RECORD_AUDIO)
+        val held = needed.all {
+            androidx.core.content.ContextCompat.checkSelfPermission(context, it) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+        if (held) recordingNote = true else askNote.launch(needed)
+    }
     val listState = rememberLazyListState()
     // iOS `ChatViewport.mode`: following the newest message, or reading history (TranscriptFollow).
     var following by remember { mutableStateOf(true) }
@@ -430,6 +444,7 @@ fun ChatScreen(
             } else {
                 null
             },
+            onVideoNote = if (uiState.editingOriginal == null) ({ startVideoNote() }) else null,
             voiceBar = when (val r = recording) {
                 is VoiceRecorder.State.Recording -> {
                     { VoiceComposerBar(true, r.durationMs, r.recent, viewModel::cancelRecording, viewModel::stopRecording) }
@@ -486,6 +501,12 @@ fun ChatScreen(
             onCancelReply = viewModel::cancelReply,
             editingPreview = uiState.editingOriginal?.ifBlank { stringResource(R.string.photo) },
             onCancelEdit = viewModel::cancelEdit,
+        )
+    }
+    if (recordingNote) {
+        VideoNoteRecordingOverlay(
+            onSend = { followNext(); viewModel.sendVideoNote(it) },
+            onClose = { recordingNote = false },
         )
     }
 }

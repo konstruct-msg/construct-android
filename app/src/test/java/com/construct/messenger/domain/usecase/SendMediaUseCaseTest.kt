@@ -84,6 +84,39 @@ class SendMediaUseCaseTest {
     }
 
     /**
+     * A video note goes the video path with the mark, through the note's own preparation (the
+     * centre 3:4 at 720×960), and the recording is deleted. The placeholder carries the mark too.
+     * Mutation: prepare it as an ordinary video, or drop the mark — reddens.
+     */
+    @Test
+    fun `a video note is a marked video, prepared as a note`() = runTest {
+        val media = FakeMedia()
+        val send: SendMessageUseCase = mock()
+        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        val notes: com.construct.messenger.media.VideoPreparer = mock()
+        whenever(notes.prepareNote(org.mockito.kotlin.anyOrNull())).thenReturn(
+            com.construct.messenger.media.VideoPreparer.Prepared(ByteArray(300) { 2 }, 720, 960, 4_000, ByteArray(10), "LEHV6nWB2yk8pyo0adR*.7kCMdnj"),
+        )
+        val file = java.io.File.createTempFile("note", ".mp4").apply { writeBytes(ByteArray(10)) }
+
+        SendMediaUseCase(images, pickedFiles, notes, media, send).videoNote("peer", file)
+
+        verify(notes, never()).prepare(org.mockito.kotlin.anyOrNull())
+        val shown = argumentCaptor<MediaWire.Stored>()
+        verify(send).persistMedia(eq("peer"), any(), any(), shown.capture(), eq(null))
+        val placeholder = MediaWire.decode(shown.firstValue.kind, shown.firstValue.bytes) as com.construct.messenger.data.model.MessageMedia.Album
+        assertTrue(placeholder.videoNote != null)
+        val content = argumentCaptor<ByteArray>()
+        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        val item = MessageContent.parseFrom(content.firstValue).mediaAlbum.getItems(0)
+        assertEquals(shared.proto.messaging.v1.Content.MediaPresentation.MEDIA_PRESENTATION_VIDEO_NOTE, item.presentation)
+        assertEquals(MediaType.MEDIA_TYPE_VIDEO, item.mediaType)
+        assertEquals(720, item.dimensions.width)
+        assertEquals(960, item.dimensions.height)
+        assertFalse(file.exists())
+    }
+
+    /**
      * iOS has no media id field for voice and reads it out of `codec` as `mime|id|size`; the
      * waveform goes as 0–255. Mutation: put the blob's size in the codec — reddens.
      */

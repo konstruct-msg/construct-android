@@ -331,6 +331,11 @@ class ChatViewModel @Inject constructor(
 
     fun cancelRecording() = recorder.cancel()
 
+    /** A recorded video note, sent in the background like a voice note; the file goes with it. */
+    fun sendVideoNote(recording: java.io.File) {
+        viewModelScope.launch { messagesRepository.sendVideoNote(contactId, recording) }
+    }
+
     fun sendRecording() {
         val done = recorder.state.value as? VoiceRecorder.State.Recorded ?: return
         recorder.handedOff()

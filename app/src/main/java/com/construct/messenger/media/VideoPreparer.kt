@@ -62,12 +62,20 @@ class VideoPreparer @Inject constructor(
 
     fun isVideo(uri: Uri): Boolean = context.contentResolver.getType(uri)?.startsWith("video/") == true
 
-    suspend fun prepare(uri: Uri): Prepared {
+    suspend fun prepare(uri: Uri): Prepared = prepare(uri, note = false)
+
+    /**
+     * A recorded video note: the centre 3:4 of the upright frame — what the viewfinder showed —
+     * at 720×960. **Canon:** iOS `MediaManager.videoNoteRender`.
+     */
+    suspend fun prepareNote(uri: Uri): Prepared = prepare(uri, note = true)
+
+    private suspend fun prepare(uri: Uri, note: Boolean): Prepared {
         val dir = File(context.cacheDir, "video").apply { mkdirs() }
         val out = File(dir, "v_${UUID.randomUUID()}.mp4")
         try {
             val (w, h) = displaySize(uri)
-            transcode(uri, out, w, h)
+            transcode(uri, out, w, h, note)
             if (out.length() > PickedFiles.MAX_BYTES) throw TooLarge()
             val retriever = MediaMetadataRetriever()
             try {
@@ -109,17 +117,19 @@ class VideoPreparer @Inject constructor(
     }
 
     @OptIn(UnstableApi::class)
-    private suspend fun transcode(uri: Uri, out: File, width: Int, height: Int) = withContext(Dispatchers.Main) {
-        // Fit within 1920×1080 the way the picture stands; smaller videos keep their size.
+    private suspend fun transcode(uri: Uri, out: File, width: Int, height: Int, note: Boolean) = withContext(Dispatchers.Main) {
+        // Fit within 1920×1080 the way the picture stands; smaller videos keep their size. A note
+        // is cropped to its centre 3:4 and filled into 720×960 (effects see the upright frame).
         val landscape = width >= height
         val (boxW, boxH) = if (landscape) LONG to SHORT else SHORT to LONG
-        val effects = if (width > boxW || height > boxH) {
-            Effects(emptyList(), listOf(Presentation.createForWidthAndHeight(boxW, boxH, Presentation.LAYOUT_SCALE_TO_FIT)))
-        } else {
-            Effects.EMPTY
+        val effects = when {
+            note -> Effects(emptyList(), listOf(Presentation.createForWidthAndHeight(NOTE_W, NOTE_H, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP)))
+            width > boxW || height > boxH ->
+                Effects(emptyList(), listOf(Presentation.createForWidthAndHeight(boxW, boxH, Presentation.LAYOUT_SCALE_TO_FIT)))
+            else -> Effects.EMPTY
         }
         val item = EditedMediaItem.Builder(androidx.media3.common.MediaItem.fromUri(uri)).setEffects(effects).build()
-        val (outW, outH) = VideoEncoding.fit(width, height, boxW, boxH)
+        val (outW, outH) = if (note) NOTE_W to NOTE_H else VideoEncoding.fit(width, height, boxW, boxH)
         val mime = VideoEncoding.mimeFor(hevcFits = VideoEncoding.hevcEncodes(outW, outH))
         val composition = Composition.Builder(EditedMediaItemSequence.Builder(item).build())
             .apply {
@@ -178,6 +188,8 @@ class VideoPreparer @Inject constructor(
     private companion object {
         const val LONG = 1920
         const val SHORT = 1080
+        const val NOTE_W = 720
+        const val NOTE_H = 960
     }
 }
 

@@ -47,7 +47,19 @@ class SendMediaUseCase @Inject constructor(
     private val media: MediaRepository,
     private val sendMessage: SendMessageUseCase,
 ) {
-    suspend fun photos(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef?): SendOutcome {
+    /**
+     * A recorded video note: the video path with the mark (`MediaMessage.presentation`), the centre
+     * 3:4 at 720×960. The placeholder carries the mark too, so the uploading row is already the
+     * note. **Canon:** iOS `MediaAttachment(presentation: .videoNote)`. The recording is deleted.
+     */
+    suspend fun videoNote(contactId: String, recording: java.io.File): SendOutcome =
+        try {
+            photos(contactId, listOf(Uri.fromFile(recording)), "", null, videoNote = true)
+        } finally {
+            recording.delete()
+        }
+
+    suspend fun photos(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef?, videoNote: Boolean = false): SendOutcome {
         require(uris.isNotEmpty())
         val messageId = UUID.randomUUID().toString().lowercase()
         val timestampMs = System.currentTimeMillis()
@@ -56,7 +68,12 @@ class SendMediaUseCase @Inject constructor(
             withContext(Dispatchers.Default) {
                 uris.map { uri ->
                     val localId = MediaWire.LOCAL_PREFIX + UUID.randomUUID()
-                    if (videos.isVideo(uri)) {
+                    if (videoNote) {
+                        val video = videos.prepareNote(uri)
+                        val sealed = MediaCrypto.seal(video.mp4)
+                        media.stage(localId, sealed.blob)
+                        Staged(localId, sealed, video = video, note = true)
+                    } else if (videos.isVideo(uri)) {
                         val video = videos.prepare(uri)
                         val sealed = MediaCrypto.seal(video.mp4)
                         media.stage(localId, sealed.blob)
@@ -244,6 +261,7 @@ class SendMediaUseCase @Inject constructor(
         val sealed: MediaCrypto.Sealed,
         val photo: ImagePreparer.Prepared? = null,
         val video: VideoPreparer.Prepared? = null,
+        val note: Boolean = false,
     ) {
         fun item(uploaded: com.construct.messenger.data.api.MediaService.Uploaded) = item(uploaded.mediaId, uploaded.downloadUrl)
 
@@ -266,6 +284,7 @@ class SendMediaUseCase @Inject constructor(
                 m.setDurationMs(v.durationMs.toInt())
                 v.thumbnail?.let { m.setThumbnail(ByteString.copyFrom(it)) }
                 v.blurhash?.let { m.setBlurhash(it) }
+                if (note) m.setPresentation(shared.proto.messaging.v1.Content.MediaPresentation.MEDIA_PRESENTATION_VIDEO_NOTE)
             } else {
                 val p = photo!!
                 m.setMediaType(MediaType.MEDIA_TYPE_IMAGE).setMimeType("image/jpeg")

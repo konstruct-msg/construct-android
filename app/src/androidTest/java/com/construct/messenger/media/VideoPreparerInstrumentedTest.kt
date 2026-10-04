@@ -93,4 +93,15 @@ class VideoPreparerInstrumentedTest {
         assertTrue(prepared.thumbnail != null)
         source.delete()
     }
+
+    /** A note is the centre 3:4 of the frame at 720×960, whatever the source's shape. */
+    @Test
+    fun aNoteIsTheCentreThreeByFourAt720x960(): Unit = runBlocking {
+        val source = h264Source()
+        val prepared = VideoPreparer(context, ImagePreparer(context)).prepareNote(Uri.fromFile(source))
+        assertEquals(720, prepared.width)
+        assertEquals(960, prepared.height)
+        source.delete()
+    }
 }
+

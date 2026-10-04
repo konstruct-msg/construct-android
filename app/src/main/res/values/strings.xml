@@ -176,6 +176,14 @@
     <string name="video">Video</string>
     <string name="video_note">Video note</string>
     <string name="video_note_muted">Sound off — tap to play with sound</string>
+    <string name="video_note_record">Record video note</string>
+    <string name="video_note_pause">Pause</string>
+    <string name="video_note_resume">Resume recording</string>
+    <string name="video_note_paused">Paused</string>
+    <string name="video_note_send">Send video note</string>
+    <string name="video_note_switch_camera">Switch camera</string>
+    <string name="video_note_camera_unavailable">Camera or microphone unavailable</string>
+    <string name="video_note_cancel">Cancel recording</string>
     <string name="voice_message">Voice message</string>
     <string name="file_attachment">File</string>
     <string name="sticker">Sticker</string>

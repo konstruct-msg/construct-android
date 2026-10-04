@@ -120,6 +120,8 @@ dependencies {
     implementation "androidx.camera:camera-camera2:${cameraxVersion}"
     implementation "androidx.camera:camera-lifecycle:${cameraxVersion}"
     implementation "androidx.camera:camera-view:${cameraxVersion}"
+    // Video notes: VideoCapture + Recorder (pause, a camera switch mid-file, a duration limit).
+    implementation "androidx.camera:camera-video:${cameraxVersion}"
     implementation 'com.google.zxing:core:3.5.4'
     // Room — local message/session persistence (data/local/db).
     implementation "androidx.room:room-runtime:${roomVersion}"

@@ -80,6 +80,8 @@ fun MessageInputView(
     attachMenu: (@Composable () -> Unit)? = null,
     onRemoveAttachment: (Uri) -> Unit = {},
     onMic: (() -> Unit)? = null,
+    /** A long press on the mic offers the camera; null leaves the mic a plain button. */
+    onVideoNote: (() -> Unit)? = null,
     voiceBar: (@Composable () -> Unit)? = null,
 ) {
     Column(
@@ -167,6 +169,9 @@ fun MessageInputView(
                         .clip(CircleShape)
                         .clickable(enabled = enabled, onClick = onSend),
                 )
+            } else if (onMic != null && onVideoNote != null) {
+                Spacer(Modifier.width(4.dp))
+                MicModeButton(size = 28.dp, onVoice = onMic, onVideoNote = onVideoNote)
             } else if (onMic != null) {
                 Spacer(Modifier.width(4.dp))
                 Icon(
