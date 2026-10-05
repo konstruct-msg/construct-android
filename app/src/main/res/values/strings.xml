@@ -176,6 +176,8 @@
     <string name="video">Video</string>
     <string name="video_note">Video note</string>
     <string name="video_note_muted">Sound off — tap to play with sound</string>
+    <string name="video_note_full_screen">Full screen</string>
+    <string name="playback_speed">Playback speed</string>
     <string name="video_note_record">Record video note</string>
     <string name="video_note_pause">Pause</string>
     <string name="video_note_resume">Resume recording</string>

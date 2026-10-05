@@ -179,6 +179,8 @@
     <string name="video">Видео</string>
     <string name="video_note">Видеозаметка</string>
     <string name="video_note_muted">Без звука — нажмите, чтобы смотреть со звуком</string>
+    <string name="video_note_full_screen">На весь экран</string>
+    <string name="playback_speed">Скорость воспроизведения</string>
     <string name="video_note_record">Записать видеозаметку</string>
     <string name="video_note_pause">Пауза</string>
     <string name="video_note_resume">Продолжить запись</string>
