@@ -132,6 +132,10 @@ object CT {
 
     // Опасность
     val danger     = Color(0xFFDC3C3C)
+
+    // Статус «подключено»: точка соединения и статус сети. Только статус — не кнопка, не текст
+    val online      = Color(0xFF30D158) // dark
+    val onlineLight = Color(0xFF248A3D) // light: 3,9:1 на bgLight (0x34C759 даёт ~2,0)
 }
 ```
 
@@ -747,7 +751,7 @@ fun ConstructButtonRow(
 @Composable
 fun ConnectionStatusIndicator() {
     // Маленькая точка или текст в CTNavBar чат-листа
-    // connected = accent, disconnected = danger, connecting = textDim
+    // connected = online (зелёная, ровная, не гаснет), disconnected = danger, connecting = textDim
 }
 ```
 

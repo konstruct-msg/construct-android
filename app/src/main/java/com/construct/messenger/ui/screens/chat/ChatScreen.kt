@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.unit.sp
 import com.construct.messenger.ui.components.glassCapsule
@@ -53,6 +54,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
 import com.construct.messenger.media.VoiceRecorder
 import com.construct.messenger.ui.components.VoiceComposerBar
+import com.construct.messenger.ui.components.VideoNoteActions
+import com.construct.messenger.ui.components.VideoNoteUi
 import com.construct.messenger.ui.components.VoicePlayback
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -86,6 +89,7 @@ fun ChatScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val recording by viewModel.recording.collectAsStateWithLifecycle()
     val playing by viewModel.playing.collectAsStateWithLifecycle()
+    val videoNote by viewModel.videoNote.collectAsStateWithLifecycle()
     val voiceLoading by viewModel.voiceLoading.collectAsStateWithLifecycle()
     val voiceUnavailable by viewModel.voiceUnavailable.collectAsStateWithLifecycle()
     val fileLoading by viewModel.fileLoading.collectAsStateWithLifecycle()
@@ -242,6 +246,18 @@ fun ChatScreen(
         if (searching && query.isNotBlank() && visible.isNotEmpty()) listState.scrollToItem(0)
     }
 
+    // A video note expanding in place grows downward; bring the whole of it into view once it has
+    // (iOS `ChatView` `.onChange(of: VideoNotePlayback.expanded)`).
+    LaunchedEffect(videoNote.expanded) {
+        val key = videoNote.expanded ?: return@LaunchedEffect
+        delay(VIDEO_NOTE_EXPAND_MS)
+        val index = visible.indexOfFirst { it.id == key.messageId }
+        val info = listState.layoutInfo
+        val item = info.visibleItemsInfo.firstOrNull { it.index == index } ?: return@LaunchedEffect
+        val viewportCenter = (info.viewportStartOffset + info.viewportEndOffset) / 2
+        listState.animateScrollBy((item.offset + item.size / 2 - viewportCenter).toFloat())
+    }
+
     LaunchedEffect(jumpToId) {
         val id = jumpToId ?: return@LaunchedEffect
         if (searching) {
@@ -318,6 +334,19 @@ fun ChatScreen(
                         uploading = voiceId!!.startsWith(com.construct.messenger.util.MediaWire.LOCAL_PREFIX),
                     ),
                     onToggleVoice = { voice?.let(viewModel::toggleVoice) },
+                    videoNote = videoNote.takeIf { it.expanded?.messageId == message.id }?.let {
+                        VideoNoteUi(expanded = true, paused = it.paused, progress = it.progress, rate = it.rate)
+                    } ?: VideoNoteUi(),
+                    videoNoteActions = remember(message.id) {
+                        val key = com.construct.messenger.media.VideoNotePlayback.Key(message.id)
+                        VideoNoteActions(
+                            tap = { viewModel.tapVideoNote(key, it) },
+                            cycleRate = viewModel::cycleVideoNoteRate,
+                            collapse = { viewModel.collapseVideoNote(key) },
+                            attach = viewModel::attachVideoNote,
+                            detach = viewModel::detachVideoNote,
+                        )
+                    },
                     fileLoading = fileLoading,
                     fileUnavailable = fileUnavailable,
                     onOpenFile = viewModel::openFile,
@@ -783,6 +812,9 @@ private fun QuoteSelectionSheet(text: String, onConfirm: (String) -> Unit, onDis
 }
 
 private val NEAR_BOTTOM = 60.dp
+
+/** iOS `ChatUIConstants.VideoNote.expandDuration`: the expansion settles before the scroll. */
+private const val VIDEO_NOTE_EXPAND_MS = 350L
 
 /**
  * To the end of the last row, not its top: `scrollToItem` puts a row's top at the viewport's, and

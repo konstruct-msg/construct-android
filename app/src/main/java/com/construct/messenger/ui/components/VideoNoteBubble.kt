@@ -6,6 +6,23 @@ import android.graphics.BitmapFactory
 import android.view.TextureView
 import androidx.annotation.OptIn as AndroidOptIn
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.unit.Dp
+import com.construct.messenger.media.VideoNotePlayback
+import com.construct.messenger.ui.theme.CTLayout
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -63,10 +80,34 @@ import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.util.BlurHash
 import com.construct.messenger.util.MediaWire
 
+/** What [VideoNotePlayback][com.construct.messenger.media.VideoNotePlayback] says about this note. */
+@Immutable
+data class VideoNoteUi(
+    val expanded: Boolean = false,
+    val paused: Boolean = false,
+    /** 0…1 while expanded. */
+    val progress: Float = 0f,
+    val rate: Float = 1f,
+)
+
+/** What the bubble forwards; it decides nothing itself. */
+@Immutable
+class VideoNoteActions(
+    /** Expand with sound, or pause / resume the expanded note. */
+    val tap: (ByteArray) -> Unit = {},
+    val cycleRate: () -> Unit = {},
+    /** Fold back if this note is the expanded one: scrolled away, or opening full screen. */
+    val collapse: () -> Unit = {},
+    val attach: (TextureView) -> Unit = {},
+    val detach: (TextureView) -> Unit = {},
+)
+
 /**
  * A video note in the transcript: a short video recorded in the chat, shown whole — never cropped
- * to a circle — playing muted on a loop while it is on screen, and opening full screen with sound
- * on tap. **Canon:** iOS `VideoNoteBubbleView`; decision `video-notes-are-uncropped-and-expand.md`.
+ * to a circle — playing muted on a loop while it is on screen. A tap expands it in place and plays
+ * it with sound, the chat still around it; another tap pauses and resumes, the end folds it back.
+ * Full screen is a button on the expanded note (and an accessibility action). **Canon:** iOS
+ * `VideoNoteBubbleView`; decision `video-notes-are-uncropped-and-expand.md` (revised 2026-10-05).
  *
  * Fetched as soon as it is shown, as a photo is (Android has no auto-download setting; a note is
  * seconds of 720p). Played from memory, like any video here — the decrypted file is never written.
@@ -77,24 +118,41 @@ import com.construct.messenger.util.MediaWire
 fun VideoNoteBubble(
     item: MediaItem,
     load: suspend (MediaItem) -> ByteArray,
-    onOpen: () -> Unit,
+    playback: VideoNoteUi,
+    actions: VideoNoteActions,
+    /** The width while expanded: [VideoNoteLayout.expandedWidth] of the row. */
+    expandedWidth: Dp,
+    onOpenFullScreen: () -> Unit,
     onLongPress: () -> Unit,
     onDoubleTap: (() -> Unit)?,
 ) {
-    val width = VideoNoteLayout.WIDTH
+    val width by animateDpAsState(
+        targetValue = if (playback.expanded) expandedWidth else VideoNoteLayout.WIDTH,
+        animationSpec = spring(),
+        label = "video-note-width",
+    )
     val height = width / VideoNoteLayout.aspect(item.width, item.height)
     val uploading = item.mediaId.startsWith(MediaWire.LOCAL_PREFIX)
     var bytes by remember(item.mediaId) { mutableStateOf<ByteArray?>(null) }
     var state by remember(item.mediaId) { mutableStateOf(NoteLoad.LOADING) }
     var attempt by remember(item.mediaId) { mutableIntStateOf(0) }
     var firstFrame by remember(item.mediaId) { mutableStateOf(false) }
+    /** Tapped before the bytes were here: play once they are (iOS `fetch(thenPlay: true)`). */
+    var playWhenLoaded by remember(item.mediaId) { mutableStateOf(false) }
+    val currentActions by rememberUpdatedState(actions)
     val label = stringResource(R.string.video_note)
+    val fullScreenLabel = stringResource(R.string.video_note_full_screen)
 
     LaunchedEffect(item.mediaId, attempt, uploading) {
         if (uploading || bytes != null) return@LaunchedEffect
         state = NoteLoad.LOADING
         state = try {
-            bytes = load(item)
+            val data = load(item)
+            bytes = data
+            if (playWhenLoaded) {
+                playWhenLoaded = false
+                currentActions.tap(data)
+            }
             NoteLoad.READY
         } catch (e: MediaUnavailable) {
             NoteLoad.UNAVAILABLE
@@ -102,6 +160,17 @@ fun VideoNoteBubble(
             throw e
         } catch (e: Exception) {
             NoteLoad.FAILED
+        }
+    }
+    // Scrolled out of view: nobody is watching, so stop and fold back (iOS `onDisappear`).
+    DisposableEffect(item.mediaId) {
+        onDispose { currentActions.collapse() }
+    }
+    val openFullScreen = {
+        if (!uploading && bytes != null) {
+            // The full-screen viewer has its own player; two would play over each other.
+            actions.collapse()
+            onOpenFullScreen()
         }
     }
 
@@ -114,28 +183,40 @@ fun VideoNoteBubble(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = {
+                    val data = bytes
                     when {
                         uploading || state == NoteLoad.UNAVAILABLE -> Unit
-                        state == NoteLoad.FAILED -> attempt++
-                        else -> onOpen()
+                        data != null -> actions.tap(data)
+                        state == NoteLoad.FAILED -> {
+                            playWhenLoaded = true
+                            attempt++
+                        }
+                        else -> playWhenLoaded = true
                     }
                 },
                 onLongClick = onLongPress,
                 onDoubleClick = onDoubleTap,
             )
-            .semantics { contentDescription = label },
+            .semantics {
+                contentDescription = label
+                customActions = listOf(CustomAccessibilityAction(fullScreenLabel) { openFullScreen(); true })
+            },
         contentAlignment = Alignment.Center,
     ) {
         val poster = remember(item.mediaId) { poster(item) }
         poster?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-        bytes?.let { data ->
-            MutedLoop(
-                data = data,
-                key = item.mediaId,
-                onFirstFrame = { firstFrame = true },
-                // Under the poster until a frame is drawn: no black flash.
-                modifier = Modifier.fillMaxSize().alpha(if (firstFrame) 1f else 0f),
-            )
+        if (playback.expanded) {
+            ExpandedSurface(actions, Modifier.fillMaxSize())
+        } else {
+            bytes?.let { data ->
+                MutedLoop(
+                    data = data,
+                    key = item.mediaId,
+                    onFirstFrame = { firstFrame = true },
+                    // Under the poster until a frame is drawn: no black flash.
+                    modifier = Modifier.fillMaxSize().alpha(if (firstFrame) 1f else 0f),
+                )
+            }
         }
         when {
             uploading || (state == NoteLoad.LOADING && bytes == null) ->
@@ -152,9 +233,59 @@ fun VideoNoteBubble(
                         .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(CornerRadius.small))
                         .padding(8.dp),
                 )
+            playback.expanded && playback.paused ->
+                Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(36.dp))
             else -> Unit
         }
-        if (!uploading) {
+        if (playback.expanded) {
+            // Full screen, top left (iOS `fullScreenButton`).
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .size(CTLayout.hitTarget)
+                    .clickable(onClickLabel = fullScreenLabel) { openFullScreen() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Filled.OpenInFull,
+                    fullScreenLabel,
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                        .padding(7.dp),
+                )
+            }
+            // How far along, and the speed (iOS `playingControls`).
+            Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth()) {
+                val speedLabel = stringResource(R.string.playback_speed)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .sizeIn(minWidth = CTLayout.hitTarget, minHeight = CTLayout.hitTarget)
+                        .clickable(onClickLabel = speedLabel) { actions.cycleRate() }
+                        .semantics { contentDescription = "$speedLabel ${VideoNotePlayback.rateLabel(playback.rate)}" },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        VideoNotePlayback.rateLabel(playback.rate),
+                        style = ctRegular(11),
+                        color = Color.White,
+                        modifier = Modifier
+                            .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(CornerRadius.badge))
+                            .padding(horizontal = 6.dp, vertical = 3.dp),
+                    )
+                }
+                LinearProgressIndicator(
+                    progress = { playback.progress },
+                    color = Color.White,
+                    trackColor = Color.White.copy(alpha = 0.3f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = CTLayout.inlinePad, end = CTLayout.inlinePad, bottom = CTLayout.inlinePad),
+                )
+            }
+        } else if (!uploading) {
             // That the sound is off here, and the length (iOS `chip`).
             Row(
                 modifier = Modifier
@@ -177,6 +308,19 @@ fun VideoNoteBubble(
             }
         }
     }
+}
+
+/** The expanded note's picture: the shared player draws into this while the note is expanded. */
+@Composable
+private fun ExpandedSurface(actions: VideoNoteActions, modifier: Modifier) {
+    var view by remember { mutableStateOf<TextureView?>(null) }
+    view?.let { v ->
+        DisposableEffect(v) {
+            actions.attach(v)
+            onDispose { actions.detach(v) }
+        }
+    }
+    AndroidView(factory = { ctx -> TextureView(ctx).also { view = it } }, modifier = modifier)
 }
 
 private enum class NoteLoad { LOADING, READY, FAILED, UNAVAILABLE }
@@ -240,6 +384,26 @@ private fun poster(item: MediaItem) =
 object VideoNoteLayout {
     /** Narrower than a photo (260): a note is a message, and at 3:4 it already stands tall. */
     val WIDTH = 200.dp
+
+    /** An expanded note wider than this is a poster, not a message (tablets). */
+    val MAX_EXPANDED_WIDTH = 480.dp
+
+    /** The row's opposite side stays free while a note is expanded: the chat is still there. */
+    val SIDE_GUTTER = 60.dp
+
+    /** Before the row is measured. */
+    val DEFAULT_ROW_WIDTH = 390.dp
+
+    /**
+     * Expanded in place while it plays with sound: the row less the opposite side's gutter and
+     * the edge padding on both sides, never narrower than the collapsed note nor wider than
+     * [MAX_EXPANDED_WIDTH]. [rowWidth] is the whole row; an unmeasured one counts as
+     * [DEFAULT_ROW_WIDTH]. **Canon:** iOS `ChatUIConstants.VideoNote.expandedWidth(in:)`.
+     */
+    fun expandedWidth(rowWidth: Dp): Dp {
+        val row = if (rowWidth.value.isFinite() && rowWidth > 0.dp) rowWidth else DEFAULT_ROW_WIDTH
+        return minOf(MAX_EXPANDED_WIDTH, maxOf(WIDTH, row - SIDE_GUTTER - CTLayout.edgePad * 2))
+    }
 
     /** The recorded shape; a note from a client that did not record 3:4 keeps its own. */
     const val DEFAULT_ASPECT = 3f / 4f

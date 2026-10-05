@@ -19,12 +19,13 @@ import kotlinx.coroutines.launch
 
 /**
  * One voice note playing at a time. **Canon:** iOS `AudioPlayerService` — starting another stops
- * the first; tapping the one playing pauses it.
+ * the first; tapping the one playing pauses it. A video note playing in place folds back when a
+ * voice note starts ([SoundFocus]).
  *
  * Plays from memory: the decrypted note is handed over as bytes and never written to disk.
  */
 @Singleton
-class VoicePlayer @Inject constructor() {
+class VoicePlayer @Inject constructor(private val focus: SoundFocus) {
     data class Playing(val mediaId: String, val progress: Float, val durationMs: Long, val paused: Boolean)
 
     private val _state = MutableStateFlow<Playing?>(null)
@@ -48,6 +49,7 @@ class VoicePlayer @Inject constructor() {
             return
         }
         stop()
+        focus.claim(this) { stop() }
         val mp = MediaPlayer()
         try {
             mp.setAudioAttributes(
@@ -63,6 +65,7 @@ class VoicePlayer @Inject constructor() {
         } catch (e: Exception) {
             Log.w(TAG, "voice note ${mediaId.take(8)}… does not play", e)
             mp.release()
+            focus.release(this)
             return
         }
         player = mp
@@ -82,6 +85,7 @@ class VoicePlayer @Inject constructor() {
         player?.let { runCatching { it.stop() }; it.release() }
         player = null
         _state.value = null
+        focus.release(this)
     }
 
     private class BytesSource(private val bytes: ByteArray) : MediaDataSource() {

@@ -105,7 +105,12 @@ private fun NetworkContent(ui: NetworkUiState, onNavigateBack: () -> Unit, onMod
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(CTLayout.edgePad),
                 ) {
-                    CTStatusBadge(status = ui.connection.toStatus(), size = 20.dp)
+                    CTStatusBadge(
+                        status = ui.connection.toStatus(),
+                        size = 20.dp,
+                        // iOS `NetworkSettingsView.statusColor`: connected is green, not "selected".
+                        tint = if (ui.connection == ConnectionStatus.CONNECTED) CTColor.online else ui.connection.toStatus().color,
+                    )
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(stringResource(ui.connection.label()), style = ctRegular(14), color = CTColor.text)
                         SelectionContainer {

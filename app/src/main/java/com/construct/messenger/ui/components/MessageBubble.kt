@@ -124,6 +124,8 @@ fun MessageBubble(
     fileUnavailable: Set<String> = emptySet(),
     onOpenFile: (com.construct.messenger.data.model.MediaItem) -> Unit = {},
     loadMedia: suspend (com.construct.messenger.data.model.MediaItem) -> ByteArray = { error("no loader") },
+    videoNote: VideoNoteUi = VideoNoteUi(),
+    videoNoteActions: VideoNoteActions = VideoNoteActions(),
 ) {
     val isOutgoing = message.isOutgoing
     val shape = RoundedCornerShape(10.dp)
@@ -151,6 +153,8 @@ fun MessageBubble(
             .padding(top = 2.dp, bottom = if (isLastInGroup) 8.dp else 2.dp),
     ) {
         val maxBubble = minOf(360.dp, maxWidth * 0.7f)
+        // The whole row: this box's width plus its 12 dp padding on each side.
+        val noteWidth = VideoNoteLayout.expandedWidth(maxWidth + 24.dp)
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = if (isOutgoing) Alignment.TopEnd else Alignment.TopStart) {
         Column(horizontalAlignment = if (isOutgoing) Alignment.End else Alignment.Start) {
             // iOS `badgeOverlap`: the chip hangs below the bubble on the corner away from the time,
@@ -213,7 +217,10 @@ fun MessageBubble(
                     VideoNoteBubble(
                         item = note,
                         load = loadMedia,
-                        onOpen = { viewing = 0 },
+                        playback = videoNote,
+                        actions = videoNoteActions,
+                        expandedWidth = noteWidth,
+                        onOpenFullScreen = { viewing = 0 },
                         onLongPress = onLongPress,
                         onDoubleTap = { onReact(ReactionRules.LIKE) },
                     )
@@ -243,7 +250,7 @@ fun MessageBubble(
                         loadVideo = loadMedia,
                         onSave = onSaveMedia,
                         onShare = onShareMedia,
-                        // A note opens playing, with sound (iOS: tap → gallery with sound).
+                        // Full screen opens playing, with sound (iOS: the expanded note's button).
                         autoPlay = note != null,
                     )
                 }

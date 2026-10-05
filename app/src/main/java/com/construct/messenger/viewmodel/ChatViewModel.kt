@@ -8,6 +8,7 @@ import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.Message
 import com.construct.messenger.data.model.MessageMedia
 import com.construct.messenger.data.repository.MediaUnavailable
+import com.construct.messenger.media.VideoNotePlayback
 import com.construct.messenger.media.VoicePlayer
 import com.construct.messenger.media.VoiceRecorder
 import com.construct.messenger.data.model.ReplyRef
@@ -68,12 +69,16 @@ class ChatViewModel @Inject constructor(
     private val securityNotices: SecurityNotices,
     private val recorder: VoiceRecorder,
     private val player: VoicePlayer,
+    private val videoNotes: VideoNotePlayback,
 ) : ViewModel() {
     /** The voice note being recorded or waiting to be sent; the composer shows its bar. */
     val recording: StateFlow<VoiceRecorder.State> = recorder.state
 
     /** The voice note playing, anywhere in this chat. */
     val playing: StateFlow<VoicePlayer.Playing?> = player.state
+
+    /** The video note expanded in place and playing with sound, if any. */
+    val videoNote: StateFlow<VideoNotePlayback.State> = videoNotes.state
 
     private val _voiceLoading = MutableStateFlow<Set<String>>(emptySet())
     val voiceLoading: StateFlow<Set<String>> = _voiceLoading.asStateFlow()
@@ -156,11 +161,16 @@ class ChatViewModel @Inject constructor(
     }
 
     /** ON_STOP — navigated away or the app went to the background. */
-    fun onHidden() = messagesRepository.chatHidden(contactId)
+    fun onHidden() {
+        messagesRepository.chatHidden(contactId)
+        // Leaving the chat folds a note playing in place (iOS `handleViewDisappear`).
+        videoNotes.collapse()
+    }
 
     override fun onCleared() {
         messagesRepository.chatHidden(contactId)
         player.stop()
+        videoNotes.collapse()
         if (recorder.state.value !is VoiceRecorder.State.Idle) recorder.cancel()
     }
 
@@ -306,6 +316,19 @@ class ChatViewModel @Inject constructor(
     }
 
     /** The decrypted bytes of [item], for a video about to play. */
+    /** A tap on a video note whose bytes are here: expand it with sound, or pause / resume it. */
+    fun tapVideoNote(key: VideoNotePlayback.Key, data: ByteArray) = videoNotes.tap(key, data)
+
+    fun cycleVideoNoteRate() = videoNotes.cycleRate()
+
+    /** The note left the screen (scrolled away) or opens full screen. */
+    fun collapseVideoNote(key: VideoNotePlayback.Key? = null) =
+        if (key == null) videoNotes.collapse() else videoNotes.collapse(ifShowing = key)
+
+    fun attachVideoNote(view: android.view.TextureView) = videoNotes.attach(view)
+
+    fun detachVideoNote(view: android.view.TextureView) = videoNotes.detach(view)
+
     suspend fun mediaBytes(item: com.construct.messenger.data.model.MediaItem): ByteArray = messagesRepository.mediaBytes(item)
 
     /** Fetch, open and hand [item] (a received or sent file) to the app that shows it. */
@@ -330,6 +353,7 @@ class ChatViewModel @Inject constructor(
     /** False when the microphone would not open. The screen has RECORD_AUDIO by now. */
     fun startRecording(): Boolean {
         player.stop()
+        videoNotes.collapse()
         return recorder.start()
     }
 
