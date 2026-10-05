@@ -73,6 +73,21 @@ class CTColorContrastTest {
         )
     }
 
+    /**
+     * [CTColor.online] is a dot, not text: it owes 3:1 (WCAG 1.4.11, non-text) on the background
+     * it sits on. Mutation: make `onlineLight` the platform 0x34C759 — this reddens at about 2.0.
+     */
+    @Test
+    fun theOnlineDotIsVisibleInBothThemes() {
+        for ((fg, bg, name) in listOf(
+            Triple(CTColor.onlineDark, CTColor.bgDark, "online on bg"),
+            Triple(CTColor.onlineLight, CTColor.bgLight, "onlineLight on bgLight"),
+        )) {
+            val ratio = contrast(fg, bg)
+            assertTrue("$name reads %.2f — a status dot owes 3:1".format(ratio), ratio >= 3.0)
+        }
+    }
+
     /** Mutation: put 0x818181 back as [CTColor.textDimDark] — this reddens at 4.18 on a card. */
     @Test
     fun secondaryTextIsReadableOnCards() {

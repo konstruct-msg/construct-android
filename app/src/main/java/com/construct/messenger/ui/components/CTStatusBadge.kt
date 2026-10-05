@@ -57,17 +57,19 @@ enum class CTStatus {
  * @param status The status to display.
  * @param size Icon size in dp; defaults to 14dp to match row text height.
  * @param modifier Optional modifier for the icon.
+ * @param tint The status's own colour unless a screen says otherwise (the network status: green).
  */
 @Composable
 fun CTStatusBadge(
     status: CTStatus,
     size: Dp = 14.dp,
     modifier: Modifier = Modifier,
+    tint: Color = status.color,
 ) {
     Icon(
         imageVector = status.icon,
         contentDescription = status.name,
-        tint = status.color,
+        tint = tint,
         modifier = modifier.size(size),
     )
 }

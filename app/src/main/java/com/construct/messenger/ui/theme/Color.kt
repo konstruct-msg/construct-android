@@ -35,6 +35,7 @@ object CTColor {
     val noise: Color get() = if (isDark) noiseDark else noiseLight
     val disabledBg: Color get() = if (isDark) disabledBgDark else disabledBgLight
     val warning: Color get() = if (isDark) warningDark else warningLight
+    val online: Color get() = if (isDark) onlineDark else onlineLight
 
     // Backgrounds
     val bgDark = Color(0xFF090909)          // dark 0x090909 / light 0xF2F2F2
@@ -101,4 +102,13 @@ object CTColor {
      */
     val warningDark = Color(0xFFFF9F0A)
     val warningLight = Color(0xFFFF9500)
+
+    /**
+     * Connected and holding: the connection dot and the network status — dark 0x30D158 / light
+     * 0x248A3D, the platform green and its high-contrast variant. The light value is the
+     * accessible one: a dot on [bgLight] needs 3:1, and 0x34C759 gives about 2.0 (0x248A3D: 3.9).
+     * **Status only — never a control or text.** **Canon:** iOS `Color.CT.online`.
+     */
+    val onlineDark = Color(0xFF30D158)
+    val onlineLight = Color(0xFF248A3D)
 }
