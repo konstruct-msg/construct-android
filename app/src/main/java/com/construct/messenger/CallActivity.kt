@@ -37,8 +37,13 @@ class CallActivity : ComponentActivity() {
 
     private val calls: CallViewModel by viewModels()
 
-    private val microphone = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) calls.answer() else refused()
+    /** Answering: the microphone, and the camera too for a video call. Without the camera it is answered with sound. */
+    private val answerPermissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
+        if (granted[Manifest.permission.RECORD_AUDIO] == true || has(Manifest.permission.RECORD_AUDIO)) calls.answer() else refused()
+    }
+
+    private val camera = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) calls.setCameraOn(true) else cameraRefused()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,8 +59,15 @@ class CallActivity : ComponentActivity() {
             }
             KonstructMessengerTheme(darkTheme = dark) {
                 val call by calls.call.collectAsStateWithLifecycle()
+                val error by calls.startError.collectAsStateWithLifecycle()
                 // Nothing to show: the call ended and its "ended" moment passed, or it never was.
                 LaunchedEffect(call == null) { if (call == null) finish() }
+                LaunchedEffect(error) {
+                    if (error == com.construct.messenger.data.model.CallStartError.CAMERA_DENIED) {
+                        cameraRefused()
+                        calls.clearErrors()
+                    }
+                }
                 call?.let {
                     CallScreen(
                         call = it,
@@ -65,6 +77,9 @@ class CallActivity : ComponentActivity() {
                         onToggleMute = calls::toggleMute,
                         onToggleSpeaker = calls::toggleSpeaker,
                         onMinimize = ::finish,
+                        frames = calls.frames,
+                        onToggleCamera = { toggleCamera(it.video.cameraOn) },
+                        onSwitchCamera = calls::switchCamera,
                     )
                 }
             }
@@ -80,17 +95,34 @@ class CallActivity : ComponentActivity() {
         if (intent?.action == ACTION_ANSWER) answer()
     }
 
-    /** Answering needs the microphone; asked for here, the moment it is needed. */
+    /**
+     * Answering needs the microphone, and a video call the camera; asked for here, the moment they
+     * are needed (as on iOS, where AVFoundation asks when the camera first comes on).
+     */
     private fun answer() {
-        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            calls.answer()
-        } else {
-            microphone.launch(Manifest.permission.RECORD_AUDIO)
+        val wanted = buildList {
+            add(Manifest.permission.RECORD_AUDIO)
+            if (calls.call.value?.isVideoCall == true) add(Manifest.permission.CAMERA)
+        }.filterNot(::has)
+        if (wanted.isEmpty()) calls.answer() else answerPermissions.launch(wanted.toTypedArray())
+    }
+
+    private fun toggleCamera(isOn: Boolean) {
+        when {
+            isOn -> calls.setCameraOn(false)
+            has(Manifest.permission.CAMERA) -> calls.setCameraOn(true)
+            else -> camera.launch(Manifest.permission.CAMERA)
         }
     }
 
+    private fun has(permission: String) = checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+
     private fun refused() {
         Toast.makeText(this, R.string.call_error_no_microphone, Toast.LENGTH_LONG).show()
+    }
+
+    private fun cameraRefused() {
+        Toast.makeText(this, R.string.call_error_camera_denied, Toast.LENGTH_LONG).show()
     }
 
     private fun showOverLockScreen() {

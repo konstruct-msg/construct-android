@@ -30,6 +30,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.VideocamOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -37,7 +39,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +56,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.R
 import com.construct.messenger.data.model.CallUi
+import com.construct.messenger.data.model.CallVideoFrames
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTLayout
@@ -74,7 +79,35 @@ fun CallScreen(
     onToggleMute: () -> Unit,
     onToggleSpeaker: () -> Unit,
     onMinimize: () -> Unit,
+    frames: CallVideoFrames? = null,
+    onToggleCamera: () -> Unit = {},
+    onSwitchCamera: () -> Unit = {},
 ) {
+    // Which face is on the big screen when both cameras are on.
+    var swapped by rememberSaveable { mutableStateOf(false) }
+    val stage = VideoCallStage.make(
+        call.video,
+        isConnecting = call.phase != CallUi.Phase.ACTIVE,
+        isEnded = !call.isLive,
+        swapped = swapped,
+    )
+    // A ringing call is answered here; the video screen begins once it is.
+    if (stage != null && frames != null && call.phase != CallUi.Phase.INCOMING) {
+        VideoCallScreen(
+            call = call,
+            stage = stage,
+            status = statusText(call),
+            frames = frames,
+            onSwap = { swapped = !swapped },
+            onToggleMute = onToggleMute,
+            onToggleCamera = onToggleCamera,
+            onSwitchCamera = onSwitchCamera,
+            onToggleSpeaker = onToggleSpeaker,
+            onEnd = onEnd,
+            onMinimize = onMinimize,
+        )
+        return
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -138,6 +171,15 @@ fun CallScreen(
                         on = call.muted,
                         onClick = onToggleMute,
                     )
+                    // Turning the camera on here is what moves the call to the video screen.
+                    if (call.video.canSend && frames != null) {
+                        Control(
+                            icon = if (call.video.cameraOn) Icons.Filled.Videocam else Icons.Filled.VideocamOff,
+                            label = stringResource(R.string.call_camera),
+                            on = call.video.cameraOn,
+                            onClick = onToggleCamera,
+                        )
+                    }
                     Control(
                         icon = Icons.Filled.VolumeUp,
                         label = stringResource(R.string.call_speaker),
@@ -166,7 +208,7 @@ private fun statusText(call: CallUi): String {
         )
     }
     return when (call.phase) {
-        CallUi.Phase.INCOMING -> stringResource(R.string.call_incoming_audio)
+        CallUi.Phase.INCOMING -> stringResource(if (call.isVideoCall) R.string.call_incoming_video else R.string.call_incoming_audio)
         CallUi.Phase.CALLING, CallUi.Phase.RINGING -> stringResource(R.string.call_status_calling)
         CallUi.Phase.CONNECTING -> stringResource(R.string.call_connecting)
         CallUi.Phase.ACTIVE -> if (call.reconnecting) stringResource(R.string.call_reconnecting) else elapsed(call.activeSinceMs)

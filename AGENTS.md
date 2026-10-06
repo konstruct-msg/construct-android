@@ -208,8 +208,10 @@ they ask nothing of the device.
 
 This is checkable right now and must stay that way: the manifest declares network permissions
 plus the Android foreground-service/notification permissions, `CAMERA` (asked for only when the
-invite scanner opens or a video note is first recorded; the QR is read by CameraX + ZXing, not ML Kit;
-a note is recorded by CameraX into the app's cache), `RECORD_AUDIO` (asked for only when
+invite scanner opens, a video note is first recorded, or a video call is started, answered or has its
+camera turned on; the QR is read by CameraX + ZXing, not ML Kit; a note is recorded by CameraX into the
+app's cache; a call's camera is WebRTC's Camera2 capturer, frames go nowhere but the call, and it stops
+whenever nobody sees the app), `RECORD_AUDIO` (asked for only when
 the user taps the microphone for a voice note, records a video note, or makes or answers a call), `MODIFY_AUDIO_SETTINGS`
 (install-time; a call's voice mode is refused without it), and for calls `MANAGE_OWN_CALLS`
 (a self-managed `ConnectionService` — Telecom knows a call is on; nothing goes to the call log or

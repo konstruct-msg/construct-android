@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.construct.messenger.data.model.CallStartError
 import com.construct.messenger.data.model.CallUi
 import com.construct.messenger.data.repository.CallsRepository
+import com.construct.messenger.data.model.CallVideoFrames
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,12 +26,17 @@ class CallViewModel @Inject constructor(
     /** Only with no call on — iOS `canStartCall`. */
     fun canCall(): Boolean = call.value == null
 
-    fun start(peerId: String) = calls.start(peerId)
+    fun start(peerId: String, video: Boolean = false) = calls.start(peerId, video)
     fun answer() = calls.answer()
     fun end() = calls.end()
     fun toggleMute() = calls.setMuted(!(call.value?.muted ?: false))
     fun toggleSpeaker() = calls.setSpeaker(!(call.value?.speaker ?: false))
     fun dismissEnded() = calls.dismissEnded()
+    fun setCameraOn(on: Boolean) = calls.setCameraOn(on)
+    fun switchCamera() = calls.switchCamera()
+
+    /** What the video panes draw from. */
+    val frames = CallVideoFrames(calls.videoContext, calls::addVideoSink, calls::removeVideoSink)
 
     fun microphoneRefused() {
         _micRefused.value = true

@@ -64,6 +64,9 @@ class CallTelecom @Inject constructor(
     private val _speaker = MutableStateFlow(false)
     val speaker: StateFlow<Boolean> = _speaker.asStateFlow()
 
+    /** Where Telecom last said the sound goes, for a call it routes. */
+    private var routeIsEarpiece = true
+
     fun start() {
         register()
         notifications.ensureChannels()
@@ -74,7 +77,20 @@ class CallTelecom @Inject constructor(
                 previous = state
             }
         }
+        var wasSending = false
+        scope.launch {
+            calls.video.collect { video ->
+                val sending = video.capturing
+                if (CallVideoAudio.movesToSpeaker(wasSending, sending, outputIsEarpiece())) {
+                    Log.i(TAG, "camera on — sound off the earpiece, to the speaker")
+                    setSpeaker(true)
+                }
+                wasSending = sending
+            }
+        }
     }
+
+    private fun outputIsEarpiece(): Boolean = if (connection != null) routeIsEarpiece else audio.outputIsEarpiece()
 
     private fun register() {
         registered = runCatching {
@@ -153,6 +169,7 @@ class CallTelecom @Inject constructor(
         }
         connection = null
         _speaker.value = false
+        routeIsEarpiece = true
     }
 
     fun setSpeaker(on: Boolean) {
@@ -254,7 +271,10 @@ class CallTelecom @Inject constructor(
 
         @Deprecated("Deprecated in Java")
         override fun onCallAudioStateChanged(state: CallAudioState) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) _speaker.value = state.route == CallAudioState.ROUTE_SPEAKER
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                _speaker.value = state.route == CallAudioState.ROUTE_SPEAKER
+                routeIsEarpiece = state.route == CallAudioState.ROUTE_EARPIECE
+            }
         }
 
         @androidx.annotation.RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
@@ -265,6 +285,7 @@ class CallTelecom @Inject constructor(
         @androidx.annotation.RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         override fun onCallEndpointChanged(endpoint: CallEndpoint) {
             _speaker.value = endpoint.endpointType == CallEndpoint.TYPE_SPEAKER
+            routeIsEarpiece = endpoint.endpointType == CallEndpoint.TYPE_EARPIECE
         }
     }
 

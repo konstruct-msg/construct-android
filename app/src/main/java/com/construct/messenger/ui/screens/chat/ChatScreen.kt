@@ -299,6 +299,7 @@ fun ChatScreen(
                 onDoneSelecting = { selectedIds = null },
                 onSearch = { searching = true },
                 onCall = com.construct.messenger.ui.screens.calls.rememberCallAction(uiState.contactId),
+                onVideoCall = com.construct.messenger.ui.screens.calls.rememberCallAction(uiState.contactId, video = true),
                 alerted = uiState.trustAlert != null,
                 ktVerified = uiState.ktVerified,
                 onVerify = onOpenSafetyNumbers,
@@ -598,6 +599,7 @@ private fun ChatNavBar(
     onDoneSelecting: () -> Unit,
     onSearch: () -> Unit,
     onCall: (() -> Unit)?,
+    onVideoCall: (() -> Unit)?,
     alerted: Boolean,
     ktVerified: Boolean,
     onVerify: () -> Unit,
@@ -652,30 +654,17 @@ private fun ChatNavBar(
                     .padding(horizontal = CTLayout.inlinePad, vertical = 10.dp),
             )
         } else {
-            if (onCall != null) {
-                Box(
-                    modifier = Modifier.size(CTLayout.hitTarget).clip(CircleShape).clickable(onClick = onCall),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Phone,
-                        contentDescription = stringResource(R.string.call_voice),
-                        tint = CTColor.text,
-                        modifier = Modifier.size(CTLayout.navIconSize),
-                    )
-                }
-            }
-            Box(
-                modifier = Modifier.size(CTLayout.hitTarget).clip(CircleShape).clickable(onClick = onSearch),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Search,
-                    contentDescription = stringResource(R.string.search_messages),
-                    tint = CTColor.text,
-                    modifier = Modifier.size(CTLayout.navIconSize),
-                )
-            }
+            // Search, call, video call — one button, one palette (decisions/chat-header-actions-are-one-palette).
+            ChatActionButton(
+                actions = ChatAction.available(canCall = onCall != null && onVideoCall != null),
+                onAction = { action ->
+                    when (action) {
+                        ChatAction.SEARCH -> onSearch()
+                        ChatAction.CALL -> onCall?.invoke()
+                        ChatAction.VIDEO_CALL -> onVideoCall?.invoke()
+                    }
+                },
+            )
         }
     }
 }
