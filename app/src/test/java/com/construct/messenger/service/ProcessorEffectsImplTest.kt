@@ -555,6 +555,41 @@ class ProcessorEffectsImplTest {
         assertTrue(inbox.acks.isProcessed("r1"))
     }
 
+    /** Mutation: drop the `isSentByMe` check — the peer's receipt rewrites the status of a message they sent us. */
+    @Test
+    fun `a receipt naming a message we received changes nothing`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.messages.rows["theirs-1"] = com.construct.messenger.data.local.db.MessageEntity(
+            id = "theirs-1", chatId = "c", text = "x", isSentByMe = false, timestamp = 1,
+            deliveryStatus = com.construct.messenger.data.model.DeliveryStatus.SENT.name,
+        )
+        val receipt = shared.proto.signaling.v1.Presence.DeliveryReceipt.newBuilder()
+            .setDirect(shared.proto.signaling.v1.Presence.DirectReceipt.newBuilder().addMessageIds("theirs-1"))
+            .build().toByteArray()
+
+        inbox.effects.onControlFrame(peer, "r2", ContentType.CONTENT_TYPE_DELIVERY_RECEIPT_VALUE, receipt)
+
+        assertEquals(com.construct.messenger.data.model.DeliveryStatus.SENT.name, inbox.messages.rows["theirs-1"]?.deliveryStatus)
+        assertTrue(inbox.acks.isProcessed("r2"))
+    }
+
+    /** iOS matches receipt ids case-insensitively; an upper-case id still finds our row. */
+    @Test
+    fun `a receipt id in another case still marks our message`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.messages.rows["ours-2"] = com.construct.messenger.data.local.db.MessageEntity(
+            id = "ours-2", chatId = "c", text = "x", isSentByMe = true, timestamp = 1,
+            deliveryStatus = com.construct.messenger.data.model.DeliveryStatus.SENT.name,
+        )
+        val receipt = shared.proto.signaling.v1.Presence.DeliveryReceipt.newBuilder()
+            .setDirect(shared.proto.signaling.v1.Presence.DirectReceipt.newBuilder().addMessageIds("OURS-2"))
+            .build().toByteArray()
+
+        inbox.effects.onControlFrame(peer, "r3", ContentType.CONTENT_TYPE_DELIVERY_RECEIPT_VALUE, receipt)
+
+        assertEquals(com.construct.messenger.data.model.DeliveryStatus.DELIVERED.name, inbox.messages.rows["ours-2"]?.deliveryStatus)
+    }
+
     /**
      * A reaction is metadata on its target: applied under the peer's account, never a row. From a
      * sibling device it is ours. Mutation: drop either reaction branch — its message turns into

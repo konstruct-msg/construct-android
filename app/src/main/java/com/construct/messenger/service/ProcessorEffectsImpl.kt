@@ -325,8 +325,16 @@ class ProcessorEffectsImpl @Inject constructor(
         Log.d(TAG, "notify ${chatId.take(8)}… (${preview.length} chars)")
     }
 
+    /**
+     * Only a message we sent can be delivered. A receipt names ids the peer chose; one naming a
+     * message we received is not about delivery at all and changes nothing. Matched the way iOS
+     * matches (`==[c]`), then written under the stored id. **Canon:** iOS
+     * `StreamLifecycleCoordinator.handleDeliveryReceipts` (`message.isSentByMe`).
+     */
     override suspend fun markDelivered(messageId: String) {
-        messageDao.updateDeliveryStatus(messageId, DeliveryStatus.DELIVERED.name)
+        val row = messageDao.getByIdIgnoreCase(messageId) ?: return
+        if (!row.isSentByMe) return
+        messageDao.updateDeliveryStatus(row.id, DeliveryStatus.DELIVERED.name)
     }
 
     override suspend fun markProcessed(messageId: String, senderId: String) {
