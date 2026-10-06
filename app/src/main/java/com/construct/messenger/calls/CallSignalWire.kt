@@ -24,9 +24,13 @@ object CallSignalWire {
      * A `WebRTCSignal` as the core encrypts it: one whole KNST frame, content type 12 in byte 5 —
      * inside the ciphertext, so nothing on the wire says "call". Never chunked: an offer can be
      * longer than a chunk, and this is exactly one message.
+     *
+     * Whole, not [KnstFrame.pack]: an offer with a video section is ~3.9 KB, past the 3770-byte
+     * chunk payload `pack` refuses, and every video call failed before ringing ("offer not sent",
+     * Redmi, 0.17.0). iOS frames it the same way (`ChunkedMessageCodec.frameWhole`).
      */
     fun frame(signal: WebRTCSignal, messageId: UUID): ByteArray =
-        KnstFrame.pack(signal.toByteArray(), KnstFrame.TYPE_CALL_SIGNAL, messageId)
+        KnstFrame.whole(signal.toByteArray(), KnstFrame.TYPE_CALL_SIGNAL, messageId)
 
     /**
      * ICE candidates of one flush, as signals that each stay well under the core's 65 536-byte
