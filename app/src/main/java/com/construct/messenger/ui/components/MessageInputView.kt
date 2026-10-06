@@ -1,5 +1,14 @@
 package com.construct.messenger.ui.components
 
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -136,14 +145,25 @@ fun MessageInputView(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val textStyle = ctMessage(15).copy(color = CTColor.text)
+            // The field keeps its own selection. Text set from outside — a message taken up for
+            // editing, a cleared draft — puts the cursor after it, where typing goes on; the String
+            // overload left it wherever it was, at the start of the message being edited.
+            var field by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
+            if (field.text != value) field = TextFieldValue(value, TextRange(value.length))
+            val focus = remember { FocusRequester() }
+            LaunchedEffect(editingPreview != null) { if (editingPreview != null) runCatching { focus.requestFocus() } }
             BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
+                value = field,
+                onValueChange = {
+                    field = it
+                    if (it.text != value) onValueChange(it.text)
+                },
                 textStyle = textStyle,
                 cursorBrush = SolidColor(CTColor.accent),
                 maxLines = 8,
                 modifier = Modifier
                     .weight(1f)
+                    .focusRequester(focus)
                     .padding(vertical = 11.dp),
                 decorationBox = { inner ->
                     Box {

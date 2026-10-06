@@ -1,5 +1,10 @@
 package com.construct.messenger.ui.navigation
 
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.construct.messenger.viewmodel.PendingChatViewModel
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -43,6 +48,7 @@ fun KonstructNavHost(
     navController: NavHostController,
     startDestination: String = Screen.Splash.route
 ) {
+    OpenTappedChat(navController)
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -302,6 +308,29 @@ fun KonstructNavHost(
         composable(Screen.RecoverySetup.route) {
             // The copy of a silently made key, or the gate's own flow when there is none.
             RecoverySetupScreen(onDone = { navController.popBackStack() })
+        }
+    }
+}
+
+/**
+ * A tapped message notification opens its chat from wherever the app was — another chat, a
+ * setting, the list — with the list under it, so back leads there. Until 2026-10-06 only the tabs
+ * took the chat, and the tabs are not composed while another screen is up: the tap opened the app
+ * where it had been left, and the chat came only on the way back to the list. Waits while the
+ * account is not signed in (no Main in the back stack: onboarding, the splash).
+ */
+@Composable
+private fun OpenTappedChat(navController: NavHostController, pendingChats: PendingChatViewModel = hiltViewModel()) {
+    val pending by pendingChats.pending.collectAsStateWithLifecycle()
+    val current by navController.currentBackStackEntryAsState()
+    LaunchedEffect(pending, current) {
+        if (pending == null) return@LaunchedEffect
+        val signedIn = runCatching { navController.getBackStackEntry(Screen.Main.route) }.isSuccess
+        if (!signedIn) return@LaunchedEffect
+        val contactId = pendingChats.take() ?: return@LaunchedEffect
+        navController.navigate(Screen.Chat.createRoute(contactId)) {
+            popUpTo(Screen.Main.route)
+            launchSingleTop = true
         }
     }
 }
