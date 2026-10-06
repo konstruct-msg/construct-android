@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import shared.proto.core.v1.EnvelopeOuterClass.Envelope
-import shared.proto.signaling.v1.Presence.DeliveryReceipt
 import shared.proto.signaling.v1.Presence.TypingIndicator
 import uniffi.construct_core.SenderCertificate
 
@@ -55,7 +54,6 @@ class MessageRouter @Inject constructor(
         /** Session-control frame (reset/sync/ping/… — never shown to the user). */
         data class Control(val message: IncomingMessage) : RoutedEvent
 
-        data class Receipt(val receipt: DeliveryReceipt) : RoutedEvent
         data class Typing(val typing: TypingIndicator) : RoutedEvent
         data class ConnectionChanged(val connected: Boolean) : RoutedEvent
     }
@@ -101,13 +99,8 @@ class MessageRouter @Inject constructor(
         if (routeJob?.isActive == true) return
         routeJob = scope.launch {
             stream.events.collect { event ->
-                when (event) {
-                    is StreamEvent.Message -> route(event.envelope)
-                    is StreamEvent.Receipt -> _routed.tryEmit(RoutedEvent.Receipt(event.receipt))
-                    is StreamEvent.Typing -> _routed.tryEmit(RoutedEvent.Typing(event.typing))
-                    is StreamEvent.Connected -> _routed.tryEmit(RoutedEvent.ConnectionChanged(true))
-                    is StreamEvent.Disconnected -> _routed.tryEmit(RoutedEvent.ConnectionChanged(false))
-                }
+                if (event is StreamEvent.Message) route(event.envelope)
+                else passThrough(event)?.let { _routed.tryEmit(it) }
             }
         }
     }
@@ -143,6 +136,30 @@ class MessageRouter @Inject constructor(
         const val TAG = "MessageRouter"
         const val DEDUP_WINDOW = 512
     }
+}
+
+/**
+ * What a stream event other than a message becomes, or null for one that goes no further.
+ *
+ * A delivery receipt the stream relays in the clear goes no further. TLS ends at the server, so
+ * nothing in it is authenticated: its value is whatever the server chose, and the checkmark is the
+ * one thing the UI says about the *other person*. The peer's own statement arrives end to end
+ * (KNST type 14, `ProcessorEffectsImpl`), and that is the only thing that marks a message
+ * delivered. The server stopped relaying these on 2026-10-06, so one arriving is either a stale
+ * server or not a peer at all — logged, never counted. The cursor needs nothing from here:
+ * `MessageStreamService` resolves a frame without a message as it arrives.
+ * **Canon:** iOS `DeliveryStatusTransition.marksDelivered`, `StreamLifecycleCoordinator.handleDeliveryReceipts`.
+ */
+internal fun passThrough(event: StreamEvent): MessageRouter.RoutedEvent? = when (event) {
+    is StreamEvent.Message -> null
+    is StreamEvent.Receipt -> {
+        val count = if (event.receipt.hasDirect()) event.receipt.direct.messageIdsCount else 0
+        Log.e("MessageRouter", "SECURITY[receipt_gate]: refused $count relayed plaintext receipt(s) — the checkmark comes from the peer's E2E receipt only")
+        null
+    }
+    is StreamEvent.Typing -> MessageRouter.RoutedEvent.Typing(event.typing)
+    is StreamEvent.Connected -> MessageRouter.RoutedEvent.ConnectionChanged(true)
+    is StreamEvent.Disconnected -> MessageRouter.RoutedEvent.ConnectionChanged(false)
 }
 
 /**

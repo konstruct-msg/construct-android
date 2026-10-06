@@ -13,8 +13,6 @@ import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.model.IdentityIds
 import com.construct.messenger.data.local.db.ChatDao
-import com.construct.messenger.data.local.db.MessageDao
-import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.domain.usecase.RotateSignedPreKeyUseCase
 import com.construct.messenger.domain.usecase.UploadPreKeysUseCase
 import com.construct.messenger.stealth.BlindTokenService
@@ -70,7 +68,6 @@ class MessagingRuntime @Inject constructor(
     private val processor: MessageProcessor,
     private val messagingService: MessagingService,
     private val chatDao: ChatDao,
-    private val messageDao: MessageDao,
     private val uploadPreKeys: UploadPreKeysUseCase,
     private val serverKeys: ServerKeysProvider,
     private val blindTokens: BlindTokenService,
@@ -234,14 +231,6 @@ class MessagingRuntime @Inject constructor(
                     runCatching { handleControl(event.message) }
                         .onSuccess { reportCursor(event.message.messageId, it) }
                         .onFailure { Log.e(TAG, "process control failed", it) }
-                is MessageRouter.RoutedEvent.Receipt -> {
-                    val ids = if (event.receipt.hasDirect()) {
-                        event.receipt.direct.messageIdsList
-                    } else {
-                        emptyList()
-                    }
-                    applyTransportReceipts(ids)
-                }
                 is MessageRouter.RoutedEvent.Typing -> Unit
                 is MessageRouter.RoutedEvent.ConnectionChanged -> {
                     if (event.connected) {
@@ -317,12 +306,6 @@ class MessagingRuntime @Inject constructor(
         )
         if (outcome == ProcessingOutcome.Deferred) {
             cursorTracker.headBlocker()?.let { Log.i(TAG, "cursor held by $it") }
-        }
-    }
-
-    private suspend fun applyTransportReceipts(ids: List<String>) {
-        for (id in ids) {
-            runCatching { messageDao.updateDeliveryStatus(id, DeliveryStatus.DELIVERED.name) }
         }
     }
 
