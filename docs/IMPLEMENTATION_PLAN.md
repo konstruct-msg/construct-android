@@ -182,7 +182,10 @@ Kotlin-реализация любого решения, которое прин
    приёме). Имя звонящего в `InitiateCall` — пустое: вызываемый называет нас по своим контактам.
 4. ✅ **Медиа** (2026-10-01; `calls/WebRtcCallMedia`, `CallAudio`). Unified plan, max-bundle,
    rtcp-mux require, `iceTransportPolicy = ALL`; ICE-серверы — только TURN из учётки, без неё
-   `stun:ams.konstruct.cc:3478`; публичных STUN нет. Один аудиотрек, без видео. Кандидаты до
+   `stun:ams.konstruct.cc:3478`; публичных STUN нет. Один аудиотрек, без видео — но фабрика с
+   видеокодеками (2026-10-06): без них WebRTC падает в `setRemoteDescription` на предложении с
+   видео-секцией, а iOS кладёт её в каждое предложение с видеозвонками (TODO 121; 0.16.0 и раньше
+   падали при ответе на звонок с iOS; `androidTest/calls/CallVideoNegotiationTest`). Кандидаты до
    remote description ждут внутри медиа, как в iOS `WebRTCSession`. Аудио:
    `JavaAudioDeviceModule` с аппаратными AEC/NS, источник `VOICE_COMMUNICATION`;
    `MODE_IN_COMMUNICATION` и фокус на время звонка, маршрут выбирает система (нужно
