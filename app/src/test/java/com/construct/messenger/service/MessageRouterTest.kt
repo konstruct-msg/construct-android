@@ -1,5 +1,6 @@
 package com.construct.messenger.service
 
+import com.construct.messenger.data.api.MessageStreamService
 import com.construct.messenger.stealth.OwnDeviceCopy
 import com.construct.messenger.stealth.StealthSenderService
 import com.google.protobuf.ByteString
@@ -14,6 +15,10 @@ import shared.proto.core.v1.EnvelopeOuterClass.Envelope
 import shared.proto.core.v1.EnvelopeOuterClass.SealedSenderEnvelope
 import shared.proto.core.v1.EnvelopeOuterClass.SenderCertificate
 import shared.proto.core.v1.Identity.UserId
+import shared.proto.signaling.v1.Presence.DeliveryReceipt
+import shared.proto.signaling.v1.Presence.DirectReceipt
+import shared.proto.signaling.v1.Presence.ReceiptStatus
+import shared.proto.signaling.v1.Presence.TypingIndicator
 
 class MessageRouterTest {
 
@@ -172,5 +177,32 @@ class MessageRouterTest {
     fun `a bare wire payload is not a sender sync`() = runBlocking<Unit> {
         assertNull(OwnDeviceCopy.unwrap(byteArrayOf()))
         assertNull(normalizeEnvelope(syncEnvelope(byteArrayOf())) { null })
+    }
+
+    /**
+     * TODO 125: a receipt the stream relays in the clear is the server's word, not the peer's.
+     * It must not reach anything that could mark a message delivered — the E2E receipt does that
+     * (`ProcessorEffectsImplTest`). Mutation: route it on — this reddens.
+     */
+    @Test
+    fun `a relayed stream receipt goes no further`() {
+        val receipt = DeliveryReceipt.newBuilder()
+            .setDirect(DirectReceipt.newBuilder().addMessageIds("ours-1").setStatus(ReceiptStatus.RECEIPT_STATUS_DELIVERED))
+            .build()
+        assertNull(passThrough(MessageStreamService.StreamEvent.Receipt(receipt)))
+    }
+
+    @Test
+    fun `typing and connection changes pass through`() {
+        assertEquals(
+            MessageRouter.RoutedEvent.ConnectionChanged(true),
+            passThrough(MessageStreamService.StreamEvent.Connected(attempt = 1)),
+        )
+        assertEquals(
+            MessageRouter.RoutedEvent.ConnectionChanged(false),
+            passThrough(MessageStreamService.StreamEvent.Disconnected(null)),
+        )
+        val typing = TypingIndicator.getDefaultInstance()
+        assertEquals(MessageRouter.RoutedEvent.Typing(typing), passThrough(MessageStreamService.StreamEvent.Typing(typing)))
     }
 }
