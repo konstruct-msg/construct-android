@@ -64,11 +64,8 @@ fun MainTabView(
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(startTab) }
 
-    // A tapped message notification: open its chat, whether the app was cold or already here.
-    val pendingChat by pendingChatViewModel.pending.collectAsStateWithLifecycle()
-    LaunchedEffect(pendingChat) {
-        if (pendingChat != null) pendingChatViewModel.take()?.let(onNavigateToChat)
-    }
+    // A tapped message notification opens its chat from the nav host (`OpenTappedChat`), which
+    // is there whatever screen is up.
     // A tapped invite — in a message or another app: Synaps redeems it and shows the outcome.
     val inviteWaiting by pendingChatViewModel.inviteWaiting.collectAsStateWithLifecycle()
     LaunchedEffect(inviteWaiting) {
