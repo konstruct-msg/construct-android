@@ -78,6 +78,18 @@ class CallSignalWireTest {
         assertEquals("c", routed.signal.callId)
     }
 
+    /**
+     * An offer with a video section is past one chunk's payload, and still one frame. Mutation:
+     * frame with `KnstFrame.pack` — this throws, and a video call never leaves the phone.
+     */
+    @Test fun `an offer larger than a chunk is still one whole frame`() {
+        val sdp = "v=0\r\n" + "a=x".repeat(1400)
+        val signal = WebRTCSignal.newBuilder().setCallId("c").setOffer(shared.proto.signaling.v1.Webrtc.CallOffer.newBuilder().setSdp(sdp)).build()
+        assertTrue(signal.serializedSize > com.construct.messenger.util.KnstFrame.MAX_PAYLOAD)
+        val frame = CallSignalWire.frame(signal, java.util.UUID.randomUUID())
+        assertArrayEquals(signal.toByteArray(), com.construct.messenger.util.KnstFrame.parse(frame)?.body())
+    }
+
     @Test fun `a candidate frame is version 4 and nothing else is read`() {
         val wire = byteArrayOf(1, 2, 3)
         val frame = CallSignalFrame.encode(wire)
