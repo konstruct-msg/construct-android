@@ -1,6 +1,7 @@
 package com.construct.messenger.ui.screens.chat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
@@ -32,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -41,6 +44,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -246,16 +250,23 @@ private fun ChatActionPaletteView(
 ) {
     val tapped = state == ChatActionPaletteState.Tapped
     val selected = (state as? ChatActionPaletteState.Held)?.selected
+    // The chat's window, read here: inside the popup LocalView is the popup's own, empty at first.
+    val root = LocalView.current.rootView
     Popup(
         popupPositionProvider = WindowOrigin,
         onDismissRequest = onDismiss,
         properties = PopupProperties(focusable = tapped, clippingEnabled = false),
     ) {
         val density = LocalDensity.current
+        // The whole window, bars and composer included. A popup's own constraints are the visible
+        // display frame — the screen less the system bars — so fillMaxSize, placed from the top
+        // edge, stopped short and dimmed the composer only partly.
+        val fullWidth = with(density) { root.width.toDp() }
+        val fullHeight = with(density) { root.height.toDp() }
         BoxWithConstraints(
             Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.25f))
+                .requiredSize(fullWidth, fullHeight)
+                .background(SCRIM)
                 .then(
                     if (tapped) Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss)
                     else Modifier,
@@ -274,16 +285,25 @@ private fun ChatActionPaletteView(
                         .scale(if (isSelected) 1.15f else 1f)
                         .then(if (tapped) Modifier.clickable { onAction(action) } else Modifier),
                 ) {
+                    // Lifted off the dimmed chat: the page's own colour, a shadow and a hairline —
+                    // in the light theme the grey message colour was lost against it.
                     Box(
                         modifier = Modifier
                             .size(ChatActionPaletteGeometry.ITEM_SIZE)
-                            .background(if (isSelected) CTColor.accent else CTColor.bgMsg, CircleShape),
+                            .shadow(8.dp, CircleShape)
+                            .background(if (isSelected) CTColor.accent else CTColor.bg, CircleShape)
+                            .border(1.dp, CTColor.textDim.copy(alpha = 0.3f), CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(action.icon, contentDescription = null, tint = if (isSelected) CTColor.bg else CTColor.accent, modifier = Modifier.size(CTLayout.navIconSize))
                     }
                     Spacer(Modifier.height(4.dp))
-                    Text(stringResource(action.label), style = ctRegular(11), color = CTColor.text)
+                    Text(
+                        stringResource(action.label),
+                        style = ctRegular(11),
+                        color = CTColor.text,
+                        modifier = Modifier.background(CTColor.bg, CircleShape).padding(horizontal = 6.dp, vertical = 1.dp),
+                    )
                 }
             }
             // The action under the finger, named away from the hand: below the header on the left.
@@ -294,13 +314,17 @@ private fun ChatActionPaletteView(
                     color = CTColor.text,
                     modifier = Modifier
                         .offset { IntOffset((maxWidth * 0.3f).roundToPx(), (cy + ChatActionPaletteGeometry.RADIUS).roundToPx()) }
-                        .background(CTColor.bgMsg, CircleShape)
+                        .shadow(8.dp, CircleShape)
+                        .background(CTColor.bg, CircleShape)
                         .padding(horizontal = CTLayout.edgePad, vertical = CTLayout.inlinePad),
                 )
             }
         }
     }
 }
+
+/** Darker than iOS's 0.25: over a material blur that is enough, over a flat chat it was not. */
+private val SCRIM = Color.Black.copy(alpha = 0.45f)
 
 /** An item's top-left so that its circle is centred on ([x], [y]). */
 private fun centeredAt(x: Dp, y: Dp, item: Dp, density: Float) =
