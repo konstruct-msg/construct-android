@@ -44,5 +44,11 @@ class KonstructApp : Application(), ImageLoaderFactory {
         // Before any service can decrypt a call signal: the inbox keeps nothing for a late listener.
         calls.start()
         callTelecom.start()
+        // Android takes the camera from an app nobody sees; the peer is told it is off rather
+        // than left on a frozen frame. iOS does the same on didEnterBackground.
+        androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(object : androidx.lifecycle.DefaultLifecycleObserver {
+            override fun onStart(owner: androidx.lifecycle.LifecycleOwner) = calls.setInBackground(false)
+            override fun onStop(owner: androidx.lifecycle.LifecycleOwner) = calls.setInBackground(true)
+        })
     }
 }

@@ -82,6 +82,20 @@ class CallManager internal constructor(
     private val _lastError = MutableStateFlow<CallError?>(null)
     val lastError: StateFlow<CallError?> = _lastError.asStateFlow()
 
+    /** The camera on both sides of the current call. Fresh for every call, like [quality]. */
+    private val _video = MutableStateFlow(CallVideoState())
+    val video: StateFlow<CallVideoState> = _video.asStateFlow()
+
+    /**
+     * Where each side's video is drawn. They outlive a call's media, so the screen adds its view
+     * whenever it appears and every new media is handed the same ones.
+     */
+    private val videoOut = mapOf(CallVideoSide.LOCAL to VideoFanOut(), CallVideoSide.REMOTE to VideoFanOut())
+
+    fun addVideoSink(side: CallVideoSide, sink: org.webrtc.VideoSink) = videoOut.getValue(side).add(sink)
+
+    fun removeVideoSink(side: CallVideoSide, sink: org.webrtc.VideoSink) = videoOut.getValue(side).remove(sink)
+
     private var active: ActiveCall? = null
     private val ended = EndedCalls(nowMs)
     private var started = false
@@ -95,8 +109,9 @@ class CallManager internal constructor(
 
     // ── What the user does ──────────────────────────────────────────────────
 
-    fun startOutgoingCall(peerUserId: String) {
-        scope.launch { startOutgoing(peerUserId) }
+    /** [video]: the video button — the camera comes on as soon as there is a sender. */
+    fun startOutgoingCall(peerUserId: String, video: Boolean = false) {
+        scope.launch { startOutgoing(peerUserId, video) }
     }
 
     fun answer() {
@@ -121,6 +136,72 @@ class CallManager internal constructor(
         scope.launch { active?.media?.setMuted(muted) }
     }
 
+    // ── The camera ──────────────────────────────────────────────────────────
+
+    /** The camera button. Without camera access it stays off and [lastError] says why. */
+    fun setCameraOn(on: Boolean) {
+        scope.launch { turnCamera(on) }
+    }
+
+    fun switchCamera() {
+        scope.launch {
+            if (active == null || !_video.value.localCameraOn) return@launch
+            updateCamera { it.copy(facing = it.facing.flipped) }
+        }
+    }
+
+    /** Nobody sees the app: Android takes the camera away, and the peer is told it is off. */
+    fun setInBackground(background: Boolean) {
+        scope.launch {
+            if (active == null || _video.value.inBackground == background) return@launch
+            updateCamera { it.copy(inBackground = background) }
+        }
+    }
+
+    private fun turnCamera(on: Boolean) {
+        if (active == null) return
+        if (on && !mediaFactory.cameraAllowed()) {
+            Log.i(TAG, "camera on refused — no camera access")
+            _lastError.value = CallError.CAMERA_DENIED
+            return
+        }
+        updateCamera { it.copy(localCameraOn = on) }
+    }
+
+    /** Bring the sender in line with [video] — after an offer, when the sender may have appeared. */
+    private fun applyCamera() = updateCamera { it }
+
+    /**
+     * The one way our side of [video] changes: the change ([CallVideoState.apply], which says what
+     * the peer must be told), then the sender brought in line, then the peer told. **Canon:** iOS
+     * `CallManager.updateCamera`.
+     */
+    private fun updateCamera(change: (CallVideoState) -> CallVideoState) {
+        val call = active ?: return
+        val media = call.media
+        val result = _video.value.apply(media?.canSendVideo, change)
+        _video.value = result.state
+        media?.setCameraOn(result.state.capturing && !result.state.inBackground, result.state.facing)
+        // Before media connects nothing is sent: onConnected says it then.
+        val announce = result.announce ?: return
+        if (call.mediaConnected) sendMediaUpdate(call, announce)
+    }
+
+    private fun sendMediaUpdate(call: ActiveCall, cameraOn: Boolean) {
+        sendE2ee(call, signal(call).setMediaUpdate(CallVideoSignal.mediaUpdate(cameraOn, nowMs())).build())
+        Log.i(TAG, "camera ${if (cameraOn) "on" else "off"} announced ${describe(call)}")
+    }
+
+    /**
+     * A video call is answered with the camera on ([CallVideoSignal.answersWithCamera]). An offer
+     * that comes once media exists (a re-offer) turns it on now.
+     */
+    private fun takeUpVideoCall(call: ActiveCall, callType: CallType) {
+        if (!call.session.isIncoming || call.startsWithCamera || !CallVideoSignal.answersWithCamera(callType)) return
+        call.startsWithCamera = true
+        if (call.media != null) turnCamera(true)
+    }
+
     fun clearLastError() {
         _lastError.value = null
     }
@@ -132,7 +213,7 @@ class CallManager internal constructor(
 
     // ── Outgoing ────────────────────────────────────────────────────────────
 
-    private suspend fun startOutgoing(peerUserId: String) {
+    private suspend fun startOutgoing(peerUserId: String, video: Boolean) {
         if (!peers.isCallable(peerUserId)) {
             Log.i(TAG, "SECURITY[call_gate]: outgoing call to ${peerUserId.take(8)}… — not a contact")
             _lastError.value = CallError.NOT_A_CONTACT
@@ -153,12 +234,13 @@ class CallManager internal constructor(
             CallRules.OutgoingRequest.START -> Unit
         }
 
-        val session = CallSession(UUID.randomUUID().toString(), peerUserId, peers.name(peerUserId), CallSession.Direction.OUTGOING)
+        val session = CallSession(UUID.randomUUID().toString(), peerUserId, peers.name(peerUserId), CallSession.Direction.OUTGOING, isVideo = video)
         val call = begin(session, CallState.Dialing(session))
+        call.startsWithCamera = video
         try {
             // The caller's name stays empty: the callee names us from its own contacts (iOS does
             // the same with the name the push carries), and the server needs no name to route.
-            val init = signaling.initiateCall(session.id, peerUserId, callerName = "")
+            val init = signaling.initiateCall(session.id, peerUserId, callerName = "", video = video)
             if (active !== call) return
             Log.i(TAG, "InitiateCall: calleeOnline=${init.calleeOnline} call=${session.id.take(8)}…")
             call.turn = fetchTurn(session.id)
@@ -216,7 +298,7 @@ class CallManager internal constructor(
         }
         val offer = CallOffer.newBuilder()
             .setSdp(sdp)
-            .setCallType(CallType.CALL_TYPE_AUDIO)
+            .setCallType(CallVideoSignal.offerCallType(_video.value, call.startsWithCamera))
             .setCallerDeviceId(myDevice())
             .setCallerUserId(peers.myUserId().orEmpty())
             .setOfferedAt(nowMs())
@@ -235,11 +317,14 @@ class CallManager internal constructor(
                 if (call != null) {
                     call.peerDevice = incoming.deviceId
                     when (CallRules.remoteOfferDisposition(call.session.isIncoming, call.answeredAtMs != null)) {
-                        CallRules.RemoteOfferDisposition.HOLD_UNTIL_ANSWERED -> holdOffer(call, signal.offer.sdp)
+                        CallRules.RemoteOfferDisposition.HOLD_UNTIL_ANSWERED -> {
+                            takeUpVideoCall(call, signal.offer.callType)
+                            holdOffer(call, signal.offer.sdp)
+                        }
                         CallRules.RemoteOfferDisposition.RENEGOTIATE -> renegotiate(call, signal.offer.sdp)
                     }
                 } else {
-                    incomingOffer(signal.callId, incoming.accountId, incoming.deviceId, signal.offer.sdp)
+                    incomingOffer(signal.callId, incoming.accountId, incoming.deviceId, signal.offer.sdp, signal.offer.callType)
                 }
             }
             WebRTCSignal.SignalCase.ANSWER -> if (call != null) remoteAnswer(call, signal.answer.sdp)
@@ -255,6 +340,11 @@ class CallManager internal constructor(
                 endActive(CallEndReason.Hangup(HangupReason.HANGUP_REASON_BUSY))
             }
             WebRTCSignal.SignalCase.RINGING -> if (call != null && _state.value is CallState.Dialing) _state.value = CallState.Ringing(call.session)
+            WebRTCSignal.SignalCase.MEDIA_UPDATE -> if (call != null) {
+                val on = CallVideoSignal.remoteCameraOn(signal.mediaUpdate) ?: return
+                _video.value = _video.value.copy(remoteCameraOn = on)
+                Log.i(TAG, "peer camera ${if (on) "on" else "off"} ${describe(call)}")
+            }
             else -> Unit
         }
         if (call == null && signal.signalCase != WebRTCSignal.SignalCase.OFFER) {
@@ -262,7 +352,7 @@ class CallManager internal constructor(
         }
     }
 
-    private suspend fun incomingOffer(callId: String, callerId: String, callerDevice: String, sdp: String) {
+    private suspend fun incomingOffer(callId: String, callerId: String, callerDevice: String, sdp: String, callType: CallType) {
         // Refused, not stored: an offer that cannot be negotiated would ring for a call that cannot connect.
         if (!CallRules.offerSdpIsUsable(sdp)) {
             Log.w(TAG, "offer from ${callerId.take(8)}… carries no SDP — not ringing (call=${callId.take(8)}…)")
@@ -294,8 +384,9 @@ class CallManager internal constructor(
             CallRules.NewCallDisposition.REPLACE_OUTGOING -> Log.i(TAG, "glare: yielding our call to ${callerId.take(8)}… — taking theirs")
             CallRules.NewCallDisposition.RING -> Unit
         }
-        val session = CallSession(callId, callerId, peers.name(callerId), CallSession.Direction.INCOMING)
+        val session = CallSession(callId, callerId, peers.name(callerId), CallSession.Direction.INCOMING, isVideo = CallVideoSignal.answersWithCamera(callType))
         val call = begin(session, CallState.Incoming(session))
+        takeUpVideoCall(call, callType)
         call.peerDevice = callerDevice
         call.pendingOfferSdp = sdp
         call.ringTimeout = scope.launch {
@@ -349,6 +440,7 @@ class CallManager internal constructor(
         val media = call.media ?: error("no media after ensureMedia")
         media.setRemoteOffer(sdp)
         call.pendingOfferSdp = null
+        applyCamera()
         drainCandidates(call)
         val answer = media.createAnswer()
         check(answer.isNotEmpty()) { "createAnswer returned no SDP" }
@@ -368,6 +460,7 @@ class CallManager internal constructor(
             check(CallRules.offerSdpIsUsable(sdp)) { "remote offer carries no SDP" }
             val media = ensureMedia(call, if (call.session.isIncoming) CallMedia.Role.CALLEE else CallMedia.Role.CALLER)
             media.setRemoteOffer(sdp)
+            applyCamera()
             val answer = media.createAnswer()
             check(answer.isNotEmpty()) { "createAnswer returned no SDP" }
             if (active !== call) return
@@ -442,7 +535,11 @@ class CallManager internal constructor(
         call.media?.let { return it }
         val media = mediaFactory.create(role, call.turn, listener(call))
         call.media = media
+        videoOut.forEach { (side, out) -> media.addVideoSink(side, out) }
         _quality.value = CallQuality.GOOD
+        // The caller's sender exists now; the callee's appears with the offer (applyCamera again
+        // after setRemoteOffer). Through turnCamera, so a video call is refused without access as the button is.
+        if (call.startsWithCamera) turnCamera(true) else applyCamera()
         // Candidates that came before there was anything to give them to.
         if (call.pendingOfferSdp == null) scope.launch { drainCandidates(call) }
         Log.i(TAG, "media created role=$role turn=${if (call.turn != null) "yes" else "STUN only"}")
@@ -466,6 +563,9 @@ class CallManager internal constructor(
                 // The server never sees the answer (it went by E2EE); this moves the call off the
                 // ringing reaper onto the keepalive one.
                 sendStream(call, CallSignalWire.connected(call.session.id, myDevice(), nowMs()))
+                // The peer has assumed the camera is off; say otherwise. Again on every reconnect,
+                // which costs one message and covers one lost on the way.
+                if (_video.value.announcedCameraOn) sendMediaUpdate(call, true)
                 Log.i(TAG, "media connected ${describe(call)}")
             }
         }
@@ -682,6 +782,7 @@ class CallManager internal constructor(
         active = call
         _state.value = initial
         _quality.value = CallQuality.GOOD
+        _video.value = CallVideoState()
         // The call's own send queue: one at a time, in order, and nothing from an earlier call ahead of it.
         scope.launch {
             for (o in call.outbox) {
@@ -706,6 +807,7 @@ class CallManager internal constructor(
         active = null
         ended.remember(call.session.id)
         _quality.value = CallQuality.GOOD
+        _video.value = CallVideoState()
         val endedState = CallState.Ended(call.session, reason)
         _state.value = endedState
         val endedAt = nowMs()
@@ -751,6 +853,8 @@ class CallManager internal constructor(
         var iceRestart: Job? = null
         var iceRestartInFlight = false
         var iceRestartAttempts = 0
+        /** Asked for with the video button, or a video call answered: the camera comes on as soon as there is a sender. */
+        var startsWithCamera = false
 
         /**
          * Timers stop and media goes; the send queue is closed, not cancelled, so a hangup already

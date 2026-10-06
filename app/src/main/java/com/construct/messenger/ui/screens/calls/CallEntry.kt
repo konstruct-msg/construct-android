@@ -20,9 +20,12 @@ import com.construct.messenger.viewmodel.CallViewModel
  * What a call button does: ask for the microphone if it has not been given (the first time a call
  * needs it, never before — as for voice notes), then call. Why a call did not start is said once,
  * as a toast. Returns the action, or null while a call is on (iOS shows no call button then).
+ *
+ * [video]: the camera is asked for too, and the call starts with it. Refused, the call goes on
+ * with sound and says why — as iOS does when camera access is off.
  */
 @Composable
-fun rememberCallAction(peerId: String, vm: CallViewModel = hiltViewModel()): (() -> Unit)? {
+fun rememberCallAction(peerId: String, video: Boolean = false, vm: CallViewModel = hiltViewModel()): (() -> Unit)? {
     val context = LocalContext.current
     val call by vm.call.collectAsStateWithLifecycle()
     val error by vm.startError.collectAsStateWithLifecycle()
@@ -31,6 +34,7 @@ fun rememberCallAction(peerId: String, vm: CallViewModel = hiltViewModel()): (()
         CallStartError.NOT_A_CONTACT to stringResource(R.string.call_error_not_contacts),
         CallStartError.BUSY to stringResource(R.string.call_error_busy),
         CallStartError.SETUP_FAILED to stringResource(R.string.call_error_setup_failed),
+        CallStartError.CAMERA_DENIED to stringResource(R.string.call_error_camera_denied),
     )
     val noMic = stringResource(R.string.call_error_no_microphone)
     LaunchedEffect(error, refused) {
@@ -38,15 +42,18 @@ fun rememberCallAction(peerId: String, vm: CallViewModel = hiltViewModel()): (()
         Toast.makeText(context, text, Toast.LENGTH_LONG).show()
         vm.clearErrors()
     }
-    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) vm.start(peerId) else vm.microphoneRefused()
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
+        val mic = granted[Manifest.permission.RECORD_AUDIO] ?: context.has(Manifest.permission.RECORD_AUDIO)
+        if (mic) vm.start(peerId, video) else vm.microphoneRefused()
     }
     if (call != null) return null
     return {
-        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            vm.start(peerId)
-        } else {
-            ask.launch(Manifest.permission.RECORD_AUDIO)
-        }
+        val wanted = buildList {
+            add(Manifest.permission.RECORD_AUDIO)
+            if (video) add(Manifest.permission.CAMERA)
+        }.filterNot(context::has)
+        if (wanted.isEmpty()) vm.start(peerId, video) else ask.launch(wanted.toTypedArray())
     }
 }
+
+private fun android.content.Context.has(permission: String) = checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED

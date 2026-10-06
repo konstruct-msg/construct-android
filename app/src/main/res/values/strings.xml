@@ -614,4 +614,16 @@
     <string name="recovery_backup_lost_title">Recovery key lost on this device</string>
     <string name="recovery_backup_lost_body">The screen lock was removed before the key was saved, and Android erased it. Your account works, but if you lose every device it cannot be brought back. Nobody can restore the key, including us.</string>
     <string name="recovery_backup_lost">Lost on this device</string>
+    <!-- Video calls (TODO 121): iOS keys. -->
+    <string name="call_incoming_video">Incoming video call</string>
+    <string name="call_camera">Camera</string>
+    <string name="call_flip_camera">Flip</string>
+    <string name="call_peer_camera_off">Camera off</string>
+    <string name="call_swap_video">Swap video</string>
+    <string name="call_self_view">Your camera</string>
+    <string name="call_error_camera_denied">Camera access is off. Turn it on in Settings → Apps → Konstruct → Permissions to use video in calls.</string>
+    <string name="chat_actions">Actions</string>
+    <string name="chat_action_search">Search</string>
+    <string name="chat_action_call">Call</string>
+    <string name="chat_action_video">Video</string>
 </resources>

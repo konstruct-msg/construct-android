@@ -75,6 +75,16 @@ class CallAudio @Inject constructor(@ApplicationContext context: Context) {
         }
     }
 
+    /** The sound goes to the earpiece — when Telecom has no connection to say where it goes. */
+    @Synchronized
+    fun outputIsEarpiece(): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            manager.communicationDevice?.type.let { it == null || it == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
+        } else {
+            @Suppress("DEPRECATION")
+            !manager.isSpeakerphoneOn && !manager.isWiredHeadsetOn && !manager.isBluetoothScoOn
+        }
+
     private var ringback: ToneGenerator? = null
 
     /**

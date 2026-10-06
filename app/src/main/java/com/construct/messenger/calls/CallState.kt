@@ -2,6 +2,7 @@ package com.construct.messenger.calls
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.channels.Channel
+import org.webrtc.VideoSink
 import shared.proto.signaling.v1.SignalingServiceOuterClass.InitiateCallResponse
 import shared.proto.signaling.v1.SignalingServiceOuterClass.SignalErrorCode
 import shared.proto.signaling.v1.SignalingServiceOuterClass.SignalRequest
@@ -17,6 +18,8 @@ data class CallSession(
     val peerUserId: String,
     val peerName: String,
     val direction: Direction,
+    /** Started with the camera, or offered as a video call. */
+    val isVideo: Boolean = false,
 ) {
     enum class Direction { INCOMING, OUTGOING }
 
@@ -44,15 +47,15 @@ sealed interface CallState {
 enum class CallQuality { GOOD, RECONNECTING }
 
 /** Why an outgoing call did not start, for the UI to say. iOS `call_error_*`. */
-enum class CallError { NOT_A_CONTACT, BUSY, SETUP_FAILED }
+enum class CallError { NOT_A_CONTACT, BUSY, SETUP_FAILED, CAMERA_DENIED }
 
 /** One ICE candidate as WebRTC hands it over: the candidate line in the clear. */
 data class CallIce(val sdp: String, val sdpMid: String, val sdpMLineIndex: Int)
 
 /**
- * The media of one call — a peer connection with one audio track. **Canon:** iOS
- * `WebRTCSessionProtocol`. C2 step 4 implements it on webrtc-sdk; the call machine never touches
- * WebRTC itself, so every decision above it is testable without a device.
+ * The media of one call — a peer connection with one audio track and a video transceiver. **Canon:**
+ * iOS `WebRTCSessionProtocol`. Implemented on webrtc-sdk; the call machine never touches WebRTC
+ * itself, so every decision above it is testable without a device.
  */
 interface CallMedia {
     suspend fun createOffer(): String
@@ -64,6 +67,20 @@ interface CallMedia {
     suspend fun restartIce(): String
     fun setMuted(muted: Boolean)
     fun close()
+
+    /**
+     * This side has a video sender the camera can feed: the caller from the start, the callee once
+     * it has applied an offer with a video section. False for an offer from an audio-only client.
+     */
+    val canSendVideo: Boolean
+
+    /** Feed the camera into the video sender, or take it away. A swap on the sender — no renegotiation. */
+    fun setCameraOn(on: Boolean, facing: CameraFacing)
+
+    /** Where one side's video is drawn. A sink added before that side has a track gets it when it does. */
+    fun addVideoSink(side: CallVideoSide, sink: VideoSink)
+
+    fun removeVideoSink(side: CallVideoSide, sink: VideoSink)
 
     /** Called from WebRTC's own threads; the machine moves each onto its own. */
     interface Listener {
@@ -78,6 +95,9 @@ interface CallMedia {
     fun interface Factory {
         /** TURN when the server gave credentials, otherwise the STUN fallback. */
         fun create(role: Role, turn: TurnCredentials?, listener: Listener): CallMedia
+
+        /** The camera may be used. Asked for by the screen; without it the camera stays off. */
+        fun cameraAllowed(): Boolean = true
     }
 }
 
@@ -98,7 +118,8 @@ interface CallSignalPort {
 
 /** What the machine needs from [SignalingClient]. */
 interface CallSignalingPort {
-    suspend fun initiateCall(callId: String, calleeUserId: String, callerName: String): InitiateCallResponse
+    /** [video]: the server is told the call type, as by iOS (`VIDEO_CALLS_DESIGN`, three questions). */
+    suspend fun initiateCall(callId: String, calleeUserId: String, callerName: String, video: Boolean = false): InitiateCallResponse
     suspend fun turnCredentials(callId: String?): TurnCredentials
     fun stream(outbound: Channel<SignalRequest>): Flow<SignalResponse>
 }

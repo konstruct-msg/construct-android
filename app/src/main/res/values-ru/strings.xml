@@ -618,4 +618,16 @@
     <string name="recovery_backup_lost_title">Ключ восстановления пропал с устройства</string>
     <string name="recovery_backup_lost_body">Блокировку экрана сняли до того, как ключ был сохранён, и Android его стёр. Аккаунт работает, но если пропадут все устройства, вернуть его будет нельзя. Восстановить ключ не сможет никто, включая нас.</string>
     <string name="recovery_backup_lost">Пропал с устройства</string>
+    <!-- Видеозвонки (TODO 121): ключи iOS. -->
+    <string name="call_incoming_video">Входящий видеозвонок</string>
+    <string name="call_camera">Камера</string>
+    <string name="call_flip_camera">Сменить</string>
+    <string name="call_peer_camera_off">Камера выключена</string>
+    <string name="call_swap_video">Поменять окна местами</string>
+    <string name="call_self_view">Ваша камера</string>
+    <string name="call_error_camera_denied">Доступ к камере выключен. Разрешите его в Настройки → Приложения → Konstruct → Разрешения, чтобы звонить с видео.</string>
+    <string name="chat_actions">Действия</string>
+    <string name="chat_action_search">Поиск</string>
+    <string name="chat_action_call">Звонок</string>
+    <string name="chat_action_video">Видео</string>
 </resources>

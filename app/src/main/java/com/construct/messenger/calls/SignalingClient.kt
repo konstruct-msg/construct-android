@@ -40,14 +40,14 @@ class SignalingClient @Inject constructor(
      * Register an outgoing call. The server checks contacts, blocks, busy and rate, keeps the call
      * 90 s, and tells the callee — by its stream or not at all; it holds no SDP.
      */
-    override suspend fun initiateCall(callId: String, calleeUserId: String, callerName: String): InitiateCallResponse =
+    override suspend fun initiateCall(callId: String, calleeUserId: String, callerName: String, video: Boolean): InitiateCallResponse =
         withTimeout(INITIATE_TIMEOUT_MS) {
             grpc.signaling.initiateCall(
                 InitiateCallRequest.newBuilder()
                     .setCallId(callId)
                     .setCalleeUserId(calleeUserId)
                     .setCallerName(callerName)
-                    .setCallType(CallType.CALL_TYPE_AUDIO)
+                    .setCallType(if (video) CallType.CALL_TYPE_VIDEO else CallType.CALL_TYPE_AUDIO)
                     .build(),
             )
         }

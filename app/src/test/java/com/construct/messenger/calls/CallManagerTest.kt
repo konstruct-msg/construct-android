@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -20,6 +21,8 @@ import shared.proto.signaling.v1.SignalingServiceOuterClass.SignalResponse
 import shared.proto.signaling.v1.Webrtc.CallAnswer
 import shared.proto.signaling.v1.Webrtc.CallHangup
 import shared.proto.signaling.v1.Webrtc.CallOffer
+import shared.proto.signaling.v1.Webrtc.CallType
+import shared.proto.signaling.v1.Webrtc.MediaType
 import shared.proto.signaling.v1.Webrtc.HangupReason
 import shared.proto.signaling.v1.Webrtc.IceCandidate
 import shared.proto.signaling.v1.Webrtc.TurnCredentials
@@ -58,7 +61,7 @@ class CallManagerTest {
         val requests = mutableListOf<SignalRequest>()
         var streams = 0
         var responses: Channel<SignalResponse>? = null
-        override suspend fun initiateCall(callId: String, calleeUserId: String, callerName: String): InitiateCallResponse {
+        override suspend fun initiateCall(callId: String, calleeUserId: String, callerName: String, video: Boolean): InitiateCallResponse {
             initiated += callId
             return InitiateCallResponse.getDefaultInstance()
         }
@@ -81,13 +84,24 @@ class CallManagerTest {
     private class FakeMedia(val role: CallMedia.Role, val listener: CallMedia.Listener) : CallMedia {
         val log = mutableListOf<String>()
         override suspend fun createOffer() = "local-offer".also { log += "createOffer" }
-        override suspend fun setRemoteOffer(sdp: String) { log += "setRemoteOffer:$sdp" }
+        override suspend fun setRemoteOffer(sdp: String) {
+            log += "setRemoteOffer:$sdp"
+            if (sdp.contains("m=video")) hasVideo = true
+        }
         override suspend fun createAnswer() = "local-answer".also { log += "createAnswer" }
         override suspend fun setRemoteAnswer(sdp: String) { log += "setRemoteAnswer:$sdp" }
         override suspend fun addRemoteCandidate(candidate: CallIce) { log += "add:${candidate.sdp}" }
         override suspend fun restartIce() = "restart-offer".also { log += "restartIce" }
         override fun setMuted(muted: Boolean) { log += "muted:$muted" }
         override fun close() { log += "close" }
+
+        /** The caller has a sender from the start; the callee once an offer with video is applied. */
+        var hasVideo = role == CallMedia.Role.CALLER
+        override val canSendVideo get() = hasVideo
+        val camera = mutableListOf<Pair<Boolean, CameraFacing>>()
+        override fun setCameraOn(on: Boolean, facing: CameraFacing) { camera += on to facing }
+        override fun addVideoSink(side: CallVideoSide, sink: org.webrtc.VideoSink) = Unit
+        override fun removeVideoSink(side: CallVideoSide, sink: org.webrtc.VideoSink) = Unit
     }
 
     private class FakePeers(private val me: String, private val contacts: Set<String>) : CallPeers {
@@ -97,7 +111,7 @@ class CallManagerTest {
         override suspend fun name(userId: String) = "name-${userId.take(4)}"
     }
 
-    private inner class Rig(val test: TestScope, myId: String = me) {
+    private inner class Rig(val test: TestScope, myId: String = me, cameraAllowed: Boolean = true) {
         val signals = FakeSignals()
         val signaling = FakeSignaling()
         val inbox = CallSignalInbox()
@@ -105,7 +119,11 @@ class CallManagerTest {
         val history = mutableListOf<Triple<String, CallRecordStatus, Int>>()
         val calls = CallManager(
             signals, signaling, FakePeers(myId, setOf(peer, third)),
-            CallMedia.Factory { role, _, listener -> FakeMedia(role, listener).also { media += it } },
+            object : CallMedia.Factory {
+                override fun create(role: CallMedia.Role, turn: TurnCredentials?, listener: CallMedia.Listener) =
+                    FakeMedia(role, listener).also { media += it }
+                override fun cameraAllowed() = cameraAllowed
+            },
             inbox, test.backgroundScope, { test.testScheduler.currentTime },
             { session, status, _, _, seconds -> history += Triple(session.id, status, seconds) },
         )
@@ -426,5 +444,156 @@ class CallManagerTest {
         assertEquals(listOf(WebRTCSignal.SignalCase.ANSWER, WebRTCSignal.SignalCase.ANSWER), rig.sentCases())
         assertTrue(rig.state is CallState.Active)
         assertNull(rig.calls.lastError.value)
+    }
+
+    // ── Video (TODO 121; canon iOS CallManager camera, CallVideoTests) ───────
+
+    private fun videoOffer(callId: String, type: CallType = CallType.CALL_TYPE_VIDEO) =
+        WebRTCSignal.newBuilder().setCallId(callId)
+            .setOffer(CallOffer.newBuilder().setSdp("v=0 m=audio m=video").setCallType(type)).build()
+
+    private fun mediaUpdate(callId: String, on: Boolean, type: MediaType = MediaType.MEDIA_TYPE_VIDEO) =
+        WebRTCSignal.newBuilder().setCallId(callId)
+            .setMediaUpdate(CallVideoSignal.mediaUpdate(on, 1).toBuilder().setMediaType(type)).build()
+
+    private fun Rig.mediaUpdatesSent() = signals.sent.map { it.second }.filter { it.hasMediaUpdate() }.map { it.mediaUpdate.enabled }
+
+    private fun Rig.connect() {
+        media.last().listener.onConnected()
+        test.runCurrent()
+    }
+
+    /** Mutation: offer CALL_TYPE_AUDIO always — the callee answers a video call without its camera. */
+    @Test
+    fun `a video call offers video and turns the camera on as soon as there is a sender`() = runTest {
+        val rig = Rig(this)
+        rig.calls.startOutgoingCall(peer, video = true)
+        runCurrent()
+        val offer = rig.signals.sent.single { it.second.hasOffer() }.second.offer
+        assertEquals(CallType.CALL_TYPE_VIDEO, offer.callType)
+        assertEquals(true to CameraFacing.FRONT, rig.media.single().camera.last())
+        assertTrue(rig.calls.video.value.localCameraOn)
+    }
+
+    @Test
+    fun `an audio call offers audio, with the camera off`() = runTest {
+        val rig = Rig(this)
+        rig.calls.startOutgoingCall(peer)
+        runCurrent()
+        assertEquals(CallType.CALL_TYPE_AUDIO, rig.signals.sent.single { it.second.hasOffer() }.second.offer.callType)
+        assertTrue(rig.media.single().camera.none { it.first })
+        assertTrue("the caller can still turn it on", rig.calls.video.value.canSend)
+    }
+
+    /**
+     * A video call is answered with the camera, once the offer has given the callee its sender.
+     * Mutation: drop `applyCamera()` after setRemoteOffer — the callee's camera stays off.
+     */
+    @Test
+    fun `a video call is answered with the camera on`() = runTest {
+        val rig = Rig(this)
+        rig.deliver(videoOffer("c1"))
+        assertTrue((rig.state as CallState.Incoming).session.isVideo)
+        rig.calls.answer()
+        runCurrent()
+        assertEquals(true to CameraFacing.FRONT, rig.media.single().camera.last())
+        assertTrue(rig.calls.video.value.announcedCameraOn)
+    }
+
+    @Test
+    fun `an audio call is answered with the camera off`() = runTest {
+        val rig = Rig(this)
+        rig.deliver(videoOffer("c1", CallType.CALL_TYPE_AUDIO))
+        rig.calls.answer()
+        runCurrent()
+        assertTrue(rig.media.single().camera.none { it.first })
+        assertTrue("a sender all the same: the camera can come on later", rig.calls.video.value.canSend)
+    }
+
+    /**
+     * Nothing about the camera is sent before media connects; on connecting the peer hears it.
+     * Mutation: drop the announcement in onConnected — the peer shows our avatar over our face.
+     */
+    @Test
+    fun `the camera is announced when media connects, not before`() = runTest {
+        val rig = Rig(this)
+        rig.calls.startOutgoingCall(peer, video = true)
+        runCurrent()
+        assertEquals(emptyList<Boolean>(), rig.mediaUpdatesSent())
+        rig.connect()
+        assertEquals(listOf(true), rig.mediaUpdatesSent())
+    }
+
+    /** iOS build 716: the callee turned the camera on and was never announced. */
+    @Test
+    fun `turning the camera on and off mid-call tells the peer, a flip does not`() = runTest {
+        val rig = Rig(this)
+        rig.deliver(videoOffer("c1", CallType.CALL_TYPE_AUDIO))
+        rig.calls.answer()
+        runCurrent()
+        rig.connect()
+        rig.calls.setCameraOn(true)
+        runCurrent()
+        rig.calls.switchCamera()
+        runCurrent()
+        assertEquals(true to CameraFacing.BACK, rig.media.single().camera.last())
+        rig.calls.setCameraOn(false)
+        runCurrent()
+        assertEquals(listOf(true, false), rig.mediaUpdatesSent())
+        assertEquals(false to CameraFacing.BACK, rig.media.single().camera.last())
+    }
+
+    /** Mutation: drop the MEDIA_TYPE_VIDEO check — a microphone mute would hide the peer's face. */
+    @Test
+    fun `the peer's camera follows its MediaUpdate, and only the camera's`() = runTest {
+        val rig = Rig(this)
+        rig.calls.startOutgoingCall(peer)
+        runCurrent()
+        val id = rig.outgoingCallId()
+        rig.deliver(mediaUpdate(id, true))
+        assertTrue(rig.calls.video.value.remoteCameraOn)
+        rig.deliver(mediaUpdate(id, false, MediaType.MEDIA_TYPE_AUDIO))
+        assertTrue(rig.calls.video.value.remoteCameraOn)
+        rig.deliver(mediaUpdate(id, false))
+        assertFalse(rig.calls.video.value.remoteCameraOn)
+        rig.deliver(mediaUpdate("another-call", true))
+        assertFalse(rig.calls.video.value.remoteCameraOn)
+    }
+
+    @Test
+    fun `in the background the camera stops and the peer is told, and back again`() = runTest {
+        val rig = Rig(this)
+        rig.calls.startOutgoingCall(peer, video = true)
+        runCurrent()
+        rig.connect()
+        rig.calls.setInBackground(true)
+        runCurrent()
+        assertEquals(false to CameraFacing.FRONT, rig.media.single().camera.last())
+        rig.calls.setInBackground(false)
+        runCurrent()
+        assertEquals(true to CameraFacing.FRONT, rig.media.single().camera.last())
+        assertEquals(listOf(true, false, true), rig.mediaUpdatesSent())
+    }
+
+    @Test
+    fun `without camera access the camera stays off and the screen is told`() = runTest {
+        val rig = Rig(this, cameraAllowed = false)
+        rig.deliver(videoOffer("c1"))
+        rig.calls.answer()
+        runCurrent()
+        assertTrue("the call is answered all the same", rig.state is CallState.Active)
+        assertFalse(rig.calls.video.value.localCameraOn)
+        assertEquals(CallError.CAMERA_DENIED, rig.calls.lastError.value)
+    }
+
+    @Test
+    fun `the next call starts with no camera on either side`() = runTest {
+        val rig = Rig(this)
+        rig.deliver(videoOffer("c1"))
+        rig.calls.answer()
+        runCurrent()
+        rig.deliver(mediaUpdate("c1", true))
+        rig.deliver(hangup("c1"))
+        assertEquals(CallVideoState(), rig.calls.video.value)
     }
 }
