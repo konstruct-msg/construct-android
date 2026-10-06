@@ -3,6 +3,9 @@ package com.construct.messenger.calls
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaRecorder
+import org.webrtc.DefaultVideoDecoderFactory
+import org.webrtc.DefaultVideoEncoderFactory
+import org.webrtc.EglBase
 import org.webrtc.PeerConnectionFactory
 import org.webrtc.audio.JavaAudioDeviceModule
 
@@ -31,6 +34,12 @@ object WebRtcRuntime {
 
     @Volatile private var factory: PeerConnectionFactory? = null
 
+    /**
+     * The one GL context video is encoded, decoded and drawn with. Created with the factory: a
+     * renderer on another context would copy every frame between the two.
+     */
+    val egl: EglBase by lazy { EglBase.create() }
+
     fun factory(context: Context): PeerConnectionFactory =
         factory ?: synchronized(this) {
             factory ?: build(context.applicationContext).also { factory = it }
@@ -55,6 +64,14 @@ object WebRtcRuntime {
                     .build(),
             )
             .createAudioDeviceModule()
-        return PeerConnectionFactory.builder().setAudioDeviceModule(audio).createPeerConnectionFactory()
+        // Video codecs even for an audio call. A factory without them aborts inside
+        // setRemoteDescription on an offer that carries a video section — libc++ "front() called
+        // on an empty vector", on WebRTC's worker thread, where nothing catches it. iOS puts one
+        // into every offer since video calls (TODO 121); 0.16.0 and earlier crash on answering.
+        return PeerConnectionFactory.builder()
+            .setAudioDeviceModule(audio)
+            .setVideoEncoderFactory(DefaultVideoEncoderFactory(egl.eglBaseContext, /* enableIntelVp8Encoder = */ true, /* enableH264HighProfile = */ true))
+            .setVideoDecoderFactory(DefaultVideoDecoderFactory(egl.eglBaseContext))
+            .createPeerConnectionFactory()
     }
 }
