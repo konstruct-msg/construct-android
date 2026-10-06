@@ -269,6 +269,7 @@ fun ChatScreen(
         jumpToId = null
     }
 
+    val actionPalette = rememberChatActionPaletteHost()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -303,6 +304,7 @@ fun ChatScreen(
                 alerted = uiState.trustAlert != null,
                 ktVerified = uiState.ktVerified,
                 onVerify = onOpenSafetyNumbers,
+                actionPalette = actionPalette,
             )
         }
 
@@ -539,6 +541,7 @@ fun ChatScreen(
             onClose = { recordingNote = false },
         )
     }
+    ChatActionPaletteOverlay(actionPalette)
 }
 
 /**
@@ -603,6 +606,7 @@ private fun ChatNavBar(
     alerted: Boolean,
     ktVerified: Boolean,
     onVerify: () -> Unit,
+    actionPalette: ChatActionPaletteHost,
 ) {
     Row(
         modifier = Modifier
@@ -657,6 +661,7 @@ private fun ChatNavBar(
             // Search, call, video call — one button, one palette (decisions/chat-header-actions-are-one-palette).
             ChatActionButton(
                 actions = ChatAction.available(canCall = onCall != null && onVideoCall != null),
+                host = actionPalette,
                 onAction = { action ->
                     when (action) {
                         ChatAction.SEARCH -> onSearch()

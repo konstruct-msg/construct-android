@@ -1,5 +1,6 @@
 package com.construct.messenger.ui.screens.chat
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
@@ -26,6 +26,8 @@ import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,7 +46,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -55,13 +56,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupPositionProvider
-import androidx.compose.ui.window.PopupProperties
 import com.construct.messenger.R
 import com.construct.messenger.ui.components.MicSwitch
 import com.construct.messenger.ui.theme.CTColor
@@ -145,12 +140,33 @@ object ChatActionPaletteGeometry {
 }
 
 /**
+ * The open palette, shared by the button that opens it and the overlay that draws it. The overlay
+ * sits at the top of the chat screen, not in the header, so it can cover all of it.
+ */
+@Stable
+class ChatActionPaletteHost {
+    internal var palette by mutableStateOf<ChatActionPaletteState?>(null)
+    /** The button's centre, in window pixels. */
+    internal var center by mutableStateOf(Offset.Zero)
+    internal var actions by mutableStateOf(emptyList<ChatAction>())
+    internal var onAction: (ChatAction) -> Unit = {}
+}
+
+@Composable
+fun rememberChatActionPaletteHost(): ChatActionPaletteHost = remember { ChatActionPaletteHost() }
+
+/**
  * The header's action button: vertical dots where the magnifier was. With a single action (no
- * callable contact) it is that action's own button — a palette of one is a detour.
+ * callable contact) it is that action's own button — a palette of one is a detour. The palette
+ * itself is drawn by [ChatActionPaletteOverlay], given the same [host].
  */
 @Composable
-fun ChatActionButton(actions: List<ChatAction>, onAction: (ChatAction) -> Unit) {
+fun ChatActionButton(actions: List<ChatAction>, host: ChatActionPaletteHost, onAction: (ChatAction) -> Unit) {
     val act by rememberUpdatedState(onAction)
+    SideEffect {
+        host.actions = actions
+        host.onAction = { act(it) }
+    }
     if (actions.size == 1) {
         val only = actions.single()
         Box(
@@ -161,8 +177,7 @@ fun ChatActionButton(actions: List<ChatAction>, onAction: (ChatAction) -> Unit) 
         }
         return
     }
-    var palette by remember { mutableStateOf<ChatActionPaletteState?>(null) }
-    var center by remember { mutableStateOf(Offset.Zero) }
+    var palette by host::palette
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
     val label = stringResource(R.string.chat_actions)
@@ -172,7 +187,7 @@ fun ChatActionButton(actions: List<ChatAction>, onAction: (ChatAction) -> Unit) 
             .size(CTLayout.hitTarget)
             .onGloballyPositioned { c ->
                 val p = c.positionInWindow()
-                center = Offset(p.x + c.size.width / 2f, p.y + c.size.height / 2f)
+                host.center = Offset(p.x + c.size.width / 2f, p.y + c.size.height / 2f)
             }
             .semantics {
                 contentDescription = label
@@ -222,103 +237,89 @@ fun ChatActionButton(actions: List<ChatAction>, onAction: (ChatAction) -> Unit) 
     ) {
         Icon(Icons.Filled.MoreVert, contentDescription = null, tint = CTColor.accent, modifier = Modifier.size(CTLayout.navIconSizeLg))
     }
-    palette?.let { state ->
-        ChatActionPaletteView(
-            state = state,
-            actions = actions,
-            centerPx = center,
-            onAction = {
-                palette = null
-                act(it)
-            },
-            onDismiss = { palette = null },
-        )
-    }
 }
 
 /**
- * Drawn over the whole window, centred on the button. Held, it is only a picture — the finger's
- * drag belongs to the button. Tapped, its actions are buttons and the dimmed rest closes it.
+ * The open palette, over the whole chat screen, centred on the button. Held, it is only a picture —
+ * the finger's drag belongs to the button. Tapped, its actions are buttons and the dimmed rest
+ * closes it, as does Back.
+ *
+ * Drawn in the chat's own window, last in the screen, as the video note overlay is — not in a
+ * `Popup`. A popup is a window of its own, which MIUI keeps above the navigation bar: the dim
+ * stopped short of the composer and, the content being taller than the window, everything in it
+ * rode up by half the bar (Redmi, 0.17.2).
  */
 @Composable
-private fun ChatActionPaletteView(
-    state: ChatActionPaletteState,
-    actions: List<ChatAction>,
-    centerPx: Offset,
-    onAction: (ChatAction) -> Unit,
-    onDismiss: () -> Unit,
-) {
+fun ChatActionPaletteOverlay(host: ChatActionPaletteHost) {
+    val state = host.palette ?: return
     val tapped = state == ChatActionPaletteState.Tapped
     val selected = (state as? ChatActionPaletteState.Held)?.selected
-    // The chat's window, read here: inside the popup LocalView is the popup's own, empty at first.
-    val root = LocalView.current.rootView
-    Popup(
-        popupPositionProvider = WindowOrigin,
-        onDismissRequest = onDismiss,
-        properties = PopupProperties(focusable = tapped, clippingEnabled = false),
+    val onDismiss = { host.palette = null }
+    val onAction = { action: ChatAction ->
+        host.palette = null
+        host.onAction(action)
+    }
+    BackHandler(enabled = tapped, onBack = onDismiss)
+    val density = LocalDensity.current
+    // The button's centre is in window coordinates; this box need not start at the window's corner.
+    var origin by remember { mutableStateOf(Offset.Zero) }
+    BoxWithConstraints(
+        Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { origin = it.positionInWindow() }
+            .background(SCRIM)
+            .then(
+                if (tapped) Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss)
+                else Modifier,
+            ),
     ) {
-        val density = LocalDensity.current
-        // The whole window, bars and composer included. A popup's own constraints are the visible
-        // display frame — the screen less the system bars — so fillMaxSize, placed from the top
-        // edge, stopped short and dimmed the composer only partly.
-        val fullWidth = with(density) { root.width.toDp() }
-        val fullHeight = with(density) { root.height.toDp() }
-        BoxWithConstraints(
-            Modifier
-                .requiredSize(fullWidth, fullHeight)
-                .background(SCRIM)
-                .then(
-                    if (tapped) Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss)
-                    else Modifier,
-                ),
-        ) {
-            val cx = with(density) { centerPx.x.toDp() }
-            val cy = with(density) { centerPx.y.toDp() }
-            for (action in actions) {
-                val (ox, oy) = ChatActionPaletteGeometry.offset(action)
-                val isSelected = selected == action
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
+        val actions = host.actions
+        val cx = with(density) { (host.center.x - origin.x).toDp() }
+        val cy = with(density) { (host.center.y - origin.y).toDp() }
+        for (action in actions) {
+            val (ox, oy) = ChatActionPaletteGeometry.offset(action)
+            val isSelected = selected == action
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .offset { centeredAt(cx + ox, cy + oy, ChatActionPaletteGeometry.ITEM_SIZE, density.density) }
+                    .wrapContentSize(unbounded = true)
+                    .scale(if (isSelected) 1.15f else 1f)
+                    .then(if (tapped) Modifier.clickable { onAction(action) } else Modifier),
+            ) {
+                // Lifted off the dimmed chat: the page's own colour, a shadow and a hairline —
+                // in the light theme the grey message colour was lost against it.
+                Box(
                     modifier = Modifier
-                        .offset { centeredAt(cx + ox, cy + oy, ChatActionPaletteGeometry.ITEM_SIZE, density.density) }
-                        .wrapContentSize(unbounded = true)
-                        .scale(if (isSelected) 1.15f else 1f)
-                        .then(if (tapped) Modifier.clickable { onAction(action) } else Modifier),
-                ) {
-                    // Lifted off the dimmed chat: the page's own colour, a shadow and a hairline —
-                    // in the light theme the grey message colour was lost against it.
-                    Box(
-                        modifier = Modifier
-                            .size(ChatActionPaletteGeometry.ITEM_SIZE)
-                            .shadow(8.dp, CircleShape)
-                            .background(if (isSelected) CTColor.accent else CTColor.bg, CircleShape)
-                            .border(1.dp, CTColor.textDim.copy(alpha = 0.3f), CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(action.icon, contentDescription = null, tint = if (isSelected) CTColor.bg else CTColor.accent, modifier = Modifier.size(CTLayout.navIconSize))
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        stringResource(action.label),
-                        style = ctRegular(11),
-                        color = CTColor.text,
-                        modifier = Modifier.background(CTColor.bg, CircleShape).padding(horizontal = 6.dp, vertical = 1.dp),
-                    )
-                }
-            }
-            // The action under the finger, named away from the hand: below the header on the left.
-            if (selected != null) {
-                Text(
-                    text = stringResource(selected.label),
-                    style = ctBold(15),
-                    color = CTColor.text,
-                    modifier = Modifier
-                        .offset { IntOffset((maxWidth * 0.3f).roundToPx(), (cy + ChatActionPaletteGeometry.RADIUS).roundToPx()) }
+                        .size(ChatActionPaletteGeometry.ITEM_SIZE)
                         .shadow(8.dp, CircleShape)
-                        .background(CTColor.bg, CircleShape)
-                        .padding(horizontal = CTLayout.edgePad, vertical = CTLayout.inlinePad),
+                        .background(if (isSelected) CTColor.accent else CTColor.bg, CircleShape)
+                        .border(1.dp, CTColor.textDim.copy(alpha = 0.3f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(action.icon, contentDescription = null, tint = if (isSelected) CTColor.bg else CTColor.accent, modifier = Modifier.size(CTLayout.navIconSize))
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    stringResource(action.label),
+                    style = ctRegular(11),
+                    color = CTColor.text,
+                    modifier = Modifier.background(CTColor.bg, CircleShape).padding(horizontal = 6.dp, vertical = 1.dp),
                 )
             }
+        }
+        // The action under the finger, named away from the hand: below the header on the left.
+        if (selected != null) {
+            Text(
+                text = stringResource(selected.label),
+                style = ctBold(15),
+                color = CTColor.text,
+                modifier = Modifier
+                    .offset { IntOffset((maxWidth * 0.3f).roundToPx(), (cy + ChatActionPaletteGeometry.RADIUS).roundToPx()) }
+                    .shadow(8.dp, CircleShape)
+                    .background(CTColor.bg, CircleShape)
+                    .padding(horizontal = CTLayout.edgePad, vertical = CTLayout.inlinePad),
+            )
         }
     }
 }
@@ -329,8 +330,3 @@ private val SCRIM = Color.Black.copy(alpha = 0.45f)
 /** An item's top-left so that its circle is centred on ([x], [y]). */
 private fun centeredAt(x: Dp, y: Dp, item: Dp, density: Float) =
     IntOffset(((x - item / 2).value * density).roundToInt(), ((y - item / 2).value * density).roundToInt())
-
-/** The popup covers the window from its top-left corner; everything inside is placed in window coordinates. */
-private object WindowOrigin : PopupPositionProvider {
-    override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize) = IntOffset.Zero
-}
