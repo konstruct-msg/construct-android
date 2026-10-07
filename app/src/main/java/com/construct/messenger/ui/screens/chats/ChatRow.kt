@@ -39,6 +39,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import java.util.Date
 
@@ -66,7 +67,7 @@ fun ChatRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = CTSpace.l, vertical = CTSpace.m),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CTAvatar(
@@ -76,7 +77,7 @@ fun ChatRow(
                 size = 40.dp,
             )
             Spacer(Modifier.width(CTLayout.chromeGap))
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(CTSpace.xs)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // The name takes all the room the time leaves, so a long name runs to the
                     // time and the time sits on the trailing edge whatever the name's length.
@@ -98,11 +99,11 @@ fun ChatRow(
                                 androidx.compose.material.icons.Icons.Filled.GppMaybe,
                                 contentDescription = stringResource(R.string.kt_warning),
                                 tint = CTColor.danger,
-                                modifier = Modifier.padding(start = 4.dp).size(CTIcon.caption),
+                                modifier = Modifier.padding(start = CTSpace.xs).size(CTIcon.caption),
                             )
                         }
                     }
-                    Spacer(Modifier.width(4.dp))
+                    Spacer(Modifier.width(CTSpace.xs))
                     chat.lastMessageTime?.let { time ->
                         Text(
                             text = rowTimestamp(context, time),
@@ -132,7 +133,7 @@ fun ChatRow(
                         modifier = Modifier.weight(1f),
                     )
                     if (chat.unreadCount > 0) {
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(CTSpace.xs))
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(CornerRadius.badge))
@@ -151,7 +152,7 @@ fun ChatRow(
             }
         }
         // The List separator, from the text column to the trailing inset.
-        CTRowDivider(indent = 16.dp + 40.dp + CTLayout.chromeGap, modifier = Modifier.padding(end = 16.dp))
+        CTRowDivider(indent = 16.dp + 40.dp + CTLayout.chromeGap, modifier = Modifier.padding(end = CTSpace.l))
     }
 }
 

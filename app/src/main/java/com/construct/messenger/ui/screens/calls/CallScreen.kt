@@ -63,6 +63,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import kotlinx.coroutines.delay
 
 /**
@@ -134,22 +135,22 @@ fun CallScreen(
             if (pulsing) PulseRing(size = AVATAR)
             CTAvatar(userId = call.peerId, displayName = call.peerName, size = AVATAR)
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(CTSpace.l))
         Text(call.peerName, style = CTFont.ui(22, FontWeight.Bold), color = CTColor.text)
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(CTSpace.s))
         Text(
             text = statusText(call),
             style = CTFont.ui(14),
             color = if (call.isLive) CTColor.textDim else CTColor.danger.copy(alpha = 0.85f),
         )
         if (call.isLive) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(CTSpace.m))
             Row(
-                modifier = Modifier.background(CTColor.bgMsg, CircleShape).padding(horizontal = 10.dp, vertical = 4.dp),
+                modifier = Modifier.background(CTColor.bgMsg, CircleShape).padding(horizontal = 10.dp, vertical = CTSpace.xs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.Filled.Lock, contentDescription = null, tint = CTColor.textDim, modifier = Modifier.size(CTIcon.caption))
-                Spacer(Modifier.width(4.dp))
+                Spacer(Modifier.width(CTSpace.xs))
                 Text(stringResource(R.string.call_e2ee_badge), style = CTFont.caption, color = CTColor.textDim)
             }
         }
@@ -309,7 +310,7 @@ fun CallMiniBar(call: CallUi, onOpen: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.Filled.Call, contentDescription = null, tint = CTColor.bg, modifier = Modifier.size(CTIcon.row))
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(CTSpace.s))
         Text(call.peerName, style = CTFont.ui(12, FontWeight.Bold), color = CTColor.bg, modifier = Modifier.weight(1f), maxLines = 1)
         Text(
             text = if (call.phase == CallUi.Phase.ACTIVE) elapsed(call.activeSinceMs) else stringResource(R.string.call_minibar_connecting),

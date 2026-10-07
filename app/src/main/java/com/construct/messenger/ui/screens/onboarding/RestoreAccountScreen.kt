@@ -116,7 +116,7 @@ fun RestoreAccountScreen(
                         .background(CTColor.bgMsg)
                         .border(1.dp, if (enabled) CTColor.accent else CTColor.noise)
                         .clickable(enabled = enabled, onClick = viewModel::submit)
-                        .padding(vertical = 12.dp),
+                        .padding(vertical = CTSpace.m),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -137,9 +137,9 @@ fun RestoreAccountScreen(
 @Composable
 private fun WordGrid(words: List<String>, onWord: (Int, String) -> Unit) {
     val focus = LocalFocusManager.current
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(CTSpace.s)) {
         words.indices.chunked(2).forEach { pair ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(CTSpace.s)) {
                 pair.forEach { index ->
                     val last = index == words.lastIndex
                     val shape = RoundedCornerShape(CornerRadius.small)
@@ -149,9 +149,9 @@ private fun WordGrid(words: List<String>, onWord: (Int, String) -> Unit) {
                             .clip(shape)
                             .background(CTColor.bgMsg)
                             .border(HairlineBorder, CTColor.noise, shape)
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                            .padding(horizontal = 10.dp, vertical = CTSpace.s),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(CTSpace.xs),
                     ) {
                         Text(
                             text = "${index + 1}.",

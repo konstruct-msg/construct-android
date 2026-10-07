@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.HairlineBorder
 
@@ -57,7 +58,7 @@ fun CTTextField(
             .clip(shape)
             .background(CTColor.bgMsg)
             .border(HairlineBorder, CTColor.noise, shape)
-            .padding(horizontal = 12.dp, vertical = 11.dp),
+            .padding(horizontal = CTSpace.m, vertical = 11.dp),
         textStyle = textStyle,
         singleLine = true,
         cursorBrush = SolidColor(CTColor.accent),
@@ -95,8 +96,8 @@ fun CTTextField(
 @Composable
 private fun CTTextFieldPreview() {
     androidx.compose.foundation.layout.Column(
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
-        modifier = Modifier.padding(16.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(CTSpace.m),
+        modifier = Modifier.padding(CTSpace.l),
     ) {
         CTTextField(placeholder = "username", value = "", onValueChange = {})
         CTTextField(placeholder = "username", value = "silent_fox", onValueChange = {})

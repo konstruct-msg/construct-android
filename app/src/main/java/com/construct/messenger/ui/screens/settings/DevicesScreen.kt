@@ -61,6 +61,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.AccountEvent
 import com.construct.messenger.viewmodel.DevicesUiState
 import com.construct.messenger.viewmodel.DevicesViewModel
@@ -176,7 +177,7 @@ private fun DevicesScreen(
                 .padding(bottom = CTLayout.edgePad),
         ) {
             if (ui.loading && ui.devices.isEmpty()) {
-                Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.fillMaxWidth().padding(CTSpace.xxl), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = CTColor.accent, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
                 }
                 return@Column
@@ -208,7 +209,7 @@ private fun DevicesScreen(
             // iOS: each a destructive `ConstructActionRow` card of its own, not rows in a group.
             Column(
                 modifier = Modifier.padding(horizontal = CTLayout.edgePad),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(CTSpace.xs),
             ) {
                 ConstructActionRow(
                     icon = Icons.AutoMirrored.Filled.Logout,
@@ -245,7 +246,7 @@ private fun DeviceRow(device: LinkedDevice, onRevoke: (() -> Unit)?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = CTLayout.edgePad, vertical = 12.dp),
+            .padding(horizontal = CTLayout.edgePad, vertical = CTSpace.m),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -293,7 +294,7 @@ private fun Hint(text: String) {
         text = text,
         style = CTFont.caption,
         color = CTColor.textDim,
-        modifier = Modifier.padding(horizontal = CTLayout.edgePad * 2, vertical = 8.dp),
+        modifier = Modifier.padding(horizontal = CTLayout.edgePad * 2, vertical = CTSpace.s),
     )
 }
 

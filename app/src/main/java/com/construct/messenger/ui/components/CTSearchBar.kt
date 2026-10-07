@@ -29,6 +29,7 @@ import com.construct.messenger.R
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 
 /**
  * Search input field.
@@ -65,7 +66,7 @@ fun CTSearchBar(
             tint = CTColor.textDim,
             modifier = Modifier.size(CTIcon.row),
         )
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(CTSpace.s))
         BasicTextField(
             value = query,
             onValueChange = onQueryChange,
@@ -85,7 +86,7 @@ fun CTSearchBar(
             }
         )
         if (query.isNotEmpty()) {
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(CTSpace.s))
             IconButton(
                 onClick = { onQueryChange("") },
                 modifier = Modifier.size(24.dp),

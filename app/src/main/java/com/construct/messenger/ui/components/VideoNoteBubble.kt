@@ -77,6 +77,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.util.BlurHash
 import com.construct.messenger.util.MediaWire
@@ -232,7 +233,7 @@ fun VideoNoteBubble(
                     modifier = Modifier
                         .size(CTIcon.hero)
                         .background(CTColor.mediaBadge, RoundedCornerShape(CornerRadius.small))
-                        .padding(8.dp),
+                        .padding(CTSpace.s),
                 )
             playback.expanded && playback.paused ->
                 Icon(Icons.Filled.PlayArrow, null, tint = CTColor.onMedia, modifier = Modifier.size(CTIcon.overlay))
@@ -294,7 +295,7 @@ fun VideoNoteBubble(
                     .padding(6.dp)
                     .background(CTColor.mediaBadge, RoundedCornerShape(CornerRadius.badge))
                     .padding(horizontal = 6.dp, vertical = 3.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(CTSpace.xs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(

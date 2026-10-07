@@ -53,6 +53,7 @@ import com.construct.messenger.ui.components.ctBackground
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.HairlineBorder
 import com.construct.messenger.ui.theme.KonstructMessengerTheme
 import com.construct.messenger.viewmodel.OrientationViewModel
@@ -130,8 +131,8 @@ private fun TopBar(onSkip: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(top = 16.dp, bottom = 8.dp),
+            .padding(horizontal = CTSpace.xl)
+            .padding(top = CTSpace.l, bottom = CTSpace.s),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -155,11 +156,11 @@ private fun BottomChrome(currentPage: Int, isLastPage: Boolean, onPrimary: () ->
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 36.dp),
+            .padding(top = CTSpace.s, bottom = 36.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(CTSpace.s)) {
             repeat(PAGE_COUNT) { index ->
                 Box(
                     modifier = Modifier
@@ -178,7 +179,7 @@ private fun BottomChrome(currentPage: Int, isLastPage: Boolean, onPrimary: () ->
             onClick = onPrimary,
             // iOS: the 24 gutter sits outside the 360 cap.
             modifier = Modifier
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = CTSpace.xl)
                 .widthIn(max = 360.dp),
         )
     }
@@ -243,7 +244,7 @@ private fun OrientationPage(page: Int) {
                 .widthIn(max = 420.dp)
                 .padding(horizontal = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(CTSpace.m),
         ) {
             Text(
                 text = stringResource(titleRes).uppercase(),
@@ -264,7 +265,7 @@ private fun OrientationPage(page: Int) {
                 style = CTFont.caption,
                 color = CTColor.textDim,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 4.dp),
+                modifier = Modifier.padding(top = CTSpace.xs),
             )
         }
 
@@ -292,7 +293,7 @@ private val HexagonShape = GenericShape { size, _ ->
 private fun IdentityIllustration() {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(CTSpace.l),
     ) {
         Box(contentAlignment = Alignment.Center) {
             Box(
@@ -338,7 +339,7 @@ private fun PeopleIllustration() {
     Row(
         modifier = Modifier.padding(horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(CTSpace.m),
     ) {
         PathCard(
             icon = Icons.Filled.QrCode,
@@ -371,7 +372,7 @@ private fun PathCard(
         modifier = modifier
             .background(CTColor.bgMsg)
             .border(HairlineBorder, CTColor.noise)
-            .padding(vertical = 16.dp, horizontal = 10.dp),
+            .padding(vertical = CTSpace.l, horizontal = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -441,7 +442,7 @@ private fun MapRow(icon: ImageVector, titleRes: Int, subRes: Int) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = CTSpace.l, vertical = CTSpace.m),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {

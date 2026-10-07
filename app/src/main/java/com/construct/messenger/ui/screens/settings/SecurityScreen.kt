@@ -73,6 +73,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.AppLockViewModel
 import com.construct.messenger.viewmodel.SecurityUiState
 import com.construct.messenger.viewmodel.SecurityViewModel
@@ -287,7 +288,7 @@ private fun LockDelayDialog(current: LockDelay, onPick: (LockDelay) -> Unit, onD
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onPick(delay) }
-                            .padding(vertical = 12.dp),
+                            .padding(vertical = CTSpace.m),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
@@ -399,7 +400,7 @@ private fun DiscoveryRow(ui: SecurityUiState, onChange: (Boolean) -> Unit) {
                 color = CTColor.accent,
                 strokeWidth = 2.dp,
                 modifier = Modifier
-                    .padding(12.dp)
+                    .padding(CTSpace.m)
                     .size(20.dp),
             )
         } else {

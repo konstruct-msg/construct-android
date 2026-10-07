@@ -47,6 +47,7 @@ import com.construct.messenger.data.model.MessageMedia
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.util.MediaWire
 
 /**
@@ -77,7 +78,7 @@ fun FilesBubble(
             .width(IntrinsicSize.Max)
             .background(if (outgoing) CTColor.outMsgBg else CTColor.bgMsg, shape)
             .border(0.5.dp, CTColor.noise, shape)
-            .padding(12.dp),
+            .padding(CTSpace.m),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         album.items.forEach { item ->
@@ -90,7 +91,7 @@ fun FilesBubble(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(iconFor(item.filename), null, tint = tint, modifier = Modifier.width(32.dp).size(CTIcon.navLg))
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(CTSpace.s))
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = item.filename ?: stringResource(R.string.file_attachment),
@@ -106,7 +107,7 @@ fun FilesBubble(
                         color = dim,
                     )
                 }
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(CTSpace.m))
                 Box(Modifier.size(22.dp), contentAlignment = Alignment.Center) {
                     when {
                         staged || item.mediaId in loading ->

@@ -49,6 +49,7 @@ import com.construct.messenger.data.model.MessageMedia
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 import kotlin.math.max
 import kotlin.math.min
 
@@ -189,7 +190,7 @@ fun VoiceBubble(
                     modifier = Modifier
                         .clip(CircleShape)
                         .clickable(onClick = onToggle)
-                        .padding(4.dp)
+                        .padding(CTSpace.xs)
                         .size(CTIcon.control),
                 )
             }
@@ -230,11 +231,11 @@ fun VoiceComposerBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(horizontal = CTSpace.l, vertical = CTSpace.xs)
             .height(44.dp)
             .background(CTColor.outMsgBg, shape)
             .border(1.dp, CTColor.accent.copy(alpha = 0.25f), shape)
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = CTSpace.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -242,12 +243,12 @@ fun VoiceComposerBar(
             contentDescription = stringResource(if (recording) R.string.action_cancel else R.string.delete),
             tint = CTColor.danger,
             // 24 drawn, 40 to press: a small target inside a pill is easy to miss.
-            modifier = Modifier.clip(CircleShape).clickable(onClick = onLeading).padding(8.dp).size(CTIcon.control),
+            modifier = Modifier.clip(CircleShape).clickable(onClick = onLeading).padding(CTSpace.s).size(CTIcon.control),
         )
         VoiceWaveform(
             samples = waveform,
             style = if (recording) WaveStyle.LiveInput else WaveStyle.StaticAccent,
-            modifier = Modifier.weight(1f).height(28.dp).padding(horizontal = 12.dp),
+            modifier = Modifier.weight(1f).height(28.dp).padding(horizontal = CTSpace.m),
         )
         Text(
             text = formatVoiceDuration(durationMs),

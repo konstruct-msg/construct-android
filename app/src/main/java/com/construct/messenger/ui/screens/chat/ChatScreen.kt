@@ -75,6 +75,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.ChatViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -610,7 +611,7 @@ private fun ChatNavBar(
 ) {
     Row(
         modifier = Modifier
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .padding(horizontal = CTSpace.s, vertical = CTSpace.xs)
             .fillMaxWidth()
             .height(CTLayout.navBarHeight)
             .glassCapsule()
@@ -679,7 +680,7 @@ private fun ChatNavBar(
 private fun ChatSearchBar(query: String, onQueryChange: (String) -> Unit, resultCount: Int, onClose: () -> Unit) {
     val focus = remember { androidx.compose.ui.focus.FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
-    Column(Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+    Column(Modifier.padding(horizontal = CTSpace.s, vertical = CTSpace.xs)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -715,7 +716,7 @@ private fun ChatSearchBar(query: String, onQueryChange: (String) -> Unit, result
                 text = androidx.compose.ui.res.pluralStringResource(R.plurals.chat_search_results, resultCount, resultCount),
                 style = CTFont.secondary,
                 color = CTColor.textDim,
-                modifier = Modifier.padding(horizontal = CTLayout.inlinePad, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = CTLayout.inlinePad, vertical = CTSpace.xs),
             )
         }
     }
@@ -727,7 +728,7 @@ private fun SelectionBar(count: Int, onDelete: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .padding(horizontal = CTSpace.s, vertical = 6.dp)
             .background(CTColor.bgMsg, androidx.compose.foundation.shape.RoundedCornerShape(com.construct.messenger.ui.theme.CornerRadius.small))
             .height(CTLayout.controlHeight)
             .padding(horizontal = CTLayout.edgePad),
@@ -760,7 +761,7 @@ private fun QuoteSelectionSheet(text: String, onConfirm: (String) -> Unit, onDis
     var value by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(text)) }
     val selected = value.text.substring(value.selection.min, value.selection.max)
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, containerColor = CTColor.bg) {
-        Column(Modifier.padding(horizontal = CTLayout.edgePad).padding(bottom = 16.dp)) {
+        Column(Modifier.padding(horizontal = CTLayout.edgePad).padding(bottom = CTSpace.l)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.select_quote), style = CTFont.headline, color = CTColor.text, modifier = Modifier.weight(1f))
                 Text(
@@ -785,11 +786,11 @@ private fun QuoteSelectionSheet(text: String, onConfirm: (String) -> Unit, onDis
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(CTColor.bgMsg)
-                    .padding(12.dp),
+                    .padding(CTSpace.m),
             )
             if (selected.isNotBlank()) {
                 Spacer(Modifier.height(CTLayout.inlinePad))
-                Row(Modifier.background(CTColor.bgMsg).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.background(CTColor.bgMsg).padding(CTSpace.s), verticalAlignment = Alignment.CenterVertically) {
                     Spacer(Modifier.width(2.dp).height(28.dp).background(CTColor.accent))
                     Text(
                         text = selected,
@@ -797,7 +798,7 @@ private fun QuoteSelectionSheet(text: String, onConfirm: (String) -> Unit, onDis
                         color = CTColor.textDim,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(start = 8.dp),
+                        modifier = Modifier.padding(start = CTSpace.s),
                     )
                 }
             }

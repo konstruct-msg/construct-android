@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.construct.messenger.ui.theme.CTSpace
 
 /**
  * Deterministic accent color derived from a stable id (userId).
@@ -200,16 +201,16 @@ fun CTAvatar(
 private fun CTAvatarPreview() {
     androidx.compose.foundation.layout.Column(
         verticalArrangement = Arrangement.spacedBy(20.dp),
-        modifier = Modifier.padding(16.dp),
+        modifier = Modifier.padding(CTSpace.l),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(CTSpace.l)) {
             CTAvatar(userId = "alice-123", displayName = "Alice", size = 52.dp, isActive = true)
             CTAvatar(userId = "bob-456", displayName = "Bob Smith", size = 52.dp)
             CTAvatar(userId = "carol-789", displayName = "Carol", size = 52.dp)
             CTAvatar(userId = "dave-000", displayName = "", size = 52.dp)
         }
         // Small (chat-list) size — identicons stay distinct at 36dp.
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(CTSpace.m)) {
             for (id in listOf("u1", "u2", "u3", "u4", "u5")) {
                 CTAvatar(userId = id, displayName = id.uppercase(), size = 36.dp)
             }

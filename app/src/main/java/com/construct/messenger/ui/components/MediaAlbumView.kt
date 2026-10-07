@@ -72,6 +72,7 @@ import com.construct.messenger.data.repository.MediaUnavailable
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.util.BlurHash
 import com.construct.messenger.util.MediaWire
@@ -229,7 +230,7 @@ private fun Tile(
                 strokeWidth = 2.dp,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(8.dp)
+                    .padding(CTSpace.s)
                     .size(18.dp),
             )
         }
@@ -254,11 +255,11 @@ private fun Failure(label: String, onRetry: (() -> Unit)?) {
                 modifier = Modifier
                     .clickable(onClick = onRetry)
                     .background(CTColor.accent.copy(alpha = 0.1f))
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                    .padding(horizontal = CTSpace.m, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.Filled.Refresh, null, tint = CTColor.accent, modifier = Modifier.size(CTIcon.caption))
-                Spacer(Modifier.width(4.dp))
+                Spacer(Modifier.width(CTSpace.xs))
                 Text(stringResource(R.string.retry), style = CTFont.caption, color = CTColor.accent)
             }
         }
@@ -311,7 +312,7 @@ fun MediaViewer(
                 if (item.isVideo) VideoPage(item, active = pager.currentPage == page, load = loadVideo, autoPlay = autoPlay) else ZoomableImage(item)
             }
             Row(
-                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp),
+                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(CTSpace.s),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onDismiss) {

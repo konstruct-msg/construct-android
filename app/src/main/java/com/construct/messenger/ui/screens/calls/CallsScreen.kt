@@ -53,6 +53,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.CallHistoryFilter
 import com.construct.messenger.viewmodel.CallHistorySection
 import com.construct.messenger.viewmodel.CallsViewModel
@@ -152,7 +153,7 @@ private fun SectionHeader(kind: CallHistorySection.Kind) {
         modifier = Modifier
             .fillMaxWidth()
             .background(CTColor.bg.copy(alpha = 0.96f))
-            .padding(horizontal = CTLayout.edgePad, vertical = 8.dp),
+            .padding(horizontal = CTLayout.edgePad, vertical = CTSpace.s),
     )
 }
 
@@ -168,7 +169,7 @@ private fun CallHistoryRow(entry: CallHistoryEntry, onDelete: () -> Unit) {
                 .combinedClickable(onClick = { callBack?.invoke() }, onLongClick = { menu = true }),
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = CTLayout.sectionGap, vertical = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = CTLayout.sectionGap, vertical = CTSpace.m),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -177,14 +178,14 @@ private fun CallHistoryRow(entry: CallHistoryEntry, onDelete: () -> Unit) {
                     tint = directionColor(entry),
                     modifier = Modifier.size(CTIcon.row),
                 )
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(CTSpace.m))
                 CTAvatar(
                     userId = entry.peerUserId,
                     displayName = entry.peerName,
                     image = rememberAvatar(entry.peerAvatar),
                     size = 40.dp,
                 )
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(CTSpace.m))
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
                         text = entry.peerName,

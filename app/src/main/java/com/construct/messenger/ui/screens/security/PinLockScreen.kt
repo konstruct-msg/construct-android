@@ -61,6 +61,7 @@ import com.construct.messenger.ui.components.CTMatrixBackground
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.AppLockViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -184,7 +185,7 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
                         style = CTFont.body,
                         color = CTColor.danger,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 32.dp).height(18.dp),
+                        modifier = Modifier.padding(horizontal = CTSpace.xxl).height(18.dp),
                     )
                 }
             } else {
@@ -202,7 +203,7 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
                             style = CTFont.body,
                             color = CTColor.danger,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 32.dp),
+                            modifier = Modifier.padding(horizontal = CTSpace.xxl),
                         )
                     }
                     Text(
@@ -210,7 +211,7 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
                         style = CTFont.ui(14),
                         color = CTColor.accent,
                         modifier = Modifier
-                            .padding(top = 8.dp - LINK_PAD_V)
+                            .padding(top = CTSpace.s - LINK_PAD_V)
                             .linkTarget { showPinEntry = true; error = null },
                     )
                 }
@@ -222,7 +223,7 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(10.dp - LINK_PAD_V),
-                        modifier = Modifier.padding(bottom = 24.dp - LINK_PAD_V),
+                        modifier = Modifier.padding(bottom = CTSpace.xl - LINK_PAD_V),
                     ) {
                         Text(
                             text = stringResource(R.string.pin_reset_countdown, left),
@@ -244,7 +245,7 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
                         color = CTColor.textDim,
                         // The text stays 24 dp above the bottom; the rest of that is touch area.
                         modifier = Modifier
-                            .padding(bottom = 24.dp - LINK_PAD_V)
+                            .padding(bottom = CTSpace.xl - LINK_PAD_V)
                             .linkTarget { confirmReset = true },
                     )
                 }
@@ -261,7 +262,7 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
 private val LINK_PAD_V = 14.dp
 
 private fun Modifier.linkTarget(onClick: () -> Unit): Modifier =
-    clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = LINK_PAD_V)
+    clickable(onClick = onClick).padding(horizontal = CTSpace.m, vertical = LINK_PAD_V)
 
 /**
  * The PIN dots. Defaults are iOS `PinDotsView` (setup): 14 dp, 14 apart, the newest dot popping
@@ -304,13 +305,13 @@ private fun Numpad(
     onBiometric: () -> Unit,
 ) {
     val rows = listOf("123", "456", "789")
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(CTSpace.l)) {
         rows.forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(CTSpace.xl)) {
                 row.forEach { digit -> DigitKey(digit, onDigit) }
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(CTSpace.xl)) {
             Box(Modifier.size(KEY_SIZE), contentAlignment = Alignment.Center) {
                 if (biometric) {
                     Icon(

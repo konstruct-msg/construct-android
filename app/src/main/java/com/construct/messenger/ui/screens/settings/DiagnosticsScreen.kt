@@ -38,6 +38,7 @@ import com.construct.messenger.ui.components.CTSettingsRow
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTSpace
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -71,7 +72,7 @@ fun DiagnosticsScreen(onNavigateBack: () -> Unit) {
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 16.dp),
+                .padding(bottom = CTSpace.l),
         ) {
             CTSettingsSectionHeader(title = stringResource(R.string.diagnostics_title), color = DEBUG_ORANGE)
             CTSectionGroup {
@@ -109,7 +110,7 @@ fun DiagnosticsScreen(onNavigateBack: () -> Unit) {
                             text = recent.asReversed().joinToString("\n"),
                             style = CTFont.micro,
                             color = CTColor.text,
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(CTSpace.m),
                         )
                     }
                 }

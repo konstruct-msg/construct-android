@@ -62,6 +62,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.StickersViewModel
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -163,7 +164,7 @@ fun StickerPickerSheet(
             }
             if (picker.packs.isEmpty() && picker.recents.isEmpty()) {
                 header("empty") {
-                    Column(Modifier.fillMaxWidth().padding(vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(Modifier.fillMaxWidth().padding(vertical = CTSpace.xl), horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Outlined.EmojiEmotions, null, tint = CTColor.textDim, modifier = Modifier.size(CTIcon.overlay))
                         Text(stringResource(R.string.sticker_catalog_empty), style = CTFont.body, color = CTColor.textDim)
                     }
@@ -171,13 +172,13 @@ fun StickerPickerSheet(
             }
             when (catalog) {
                 StickersViewModel.Catalog.Unavailable -> header("catalog-failed") {
-                    Row(Modifier.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.padding(vertical = CTSpace.m), verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(R.string.sticker_catalog_failed), style = CTFont.secondary, color = CTColor.textDim, modifier = Modifier.weight(1f))
                         Text(
                             stringResource(R.string.retry),
                             style = CTFont.ui(12, FontWeight.Medium),
                             color = CTColor.accent,
-                            modifier = Modifier.clickable { stickers.loadCatalog() }.padding(8.dp),
+                            modifier = Modifier.clickable { stickers.loadCatalog() }.padding(CTSpace.s),
                         )
                     }
                 }
@@ -190,7 +191,7 @@ fun StickerPickerSheet(
                     }
                 }
             }
-            header("bottom") { Spacer(Modifier.height(24.dp)) }
+            header("bottom") { Spacer(Modifier.height(CTSpace.xl)) }
         }
     }
 }
@@ -205,7 +206,7 @@ private fun SectionTitle(text: String) {
         style = CTFont.ui(11, FontWeight.Medium),
         color = CTColor.textDim,
         letterSpacing = 2.sp,
-        modifier = Modifier.padding(top = 12.dp, bottom = 6.dp),
+        modifier = Modifier.padding(top = CTSpace.m, bottom = 6.dp),
     )
 }
 
@@ -220,7 +221,7 @@ private fun PackTitle(pack: StickerPack, onRemove: () -> Unit) {
             letterSpacing = 2.sp,
             modifier = Modifier
                 .combinedClickable(onClick = {}, onLongClick = { menu = true })
-                .padding(top = 12.dp, bottom = 6.dp),
+                .padding(top = CTSpace.m, bottom = 6.dp),
         )
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
             DropdownMenuItem(

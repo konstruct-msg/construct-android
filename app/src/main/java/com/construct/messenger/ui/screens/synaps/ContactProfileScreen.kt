@@ -65,6 +65,7 @@ import com.construct.messenger.ui.components.rememberAvatar
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.viewmodel.ContactProfileUiState
 import com.construct.messenger.viewmodel.ContactProfileViewModel
@@ -193,7 +194,7 @@ fun ContactProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 32.dp),
+                .padding(bottom = CTSpace.xxl),
         ) {
             AvatarHeader(ui)
             FlatDivider(thick = true)
@@ -234,7 +235,7 @@ fun ContactProfileScreen(
                 color = CTColor.accent.copy(alpha = 0.5f),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = ROW_H, vertical = 12.dp),
+                    .padding(horizontal = ROW_H, vertical = CTSpace.m),
             )
         }
     }
@@ -255,7 +256,7 @@ private fun AvatarHeader(ui: ContactProfileUiState) {
             Row(
                 modifier = Modifier
                     .background(CTColor.danger.copy(alpha = 0.14f), RoundedCornerShape(CornerRadius.small))
-                    .padding(horizontal = 9.dp, vertical = 4.dp),
+                    .padding(horizontal = 9.dp, vertical = CTSpace.xs),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
@@ -281,7 +282,7 @@ private fun IdentitySection(ui: ContactProfileUiState, onEditLocalName: () -> Un
     RowDivider()
     // iOS: a name only this device shows, overriding every other one wherever they are named.
     ProfileRow(stringResource(R.string.local_name), modifier = Modifier.clickable(onClick = onEditLocalName)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(CTSpace.s)) {
             val local = ui.localName
             Text(
                 text = local ?: stringResource(R.string.local_name_unset),
@@ -411,10 +412,10 @@ private fun SecurityNoticeBlock(alert: ContactTrustAlert, name: String, onVerify
         modifier = Modifier
             .fillMaxWidth()
             .background(CTColor.danger.copy(alpha = 0.08f))
-            .padding(horizontal = ROW_H, vertical = 12.dp),
+            .padding(horizontal = ROW_H, vertical = CTSpace.m),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(CTSpace.s)) {
             Icon(Icons.Default.GppMaybe, contentDescription = null, tint = CTColor.danger, modifier = Modifier.size(CTIcon.row))
             Text(title, style = CTFont.ui(12, FontWeight.Bold), color = CTColor.danger)
         }
@@ -427,7 +428,7 @@ private fun SecurityNoticeBlock(alert: ContactTrustAlert, name: String, onVerify
                 modifier = Modifier
                     .background(CTColor.danger, control)
                     .clickable(onClick = onVerify)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = CTSpace.m, vertical = CTSpace.s),
             )
             Text(
                 text = stringResource(R.string.security_notice_acknowledge),
@@ -437,7 +438,7 @@ private fun SecurityNoticeBlock(alert: ContactTrustAlert, name: String, onVerify
                     .background(CTColor.bgMsg, control)
                     .border(1.dp, CTColor.accent.copy(alpha = 0.5f), control)
                     .clickable(onClick = onAcknowledge)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = CTSpace.m, vertical = CTSpace.s),
             )
         }
     }

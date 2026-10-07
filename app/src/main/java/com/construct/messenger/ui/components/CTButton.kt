@@ -18,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.HairlineBorder
 
@@ -71,8 +72,8 @@ fun CTButton(
 @Composable
 private fun CTButtonPreview() {
     Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(CTSpace.m),
+        modifier = Modifier.padding(CTSpace.l),
     ) {
         CTButton(label = "CREATE IDENTITY", onClick = {})
         CTButton(label = "DELETE", onClick = {}, isDestructive = true)

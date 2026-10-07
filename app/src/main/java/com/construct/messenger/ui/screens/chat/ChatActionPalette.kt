@@ -63,6 +63,7 @@ import com.construct.messenger.ui.components.MicSwitch
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -299,7 +300,7 @@ fun ChatActionPaletteOverlay(host: ChatActionPaletteHost) {
                 ) {
                     Icon(action.icon, contentDescription = null, tint = if (isSelected) CTColor.bg else CTColor.accent, modifier = Modifier.size(CTLayout.navIconSize))
                 }
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(CTSpace.xs))
                 Text(
                     stringResource(action.label),
                     style = CTFont.caption,

@@ -58,6 +58,7 @@ import coil.request.SuccessResult
 import com.construct.messenger.R
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTSpace
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -140,8 +141,8 @@ fun AvatarCropDialog(uri: Uri, onConfirm: (Bitmap) -> Unit, onCancel: () -> Unit
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(start = 24.dp, end = 24.dp, bottom = 40.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(start = CTSpace.xl, end = CTSpace.xl, bottom = 40.dp),
+                horizontalArrangement = Arrangement.spacedBy(CTSpace.s),
             ) {
                 CropButton(stringResource(R.string.action_cancel), CTColor.mediaControl, CTColor.onMedia, onCancel)
                 CropButton(stringResource(R.string.crop_use_photo), CTColor.mediaControlOn, CTColor.onMediaControlOn) {
@@ -195,7 +196,7 @@ fun AvatarViewerDialog(jpeg: ByteArray, onChange: () -> Unit, onDismiss: () -> U
                 )
             }
             Row(
-                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp),
+                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(CTSpace.s),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onDismiss) {

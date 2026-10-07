@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -193,9 +194,9 @@ private fun ActionButton(action: SwipeAction, modifier: Modifier, onClick: () ->
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier.width(ACTION_WIDTH).padding(horizontal = 4.dp),
+            modifier = Modifier.width(ACTION_WIDTH).padding(horizontal = CTSpace.xs),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(CTSpace.xs),
         ) {
             Icon(action.icon, contentDescription = null, tint = action.tint, modifier = Modifier.size(CTIcon.nav))
             Text(

@@ -114,7 +114,7 @@ fun MessageInputView(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = CTLayout.edgePad, vertical = 4.dp),
+                .padding(horizontal = CTLayout.edgePad, vertical = CTSpace.xs),
             verticalAlignment = Alignment.Bottom,
         ) {
         if (onAttach != null) {
@@ -133,7 +133,7 @@ fun MessageInputView(
                 )
                 attachMenu?.invoke()
             }
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(CTSpace.s))
         }
         Row(
             modifier = Modifier
@@ -141,7 +141,7 @@ fun MessageInputView(
                 .heightIn(min = 44.dp)
                 // iOS `InputBar.cornerRadius`: half of one line's height, kept as the text grows.
                 .glassCapsule(cornerRadius = 22.dp)
-                .padding(start = 16.dp, end = 8.dp),
+                .padding(start = CTSpace.l, end = CTSpace.s),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val textStyle = CTFont.message(15).copy(color = CTColor.text)
@@ -179,7 +179,7 @@ fun MessageInputView(
                 },
             )
             if (value.isNotBlank() || attachments.isNotEmpty() || files.isNotEmpty()) {
-                Spacer(Modifier.width(4.dp))
+                Spacer(Modifier.width(CTSpace.xs))
                 Icon(
                     imageVector = Icons.Filled.ArrowCircleUp,
                     contentDescription = stringResource(R.string.chat_send),
@@ -190,10 +190,10 @@ fun MessageInputView(
                         .clickable(enabled = enabled, onClick = onSend),
                 )
             } else if (onMic != null && onVideoNote != null) {
-                Spacer(Modifier.width(4.dp))
+                Spacer(Modifier.width(CTSpace.xs))
                 MicModeButton(size = 28.dp, onVoice = onMic, onVideoNote = onVideoNote)
             } else if (onMic != null) {
-                Spacer(Modifier.width(4.dp))
+                Spacer(Modifier.width(CTSpace.xs))
                 Icon(
                     imageVector = Icons.Filled.Mic,
                     contentDescription = stringResource(R.string.voice_record),
@@ -235,11 +235,11 @@ private fun AttachmentStrip(uris: List<Uri>, files: List<Pair<Uri, String>>, onR
                     .height(80.dp)
                     .clip(RoundedCornerShape(CornerRadius.small))
                     .background(CTColor.bg)
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = CTSpace.m),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.AutoMirrored.Filled.InsertDriveFile, null, tint = CTColor.accent, modifier = Modifier.size(CTIcon.control))
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(CTSpace.s))
                 Text(
                     name,
                     style = CTFont.body,
@@ -253,10 +253,10 @@ private fun AttachmentStrip(uris: List<Uri>, files: List<Pair<Uri, String>>, onR
                     contentDescription = stringResource(R.string.remove),
                     tint = CTColor.textDim,
                     modifier = Modifier
-                        .padding(start = 8.dp)
+                        .padding(start = CTSpace.s)
                         .clip(CircleShape)
                         .clickable { onRemove(uri) }
-                        .padding(4.dp)
+                        .padding(CTSpace.xs)
                         .size(CTIcon.nav),
                 )
             }
@@ -277,7 +277,7 @@ private fun AttachmentStrip(uris: List<Uri>, files: List<Pair<Uri, String>>, onR
                     tint = CTColor.onMedia,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(4.dp)
+                        .padding(CTSpace.xs)
                         .size(CTIcon.navLg)
                         .clip(CircleShape)
                         .background(CTColor.mediaScrim)

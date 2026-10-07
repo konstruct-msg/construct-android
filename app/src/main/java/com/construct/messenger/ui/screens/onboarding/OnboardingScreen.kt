@@ -53,6 +53,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.HairlineBorder
 import com.construct.messenger.ui.theme.KonstructMessengerTheme
 import com.construct.messenger.viewmodel.AliasStatus
@@ -178,8 +179,8 @@ private fun IdentityFormContent(
             // iOS: `.frame(maxWidth: 360).padding(.horizontal, 24)` — the gutter sits outside
             // the cap, so on a phone the field is as wide as the button.
             modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 16.dp)
+                .padding(horizontal = CTSpace.xl)
+                .padding(bottom = CTSpace.l)
                 .widthIn(max = 360.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -196,10 +197,10 @@ private fun IdentityFormContent(
 
         Column(
             modifier = Modifier
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = CTSpace.xl)
                 .padding(bottom = 52.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(CTSpace.s),
         ) {
             CTButton(
                 label = stringResource(R.string.onboarding_init_action),
@@ -207,7 +208,7 @@ private fun IdentityFormContent(
                 enabled = canProceed,
                 modifier = Modifier
                     .widthIn(max = 360.dp)
-                    .padding(bottom = 12.dp),
+                    .padding(bottom = CTSpace.m),
             )
             Text(
                 text = stringResource(R.string.onboarding_already_have),
@@ -223,7 +224,7 @@ private fun IdentityFormContent(
                 val context = LocalContext.current
                 Row(
                     modifier = Modifier
-                        .padding(top = 12.dp)
+                        .padding(top = CTSpace.m)
                         .clickable { Diagnostics.share(context) },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -285,7 +286,7 @@ private fun RegistrationStageContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 32.dp),
+            .padding(horizontal = CTSpace.xxl),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(modifier = Modifier.weight(1f))
@@ -338,7 +339,7 @@ private fun RegistrationPreparingContent(step: RegistrationStep, collapsed: Bool
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(CTSpace.s),
         ) {
             Text(
                 text = stringResource(R.string.reg_establishing_trust),

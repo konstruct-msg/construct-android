@@ -82,7 +82,7 @@ fun SafetyNumberScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = EDGE, vertical = 16.dp),
+                modifier = Modifier.padding(horizontal = EDGE, vertical = CTSpace.l),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Tracked("> ${stringResource(R.string.safety_numbers_verify_title).uppercase()}", CTFont.ui(12, FontWeight.Bold), CTColor.accent)
@@ -110,7 +110,7 @@ fun SafetyNumberScreen(
                 }
             }
             Column(
-                modifier = Modifier.padding(horizontal = EDGE, vertical = 16.dp),
+                modifier = Modifier.padding(horizontal = EDGE, vertical = CTSpace.l),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Tracked(
@@ -152,7 +152,7 @@ private fun DeviceBlock(device: DeviceSafetyNumber, showDevice: Boolean) {
         return
     }
     Column(
-        modifier = Modifier.padding(16.dp),
+        modifier = Modifier.padding(CTSpace.l),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         number.split(" ").filter { it.isNotBlank() }.chunked(4).forEach { row ->

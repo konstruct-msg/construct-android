@@ -12,6 +12,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTSpace
 
 /**
  * System message rendered as terminal-style `> text`.
@@ -30,7 +31,7 @@ fun CTSystemMessage(
 ) {
     Row(
         modifier = modifier
-            .padding(horizontal = 12.dp, vertical = 2.dp)
+            .padding(horizontal = CTSpace.m, vertical = 2.dp)
     ) {
         Text(
             text = ">",

@@ -185,11 +185,11 @@ fun QrScannerScreen(
                             onScanned()
                         }
                     }
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                    .padding(horizontal = CTSpace.l, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.Default.ContentPaste, contentDescription = null, tint = CTColor.onMedia, modifier = Modifier.size(CTIcon.row))
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(CTSpace.s))
                 Text(stringResource(R.string.paste_invite_link), style = CTFont.ui(15), color = CTColor.onMedia)
             }
             if (emptyClipboard) {

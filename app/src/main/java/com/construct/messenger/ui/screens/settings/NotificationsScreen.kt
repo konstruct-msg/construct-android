@@ -60,6 +60,7 @@ import com.construct.messenger.ui.components.CTStatusBadge
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.NotificationsViewModel
 
 /** What the system allows: iOS `UNAuthorizationStatus`, reduced to what Android can tell. */
@@ -211,7 +212,7 @@ private fun NotificationsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                        .padding(horizontal = CTSpace.m, vertical = 10.dp),
                     verticalAlignment = Alignment.Top,
                 ) {
                     androidx.compose.material3.Icon(
@@ -247,7 +248,7 @@ private fun ToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+            .padding(horizontal = CTSpace.m, vertical = CTSpace.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // iOS sets these labels in textDim.
@@ -272,7 +273,7 @@ private fun Footer(text: String, color: Color = CTColor.textDim) {
         text = text,
         style = CTFont.caption,
         color = color,
-        modifier = Modifier.padding(horizontal = CTLayout.edgePad * 2, vertical = 8.dp),
+        modifier = Modifier.padding(horizontal = CTLayout.edgePad * 2, vertical = CTSpace.s),
     )
 }
 

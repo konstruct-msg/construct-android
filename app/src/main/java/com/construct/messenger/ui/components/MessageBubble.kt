@@ -149,7 +149,7 @@ fun MessageBubble(
     BoxWithConstraints(
         modifier = swipe
             .fillMaxWidth()
-            .padding(horizontal = 12.dp)
+            .padding(horizontal = CTSpace.m)
             .padding(top = 2.dp, bottom = if (isLastInGroup) 8.dp else 2.dp),
     ) {
         val maxBubble = minOf(360.dp, maxWidth * 0.7f)
@@ -273,7 +273,7 @@ fun MessageBubble(
                         // iOS: a double tap is the like — the first of the quick set.
                         onDoubleClick = { onReact(ReactionRules.LIKE) },
                     )
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = CTSpace.m, vertical = CTSpace.s),
             ) {
                 if (replyLabel != null) {
                     ReplyQuoteStrip(
@@ -305,8 +305,8 @@ fun MessageBubble(
             }
             if (isLastInGroup) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(horizontal = CTSpace.xs, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(CTSpace.xs),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (isOutgoing) DeliveryStatusIcon(status = message.deliveryStatus)
@@ -411,7 +411,7 @@ private fun BubbleFrame(
                 imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
                 contentDescription = null,
                 tint = if (selected) CTColor.accent else CTColor.textDim,
-                modifier = Modifier.padding(start = 12.dp).size(CTIcon.nav),
+                modifier = Modifier.padding(start = CTSpace.m).size(CTIcon.nav),
             )
             Box(Modifier.weight(1f)) {
                 content(Modifier)
@@ -452,7 +452,7 @@ private fun BubbleFrame(
                 tint = CTColor.accent,
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .padding(end = 8.dp)
+                    .padding(end = CTSpace.s)
                     .size(CTIcon.row)
                     .alpha((offset / commit).coerceIn(0f, 1f)),
             )
@@ -533,8 +533,8 @@ private fun formatMessageTime(timestamp: Long): String {
 @Composable
 private fun MessageBubblePreview() {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(CTSpace.s),
+        modifier = Modifier.padding(vertical = CTSpace.s),
     ) {
         MessageBubble(
             message = Message(
