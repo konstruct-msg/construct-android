@@ -107,6 +107,8 @@ fun MessageBubble(
     onDelete: () -> Unit = {},
     onJumpToReply: () -> Unit = {},
     onReact: (String) -> Unit = {},
+    /** The emoji heading the menu, in display order; the user's own once learned. */
+    reactionRow: List<String> = ReactionRules.QUICK_SET,
     onPickMoreReactions: () -> Unit = {},
     onQuoteReply: () -> Unit = {},
     onSelectMessages: () -> Unit = {},
@@ -325,7 +327,7 @@ fun MessageBubble(
                 expanded = menuExpanded,
                 onDismissRequest = onDismissMenu,
             ) {
-                ReactionQuickRow(current = message.myReaction, onPick = onReact, onPickMore = onPickMoreReactions)
+                ReactionQuickRow(row = reactionRow, current = message.myReaction, onPick = onReact, onPickMore = onPickMoreReactions)
                 HorizontalDivider(color = CTColor.noise, thickness = 0.5.dp)
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.reply), style = CTFont.ui(14), color = CTColor.text) },

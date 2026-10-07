@@ -91,6 +91,7 @@ fun ChatScreen(
     val recording by viewModel.recording.collectAsStateWithLifecycle()
     val playing by viewModel.playing.collectAsStateWithLifecycle()
     val videoNote by viewModel.videoNote.collectAsStateWithLifecycle()
+    val reactionRow by viewModel.reactionRow.collectAsStateWithLifecycle()
     val voiceLoading by viewModel.voiceLoading.collectAsStateWithLifecycle()
     val voiceUnavailable by viewModel.voiceUnavailable.collectAsStateWithLifecycle()
     val fileLoading by viewModel.fileLoading.collectAsStateWithLifecycle()
@@ -385,6 +386,7 @@ fun ChatScreen(
                         viewModel.react(message, emoji)
                         menuMessageId = null
                     },
+                    reactionRow = reactionRow,
                     onPickMoreReactions = {
                         reactingTo = message
                         menuMessageId = null
