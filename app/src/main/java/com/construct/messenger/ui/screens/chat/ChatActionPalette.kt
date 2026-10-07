@@ -325,7 +325,7 @@ fun ChatActionPaletteOverlay(host: ChatActionPaletteHost) {
 }
 
 /** Darker than iOS's 0.25: over a material blur that is enough, over a flat chat it was not. */
-private val SCRIM = Color.Black.copy(alpha = 0.45f)
+private val SCRIM = CTColor.scrim
 
 /** An item's top-left so that its circle is centred on ([x], [y]). */
 private fun centeredAt(x: Dp, y: Dp, item: Dp, density: Float) =

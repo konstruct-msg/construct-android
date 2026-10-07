@@ -302,7 +302,7 @@ private fun Controls(
                     .semantics { role = Role.Button },
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Filled.CallEnd, contentDescription = stringResource(R.string.call_end), tint = Color.White, modifier = Modifier.size(CTLayout.callIconSize))
+                Icon(Icons.Filled.CallEnd, contentDescription = stringResource(R.string.call_end), tint = CTColor.onFill, modifier = Modifier.size(CTLayout.callIconSize))
             }
         }
     }
@@ -327,7 +327,7 @@ private fun RoundControl(icon: ImageVector, label: String, off: Boolean, onClick
             },
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription = null, tint = if (off) Color.Black else CTColor.onMedia, modifier = Modifier.size(CTLayout.callIconSize))
+        Icon(icon, contentDescription = null, tint = if (off) CTColor.onMediaControlOn else CTColor.onMedia, modifier = Modifier.size(CTLayout.callIconSize))
     }
 }
 
@@ -392,7 +392,7 @@ private fun PreviewWindow(
     }
 }
 
-private val SCRIM = Color.Black.copy(alpha = 0.35f)
+private val SCRIM = CTColor.mediaGround.copy(alpha = 0.35f)
 private val PREVIEW_WIDTH = 104.dp
 private val PREVIEW_HEIGHT = 156.dp
 private val CONTROL_SPACING = 14.dp

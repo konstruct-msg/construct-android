@@ -135,13 +135,13 @@ fun TrimBar(
             }
         }
         // What is cut away, dimmed.
-        Box(Modifier.width(x(shown.first)).fillMaxHeight().background(Color.Black.copy(alpha = CUT_DIM)))
+        Box(Modifier.width(x(shown.first)).fillMaxHeight().background(CTColor.mediaGround.copy(alpha = CUT_DIM)))
         Box(
             Modifier
                 .offset(x = x(shown.last))
                 .width(maxWidth - x(shown.last))
                 .fillMaxHeight()
-                .background(Color.Black.copy(alpha = CUT_DIM)),
+                .background(CTColor.mediaGround.copy(alpha = CUT_DIM)),
         )
         // The kept stretch.
         Box(

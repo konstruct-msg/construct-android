@@ -116,7 +116,7 @@ fun QrScannerScreen(
     var notAnInvite by remember { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current
     var emptyClipboard by remember { mutableStateOf(false) }
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Box(modifier = Modifier.fillMaxSize().background(CTColor.mediaGround)) {
         if (granted) {
             ScannerViewport(
                 onNotAnInvite = { notAnInvite = true },
@@ -137,7 +137,7 @@ fun QrScannerScreen(
         Text(
             text = stringResource(R.string.action_cancel),
             style = CTFont.ui(17),
-            color = Color.White,
+            color = CTColor.onMedia,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .statusBarsPadding()
@@ -156,7 +156,7 @@ fun QrScannerScreen(
                 .padding(horizontal = CTSpace.l)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color.Black.copy(alpha = 0.7f))
+                .background(CTColor.mediaGround.copy(alpha = 0.7f))
                 .padding(CTSpace.l),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -164,18 +164,18 @@ fun QrScannerScreen(
             Text(
                 text = stringResource(R.string.scan_qr_code),
                 style = CTFont.ui(17, FontWeight.SemiBold),
-                color = Color.White,
+                color = CTColor.onMedia,
             )
             Text(
                 text = stringResource(if (notAnInvite) R.string.invalid_qr_code else R.string.scan_hint),
                 style = CTFont.ui(15),
-                color = if (notAnInvite) CTColor.danger else Color.White.copy(alpha = 0.8f),
+                color = if (notAnInvite) CTColor.danger else CTColor.onMediaDim,
                 textAlign = TextAlign.Center,
             )
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(Color.White.copy(alpha = 0.15f))
+                    .background(CTColor.mediaControl)
                     .clickable {
                         val text = clipboard.getText()?.text?.trim().orEmpty()
                         if (text.isEmpty()) {
@@ -188,9 +188,9 @@ fun QrScannerScreen(
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Default.ContentPaste, contentDescription = null, tint = Color.White, modifier = Modifier.size(CTIcon.row))
+                Icon(Icons.Default.ContentPaste, contentDescription = null, tint = CTColor.onMedia, modifier = Modifier.size(CTIcon.row))
                 Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.paste_invite_link), style = CTFont.ui(15), color = Color.White)
+                Text(stringResource(R.string.paste_invite_link), style = CTFont.ui(15), color = CTColor.onMedia)
             }
             if (emptyClipboard) {
                 Text(
@@ -274,7 +274,7 @@ private fun ScanFrame(modifier: Modifier) {
             addRect(Rect(0f, 0f, size.width, size.height))
             addRoundRect(RoundRect(left, top, left + side, top + side, CornerRadius(12.dp.toPx())))
         }
-        drawPath(cutout, Color.Black.copy(alpha = 0.6f))
+        drawPath(cutout, CTColor.mediaGround.copy(alpha = 0.6f))
         val len = 24.dp.toPx()
         val r = 4.dp.toPx()
         val right = left + side

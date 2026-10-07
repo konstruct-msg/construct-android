@@ -55,7 +55,7 @@ fun CTSearchBar(
             .fillMaxWidth()
             .clip(shape)
             .background(CTColor.bgMsg.copy(alpha = 0.72f))
-            .border(1.dp, Color.White.copy(alpha = 0.15f), shape)
+            .border(1.dp, CTColor.fieldStroke, shape)
             .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

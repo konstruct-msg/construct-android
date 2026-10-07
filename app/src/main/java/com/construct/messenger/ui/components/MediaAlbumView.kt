@@ -182,20 +182,20 @@ private fun Tile(
             Box(
                 Modifier
                     .size(54.dp)
-                    .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(CornerRadius.small)),
+                    .background(CTColor.mediaBadge, RoundedCornerShape(CornerRadius.small)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(CTIcon.overlay))
+                Icon(Icons.Filled.PlayArrow, null, tint = CTColor.onMedia, modifier = Modifier.size(CTIcon.overlay))
             }
             item.durationMs?.let { ms ->
                 Text(
                     text = formatDuration(ms),
                     style = CTFont.caption,
-                    color = Color.White,
+                    color = CTColor.onMedia,
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .padding(6.dp)
-                        .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(CornerRadius.badge))
+                        .background(CTColor.mediaBadge, RoundedCornerShape(CornerRadius.badge))
                         .padding(horizontal = 6.dp, vertical = 2.dp),
                 )
             }
@@ -217,7 +217,7 @@ private fun Tile(
                             Failure(stringResource(R.string.failed_to_load), onRetry = { attempt++ })
                         }
                     else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+                        CircularProgressIndicator(color = CTColor.onMedia, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
                     }
                 }
             }
@@ -225,7 +225,7 @@ private fun Tile(
         if (item.mediaId.startsWith(MediaWire.LOCAL_PREFIX)) {
             // Ours, still uploading (iOS `uploadingBadge`).
             CircularProgressIndicator(
-                color = Color.White,
+                color = CTColor.onMedia,
                 strokeWidth = 2.dp,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -305,7 +305,7 @@ fun MediaViewer(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
-        Box(Modifier.fillMaxSize().background(Color.Black)) {
+        Box(Modifier.fillMaxSize().background(CTColor.mediaGround)) {
             HorizontalPager(state = pager, modifier = Modifier.fillMaxSize()) { page ->
                 val item = photos[page]
                 if (item.isVideo) VideoPage(item, active = pager.currentPage == page, load = loadVideo, autoPlay = autoPlay) else ZoomableImage(item)
@@ -315,13 +315,13 @@ fun MediaViewer(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.close), tint = Color.White)
+                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.close), tint = CTColor.onMedia)
                 }
                 if (photos.size > 1) {
                     Text(
                         stringResource(R.string.media_viewer_counter, pager.currentPage + 1, photos.size),
                         style = CTFont.ui(14),
-                        color = Color.White,
+                        color = CTColor.onMedia,
                     )
                 }
                 Spacer(Modifier.weight(1f))
@@ -331,12 +331,12 @@ fun MediaViewer(
                 val current = photos[pager.currentPage]
                 if (onSave != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                     IconButton(onClick = { onSave(current) }) {
-                        Icon(Icons.Filled.Download, contentDescription = stringResource(R.string.media_save), tint = Color.White)
+                        Icon(Icons.Filled.Download, contentDescription = stringResource(R.string.media_save), tint = CTColor.onMedia)
                     }
                 }
                 if (onShare != null) {
                     IconButton(onClick = { onShare(current) }) {
-                        Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.media_share), tint = Color.White)
+                        Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.media_share), tint = CTColor.onMedia)
                     }
                 }
             }
@@ -388,15 +388,15 @@ private fun VideoPage(item: MediaItem, active: Boolean, load: suspend (MediaItem
         ) {
             preview?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
             when {
-                loading -> CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp)
-                failure != null -> Text(failure!!, style = CTFont.ui(14), color = Color.White)
+                loading -> CircularProgressIndicator(color = CTColor.onMedia, strokeWidth = 2.dp)
+                failure != null -> Text(failure!!, style = CTFont.ui(14), color = CTColor.onMedia)
                 else -> Icon(
                     Icons.Filled.PlayArrow,
                     null,
-                    tint = Color.White,
+                    tint = CTColor.onMedia,
                     modifier = Modifier
                         .size(CTIcon.hero)
-                        .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(CornerRadius.small)),
+                        .background(CTColor.mediaBadge, RoundedCornerShape(CornerRadius.small)),
                 )
             }
         }
@@ -444,7 +444,7 @@ private fun ZoomableImage(item: MediaItem) {
             .graphicsLayer(scaleX = scale, scaleY = scale, translationX = offset.x, translationY = offset.y),
         loading = {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp)
+                CircularProgressIndicator(color = CTColor.onMedia, strokeWidth = 2.dp)
             }
         },
     )

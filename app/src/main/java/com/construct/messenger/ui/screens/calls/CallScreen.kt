@@ -265,7 +265,7 @@ private fun RoundAction(icon: ImageVector, label: String, color: Color, onClick:
                 .semantics { contentDescription = label },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(CTLayout.callIconSize))
+            Icon(icon, contentDescription = null, tint = CTColor.onFill, modifier = Modifier.size(CTLayout.callIconSize))
         }
         if (showLabel) {
             Spacer(Modifier.height(6.dp))

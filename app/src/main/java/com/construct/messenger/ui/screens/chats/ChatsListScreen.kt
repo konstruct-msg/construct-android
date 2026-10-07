@@ -159,7 +159,7 @@ fun ChatsListScreen(
                             icon = Icons.Outlined.PushPin,
                             label = stringResource(if (chat.isPinned) R.string.chat_unpin else R.string.chat_pin),
                             color = CTColor.textDim,
-                            tint = Color.White,
+                            tint = CTColor.onFill,
                             onClick = { viewModel.togglePin(chat) },
                         ),
                         trailing = listOf(
@@ -167,7 +167,7 @@ fun ChatsListScreen(
                                 icon = Icons.Outlined.Delete,
                                 label = stringResource(R.string.delete),
                                 color = CTColor.danger,
-                                tint = Color.White,
+                                tint = CTColor.onFill,
                                 onClick = { viewModel.deleteChat(chat) },
                             ),
                             SwipeAction(
@@ -176,7 +176,7 @@ fun ChatsListScreen(
                                     if (chat.unreadCount > 0) R.string.chat_mark_read else R.string.chat_mark_unread,
                                 ),
                                 color = CTColor.accentDim,
-                                tint = Color.White,
+                                tint = CTColor.onFill,
                                 onClick = { viewModel.toggleUnread(chat) },
                             ),
                         ),

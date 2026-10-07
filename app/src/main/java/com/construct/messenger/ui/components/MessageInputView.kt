@@ -274,13 +274,13 @@ private fun AttachmentStrip(uris: List<Uri>, files: List<Pair<Uri, String>>, onR
                 Icon(
                     imageVector = Icons.Filled.Cancel,
                     contentDescription = stringResource(R.string.remove),
-                    tint = Color.White,
+                    tint = CTColor.onMedia,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(4.dp)
                         .size(CTIcon.navLg)
                         .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.45f))
+                        .background(CTColor.mediaScrim)
                         .clickable { onRemove(uri) },
                 )
             }

@@ -39,7 +39,7 @@ fun CTButton(
 ) {
     val fgColor = when {
         !enabled -> CTColor.textDim
-        isDestructive -> Color.White
+        isDestructive -> CTColor.onFill
         else -> CTColor.bg
     }
     val bgColor = when {

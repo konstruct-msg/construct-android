@@ -352,8 +352,12 @@ object CTLayout {
 }
 ```
 
-Поверх картинки (звонок, просмотр медиа) — не цвета темы, а `CTColor.onMedia`, `onMediaDim`,
-`mediaScrim`, `mediaControl`, `mediaControlOn`, `answer` (= iOS `Color.CT`).
+Поверх картинки (звонок, просмотр медиа, камера) — не цвета темы, а `CTColor.onMedia`, `onMediaDim`,
+`mediaScrim`, `mediaControl`, `mediaControlOn`, `answer` (= iOS `Color.CT`) и `mediaGround` (чёрная
+подложка медиа и камеры), `mediaBadge` (плашка на картинке, 55 %), `onMediaControlOn`. Ещё: `onFill`
+(значок на залитой accent/danger кнопке), `scrim` (затемнение поверх приложения), `delivered` (зелёная
+галочка), `qrPaper`/`qrInk`/`qrInkSoft` (QR всегда тёмный на белом), `fieldStroke` (рамка поиска).
+С 2026-10-07 вне `ui/theme` цвет-литерал один — цвет контура в `TabIcons`, который перекрывает tint.
 
 `scripts/check_ui_tokens.sh` (часть `verify.sh`, значит и CI) считает размеры, кегли, системный
 шрифт и цвета, заданные мимо токенов, и падает, если счётчик вырос. Миграция, которая его понижает,

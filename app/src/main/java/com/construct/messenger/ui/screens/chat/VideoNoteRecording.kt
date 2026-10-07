@@ -115,7 +115,7 @@ fun VideoNoteRecordingOverlay(onSend: (VideoNoteTake) -> Unit, onClose: () -> Un
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = RECORDING_DIM))
+                .background(CTColor.mediaGround.copy(alpha = RECORDING_DIM))
                 // Nothing behind is touchable while recording.
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -127,14 +127,14 @@ fun VideoNoteRecordingOverlay(onSend: (VideoNoteTake) -> Unit, onClose: () -> Un
                         .width(width)
                         .aspectRatio(3f / 4f)
                         .clip(RoundedCornerShape(CornerRadius.control))
-                        .background(Color.Black),
+                        .background(CTColor.mediaGround),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (phase == VideoNoteRecorder.Phase.FAILED) {
                         Text(
                             stringResource(R.string.video_note_camera_unavailable),
                             style = CTFont.body,
-                            color = Color.White,
+                            color = CTColor.onMedia,
                             modifier = Modifier.padding(16.dp),
                         )
                     } else {

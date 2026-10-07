@@ -522,7 +522,7 @@ private fun DeliveryStatusIcon(status: DeliveryStatus) {
 private val REACTION_OVERHANG = 18.dp
 
 /** SwiftUI `.green` (dark variant 0x30D158) — iOS's "delivered" colour. */
-private val SYSTEM_GREEN = Color(0xFF30D158)
+private val SYSTEM_GREEN = CTColor.delivered
 
 private fun formatMessageTime(timestamp: Long): String {
     val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())

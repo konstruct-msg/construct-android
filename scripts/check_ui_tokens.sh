@@ -28,7 +28,7 @@ CHECKS=(
   "text size past CTFont — use a role or CTFont.ui(size)|fontSize *= *[0-9]|5"
   "fixed-size text helper — use a CTFont role|\bct(Regular|Medium|SemiBold|Bold|Message)\(|0"
   "system face — chrome is JetBrains Mono; message text is CTFont.message|FontFamily\.(Default|Monospace|SansSerif|Serif)|1"
-  "colour literal — use CTColor|Color\.(White|Black|Gray|Red|Green|Blue|Yellow|LightGray|DarkGray)\b|Color\(0x|73"
+  "colour literal — use CTColor|Color\.(White|Black|Gray|Red|Green|Blue|Yellow|LightGray|DarkGray)\b|Color\(0x|1"
 )
 
 failed=0
