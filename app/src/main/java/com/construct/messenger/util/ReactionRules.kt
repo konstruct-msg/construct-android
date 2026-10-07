@@ -15,9 +15,12 @@ import java.text.BreakIterator
  */
 object ReactionRules {
 
-    /** Instagram DM quick set, in display order. The first is the double-tap like. */
+    /**
+     * Instagram DM quick set, in display order: the menu row before it learns ([ReactionQuickSet]).
+     * The first is the double-tap like, which stays ❤️ whatever the row becomes.
+     */
     val QUICK_SET = listOf("❤️", "😂", "😮", "😢", "😠", "🔥")
-    val LIKE: String get() = QUICK_SET.first()
+    const val LIKE = "❤️"
 
     const val ORPHAN_TTL_MS = 7L * 24 * 60 * 60 * 1000
     private const val MAX_EMOJI_UTF8_BYTES = 32

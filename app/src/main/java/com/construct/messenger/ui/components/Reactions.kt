@@ -45,7 +45,8 @@ import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.util.ReactionRules
 
 /**
- * The quick set and a plus. **Canon:** iOS `MessageReactionCapsule` — six emoji, a dot under the
+ * The quick set and a plus. **Canon:** iOS `MessageReactionCapsule` — six emoji ([row]: the
+ * popular set at first, then what the user reacts with, `ReactionQuickSet`), a dot under the
  * one already set (tapping it again takes it off), the plus opens the full picker.
  *
  * On iOS the capsule opens from the menu's React item; here it heads the long-press menu itself —
@@ -53,7 +54,7 @@ import com.construct.messenger.util.ReactionRules
  * messengers offer it.
  */
 @Composable
-fun ReactionQuickRow(current: String?, onPick: (String) -> Unit, onPickMore: () -> Unit) {
+fun ReactionQuickRow(row: List<String>, current: String?, onPick: (String) -> Unit, onPickMore: () -> Unit) {
     val remove = stringResource(R.string.reaction_remove)
     val more = stringResource(R.string.reaction_pick_more)
     Row(
@@ -61,7 +62,7 @@ fun ReactionQuickRow(current: String?, onPick: (String) -> Unit, onPickMore: () 
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ReactionRules.QUICK_SET.forEach { emoji ->
+        row.forEach { emoji ->
             Column(
                 modifier = Modifier
                     .size(36.dp)

@@ -17,9 +17,11 @@ import com.construct.messenger.data.model.ContactTrustAlert
 import com.construct.messenger.data.model.KtStatus
 import com.construct.messenger.data.repository.ContactsRepository
 import com.construct.messenger.data.repository.MessagesRepository
+import com.construct.messenger.data.repository.ReactionQuickSetRepository
 import com.construct.messenger.domain.usecase.SendOutcome
 import com.construct.messenger.security.SecurityNotices
 import com.construct.messenger.util.DisplayNameGenerator
+import com.construct.messenger.util.ReactionRules
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,12 +73,16 @@ class ChatViewModel @Inject constructor(
     private val recorder: VoiceRecorder,
     private val player: VoicePlayer,
     private val videoNotes: VideoNotePlayback,
+    private val quickReactions: ReactionQuickSetRepository,
 ) : ViewModel() {
     /** The voice note being recorded or waiting to be sent; the composer shows its bar. */
     val recording: StateFlow<VoiceRecorder.State> = recorder.state
 
     /** The voice note playing, anywhere in this chat. */
     val playing: StateFlow<VoicePlayer.Playing?> = player.state
+
+    /** The emoji heading the message menu, learned from this device's reactions (TODO 117). */
+    val reactionRow: StateFlow<List<String>> get() = quickReactions.slots
 
     /** The video note expanded in place and playing with sound, if any. */
     val videoNote: StateFlow<VideoNotePlayback.State> = videoNotes.state
@@ -232,6 +238,10 @@ class ChatViewModel @Inject constructor(
      * badge shows at once (iOS `sendReaction`).
      */
     fun react(message: Message, emoji: String) {
+        // What the menu row learns from. Taking a reaction off is not a use of it.
+        if (ReactionRules.localToggle(message.myReaction, emoji) is ReactionRules.Incoming.Add) {
+            quickReactions.record(emoji)
+        }
         viewModelScope.launch {
             if (!messagesRepository.react(contactId, message.id, emoji)) _reactionFailed.tryEmit(Unit)
         }
