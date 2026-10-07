@@ -340,9 +340,13 @@ private fun ActionsSection(
         ActionRow(label = stringResource(R.string.contact_open_chat), color = CTColor.accent, onClick = onOpenChat)
         RowDivider()
     }
-    // iOS: the voice call row, accent, only while no call is on.
+    // iOS: the voice and video call rows, accent, only while no call is on.
     com.construct.messenger.ui.screens.calls.rememberCallAction(ui.userId)?.let { call ->
         ActionRow(label = stringResource(R.string.profile_call_voice), color = CTColor.accent, onClick = call)
+        RowDivider()
+    }
+    com.construct.messenger.ui.screens.calls.rememberCallAction(ui.userId, video = true)?.let { call ->
+        ActionRow(label = stringResource(R.string.profile_call_video), color = CTColor.accent, onClick = call)
         RowDivider()
     }
     // iOS: accent to share, plain to stop; the row waits while the share is in flight.

@@ -469,6 +469,7 @@
     <string name="profile_user_id">id пользователя</string>
     <string name="profile_actions">Действия</string>
     <string name="profile_call_voice">голосовой звонок</string>
+    <string name="profile_call_video">видеозвонок</string>
     <string name="share_my_profile">Поделиться моим профилем</string>
     <string name="stop_sharing_profile">Прекратить делиться профилем</string>
     <string name="profile_shared_successfully">Профиль успешно отправлен</string>
