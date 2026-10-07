@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTSpace
 
 /**
  * Connection state for the chat-list header indicator.
@@ -107,7 +108,7 @@ private enum class DotState { CONNECTING, CONNECTED, DISCONNECTED, PAUSED }
 @Preview(backgroundColor = 0xFF090909, showBackground = true, widthDp = 120)
 @Composable
 private fun ConnectionStatusIndicatorPreview() {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(12.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(CTSpace.m), modifier = Modifier.padding(CTSpace.m)) {
         ConnectionStatusIndicator(status = ConnectionStatus.CONNECTED)
         ConnectionStatusIndicator(status = ConnectionStatus.CONNECTING)
         ConnectionStatusIndicator(status = ConnectionStatus.DISCONNECTED)

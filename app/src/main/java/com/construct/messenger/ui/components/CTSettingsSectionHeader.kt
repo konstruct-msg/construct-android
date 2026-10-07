@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTSpace
 
 /**
  * Section header rendered as `> TITLE`.
@@ -29,8 +30,8 @@ fun CTSettingsSectionHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp)
-            .padding(top = 16.dp, bottom = 4.dp),
+            .padding(horizontal = CTSpace.m)
+            .padding(top = CTSpace.l, bottom = CTSpace.xs),
     ) {
         Text(text = ">", style = CTFont.badge, color = color)
         Spacer(Modifier.width(6.dp))

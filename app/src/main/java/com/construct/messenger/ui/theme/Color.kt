@@ -128,4 +128,29 @@ object CTColor {
     val mediaControlOn = Color.White
     /** The answer button of an incoming call: the platform's green, a control by convention. */
     val answer = Color(0xFF30D158)
+
+    /** The ground behind full-screen media and the camera: the viewer, the QR scanner, the crop, the recording. */
+    val mediaGround = Color.Black
+    /** A chip on a picture — a duration, the play and download pills (iOS writes `.black.opacity(0.55)`). */
+    val mediaBadge = Color.Black.copy(alpha = 0.55f)
+    /** The glyph on a lit control over media — muted, camera off: dark on [mediaControlOn]. */
+    val onMediaControlOn = Color.Black
+
+    /** Text and glyphs on a filled accent or danger control: swipe actions, a destructive button, call discs. */
+    val onFill = Color.White
+
+    /** The dim laid over the app while a palette has the screen. Not over media: that is [mediaScrim]. */
+    val scrim = Color.Black.copy(alpha = 0.45f)
+
+    /** The delivered checkmark: the platform green, as iOS `.green`. Status only. */
+    val delivered = Color(0xFF30D158)
+
+    /** A QR code stays dark on white whatever the theme — that is what scanners read. */
+    val qrPaper = Color.White
+    val qrInk = Color.Black
+    /** The far end of the logo's gradient in the middle of a QR code. */
+    val qrInkSoft = Color(0xFF4A4A4A)
+
+    /** The search field's hairline. */
+    val fieldStroke = Color.White.copy(alpha = 0.15f)
 }

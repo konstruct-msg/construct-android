@@ -49,6 +49,7 @@ import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.viewmodel.DraftsViewModel
 import java.util.Date
@@ -100,10 +101,10 @@ private fun DraftsScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(CTSpace.l),
+            verticalArrangement = Arrangement.spacedBy(CTSpace.l),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(CTSpace.s)) {
                 BasicTextField(
                     value = text,
                     onValueChange = { text = it },
@@ -116,7 +117,7 @@ private fun DraftsScreen(
                         .clip(shape)
                         .background(CTColor.bgMsg)
                         .border(1.dp, CTColor.noise, shape)
-                        .padding(8.dp),
+                        .padding(CTSpace.s),
                 )
                 Box(
                     modifier = Modifier
@@ -179,7 +180,7 @@ private fun DraftRow(draft: Draft, onDelete: () -> Unit) {
                 modifier = Modifier
                     .fillMaxSize()
                     .background(CTColor.danger)
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = CTSpace.l),
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 Text(text = stringResource(R.string.delete), style = CTFont.body, color = CTColor.outMsgTextDark)

@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTSpace
 
 /**
  * Canonical status indicator.
@@ -78,8 +79,8 @@ fun CTStatusBadge(
 @Composable
 private fun CTStatusBadgePreview() {
     Row(
-        modifier = Modifier.padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = Modifier.padding(CTSpace.m),
+        horizontalArrangement = Arrangement.spacedBy(CTSpace.s)
     ) {
         CTStatusBadge(CTStatus.OK)
         CTStatusBadge(CTStatus.ON)

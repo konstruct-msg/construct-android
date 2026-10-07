@@ -39,6 +39,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.HairlineBorder
 
@@ -107,7 +108,7 @@ private fun ChoiceCard(icon: ImageVector, title: String, subtitle: String, onCli
             .background(CTColor.bgMsg)
             .border(HairlineBorder, CTColor.noise, shape)
             .clickable(onClick = onClick)
-            .padding(horizontal = CTLayout.edgePad, vertical = 16.dp),
+            .padding(horizontal = CTLayout.edgePad, vertical = CTSpace.l),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(CTLayout.chromeGap),
     ) {

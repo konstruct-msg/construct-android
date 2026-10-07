@@ -9,6 +9,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CTSymbol
 
 /** Separator weight — thin (`- - -`) or thick (`= = =`). */
@@ -33,6 +34,6 @@ fun CTSep(
         maxLines = 1,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = CTSpace.m),
     )
 }

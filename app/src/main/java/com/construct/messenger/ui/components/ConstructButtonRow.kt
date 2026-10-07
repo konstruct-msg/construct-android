@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 
 /**
  * Button row with a leading icon, title and optional trailing chevron.
@@ -48,13 +49,13 @@ fun ConstructButtonRow(
     Row(
         modifier = modifier
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 9.dp),
+            .padding(horizontal = CTSpace.m, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
                 .width(28.dp)
-                .padding(end = 4.dp),
+                .padding(end = CTSpace.xs),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -71,7 +72,7 @@ fun ConstructButtonRow(
             modifier = Modifier.weight(1f),
         )
         if (showChevron) {
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(CTSpace.s))
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
@@ -86,8 +87,8 @@ fun ConstructButtonRow(
 @Composable
 private fun ConstructButtonRowPreview() {
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(CTSpace.xs),
+        modifier = Modifier.padding(vertical = CTSpace.s),
     ) {
         CTSettingsSectionHeader(title = "Actions")
         CTSectionGroup {

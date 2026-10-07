@@ -77,6 +77,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.util.BlurHash
 import com.construct.messenger.util.MediaWire
@@ -221,21 +222,21 @@ fun VideoNoteBubble(
         }
         when {
             uploading || (state == NoteLoad.LOADING && bytes == null) ->
-                CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+                CircularProgressIndicator(color = CTColor.onMedia, strokeWidth = 2.dp, modifier = Modifier.size(CTIcon.navLg))
             state == NoteLoad.UNAVAILABLE ->
                 Icon(Icons.Filled.Warning, stringResource(R.string.media_unavailable), tint = CTColor.danger, modifier = Modifier.size(CTIcon.overlay))
             state == NoteLoad.FAILED ->
                 Icon(
                     Icons.Filled.Download,
                     stringResource(R.string.retry),
-                    tint = Color.White,
+                    tint = CTColor.onMedia,
                     modifier = Modifier
                         .size(CTIcon.hero)
-                        .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(CornerRadius.small))
-                        .padding(8.dp),
+                        .background(CTColor.mediaBadge, RoundedCornerShape(CornerRadius.small))
+                        .padding(CTSpace.s),
                 )
             playback.expanded && playback.paused ->
-                Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(CTIcon.overlay))
+                Icon(Icons.Filled.PlayArrow, null, tint = CTColor.onMedia, modifier = Modifier.size(CTIcon.overlay))
             else -> Unit
         }
         if (playback.expanded) {
@@ -250,10 +251,10 @@ fun VideoNoteBubble(
                 Icon(
                     Icons.Filled.OpenInFull,
                     fullScreenLabel,
-                    tint = Color.White,
+                    tint = CTColor.onMedia,
                     modifier = Modifier
                         .size(CTIcon.overlay)
-                        .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                        .background(CTColor.mediaScrim, CircleShape)
                         .padding(7.dp),
                 )
             }
@@ -271,16 +272,16 @@ fun VideoNoteBubble(
                     Text(
                         VideoNotePlayback.rateLabel(playback.rate),
                         style = CTFont.caption,
-                        color = Color.White,
+                        color = CTColor.onMedia,
                         modifier = Modifier
-                            .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(CornerRadius.badge))
+                            .background(CTColor.mediaBadge, RoundedCornerShape(CornerRadius.badge))
                             .padding(horizontal = 6.dp, vertical = 3.dp),
                     )
                 }
                 LinearProgressIndicator(
                     progress = { playback.progress },
-                    color = Color.White,
-                    trackColor = Color.White.copy(alpha = 0.3f),
+                    color = CTColor.onMedia,
+                    trackColor = CTColor.onMedia.copy(alpha = 0.3f),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = CTLayout.inlinePad, end = CTLayout.inlinePad, bottom = CTLayout.inlinePad),
@@ -292,19 +293,19 @@ fun VideoNoteBubble(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(6.dp)
-                    .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(CornerRadius.badge))
+                    .background(CTColor.mediaBadge, RoundedCornerShape(CornerRadius.badge))
                     .padding(horizontal = 6.dp, vertical = 3.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(CTSpace.xs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.VolumeOff,
                     stringResource(R.string.video_note_muted),
-                    tint = Color.White,
+                    tint = CTColor.onMedia,
                     modifier = Modifier.size(CTIcon.caption),
                 )
                 item.durationMs?.takeIf { it > 0 }?.let {
-                    Text(VideoNoteLayout.duration(it), style = CTFont.caption, color = Color.White)
+                    Text(VideoNoteLayout.duration(it), style = CTFont.caption, color = CTColor.onMedia)
                 }
             }
         }

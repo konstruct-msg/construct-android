@@ -69,6 +69,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.SettingsViewModel
 
 /** Callbacks for the rows that open another app screen. */
@@ -341,7 +342,7 @@ private fun RecoveryBanner(held: HeldPhrase, onSetUp: () -> Unit, onDismiss: () 
             modifier = Modifier.size(CTIcon.nav),
         )
         Spacer(Modifier.width(10.dp))
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(CTSpace.xs)) {
             Text(
                 text = stringResource(title).uppercase(),
                 style = CTFont.badge,
@@ -355,7 +356,7 @@ private fun RecoveryBanner(held: HeldPhrase, onSetUp: () -> Unit, onDismiss: () 
             // Lost: there is nothing left to set up, only the fact to state.
             if (held != HeldPhrase.LOST) {
                 Row(
-                    modifier = Modifier.clickable(onClick = onSetUp).padding(vertical = 4.dp),
+                    modifier = Modifier.clickable(onClick = onSetUp).padding(vertical = CTSpace.xs),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(text = stringResource(R.string.recovery_banner_action), style = CTFont.badge, color = CTColor.accent)

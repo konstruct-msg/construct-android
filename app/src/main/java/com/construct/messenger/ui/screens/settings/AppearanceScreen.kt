@@ -50,6 +50,7 @@ import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTFontFamily
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.AppearanceViewModel
 
 @Composable
@@ -163,7 +164,7 @@ private fun <T> ChoiceSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onSelect(option) }
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                    .padding(horizontal = CTSpace.l, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {

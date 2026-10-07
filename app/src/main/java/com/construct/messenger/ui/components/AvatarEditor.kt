@@ -58,6 +58,7 @@ import coil.request.SuccessResult
 import com.construct.messenger.R
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTSpace
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -81,10 +82,10 @@ fun AvatarCropDialog(uri: Uri, onConfirm: (Bitmap) -> Unit, onCancel: () -> Unit
         onDismissRequest = onCancel,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
-        BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
+        BoxWithConstraints(Modifier.fillMaxSize().background(CTColor.mediaGround)) {
             val bitmap = picture
             if (bitmap == null) {
-                CircularProgressIndicator(color = Color.White, modifier = Modifier.align(Alignment.Center))
+                CircularProgressIndicator(color = CTColor.onMedia, modifier = Modifier.align(Alignment.Center))
                 return@BoxWithConstraints
             }
             val boxW = constraints.maxWidth.toFloat()
@@ -122,14 +123,14 @@ fun AvatarCropDialog(uri: Uri, onConfirm: (Bitmap) -> Unit, onCancel: () -> Unit
                 )
                 val left = (boxW - crop) / 2
                 val top = (boxH - crop) / 2
-                val scrim = Color.Black.copy(alpha = 0.55f)
+                val scrim = CTColor.mediaGround.copy(alpha = 0.55f)
                 drawRect(scrim, Offset.Zero, Size(boxW, top))
                 drawRect(scrim, Offset(0f, top + crop), Size(boxW, boxH - top - crop))
                 drawRect(scrim, Offset(0f, top), Size(left, crop))
                 drawRect(scrim, Offset(left + crop, top), Size(boxW - left - crop, crop))
-                drawRect(Color.White.copy(alpha = 0.9f), Offset(left, top), Size(crop, crop), style = Stroke(1.5.dp.toPx()))
+                drawRect(CTColor.onMedia.copy(alpha = 0.9f), Offset(left, top), Size(crop, crop), style = Stroke(1.5.dp.toPx()))
                 val thin = 0.5.dp.toPx()
-                val grid = Color.White.copy(alpha = 0.25f)
+                val grid = CTColor.onMedia.copy(alpha = 0.25f)
                 for (i in 1..2) {
                     val d = crop * i / 3
                     drawLine(grid, Offset(left + d, top), Offset(left + d, top + crop), thin)
@@ -140,11 +141,11 @@ fun AvatarCropDialog(uri: Uri, onConfirm: (Bitmap) -> Unit, onCancel: () -> Unit
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(start = 24.dp, end = 24.dp, bottom = 40.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(start = CTSpace.xl, end = CTSpace.xl, bottom = 40.dp),
+                horizontalArrangement = Arrangement.spacedBy(CTSpace.s),
             ) {
-                CropButton(stringResource(R.string.action_cancel), Color.White.copy(alpha = 0.15f), Color.White, onCancel)
-                CropButton(stringResource(R.string.crop_use_photo), Color.White, Color.Black) {
+                CropButton(stringResource(R.string.action_cancel), CTColor.mediaControl, CTColor.onMedia, onCancel)
+                CropButton(stringResource(R.string.crop_use_photo), CTColor.mediaControlOn, CTColor.onMediaControlOn) {
                     // The square in the picture's own pixels: iOS `cropImage`.
                     val w = fittedW * scale
                     val h = fittedH * scale
@@ -185,7 +186,7 @@ fun AvatarViewerDialog(jpeg: ByteArray, onChange: () -> Unit, onDismiss: () -> U
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
-        Box(Modifier.fillMaxSize().background(Color.Black)) {
+        Box(Modifier.fillMaxSize().background(CTColor.mediaGround)) {
             if (image != null) {
                 Image(
                     bitmap = image,
@@ -195,11 +196,11 @@ fun AvatarViewerDialog(jpeg: ByteArray, onChange: () -> Unit, onDismiss: () -> U
                 )
             }
             Row(
-                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp),
+                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(CTSpace.s),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.close), tint = Color.White)
+                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.close), tint = CTColor.onMedia)
                 }
                 Box(Modifier.weight(1f))
                 TextButton(onClick = onChange) {

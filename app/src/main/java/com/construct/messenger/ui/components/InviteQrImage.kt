@@ -65,7 +65,7 @@ fun InviteQrImage(
     Box(
         modifier = modifier
             .clip(card)
-            .background(Color.White)
+            .background(CTColor.qrPaper)
             .border(1.dp, CTColor.noise, card)
             .padding(QR_PADDING),
         contentAlignment = Alignment.Center,
@@ -79,14 +79,14 @@ fun InviteQrImage(
         Icon(
             painter = painterResource(R.drawable.ic_logo),
             contentDescription = null,
-            tint = Color.Black,
+            tint = CTColor.qrInk,
             modifier = Modifier
                 .size(size * LOGO_FRACTION)
                 // iOS draws the light-trait logo: black easing to graphite across the mark.
                 .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                 .drawWithContent {
                     drawContent()
-                    drawRect(Brush.linearGradient(listOf(Color.Black, LOGO_GRAPHITE)), blendMode = BlendMode.SrcIn)
+                    drawRect(Brush.linearGradient(listOf(CTColor.qrInk, CTColor.qrInkSoft)), blendMode = BlendMode.SrcIn)
                 },
         )
     }
@@ -103,7 +103,6 @@ private fun logoPatch(modules: Int): IntRange {
 private val QR_PADDING = 20.dp
 private const val LOGO_FRACTION = 0.22f
 private const val LOGO_PADDING_FRACTION = 0.01f
-private val LOGO_GRAPHITE = Color(0xFF4A4A4A)
 
 /** iOS `QRCodeSize.standard(in:)`: the code is 80 % of the width, at most 350; the card adds 20 a side. */
 fun inviteQrSize(containerWidth: Dp): Dp = minOf(containerWidth * 0.8f, 350.dp)

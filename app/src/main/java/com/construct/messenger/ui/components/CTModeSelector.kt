@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTSpace
 
 /**
  * CT-styled segmented control for selecting between modes.
@@ -71,7 +72,7 @@ fun <T> CTModeSelector(
                     .fillMaxWidth()
                     .background(if (isSelected) CTColor.accent else Color.Transparent)
                     .clickable { onSelection(option) }
-                    .padding(horizontal = 4.dp),
+                    .padding(horizontal = CTSpace.xs),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -96,8 +97,8 @@ private enum class PreviewMode {
 @Composable
 private fun CTModeSelectorPreview() {
     Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(CTSpace.l),
+        modifier = Modifier.padding(CTSpace.l),
     ) {
         CTModeSelector(
             selected = PreviewMode.AUTO,

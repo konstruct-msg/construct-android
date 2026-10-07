@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 
 /**
  * Visual role that controls the fill, border, and foreground color of a row.
@@ -85,7 +86,7 @@ fun ConstructActionRow(
             .clickable(enabled = !isDisabled, onClick = onClick)
             .background(role.fill())
             .border(width = 1.dp, color = role.border(), shape = shape)
-            .padding(horizontal = 16.dp, vertical = 13.dp),
+            .padding(horizontal = CTSpace.l, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -94,20 +95,20 @@ fun ConstructActionRow(
             tint = role.foreground(),
             modifier = Modifier.size(CTIcon.nav),
         )
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(CTSpace.m))
         Text(
             text = title,
             style = CTFont.ui(16, FontWeight.Bold),
             color = role.foreground(),
             modifier = Modifier.weight(1f),
         )
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(CTSpace.m))
         when {
             isLoading -> {
                 CircularProgressIndicator(
                     color = role.foreground(),
                     strokeWidth = 2.dp,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(CTIcon.row),
                 )
             }
 
@@ -162,8 +163,8 @@ private fun ConstructRowRole.foreground(): Color = when (this) {
 @Composable
 private fun ConstructActionRowPreview() {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(CTSpace.s),
+        modifier = Modifier.padding(CTSpace.l),
     ) {
         ConstructActionRow(
             icon = Icons.Default.Bolt,

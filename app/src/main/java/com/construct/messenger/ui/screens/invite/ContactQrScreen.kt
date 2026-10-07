@@ -254,7 +254,7 @@ private fun QrPlaceholder(size: Dp, failed: Boolean) {
             CircularProgressIndicator(
                 color = CTColor.textDim,
                 strokeWidth = 2.dp,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(CTIcon.nav),
             )
         }
     }

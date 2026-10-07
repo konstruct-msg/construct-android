@@ -68,7 +68,7 @@ fun SynapsScreen(
         CTSearchBar(
             query = uiState.query,
             onQueryChange = viewModel::onQueryChange,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = CTSpace.m, vertical = CTSpace.s),
         )
 
         Column(
@@ -152,11 +152,11 @@ private fun ContactRow(contact: Contact, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = CTSpace.m, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CTAvatar(userId = contact.userId, displayName = contact.displayName, image = rememberAvatar(contact.avatar), size = 44.dp)
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(CTSpace.m))
         Text(
             text = title,
             style = CTFont.ui(14),

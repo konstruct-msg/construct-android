@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 
 /**
  * One row of a settings section: `[icon] label … value | status`.
@@ -60,14 +61,14 @@ fun CTSettingsRow(
 
     Row(
         modifier = modifier
-            .padding(horizontal = 12.dp, vertical = 9.dp),
+            .padding(horizontal = CTSpace.m, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
             Box(
                 modifier = Modifier
                     .width(28.dp)
-                    .padding(end = 4.dp),
+                    .padding(end = CTSpace.xs),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -84,7 +85,7 @@ fun CTSettingsRow(
             color = primaryColor,
             modifier = Modifier.weight(1f),
         )
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(CTSpace.s))
         if (value.isNotEmpty()) {
             Text(
                 text = value,
@@ -117,8 +118,8 @@ fun CTSettingsRow(
 @Composable
 private fun SettingsSectionPreview() {
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(CTSpace.xs),
+        modifier = Modifier.padding(vertical = CTSpace.s),
     ) {
         CTSettingsSectionHeader(title = "Identity")
         CTSectionGroup {

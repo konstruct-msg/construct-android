@@ -42,6 +42,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.util.ReactionRules
 
 /**
@@ -58,7 +59,7 @@ fun ReactionQuickRow(current: String?, onPick: (String) -> Unit, onPickMore: () 
     val more = stringResource(R.string.reaction_pick_more)
     Row(
         modifier = Modifier.padding(horizontal = CTLayout.inlinePad, vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(CTSpace.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ReactionRules.QUICK_SET.forEach { emoji ->
@@ -111,7 +112,7 @@ fun ReactionBadgeRow(reactions: List<MessageReaction>, onTap: (String) -> Unit, 
                 modifier = Modifier
                     .clickable { onTap(reaction.emoji) }
                     .semantics { contentDescription = label }
-                    .padding(horizontal = 6.dp, vertical = 4.dp),
+                    .padding(horizontal = 6.dp, vertical = CTSpace.xs),
             )
         }
     }

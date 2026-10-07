@@ -63,6 +63,7 @@ import com.construct.messenger.ui.components.MicSwitch
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -299,7 +300,7 @@ fun ChatActionPaletteOverlay(host: ChatActionPaletteHost) {
                 ) {
                     Icon(action.icon, contentDescription = null, tint = if (isSelected) CTColor.bg else CTColor.accent, modifier = Modifier.size(CTLayout.navIconSize))
                 }
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(CTSpace.xs))
                 Text(
                     stringResource(action.label),
                     style = CTFont.caption,
@@ -325,7 +326,7 @@ fun ChatActionPaletteOverlay(host: ChatActionPaletteHost) {
 }
 
 /** Darker than iOS's 0.25: over a material blur that is enough, over a flat chat it was not. */
-private val SCRIM = Color.Black.copy(alpha = 0.45f)
+private val SCRIM = CTColor.scrim
 
 /** An item's top-left so that its circle is centred on ([x], [y]). */
 private fun centeredAt(x: Dp, y: Dp, item: Dp, density: Float) =

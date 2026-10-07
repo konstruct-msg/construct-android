@@ -71,6 +71,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.AccountEvent
 import com.construct.messenger.viewmodel.AccountUiState
 import com.construct.messenger.viewmodel.AccountViewModel
@@ -230,7 +231,7 @@ private fun AccountContent(
                     .padding(vertical = 28.dp)
                     .alpha(if (ui.editing) 0.4f else 1f),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(CTSpace.m),
             ) {
                 CTAvatar(
                     userId = account?.userId.orEmpty(),
@@ -348,7 +349,7 @@ private fun AccountContent(
                 text = stringResource(R.string.changes_encrypted_footer),
                 style = CTFont.caption,
                 color = CTColor.accent.copy(alpha = 0.6f),
-                modifier = Modifier.padding(horizontal = ROW_H_PAD, vertical = 16.dp),
+                modifier = Modifier.padding(horizontal = ROW_H_PAD, vertical = CTSpace.l),
             )
         }
     }
@@ -407,7 +408,7 @@ private fun UsernameRow(ui: AccountUiState, onDraftChange: (String) -> Unit, onE
             // "Edit" means "type now": the field takes focus and the keyboard comes up.
             val focus = remember { FocusRequester() }
             LaunchedEffect(Unit) { focus.requestFocus() }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(CTSpace.s))
             CTTextField(
                 placeholder = stringResource(R.string.account_username),
                 value = ui.draftUsername,
@@ -417,7 +418,7 @@ private fun UsernameRow(ui: AccountUiState, onDraftChange: (String) -> Unit, onE
         }
         val error = ui.usernameError
         if (error != null || !ui.editing) {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(CTSpace.xs))
             Text(
                 text = if (error != null) stringResource(error.message()) else stringResource(R.string.account_username_hint),
                 style = CTFont.caption,
@@ -448,14 +449,14 @@ private fun DisplayNameRow(ui: AccountUiState, onDraftChange: (String) -> Unit, 
             }
         }
         if (ui.editing) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(CTSpace.s))
             CTTextField(
                 placeholder = stringResource(R.string.account_display_name),
                 value = ui.draftDisplayName,
                 onValueChange = onDraftChange,
             )
         } else {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(CTSpace.xs))
             Text(
                 text = stringResource(R.string.account_display_name_hint),
                 style = CTFont.caption,

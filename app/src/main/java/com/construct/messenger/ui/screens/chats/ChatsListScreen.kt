@@ -66,6 +66,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.HairlineBorder
 import com.construct.messenger.viewmodel.MainViewModel
@@ -118,14 +119,14 @@ fun ChatsListScreen(
                 modifier = Modifier
                     .size(CTIcon.hero)
                     .clickable(onClick = onScanQr)
-                    .padding(12.dp),
+                    .padding(CTSpace.m),
             )
         }
 
         CTSearchBar(
             query = query,
             onQueryChange = { query = it },
-            modifier = Modifier.padding(horizontal = CTLayout.edgePad).padding(top = 4.dp, bottom = 8.dp),
+            modifier = Modifier.padding(horizontal = CTLayout.edgePad).padding(top = CTSpace.xs, bottom = CTSpace.s),
         )
 
         // iOS `filteredChats`: name, @username or the last message, case-insensitive. An empty
@@ -159,7 +160,7 @@ fun ChatsListScreen(
                             icon = Icons.Outlined.PushPin,
                             label = stringResource(if (chat.isPinned) R.string.chat_unpin else R.string.chat_pin),
                             color = CTColor.textDim,
-                            tint = Color.White,
+                            tint = CTColor.onFill,
                             onClick = { viewModel.togglePin(chat) },
                         ),
                         trailing = listOf(
@@ -167,7 +168,7 @@ fun ChatsListScreen(
                                 icon = Icons.Outlined.Delete,
                                 label = stringResource(R.string.delete),
                                 color = CTColor.danger,
-                                tint = Color.White,
+                                tint = CTColor.onFill,
                                 onClick = { viewModel.deleteChat(chat) },
                             ),
                             SwipeAction(
@@ -176,7 +177,7 @@ fun ChatsListScreen(
                                     if (chat.unreadCount > 0) R.string.chat_mark_read else R.string.chat_mark_unread,
                                 ),
                                 color = CTColor.accentDim,
-                                tint = Color.White,
+                                tint = CTColor.onFill,
                                 onClick = { viewModel.toggleUnread(chat) },
                             ),
                         ),
@@ -240,7 +241,7 @@ private fun EmptyState(onScanQr: () -> Unit, onShowMyQr: () -> Unit, onOpenSynap
             imageVector = Icons.Outlined.Forum,
             contentDescription = null,
             tint = CTColor.textDim,
-            modifier = Modifier.padding(bottom = 4.dp).size(CTIcon.overlay),
+            modifier = Modifier.padding(bottom = CTSpace.xs).size(CTIcon.overlay),
         )
         Text(
             text = stringResource(R.string.chats_empty_title),

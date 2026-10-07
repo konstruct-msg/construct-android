@@ -1,0 +1,13 @@
+{
+  "name": "Konstruct tokens",
+  "id": "konstruct-tokens-local",
+  "api": "1.0.0",
+  "main": "code.js",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": { "allowedDomains": ["none"] },
+  "menu": [
+    { "name": "Build screens (dark)", "command": "build-screens" },
+    { "name": "Export tokens (JSON)", "command": "export-tokens" }
+  ]
+}

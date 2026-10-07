@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.HairlineBorder
 
@@ -30,7 +31,7 @@ fun CTSectionGroup(
     val shape = RoundedCornerShape(CornerRadius.small)
     Column(
         modifier = modifier
-            .padding(horizontal = 12.dp)
+            .padding(horizontal = CTSpace.m)
             .clip(shape)
             .background(CTColor.outMsgBg)
             .border(HairlineBorder, CTColor.noise, shape),

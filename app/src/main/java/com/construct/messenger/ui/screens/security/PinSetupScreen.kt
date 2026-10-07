@@ -48,6 +48,7 @@ import com.construct.messenger.data.repository.PIN_LENGTH
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.AppLockViewModel
 import kotlinx.coroutines.launch
 
@@ -144,9 +145,9 @@ fun PinSetupScreen(
         )
         Spacer(Modifier.weight(1f))
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = CTSpace.xxl),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(CTSpace.l),
         ) {
             if (step == Step.BIOMETRIC) {
                 Text(
@@ -207,12 +208,12 @@ fun PinSetupScreen(
         Spacer(Modifier.weight(1f))
         Box(
             modifier = Modifier
-                .padding(horizontal = 32.dp)
-                .padding(bottom = 16.dp)
+                .padding(horizontal = CTSpace.xxl)
+                .padding(bottom = CTSpace.l)
                 .fillMaxWidth()
                 .background(if (canProceed) CTColor.accent else CTColor.noise)
                 .clickable(enabled = canProceed) { primary() }
-                .padding(16.dp),
+                .padding(CTSpace.l),
             contentAlignment = Alignment.Center,
         ) {
             Text(

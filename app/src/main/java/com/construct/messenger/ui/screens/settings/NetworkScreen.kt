@@ -46,6 +46,7 @@ import com.construct.messenger.ui.components.ConnectionStatus
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.veil.VeilMode
 import com.construct.messenger.veil.VeilProxy
 import com.construct.messenger.viewmodel.NetworkUiState
@@ -94,7 +95,7 @@ private fun NetworkContent(ui: NetworkUiState, onNavigateBack: () -> Unit, onMod
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 16.dp),
+                .padding(bottom = CTSpace.l),
         ) {
             CTSettingsSectionHeader(title = stringResource(R.string.network_status))
             CTSectionGroup {
@@ -182,7 +183,7 @@ private fun NetworkContent(ui: NetworkUiState, onNavigateBack: () -> Unit, onMod
                 ),
                 style = CTFont.caption,
                 color = CTColor.textDim,
-                modifier = Modifier.padding(horizontal = CTLayout.edgePad * 2, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = CTLayout.edgePad * 2, vertical = CTSpace.s),
             )
 
             if (SHOW_TRANSPORT_DETAIL) TransportDetail(ui)
@@ -239,7 +240,7 @@ private fun TransportDetail(ui: NetworkUiState) {
             },
             style = CTFont.caption,
             color = CTColor.danger,
-            modifier = Modifier.padding(horizontal = CTLayout.edgePad * 2, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = CTLayout.edgePad * 2, vertical = CTSpace.s),
         )
     }
 }

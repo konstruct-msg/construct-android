@@ -57,6 +57,7 @@ import com.construct.messenger.media.VideoNoteTake
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import kotlinx.coroutines.launch
 
@@ -115,7 +116,7 @@ fun VideoNoteRecordingOverlay(onSend: (VideoNoteTake) -> Unit, onClose: () -> Un
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = RECORDING_DIM))
+                .background(CTColor.mediaGround.copy(alpha = RECORDING_DIM))
                 // Nothing behind is touchable while recording.
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -127,15 +128,15 @@ fun VideoNoteRecordingOverlay(onSend: (VideoNoteTake) -> Unit, onClose: () -> Un
                         .width(width)
                         .aspectRatio(3f / 4f)
                         .clip(RoundedCornerShape(CornerRadius.control))
-                        .background(Color.Black),
+                        .background(CTColor.mediaGround),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (phase == VideoNoteRecorder.Phase.FAILED) {
                         Text(
                             stringResource(R.string.video_note_camera_unavailable),
                             style = CTFont.body,
-                            color = Color.White,
-                            modifier = Modifier.padding(16.dp),
+                            color = CTColor.onMedia,
+                            modifier = Modifier.padding(CTSpace.l),
                         )
                     } else {
                         AndroidView(
@@ -163,7 +164,7 @@ fun VideoNoteRecordingOverlay(onSend: (VideoNoteTake) -> Unit, onClose: () -> Un
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .width(width)
-                            .padding(bottom = 12.dp),
+                            .padding(bottom = CTSpace.m),
                     )
                 }
             }
@@ -196,16 +197,16 @@ private fun RecordingBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(CTColor.bg)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(horizontal = CTSpace.s, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(CTSpace.xs),
     ) {
         IconButton(onClick = onCancel) {
             Icon(Icons.Filled.Close, stringResource(R.string.video_note_cancel), tint = CTColor.textDim)
         }
         if (live) {
             Box(Modifier.size(8.dp).background(CTColor.danger, CircleShape))
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(CTSpace.xs))
         }
         Text(
             text = when (phase) {

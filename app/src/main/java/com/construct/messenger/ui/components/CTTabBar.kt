@@ -28,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 
 /**
  * One tab. iOS renders the icon only (the ASCII `symbol` is not shown in the bar),
@@ -77,7 +78,7 @@ fun CTTabBar(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                     ) { onTabSelected(index) }
-                    .padding(vertical = 4.dp),
+                    .padding(vertical = CTSpace.xs),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(

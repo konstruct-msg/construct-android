@@ -34,6 +34,8 @@ import com.construct.messenger.R
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.viewmodel.Deletion
 
@@ -84,9 +86,9 @@ fun DeleteAccountSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 32.dp),
+                .padding(horizontal = CTSpace.xl, vertical = CTSpace.xxl),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(CTSpace.l),
         ) {
             Text(stringResource(R.string.delete_account_title), style = CTFont.ui(20, FontWeight.Bold), color = CTColor.text)
             Text(
@@ -113,7 +115,7 @@ fun DeleteAccountSheet(
             val shape = RoundedCornerShape(CornerRadius.small)
             when (deletion) {
                 Deletion.Requesting -> Box(Modifier.height(52.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = CTColor.danger, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
+                    CircularProgressIndicator(color = CTColor.danger, strokeWidth = 2.dp, modifier = Modifier.size(CTIcon.control))
                 }
                 is Deletion.Counting -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Box(

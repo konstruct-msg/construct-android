@@ -20,12 +20,14 @@ object TabIcons {
     val SynapsSelected: ImageVector by lazy { crossGrid(filled = true) }
 
     private const val STROKE = 1.6f
+    /** A path's own colour, never shown: `Icon` tints the vector with the tab's colour. */
+    private val PATH = Color.Black
 
     /** An oval speech bubble with its tail at the lower left. */
     private fun bubble(filled: Boolean) = icon(if (filled) "TabChatsFilled" else "TabChats") {
         path(
-            fill = if (filled) SolidColor(Color.Black) else null,
-            stroke = SolidColor(Color.Black),
+            fill = if (filled) SolidColor(PATH) else null,
+            stroke = SolidColor(PATH),
             strokeLineWidth = STROKE,
             strokeLineJoin = StrokeJoin.Round,
         ) {
@@ -42,8 +44,8 @@ object TabIcons {
         val r = if (filled) 3.0f else 2.6f
         for ((cx, cy) in listOf(12f to 4.5f, 4.5f to 12f, 12f to 12f, 19.5f to 12f, 12f to 19.5f)) {
             path(
-                fill = if (filled) SolidColor(Color.Black) else null,
-                stroke = if (filled) null else SolidColor(Color.Black),
+                fill = if (filled) SolidColor(PATH) else null,
+                stroke = if (filled) null else SolidColor(PATH),
                 strokeLineWidth = STROKE,
             ) { circle(cx, cy, r) }
         }
