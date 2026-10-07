@@ -47,11 +47,12 @@ import com.construct.messenger.R
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTTextField
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.HairlineBorder
-import com.construct.messenger.ui.theme.Spacing
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.RestoreAccountViewModel
 
 /**
@@ -89,22 +90,22 @@ fun RestoreAccountScreen(
                 .padding(horizontal = CTLayout.sectionGap, vertical = CTLayout.sectionGap),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            Text(stringResource(R.string.restore_body), style = ctRegular(14), color = CTColor.textDim)
+            Text(stringResource(R.string.restore_body), style = CTFont.ui(14), color = CTColor.textDim)
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(stringResource(R.string.restore_identifier_label), style = ctRegular(12), color = CTColor.textDim)
+                Text(stringResource(R.string.restore_identifier_label), style = CTFont.secondary, color = CTColor.textDim)
                 CTTextField(
                     placeholder = stringResource(R.string.restore_identifier_placeholder),
                     value = ui.identifier,
                     onValueChange = viewModel::setIdentifier,
                 )
             }
-            Text(stringResource(R.string.restore_phrase_label), style = ctRegular(12), color = CTColor.textDim)
+            Text(stringResource(R.string.restore_phrase_label), style = CTFont.secondary, color = CTColor.textDim)
             WordGrid(words = ui.words, onWord = viewModel::setWord)
-            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
-                Icon(Icons.Default.Warning, contentDescription = null, tint = CTColor.danger, modifier = Modifier.size(16.dp))
-                Text(stringResource(R.string.restore_other_devices), style = ctRegular(12), color = CTColor.textDim)
+            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(CTSpace.s)) {
+                Icon(Icons.Default.Warning, contentDescription = null, tint = CTColor.danger, modifier = Modifier.size(CTIcon.row))
+                Text(stringResource(R.string.restore_other_devices), style = CTFont.secondary, color = CTColor.textDim)
             }
-            ui.errorRes?.let { Text(stringResource(it), style = ctRegular(12), color = CTColor.danger) }
+            ui.errorRes?.let { Text(stringResource(it), style = CTFont.secondary, color = CTColor.danger) }
             if (ui.working) {
                 CircularProgressIndicator(color = CTColor.accent, modifier = Modifier.align(Alignment.CenterHorizontally))
             } else {
@@ -120,7 +121,7 @@ fun RestoreAccountScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.restore_action),
-                        style = ctRegular(13),
+                        style = CTFont.body,
                         color = if (enabled) CTColor.text else CTColor.textDim,
                     )
                 }
@@ -154,7 +155,7 @@ private fun WordGrid(words: List<String>, onWord: (Int, String) -> Unit) {
                     ) {
                         Text(
                             text = "${index + 1}.",
-                            style = ctRegular(11),
+                            style = CTFont.caption,
                             color = CTColor.textDim,
                             textAlign = TextAlign.End,
                             modifier = Modifier.width(20.dp),
@@ -171,7 +172,7 @@ private fun WordGrid(words: List<String>, onWord: (Int, String) -> Unit) {
                                 }
                             },
                             singleLine = true,
-                            textStyle = ctRegular(14).copy(color = CTColor.text),
+                            textStyle = CTFont.ui(14).copy(color = CTColor.text),
                             cursorBrush = SolidColor(CTColor.accent),
                             keyboardOptions = KeyboardOptions(
                                 capitalization = KeyboardCapitalization.None,

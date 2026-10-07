@@ -37,7 +37,7 @@ import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.CTSettingsRow
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -107,7 +107,7 @@ fun DiagnosticsScreen(onNavigateBack: () -> Unit) {
                     SelectionContainer {
                         Text(
                             text = recent.asReversed().joinToString("\n"),
-                            style = ctRegular(10),
+                            style = CTFont.micro,
                             color = CTColor.text,
                             modifier = Modifier.padding(12.dp),
                         )

@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -49,9 +50,9 @@ import com.construct.messenger.ui.components.CTModeSelector
 import com.construct.messenger.ui.components.CTRowDivider
 import com.construct.messenger.ui.components.rememberAvatar
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.CallHistoryFilter
 import com.construct.messenger.viewmodel.CallHistorySection
 import com.construct.messenger.viewmodel.CallsViewModel
@@ -90,13 +91,13 @@ fun CallsScreen(viewModel: CallsViewModel = hiltViewModel()) {
             ) {
                 Text(
                     text = stringResource(R.string.calls_recents).uppercase(),
-                    style = ctBold(17),
+                    style = CTFont.ui(17, FontWeight.SemiBold),
                     color = CTColor.text,
                     modifier = Modifier.weight(1f),
                 )
                 if (ui.hasAny) {
                     TextButton(onClick = { confirmClear = true }) {
-                        Text(stringResource(R.string.calls_clear), style = ctBold(13), color = CTColor.danger)
+                        Text(stringResource(R.string.calls_clear), style = CTFont.bodyEmphasis, color = CTColor.danger)
                     }
                 }
             }
@@ -116,7 +117,7 @@ fun CallsScreen(viewModel: CallsViewModel = hiltViewModel()) {
                         text = stringResource(
                             if (ui.filter == CallHistoryFilter.MISSED) R.string.calls_empty_missed else R.string.calls_empty,
                         ),
-                        style = ctRegular(14),
+                        style = CTFont.body,
                         color = CTColor.textDim,
                     )
                 }
@@ -146,7 +147,7 @@ private fun SectionHeader(kind: CallHistorySection.Kind) {
     )
     Text(
         text = title.uppercase(),
-        style = ctBold(11),
+        style = CTFont.badge,
         color = CTColor.accent,
         modifier = Modifier
             .fillMaxWidth()
@@ -174,7 +175,7 @@ private fun CallHistoryRow(entry: CallHistoryEntry, onDelete: () -> Unit) {
                     imageVector = if (entry.incoming) Icons.AutoMirrored.Filled.CallReceived else Icons.AutoMirrored.Filled.CallMade,
                     contentDescription = stringResource(if (entry.incoming) R.string.call_incoming else R.string.call_outgoing),
                     tint = directionColor(entry),
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(CTIcon.row),
                 )
                 Spacer(Modifier.width(12.dp))
                 CTAvatar(
@@ -187,12 +188,12 @@ private fun CallHistoryRow(entry: CallHistoryEntry, onDelete: () -> Unit) {
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
                         text = entry.peerName,
-                        style = ctBold(15),
+                        style = CTFont.ui(15, FontWeight.Bold),
                         color = if (entry.status == CallHistoryEntry.Status.MISSED) CTColor.danger else CTColor.text,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Text(statusLabel(entry), style = ctRegular(12), color = CTColor.textDim)
+                    Text(statusLabel(entry), style = CTFont.secondary, color = CTColor.textDim)
                 }
                 Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
@@ -202,11 +203,11 @@ private fun CallHistoryRow(entry: CallHistoryEntry, onDelete: () -> Unit) {
                             DateUtils.MINUTE_IN_MILLIS,
                             DateUtils.FORMAT_ABBREV_RELATIVE,
                         ).toString(),
-                        style = ctRegular(12),
+                        style = CTFont.secondary,
                         color = CTColor.textDim,
                     )
                     formattedDuration(entry.durationSeconds)?.let {
-                        Text(it, style = ctRegular(10), color = CTColor.textDim)
+                        Text(it, style = CTFont.micro, color = CTColor.textDim)
                     }
                 }
                 Spacer(Modifier.width(CTLayout.inlinePad))
@@ -214,7 +215,7 @@ private fun CallHistoryRow(entry: CallHistoryEntry, onDelete: () -> Unit) {
                     imageVector = Icons.Default.Call,
                     contentDescription = stringResource(R.string.call_call_back),
                     tint = if (callBack != null) CTColor.accent else CTColor.textDim,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(CTIcon.row),
                 )
             }
             CTRowDivider(indent = 72.dp)
@@ -222,12 +223,12 @@ private fun CallHistoryRow(entry: CallHistoryEntry, onDelete: () -> Unit) {
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, modifier = Modifier.background(CTColor.outMsgBg)) {
             if (callBack != null) {
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.call_call_back), style = ctRegular(14), color = CTColor.accent) },
+                    text = { Text(stringResource(R.string.call_call_back), style = CTFont.ui(14), color = CTColor.accent) },
                     onClick = { menu = false; callBack() },
                 )
             }
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.delete), style = ctRegular(14), color = CTColor.danger) },
+                text = { Text(stringResource(R.string.delete), style = CTFont.ui(14), color = CTColor.danger) },
                 onClick = { menu = false; onDelete() },
             )
         }

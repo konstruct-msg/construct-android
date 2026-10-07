@@ -4,18 +4,14 @@ import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.core.Animatable
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,10 +39,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -58,8 +59,8 @@ import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTLogoView
 import com.construct.messenger.ui.components.CTMatrixBackground
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.ctMedium
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.viewmodel.AppLockViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -180,7 +181,7 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
                     )
                     Text(
                         text = error ?: " ",
-                        style = ctRegular(13),
+                        style = CTFont.body,
                         color = CTColor.danger,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 32.dp).height(18.dp),
@@ -192,13 +193,13 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
                         imageVector = Icons.Default.Fingerprint,
                         contentDescription = null,
                         tint = CTColor.accent,
-                        modifier = Modifier.size(64.dp).clickable { promptBiometric() },
+                        modifier = Modifier.size(CTIcon.hero).clickable { promptBiometric() },
                     )
-                    Text(text = stringResource(R.string.security_use_biometric), style = ctMedium(16), color = CTColor.textDim)
+                    Text(text = stringResource(R.string.security_use_biometric), style = CTFont.ui(16, FontWeight.Medium), color = CTColor.textDim)
                     error?.let {
                         Text(
                             text = it,
-                            style = ctRegular(13),
+                            style = CTFont.body,
                             color = CTColor.danger,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(horizontal = 32.dp),
@@ -206,7 +207,7 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
                     }
                     Text(
                         text = stringResource(R.string.pin_use_pin),
-                        style = ctRegular(14),
+                        style = CTFont.ui(14),
                         color = CTColor.accent,
                         modifier = Modifier
                             .padding(top = 8.dp - LINK_PAD_V)
@@ -225,13 +226,13 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
                     ) {
                         Text(
                             text = stringResource(R.string.pin_reset_countdown, left),
-                            style = ctMedium(14),
+                            style = CTFont.ui(14, FontWeight.Medium),
                             color = CTColor.danger,
                             textAlign = TextAlign.Center,
                         )
                         Text(
                             text = stringResource(R.string.action_cancel),
-                            style = ctRegular(13),
+                            style = CTFont.body,
                             color = CTColor.accent,
                             modifier = Modifier.linkTarget { countdown = null },
                         )
@@ -239,7 +240,7 @@ fun PinLockScreen(viewModel: AppLockViewModel = hiltViewModel()) {
                 } else {
                     Text(
                         text = stringResource(R.string.pin_cant_unlock),
-                        style = ctRegular(13).copy(textDecoration = TextDecoration.Underline),
+                        style = CTFont.body.copy(textDecoration = TextDecoration.Underline),
                         color = CTColor.textDim,
                         // The text stays 24 dp above the bottom; the rest of that is touch area.
                         modifier = Modifier
@@ -366,7 +367,7 @@ private fun DigitKey(digit: Char, onDigit: (Char) -> Unit) {
             .clickable(interactionSource = interaction, indication = null) { onDigit(digit) },
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = digit.toString(), style = ctRegular(30), color = CTColor.text)
+        Text(text = digit.toString(), style = CTFont.ui(30), color = CTColor.text)
     }
 }
 

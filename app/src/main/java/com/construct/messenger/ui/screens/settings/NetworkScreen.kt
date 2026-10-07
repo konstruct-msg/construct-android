@@ -44,8 +44,8 @@ import com.construct.messenger.ui.components.CTStatus
 import com.construct.messenger.ui.components.CTStatusBadge
 import com.construct.messenger.ui.components.ConnectionStatus
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.veil.VeilMode
 import com.construct.messenger.veil.VeilProxy
 import com.construct.messenger.viewmodel.NetworkUiState
@@ -112,7 +112,7 @@ private fun NetworkContent(ui: NetworkUiState, onNavigateBack: () -> Unit, onMod
                         tint = if (ui.connection == ConnectionStatus.CONNECTED) CTColor.online else ui.connection.toStatus().color,
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(stringResource(ui.connection.label()), style = ctRegular(14), color = CTColor.text)
+                        Text(stringResource(ui.connection.label()), style = CTFont.ui(14), color = CTColor.text)
                         SelectionContainer {
                             Text(
                                 text = if (SHOW_TRANSPORT_DETAIL) {
@@ -121,7 +121,7 @@ private fun NetworkContent(ui: NetworkUiState, onNavigateBack: () -> Unit, onMod
                                     // Direct and VEIL collapse to one information-free state.
                                     stringResource(if (connecting) R.string.net_status_connecting else R.string.net_status_protected)
                                 },
-                                style = ctRegular(11),
+                                style = CTFont.caption,
                                 color = CTColor.textDim,
                             )
                         }
@@ -137,11 +137,11 @@ private fun NetworkContent(ui: NetworkUiState, onNavigateBack: () -> Unit, onMod
                     ) {
                         Text(
                             stringResource(R.string.network_last_heartbeat),
-                            style = ctRegular(13),
+                            style = CTFont.body,
                             color = CTColor.textDim,
                             modifier = Modifier.weight(1f),
                         )
-                        Text(relativeTime(at), style = ctRegular(13), color = CTColor.textDim)
+                        Text(relativeTime(at), style = CTFont.body, color = CTColor.textDim)
                     }
                 }
             }
@@ -156,7 +156,7 @@ private fun NetworkContent(ui: NetworkUiState, onNavigateBack: () -> Unit, onMod
                 ) {
                     Text(
                         stringResource(R.string.censorship_protection),
-                        style = ctRegular(13),
+                        style = CTFont.body,
                         color = CTColor.text,
                         modifier = Modifier.weight(1f),
                     )
@@ -180,7 +180,7 @@ private fun NetworkContent(ui: NetworkUiState, onNavigateBack: () -> Unit, onMod
                         VeilMode.ON -> R.string.censorship_protection_footer_on
                     },
                 ),
-                style = ctRegular(11),
+                style = CTFont.caption,
                 color = CTColor.textDim,
                 modifier = Modifier.padding(horizontal = CTLayout.edgePad * 2, vertical = 8.dp),
             )
@@ -237,7 +237,7 @@ private fun TransportDetail(ui: NetworkUiState) {
             } else {
                 stringResource(R.string.veil_last_error) + ": " + error
             },
-            style = ctRegular(11),
+            style = CTFont.caption,
             color = CTColor.danger,
             modifier = Modifier.padding(horizontal = CTLayout.edgePad * 2, vertical = 8.dp),
         )

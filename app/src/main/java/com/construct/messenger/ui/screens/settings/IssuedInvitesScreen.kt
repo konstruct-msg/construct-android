@@ -46,9 +46,10 @@ import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
 import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.CornerRadius
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.IssuedAct
 import com.construct.messenger.viewmodel.IssuedInvitesUiState
 import com.construct.messenger.viewmodel.IssuedInvitesViewModel
@@ -169,7 +170,7 @@ private fun InviteRow(
             imageVector = if (isQr) Icons.Default.QrCode else Icons.Default.Link,
             contentDescription = null,
             tint = CTColor.text,
-            modifier = Modifier.width(20.dp).size(18.dp),
+            modifier = Modifier.width(20.dp).size(CTIcon.nav),
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             val kind = if (isQr) {
@@ -177,10 +178,10 @@ private fun InviteRow(
             } else {
                 stringResource(R.string.issued_invite_link)
             }
-            Text(text = "${kind.uppercase()} · $time", style = ctRegular(13), color = CTColor.text)
+            Text(text = "${kind.uppercase()} · $time", style = CTFont.body, color = CTColor.text)
             Text(
                 text = stringResource(R.string.issued_invite_expires, remaining(act, nowEpochSec)),
-                style = ctRegular(11),
+                style = CTFont.caption,
                 color = CTColor.textDim,
             )
         }
@@ -190,7 +191,7 @@ private fun InviteRow(
             val shape = RoundedCornerShape(CornerRadius.small)
             Text(
                 text = stringResource(R.string.invite_revoke).lowercase(),
-                style = ctRegular(13),
+                style = CTFont.body,
                 color = CTColor.danger,
                 modifier = Modifier
                     .clip(shape)
@@ -226,7 +227,7 @@ private val InviteRevocation.message: Int
 private fun Line(text: String, modifier: Modifier = Modifier, color: androidx.compose.ui.graphics.Color = CTColor.textDim) {
     Text(
         text = text,
-        style = ctRegular(11),
+        style = CTFont.caption,
         color = color,
         modifier = modifier
             .fillMaxWidth()

@@ -5,15 +5,19 @@ package com.construct.messenger.ui.components
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,59 +26,55 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.unit.IntOffset
-import kotlin.math.roundToInt
-import com.construct.messenger.util.ReactionRules
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Circle
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.material.icons.outlined.Circle
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.filled.Circle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.R
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.Message
 import com.construct.messenger.data.model.MessageMedia
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.Spacing
-import com.construct.messenger.ui.theme.ctMessage
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
+import com.construct.messenger.util.ReactionRules
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
  * Simple E2EE message bubble.
@@ -235,7 +235,7 @@ fun MessageBubble(
                 if (message.body.isNotBlank()) {
                     LinkedText(
                         text = message.body,
-                        style = ctMessage(12),
+                        style = CTFont.message(12),
                         color = CTColor.text,
                         linkColor = CTColor.accent,
                         onLongPress = onLongPress,
@@ -287,7 +287,7 @@ fun MessageBubble(
                 if (message.body.isNotBlank() || message.media == null) {
                     LinkedText(
                         text = message.body,
-                        style = ctMessage(15),
+                        style = CTFont.message(15),
                         color = contentColor,
                         // iOS: links in the accent on an incoming bubble, in the text colour on ours.
                         linkColor = if (isOutgoing) contentColor else CTColor.accent,
@@ -311,11 +311,11 @@ fun MessageBubble(
                 ) {
                     if (isOutgoing) DeliveryStatusIcon(status = message.deliveryStatus)
                     if (message.isEdited) {
-                        Text(text = stringResource(R.string.edited), style = ctRegular(10), color = metaColor)
+                        Text(text = stringResource(R.string.edited), style = CTFont.micro, color = metaColor)
                     }
                     Text(
                         text = formatMessageTime(message.timestamp),
-                        style = ctRegular(10),
+                        style = CTFont.micro,
                         color = metaColor,
                     )
                 }
@@ -328,7 +328,7 @@ fun MessageBubble(
                 ReactionQuickRow(current = message.myReaction, onPick = onReact, onPickMore = onPickMoreReactions)
                 HorizontalDivider(color = CTColor.noise, thickness = 0.5.dp)
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.reply), style = ctRegular(14), color = CTColor.text) },
+                    text = { Text(stringResource(R.string.reply), style = CTFont.ui(14), color = CTColor.text) },
                     leadingIcon = {
                         Icon(Icons.AutoMirrored.Filled.Reply, contentDescription = null, tint = CTColor.text)
                     },
@@ -336,14 +336,14 @@ fun MessageBubble(
                 )
                 if (message.body.isNotBlank()) {
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.quote_reply), style = ctRegular(14), color = CTColor.text) },
+                        text = { Text(stringResource(R.string.quote_reply), style = CTFont.ui(14), color = CTColor.text) },
                         leadingIcon = { Icon(Icons.Filled.FormatQuote, contentDescription = null, tint = CTColor.text) },
                         onClick = onQuoteReply,
                     )
                 }
                 if (message.isEditable) {
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.edit_message), style = ctRegular(14), color = CTColor.text) },
+                        text = { Text(stringResource(R.string.edit_message), style = CTFont.ui(14), color = CTColor.text) },
                         leadingIcon = {
                             Icon(Icons.Filled.Edit, contentDescription = null, tint = CTColor.text)
                         },
@@ -352,7 +352,7 @@ fun MessageBubble(
                 }
                 if (message.body.isNotBlank()) {
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.copy), style = ctRegular(14), color = CTColor.text) },
+                        text = { Text(stringResource(R.string.copy), style = CTFont.ui(14), color = CTColor.text) },
                         leadingIcon = {
                             Icon(Icons.Filled.ContentCopy, contentDescription = null, tint = CTColor.text)
                         },
@@ -360,13 +360,13 @@ fun MessageBubble(
                     )
                 }
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.select_messages), style = ctRegular(14), color = CTColor.text) },
+                    text = { Text(stringResource(R.string.select_messages), style = CTFont.ui(14), color = CTColor.text) },
                     leadingIcon = { Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = CTColor.text) },
                     onClick = onSelectMessages,
                 )
                 HorizontalDivider(color = CTColor.noise, thickness = 0.5.dp)
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.delete), style = ctRegular(14), color = CTColor.danger) },
+                    text = { Text(stringResource(R.string.delete), style = CTFont.ui(14), color = CTColor.danger) },
                     leadingIcon = {
                         Icon(Icons.Filled.Delete, contentDescription = null, tint = CTColor.danger)
                     },
@@ -374,7 +374,7 @@ fun MessageBubble(
                 )
                 if (message.isOutgoing && message.deliveryStatus == DeliveryStatus.FAILED) {
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.retry), style = ctRegular(14), color = CTColor.text) },
+                        text = { Text(stringResource(R.string.retry), style = CTFont.ui(14), color = CTColor.text) },
                         leadingIcon = { Icon(Icons.Filled.Refresh, contentDescription = null, tint = CTColor.text) },
                         onClick = onRetry,
                     )
@@ -411,7 +411,7 @@ private fun BubbleFrame(
                 imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
                 contentDescription = null,
                 tint = if (selected) CTColor.accent else CTColor.textDim,
-                modifier = Modifier.padding(start = 12.dp).size(20.dp),
+                modifier = Modifier.padding(start = 12.dp).size(CTIcon.nav),
             )
             Box(Modifier.weight(1f)) {
                 content(Modifier)
@@ -453,7 +453,7 @@ private fun BubbleFrame(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .padding(end = 8.dp)
-                    .size(16.dp)
+                    .size(CTIcon.row)
                     .alpha((offset / commit).coerceIn(0f, 1f)),
             )
         }
@@ -483,7 +483,7 @@ private fun ReplyQuoteStrip(
                 onLongClick = onLongPress,
                 onClickLabel = stringResource(R.string.jump_to_replied_message),
             )
-            .padding(bottom = Spacing.compact),
+            .padding(bottom = CTSpace.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Spacer(
@@ -494,11 +494,11 @@ private fun ReplyQuoteStrip(
         )
         Text(
             text = label,
-            style = ctRegular(12),
+            style = CTFont.secondary,
             color = textColor,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = Spacing.compact),
+            modifier = Modifier.padding(start = CTSpace.xs),
         )
     }
 }
@@ -515,7 +515,7 @@ private fun DeliveryStatusIcon(status: DeliveryStatus) {
         DeliveryStatus.DELIVERED, DeliveryStatus.READ -> Icons.Outlined.CheckCircle to SYSTEM_GREEN
         DeliveryStatus.FAILED -> Icons.Filled.Error to CTColor.danger
     }
-    Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(11.dp))
+    Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(CTIcon.caption))
 }
 
 /** iOS `Reaction.badgeOverlap` — more than the bubble's padding and the last line's glyphs. */

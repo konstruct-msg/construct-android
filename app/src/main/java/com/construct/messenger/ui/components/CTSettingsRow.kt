@@ -23,15 +23,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 
 /**
  * One row of a settings section: `[icon] label … value | status`.
  *
  * **Canon:** iOS `ConstructTheme.swift` → `struct CTSettingsRow`.
  * - Optional leading [icon] in a 28dp centered column.
- * - `ctRegular(13)` label; value is `ctBold(13)` + `accent` when [isAction].
+ * - `CTFont.body` label; value is `CTFont.bodyEmphasis` + `accent` when [isAction].
  * - [isDestructive] paints label, icon and value in `danger`.
  * - Optional [status] renders a [CTStatusBadge] after the value.
  * - [disclosure] adds a trailing chevron: the row opens another screen.
@@ -74,13 +74,13 @@ fun CTSettingsRow(
                     imageVector = icon,
                     contentDescription = null,
                     tint = primaryColor,
-                    modifier = Modifier.size(15.dp),
+                    modifier = Modifier.size(CTIcon.row),
                 )
             }
         }
         Text(
             text = label,
-            style = ctRegular(13),
+            style = CTFont.body,
             color = primaryColor,
             modifier = Modifier.weight(1f),
         )
@@ -88,7 +88,7 @@ fun CTSettingsRow(
         if (value.isNotEmpty()) {
             Text(
                 text = value,
-                style = if (isAction) ctBold(13) else ctRegular(13),
+                style = if (isAction) CTFont.bodyEmphasis else CTFont.body,
                 color = resolvedValueColor,
                 textAlign = TextAlign.End,
                 maxLines = 1,
@@ -107,7 +107,7 @@ fun CTSettingsRow(
                 tint = if (isDestructive) CTColor.danger else CTColor.textDim,
                 modifier = Modifier
                     .padding(start = if (value.isEmpty() && status == null) 0.dp else 6.dp)
-                    .size(16.dp),
+                    .size(CTIcon.row),
             )
         }
     }

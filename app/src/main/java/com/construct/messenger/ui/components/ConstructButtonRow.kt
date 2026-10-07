@@ -24,14 +24,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 
 /**
  * Button row with a leading icon, title and optional trailing chevron.
  *
  * **Canon:** iOS `ConstructTheme.swift` → `struct ConstructButtonRow`.
  * - Fixed 28dp leading column for the icon, aligned center.
- * - `ctRegular(13)` title in `CTColor.text`.
+ * - `CTFont.body` title in `CTColor.text`.
  * - Optional trailing `Icons.Default.ChevronRight` when [showChevron] is true.
  * - Padding: horizontal 12, vertical 9.
  */
@@ -60,12 +61,12 @@ fun ConstructButtonRow(
                 imageVector = icon,
                 contentDescription = null,
                 tint = iconColor,
-                modifier = Modifier.size(15.dp),
+                modifier = Modifier.size(CTIcon.row),
             )
         }
         Text(
             text = title,
-            style = ctRegular(13),
+            style = CTFont.body,
             color = CTColor.text,
             modifier = Modifier.weight(1f),
         )
@@ -75,7 +76,7 @@ fun ConstructButtonRow(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
                 tint = CTColor.textDim,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(CTIcon.row),
             )
         }
     }

@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.Icon
@@ -42,14 +42,14 @@ import com.construct.messenger.data.model.Appearance
 import com.construct.messenger.data.model.ChatFace
 import com.construct.messenger.data.model.TextSize
 import com.construct.messenger.ui.components.CTNavBar
-import com.construct.messenger.ui.components.CTSectionGroup
 import com.construct.messenger.ui.components.CTRowDivider
+import com.construct.messenger.ui.components.CTSectionGroup
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTFontFamily
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.AppearanceViewModel
 
 @Composable
@@ -122,7 +122,7 @@ fun AppearanceScreen(
                 onSelect = onChatFace,
             ) { face ->
                 // Set in the face it offers, so the choice is visible before it is made.
-                // `ctMessage` cannot be used: it reads the current choice and would render
+                // `CTFont.message` cannot be used: it reads the current choice and would render
                 // both rows alike.
                 ChoiceLabel(
                     text = stringResource(face.label),
@@ -174,7 +174,7 @@ private fun <T> ChoiceSection(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
                         tint = CTColor.accent,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(CTIcon.nav),
                     )
                 }
             }
@@ -182,7 +182,7 @@ private fun <T> ChoiceSection(
     }
     Text(
         text = footer,
-        style = ctRegular(11),
+        style = CTFont.caption,
         color = CTColor.textDim,
         modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 14.dp),
     )
@@ -193,10 +193,10 @@ private fun ChoiceLabel(
     text: String,
     icon: ImageVector? = null,
     iconTint: Color = CTColor.textDim,
-    style: TextStyle = ctBold(16),
+    style: TextStyle = CTFont.ui(16, FontWeight.Bold),
 ) {
     if (icon != null) {
-        Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(18.dp))
+        Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(CTIcon.nav))
         Spacer(Modifier.width(14.dp))
     }
     Text(text = text, style = style, color = CTColor.text)

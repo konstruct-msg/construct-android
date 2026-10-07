@@ -1,6 +1,5 @@
 package com.construct.messenger.ui.screens.synaps
 
-import com.construct.messenger.ui.components.rememberAvatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -45,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,11 +61,11 @@ import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTStatus
 import com.construct.messenger.ui.components.CTStatusBadge
 import com.construct.messenger.ui.components.CTTextField
+import com.construct.messenger.ui.components.rememberAvatar
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CornerRadius
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
-import com.construct.messenger.ui.theme.ctSemiBold
 import com.construct.messenger.viewmodel.ContactProfileUiState
 import com.construct.messenger.viewmodel.ContactProfileViewModel
 import com.construct.messenger.viewmodel.ShareOutcome
@@ -149,13 +149,13 @@ fun ContactProfileScreen(
                             ShareOutcome.STOPPED -> R.string.profile_sharing_stopped
                         },
                     ),
-                    style = ctRegular(13),
+                    style = CTFont.body,
                     color = CTColor.textDim,
                 )
             },
             confirmButton = {
                 TextButton(onClick = viewModel::shareOutcomeShown) {
-                    Text(stringResource(R.string.close), style = ctBold(13), color = CTColor.accent)
+                    Text(stringResource(R.string.close), style = CTFont.bodyEmphasis, color = CTColor.accent)
                 }
             },
         )
@@ -168,13 +168,13 @@ fun ContactProfileScreen(
             text = {
                 Text(
                     stringResource(if (accepted) R.string.contact_report_sent else R.string.contact_report_failed),
-                    style = ctRegular(13),
+                    style = CTFont.body,
                     color = CTColor.textDim,
                 )
             },
             confirmButton = {
                 TextButton(onClick = viewModel::reportShown) {
-                    Text(stringResource(R.string.close), style = ctBold(13), color = CTColor.accent)
+                    Text(stringResource(R.string.close), style = CTFont.bodyEmphasis, color = CTColor.accent)
                 }
             },
         )
@@ -230,7 +230,7 @@ fun ContactProfileScreen(
             FlatDivider(thick = true)
             Text(
                 text = "> ${stringResource(R.string.profile_e2e)}",
-                style = ctRegular(11),
+                style = CTFont.caption,
                 color = CTColor.accent.copy(alpha = 0.5f),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -259,8 +259,8 @@ private fun AvatarHeader(ui: ContactProfileUiState) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
-                Icon(Icons.Default.Block, contentDescription = null, tint = CTColor.danger, modifier = Modifier.size(11.dp))
-                Text(stringResource(R.string.profile_blocked_badge), style = ctSemiBold(11), color = CTColor.danger)
+                Icon(Icons.Default.Block, contentDescription = null, tint = CTColor.danger, modifier = Modifier.size(CTIcon.caption))
+                Text(stringResource(R.string.profile_blocked_badge), style = CTFont.ui(11, FontWeight.SemiBold), color = CTColor.danger)
             }
         }
     }
@@ -272,11 +272,11 @@ private fun IdentitySection(ui: ContactProfileUiState, onEditLocalName: () -> Un
     SectionHeader(stringResource(R.string.profile_identity))
     RowDivider()
     ProfileRow(stringResource(R.string.profile_username)) {
-        Text("<@${ui.username.ifBlank { "—" }}>", style = ctRegular(14), color = CTColor.textDim)
+        Text("<@${ui.username.ifBlank { "—" }}>", style = CTFont.ui(14), color = CTColor.textDim)
     }
     RowDivider()
     ProfileRow(stringResource(R.string.profile_display_name)) {
-        Text(ui.displayName, style = ctRegular(14), color = CTColor.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(ui.displayName, style = CTFont.ui(14), color = CTColor.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
     RowDivider()
     // iOS: a name only this device shows, overriding every other one wherever they are named.
@@ -285,12 +285,12 @@ private fun IdentitySection(ui: ContactProfileUiState, onEditLocalName: () -> Un
             val local = ui.localName
             Text(
                 text = local ?: stringResource(R.string.local_name_unset),
-                style = ctRegular(14),
+                style = CTFont.ui(14),
                 color = if (local != null) CTColor.text else CTColor.textDim,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Icon(Icons.Default.Edit, contentDescription = null, tint = CTColor.accent.copy(alpha = 0.7f), modifier = Modifier.size(12.dp))
+            Icon(Icons.Default.Edit, contentDescription = null, tint = CTColor.accent.copy(alpha = 0.7f), modifier = Modifier.size(CTIcon.caption))
         }
     }
     RowDivider()
@@ -304,13 +304,13 @@ private fun IdentitySection(ui: ContactProfileUiState, onEditLocalName: () -> Un
                 .semantics { onClick(label = copyHint) { clipboard.setText(AnnotatedString(fingerprint)); true } },
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(fingerprint, style = ctRegular(12), color = CTColor.accent, maxLines = 1)
-                Icon(Icons.Outlined.ContentCopy, contentDescription = null, tint = CTColor.textDim, modifier = Modifier.size(12.dp))
+                Text(fingerprint, style = CTFont.secondary, color = CTColor.accent, maxLines = 1)
+                Icon(Icons.Outlined.ContentCopy, contentDescription = null, tint = CTColor.textDim, modifier = Modifier.size(CTIcon.caption))
             }
         }
     } else {
         ProfileRow(stringResource(R.string.profile_fingerprint)) {
-            Text(stringResource(R.string.profile_fingerprint_unknown), style = ctRegular(13), color = CTColor.textDim)
+            Text(stringResource(R.string.profile_fingerprint_unknown), style = CTFont.body, color = CTColor.textDim)
         }
     }
     // The server's user id is addressing, not identity: debug builds only, as on iOS.
@@ -320,7 +320,7 @@ private fun IdentitySection(ui: ContactProfileUiState, onEditLocalName: () -> Un
             val id = ui.userId
             Text(
                 text = if (id.length > 12) "${id.take(8)}...${id.takeLast(2)}" else id,
-                style = ctRegular(13),
+                style = CTFont.body,
                 color = CTColor.textDim.copy(alpha = 0.7f),
             )
         }
@@ -357,7 +357,7 @@ private fun ActionsSection(
         RowDivider()
         Text(
             text = stringResource(R.string.sharing_with_you),
-            style = ctRegular(11),
+            style = CTFont.caption,
             color = CTColor.textDim,
             modifier = Modifier.padding(horizontal = ROW_H, vertical = 10.dp),
         )
@@ -377,7 +377,7 @@ private fun SecuritySection(ui: ContactProfileUiState, onSafetyNumbers: () -> Un
     ProfileRow(stringResource(R.string.profile_encryption)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             CTStatusBadge(status = if (hasSession) CTStatus.OK else CTStatus.OFF, size = 13.dp)
-            if (hasSession) Text(stringResource(R.string.profile_encrypted), style = ctRegular(13), color = CTColor.text)
+            if (hasSession) Text(stringResource(R.string.profile_encrypted), style = CTFont.body, color = CTColor.text)
         }
     }
     RowDivider()
@@ -388,13 +388,13 @@ private fun SecuritySection(ui: ContactProfileUiState, onSafetyNumbers: () -> Un
             } else {
                 stringResource(R.string.profile_no_session)
             },
-            style = ctRegular(13),
+            style = CTFont.body,
             color = if (hasSession) CTColor.text else CTColor.textDim,
         )
     }
     RowDivider()
     ProfileRow(stringResource(R.string.safety_numbers), modifier = Modifier.clickable(onClick = onSafetyNumbers)) {
-        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = CTColor.textDim, modifier = Modifier.size(16.dp))
+        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = CTColor.textDim, modifier = Modifier.size(CTIcon.row))
     }
 }
 
@@ -411,14 +411,14 @@ private fun SecurityNoticeBlock(alert: ContactTrustAlert, name: String, onVerify
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(Icons.Default.GppMaybe, contentDescription = null, tint = CTColor.danger, modifier = Modifier.size(16.dp))
-            Text(title, style = ctBold(12), color = CTColor.danger)
+            Icon(Icons.Default.GppMaybe, contentDescription = null, tint = CTColor.danger, modifier = Modifier.size(CTIcon.row))
+            Text(title, style = CTFont.ui(12, FontWeight.Bold), color = CTColor.danger)
         }
-        Text(body, style = ctRegular(11), color = CTColor.textDim)
+        Text(body, style = CTFont.caption, color = CTColor.textDim)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 text = stringResource(R.string.key_change_verify),
-                style = ctBold(12),
+                style = CTFont.ui(12, FontWeight.Bold),
                 color = CTColor.bg,
                 modifier = Modifier
                     .background(CTColor.danger, control)
@@ -427,7 +427,7 @@ private fun SecurityNoticeBlock(alert: ContactTrustAlert, name: String, onVerify
             )
             Text(
                 text = stringResource(R.string.security_notice_acknowledge),
-                style = ctRegular(12),
+                style = CTFont.secondary,
                 color = CTColor.accent,
                 modifier = Modifier
                     .background(CTColor.bgMsg, control)
@@ -446,10 +446,10 @@ private fun LocalNameDialog(current: String, onSave: (String) -> Unit, onClear: 
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = CTColor.outMsgBg,
-        title = { Text(stringResource(R.string.local_name), style = ctBold(15), color = CTColor.text) },
+        title = { Text(stringResource(R.string.local_name), style = CTFont.ui(15, FontWeight.Bold), color = CTColor.text) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(stringResource(R.string.local_name_footer), style = ctRegular(12), color = CTColor.textDim)
+                Text(stringResource(R.string.local_name_footer), style = CTFont.secondary, color = CTColor.textDim)
                 CTTextField(
                     placeholder = stringResource(R.string.local_name_placeholder),
                     value = draft,
@@ -459,18 +459,18 @@ private fun LocalNameDialog(current: String, onSave: (String) -> Unit, onClear: 
         },
         confirmButton = {
             TextButton(onClick = { onSave(draft) }) {
-                Text(stringResource(R.string.action_save).replaceFirstChar { it.titlecase() }, style = ctBold(13), color = CTColor.accent)
+                Text(stringResource(R.string.action_save).replaceFirstChar { it.titlecase() }, style = CTFont.bodyEmphasis, color = CTColor.accent)
             }
         },
         dismissButton = {
             Row {
                 if (current.isNotEmpty()) {
                     TextButton(onClick = onClear) {
-                        Text(stringResource(R.string.local_name_clear), style = ctRegular(13), color = CTColor.danger)
+                        Text(stringResource(R.string.local_name_clear), style = CTFont.body, color = CTColor.danger)
                     }
                 }
                 TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.action_cancel), style = ctRegular(13), color = CTColor.textDim)
+                    Text(stringResource(R.string.action_cancel), style = CTFont.body, color = CTColor.textDim)
                 }
             }
         },
@@ -491,7 +491,7 @@ private fun suiteName(suiteId: Int): String = when (suiteId) {
 private fun SectionHeader(title: String, color: Color = CTColor.accent) {
     Text(
         text = "> ${title.uppercase()}",
-        style = ctBold(12),
+        style = CTFont.ui(12, FontWeight.Bold),
         color = color,
         letterSpacing = 2.sp,
         modifier = Modifier.padding(horizontal = ROW_H, vertical = 10.dp),
@@ -507,7 +507,7 @@ private fun ProfileRow(label: String, modifier: Modifier = Modifier, value: @Com
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (label.isNotEmpty()) {
-            Text(label.lowercase(), style = ctRegular(14), color = CTColor.textDim)
+            Text(label.lowercase(), style = CTFont.ui(14), color = CTColor.textDim)
             Spacer(Modifier.size(12.dp))
         }
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) { value() }
@@ -529,12 +529,12 @@ private fun ActionRow(
             .padding(horizontal = ROW_H, vertical = ROW_V),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label.lowercase(), style = ctRegular(14), color = color, modifier = Modifier.weight(1f))
+        Text(label.lowercase(), style = CTFont.ui(14), color = color, modifier = Modifier.weight(1f))
         // iOS `actionRow(isLoading:)`: a share can take as long as opening a session does.
         if (loading) {
             CircularProgressIndicator(color = CTColor.textDim, strokeWidth = 2.dp, modifier = Modifier.size(14.dp))
         } else {
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = color.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = color.copy(alpha = 0.6f), modifier = Modifier.size(CTIcon.row))
         }
     }
 }

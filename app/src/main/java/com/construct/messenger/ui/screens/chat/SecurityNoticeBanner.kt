@@ -19,10 +19,9 @@ import androidx.compose.ui.res.stringResource
 import com.construct.messenger.R
 import com.construct.messenger.data.model.ContactTrustAlert
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.Spacing
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTSpace
 
 /**
  * A contact's security event or failed KT proof, above the transcript until the user
@@ -40,25 +39,25 @@ fun SecurityNoticeBanner(
         modifier = Modifier
             .fillMaxWidth()
             .background(CTColor.bgMsg)
-            .padding(horizontal = CTLayout.edgePad, vertical = Spacing.standard),
-        verticalArrangement = Arrangement.spacedBy(Spacing.compact),
+            .padding(horizontal = CTLayout.edgePad, vertical = CTSpace.m),
+        verticalArrangement = Arrangement.spacedBy(CTSpace.xs),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(CTSpace.s)) {
             Icon(
                 imageVector = Icons.Default.Warning,
                 contentDescription = null,
                 tint = CTColor.danger,
                 modifier = Modifier.size(CTLayout.navIconSize),
             )
-            Text(title, style = ctBold(14), color = CTColor.text)
+            Text(title, style = CTFont.headline, color = CTColor.text)
         }
-        Text(body, style = ctRegular(13), color = CTColor.textDim)
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+        Text(body, style = CTFont.body, color = CTColor.textDim)
+        Row(horizontalArrangement = Arrangement.spacedBy(CTSpace.s)) {
             TextButton(onClick = onVerify) {
-                Text(stringResource(R.string.key_change_verify), style = ctBold(13), color = CTColor.accent)
+                Text(stringResource(R.string.key_change_verify), style = CTFont.bodyEmphasis, color = CTColor.accent)
             }
             TextButton(onClick = onAcknowledge) {
-                Text(stringResource(R.string.security_notice_acknowledge), style = ctRegular(13), color = CTColor.textDim)
+                Text(stringResource(R.string.security_notice_acknowledge), style = CTFont.body, color = CTColor.textDim)
             }
         }
     }

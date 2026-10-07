@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -53,13 +54,13 @@ import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
 import com.construct.messenger.ui.components.CTSep
+import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.ConstructActionRow
 import com.construct.messenger.ui.components.ConstructRowRole
-import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.AccountEvent
 import com.construct.messenger.viewmodel.DevicesUiState
 import com.construct.messenger.viewmodel.DevicesViewModel
@@ -251,26 +252,26 @@ private fun DeviceRow(device: LinkedDevice, onRevoke: (() -> Unit)?) {
             imageVector = device.platform.icon,
             contentDescription = null,
             tint = if (device.isCurrent) CTColor.accent else CTColor.textDim,
-            modifier = Modifier.size(22.dp),
+            modifier = Modifier.size(CTIcon.navLg),
         )
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(text = device.label(), style = ctBold(15), color = CTColor.text)
+            Text(text = device.label(), style = CTFont.ui(15, FontWeight.Bold), color = CTColor.text)
             // The id in the eight characters every log line prints: a name does not identify a
             // device, and relinking the same one yields rows with the same name.
             SelectionContainer {
                 Text(
                     text = device.shortId,
-                    style = ctRegular(11).copy(fontFamily = FontFamily.Monospace),
+                    style = CTFont.mono(11),
                     color = CTColor.textDim,
                 )
             }
             if (device.isCurrent) {
-                Text(text = "● " + stringResource(R.string.device_active_now), style = ctRegular(12), color = CTColor.accent)
+                Text(text = "● " + stringResource(R.string.device_active_now), style = CTFont.secondary, color = CTColor.accent)
             } else if (device.createdAt > 0) {
                 // The server keeps no last-seen (migration 013), so the date added is all there is.
                 val added = DateFormat.getMediumDateFormat(context).format(Date(device.createdAt * 1000))
-                Text(text = stringResource(R.string.device_added, added), style = ctRegular(12), color = CTColor.textDim)
+                Text(text = stringResource(R.string.device_added, added), style = CTFont.secondary, color = CTColor.textDim)
             }
         }
         if (onRevoke != null) {
@@ -279,7 +280,7 @@ private fun DeviceRow(device: LinkedDevice, onRevoke: (() -> Unit)?) {
                 contentDescription = stringResource(R.string.device_revoke),
                 tint = CTColor.danger,
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(CTIcon.control)
                     .clickable(onClick = onRevoke),
             )
         }
@@ -290,7 +291,7 @@ private fun DeviceRow(device: LinkedDevice, onRevoke: (() -> Unit)?) {
 private fun Hint(text: String) {
     Text(
         text = text,
-        style = ctRegular(11),
+        style = CTFont.caption,
         color = CTColor.textDim,
         modifier = Modifier.padding(horizontal = CTLayout.edgePad * 2, vertical = 8.dp),
     )

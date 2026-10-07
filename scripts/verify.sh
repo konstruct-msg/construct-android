@@ -68,6 +68,13 @@ step "no Play Services"
 if bash scripts/check_no_play_services.sh > "$OUT/no-gms.txt" 2>&1; then pass "no Play Services"
 else fail "no Play Services" "see $OUT/no-gms.txt"; fi
 
+# ── 2b. Design-token debt does not grow ────────────────────────────────────────
+# Sizes, faces and colours set by hand instead of CTFont / CTIcon / CTColor. A baseline per
+# kind; a rise fails. Twin of the iOS check (vault TODO 122).
+step "UI tokens"
+if bash scripts/check_ui_tokens.sh > "$OUT/ui-tokens.txt" 2>&1; then pass "UI tokens"
+else fail "UI tokens" "see $OUT/ui-tokens.txt"; fi
+
 # ── 3. Every core action has an executor ───────────────────────────────────────
 # The two `when`s over CfeAction must stay exhaustive: a new core action should fail to
 # compile, not fall into `else ->` and vanish. A branch that only warns "not acted on" is a

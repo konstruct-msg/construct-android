@@ -151,8 +151,11 @@ hex avatars). **Never** sacrifice usability or clash with Material guidelines.
   unknown`) — never a `"[ok]"` / `"[err]"` text token. Compose implementation:
   `ui/components/CTStatusBadge.kt`; canon: `ANDROID_ONBOARDING.md` §3.3.
 - **Selection** → `Icons.Default.Check` in `accent`; **on/off** → Material3 `Switch`.
-- Tokens: `CTColor.*`, `ctRegular(size)` / `ctBold(size)` (JetBrains Mono), `CornerRadius.*`,
-  `Spacing.*`, `CTLayout.*`. No inline magic numbers.
+- Tokens: `CTColor.*`, `CTFont.*` roles (JetBrains Mono; `CTFont.ui(size)` off the scale,
+  `CTFont.message` for message text), `CTIcon.*`, `CTSpace.*`, `CornerRadius.*`, `CTLayout.*` —
+  the same names and values as iOS `ConstructTheme.swift`. No inline magic numbers:
+  `scripts/check_ui_tokens.sh` (run by `verify.sh`) fails when a count of hand-set sizes, faces or
+  colours rises; a migration lowers its baseline in the same commit.
 
 ### Current state & migration
 

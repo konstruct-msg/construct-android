@@ -19,7 +19,7 @@
    - 3.2 [Типографика](#32-типографика)
    - 3.3 [Символы / иконки](#33-символы--иконки)
    - 3.4 [Геометрия / скругления](#34-геометрия--скругления)
-   - 3.5 [Сетка / Spacing](#35-сетка--spacing)
+   - 3.5 [Сетка, иконки / CTSpace, CTIcon](#35-сетка-иконки--ctspace-cticon)
    - 3.6 [Тени](#36-тени)
    - 3.7 [Анимации](#37-анимации)
 4. [UI Компоненты (Reusable)](#4-ui-компоненты-reusable)
@@ -148,19 +148,34 @@ object CT {
 // JetBrains Mono вложен в приложение: res/font/jetbrains_mono_{regular,medium,semibold,bold}.ttf —
 // те же четыре файла, что в iOS `Fonts/` (OFL 1.1, лицензия в assets/licenses/).
 val CTFontFamily = FontFamily(Font(R.font.jetbrains_mono_regular, FontWeight.Normal), /* … */)
-fun ctRegular(size: Int)  // Normal
-fun ctSemiBold(size: Int) // SemiBold — заголовок CTNavBar
-fun ctBold(size: Int)     // Bold
-fun ctMessage(size: Int)  // текст сообщений: выбор читателя (System / JetBrains Mono) × размер
+object CTFont {            // = iOS CTFont
+    fun ui(size: Int, weight: FontWeight = FontWeight.Normal)   // кегль вне шкалы
+    fun mono(size: Int, weight: FontWeight = FontWeight.Normal) // id, отпечатки, логи
+    val title         // Bold 18 — заголовки экранов и листов
+    val headline      // Bold 14 — заголовок корня вкладки, подзаголовки
+    val body          // Regular 13 — строки, текст, пустые экраны
+    val bodyEmphasis  // Bold 13 — кнопки, имя в списке чатов
+    val secondary     // Regular 12 — значения, вторые строки, превью
+    val caption       // Regular 11 — время, подвалы, подсказки
+    val micro         // Regular 10 — время в пузыре, подписи кнопок звонка
+    val badge         // Bold 11 — заголовки секций, счётчики
+    @Composable fun message(size: Int) // текст сообщений: выбор читателя (System / JetBrains Mono) × размер
+}
 ```
 
-**Распространённые размеры:**
-- `ctSemiBold(17)` — заголовок `CTNavBar` подэкрана, как задан, без разрядки
-- `ctBold(14)` + `letterSpacing(4.sp)` + капс — шапка корня вкладки (Settings, Chats, Synaps)
-- `ctRegular(13)` — текст в строках настроек
-- `ctBold(12)` — > SECTION заголовки
-- `ctRegular(11)` — таймстемпы, метаданные
-- `ctBold(16)` — заголовки в `ConstructActionRow` и строках выбора
+Экран выбирает **роль**, а не кегль; кегль вне шкалы — `CTFont.ui(size, weight)`. С 2026-10-07
+`ctRegular(n)` / `ctBold(n)` удалены, как на iOS старые `CTFont.regular/medium/bold`: при них один и
+тот же тип элемента набирался 2–5 кеглями. Системный шрифт — только в тексте сообщений
+(`CTFont.message`) и в строке «системный» выбора шрифта в Оформлении. Живая сверка ролей iOS ↔ Android —
+документ «Konstruct: типографика iOS и Android» (ссылка в vault, TODO 122).
+
+**Частые места:**
+- `CTFont.ui(17, FontWeight.SemiBold)` — заголовок `CTNavBar` подэкрана, без разрядки
+- `CTFont.headline` + `letterSpacing(4.sp)` + капс — шапка корня вкладки (Settings, Chats, Synaps)
+- `CTFont.body` — текст в строках настроек
+- `CTFont.badge` — > SECTION заголовки
+- `CTFont.caption` — таймстемпы, метаданные
+- `CTFont.ui(16, FontWeight.Bold)` — заголовки в `ConstructActionRow` и строках выбора
 
 В Kotlin/Compose для `tracking(4)` использовать `letterSpacing(4.sp)`.
 
@@ -310,27 +325,39 @@ object CornerRadius {
 // SettingsSectionGroup: RoundedRectangle(cornerRadius = 8)
 ```
 
-### 3.5 Сетка / Spacing
+### 3.5 Сетка, иконки / CTSpace, CTIcon
 
 ```kotlin
-// Spacing.kt
-object Spacing {
-    val compact    = 4.dp
-    val small      = 8.dp
-    val standard   = 12.dp
-    val medium     = 16.dp
-    val large      = 24.dp
-    val extraLarge = 32.dp
+// ui/theme/Dimens.kt — = iOS CTSpace / CTIcon / CTLayout
+object CTSpace { val xs = 4.dp; val s = 8.dp; val m = 12.dp; val l = 16.dp; val xl = 24.dp; val xxl = 32.dp }
+
+object CTIcon {            // размер иконки — ступень шкалы, не число по месту
+    val caption = 12.dp    // рядом с подписью: плашки, статус, замок в строке
+    val row     = 16.dp    // в строке списка
+    val nav     = 20.dp    // действия в панели навигации
+    val navLg   = 22.dp    // выделенное действие, кнопка шапки чата
+    val control = 24.dp    // в круглой кнопке: звонок, панель медиа
+    val overlay = 32.dp    // поверх медиа: воспроизвести, скачать, повторить
+    val hero    = 48.dp    // пустой экран, единственный символ экрана
 }
 
-// CTLayout (для nav bar и таб бара)
 object CTLayout {
-    val edgePad      = 12.dp    // горизонтальный padding
-    val navVPad      = 11.dp    // вертикальный padding nav bar
-    val navBarHeight = 44.dp    // фикс. высота nav bar
-    val navIconSize  = 20.dp    // размер Material-иконки для кнопок в nav bar
+    val edgePad      = CTSpace.m    // горизонтальный padding
+    val navVPad      = 11.dp        // вертикальный padding nav bar
+    val navBarHeight = 44.dp        // фикс. высота nav bar
+    val navIconSize  = CTIcon.nav   // иконка кнопки в nav bar
+    val inlinePad    = CTSpace.s
+    val sectionGap   = CTSpace.l
+    // …
 }
 ```
+
+Поверх картинки (звонок, просмотр медиа) — не цвета темы, а `CTColor.onMedia`, `onMediaDim`,
+`mediaScrim`, `mediaControl`, `mediaControlOn`, `answer` (= iOS `Color.CT`).
+
+`scripts/check_ui_tokens.sh` (часть `verify.sh`, значит и CI) считает размеры, кегли, системный
+шрифт и цвета, заданные мимо токенов, и падает, если счётчик вырос. Миграция, которая его понижает,
+понижает базовую линию в том же коммите.
 
 ### 3.6 Тени
 
@@ -1211,7 +1238,7 @@ app/src/main/java/com/construct/messenger/
 │   ├── CTColor.kt                  // Color.CT palette
 │   ├── CTTypography.kt             // CTFont
 │   ├── CTSymbol.kt                 // ASCII-символы
-│   ├── CTLayout.kt                 // Spacing, corner radius
+│   ├── Dimens.kt                   // CTLayout, CTSpace, CTIcon, corner radius
 │   └── CTShadows.kt                // Shadow tokens
 
 ├── ui/components/                  // Reusable > ConstructTheme.swift (components)

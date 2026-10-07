@@ -54,15 +54,15 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.R
 import com.construct.messenger.ui.components.MicSwitch
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -302,7 +302,7 @@ fun ChatActionPaletteOverlay(host: ChatActionPaletteHost) {
                 Spacer(Modifier.height(4.dp))
                 Text(
                     stringResource(action.label),
-                    style = ctRegular(11),
+                    style = CTFont.caption,
                     color = CTColor.text,
                     modifier = Modifier.background(CTColor.bg, CircleShape).padding(horizontal = 6.dp, vertical = 1.dp),
                 )
@@ -312,7 +312,7 @@ fun ChatActionPaletteOverlay(host: ChatActionPaletteHost) {
         if (selected != null) {
             Text(
                 text = stringResource(selected.label),
-                style = ctBold(15),
+                style = CTFont.ui(15, FontWeight.Bold),
                 color = CTColor.text,
                 modifier = Modifier
                     .offset { IntOffset((maxWidth * 0.3f).roundToPx(), (cy + ChatActionPaletteGeometry.RADIUS).roundToPx()) }

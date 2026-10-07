@@ -5,49 +5,44 @@ package com.construct.messenger.ui.components
 import android.graphics.BitmapFactory
 import android.view.TextureView
 import androidx.annotation.OptIn as AndroidOptIn
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.filled.OpenInFull
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.unit.Dp
-import com.construct.messenger.media.VideoNotePlayback
-import com.construct.messenger.ui.theme.CTLayout
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,8 +54,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
@@ -74,9 +72,12 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.construct.messenger.R
 import com.construct.messenger.data.model.MediaItem
 import com.construct.messenger.data.repository.MediaUnavailable
+import com.construct.messenger.media.VideoNotePlayback
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.CornerRadius
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.util.BlurHash
 import com.construct.messenger.util.MediaWire
 
@@ -222,19 +223,19 @@ fun VideoNoteBubble(
             uploading || (state == NoteLoad.LOADING && bytes == null) ->
                 CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
             state == NoteLoad.UNAVAILABLE ->
-                Icon(Icons.Filled.Warning, stringResource(R.string.media_unavailable), tint = CTColor.danger, modifier = Modifier.size(28.dp))
+                Icon(Icons.Filled.Warning, stringResource(R.string.media_unavailable), tint = CTColor.danger, modifier = Modifier.size(CTIcon.overlay))
             state == NoteLoad.FAILED ->
                 Icon(
                     Icons.Filled.Download,
                     stringResource(R.string.retry),
                     tint = Color.White,
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(CTIcon.hero)
                         .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(CornerRadius.small))
                         .padding(8.dp),
                 )
             playback.expanded && playback.paused ->
-                Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(36.dp))
+                Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(CTIcon.overlay))
             else -> Unit
         }
         if (playback.expanded) {
@@ -251,7 +252,7 @@ fun VideoNoteBubble(
                     fullScreenLabel,
                     tint = Color.White,
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(CTIcon.overlay)
                         .background(Color.Black.copy(alpha = 0.45f), CircleShape)
                         .padding(7.dp),
                 )
@@ -269,7 +270,7 @@ fun VideoNoteBubble(
                 ) {
                     Text(
                         VideoNotePlayback.rateLabel(playback.rate),
-                        style = ctRegular(11),
+                        style = CTFont.caption,
                         color = Color.White,
                         modifier = Modifier
                             .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(CornerRadius.badge))
@@ -300,10 +301,10 @@ fun VideoNoteBubble(
                     Icons.AutoMirrored.Filled.VolumeOff,
                     stringResource(R.string.video_note_muted),
                     tint = Color.White,
-                    modifier = Modifier.size(10.dp),
+                    modifier = Modifier.size(CTIcon.caption),
                 )
                 item.durationMs?.takeIf { it > 0 }?.let {
-                    Text(VideoNoteLayout.duration(it), style = ctRegular(11), color = Color.White)
+                    Text(VideoNoteLayout.duration(it), style = CTFont.caption, color = Color.White)
                 }
             }
         }

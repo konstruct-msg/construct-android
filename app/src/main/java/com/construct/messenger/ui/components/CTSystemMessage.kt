@@ -7,18 +7,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
 
 /**
  * System message rendered as terminal-style `> text`.
  *
  * **Canon:** iOS `ConstructTheme.swift` → `struct CTSystemMessage`.
- * - `>` prefix in `ctBold(12)` + `accent`.
- * - Body in `ctRegular(12)` + `accent`.
+ * - `>` prefix in `CTFont.ui(12, FontWeight.Bold)` + `accent`.
+ * - Body in `CTFont.secondary` + `accent`.
  * - Padding: horizontal 12dp, vertical 2dp.
  *
  * The `>` prefix is decorative terminal chrome; it is not a functional control.
@@ -34,13 +34,13 @@ fun CTSystemMessage(
     ) {
         Text(
             text = ">",
-            style = ctBold(12),
+            style = CTFont.ui(12, FontWeight.Bold),
             color = CTColor.accent,
         )
         Spacer(Modifier.width(6.dp))
         Text(
             text = text,
-            style = ctRegular(12),
+            style = CTFont.secondary,
             color = CTColor.accent,
         )
     }

@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowCircleUp
 import androidx.compose.material.icons.filled.Cancel
@@ -36,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -47,7 +47,8 @@ import androidx.compose.ui.unit.dp
 import com.construct.messenger.R
 import com.construct.messenger.data.model.MessageMedia
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import kotlin.math.max
 import kotlin.math.min
 
@@ -180,7 +181,7 @@ fun VoiceBubble(
                 playback.uploading || playback.loading ->
                     CircularProgressIndicator(color = tint, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
                 playback.unavailable ->
-                    Icon(Icons.Filled.Warning, stringResource(R.string.media_unavailable), tint = CTColor.danger, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.Warning, stringResource(R.string.media_unavailable), tint = CTColor.danger, modifier = Modifier.size(CTIcon.row))
                 else -> Icon(
                     imageVector = if (playback.progress != null && !playback.paused) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = stringResource(R.string.voice_message),
@@ -189,7 +190,7 @@ fun VoiceBubble(
                         .clip(CircleShape)
                         .clickable(onClick = onToggle)
                         .padding(4.dp)
-                        .size(24.dp),
+                        .size(CTIcon.control),
                 )
             }
         }
@@ -204,7 +205,7 @@ fun VoiceBubble(
         )
         Text(
             text = formatVoiceDuration(shownMs),
-            style = ctRegular(11),
+            style = CTFont.caption,
             color = if (outgoing) CTColor.outMsgText.copy(alpha = 0.85f) else CTColor.textDim,
             textAlign = TextAlign.End,
             modifier = Modifier.width(34.dp),
@@ -241,7 +242,7 @@ fun VoiceComposerBar(
             contentDescription = stringResource(if (recording) R.string.action_cancel else R.string.delete),
             tint = CTColor.danger,
             // 24 drawn, 40 to press: a small target inside a pill is easy to miss.
-            modifier = Modifier.clip(CircleShape).clickable(onClick = onLeading).padding(8.dp).size(24.dp),
+            modifier = Modifier.clip(CircleShape).clickable(onClick = onLeading).padding(8.dp).size(CTIcon.control),
         )
         VoiceWaveform(
             samples = waveform,
@@ -250,7 +251,7 @@ fun VoiceComposerBar(
         )
         Text(
             text = formatVoiceDuration(durationMs),
-            style = ctRegular(14),
+            style = CTFont.ui(14),
             color = CTColor.textDim,
             textAlign = TextAlign.End,
             modifier = Modifier.widthIn(min = 42.dp),

@@ -22,62 +22,76 @@ val CTFontFamily = FontFamily(
     Font(R.font.jetbrains_mono_semibold, FontWeight.SemiBold),
     Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
 )
-val CTFontRegular = CTFontFamily
-val CTFontBold = CTFontFamily
 
-fun ctRegular(size: Int) = TextStyle(
-    fontFamily = CTFontRegular,
-    fontSize = size.sp,
-    fontWeight = FontWeight.Normal
-)
+/**
+ * The chrome's type scale. **Canon:** iOS `CTFont` (`ConstructTheme.swift`).
+ *
+ * A screen picks a role, not a size: a change to "what body text is" happens here once. The roles
+ * are the (weight, size) pairs that cover most of the chrome on both platforms; a size not in the
+ * list is [ui] directly. Sizes are sp, so they follow the system font scale — Android's Dynamic Type.
+ *
+ * The fixed-size helpers this replaced (`ctRegular(13)`, `ctBold(15)` …) let every screen choose its
+ * own size, and by 2026-10-06 one kind of element had 2–5 sizes across screens. They are gone, as the
+ * iOS pre-split names are.
+ */
+object CTFont {
+    /** Chrome: nav bars, labels, section headers, buttons — anything read to operate the app. */
+    fun ui(size: Int, weight: FontWeight = FontWeight.Normal) = TextStyle(
+        fontFamily = CTFontFamily,
+        fontSize = size.sp,
+        fontWeight = weight,
+    )
 
-/** iOS `CTFont.ui(size, weight: .medium)`. */
-fun ctMedium(size: Int) = TextStyle(
-    fontFamily = CTFontFamily,
-    fontSize = size.sp,
-    fontWeight = FontWeight.Medium
-)
+    /**
+     * Technical content: hex ids, fingerprints, safety numbers, device ids, logs. Monospace here is
+     * a decision about what the content *is*, so it stays monospace whatever the chrome is set in.
+     */
+    fun mono(size: Int, weight: FontWeight = FontWeight.Normal) = ui(size, weight)
 
-/** iOS `CTFont.ui(size, weight: .semibold)` — the nav bar title. */
-fun ctSemiBold(size: Int) = TextStyle(
-    fontFamily = CTFontFamily,
-    fontSize = size.sp,
-    fontWeight = FontWeight.SemiBold
-)
+    /** Screen and sheet titles. */
+    val title = ui(18, FontWeight.Bold)
+    /** Section titles, the root title of a tab, emphasised labels. */
+    val headline = ui(14, FontWeight.Bold)
+    /** Row labels and the ordinary text of the chrome. */
+    val body = ui(13)
+    /** Body with emphasis: buttons, the name in the chat list. */
+    val bodyEmphasis = ui(13, FontWeight.Bold)
+    /** Row values, secondary lines, previews. */
+    val secondary = ui(12)
+    /** Captions, timestamps, footers. */
+    val caption = ui(11)
+    /** The smallest text the chrome sets: the bubble's time, call button labels. */
+    val micro = ui(10)
+    /** Section headers, counters, chips. */
+    val badge = ui(11, FontWeight.Bold)
 
-fun ctBold(size: Int) = TextStyle(
-    fontFamily = CTFontBold,
-    fontSize = size.sp,
-    fontWeight = FontWeight.Bold
-)
+    /**
+     * Message text — bubbles and the composer that fills them — in the reader's face and size.
+     * The only font in the app the reader chooses; everything else is chrome.
+     */
+    @Composable
+    @ReadOnlyComposable
+    fun message(size: Int): TextStyle {
+        val chat = LocalChatText.current
+        return TextStyle(
+            fontFamily = if (chat.monospace) CTFontFamily else FontFamily.Default,
+            fontSize = (size * chat.multiplier).sp,
+            fontWeight = FontWeight.Normal,
+        )
+    }
+}
 
 /** What message text is set in: [monospace] or the platform face, scaled by [multiplier]. */
 data class ChatText(val monospace: Boolean = false, val multiplier: Float = 1f)
 
-/**
- * Message text — bubbles and the composer that fills them — in the reader's face and size.
- *
- * **Canon:** iOS `CTFont.message`. Everything else is chrome and stays [ctRegular].
- */
-@Composable
-@ReadOnlyComposable
-fun ctMessage(size: Int): TextStyle {
-    val chat = LocalChatText.current
-    return TextStyle(
-        fontFamily = if (chat.monospace) CTFontRegular else FontFamily.Default,
-        fontSize = (size * chat.multiplier).sp,
-        fontWeight = FontWeight.Normal,
-    )
-}
-
 val Typography = Typography(
-    bodyLarge = ctRegular(16),
-    bodyMedium = ctRegular(14),
-    bodySmall = ctRegular(12),
-    titleLarge = ctBold(22),
-    titleMedium = ctBold(18),
-    titleSmall = ctBold(14),
-    labelLarge = ctRegular(14),
-    labelMedium = ctRegular(12),
-    labelSmall = ctRegular(10)
+    bodyLarge = CTFont.ui(16),
+    bodyMedium = CTFont.ui(14),
+    bodySmall = CTFont.secondary,
+    titleLarge = CTFont.ui(22, FontWeight.Bold),
+    titleMedium = CTFont.title,
+    titleSmall = CTFont.headline,
+    labelLarge = CTFont.ui(14),
+    labelMedium = CTFont.secondary,
+    labelSmall = CTFont.micro,
 )

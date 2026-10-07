@@ -72,10 +72,11 @@ import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.invite.InviteQr
 import com.construct.messenger.ui.components.CTButton
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.Spacing
-import com.construct.messenger.ui.theme.ctRegular
-import com.construct.messenger.viewmodel.QrScannerViewModel
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.veil.VeilConfigLink
+import com.construct.messenger.viewmodel.QrScannerViewModel
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
 import com.google.zxing.NotFoundException
@@ -135,15 +136,15 @@ fun QrScannerScreen(
         }
         Text(
             text = stringResource(R.string.action_cancel),
-            style = TextStyle(fontSize = 17.sp),
+            style = CTFont.ui(17),
             color = Color.White,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .statusBarsPadding()
-                .padding(horizontal = Spacing.small, vertical = Spacing.small)
+                .padding(horizontal = CTSpace.s, vertical = CTSpace.s)
                 .clip(RoundedCornerShape(8.dp))
                 .clickable(onClick = onNavigateBack)
-                .padding(horizontal = Spacing.small, vertical = Spacing.small),
+                .padding(horizontal = CTSpace.s, vertical = CTSpace.s),
         )
         // A link that arrived as text goes in here and takes the same path as a scanned one —
         // Synaps redeems it and says how it went.
@@ -152,22 +153,22 @@ fun QrScannerScreen(
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .padding(bottom = 60.dp)
-                .padding(horizontal = Spacing.medium)
+                .padding(horizontal = CTSpace.l)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color.Black.copy(alpha = 0.7f))
-                .padding(Spacing.medium),
+                .padding(CTSpace.l),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
                 text = stringResource(R.string.scan_qr_code),
-                style = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.SemiBold),
+                style = CTFont.ui(17, FontWeight.SemiBold),
                 color = Color.White,
             )
             Text(
                 text = stringResource(if (notAnInvite) R.string.invalid_qr_code else R.string.scan_hint),
-                style = TextStyle(fontSize = 15.sp),
+                style = CTFont.ui(15),
                 color = if (notAnInvite) CTColor.danger else Color.White.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
             )
@@ -187,14 +188,14 @@ fun QrScannerScreen(
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Default.ContentPaste, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.ContentPaste, contentDescription = null, tint = Color.White, modifier = Modifier.size(CTIcon.row))
                 Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.paste_invite_link), style = TextStyle(fontSize = 15.sp), color = Color.White)
+                Text(stringResource(R.string.paste_invite_link), style = CTFont.ui(15), color = Color.White)
             }
             if (emptyClipboard) {
                 Text(
                     text = stringResource(R.string.clipboard_no_valid_invite),
-                    style = TextStyle(fontSize = 13.sp),
+                    style = CTFont.body,
                     color = CTColor.danger,
                     textAlign = TextAlign.Center,
                 )
@@ -297,13 +298,13 @@ private fun PermissionPrompt(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = Spacing.extraLarge),
-        verticalArrangement = Arrangement.spacedBy(Spacing.large, Alignment.CenterVertically),
+            .padding(horizontal = CTSpace.xxl),
+        verticalArrangement = Arrangement.spacedBy(CTSpace.xl, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = stringResource(R.string.camera_permission_needed),
-            style = ctRegular(14),
+            style = CTFont.ui(14),
             color = CTColor.textDim,
             textAlign = TextAlign.Center,
         )

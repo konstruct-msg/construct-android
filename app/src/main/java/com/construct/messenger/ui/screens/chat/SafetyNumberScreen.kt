@@ -4,12 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,9 +45,9 @@ import com.construct.messenger.R
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.ctBackground
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.Spacing
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.DeviceSafetyNumber
 import com.construct.messenger.viewmodel.SafetyNumberViewModel
 import kotlinx.coroutines.delay
@@ -84,10 +85,10 @@ fun SafetyNumberScreen(
                 modifier = Modifier.padding(horizontal = EDGE, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Tracked("> ${stringResource(R.string.safety_numbers_verify_title).uppercase()}", ctBold(12), CTColor.accent)
+                Tracked("> ${stringResource(R.string.safety_numbers_verify_title).uppercase()}", CTFont.ui(12, FontWeight.Bold), CTColor.accent)
                 Text(
                     text = stringResource(R.string.safety_numbers_instruction, ui.contactName),
-                    style = ctRegular(13).copy(lineHeight = 21.sp),
+                    style = CTFont.body.copy(lineHeight = 21.sp),
                     color = CTColor.textDim,
                 )
             }
@@ -97,7 +98,7 @@ fun SafetyNumberScreen(
                     color = CTColor.accent,
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
-                        .padding(Spacing.large),
+                        .padding(CTSpace.xl),
                 )
                 ui.devices.isEmpty() -> {
                     Unavailable()
@@ -114,12 +115,12 @@ fun SafetyNumberScreen(
             ) {
                 Tracked(
                     "! ${stringResource(R.string.safety_numbers_mismatch_header).uppercase()}",
-                    ctBold(11),
+                    CTFont.badge,
                     CTColor.accent.copy(alpha = 0.7f),
                 )
                 Text(
                     text = stringResource(R.string.safety_numbers_mismatch_body),
-                    style = ctRegular(12).copy(lineHeight = 20.sp),
+                    style = CTFont.secondary.copy(lineHeight = 20.sp),
                     color = CTColor.textDim,
                 )
             }
@@ -140,7 +141,7 @@ private fun DeviceBlock(device: DeviceSafetyNumber, showDevice: Boolean) {
     if (showDevice) {
         Tracked(
             text = stringResource(R.string.safety_numbers_device, device.fingerprint),
-            style = ctBold(11),
+            style = CTFont.badge,
             color = CTColor.textDim,
             modifier = Modifier.padding(start = EDGE, end = EDGE, top = 14.dp),
         )
@@ -159,7 +160,7 @@ private fun DeviceBlock(device: DeviceSafetyNumber, showDevice: Boolean) {
                 row.forEach { chunk ->
                     Text(
                         text = chunk,
-                        style = ctBold(16),
+                        style = CTFont.ui(16, FontWeight.Bold),
                         color = CTColor.text,
                         modifier = Modifier
                             .weight(1f)
@@ -184,7 +185,7 @@ private fun DeviceBlock(device: DeviceSafetyNumber, showDevice: Boolean) {
     ) {
         Text(
             text = stringResource(if (copied) R.string.safety_numbers_copied else R.string.safety_numbers_copy),
-            style = ctRegular(13),
+            style = CTFont.body,
             color = if (copied) CTColor.accent else CTColor.text,
         )
         Spacer(Modifier.weight(1f))
@@ -192,7 +193,7 @@ private fun DeviceBlock(device: DeviceSafetyNumber, showDevice: Boolean) {
             imageVector = if (copied) Icons.Default.Check else Icons.Outlined.ContentCopy,
             contentDescription = null,
             tint = if (copied) CTColor.accent else CTColor.textDim,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(CTIcon.nav),
         )
     }
 }
@@ -201,7 +202,7 @@ private fun DeviceBlock(device: DeviceSafetyNumber, showDevice: Boolean) {
 private fun Unavailable() {
     Text(
         text = stringResource(R.string.safety_numbers_unavailable),
-        style = ctRegular(13),
+        style = CTFont.body,
         color = CTColor.textDim,
         modifier = Modifier.padding(horizontal = EDGE, vertical = 14.dp),
     )

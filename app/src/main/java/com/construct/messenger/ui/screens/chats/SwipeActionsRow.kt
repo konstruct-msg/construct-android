@@ -40,7 +40,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -196,10 +197,10 @@ private fun ActionButton(action: SwipeAction, modifier: Modifier, onClick: () ->
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Icon(action.icon, contentDescription = null, tint = action.tint, modifier = Modifier.size(20.dp))
+            Icon(action.icon, contentDescription = null, tint = action.tint, modifier = Modifier.size(CTIcon.nav))
             Text(
                 text = action.label,
-                style = ctRegular(11),
+                style = CTFont.caption,
                 color = action.tint,
                 textAlign = TextAlign.Center,
                 maxLines = 2,

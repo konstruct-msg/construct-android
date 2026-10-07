@@ -1,7 +1,5 @@
 package com.construct.messenger.ui.screens.settings
 
-import androidx.compose.material.icons.filled.Tag
-import com.construct.messenger.security.KtTally
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,24 +21,20 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import com.construct.messenger.data.repository.AppLockState
-import com.construct.messenger.data.repository.LockDelay
-import com.construct.messenger.ui.screens.security.PinFlow
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.viewmodel.AppLockViewModel
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.PendingActions
+import androidx.compose.material.icons.filled.Tag
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -60,19 +55,25 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
+import com.construct.messenger.data.repository.AppLockState
+import com.construct.messenger.data.repository.LockDelay
 import com.construct.messenger.data.repository.Lockdown
 import com.construct.messenger.recovery.HeldPhrase
 import com.construct.messenger.recovery.RecoveryStatus
+import com.construct.messenger.security.KtTally
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.CTSettingsRow
-import com.construct.messenger.ui.components.CTStatus
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
+import com.construct.messenger.ui.components.CTStatus
 import com.construct.messenger.ui.components.CTStatusBadge
+import com.construct.messenger.ui.screens.security.PinFlow
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.viewmodel.AppLockViewModel
 import com.construct.messenger.viewmodel.SecurityUiState
 import com.construct.messenger.viewmodel.SecurityViewModel
 import java.util.Date
@@ -186,7 +187,7 @@ private fun SecurityContent(
                 )
                 Text(
                     text = stringResource(R.string.security_stealth_title),
-                    style = ctRegular(13),
+                    style = CTFont.body,
                     color = CTColor.text,
                     modifier = Modifier.weight(1f),
                 )
@@ -235,7 +236,7 @@ private fun PinBlock(
     SecurityRow(modifier = Modifier.clickable { onPin(if (lock.pinEnabled) PinFlow.CHANGE else PinFlow.CREATE) }) {
         Text(
             text = stringResource(if (lock.pinEnabled) R.string.pin_change else R.string.pin_enable),
-            style = ctRegular(13),
+            style = CTFont.body,
             color = CTColor.text,
             modifier = Modifier.weight(1f),
         )
@@ -247,7 +248,7 @@ private fun PinBlock(
         RowIcon(Icons.Default.Fingerprint, if (lock.biometricEnabled) CTColor.accent else CTColor.textDim)
         Text(
             text = stringResource(R.string.security_use_biometric),
-            style = ctRegular(13),
+            style = CTFont.body,
             color = if (lock.biometricAvailable) CTColor.text else CTColor.textDim,
             modifier = Modifier.weight(1f),
         )
@@ -258,17 +259,17 @@ private fun PinBlock(
         RowIcon(Icons.Default.Timer, CTColor.textDim)
         Text(
             text = stringResource(R.string.lock_delay),
-            style = ctRegular(13),
+            style = CTFont.body,
             color = CTColor.text,
             modifier = Modifier.weight(1f),
         )
-        Text(text = stringResource(lock.lockDelay.label), style = ctRegular(12), color = CTColor.textDim)
+        Text(text = stringResource(lock.lockDelay.label), style = CTFont.secondary, color = CTColor.textDim)
         Chevron()
     }
     CTSep()
     SecurityRow(modifier = Modifier.clickable { onPin(PinFlow.DISABLE) }) {
         RowIcon(Icons.Default.Cancel, CTColor.danger)
-        Text(text = stringResource(R.string.pin_disable), style = ctRegular(13), color = CTColor.danger)
+        Text(text = stringResource(R.string.pin_disable), style = CTFont.body, color = CTColor.danger)
     }
 }
 
@@ -278,7 +279,7 @@ private fun LockDelayDialog(current: LockDelay, onPick: (LockDelay) -> Unit, onD
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = CTColor.outMsgBg,
-        title = { Text(stringResource(R.string.lock_delay), style = ctBold(15), color = CTColor.text) },
+        title = { Text(stringResource(R.string.lock_delay), style = CTFont.ui(15, FontWeight.Bold), color = CTColor.text) },
         text = {
             Column {
                 LockDelay.entries.forEach { delay ->
@@ -291,12 +292,12 @@ private fun LockDelayDialog(current: LockDelay, onPick: (LockDelay) -> Unit, onD
                     ) {
                         Text(
                             text = stringResource(delay.label),
-                            style = ctRegular(14),
+                            style = CTFont.ui(14),
                             color = CTColor.text,
                             modifier = Modifier.weight(1f),
                         )
                         if (delay == current) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = CTColor.accent, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Check, contentDescription = null, tint = CTColor.accent, modifier = Modifier.size(CTIcon.nav))
                         }
                     }
                 }
@@ -305,7 +306,7 @@ private fun LockDelayDialog(current: LockDelay, onPick: (LockDelay) -> Unit, onD
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel), style = ctRegular(13), color = CTColor.textDim)
+                Text(stringResource(R.string.action_cancel), style = CTFont.body, color = CTColor.textDim)
             }
         },
     )
@@ -324,29 +325,29 @@ private val LockDelay.label: Int
 private fun RecoveryRow(recovery: RecoveryStatus?, held: HeldPhrase, onClick: () -> Unit) {
     SecurityRow(modifier = Modifier.clickable(onClick = onClick)) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(text = stringResource(R.string.security_recovery_title), style = ctRegular(13), color = CTColor.text)
+            Text(text = stringResource(R.string.security_recovery_title), style = CTFont.body, color = CTColor.text)
             when {
                 // iOS: a silent key not yet copied says so instead of its fingerprint.
                 held == HeldPhrase.HELD -> Text(
                     text = stringResource(R.string.recovery_backup_pending),
-                    style = ctRegular(11),
+                    style = CTFont.caption,
                     color = CTColor.warning,
                 )
                 held == HeldPhrase.LOST -> Text(
                     text = stringResource(R.string.recovery_backup_lost),
-                    style = ctRegular(11),
+                    style = CTFont.caption,
                     color = CTColor.danger,
                 )
                 recovery?.isSetup == true && recovery.fingerprint != null -> Text(
                     text = recovery.fingerprint,
-                    style = ctRegular(11),
+                    style = CTFont.caption,
                     color = CTColor.accent,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 recovery?.isSetup == false -> Text(
                     text = stringResource(R.string.security_recovery_not_set_up),
-                    style = ctRegular(11),
+                    style = CTFont.caption,
                     color = CTColor.warning,
                 )
             }
@@ -364,14 +365,14 @@ private fun LockdownRow(lockdown: Lockdown, onChange: (Boolean) -> Unit) {
             if (lockdown.isActive) CTColor.warning else CTColor.textDim,
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(text = stringResource(R.string.security_lockdown_title), style = ctRegular(13), color = CTColor.text)
+            Text(text = stringResource(R.string.security_lockdown_title), style = CTFont.body, color = CTColor.text)
             lockdown.activatedAt?.let { since ->
                 val date = Date(since)
                 val formatted = DateFormat.getMediumDateFormat(context).format(date) + " " +
                     DateFormat.getTimeFormat(context).format(date)
                 Text(
                     text = stringResource(R.string.security_lockdown_since, formatted),
-                    style = ctRegular(11),
+                    style = CTFont.caption,
                     color = CTColor.warning,
                 )
             }
@@ -389,7 +390,7 @@ private fun DiscoveryRow(ui: SecurityUiState, onChange: (Boolean) -> Unit) {
         )
         Text(
             text = stringResource(R.string.searchable_toggle_title),
-            style = ctRegular(13),
+            style = CTFont.body,
             color = if (ui.hasUsername) CTColor.text else CTColor.textDim,
             modifier = Modifier.weight(1f),
         )
@@ -428,7 +429,7 @@ private fun SecurityRow(
 /** iOS `CTRowIcon(sf:)`: a 16pt symbol, which draws a little larger than its point size. */
 @Composable
 private fun RowIcon(icon: ImageVector, tint: Color) {
-    Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
+    Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(CTIcon.nav))
 }
 
 @Composable
@@ -437,7 +438,7 @@ private fun Chevron() {
         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
         contentDescription = null,
         tint = CTColor.textDim,
-        modifier = Modifier.size(16.dp),
+        modifier = Modifier.size(CTIcon.row),
     )
 }
 
@@ -462,7 +463,7 @@ private fun CTSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, enabl
 private fun Hint(text: String, color: Color = CTColor.textDim, top: Dp = 6.dp) {
     Text(
         text = text,
-        style = ctRegular(11),
+        style = CTFont.caption,
         color = color,
         modifier = Modifier
             .fillMaxWidth()
@@ -508,12 +509,12 @@ private fun KtSection(kt: KtTally) {
         RowIcon(Icons.Default.Tag, tint)
         Text(
             text = stringResource(R.string.kt_status),
-            style = ctRegular(13),
+            style = CTFont.body,
             color = CTColor.text,
             modifier = Modifier.weight(1f),
         )
         CTStatusBadge(status = status, size = 12.dp)
-        Text(text = label, style = ctRegular(11), color = tint, modifier = Modifier.padding(start = 6.dp))
+        Text(text = label, style = CTFont.caption, color = tint, modifier = Modifier.padding(start = 6.dp))
     }
     val failedAt = kt.lastFailedAtMs
     if (kt.failures > 0 && failedAt != null) {

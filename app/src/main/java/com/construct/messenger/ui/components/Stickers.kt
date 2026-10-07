@@ -50,6 +50,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -58,9 +59,9 @@ import com.construct.messenger.stickers.StickerPack
 import com.construct.messenger.stickers.StickerReference
 import com.construct.messenger.stickers.StickerStore
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.ctMedium
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.StickersViewModel
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -163,18 +164,18 @@ fun StickerPickerSheet(
             if (picker.packs.isEmpty() && picker.recents.isEmpty()) {
                 header("empty") {
                     Column(Modifier.fillMaxWidth().padding(vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Outlined.EmojiEmotions, null, tint = CTColor.textDim, modifier = Modifier.size(32.dp))
-                        Text(stringResource(R.string.sticker_catalog_empty), style = ctRegular(13), color = CTColor.textDim)
+                        Icon(Icons.Outlined.EmojiEmotions, null, tint = CTColor.textDim, modifier = Modifier.size(CTIcon.overlay))
+                        Text(stringResource(R.string.sticker_catalog_empty), style = CTFont.body, color = CTColor.textDim)
                     }
                 }
             }
             when (catalog) {
                 StickersViewModel.Catalog.Unavailable -> header("catalog-failed") {
                     Row(Modifier.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.sticker_catalog_failed), style = ctRegular(12), color = CTColor.textDim, modifier = Modifier.weight(1f))
+                        Text(stringResource(R.string.sticker_catalog_failed), style = CTFont.secondary, color = CTColor.textDim, modifier = Modifier.weight(1f))
                         Text(
                             stringResource(R.string.retry),
-                            style = ctMedium(12),
+                            style = CTFont.ui(12, FontWeight.Medium),
                             color = CTColor.accent,
                             modifier = Modifier.clickable { stickers.loadCatalog() }.padding(8.dp),
                         )
@@ -201,7 +202,7 @@ private fun androidx.compose.foundation.lazy.grid.LazyGridScope.header(key: Stri
 private fun SectionTitle(text: String) {
     Text(
         text = "> " + text.uppercase(),
-        style = ctMedium(11),
+        style = CTFont.ui(11, FontWeight.Medium),
         color = CTColor.textDim,
         letterSpacing = 2.sp,
         modifier = Modifier.padding(top = 12.dp, bottom = 6.dp),
@@ -214,7 +215,7 @@ private fun PackTitle(pack: StickerPack, onRemove: () -> Unit) {
     Box {
         Text(
             text = "> " + pack.title.uppercase(),
-            style = ctMedium(11),
+            style = CTFont.ui(11, FontWeight.Medium),
             color = CTColor.textDim,
             letterSpacing = 2.sp,
             modifier = Modifier
@@ -223,7 +224,7 @@ private fun PackTitle(pack: StickerPack, onRemove: () -> Unit) {
         )
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.sticker_pack_remove), style = ctRegular(14), color = CTColor.danger) },
+                text = { Text(stringResource(R.string.sticker_pack_remove), style = CTFont.ui(14), color = CTColor.danger) },
                 onClick = {
                     menu = false
                     onRemove()
@@ -269,10 +270,10 @@ private fun CatalogRow(
             }
             Spacer(Modifier.width(CTLayout.inlinePad))
             Column(Modifier.weight(1f)) {
-                Text(entry.title, style = ctMedium(14), color = CTColor.text)
+                Text(entry.title, style = CTFont.ui(14, FontWeight.Medium), color = CTColor.text)
                 Text(
                     "${entry.publisher} · ${pluralStringResource(R.plurals.sticker_pack_count, entry.count, entry.count)} · ${entry.totalBytes / 1024} KB",
-                    style = ctRegular(11),
+                    style = CTFont.caption,
                     color = CTColor.textDim,
                 )
             }
@@ -281,7 +282,7 @@ private fun CatalogRow(
             } else {
                 Text(
                     stringResource(R.string.sticker_get),
-                    style = ctMedium(13),
+                    style = CTFont.ui(13, FontWeight.Medium),
                     color = CTColor.bg,
                     modifier = Modifier
                         .background(CTColor.accent, RoundedCornerShape(50))
@@ -290,6 +291,6 @@ private fun CatalogRow(
                 )
             }
         }
-        if (failed) Text(stringResource(R.string.sticker_install_failed), style = ctRegular(11), color = CTColor.danger)
+        if (failed) Text(stringResource(R.string.sticker_install_failed), style = CTFont.caption, color = CTColor.danger)
     }
 }

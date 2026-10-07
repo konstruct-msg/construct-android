@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTIcon
 
 /**
  * One tab. iOS renders the icon only (the ASCII `symbol` is not shown in the bar),
@@ -83,7 +84,7 @@ fun CTTabBar(
                     imageVector = if (selected) item.selectedIcon else item.icon,
                     contentDescription = item.contentDescription,
                     tint = if (selected) CTColor.accent else CTColor.textDim,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(CTIcon.nav),
                 )
             }
         }

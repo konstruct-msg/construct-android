@@ -11,10 +11,10 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -55,8 +55,9 @@ import com.construct.messenger.R
 import com.construct.messenger.media.VideoNoteRecorder
 import com.construct.messenger.media.VideoNoteTake
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CornerRadius
-import com.construct.messenger.ui.theme.ctRegular
 import kotlinx.coroutines.launch
 
 /**
@@ -132,7 +133,7 @@ fun VideoNoteRecordingOverlay(onSend: (VideoNoteTake) -> Unit, onClose: () -> Un
                     if (phase == VideoNoteRecorder.Phase.FAILED) {
                         Text(
                             stringResource(R.string.video_note_camera_unavailable),
-                            style = ctRegular(13),
+                            style = CTFont.body,
                             color = Color.White,
                             modifier = Modifier.padding(16.dp),
                         )
@@ -211,7 +212,7 @@ private fun RecordingBar(
                 VideoNoteRecorder.Phase.PAUSED -> stringResource(R.string.video_note_paused)
                 else -> VideoNoteClock.format(elapsedMs)
             },
-            style = ctRegular(14),
+            style = CTFont.ui(14),
             color = CTColor.text,
         )
         Spacer(Modifier.weight(1f))
@@ -236,7 +237,7 @@ private fun RecordingBar(
                 Icons.Filled.ArrowCircleUp,
                 stringResource(R.string.video_note_send),
                 tint = if (canSend) CTColor.accent else CTColor.textDim,
-                modifier = Modifier.size(28.dp),
+                modifier = Modifier.size(CTIcon.overlay),
             )
         }
     }

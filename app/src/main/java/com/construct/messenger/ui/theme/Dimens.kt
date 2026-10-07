@@ -5,37 +5,58 @@ import androidx.compose.ui.unit.dp
 /**
  * Layout / geometry / spacing tokens.
  *
- * `CTLayout` mirrors iOS `ConstructTheme.swift` → `enum CTLayout` exactly.
- * `Spacing` and `CornerRadius` are the Android-side scale (see
- * `construct-docs/raw/ANDROID_ONBOARDING.md` §3.4–3.5); keep usages on the
- * scale instead of magic numbers.
+ * `CTLayout`, `CTIcon` and `CTSpace` mirror iOS `ConstructTheme.swift` exactly;
+ * `CornerRadius` is the Android-side scale (`docs/ANDROID_ONBOARDING.md` §3).
+ * Keep usages on the scale instead of magic numbers — `scripts/check_ui_tokens.sh`
+ * counts what is not, and fails when the count rises.
  */
 
 /** Nav bar / tab bar metrics — must match iOS `CTLayout`. */
 object CTLayout {
-    val edgePad = 12.dp        // horizontal padding
+    val edgePad = CTSpace.m    // horizontal padding
     val navVPad = 11.dp        // vertical padding of nav bar
     val navBarHeight = 44.dp   // fixed nav bar height
-    val navIconSize = 20.dp    // icon size for nav bar buttons
-    val navIconSizeLg = 22.dp  // larger nav icon variant
+    val navIconSize = CTIcon.nav     // icon size for nav bar buttons
+    val navIconSizeLg = CTIcon.navLg // larger nav icon variant
     val chromeGap = 10.dp      // gap between chrome elements; compact row padding
-    val inlinePad = 8.dp       // inline padding inside a row
-    val sectionGap = 16.dp     // between sections
+    val inlinePad = CTSpace.s  // inline padding inside a row
+    val sectionGap = CTSpace.l // between sections
     val controlHeight = 42.dp  // minimum height of a tappable card row
     val hitTarget = 44.dp      // smallest thing meant to be tapped
-    val callIconSize = 24.dp   // glyph inside a call control
+    val callIconSize = CTIcon.control // glyph inside a call control
     val callControlSize = 56.dp // mute / speaker discs
     val callEndSize = 64.dp    // the end-call disc
 }
 
-/** Spacing scale. */
-object Spacing {
-    val compact = 4.dp
-    val small = 8.dp
-    val standard = 12.dp
-    val medium = 16.dp
-    val large = 24.dp
-    val extraLarge = 32.dp
+/**
+ * Icon sizes — seven steps instead of a size per site. **Canon:** iOS `CTIcon`. A size between two
+ * steps rounds to the nearer one, up on a tie (owner's choice, 2026-10-06).
+ */
+object CTIcon {
+    /** Beside a caption: chips, status, a lock in a row. */
+    val caption = 12.dp
+    /** In a list row, beside the main text. */
+    val row = 16.dp
+    /** Actions in the nav bar. */
+    val nav = 20.dp
+    /** An emphasised action, the chat header's button. */
+    val navLg = 22.dp
+    /** Inside a round control: call buttons, the media viewer's bar. */
+    val control = 24.dp
+    /** Over media: play, download, retry. */
+    val overlay = 32.dp
+    /** An empty screen, a screen's single symbol. */
+    val hero = 48.dp
+}
+
+/** Spacing scale. **Canon:** iOS `CTSpace`. */
+object CTSpace {
+    val xs = 4.dp
+    val s = 8.dp
+    val m = 12.dp
+    val l = 16.dp
+    val xl = 24.dp
+    val xxl = 32.dp
 }
 
 /** Corner radii. */

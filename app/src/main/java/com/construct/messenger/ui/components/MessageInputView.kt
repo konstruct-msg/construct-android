@@ -1,67 +1,67 @@
 package com.construct.messenger.ui.components
 
+import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.ArrowCircleUp
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
-import android.net.Uri
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.filled.AddCircleOutline
-import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.ui.layout.ContentScale
-import coil.compose.AsyncImage
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.filled.ArrowCircleUp
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.construct.messenger.R
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.HairlineBorder
-import com.construct.messenger.ui.theme.Spacing
-import com.construct.messenger.ui.theme.ctMessage
-import com.construct.messenger.ui.theme.ctRegular
 
 /**
  * Chat composer: optional reply bar, text field, send.
@@ -129,7 +129,7 @@ fun MessageInputView(
                     imageVector = Icons.Filled.AddCircleOutline,
                     contentDescription = stringResource(R.string.attach),
                     tint = CTColor.textDim,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(CTIcon.control),
                 )
                 attachMenu?.invoke()
             }
@@ -144,7 +144,7 @@ fun MessageInputView(
                 .padding(start = 16.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val textStyle = ctMessage(15).copy(color = CTColor.text)
+            val textStyle = CTFont.message(15).copy(color = CTColor.text)
             // The field keeps its own selection. Text set from outside — a message taken up for
             // editing, a cleared draft — puts the cursor after it, where typing goes on; the String
             // overload left it wherever it was, at the start of the message being edited.
@@ -185,7 +185,7 @@ fun MessageInputView(
                     contentDescription = stringResource(R.string.chat_send),
                     tint = if (enabled) CTColor.accent else CTColor.textDim,
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(CTIcon.overlay)
                         .clip(CircleShape)
                         .clickable(enabled = enabled, onClick = onSend),
                 )
@@ -199,7 +199,7 @@ fun MessageInputView(
                     contentDescription = stringResource(R.string.voice_record),
                     tint = CTColor.textDim,
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(CTIcon.overlay)
                         .clip(CircleShape)
                         .clickable(onClick = onMic)
                         .padding(2.dp),
@@ -221,12 +221,12 @@ private fun AttachmentStrip(uris: List<Uri>, files: List<Pair<Uri, String>>, onR
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = CTLayout.edgePad)
-            .padding(top = Spacing.small)
+            .padding(top = CTSpace.s)
             .clip(shape)
             .background(CTColor.bgMsg)
             .border(HairlineBorder, CTColor.noise, shape),
-        contentPadding = PaddingValues(Spacing.small),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+        contentPadding = PaddingValues(CTSpace.s),
+        horizontalArrangement = Arrangement.spacedBy(CTSpace.s),
     ) {
         // iOS `MessageAttachmentPreviews`: a file is a chip — icon, name, remove — not a tile.
         items(files, key = { it.first.toString() }) { (uri, name) ->
@@ -238,11 +238,11 @@ private fun AttachmentStrip(uris: List<Uri>, files: List<Pair<Uri, String>>, onR
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.AutoMirrored.Filled.InsertDriveFile, null, tint = CTColor.accent, modifier = Modifier.size(24.dp))
+                Icon(Icons.AutoMirrored.Filled.InsertDriveFile, null, tint = CTColor.accent, modifier = Modifier.size(CTIcon.control))
                 Spacer(Modifier.width(8.dp))
                 Text(
                     name,
-                    style = ctRegular(13),
+                    style = CTFont.body,
                     color = CTColor.text,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -257,7 +257,7 @@ private fun AttachmentStrip(uris: List<Uri>, files: List<Pair<Uri, String>>, onR
                         .clip(CircleShape)
                         .clickable { onRemove(uri) }
                         .padding(4.dp)
-                        .size(18.dp),
+                        .size(CTIcon.nav),
                 )
             }
         }
@@ -278,7 +278,7 @@ private fun AttachmentStrip(uris: List<Uri>, files: List<Pair<Uri, String>>, onR
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(4.dp)
-                        .size(22.dp)
+                        .size(CTIcon.navLg)
                         .clip(CircleShape)
                         .background(Color.Black.copy(alpha = 0.45f))
                         .clickable { onRemove(uri) },
@@ -322,11 +322,11 @@ private fun ComposerAuxBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = CTLayout.edgePad)
-            .padding(top = Spacing.small)
+            .padding(top = CTSpace.s)
             .clip(shape)
             .background(CTColor.bgMsg)
             .border(HairlineBorder, CTColor.noise, shape)
-            .padding(horizontal = Spacing.small, vertical = Spacing.compact),
+            .padding(horizontal = CTSpace.s, vertical = CTSpace.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Spacer(
@@ -338,16 +338,16 @@ private fun ComposerAuxBar(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(horizontal = Spacing.small),
+                .padding(horizontal = CTSpace.s),
         ) {
             Text(
                 text = title,
-                style = ctRegular(11),
+                style = CTFont.micro,
                 color = titleColor,
             )
             Text(
                 text = preview,
-                style = ctRegular(13),
+                style = CTFont.secondary,
                 color = CTColor.text,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -358,7 +358,7 @@ private fun ComposerAuxBar(
             contentDescription = stringResource(R.string.close),
             tint = CTColor.textDim,
             modifier = Modifier
-                .size(32.dp)
+                .size(CTIcon.overlay)
                 .clickable(onClick = onCancel),
         )
     }

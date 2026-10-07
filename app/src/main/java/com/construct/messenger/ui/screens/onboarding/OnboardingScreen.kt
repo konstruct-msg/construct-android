@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -49,11 +50,11 @@ import com.construct.messenger.ui.components.CTTextField
 import com.construct.messenger.ui.components.ConvergingSignal
 import com.construct.messenger.ui.components.ctBackground
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.HairlineBorder
 import com.construct.messenger.ui.theme.KonstructMessengerTheme
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.AliasStatus
 import com.construct.messenger.viewmodel.OnboardingEvent
 import com.construct.messenger.viewmodel.OnboardingUiState
@@ -155,17 +156,17 @@ private fun IdentityFormContent(
                 painter = painterResource(R.drawable.ic_konstruct_logo),
                 contentDescription = null,
                 tint = CTColor.text,
-                modifier = Modifier.size(100.dp)
+                modifier = Modifier.size(LOGO_SIZE)
             )
             Text(
                 text = stringResource(R.string.brand_name),
-                style = ctBold(26),
+                style = CTFont.ui(26, FontWeight.Bold),
                 color = CTColor.text,
                 letterSpacing = 8.sp
             )
             Text(
                 text = stringResource(R.string.onboarding_subtitle),
-                style = ctRegular(12),
+                style = CTFont.secondary,
                 color = CTColor.textDim,
                 textAlign = TextAlign.Center,
             )
@@ -189,7 +190,7 @@ private fun IdentityFormContent(
                 textAlign = TextAlign.Center,
             )
             aliasStatus.line()?.let { (text, color) ->
-                Text(text = text, style = ctRegular(11), color = color)
+                Text(text = text, style = CTFont.caption, color = color)
             }
         }
 
@@ -210,7 +211,7 @@ private fun IdentityFormContent(
             )
             Text(
                 text = stringResource(R.string.onboarding_already_have),
-                style = ctRegular(13),
+                style = CTFont.body,
                 color = CTColor.textDim,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.clickable(onClick = onExistingIdentity),
@@ -231,11 +232,11 @@ private fun IdentityFormContent(
                         imageVector = Icons.Default.IosShare,
                         contentDescription = null,
                         tint = CTColor.textDim,
-                        modifier = Modifier.size(14.dp),
+                        modifier = Modifier.size(CTIcon.row),
                     )
                     Text(
                         text = stringResource(R.string.diagnostics_share_logs),
-                        style = ctRegular(11),
+                        style = CTFont.caption,
                         color = CTColor.textDim,
                     )
                 }
@@ -304,7 +305,7 @@ private fun RegistrationStageContent(
                 )
                 else -> Text(
                     text = stringResource(R.string.reg_cancel),
-                    style = ctRegular(13),
+                    style = CTFont.body,
                     color = CTColor.textDim,
                     modifier = Modifier.clickable(onClick = onDismiss),
                 )
@@ -341,12 +342,12 @@ private fun RegistrationPreparingContent(step: RegistrationStep, collapsed: Bool
         ) {
             Text(
                 text = stringResource(R.string.reg_establishing_trust),
-                style = ctBold(18),
+                style = CTFont.title,
                 color = CTColor.text,
             )
             Text(
                 text = stringResource(R.string.reg_joining_network),
-                style = ctRegular(13),
+                style = CTFont.body,
                 color = CTColor.textDim,
             )
         }
@@ -358,7 +359,7 @@ private fun RegistrationPreparingContent(step: RegistrationStep, collapsed: Bool
                 .height(72.dp),
         )
         Crossfade(targetState = phaseLabel, animationSpec = tween(400), label = "phase") { label ->
-            Text(text = label, style = ctRegular(11), color = CTColor.textDim)
+            Text(text = label, style = CTFont.caption, color = CTColor.textDim)
         }
     }
 }
@@ -371,7 +372,7 @@ private fun RegistrationCompleteContent(username: String?, deviceId: String?) {
     ) {
         Text(
             text = stringResource(R.string.reg_welcome),
-            style = ctBold(24),
+            style = CTFont.ui(24, FontWeight.Bold),
             color = CTColor.text,
         )
         Column(
@@ -405,8 +406,8 @@ private fun DetailRow(label: String, value: String) {
             .padding(horizontal = CTLayout.edgePad, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = label, style = ctRegular(12), color = CTColor.textDim, modifier = Modifier.weight(1f))
-        Text(text = value, style = ctBold(12), color = CTColor.text)
+        Text(text = label, style = CTFont.secondary, color = CTColor.textDim, modifier = Modifier.weight(1f))
+        Text(text = value, style = CTFont.ui(12, FontWeight.Bold), color = CTColor.text)
     }
 }
 
@@ -418,12 +419,12 @@ private fun RegistrationErrorContent(message: String) {
     ) {
         Text(
             text = stringResource(R.string.reg_error_title),
-            style = ctBold(18),
+            style = CTFont.title,
             color = CTColor.danger,
         )
         Text(
             text = message,
-            style = ctRegular(13),
+            style = CTFont.body,
             color = CTColor.textDim,
             textAlign = TextAlign.Center,
         )
@@ -432,6 +433,9 @@ private fun RegistrationErrorContent(message: String) {
 
 /** iOS waits for the signal's collapse before the welcome fades in. */
 private const val COMPLETE_REVEAL_DELAY_MS = 650L
+
+/** The brand mark, not a symbol: it keeps its own size, off the CTIcon scale. */
+private val LOGO_SIZE = 100.dp
 
 @Preview(backgroundColor = 0xFF090909, showBackground = true, widthDp = 390, heightDp = 844)
 @Composable

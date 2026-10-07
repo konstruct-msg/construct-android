@@ -56,6 +56,8 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.construct.messenger.R
+import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -168,7 +170,7 @@ private fun androidx.compose.foundation.layout.RowScope.CropButton(label: String
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, color = text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        Text(label, color = text, style = CTFont.ui(17, FontWeight.SemiBold))
     }
 }
 
@@ -201,7 +203,7 @@ fun AvatarViewerDialog(jpeg: ByteArray, onChange: () -> Unit, onDismiss: () -> U
                 }
                 Box(Modifier.weight(1f))
                 TextButton(onClick = onChange) {
-                    Text(stringResource(R.string.change_avatar), color = Color.White, fontSize = 17.sp)
+                    Text(stringResource(R.string.change_avatar), color = CTColor.onMedia, style = CTFont.ui(17))
                 }
             }
         }

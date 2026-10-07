@@ -17,32 +17,33 @@ import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
+import com.construct.messenger.ui.components.TabIcons
 import com.construct.messenger.ui.screens.calls.CallsScreen
 import com.construct.messenger.ui.screens.chats.ChatsListScreen
 import com.construct.messenger.ui.screens.settings.SettingsNavigation
 import com.construct.messenger.ui.screens.settings.SettingsRoute
-import com.construct.messenger.ui.components.TabIcons
 import com.construct.messenger.ui.screens.synaps.SynapsScreen
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.viewmodel.PendingChatViewModel
 
 /**
@@ -140,7 +141,7 @@ private fun TabBar(tabs: List<TabItem>, selected: Int, onSelect: (Int) -> Unit) 
                     imageVector = if (isSelected) tab.selectedIcon else tab.icon,
                     contentDescription = stringResource(tab.labelRes),
                     tint = if (isSelected) CTColor.accent else CTColor.textDim,
-                    modifier = Modifier.size(26.dp),
+                    modifier = Modifier.size(CTIcon.control),
                 )
             }
         }
