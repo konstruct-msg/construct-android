@@ -1,72 +1,73 @@
 package com.construct.messenger.ui.screens.chats
 
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.foundation.background
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.ui.graphics.Color
-import androidx.compose.runtime.remember
-import androidx.compose.material.icons.outlined.PushPin
-import androidx.compose.material.icons.outlined.MarkChatUnread
-import androidx.compose.material.icons.outlined.MarkChatRead
-import androidx.compose.material.icons.outlined.Delete
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.HairlineBorder
-import com.construct.messenger.ui.theme.CornerRadius
-import com.construct.messenger.ui.components.TabIcons
-import com.construct.messenger.ui.components.CTMatrixBackground
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.draw.clip
-import androidx.compose.material.icons.outlined.Forum
-import androidx.compose.material.icons.filled.QrCode
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Forum
+import androidx.compose.material.icons.outlined.MarkChatRead
+import androidx.compose.material.icons.outlined.MarkChatUnread
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import com.construct.messenger.ui.components.ConnectionStatusIndicator
-import com.construct.messenger.ui.components.ctBackground
-import com.construct.messenger.ui.theme.CTLayout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
+import com.construct.messenger.ui.components.CTMatrixBackground
 import com.construct.messenger.ui.components.CTSearchBar
+import com.construct.messenger.ui.components.ConnectionStatusIndicator
+import com.construct.messenger.ui.components.TabIcons
+import com.construct.messenger.ui.components.ctBackground
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CornerRadius
+import com.construct.messenger.ui.theme.HairlineBorder
 import com.construct.messenger.viewmodel.MainViewModel
 
 /** What the plain iOS `List` adds above its first row, measured side by side. */
@@ -115,7 +116,7 @@ fun ChatsListScreen(
                 contentDescription = stringResource(R.string.scan_qr_code),
                 tint = CTColor.accent,
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(CTIcon.hero)
                     .clickable(onClick = onScanQr)
                     .padding(12.dp),
             )
@@ -239,17 +240,17 @@ private fun EmptyState(onScanQr: () -> Unit, onShowMyQr: () -> Unit, onOpenSynap
             imageVector = Icons.Outlined.Forum,
             contentDescription = null,
             tint = CTColor.textDim,
-            modifier = Modifier.padding(bottom = 4.dp).size(36.dp),
+            modifier = Modifier.padding(bottom = 4.dp).size(CTIcon.overlay),
         )
         Text(
             text = stringResource(R.string.chats_empty_title),
-            style = ctBold(16),
+            style = CTFont.ui(16, FontWeight.Bold),
             color = CTColor.text,
             textAlign = TextAlign.Center,
         )
         Text(
             text = stringResource(R.string.chats_empty_subtitle),
-            style = ctRegular(13),
+            style = CTFont.body,
             color = CTColor.textDim,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = CTLayout.sectionGap),
@@ -286,20 +287,20 @@ private fun EmptyAction(icon: ImageVector, title: String, onClick: () -> Unit) {
         Icon(icon, contentDescription = null, tint = CTColor.accent, modifier = Modifier.size(CTLayout.navIconSize))
         Text(
             text = title.uppercase(),
-            style = ctBold(12),
+            style = CTFont.ui(12, FontWeight.Bold),
             color = CTColor.accent,
             letterSpacing = 1.sp,
             modifier = Modifier.weight(1f),
         )
-        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = CTColor.textDim, modifier = Modifier.size(14.dp))
+        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = CTColor.textDim, modifier = Modifier.size(CTIcon.row))
     }
 }
 
 @Composable
 private fun ChatMenuItem(label: String, icon: ImageVector, color: Color, onClick: () -> Unit) {
     DropdownMenuItem(
-        text = { Text(label, style = ctRegular(14), color = color) },
-        leadingIcon = { Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp)) },
+        text = { Text(label, style = CTFont.ui(14), color = color) },
+        leadingIcon = { Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(CTIcon.nav)) },
         onClick = onClick,
     )
 }

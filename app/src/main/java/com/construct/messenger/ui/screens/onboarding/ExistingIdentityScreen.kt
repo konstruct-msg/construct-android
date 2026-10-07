@@ -36,11 +36,11 @@ import androidx.compose.ui.unit.sp
 import com.construct.messenger.R
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.HairlineBorder
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 
 /**
  * "Already have an identity?" — how to bring it to this device.
@@ -79,7 +79,7 @@ fun ExistingIdentityScreen(
         ) {
             Text(
                 text = stringResource(R.string.onboarding_existing_intro),
-                style = ctRegular(13),
+                style = CTFont.body,
                 color = CTColor.textDim,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
@@ -116,17 +116,17 @@ private fun ChoiceCard(icon: ImageVector, title: String, subtitle: String, onCli
             contentDescription = null,
             tint = CTColor.accent,
             // SF `key.fill` stands upright; Material's key lies on its side.
-            modifier = Modifier.width(32.dp).size(24.dp).rotate(90f),
+            modifier = Modifier.width(32.dp).size(CTIcon.control).rotate(90f),
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(text = title.uppercase(), style = ctBold(13), color = CTColor.text, letterSpacing = 1.sp)
-            Text(text = subtitle, style = ctRegular(11), color = CTColor.textDim)
+            Text(text = title.uppercase(), style = CTFont.bodyEmphasis, color = CTColor.text, letterSpacing = 1.sp)
+            Text(text = subtitle, style = CTFont.caption, color = CTColor.textDim)
         }
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
             tint = CTColor.textDim,
-            modifier = Modifier.size(16.dp),
+            modifier = Modifier.size(CTIcon.row),
         )
     }
 }

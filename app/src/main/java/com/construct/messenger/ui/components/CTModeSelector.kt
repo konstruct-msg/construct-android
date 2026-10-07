@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,7 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
 
 /**
  * CT-styled segmented control for selecting between modes.
@@ -32,7 +32,7 @@ import com.construct.messenger.ui.theme.ctRegular
  * - No spacing between segments.
  * - Accent fill on the selected segment, dim text otherwise.
  * - Rounded rectangle border with subtle accent stroke.
- * - `ctRegular(12)` labels.
+ * - `CTFont.secondary` labels.
  *
  * @param selected Currently selected option.
  * @param options Ordered list of selectable options.
@@ -76,7 +76,7 @@ fun <T> CTModeSelector(
             ) {
                 Text(
                     text = label,
-                    style = ctRegular(12),
+                    style = CTFont.secondary,
                     color = if (isSelected) CTColor.bg else CTColor.textDim,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

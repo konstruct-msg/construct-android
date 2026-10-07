@@ -1,6 +1,5 @@
 package com.construct.messenger.ui.screens.synaps
 
-import com.construct.messenger.ui.components.rememberAvatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -9,17 +8,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Text
-import com.construct.messenger.ui.components.ctBackground
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -33,12 +31,14 @@ import com.construct.messenger.data.model.Contact
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.components.CTButton
 import com.construct.messenger.ui.components.CTNavBar
-import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.CTSearchBar
+import com.construct.messenger.ui.components.CTSettingsSectionHeader
+import com.construct.messenger.ui.components.ctBackground
+import com.construct.messenger.ui.components.rememberAvatar
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.Spacing
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.SynapsViewModel
 
 @Composable
@@ -84,10 +84,10 @@ fun SynapsScreen(
                 )
             }
             uiState.status?.let { message ->
-                Spacer(Modifier.height(Spacing.small))
+                Spacer(Modifier.height(CTSpace.s))
                 Text(
                     text = message,
-                    style = ctRegular(12),
+                    style = CTFont.secondary,
                     color = CTColor.textDim,
                 )
             }
@@ -96,9 +96,9 @@ fun SynapsScreen(
         if (uiState.incomingRequests.isNotEmpty()) {
             Text(
                 text = stringResource(R.string.synaps_requests_title),
-                style = ctRegular(12),
+                style = CTFont.secondary,
                 color = CTColor.textDim,
-                modifier = Modifier.padding(horizontal = CTLayout.edgePad, vertical = Spacing.small),
+                modifier = Modifier.padding(horizontal = CTLayout.edgePad, vertical = CTSpace.s),
             )
             uiState.incomingRequests.forEach { request ->
                 ContactRow(
@@ -115,7 +115,7 @@ fun SynapsScreen(
         if (uiState.filtered.isEmpty() && uiState.blocked.isEmpty()) {
             Text(
                 text = stringResource(R.string.synaps_empty_title),
-                style = ctRegular(14),
+                style = CTFont.ui(14),
                 color = CTColor.textDim,
                 modifier = Modifier.padding(CTLayout.edgePad),
             )
@@ -159,7 +159,7 @@ private fun ContactRow(contact: Contact, onClick: () -> Unit) {
         Spacer(Modifier.width(12.dp))
         Text(
             text = title,
-            style = ctRegular(14),
+            style = CTFont.ui(14),
             color = CTColor.text,
             modifier = Modifier.weight(1f),
         )

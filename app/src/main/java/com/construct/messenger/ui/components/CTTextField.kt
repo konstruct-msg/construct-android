@@ -14,27 +14,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.HairlineBorder
-import com.construct.messenger.ui.theme.ctRegular
 
 /**
  * Single-line text input.
  *
  * **Canon:** iOS `ConstructTheme.swift` → `struct CTTextField`.
- * - `ctRegular(14)`, text color `text`, cursor `accent`.
+ * - `CTFont.ui(14)`, text color `text`, cursor `accent`.
  * - 12dp horizontal / 11dp vertical padding, `bgMsg` background.
  * - Corner radius 8 with a 0.5dp `noise` border.
  * - [isSecure] masks input (password). [textAlign] controls alignment.
- * - [style] is the chrome face by default; the chat composer passes `ctMessage`.
+ * - [style] is the chrome face by default; the chat composer passes `CTFont.message`.
  */
 @Composable
 fun CTTextField(
@@ -44,7 +44,7 @@ fun CTTextField(
     modifier: Modifier = Modifier,
     isSecure: Boolean = false,
     textAlign: TextAlign = TextAlign.Start,
-    style: TextStyle = ctRegular(14),
+    style: TextStyle = CTFont.ui(14),
 ) {
     val shape = RoundedCornerShape(CornerRadius.small)
     val textStyle = style.copy(color = CTColor.text, textAlign = textAlign)

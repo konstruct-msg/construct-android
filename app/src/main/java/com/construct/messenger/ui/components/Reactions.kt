@@ -33,14 +33,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.construct.messenger.R
 import com.construct.messenger.data.model.MessageReaction
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.ctMedium
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.util.ReactionRules
 
 /**
@@ -82,7 +83,7 @@ fun ReactionQuickRow(current: String?, onPick: (String) -> Unit, onPickMore: () 
             modifier = Modifier.size(36.dp).clip(CircleShape).clickable(onClick = onPickMore),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Outlined.AddCircleOutline, contentDescription = more, tint = CTColor.accent, modifier = Modifier.size(24.dp))
+            Icon(Icons.Outlined.AddCircleOutline, contentDescription = more, tint = CTColor.accent, modifier = Modifier.size(CTIcon.control))
         }
     }
 }
@@ -106,7 +107,7 @@ fun ReactionBadgeRow(reactions: List<MessageReaction>, onTap: (String) -> Unit, 
             val label = stringResource(R.string.reaction_a11y, reaction.emoji)
             Text(
                 text = reaction.emoji,
-                style = ctRegular(14),
+                style = CTFont.ui(14),
                 modifier = Modifier
                     .clickable { onTap(reaction.emoji) }
                     .semantics { contentDescription = label }
@@ -133,7 +134,7 @@ fun ReactionPickerSheet(onPick: (String) -> Unit, onDismiss: () -> Unit) {
                 item(key = group.title, span = { GridItemSpan(maxLineSpan) }) {
                     Text(
                         text = "> " + stringResource(group.title).uppercase(),
-                        style = ctMedium(11),
+                        style = CTFont.ui(11, FontWeight.Medium),
                         color = CTColor.textDim,
                         letterSpacing = 2.sp,
                         modifier = Modifier.padding(vertical = 6.dp),

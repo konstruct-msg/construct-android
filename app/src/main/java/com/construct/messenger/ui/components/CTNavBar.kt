@@ -1,11 +1,8 @@
 package com.construct.messenger.ui.components
 
-import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.unit.Dp
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,38 +10,41 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.ui.text.style.TextOverflow
-import com.construct.messenger.ui.theme.ctSemiBold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 
 /**
  * Navigation bar — reusable header.
  *
  * **Canon:** iOS `ConstructTheme.swift` → `struct CTNavBar` for a pushed screen: the title as
- *   given, `ctSemiBold(17)`, no letter-spacing (iOS dropped the uppercase + tracking on all its
+ *   given, `CTFont.ui(17, FontWeight.SemiBold)`, no letter-spacing (iOS dropped the uppercase + tracking on all its
  *   screens — it read as a machine label, not a screen's name); back is a filled accent circle
  *   with a chevron (`chevron.backward.circle.fill`, 22pt). Bottom border.
- * - A tab's root (no back, not modal) is iOS's root header instead: uppercase, `ctBold(14)`,
+ * - A tab's root (no back, not modal) is iOS's root header instead: uppercase, `CTFont.headline`,
  *   tracking 4, no border (iOS `SettingsView` header).
  * - Trailing: an icon ([trailingIcon]); an optional secondary icon
  *   ([trailingSecondaryIcon]) renders to its left (typically a muted cancel next
@@ -87,7 +87,7 @@ fun CTNavBar(
         // spacer got half the row and cut "Use existing identity" to "Use existing id…".
         Text(
             text = if (isRoot) title.uppercase() else title,
-            style = if (isRoot) ctBold(14) else ctSemiBold(17),
+            style = if (isRoot) CTFont.headline else CTFont.ui(17, FontWeight.SemiBold),
             color = CTColor.text,
             letterSpacing = if (isRoot) 4.sp else TextUnit.Unspecified,
             maxLines = 1,
@@ -170,7 +170,7 @@ private fun NavBarBackButton(isModal: Boolean, onClick: () -> Unit) {
                 imageVector = if (isModal) Icons.Default.Close else Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 contentDescription = null,
                 tint = CTColor.bg,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(CTIcon.nav),
             )
         }
     }

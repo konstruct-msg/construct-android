@@ -11,13 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.ctBold
+import com.construct.messenger.ui.theme.CTFont
 
 /**
  * Section header rendered as `> TITLE`.
  *
  * **Canon:** iOS `ConstructTheme.swift` → `struct CTSettingsSectionHeader`.
- * - `ctBold(11)`, [color] default `accent`, title uppercased.
+ * - `CTFont.badge`, [color] default `accent`, title uppercased.
  * - Padding: horizontal 12, top 16 (the inter-section gap), bottom 4.
  */
 @Composable
@@ -32,8 +32,8 @@ fun CTSettingsSectionHeader(
             .padding(horizontal = 12.dp)
             .padding(top = 16.dp, bottom = 4.dp),
     ) {
-        Text(text = ">", style = ctBold(11), color = color)
+        Text(text = ">", style = CTFont.badge, color = color)
         Spacer(Modifier.width(6.dp))
-        Text(text = title.uppercase(), style = ctBold(11), color = color)
+        Text(text = title.uppercase(), style = CTFont.badge, color = color)
     }
 }

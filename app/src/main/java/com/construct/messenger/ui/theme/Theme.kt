@@ -38,7 +38,7 @@ private val LightColorScheme = lightColorScheme(
 
 val LocalIsDarkTheme = staticCompositionLocalOf { true }
 
-/** Message face and size from Settings → Appearance; read by [ctMessage]. */
+/** Message face and size from Settings → Appearance; read by [CTFont.message]. */
 val LocalChatText = staticCompositionLocalOf { ChatText() }
 
 /**

@@ -1,16 +1,8 @@
 package com.construct.messenger.ui.screens.invite
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.unit.Dp
-import com.construct.messenger.ui.theme.CornerRadius
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -19,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -26,10 +19,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,11 +34,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -54,9 +54,10 @@ import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.InviteQrImage
 import com.construct.messenger.ui.components.inviteQrSize
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.Spacing
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTSpace
+import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.viewmodel.ContactQrViewModel
 
 /**
@@ -117,10 +118,10 @@ fun ContactQrScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Text(text = ui.displayName, style = ctBold(15), color = CTColor.text)
+                Text(text = ui.displayName, style = CTFont.ui(15, FontWeight.Bold), color = CTColor.text)
                 Text(
                     text = stringResource(R.string.qr_caption_trust),
-                    style = ctRegular(11),
+                    style = CTFont.caption,
                     color = CTColor.accent.copy(alpha = 0.5f),
                 )
             }
@@ -173,11 +174,11 @@ fun ContactQrScreen(
                     tint = tint,
                     // SF `link` leans; Material's lies flat.
                     modifier = Modifier
-                        .size(16.dp)
+                        .size(CTIcon.row)
                         .rotate(if (copiedAny) 0f else -45f),
                 )
-                Spacer(Modifier.width(Spacing.small))
-                Text(text = copyLabel.uppercase(), style = ctRegular(11), color = tint)
+                Spacer(Modifier.width(CTSpace.s))
+                Text(text = copyLabel.uppercase(), style = CTFont.caption, color = tint)
             }
             Rule()
 
@@ -192,13 +193,13 @@ fun ContactQrScreen(
                         R.string.invite_share_rule,
                         (InviteConfig.TTL_SECONDS / 3600).toInt(),
                     ),
-                    style = ctRegular(11),
+                    style = CTFont.caption,
                     color = CTColor.textDim,
                 )
                 if (ui.copyFailed) {
                     Text(
                         text = "> " + stringResource(R.string.invite_create_failed),
-                        style = ctRegular(11),
+                        style = CTFont.caption,
                         color = CTColor.danger,
                     )
                 }
@@ -233,18 +234,18 @@ private fun QrPlaceholder(size: Dp, failed: Boolean) {
         if (failed) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(Spacing.small),
-                modifier = Modifier.padding(horizontal = Spacing.large),
+                verticalArrangement = Arrangement.spacedBy(CTSpace.s),
+                modifier = Modifier.padding(horizontal = CTSpace.xl),
             ) {
                 Icon(
                     imageVector = Icons.Default.Warning,
                     contentDescription = null,
                     tint = CTColor.danger,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(CTIcon.nav),
                 )
                 Text(
                     text = stringResource(R.string.qr_failed),
-                    style = ctRegular(11),
+                    style = CTFont.caption,
                     color = CTColor.textDim,
                     textAlign = TextAlign.Center,
                 )
@@ -265,14 +266,14 @@ private fun NewCodeButton(onClick: () -> Unit) {
     val card = RoundedCornerShape(CornerRadius.small)
     Text(
         text = stringResource(R.string.qr_new_code).lowercase(),
-        style = ctRegular(13),
+        style = CTFont.body,
         color = CTColor.accent,
         modifier = Modifier
             .clip(card)
             .background(CTColor.bgMsg)
             .border(1.dp, CTColor.accent.copy(alpha = 0.4f), card)
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = Spacing.small),
+            .padding(horizontal = 20.dp, vertical = CTSpace.s),
     )
 }
 

@@ -5,10 +5,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.font.FontWeight
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CornerRadius
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 
 /**
  * A yes/no question before an action with consequences.
@@ -31,13 +31,13 @@ fun CTConfirmDialog(
         onDismissRequest = onDismiss,
         containerColor = CTColor.outMsgBg,
         shape = RoundedCornerShape(CornerRadius.medium),
-        title = { Text(title, style = ctBold(15), color = CTColor.text) },
-        text = { Text(message, style = ctRegular(13), color = CTColor.textDim) },
+        title = { Text(title, style = CTFont.ui(15, FontWeight.Bold), color = CTColor.text) },
+        text = { Text(message, style = CTFont.body, color = CTColor.textDim) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text(
                     confirmLabel,
-                    style = ctBold(13),
+                    style = CTFont.bodyEmphasis,
                     color = if (isDestructive) CTColor.danger else CTColor.accent,
                 )
             }
@@ -45,7 +45,7 @@ fun CTConfirmDialog(
         dismissButton = dismissLabel?.let { label ->
             {
                 TextButton(onClick = onDismiss) {
-                    Text(label, style = ctRegular(13), color = CTColor.textDim)
+                    Text(label, style = CTFont.body, color = CTColor.textDim)
                 }
             }
         },

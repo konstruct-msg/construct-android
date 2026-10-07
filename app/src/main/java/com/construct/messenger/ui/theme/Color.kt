@@ -111,4 +111,21 @@ object CTColor {
      */
     val onlineDark = Color(0xFF30D158)
     val onlineLight = Color(0xFF248A3D)
+
+    /*
+     * Over media — the call screens and media overlays sit on a picture, not on the theme's
+     * ground, so these do not follow the theme. **Canon:** iOS `Color.CT.onMedia` and the rest.
+     */
+    /** Text and glyphs over a picture. */
+    val onMedia = Color.White
+    /** Secondary text over a picture. */
+    val onMediaDim = Color.White.copy(alpha = 0.8f)
+    /** Darkening laid over a picture so text and controls read on it. */
+    val mediaScrim = Color.Black.copy(alpha = 0.45f)
+    /** A round control's disc over a picture, off. */
+    val mediaControl = Color.White.copy(alpha = 0.14f)
+    /** A round control's disc over a picture, on. */
+    val mediaControlOn = Color.White
+    /** The answer button of an incoming call: the platform's green, a control by convention. */
+    val answer = Color(0xFF30D158)
 }

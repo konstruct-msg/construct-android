@@ -1,15 +1,12 @@
 package com.construct.messenger.ui.screens.chats
 
-import androidx.compose.material.icons.filled.GppMaybe
-import com.construct.messenger.ui.components.rememberAvatar
+import android.content.Context
+import android.text.format.DateFormat
+import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import com.construct.messenger.R
-import androidx.compose.ui.res.stringResource
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,27 +16,30 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.GppMaybe
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import android.content.Context
-import android.text.format.DateFormat
-import android.text.format.DateUtils
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.layout.Arrangement
-import com.construct.messenger.ui.components.CTRowDivider
-import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.CornerRadius
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.construct.messenger.R
 import com.construct.messenger.data.model.ChatSummary
 import com.construct.messenger.ui.components.CTAvatar
+import com.construct.messenger.ui.components.CTRowDivider
+import com.construct.messenger.ui.components.rememberAvatar
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CornerRadius
 import java.util.Date
 
 /**
@@ -48,7 +48,7 @@ import java.util.Date
  * **Canon:** iOS `ConstructTheme.swift` → `struct ChatRowView`.
  * - 44dp avatar on the left.
  * - Title: `@username` when available, otherwise `DISPLAY_NAME` uppercased.
- * - Preview line in `ctRegular(12)` + `textDim`.
+ * - Preview line in `CTFont.secondary` + `textDim`.
  * - Timestamp and unread badge on the trailing edge.
  */
 @OptIn(ExperimentalFoundationApi::class)
@@ -87,7 +87,7 @@ fun ChatRow(
                         // username only when there is no name.
                         Text(
                             text = chat.displayName.ifBlank { chat.username },
-                            style = ctBold(13),
+                            style = CTFont.bodyEmphasis,
                             color = CTColor.text,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -98,7 +98,7 @@ fun ChatRow(
                                 androidx.compose.material.icons.Icons.Filled.GppMaybe,
                                 contentDescription = stringResource(R.string.kt_warning),
                                 tint = CTColor.danger,
-                                modifier = Modifier.padding(start = 4.dp).size(13.dp),
+                                modifier = Modifier.padding(start = 4.dp).size(CTIcon.caption),
                             )
                         }
                     }
@@ -106,7 +106,7 @@ fun ChatRow(
                     chat.lastMessageTime?.let { time ->
                         Text(
                             text = rowTimestamp(context, time),
-                            style = ctRegular(11),
+                            style = CTFont.caption,
                             color = CTColor.textDim,
                             maxLines = 1,
                         )
@@ -118,14 +118,14 @@ fun ChatRow(
                             imageVector = Icons.Filled.PushPin,
                             contentDescription = stringResource(R.string.chat_pinned),
                             tint = CTColor.textDim,
-                            modifier = Modifier.size(11.dp),
+                            modifier = Modifier.size(CTIcon.caption),
                         )
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = chat.lastMessagePreview.orEmpty(),
-                        style = ctRegular(12),
+                        style = CTFont.secondary,
                         color = CTColor.textDim,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -142,7 +142,7 @@ fun ChatRow(
                         ) {
                             Text(
                                 text = if (chat.unreadCount < 10_000) chat.unreadCount.toString() else "9999+",
-                                style = ctBold(11),
+                                style = CTFont.badge,
                                 color = CTColor.bg,
                             )
                         }

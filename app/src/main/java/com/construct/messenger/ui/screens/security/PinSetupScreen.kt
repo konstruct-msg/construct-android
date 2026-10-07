@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
@@ -46,8 +47,7 @@ import com.construct.messenger.R
 import com.construct.messenger.data.repository.PIN_LENGTH
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.viewmodel.AppLockViewModel
 import kotlinx.coroutines.launch
 
@@ -151,14 +151,14 @@ fun PinSetupScreen(
             if (step == Step.BIOMETRIC) {
                 Text(
                     text = stringResource(R.string.pin_enable_biometric),
-                    style = ctBold(15),
+                    style = CTFont.ui(15, FontWeight.Bold),
                     color = CTColor.text,
                     textAlign = TextAlign.Center,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = stringResource(R.string.security_use_biometric),
-                        style = ctRegular(13),
+                        style = CTFont.body,
                         color = CTColor.text,
                         modifier = Modifier.weight(1f),
                     )
@@ -183,7 +183,7 @@ fun PinSetupScreen(
                             else -> R.string.pin_confirm
                         },
                     ),
-                    style = ctBold(15),
+                    style = CTFont.ui(15, FontWeight.Bold),
                     color = CTColor.text,
                 )
                 HiddenPinField(
@@ -197,11 +197,11 @@ fun PinSetupScreen(
                     autoSubmit = step != Step.ENTER,
                 )
                 if (step == Step.ENTER) {
-                    Text(text = stringResource(R.string.pin_length_hint), style = ctRegular(11), color = CTColor.textDim)
+                    Text(text = stringResource(R.string.pin_length_hint), style = CTFont.caption, color = CTColor.textDim)
                 }
             }
             errorRes?.let {
-                Text(text = stringResource(it), style = ctRegular(13), color = CTColor.danger, textAlign = TextAlign.Center)
+                Text(text = stringResource(it), style = CTFont.body, color = CTColor.danger, textAlign = TextAlign.Center)
             }
         }
         Spacer(Modifier.weight(1f))
@@ -223,7 +223,7 @@ fun PinSetupScreen(
                         else -> R.string.pin_continue
                     },
                 ),
-                style = ctRegular(14),
+                style = CTFont.ui(14),
                 color = CTColor.outMsgTextDark,
             )
         }

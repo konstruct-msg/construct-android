@@ -42,6 +42,7 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.construct.messenger.R
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTIcon
 
 /**
  * The mic button, which also offers the camera. **Canon:** iOS `MicModeButton` — a tap records a
@@ -150,7 +151,7 @@ private fun Segment(icon: androidx.compose.ui.graphics.vector.ImageVector, chose
             .background(if (chosen) CTColor.accent else androidx.compose.ui.graphics.Color.Transparent, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, null, tint = if (chosen) CTColor.bg else CTColor.textDim, modifier = Modifier.size(22.dp))
+        Icon(icon, null, tint = if (chosen) CTColor.bg else CTColor.textDim, modifier = Modifier.size(CTIcon.navLg))
     }
 }
 

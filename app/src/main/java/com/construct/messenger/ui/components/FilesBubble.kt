@@ -8,11 +8,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -45,8 +45,8 @@ import com.construct.messenger.R
 import com.construct.messenger.data.model.MediaItem
 import com.construct.messenger.data.model.MessageMedia
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.ctMessage
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.util.MediaWire
 
 /**
@@ -89,12 +89,12 @@ fun FilesBubble(
                 ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(iconFor(item.filename), null, tint = tint, modifier = Modifier.width(32.dp).size(22.dp))
+                Icon(iconFor(item.filename), null, tint = tint, modifier = Modifier.width(32.dp).size(CTIcon.navLg))
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = item.filename ?: stringResource(R.string.file_attachment),
-                        style = ctMessage(13).copy(fontWeight = FontWeight.Medium),
+                        style = CTFont.message(13).copy(fontWeight = FontWeight.Medium),
                         color = text,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -102,7 +102,7 @@ fun FilesBubble(
                     Text(
                         text = if (item.mediaId in unavailable) stringResource(R.string.media_unavailable)
                         else Formatter.formatShortFileSize(context, item.sizeBytes),
-                        style = ctRegular(11),
+                        style = CTFont.caption,
                         color = dim,
                     )
                 }
@@ -118,7 +118,7 @@ fun FilesBubble(
             }
         }
         if (caption.isNotBlank()) {
-            Text(caption, style = ctMessage(12), color = text, modifier = Modifier.padding(top = 2.dp))
+            Text(caption, style = CTFont.message(12), color = text, modifier = Modifier.padding(top = 2.dp))
         }
     }
 }

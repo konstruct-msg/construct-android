@@ -14,9 +14,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -28,19 +29,18 @@ import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material.icons.outlined.Settings
-import com.construct.messenger.ui.components.TabIcons
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -48,16 +48,17 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.construct.messenger.R
 import com.construct.messenger.ui.components.CTButton
+import com.construct.messenger.ui.components.TabIcons
 import com.construct.messenger.ui.components.ctBackground
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.HairlineBorder
 import com.construct.messenger.ui.theme.KonstructMessengerTheme
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.OrientationViewModel
-import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlinx.coroutines.launch
 
 /**
  * Post-registration product orientation — the three-page "How Konstruct works" guide.
@@ -135,14 +136,14 @@ private fun TopBar(onSkip: () -> Unit) {
     ) {
         Text(
             text = stringResource(R.string.orientation_section_label).uppercase(),
-            style = ctRegular(11),
+            style = CTFont.caption,
             color = CTColor.accent,
             letterSpacing = 2.sp,
         )
         Spacer(modifier = Modifier.weight(1f))
         Text(
             text = stringResource(R.string.orientation_skip).uppercase(),
-            style = ctRegular(13),
+            style = CTFont.body,
             color = CTColor.textDim,
             modifier = Modifier.clickable(onClick = onSkip),
         )
@@ -246,21 +247,21 @@ private fun OrientationPage(page: Int) {
         ) {
             Text(
                 text = stringResource(titleRes).uppercase(),
-                style = ctBold(18),
+                style = CTFont.title,
                 color = CTColor.text,
                 letterSpacing = 2.sp,
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = stringResource(bodyRes),
-                style = ctRegular(13),
+                style = CTFont.body,
                 color = CTColor.text,
                 textAlign = TextAlign.Center,
                 lineHeight = 20.sp,
             )
             Text(
                 text = stringResource(captionRes),
-                style = ctRegular(11),
+                style = CTFont.caption,
                 color = CTColor.textDim,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 4.dp),
@@ -309,7 +310,7 @@ private fun IdentityIllustration() {
                 contentDescription = null,
                 tint = CTColor.accent,
                 // SF `key.fill` stands upright; Material's key lies on its side.
-                modifier = Modifier.size(28.dp).rotate(90f),
+                modifier = Modifier.size(CTIcon.overlay).rotate(90f),
             )
         }
         Row(
@@ -320,11 +321,11 @@ private fun IdentityIllustration() {
                 imageVector = Icons.Filled.Smartphone,
                 contentDescription = null,
                 tint = CTColor.textDim,
-                modifier = Modifier.size(12.dp),
+                modifier = Modifier.size(CTIcon.caption),
             )
             Text(
                 text = stringResource(R.string.orientation_page1_visual_label).uppercase(),
-                style = ctRegular(10),
+                style = CTFont.micro,
                 color = CTColor.textDim,
                 letterSpacing = 1.sp,
             )
@@ -347,7 +348,7 @@ private fun PeopleIllustration() {
         )
         Text(
             text = stringResource(R.string.orientation_or).uppercase(),
-            style = ctRegular(10),
+            style = CTFont.micro,
             color = CTColor.textDim,
         )
         PathCard(
@@ -378,18 +379,18 @@ private fun PathCard(
             imageVector = icon,
             contentDescription = null,
             tint = CTColor.accent,
-            modifier = Modifier.size(22.dp),
+            modifier = Modifier.size(CTIcon.navLg),
         )
         Text(
             text = stringResource(titleRes).uppercase(),
-            style = ctBold(11),
+            style = CTFont.badge,
             color = CTColor.text,
             letterSpacing = 1.sp,
             textAlign = TextAlign.Center,
         )
         Text(
             text = stringResource(subtitleRes),
-            style = ctRegular(10),
+            style = CTFont.micro,
             color = CTColor.textDim,
             textAlign = TextAlign.Center,
         )
@@ -449,18 +450,18 @@ private fun MapRow(icon: ImageVector, titleRes: Int, subRes: Int) {
             contentDescription = null,
             tint = CTColor.accent,
             // iOS: a 16 pt SF symbol in a 24-wide frame — the glyph reads about 20 tall.
-            modifier = Modifier.width(24.dp).size(20.dp),
+            modifier = Modifier.width(24.dp).size(CTIcon.nav),
         )
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = stringResource(titleRes).uppercase(),
-                style = ctBold(12),
+                style = CTFont.ui(12, FontWeight.Bold),
                 color = CTColor.text,
                 letterSpacing = 1.sp,
             )
             Text(
                 text = stringResource(subRes),
-                style = ctRegular(11),
+                style = CTFont.caption,
                 color = CTColor.textDim,
             )
         }

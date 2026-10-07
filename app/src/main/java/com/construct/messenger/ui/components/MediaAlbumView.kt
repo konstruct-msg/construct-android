@@ -31,9 +31,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -62,16 +62,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
-import coil.compose.AsyncImagePainter
 import com.construct.messenger.R
 import com.construct.messenger.data.model.MediaItem
 import com.construct.messenger.data.model.MessageMedia
 import com.construct.messenger.data.repository.MediaUnavailable
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CornerRadius
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.util.BlurHash
 import com.construct.messenger.util.MediaWire
 import kotlinx.coroutines.launch
@@ -184,12 +185,12 @@ private fun Tile(
                     .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(CornerRadius.small)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(32.dp))
+                Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(CTIcon.overlay))
             }
             item.durationMs?.let { ms ->
                 Text(
                     text = formatDuration(ms),
-                    style = ctRegular(11),
+                    style = CTFont.caption,
                     color = Color.White,
                     modifier = Modifier
                         .align(Alignment.BottomStart)
@@ -244,9 +245,9 @@ private fun Failure(label: String, onRetry: (() -> Unit)?) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Icon(Icons.Filled.Warning, null, tint = CTColor.danger, modifier = Modifier.size(32.dp))
+        Icon(Icons.Filled.Warning, null, tint = CTColor.danger, modifier = Modifier.size(CTIcon.overlay))
         Spacer(Modifier.height(6.dp))
-        Text(label, style = ctRegular(11), color = CTColor.textDim)
+        Text(label, style = CTFont.caption, color = CTColor.textDim)
         if (onRetry != null) {
             Spacer(Modifier.height(6.dp))
             Row(
@@ -256,9 +257,9 @@ private fun Failure(label: String, onRetry: (() -> Unit)?) {
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Filled.Refresh, null, tint = CTColor.accent, modifier = Modifier.size(12.dp))
+                Icon(Icons.Filled.Refresh, null, tint = CTColor.accent, modifier = Modifier.size(CTIcon.caption))
                 Spacer(Modifier.width(4.dp))
-                Text(stringResource(R.string.retry), style = ctRegular(11), color = CTColor.accent)
+                Text(stringResource(R.string.retry), style = CTFont.caption, color = CTColor.accent)
             }
         }
     }
@@ -319,7 +320,7 @@ fun MediaViewer(
                 if (photos.size > 1) {
                     Text(
                         stringResource(R.string.media_viewer_counter, pager.currentPage + 1, photos.size),
-                        style = ctRegular(14),
+                        style = CTFont.ui(14),
                         color = Color.White,
                     )
                 }
@@ -388,13 +389,13 @@ private fun VideoPage(item: MediaItem, active: Boolean, load: suspend (MediaItem
             preview?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
             when {
                 loading -> CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp)
-                failure != null -> Text(failure!!, style = ctRegular(14), color = Color.White)
+                failure != null -> Text(failure!!, style = CTFont.ui(14), color = Color.White)
                 else -> Icon(
                     Icons.Filled.PlayArrow,
                     null,
                     tint = Color.White,
                     modifier = Modifier
-                        .size(64.dp)
+                        .size(CTIcon.hero)
                         .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(CornerRadius.small)),
                 )
             }

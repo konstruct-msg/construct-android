@@ -4,11 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.clip
-import com.construct.messenger.ui.components.AvatarCropDialog
-import com.construct.messenger.ui.components.AvatarViewerDialog
-import com.construct.messenger.ui.components.rememberAvatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,49 +22,55 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
+import com.construct.messenger.ui.components.AvatarCropDialog
+import com.construct.messenger.ui.components.AvatarViewerDialog
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTStatus
 import com.construct.messenger.ui.components.CTStatusBadge
 import com.construct.messenger.ui.components.CTTextField
+import com.construct.messenger.ui.components.rememberAvatar
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.AccountEvent
 import com.construct.messenger.viewmodel.AccountUiState
 import com.construct.messenger.viewmodel.AccountViewModel
@@ -246,7 +247,7 @@ private fun AccountContent(
                 Box {
                     Text(
                         text = "[${stringResource(R.string.change_photo)}]",
-                        style = ctRegular(14),
+                        style = CTFont.ui(14),
                         color = if (ui.editing) CTColor.textDim else CTColor.accent,
                         modifier = Modifier.clickable(enabled = !ui.editing) {
                             if (account?.avatar != null) photoMenu = true else onChangeAvatar()
@@ -258,12 +259,12 @@ private fun AccountContent(
                         modifier = Modifier.background(CTColor.outMsgBg),
                     ) {
                         DropdownMenuItem(
-                            text = { Text(stringResource(R.string.choose_photo), style = ctRegular(14), color = CTColor.text) },
+                            text = { Text(stringResource(R.string.choose_photo), style = CTFont.ui(14), color = CTColor.text) },
                             leadingIcon = { Icon(Icons.Outlined.Image, contentDescription = null, tint = CTColor.text) },
                             onClick = { photoMenu = false; onChangeAvatar() },
                         )
                         DropdownMenuItem(
-                            text = { Text(stringResource(R.string.remove_photo), style = ctRegular(14), color = CTColor.danger) },
+                            text = { Text(stringResource(R.string.remove_photo), style = CTFont.ui(14), color = CTColor.danger) },
                             leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = CTColor.danger) },
                             onClick = { photoMenu = false; onRemoveAvatar() },
                         )
@@ -308,7 +309,7 @@ private fun AccountContent(
                     label = stringResource(R.string.linked_devices),
                     onClick = onDevices.takeUnless { ui.editing },
                 ) {
-                    Text("[${stringResource(R.string.account_manage)}]", style = ctRegular(13), color = CTColor.accent)
+                    Text("[${stringResource(R.string.account_manage)}]", style = CTFont.body, color = CTColor.accent)
                 }
                 RowDivider()
                 InfoRow(
@@ -336,7 +337,7 @@ private fun AccountContent(
                 ) {
                     Text(
                         "[${stringResource(R.string.account_delete_action)}]",
-                        style = ctRegular(13),
+                        style = CTFont.body,
                         color = CTColor.danger.copy(alpha = 0.6f),
                     )
                 }
@@ -345,7 +346,7 @@ private fun AccountContent(
 
             Text(
                 text = stringResource(R.string.changes_encrypted_footer),
-                style = ctRegular(11),
+                style = CTFont.caption,
                 color = CTColor.accent.copy(alpha = 0.6f),
                 modifier = Modifier.padding(horizontal = ROW_H_PAD, vertical = 16.dp),
             )
@@ -359,18 +360,18 @@ private fun NoBackupDialog(onSetUp: () -> Unit, onProceed: () -> Unit, onDismiss
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = CTColor.outMsgBg,
-        title = { Text(stringResource(R.string.logout_no_backup_title), style = ctBold(15), color = CTColor.text) },
-        text = { Text(stringResource(R.string.logout_no_backup_message), style = ctRegular(13), color = CTColor.textDim) },
+        title = { Text(stringResource(R.string.logout_no_backup_title), style = CTFont.ui(15, FontWeight.Bold), color = CTColor.text) },
+        text = { Text(stringResource(R.string.logout_no_backup_message), style = CTFont.body, color = CTColor.textDim) },
         confirmButton = {
             Column(horizontalAlignment = Alignment.End) {
                 TextButton(onClick = onSetUp) {
-                    Text(stringResource(R.string.logout_no_backup_setup), style = ctBold(13), color = CTColor.accent)
+                    Text(stringResource(R.string.logout_no_backup_setup), style = CTFont.bodyEmphasis, color = CTColor.accent)
                 }
                 TextButton(onClick = onProceed) {
-                    Text(stringResource(R.string.logout_no_backup_proceed), style = ctRegular(13), color = CTColor.danger)
+                    Text(stringResource(R.string.logout_no_backup_proceed), style = CTFont.body, color = CTColor.danger)
                 }
                 TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.action_cancel), style = ctRegular(13), color = CTColor.textDim)
+                    Text(stringResource(R.string.action_cancel), style = CTFont.body, color = CTColor.textDim)
                 }
             }
         },
@@ -390,14 +391,14 @@ private fun UsernameRow(ui: AccountUiState, onDraftChange: (String) -> Unit, onE
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(R.string.account_username),
-                style = ctRegular(14),
+                style = CTFont.ui(14),
                 color = CTColor.textDim,
                 modifier = Modifier.weight(1f),
             )
             if (!ui.editing) {
                 Text(
                     text = if (username.isEmpty()) stringResource(R.string.username_not_set) else "@$username",
-                    style = ctRegular(14),
+                    style = CTFont.ui(14),
                     color = if (username.isEmpty()) CTColor.textDim else CTColor.accent,
                 )
             }
@@ -419,7 +420,7 @@ private fun UsernameRow(ui: AccountUiState, onDraftChange: (String) -> Unit, onE
             Spacer(Modifier.height(4.dp))
             Text(
                 text = if (error != null) stringResource(error.message()) else stringResource(R.string.account_username_hint),
-                style = ctRegular(11),
+                style = CTFont.caption,
                 color = if (error != null) CTColor.danger else CTColor.textDim,
             )
         }
@@ -438,12 +439,12 @@ private fun DisplayNameRow(ui: AccountUiState, onDraftChange: (String) -> Unit, 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(R.string.account_display_name),
-                style = ctRegular(14),
+                style = CTFont.ui(14),
                 color = CTColor.textDim,
                 modifier = Modifier.weight(1f),
             )
             if (!ui.editing) {
-                Text(ui.account?.displayName.orEmpty(), style = ctRegular(14), color = CTColor.text)
+                Text(ui.account?.displayName.orEmpty(), style = CTFont.ui(14), color = CTColor.text)
             }
         }
         if (ui.editing) {
@@ -457,7 +458,7 @@ private fun DisplayNameRow(ui: AccountUiState, onDraftChange: (String) -> Unit, 
             Spacer(Modifier.height(4.dp))
             Text(
                 text = stringResource(R.string.account_display_name_hint),
-                style = ctRegular(11),
+                style = CTFont.caption,
                 color = CTColor.textDim,
             )
         }
@@ -474,7 +475,7 @@ private fun SearchableRow(searchable: Boolean) {
         Spacer(Modifier.width(6.dp))
         Text(
             text = stringResource(if (searchable) R.string.searchable_indicator else R.string.searchable_indicator_off),
-            style = ctRegular(12),
+            style = CTFont.secondary,
             color = if (searchable) CTColor.accent else CTColor.textDim,
         )
     }
@@ -516,7 +517,7 @@ private fun CopyRow(
                 flash -> copiedLabel
                 else -> shown
             },
-            style = ctRegular(13),
+            style = CTFont.body,
             color = if (shown == null) CTColor.textDim else valueColor,
             maxLines = 1,
         )
@@ -539,7 +540,7 @@ private fun InfoRow(
     ) {
         Text(
             text = label.lowercase(),
-            style = ctRegular(14),
+            style = CTFont.ui(14),
             color = labelColor,
             modifier = Modifier.weight(1f),
         )
@@ -553,16 +554,16 @@ private fun Chevron(tint: Color = CTColor.accent) {
         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
         contentDescription = null,
         tint = tint,
-        modifier = Modifier.size(18.dp),
+        modifier = Modifier.size(CTIcon.nav),
     )
 }
 
 @Composable
 private fun SectionHeader(title: String, color: Color = CTColor.accent) {
     Row(modifier = Modifier.padding(horizontal = ROW_H_PAD, vertical = 10.dp)) {
-        Text(">", style = ctBold(12), color = color)
+        Text(">", style = CTFont.ui(12, FontWeight.Bold), color = color)
         Spacer(Modifier.width(6.dp))
-        Text(title.uppercase(), style = ctBold(12), color = color, letterSpacing = 2.sp)
+        Text(title.uppercase(), style = CTFont.ui(12, FontWeight.Bold), color = color, letterSpacing = 2.sp)
     }
 }
 

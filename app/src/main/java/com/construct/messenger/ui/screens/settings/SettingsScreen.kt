@@ -1,10 +1,8 @@
 package com.construct.messenger.ui.screens.settings
 
-import com.construct.messenger.ui.components.rememberAvatar
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,12 +16,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Brush
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Info
@@ -45,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -53,6 +53,8 @@ import com.construct.messenger.BuildConfig
 import com.construct.messenger.R
 import com.construct.messenger.data.repository.OwnAccount
 import com.construct.messenger.diagnostics.Diagnostics
+import com.construct.messenger.recovery.HeldPhrase
+import com.construct.messenger.recovery.RecoveryViewModel
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
@@ -62,13 +64,12 @@ import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.CTStatus
 import com.construct.messenger.ui.components.CTStatusBadge
 import com.construct.messenger.ui.components.ConnectionStatus
+import com.construct.messenger.ui.components.rememberAvatar
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.SettingsViewModel
-import com.construct.messenger.recovery.HeldPhrase
-import com.construct.messenger.recovery.RecoveryViewModel
 
 /** Callbacks for the rows that open another app screen. */
 data class SettingsNavigation(
@@ -274,13 +275,13 @@ private fun ProfileRow(account: OwnAccount?, onClick: () -> Unit) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(
                 text = (account?.displayName ?: stringResource(R.string.settings_row_account_fallback)).uppercase(),
-                style = ctBold(15),
+                style = CTFont.ui(15, FontWeight.Bold),
                 color = CTColor.text,
             )
             Text(
                 text = account?.username?.takeIf { it.isNotEmpty() }?.let { "@$it" }
                     ?: stringResource(R.string.username_not_set),
-                style = ctRegular(12),
+                style = CTFont.secondary,
                 color = CTColor.textDim,
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -290,7 +291,7 @@ private fun ProfileRow(account: OwnAccount?, onClick: () -> Unit) {
                     text = stringResource(
                         if (searchable) R.string.searchable_indicator else R.string.searchable_indicator_off,
                     ),
-                    style = ctRegular(11),
+                    style = CTFont.caption,
                     color = if (searchable) CTColor.accent else CTColor.textDim,
                 )
             }
@@ -299,7 +300,7 @@ private fun ProfileRow(account: OwnAccount?, onClick: () -> Unit) {
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
             tint = CTColor.accent,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(CTIcon.nav),
         )
     }
 }
@@ -337,18 +338,18 @@ private fun RecoveryBanner(held: HeldPhrase, onSetUp: () -> Unit, onDismiss: () 
             imageVector = Icons.Default.Error,
             contentDescription = null,
             tint = CTColor.danger,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(CTIcon.nav),
         )
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = stringResource(title).uppercase(),
-                style = ctBold(11),
+                style = CTFont.badge,
                 color = CTColor.danger,
             )
             Text(
                 text = stringResource(subtitle),
-                style = ctRegular(12),
+                style = CTFont.secondary,
                 color = CTColor.textDim,
             )
             // Lost: there is nothing left to set up, only the fact to state.
@@ -357,12 +358,12 @@ private fun RecoveryBanner(held: HeldPhrase, onSetUp: () -> Unit, onDismiss: () 
                     modifier = Modifier.clickable(onClick = onSetUp).padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(text = stringResource(R.string.recovery_banner_action), style = ctBold(11), color = CTColor.accent)
+                    Text(text = stringResource(R.string.recovery_banner_action), style = CTFont.badge, color = CTColor.accent)
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = null,
                         tint = CTColor.accent,
-                        modifier = Modifier.size(14.dp),
+                        modifier = Modifier.size(CTIcon.row),
                     )
                 }
             }
@@ -372,7 +373,7 @@ private fun RecoveryBanner(held: HeldPhrase, onSetUp: () -> Unit, onDismiss: () 
             contentDescription = stringResource(R.string.close),
             tint = CTColor.textDim,
             modifier = Modifier
-                .size(18.dp)
+                .size(CTIcon.nav)
                 .clickable(onClick = onDismiss),
         )
     }

@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,6 +25,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -64,8 +64,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -74,16 +74,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.construct.messenger.R
 import com.construct.messenger.data.model.CallUi
+import com.construct.messenger.data.model.CallVideoFrames
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import org.webrtc.RendererCommon
 import org.webrtc.SurfaceViewRenderer
-import com.construct.messenger.data.model.CallVideoFrames
 
 /**
  * The call screen while a camera is on. Like FaceTime, only less: one face on the whole screen,
@@ -185,7 +185,7 @@ private fun Pane(pane: VideoCallStage.Pane, call: CallUi, frames: CallVideoFrame
                     Icons.Filled.VideocamOff,
                     contentDescription = stringResource(R.string.call_peer_camera_off),
                     tint = CTColor.textDim,
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(CTIcon.nav),
                 )
             }
         }
@@ -237,23 +237,23 @@ private fun Header(call: CallUi, status: String, onMinimize: (() -> Unit)?) {
                     .semantics { role = Role.Button },
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.call_minimize), tint = Color.White)
+                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.call_minimize), tint = CTColor.onMedia)
             }
             Spacer(Modifier.width(CTLayout.edgePad))
         }
         Column(Modifier.semantics(mergeDescendants = true) {}) {
-            Text(call.peerName, style = ctBold(18), color = Color.White)
+            Text(call.peerName, style = CTFont.title, color = CTColor.onMedia)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Lock, contentDescription = stringResource(R.string.call_e2ee_badge), tint = Color.White, modifier = Modifier.size(10.dp))
+                Icon(Icons.Filled.Lock, contentDescription = stringResource(R.string.call_e2ee_badge), tint = CTColor.onMedia, modifier = Modifier.size(CTIcon.caption))
                 Spacer(Modifier.width(5.dp))
-                Text(status, style = ctRegular(13), color = Color.White)
+                Text(status, style = CTFont.body, color = CTColor.onMedia)
                 if (call.reconnecting) {
                     Spacer(Modifier.width(5.dp))
                     Icon(
                         Icons.Filled.SignalWifiStatusbarConnectedNoInternet4,
                         contentDescription = stringResource(R.string.call_reconnecting),
-                        tint = Color.White,
-                        modifier = Modifier.size(12.dp),
+                        tint = CTColor.onMedia,
+                        modifier = Modifier.size(CTIcon.caption),
                     )
                 }
             }
@@ -318,7 +318,7 @@ private fun RoundControl(icon: ImageVector, label: String, off: Boolean, onClick
         modifier = Modifier
             .size(CTLayout.callControlSize)
             .clip(CircleShape)
-            .background(if (off) Color.White else Color.White.copy(alpha = 0.14f))
+            .background(if (off) CTColor.mediaControlOn else CTColor.mediaControl)
             .clickable(onClick = onClick)
             .semantics {
                 contentDescription = label
@@ -327,7 +327,7 @@ private fun RoundControl(icon: ImageVector, label: String, off: Boolean, onClick
             },
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription = null, tint = if (off) Color.Black else Color.White, modifier = Modifier.size(CTLayout.callIconSize))
+        Icon(icon, contentDescription = null, tint = if (off) Color.Black else CTColor.onMedia, modifier = Modifier.size(CTLayout.callIconSize))
     }
 }
 
@@ -367,7 +367,7 @@ private fun PreviewWindow(
             .size(PREVIEW_WIDTH, PREVIEW_HEIGHT)
             .shadow(12.dp, shape)
             .clip(shape)
-            .border(1.dp, Color.White.copy(alpha = 0.18f), shape)
+            .border(1.dp, CTColor.mediaControl, shape)
             .pointerInput(corner, screenWidth, screenHeight) {
                 detectDragGestures(
                     onDrag = { change, amount ->

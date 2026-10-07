@@ -26,15 +26,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.R
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CornerRadius
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.Deletion
 
 /** iOS `DeleteAccountSheetLayout.abortWindowSeconds`. */
@@ -88,10 +88,10 @@ fun DeleteAccountSheet(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(stringResource(R.string.delete_account_title), style = ctBold(20), color = CTColor.text)
+            Text(stringResource(R.string.delete_account_title), style = CTFont.ui(20, FontWeight.Bold), color = CTColor.text)
             Text(
                 text = stringResource(R.string.delete_account_message),
-                style = ctRegular(14),
+                style = CTFont.ui(14),
                 color = CTColor.textDim,
                 textAlign = TextAlign.Center,
             )
@@ -99,13 +99,13 @@ fun DeleteAccountSheet(
                 Text(
                     text = deletion.message?.let { stringResource(R.string.delete_account_failed, it) }
                         ?: stringResource(R.string.delete_account_not_available),
-                    style = ctRegular(12),
+                    style = CTFont.secondary,
                     color = CTColor.danger,
                     textAlign = TextAlign.Center,
                 )
                 Text(
                     text = stringResource(R.string.delete_account_local_only),
-                    style = ctRegular(12).copy(textDecoration = TextDecoration.Underline),
+                    style = CTFont.secondary.copy(textDecoration = TextDecoration.Underline),
                     color = CTColor.danger.copy(alpha = 0.8f),
                     modifier = Modifier.clickable { confirmLocal = true },
                 )
@@ -127,7 +127,7 @@ fun DeleteAccountSheet(
                     ) {
                         Text(
                             text = stringResource(R.string.delete_account_abort_hint, deletion.secondsLeft),
-                            style = ctBold(15),
+                            style = CTFont.ui(15, FontWeight.Bold),
                             color = CTColor.danger,
                         )
                     }
@@ -147,13 +147,13 @@ fun DeleteAccountSheet(
                         .clickable(onClick = onDelete),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(stringResource(R.string.delete_account_button), style = ctBold(16), color = CTColor.danger)
+                    Text(stringResource(R.string.delete_account_button), style = CTFont.ui(16, FontWeight.Bold), color = CTColor.danger)
                 }
             }
             if (!busy) {
                 Text(
                     text = stringResource(R.string.action_cancel),
-                    style = ctRegular(15),
+                    style = CTFont.ui(15),
                     color = CTColor.textDim,
                     modifier = Modifier.clickable(onClick = onDismiss),
                 )

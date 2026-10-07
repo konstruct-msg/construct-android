@@ -1,83 +1,83 @@
 package com.construct.messenger.ui.screens.chat
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.animateScrollBy
-import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Phone
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import androidx.compose.ui.unit.sp
-import com.construct.messenger.ui.components.glassCapsule
-import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.ctBold
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.Composable
-import com.construct.messenger.ui.theme.ctRegular
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.GppMaybe
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.EmojiEmotions
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.DropdownMenu
-import com.construct.messenger.media.VoiceRecorder
-import com.construct.messenger.ui.components.VoiceComposerBar
-import com.construct.messenger.ui.components.VideoNoteActions
-import com.construct.messenger.ui.components.VideoNoteUi
-import com.construct.messenger.ui.components.VoicePlayback
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.data.model.Message
+import com.construct.messenger.media.VoiceRecorder
 import com.construct.messenger.ui.components.MessageBubble
 import com.construct.messenger.ui.components.MessageInputView
+import com.construct.messenger.ui.components.VideoNoteActions
+import com.construct.messenger.ui.components.VideoNoteUi
+import com.construct.messenger.ui.components.VoiceComposerBar
+import com.construct.messenger.ui.components.VoicePlayback
+import com.construct.messenger.ui.components.glassCapsule
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
+import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.viewmodel.ChatViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun ChatScreen(
@@ -496,7 +496,7 @@ fun ChatScreen(
                 // iOS `MediaPickerSheet` has Gallery and Files tabs; here the two are a menu.
                 DropdownMenu(expanded = attachMenuOpen, onDismissRequest = { attachMenuOpen = false }) {
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.attach_photo_video), style = ctRegular(14), color = CTColor.text) },
+                        text = { Text(stringResource(R.string.attach_photo_video), style = CTFont.ui(14), color = CTColor.text) },
                         leadingIcon = { Icon(Icons.Filled.Image, null, tint = CTColor.text) },
                         onClick = {
                             attachMenuOpen = false
@@ -505,7 +505,7 @@ fun ChatScreen(
                     )
                     // iOS: stickers are the picker sheet's tab next to Gallery; here the sheet is a menu.
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.media_picker_tab_stickers), style = ctRegular(14), color = CTColor.text) },
+                        text = { Text(stringResource(R.string.media_picker_tab_stickers), style = CTFont.ui(14), color = CTColor.text) },
                         leadingIcon = { Icon(Icons.Outlined.EmojiEmotions, null, tint = CTColor.text) },
                         onClick = {
                             attachMenuOpen = false
@@ -513,7 +513,7 @@ fun ChatScreen(
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.attach_file), style = ctRegular(14), color = CTColor.text) },
+                        text = { Text(stringResource(R.string.attach_file), style = CTFont.ui(14), color = CTColor.text) },
                         leadingIcon = { Icon(Icons.AutoMirrored.Filled.InsertDriveFile, null, tint = CTColor.text) },
                         onClick = {
                             attachMenuOpen = false
@@ -629,14 +629,14 @@ private fun ChatNavBar(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 contentDescription = stringResource(R.string.back),
                 tint = CTColor.bg,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(CTIcon.nav),
             )
         }
         Spacer(Modifier.width(CTLayout.inlinePad))
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = title.uppercase(),
-                style = ctBold(14),
+                style = CTFont.headline,
                 color = CTColor.text,
                 letterSpacing = 4.sp,
                 maxLines = 1,
@@ -651,7 +651,7 @@ private fun ChatNavBar(
         if (selecting) {
             Text(
                 text = stringResource(R.string.done),
-                style = ctBold(14),
+                style = CTFont.headline,
                 color = CTColor.accent,
                 modifier = Modifier
                     .clickable(onClick = onDoneSelecting)
@@ -688,17 +688,17 @@ private fun ChatSearchBar(query: String, onQueryChange: (String) -> Unit, result
                 .padding(start = CTLayout.edgePad),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Filled.Search, contentDescription = null, tint = CTColor.textDim, modifier = Modifier.size(18.dp))
+            Icon(Icons.Filled.Search, contentDescription = null, tint = CTColor.textDim, modifier = Modifier.size(CTIcon.nav))
             Spacer(Modifier.width(CTLayout.inlinePad))
             Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                 if (query.isEmpty()) {
-                    Text(stringResource(R.string.search_messages), style = ctRegular(14), color = CTColor.textDim)
+                    Text(stringResource(R.string.search_messages), style = CTFont.ui(14), color = CTColor.textDim)
                 }
                 androidx.compose.foundation.text.BasicTextField(
                     value = query,
                     onValueChange = onQueryChange,
                     singleLine = true,
-                    textStyle = ctRegular(14).copy(color = CTColor.text),
+                    textStyle = CTFont.ui(14).copy(color = CTColor.text),
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(CTColor.accent),
                     modifier = Modifier.fillMaxWidth().focusRequester(focus),
                 )
@@ -713,7 +713,7 @@ private fun ChatSearchBar(query: String, onQueryChange: (String) -> Unit, result
         if (query.isNotEmpty()) {
             Text(
                 text = androidx.compose.ui.res.pluralStringResource(R.plurals.chat_search_results, resultCount, resultCount),
-                style = ctRegular(12),
+                style = CTFont.secondary,
                 color = CTColor.textDim,
                 modifier = Modifier.padding(horizontal = CTLayout.inlinePad, vertical = 4.dp),
             )
@@ -735,7 +735,7 @@ private fun SelectionBar(count: Int, onDelete: () -> Unit) {
     ) {
         Text(
             text = stringResource(R.string.delete_selected).uppercase(),
-            style = ctRegular(14),
+            style = CTFont.ui(14),
             color = if (count > 0) CTColor.danger else CTColor.textDim,
             modifier = Modifier
                 .clickable(enabled = count > 0, onClick = onDelete)
@@ -744,7 +744,7 @@ private fun SelectionBar(count: Int, onDelete: () -> Unit) {
         Spacer(Modifier.weight(1f))
         Text(
             text = androidx.compose.ui.res.pluralStringResource(R.plurals.messages_selected, count, count),
-            style = ctRegular(12),
+            style = CTFont.secondary,
             color = CTColor.textDim,
         )
     }
@@ -762,10 +762,10 @@ private fun QuoteSelectionSheet(text: String, onConfirm: (String) -> Unit, onDis
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, containerColor = CTColor.bg) {
         Column(Modifier.padding(horizontal = CTLayout.edgePad).padding(bottom = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.select_quote), style = ctBold(14), color = CTColor.text, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.select_quote), style = CTFont.headline, color = CTColor.text, modifier = Modifier.weight(1f))
                 Text(
                     text = stringResource(R.string.reply_with_selection),
-                    style = ctBold(14),
+                    style = CTFont.headline,
                     color = if (selected.isNotBlank()) CTColor.accent else CTColor.textDim,
                     modifier = Modifier
                         .clickable(enabled = selected.isNotBlank()) {
@@ -775,13 +775,13 @@ private fun QuoteSelectionSheet(text: String, onConfirm: (String) -> Unit, onDis
                         .padding(vertical = 10.dp),
                 )
             }
-            Text(stringResource(R.string.quote_selection_hint), style = ctRegular(12), color = CTColor.textDim)
+            Text(stringResource(R.string.quote_selection_hint), style = CTFont.secondary, color = CTColor.textDim)
             Spacer(Modifier.height(CTLayout.inlinePad))
             androidx.compose.foundation.text.BasicTextField(
                 value = value,
                 onValueChange = { value = it.copy(text = text) },
                 readOnly = true,
-                textStyle = ctRegular(15).copy(color = CTColor.text),
+                textStyle = CTFont.ui(15).copy(color = CTColor.text),
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(CTColor.bgMsg)
@@ -793,7 +793,7 @@ private fun QuoteSelectionSheet(text: String, onConfirm: (String) -> Unit, onDis
                     Spacer(Modifier.width(2.dp).height(28.dp).background(CTColor.accent))
                     Text(
                         text = selected,
-                        style = ctRegular(12),
+                        style = CTFont.secondary,
                         color = CTColor.textDim,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -871,7 +871,7 @@ private fun KtBadge(alerted: Boolean, verified: Boolean, onAlertTap: () -> Unit)
             Icons.Filled.CheckCircle,
             contentDescription = stringResource(R.string.kt_verified),
             tint = CTColor.accent,
-            modifier = Modifier.padding(start = CTLayout.inlinePad).size(14.dp),
+            modifier = Modifier.padding(start = CTLayout.inlinePad).size(CTIcon.row),
         )
     }
 }

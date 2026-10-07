@@ -39,9 +39,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
@@ -56,11 +56,11 @@ import com.construct.messenger.ui.components.CTButton
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTTextField
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
-import com.construct.messenger.ui.theme.Spacing
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 
 /**
  * Shows [content] once this device knows the account's address, the recovery gate until then.
@@ -158,14 +158,14 @@ private fun RecoveryGateScreen(
             CTNavBar(title = stringResource(R.string.recovery_gate_nav_title))
             Text(
                 text = dismissLabel,
-                style = ctBold(13),
+                style = CTFont.bodyEmphasis,
                 color = CTColor.textDim,
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .padding(end = Spacing.small)
+                    .padding(end = CTSpace.s)
                     .clip(RoundedCornerShape(CornerRadius.small))
                     .clickable(onClick = onDismiss)
-                    .padding(horizontal = Spacing.small, vertical = Spacing.small),
+                    .padding(horizontal = CTSpace.s, vertical = CTSpace.s),
             )
         }
         Column(
@@ -183,15 +183,15 @@ private fun RecoveryGateScreen(
                 imageVector = if (stage == RecoveryStage.BackupLost) Icons.Default.Warning else Icons.Default.Key,
                 contentDescription = null,
                 tint = if (stage == RecoveryStage.BackupLost) CTColor.danger else CTColor.accent,
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(CTIcon.navLg),
             )
             val (title, body) = when {
                 stage == RecoveryStage.BackupLost -> R.string.recovery_backup_lost_title to R.string.recovery_backup_lost_body
                 backup -> R.string.recovery_backup_intro_title to R.string.recovery_backup_intro_body
                 else -> R.string.recovery_gate_title to R.string.recovery_gate_why
             }
-            Text(stringResource(title), style = ctBold(18), color = CTColor.text)
-            Text(stringResource(body), style = ctRegular(13), color = CTColor.textDim)
+            Text(stringResource(title), style = CTFont.title, color = CTColor.text)
+            Text(stringResource(body), style = CTFont.body, color = CTColor.textDim)
 
             when (stage) {
                 RecoveryStage.Loading, RecoveryStage.Working, RecoveryStage.Ready ->
@@ -200,17 +200,17 @@ private fun RecoveryGateScreen(
                         modifier = Modifier.align(Alignment.CenterHorizontally),
                     )
                 RecoveryStage.Explain -> {
-                    Text(stringResource(R.string.recovery_gate_setup_note), style = ctRegular(12), color = CTColor.textDim)
+                    Text(stringResource(R.string.recovery_gate_setup_note), style = CTFont.secondary, color = CTColor.textDim)
                     CTButton(label = stringResource(R.string.recovery_gate_setup_action), onClick = viewModel::startSetup)
                 }
                 is RecoveryStage.ShowWords -> {
-                    Text(stringResource(R.string.recovery_write_down), style = ctBold(14), color = CTColor.text)
+                    Text(stringResource(R.string.recovery_write_down), style = CTFont.headline, color = CTColor.text)
                     WordGrid(stage.words)
-                    Text(stringResource(R.string.recovery_never_share), style = ctRegular(12), color = CTColor.danger)
+                    Text(stringResource(R.string.recovery_never_share), style = CTFont.secondary, color = CTColor.danger)
                     CTButton(label = stringResource(R.string.recovery_words_written), onClick = viewModel::toQuiz)
                 }
                 is RecoveryStage.Quiz -> {
-                    Text(stringResource(R.string.recovery_quiz_prompt), style = ctRegular(13), color = CTColor.textDim)
+                    Text(stringResource(R.string.recovery_quiz_prompt), style = CTFont.body, color = CTColor.textDim)
                     stage.indices.forEach { i ->
                         WordChoice(
                             label = stringResource(R.string.recovery_quiz_word_n, i + 1),
@@ -233,7 +233,7 @@ private fun RecoveryGateScreen(
                 }
                 RecoveryStage.BackupLost -> Unit
                 RecoveryStage.Confirm -> {
-                    Text(stringResource(R.string.recovery_gate_confirm_note), style = ctRegular(12), color = CTColor.textDim)
+                    Text(stringResource(R.string.recovery_gate_confirm_note), style = CTFont.secondary, color = CTColor.textDim)
                     CTTextField(
                         placeholder = stringResource(R.string.recovery_confirm_placeholder),
                         value = ui.confirmPhrase,
@@ -253,18 +253,18 @@ private fun RecoveryGateScreen(
 
 @Composable
 private fun WordGrid(words: List<String>) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+    Column(verticalArrangement = Arrangement.spacedBy(CTSpace.s)) {
         words.chunked(3).forEachIndexed { row, chunk ->
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(CTSpace.s)) {
                 chunk.forEachIndexed { col, word ->
                     Text(
                         text = "${row * 3 + col + 1}. $word",
-                        style = ctRegular(14),
+                        style = CTFont.ui(14),
                         color = CTColor.text,
                         modifier = Modifier
                             .weight(1f)
                             .background(CTColor.bgMsg)
-                            .padding(horizontal = Spacing.small, vertical = 10.dp),
+                            .padding(horizontal = CTSpace.s, vertical = 10.dp),
                     )
                 }
             }
@@ -275,10 +275,10 @@ private fun WordGrid(words: List<String>) {
 /** One of the three checks: which of these is word N. Picking, not typing. */
 @Composable
 private fun WordChoice(label: String, options: List<String>, picked: String?, onPick: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-        Text(label, style = ctRegular(12), color = CTColor.textDim)
+    Column(verticalArrangement = Arrangement.spacedBy(CTSpace.s)) {
+        Text(label, style = CTFont.secondary, color = CTColor.textDim)
         options.chunked(2).forEach { pair ->
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(CTSpace.s)) {
                 pair.forEach { word ->
                     val chosen = word == picked
                     Row(
@@ -289,12 +289,12 @@ private fun WordChoice(label: String, options: List<String>, picked: String?, on
                             .border(1.dp, if (chosen) CTColor.accent else CTColor.noise, RoundedCornerShape(CornerRadius.small))
                             .semantics { selected = chosen }
                             .clickable { onPick(word) }
-                            .padding(horizontal = Spacing.small, vertical = 10.dp),
+                            .padding(horizontal = CTSpace.s, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(word, style = ctRegular(14), color = CTColor.text, modifier = Modifier.weight(1f))
+                        Text(word, style = CTFont.body, color = CTColor.text, modifier = Modifier.weight(1f))
                         if (chosen) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = CTColor.accent, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Check, contentDescription = null, tint = CTColor.accent, modifier = Modifier.size(CTIcon.row))
                         }
                     }
                 }
@@ -362,8 +362,8 @@ private fun rememberHeldUnlock(viewModel: RecoveryViewModel): () -> Unit {
 @Composable
 private fun ErrorLine(errorRes: Int?) {
     if (errorRes == null) return
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
-        Icon(Icons.Default.Warning, contentDescription = null, tint = CTColor.danger, modifier = Modifier.size(16.dp))
-        Text(stringResource(errorRes), style = ctRegular(13), color = CTColor.danger)
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(CTSpace.s)) {
+        Icon(Icons.Default.Warning, contentDescription = null, tint = CTColor.danger, modifier = Modifier.size(CTIcon.row))
+        Text(stringResource(errorRes), style = CTFont.body, color = CTColor.danger)
     }
 }

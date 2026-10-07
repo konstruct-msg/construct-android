@@ -48,8 +48,8 @@ import com.construct.messenger.data.model.Draft
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CornerRadius
-import com.construct.messenger.ui.theme.ctRegular
 import com.construct.messenger.viewmodel.DraftsViewModel
 import java.util.Date
 
@@ -107,7 +107,7 @@ private fun DraftsScreen(
                 BasicTextField(
                     value = text,
                     onValueChange = { text = it },
-                    textStyle = ctRegular(14).copy(color = CTColor.text),
+                    textStyle = CTFont.ui(14).copy(color = CTColor.text),
                     cursorBrush = SolidColor(CTColor.accent),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -133,7 +133,7 @@ private fun DraftsScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.drafts_save),
-                        style = ctRegular(14),
+                        style = CTFont.ui(14),
                         color = if (canSave) CTColor.text else CTColor.textDim,
                     )
                 }
@@ -144,7 +144,7 @@ private fun DraftsScreen(
                     Text(
                         text = stringResource(R.string.drafts_stored_locally),
                         // iOS `.footnote`: the system face, not the chrome's mono.
-                        style = TextStyle(fontFamily = FontFamily.Default, fontSize = 13.sp),
+                        style = CTFont.body,
                         color = CTColor.textDim,
                         textAlign = TextAlign.Center,
                     )
@@ -182,7 +182,7 @@ private fun DraftRow(draft: Draft, onDelete: () -> Unit) {
                     .padding(horizontal = 16.dp),
                 contentAlignment = Alignment.CenterEnd,
             ) {
-                Text(text = stringResource(R.string.delete), style = ctRegular(13), color = CTColor.outMsgTextDark)
+                Text(text = stringResource(R.string.delete), style = CTFont.body, color = CTColor.outMsgTextDark)
             }
         },
     ) {
@@ -195,14 +195,15 @@ private fun DraftRow(draft: Draft, onDelete: () -> Unit) {
         ) {
             Text(
                 text = draft.text,
-                style = ctRegular(14),
+                // What a person wrote: in the face they chose for messages (iOS DraftsView).
+                style = CTFont.message(15),
                 color = CTColor.text,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = DateFormat.getMediumDateFormat(context).format(Date(draft.createdAt)),
-                style = ctRegular(11),
+                style = CTFont.secondary,
                 color = CTColor.textDim,
             )
         }

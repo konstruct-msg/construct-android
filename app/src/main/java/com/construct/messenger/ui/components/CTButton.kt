@@ -3,8 +3,8 @@ package com.construct.messenger.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,15 +17,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.ui.theme.HairlineBorder
-import com.construct.messenger.ui.theme.ctBold
 
 /**
  * Full-width primary button.
  *
  * **Canon:** iOS `ConstructTheme.swift` → `struct CTButton`.
- * - `ctBold(13)`, full width, 14dp vertical padding, corner radius 8.
+ * - `CTFont.bodyEmphasis`, full width, 14dp vertical padding, corner radius 8.
  * - Normal: fg `bg`, bg `accent`. Destructive: fg white, bg `danger`.
  * - Disabled: fg `textDim`, bg `disabledBg`, with a 0.5dp `noise` border.
  */
@@ -51,7 +51,7 @@ fun CTButton(
 
     Text(
         text = label,
-        style = ctBold(13),
+        style = CTFont.bodyEmphasis,
         color = fgColor,
         textAlign = TextAlign.Center,
         modifier = modifier

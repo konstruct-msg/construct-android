@@ -17,10 +17,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -53,15 +53,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.R
 import com.construct.messenger.data.model.CallUi
 import com.construct.messenger.data.model.CallVideoFrames
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 import com.construct.messenger.ui.theme.CTLayout
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
 import kotlinx.coroutines.delay
 
 /**
@@ -134,11 +135,11 @@ fun CallScreen(
             CTAvatar(userId = call.peerId, displayName = call.peerName, size = AVATAR)
         }
         Spacer(Modifier.height(16.dp))
-        Text(call.peerName, style = ctBold(22), color = CTColor.text)
+        Text(call.peerName, style = CTFont.ui(22, FontWeight.Bold), color = CTColor.text)
         Spacer(Modifier.height(8.dp))
         Text(
             text = statusText(call),
-            style = ctRegular(14),
+            style = CTFont.ui(14),
             color = if (call.isLive) CTColor.textDim else CTColor.danger.copy(alpha = 0.85f),
         )
         if (call.isLive) {
@@ -147,9 +148,9 @@ fun CallScreen(
                 modifier = Modifier.background(CTColor.bgMsg, CircleShape).padding(horizontal = 10.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Filled.Lock, contentDescription = null, tint = CTColor.textDim, modifier = Modifier.size(10.dp))
+                Icon(Icons.Filled.Lock, contentDescription = null, tint = CTColor.textDim, modifier = Modifier.size(CTIcon.caption))
                 Spacer(Modifier.width(4.dp))
-                Text(stringResource(R.string.call_e2ee_badge), style = ctRegular(11), color = CTColor.textDim)
+                Text(stringResource(R.string.call_e2ee_badge), style = CTFont.caption, color = CTColor.textDim)
             }
         }
 
@@ -248,7 +249,7 @@ private fun Control(icon: ImageVector, label: String, on: Boolean, onClick: () -
             Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(CTLayout.callIconSize))
         }
         Spacer(Modifier.height(6.dp))
-        Text(label, style = ctRegular(10), color = CTColor.textDim)
+        Text(label, style = CTFont.micro, color = CTColor.textDim)
     }
 }
 
@@ -268,7 +269,7 @@ private fun RoundAction(icon: ImageVector, label: String, color: Color, onClick:
         }
         if (showLabel) {
             Spacer(Modifier.height(6.dp))
-            Text(label, style = ctRegular(11), color = CTColor.textDim)
+            Text(label, style = CTFont.micro, color = CTColor.textDim)
         }
     }
 }
@@ -307,12 +308,12 @@ fun CallMiniBar(call: CallUi, onOpen: () -> Unit) {
             .padding(horizontal = CTLayout.edgePad, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Filled.Call, contentDescription = null, tint = CTColor.bg, modifier = Modifier.size(14.dp))
+        Icon(Icons.Filled.Call, contentDescription = null, tint = CTColor.bg, modifier = Modifier.size(CTIcon.row))
         Spacer(Modifier.width(8.dp))
-        Text(call.peerName, style = ctBold(12), color = CTColor.bg, modifier = Modifier.weight(1f), maxLines = 1)
+        Text(call.peerName, style = CTFont.ui(12, FontWeight.Bold), color = CTColor.bg, modifier = Modifier.weight(1f), maxLines = 1)
         Text(
             text = if (call.phase == CallUi.Phase.ACTIVE) elapsed(call.activeSinceMs) else stringResource(R.string.call_minibar_connecting),
-            style = ctRegular(12),
+            style = CTFont.caption,
             color = CTColor.bg,
         )
     }

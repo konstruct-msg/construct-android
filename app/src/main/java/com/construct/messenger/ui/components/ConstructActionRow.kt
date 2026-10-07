@@ -27,11 +27,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.ctBold
-import com.construct.messenger.ui.theme.ctRegular
+import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.theme.CTIcon
 
 /**
  * Visual role that controls the fill, border, and foreground color of a row.
@@ -60,7 +61,7 @@ enum class ConstructRowRole {
  *
  * **Canon:** iOS `ConstructRowComponents.swift` → `struct ConstructActionRow`.
  * - 16dp horizontal / 13dp vertical padding.
- * - `ctBold(16)` title.
+ * - `CTFont.ui(16, FontWeight.Bold)` title.
  * - 8dp rounded rectangle with tinted fill and border.
  * - [badge] rendered as a small pill on the trailing side.
  * - [isLoading] replaces the badge with a progress indicator.
@@ -91,12 +92,12 @@ fun ConstructActionRow(
             imageVector = icon,
             contentDescription = null,
             tint = role.foreground(),
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(CTIcon.nav),
         )
         Spacer(Modifier.width(12.dp))
         Text(
             text = title,
-            style = ctBold(16),
+            style = CTFont.ui(16, FontWeight.Bold),
             color = role.foreground(),
             modifier = Modifier.weight(1f),
         )
@@ -125,7 +126,7 @@ fun ConstructActionRow(
 private fun ActionRowBadge(text: String) {
     Text(
         text = text,
-        style = ctRegular(10),
+        style = CTFont.micro,
         color = CTColor.textDim,
         modifier = Modifier
             .background(CTColor.bgMsg)
