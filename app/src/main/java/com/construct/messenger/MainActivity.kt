@@ -179,12 +179,21 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    /** Bars take the app background of the chosen theme, with icons that read on it. */
+    /**
+     * Bars over the app background of the chosen theme, with icons that read on it.
+     *
+     * The bars are transparent, not painted in that background. On Android 10–14 the colour given
+     * here is drawn over the app, so nothing the app draws reaches it: the chat palette's dim stopped
+     * at the navigation bar, a light strip under a grey screen (Redmi, Android 11, light theme,
+     * 0.17.2–0.17.4). Android 15+ ignores the colour, which is why the emulator never showed it. The
+     * root `Surface` fills the window with the background, so the bars look the same either way.
+     */
     private fun applySystemBars(darkTheme: Boolean) {
+        val transparent = android.graphics.Color.TRANSPARENT
         val style = if (darkTheme) {
-            SystemBarStyle.dark(CTColor.bgDark.toArgb())
+            SystemBarStyle.dark(transparent)
         } else {
-            SystemBarStyle.light(CTColor.bgLight.toArgb(), CTColor.bgDark.toArgb())
+            SystemBarStyle.light(transparent, transparent)
         }
         enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
     }
