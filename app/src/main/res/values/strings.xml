@@ -465,6 +465,7 @@
     <string name="profile_user_id">user id</string>
     <string name="profile_actions">Actions</string>
     <string name="profile_call_voice">voice call</string>
+    <string name="profile_call_video">video call</string>
     <string name="share_my_profile">Share My Profile</string>
     <string name="stop_sharing_profile">Stop Sharing Profile</string>
     <string name="profile_shared_successfully">Profile shared successfully</string>

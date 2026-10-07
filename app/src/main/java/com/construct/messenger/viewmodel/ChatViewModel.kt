@@ -12,6 +12,7 @@ import com.construct.messenger.media.VideoNotePlayback
 import com.construct.messenger.media.VoicePlayer
 import com.construct.messenger.media.VoiceRecorder
 import com.construct.messenger.data.model.ReplyRef
+import com.construct.messenger.data.model.Contact
 import com.construct.messenger.data.model.ContactTrustAlert
 import com.construct.messenger.data.model.KtStatus
 import com.construct.messenger.data.repository.ContactsRepository
@@ -124,23 +125,17 @@ class ChatViewModel @Inject constructor(
     ) { messages, contacts, draftText, composer ->
         val (reply, edit, photos, picked) = composer
         val contact = contacts.find { it.userId == contactId }
-        val title = when {
-            contact == null -> DisplayNameGenerator.generate(contactId).uppercase()
-            contact.localName != null -> contact.localName.uppercase()
-            contact.username.isNotBlank() -> "@${contact.username}"
-            else -> contact.displayName.uppercase()
-        }
+        val name = chatPeerName(contact, contactId)
         ChatUiState(
             contactId = contactId,
-            title = title,
+            title = name.uppercase(),
             messages = messages,
             draft = draftText,
             replyingTo = reply,
             editingOriginal = edit?.original,
             trustAlert = contact?.trustAlert,
             ktVerified = contact?.ktStatus == KtStatus.VERIFIED,
-            contactName = contact?.let { it.localName ?: if (it.username.isNotBlank()) "@${it.username}" else it.displayName }
-                ?: DisplayNameGenerator.generate(contactId),
+            contactName = name,
             attachments = photos,
             files = picked,
         )
@@ -455,3 +450,15 @@ class ChatViewModel @Inject constructor(
         const val MAX_ATTACHMENTS = 99
     }
 }
+
+/**
+ * The peer's name in the chat header and its security banner: the name the user gave them, the
+ * name they shared, their username, then the generated name — [Contact.displayName] already holds
+ * that order (`resolvedName`). The header sets it in capitals. **Canon:** iOS `ChatView`'s
+ * `ObservedPeerName` → `resolvedDisplayName`.
+ *
+ * Until 2026-10-07 a username won over the shared name here, as `@username`: Alice, who shared
+ * her name, was "@ALICE" on Android and "ALICE" on iOS.
+ */
+internal fun chatPeerName(contact: Contact?, contactId: String): String =
+    contact?.displayName ?: DisplayNameGenerator.generate(contactId)

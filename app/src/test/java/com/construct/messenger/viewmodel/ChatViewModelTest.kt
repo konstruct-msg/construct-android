@@ -77,6 +77,22 @@ class ChatViewModelTest {
         assertEquals("next", viewModel.uiState.value.draft)
     }
 
+    /**
+     * The header names the peer as iOS does: the shared name, in capitals — not `@username`.
+     * Mutation: put the username branch back ahead of the name — this reddens.
+     */
+    @Test
+    fun `the header shows the shared name, not the username`() = runTest {
+        val contacts = FakeContactsRepository()
+        contacts.contacts.value = listOf(Contact(userId = "peer-1", displayName = "Alice", username = "alice"))
+        val handle = SavedStateHandle().apply { set("contactId", "peer-1") }
+        val viewModel = ChatViewModel(handle, FakeMessagesRepository(), contacts, org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        advanceUntilIdle()
+
+        assertEquals("ALICE", viewModel.uiState.value.title)
+        assertEquals("Alice", viewModel.uiState.value.contactName)
+    }
+
     /** Refused before a row was written, nothing on screen holds the text: it comes back. */
     @Test
     fun `a send refused before any bubble gives the text back`() = runTest {
