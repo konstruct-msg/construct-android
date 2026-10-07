@@ -24,7 +24,7 @@ count() {
 
 # name | pattern | baseline
 CHECKS=(
-  "size set by hand — an icon takes CTIcon, a box a CTLayout size|\.size\([0-9]+(\.[0-9]+)?\.dp\)|32"
+  "size set by hand — an icon takes CTIcon, a box a CTLayout size|\.size\([0-9]+(\.[0-9]+)?\.dp\)|20"
   "text size past CTFont — use a role or CTFont.ui(size)|fontSize *= *[0-9]|5"
   "fixed-size text helper — use a CTFont role|\bct(Regular|Medium|SemiBold|Bold|Message)\(|0"
   "system face — chrome is JetBrains Mono; message text is CTFont.message|FontFamily\.(Default|Monospace|SansSerif|Serif)|1"

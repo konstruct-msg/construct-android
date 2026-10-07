@@ -222,7 +222,7 @@ fun VideoNoteBubble(
         }
         when {
             uploading || (state == NoteLoad.LOADING && bytes == null) ->
-                CircularProgressIndicator(color = CTColor.onMedia, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+                CircularProgressIndicator(color = CTColor.onMedia, strokeWidth = 2.dp, modifier = Modifier.size(CTIcon.navLg))
             state == NoteLoad.UNAVAILABLE ->
                 Icon(Icons.Filled.Warning, stringResource(R.string.media_unavailable), tint = CTColor.danger, modifier = Modifier.size(CTIcon.overlay))
             state == NoteLoad.FAILED ->

@@ -108,7 +108,7 @@ fun ConstructActionRow(
                 CircularProgressIndicator(
                     color = role.foreground(),
                     strokeWidth = 2.dp,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(CTIcon.row),
                 )
             }
 

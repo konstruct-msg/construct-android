@@ -279,7 +279,7 @@ private fun CatalogRow(
                 )
             }
             if (installing) {
-                CircularProgressIndicator(color = CTColor.accent, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                CircularProgressIndicator(color = CTColor.accent, strokeWidth = 2.dp, modifier = Modifier.size(CTIcon.nav))
             } else {
                 Text(
                     stringResource(R.string.sticker_get),

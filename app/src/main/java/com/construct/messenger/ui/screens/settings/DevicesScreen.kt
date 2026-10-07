@@ -178,7 +178,7 @@ private fun DevicesScreen(
         ) {
             if (ui.loading && ui.devices.isEmpty()) {
                 Box(Modifier.fillMaxWidth().padding(CTSpace.xxl), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = CTColor.accent, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
+                    CircularProgressIndicator(color = CTColor.accent, strokeWidth = 2.dp, modifier = Modifier.size(CTIcon.control))
                 }
                 return@Column
             }

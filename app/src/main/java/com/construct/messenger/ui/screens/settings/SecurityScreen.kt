@@ -401,7 +401,7 @@ private fun DiscoveryRow(ui: SecurityUiState, onChange: (Boolean) -> Unit) {
                 strokeWidth = 2.dp,
                 modifier = Modifier
                     .padding(CTSpace.m)
-                    .size(20.dp),
+                    .size(CTIcon.nav),
             )
         } else {
             // Switching off stays possible without an alias; switching on does not.

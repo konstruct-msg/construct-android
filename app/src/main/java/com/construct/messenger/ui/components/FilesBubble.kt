@@ -111,7 +111,7 @@ fun FilesBubble(
                 Box(Modifier.size(22.dp), contentAlignment = Alignment.Center) {
                     when {
                         staged || item.mediaId in loading ->
-                            CircularProgressIndicator(color = tint, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
+                            CircularProgressIndicator(color = tint, strokeWidth = 2.dp, modifier = Modifier.size(CTIcon.row))
                         item.mediaId in unavailable -> Icon(Icons.Filled.Warning, null, tint = CTColor.danger)
                         else -> Icon(Icons.Filled.ArrowCircleDown, stringResource(R.string.open_file), tint = tint)
                     }

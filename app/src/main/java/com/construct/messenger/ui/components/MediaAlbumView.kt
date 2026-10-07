@@ -218,7 +218,7 @@ private fun Tile(
                             Failure(stringResource(R.string.failed_to_load), onRetry = { attempt++ })
                         }
                     else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = CTColor.onMedia, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+                        CircularProgressIndicator(color = CTColor.onMedia, strokeWidth = 2.dp, modifier = Modifier.size(CTIcon.navLg))
                     }
                 }
             }

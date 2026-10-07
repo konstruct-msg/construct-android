@@ -186,7 +186,7 @@ private fun InviteRow(
             )
         }
         if (revoking) {
-            CircularProgressIndicator(color = CTColor.textDim, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
+            CircularProgressIndicator(color = CTColor.textDim, strokeWidth = 2.dp, modifier = Modifier.size(CTIcon.row))
         } else {
             val shape = RoundedCornerShape(CornerRadius.small)
             Text(

@@ -120,7 +120,7 @@ fun MessageInputView(
         if (onAttach != null) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(CTLayout.hitTarget)
                     .glassCapsule()
                     .clickable(onClick = onAttach),
                 contentAlignment = Alignment.Center,

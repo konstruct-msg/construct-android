@@ -180,7 +180,7 @@ fun VoiceBubble(
         Box(Modifier.width(38.dp).height(28.dp), contentAlignment = Alignment.Center) {
             when {
                 playback.uploading || playback.loading ->
-                    CircularProgressIndicator(color = tint, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
+                    CircularProgressIndicator(color = tint, strokeWidth = 2.dp, modifier = Modifier.size(CTIcon.row))
                 playback.unavailable ->
                     Icon(Icons.Filled.Warning, stringResource(R.string.media_unavailable), tint = CTColor.danger, modifier = Modifier.size(CTIcon.row))
                 else -> Icon(
