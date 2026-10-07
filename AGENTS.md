@@ -117,6 +117,26 @@ which does all of the above. Either way the files stay untracked.
 
 ---
 
+## Commits and branches
+
+[Conventional Commits](https://www.conventionalcommits.org/): `feat(scope): …`, `fix(scope): …`,
+`refactor(scope): …`, `chore(scope): …`, `docs(scope): …`.
+
+**Never commit on `develop` or `main`.** `develop` is what testers get — the release APK is built
+from a `v<versionName>` tag on it; `main` is what goes public. Every change goes on a topic branch
+cut from an up-to-date `develop` (`feat|fix|docs|chore|refactor|test/<topic>`) and lands in
+`develop` through a GitHub pull request. `develop → main` is the release step, and the owner takes
+it. Agents push and open the PR only when asked, and `scripts/verify.sh` passes first.
+
+From 2026-09-11 to 2026-10-01 changes went straight to the default branch across the
+construct-* repos — two people on the project made a branch per change look like ceremony. That
+was reversed on purpose: the habit has to be in place before there is a public release for it to
+break. A commit that landed on `develop` by mistake and is not pushed moves off it with
+`git branch <topic> && git reset --keep origin/develop && git switch <topic>`. Pushed history is
+never rewritten.
+
+---
+
 ## Design System (read before touching any UI)
 
 The iOS app is the **design canon**. Android mirrors it — every CT* component carries a
