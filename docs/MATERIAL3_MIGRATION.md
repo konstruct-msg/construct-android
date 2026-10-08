@@ -53,37 +53,39 @@
 
 Цель: Material и CT показывают одно и то же. Скриншоты не меняются.
 
-1. **`ColorScheme` целиком** (тёмная и светлая) из текущих CT-значений:
+Как сделано (`ui/theme/Theme.kt` → `ctColorScheme`, `Color.kt`):
 
-   | CT сейчас | Роль Material |
-   |---|---|
-   | `bg` | `background`, `surface` |
-   | `bgMsg` | `surfaceContainer` (карточки, секции); лесенка `Lowest…Highest` — ступенями вокруг него |
-   | `text` | `onBackground`, `onSurface` |
-   | `textDim` | `onSurfaceVariant` |
-   | `accent` | `primary`; `onPrimary` = `bg` (как подпись `CTButton` сейчас) |
-   | `accentDim` | `primaryContainer` / состояние нажатия |
-   | `danger` | `error`; `onError` = `onFill` |
-   | `noise` | `outlineVariant` (разделители); `outline` — светлее, для полей |
-   | `disabledBg` | не нужен: Material берёт `onSurface` 12 % |
-   | `scrim` | `scrim` |
+1. **`ColorScheme` — все роли**, тёмная и светлая, из палитры `CTColor.…Dark/…Light`:
 
-   Остальное ролей Material не имеет и остаётся своими токенами — это нормально, у Material нет
-   «предупреждения» и «успеха»: `warning`, `online`, `delivered`, `answer`, всё `onMedia*`/`media*`,
-   `qr*`, пузыри (`outMsgBg`, `outMsgText`). Их собрать в `ExtendedColors` через
-   `CompositionLocal` рядом с `MaterialTheme`.
-2. **`Typography` целиком** — все 15 ролей в JetBrains Mono, размеры подобраны так, чтобы Material-
-   компоненты совпали с нынешними CT: `labelLarge` (кнопки) = `CTFont.bodyEmphasis`,
-   `bodyLarge` (поля ввода) = `CTFont.body`, `titleLarge` (верхняя панель) = `CTFont.title`,
-   `labelMedium` (подписи навигации) = `CTFont.caption`. `CTFont.message` не трогаем.
-3. **`Shapes`** из `CornerRadius.*`.
-4. **`CTColor` начинает читать схему.** Геттеры остаются геттерами (их зовут и вне композиции:
-   `CTStatus.color`, системные панели), но берут значение из текущей схемы, которую тема кладёт в
-   то же место, где сейчас `CTColor.isDark`: `val accent get() = current.primary`. 898 обращений не
-   трогаются; с этой минуты смена схемы перекрашивает всё приложение.
+   | Роль Material | CT | Заметка |
+   |---|---|---|
+   | `background`, `surface`, `surfaceContainerLowest`, `surfaceDim`, `surfaceTint` | `bg` | плоско: оттенка на приподнятых поверхностях нет |
+   | `surfaceContainerLow`, `surfaceContainer`, `surfaceContainerHigh` | `outMsgBg` | так CT красит диалоги и меню |
+   | `surfaceContainerHighest`, `surfaceVariant`, `surfaceBright`, `*Container` (кроме primary) | `bgMsg` | карточка; у CT один приподнятый уровень |
+   | `onBackground`, `onSurface`, `inverseSurface`, `on*Container` | `text` | |
+   | `onSurfaceVariant`, `outline` | `textDim` | `outline` должен давать 3:1 к фону, `noise` не даёт |
+   | `outlineVariant` | `noise` | разделители |
+   | `primary` / `onPrimary` | `accent` / `bg` | как подпись `CTButton`; белый на тёмном акценте был 3.39 |
+   | `primaryContainer`, `secondary` / `onPrimaryContainer`, `onSecondary` | `accentDim` / `onFill` | |
+   | `tertiary` / `onTertiary` | `warning` / тёмный | не `danger`: опасность — это `error` |
+   | `error` / `onError` | `danger` / `onFill` | белый на `danger` — 4.42, известно |
+   | `scrim` | чёрный | Material сам кладёт 32 % |
 
-Проверка шага: скриншоты без диффа (допустим только дифф в тех семи `AlertDialog` и прочих Material-
-компонентах, которые до сих пор красил baseline, — это исправление, а не потеря).
+   Без роли остаются своими токенами: пузыри (`outMsgBg`, `outMsgText`), `disabledBg`, статусы
+   (`online`, `delivered`, `answer`), всё поверх медиа, QR, `scrim` приложения.
+2. **`Typography`**: роли, которые экраны уже читают, не тронуты (`Text` без стиля — это
+   `bodyLarge`); display и headline — размеры Material в JetBrains Mono. Подгонка `labelLarge`
+   (кнопки), `titleLarge` (верхняя панель) и остальных к ролям CT — часть замены каждого
+   компонента на шаге 2, где её покажет дифф скриншотов.
+3. **`Shapes`** из `CornerRadius`: меню 6, чипы 8, карточки 12, крупные 16, диалоги и шторки 20.
+4. **`CTColor` читает роли**: `bg`, `bgMsg`, `accent`, `accentDim`, `text`, `textDim`, `noise`,
+   `danger`, `warning` — геттеры над текущей схемой; ~900 обращений не менялись.
+
+Проверка: 72 скриншота совпали с эталонами без перезаписи. Изменились только Material-компоненты
+без явного цвета, которых нет в превью: меню вложений в чате (было фиолетово-серым baseline), углы
+диалогов (28 → 20) и меню. Контраст: исправлен белый на тёмном акценте; три пары `danger` ниже
+4.5 (белый на нём 4.42, он как текст на светлом фоне 3.95) — их чинит значение `danger` по теме,
+а это решение дизайна, не моста.
 
 ## Шаг 2. Компоненты — сначала внутренности, потом вызовы
 

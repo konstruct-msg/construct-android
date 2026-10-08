@@ -1,5 +1,6 @@
 package com.construct.messenger.ui.theme
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -24,17 +25,28 @@ object CTColor {
      */
     var isDark: Boolean by mutableStateOf(true)
 
-    val bg: Color get() = if (isDark) bgDark else bgLight
-    val bgMsg: Color get() = if (isDark) bgMsgDark else bgMsgLight
+    /**
+     * The Material roles of the current theme. A token below that has a role reads it, so a change
+     * of scheme in `Theme.kt` repaints every site that reads the token — the ~900 of them did not
+     * have to change for that (`docs/MATERIAL3_MIGRATION.md`, step 1). The `…Dark` / `…Light`
+     * halves further down are the palette the schemes are built from.
+     */
+    private val roles: ColorScheme get() = if (isDark) DarkColorScheme else LightColorScheme
+
+    val bg: Color get() = roles.background
+    val bgMsg: Color get() = roles.surfaceContainerHighest
+    val accent: Color get() = roles.primary
+    val accentDim: Color get() = roles.primaryContainer
+    val text: Color get() = roles.onSurface
+    val textDim: Color get() = roles.onSurfaceVariant
+    val noise: Color get() = roles.outlineVariant
+    val danger: Color get() = roles.error
+    val warning: Color get() = roles.tertiary
+
+    // No Material role: a bubble, a disabled fill, a status. They stay CT tokens.
     val outMsgBg: Color get() = if (isDark) outMsgBgDark else outMsgBgLight
-    val accent: Color get() = if (isDark) accentDark else accentLight
-    val accentDim: Color get() = if (isDark) accentDimDark else accentDimLight
-    val text: Color get() = if (isDark) textDark else textLight
-    val textDim: Color get() = if (isDark) textDimDark else textDimLight
     val outMsgText: Color get() = if (isDark) outMsgTextDark else outMsgTextLight
-    val noise: Color get() = if (isDark) noiseDark else noiseLight
     val disabledBg: Color get() = if (isDark) disabledBgDark else disabledBgLight
-    val warning: Color get() = if (isDark) warningDark else warningLight
     val online: Color get() = if (isDark) onlineDark else onlineLight
 
     // Backgrounds
@@ -93,8 +105,8 @@ object CTColor {
     val disabledBgDark = Color(0xFF1C1C1C)  // dark 0x1C1C1C / light 0xD8D8D8
     val disabledBgLight = Color(0xFFD8D8D8)
 
-    // Danger (single value)
-    val danger = Color(0xFFDC3C3C)
+    // Danger — one value in both themes; the [danger] token reads it through the `error` role.
+    val dangerFixed = Color(0xFFDC3C3C)
 
     /**
      * Warning, debug chrome, the light-theme sun — iOS writes these as SwiftUI `.orange`, which is
