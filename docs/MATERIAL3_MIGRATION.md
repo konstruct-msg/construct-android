@@ -61,7 +61,8 @@
    |---|---|---|
    | `background`, `surface`, `surfaceContainerLowest`, `surfaceDim`, `surfaceTint` | `bg` | плоско: оттенка на приподнятых поверхностях нет |
    | `surfaceContainerLow`, `surfaceContainer`, `surfaceContainerHigh` | `outMsgBg` | так CT красит диалоги и меню |
-   | `surfaceContainerHighest`, `surfaceVariant`, `surfaceBright`, `*Container` (кроме primary) | `bgMsg` | карточка; у CT один приподнятый уровень |
+   | `surfaceContainerHighest`, `surfaceVariant`, `surfaceBright`, `*Container` (кроме primary и secondary) | `bgMsg` | карточка; у CT один приподнятый уровень |
+   | `secondaryContainer` | `accent` 24 % (тёмная) / 16 % (светлая) поверх `bg` | выбранный сегмент, индикатор навигации, выбранный чип; на карточке должен отличаться от неё (с п. 3 шага 2) |
    | `onBackground`, `onSurface`, `inverseSurface`, `on*Container` | `text` | |
    | `onSurfaceVariant`, `outline` | `textDim` | `outline` должен давать 3:1 к фону, `noise` не даёт |
    | `outlineVariant` | `noise` | разделители |
