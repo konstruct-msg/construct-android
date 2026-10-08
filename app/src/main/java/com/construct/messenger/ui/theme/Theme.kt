@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 
 /*
  * Material roles filled from the CT palette — step 1 of the Material 3 move
@@ -48,7 +49,9 @@ private fun ctColorScheme(dark: Boolean): ColorScheme {
         inversePrimary = pick(CTColor.accentLight, CTColor.accentDark),
         secondary = accentDim,
         onSecondary = CTColor.onFill,
-        secondaryContainer = card,
+        // The selected segment, a navigation indicator, a selected chip: an accent-tinted fill, as
+        // Material means it. Not the card — a selector sits on a card, and the selection vanished.
+        secondaryContainer = accent.copy(alpha = if (dark) 0.24f else 0.16f).compositeOver(bg),
         onSecondaryContainer = text,
         // Warning, not danger: danger is `error`.
         tertiary = warning,

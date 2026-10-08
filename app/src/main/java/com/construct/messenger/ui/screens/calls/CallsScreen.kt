@@ -25,6 +25,9 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -46,7 +49,6 @@ import com.construct.messenger.data.model.CallHistoryEntry
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTMatrixBackground
-import com.construct.messenger.ui.components.CTModeSelector
 import com.construct.messenger.ui.components.CTRowDivider
 import com.construct.messenger.ui.components.rememberAvatar
 import com.construct.messenger.ui.theme.CTColor
@@ -102,16 +104,26 @@ fun CallsScreen(viewModel: CallsViewModel = hiltViewModel()) {
                     }
                 }
             }
-            CTModeSelector(
-                selected = ui.filter,
-                options = CallHistoryFilter.entries,
-                labels = mapOf(
-                    CallHistoryFilter.ALL to stringResource(R.string.calls_filter_all),
-                    CallHistoryFilter.MISSED to stringResource(R.string.calls_filter_missed),
-                ),
-                onSelection = viewModel::select,
+            SingleChoiceSegmentedButtonRow(
                 modifier = Modifier.padding(start = CTLayout.edgePad, bottom = CTLayout.chromeGap),
-            )
+            ) {
+                CallHistoryFilter.entries.forEachIndexed { index, filter ->
+                    SegmentedButton(
+                        selected = filter == ui.filter,
+                        onClick = { viewModel.select(filter) },
+                        shape = SegmentedButtonDefaults.itemShape(index, CallHistoryFilter.entries.size),
+                    ) {
+                        Text(
+                            stringResource(
+                                when (filter) {
+                                    CallHistoryFilter.ALL -> R.string.calls_filter_all
+                                    CallHistoryFilter.MISSED -> R.string.calls_filter_missed
+                                },
+                            ),
+                        )
+                    }
+                }
+            }
             if (ui.sections.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(

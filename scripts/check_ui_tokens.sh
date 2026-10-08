@@ -33,7 +33,7 @@ CHECKS=(
   # Material 3 move (docs/MATERIAL3_MIGRATION.md): a CT control that a Material component replaces.
   # Definitions and previews count too — the number only has to fall. CTConfirmDialog left the
   # list when it became a Material AlertDialog with one addition, the destructive button.
-  "CT control Material replaces — use the Material component|\b(CTNavBar|CTTabBar|CTTextField|CTSearchBar|CTModeSelector|CTSettingsRow|ConstructActionRow|ConstructNavRow|ConstructButtonRow)\(|87"
+  "CT control Material replaces — use the Material component|\b(CTNavBar|CTTabBar|CTTextField|CTSearchBar|CTSettingsRow|ConstructActionRow|ConstructNavRow|ConstructButtonRow)\(|83"
 )
 
 failed=0

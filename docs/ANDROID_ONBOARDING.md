@@ -692,20 +692,11 @@ fun Modifier.ctBackground(): Modifier = this.then(
 )
 ```
 
-### 4.15 CTModeSelector — сегментированный контроль
+### 4.15 CTModeSelector — сегментированный контроль (удалён 2026-10-08)
 
-```kotlin
-@Composable
-fun <T> CTModeSelector(
-    selected: T,
-    options: List<T>,
-    labels: Map<T, String>,
-    onSelection: (T) -> Unit,
-    modifier: Modifier = Modifier
-)
-```
-
-**Стиль**: без скруглений, accent на выбранном, `Rect` border.
+Заменён на Material `SingleChoiceSegmentedButtonRow` + `SegmentedButton`
+(`docs/MATERIAL3_MIGRATION.md`, шаг 2): «Сеть» → VEIL, «Звонки» → фильтр. Ширина — по самой длинной
+подписи (Material), выбранный сегмент — галочка и `secondaryContainer` (акцент поверх фона).
 
 ### 4.16 CTLogoView — логотип
 

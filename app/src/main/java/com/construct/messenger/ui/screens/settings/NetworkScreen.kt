@@ -17,6 +17,9 @@ import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.VpnLock
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,7 +37,6 @@ import com.construct.messenger.BuildConfig
 import com.construct.messenger.R
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.transport.TransportRoute
-import com.construct.messenger.ui.components.CTModeSelector
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
 import com.construct.messenger.ui.components.CTSep
@@ -161,16 +163,25 @@ private fun NetworkContent(ui: NetworkUiState, onNavigateBack: () -> Unit, onMod
                         color = CTColor.text,
                         modifier = Modifier.weight(1f),
                     )
-                    CTModeSelector(
-                        selected = ui.mode,
-                        options = VeilMode.entries,
-                        labels = mapOf(
-                            VeilMode.OFF to stringResource(R.string.veil_mode_off),
-                            VeilMode.AUTO to stringResource(R.string.veil_mode_auto),
-                            VeilMode.ON to stringResource(R.string.veil_mode_on),
-                        ),
-                        onSelection = onMode,
-                    )
+                    SingleChoiceSegmentedButtonRow {
+                        VeilMode.entries.forEachIndexed { index, mode ->
+                            SegmentedButton(
+                                selected = mode == ui.mode,
+                                onClick = { onMode(mode) },
+                                shape = SegmentedButtonDefaults.itemShape(index, VeilMode.entries.size),
+                            ) {
+                                Text(
+                                    stringResource(
+                                        when (mode) {
+                                            VeilMode.OFF -> R.string.veil_mode_off
+                                            VeilMode.AUTO -> R.string.veil_mode_auto
+                                            VeilMode.ON -> R.string.veil_mode_on
+                                        },
+                                    ),
+                                )
+                            }
+                        }
+                    }
                 }
             }
             Text(
