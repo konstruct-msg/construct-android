@@ -21,7 +21,6 @@ import com.construct.messenger.ui.theme.CTColor
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.sin
-import kotlin.random.Random
 
 private const val DOTS = 24
 private const val SPEED = 1.5
@@ -61,7 +60,8 @@ fun ConvergingSignal(
     collapsed: Boolean = false,
     dotColor: Color = CTColor.accent,
 ) {
-    val phases = remember { List(3) { DoubleArray(DOTS) { Random.nextDouble(0.0, 2 * PI) } } }
+    val random = LocalDecorRandom.current
+    val phases = remember { List(3) { DoubleArray(DOTS) { random.nextDouble(0.0, 2 * PI) } } }
     val collapse = remember { Animatable(0f) }
     var frameNanos by remember { mutableLongStateOf(0L) }
     val start = remember { System.nanoTime() }
