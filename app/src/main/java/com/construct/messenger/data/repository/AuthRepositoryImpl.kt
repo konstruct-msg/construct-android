@@ -11,6 +11,7 @@ import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.model.AuthState
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.domain.usecase.LoginUseCase
+import com.construct.messenger.data.auth.DeviceAuthRefused
 import com.construct.messenger.domain.usecase.RecoverAccountUseCase
 import com.construct.messenger.domain.usecase.RegisterUseCase
 import com.construct.messenger.domain.usecase.RegistrationStep
@@ -123,6 +124,12 @@ class AuthRepositoryImpl @Inject constructor(
                     ?: error("LoginUseCase succeeded without persisting userId")
                 authSession.onAuthenticated(loggedInUserId, deviceId)
             }
+        } catch (e: DeviceAuthRefused) {
+            Log.e(TAG, "restoreSession: device auth refused (${e.refusal}, direct=${e.overDirectTLS})", e)
+            // Removed from the account: the splash shows why and erases the device. Any other
+            // refusal keeps everything — NOT_FOUND, or REMOVED heard only through a VEIL relay.
+            mutableAuthState.value = AuthState(isInitialized = false, removed = e.erasesDevice)
+            return false
         } catch (e: Exception) {
             Log.e(TAG, "restoreSession failed", e)
             mutableAuthState.value = AuthState(isInitialized = false)
