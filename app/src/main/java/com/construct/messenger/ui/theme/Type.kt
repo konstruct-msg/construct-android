@@ -84,7 +84,22 @@ object CTFont {
 /** What message text is set in: [monospace] or the platform face, scaled by [multiplier]. */
 data class ChatText(val monospace: Boolean = false, val multiplier: Float = 1f)
 
+/**
+ * Material's type roles, all in JetBrains Mono. Step 1 of the Material 3 move: the roles a screen
+ * already reads keep today's values (a `Text` without a style is `bodyLarge`), and the ones nothing
+ * set — display and headline — take Material's sizes in our face instead of Roboto. Matching
+ * `labelLarge` (buttons), `titleLarge` (top bar) and the rest to the CT roles is part of each
+ * component's swap in step 2, where the screenshot diff shows it.
+ */
+private val materialDefaults = Typography()
+
 val Typography = Typography(
+    displayLarge = materialDefaults.displayLarge.copy(fontFamily = CTFontFamily),
+    displayMedium = materialDefaults.displayMedium.copy(fontFamily = CTFontFamily),
+    displaySmall = materialDefaults.displaySmall.copy(fontFamily = CTFontFamily),
+    headlineLarge = materialDefaults.headlineLarge.copy(fontFamily = CTFontFamily),
+    headlineMedium = materialDefaults.headlineMedium.copy(fontFamily = CTFontFamily),
+    headlineSmall = materialDefaults.headlineSmall.copy(fontFamily = CTFontFamily),
     bodyLarge = CTFont.ui(16),
     bodyMedium = CTFont.ui(14),
     bodySmall = CTFont.secondary,

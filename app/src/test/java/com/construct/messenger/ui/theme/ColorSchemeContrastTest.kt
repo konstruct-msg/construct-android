@@ -69,15 +69,19 @@ class ColorSchemeContrastTest {
     private val schemes = listOf("dark" to DarkColorScheme, "light" to LightColorScheme)
 
     /**
-     * Below 4.5:1 on 2026-10-08, before the theme bridge (migration step 1) fills the scheme.
-     * The dark `onPrimary` is white on the 0x008CFF accent — `CTButton` sets its label in `bg`
-     * there, which reads; a Material `Button` would set it in white, which does not.
+     * Below 4.5:1 after the theme bridge (migration step 1, 2026-10-08). All three are
+     * `CTColor.danger` (0xDC3C3C), now the `error` role:
+     * - white on it, 4.42 — the destructive `CTButton` label and the swipe actions. Before the
+     *   bridge the same pair was listed as `tertiary`; it moved role, it did not appear;
+     * - as text on the light ground, 3.95. CT has drawn it so since it had a light theme; the
+     *   `error` role was the library's own red until the bridge, so nothing measured it.
+     * The bridge fixed one: white on the dark accent (3.39), now the ground on it (5.87).
+     * The fix for these is a danger value per theme, which is a design change, not a bridge one.
      */
     private val knownBelow = mapOf(
-        "dark onPrimary/primary" to 3.39,
-        // `tertiary` is `CTColor.danger` in both schemes, white on it.
-        "dark onTertiary/tertiary" to 4.42,
-        "light onTertiary/tertiary" to 4.42,
+        "dark onError/error" to 4.42,
+        "light onError/error" to 4.42,
+        "light error/surface" to 3.95,
     )
 
     @Test
