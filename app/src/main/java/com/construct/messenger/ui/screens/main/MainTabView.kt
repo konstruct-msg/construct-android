@@ -17,7 +17,7 @@ import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -133,7 +133,7 @@ private fun TabBar(tabs: List<TabItem>, selected: Int, onSelect: (Int) -> Unit) 
                         onClick = { onSelect(index) },
                         role = Role.Tab,
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = rememberRipple(bounded = false, radius = 24.dp),
+                        indication = ripple(bounded = false, radius = 24.dp),
                     ),
                 contentAlignment = Alignment.Center,
             ) {
