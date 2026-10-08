@@ -127,6 +127,9 @@ fun SettingsScreen(
     navigation: SettingsNavigation,
     recoveryMissing: Boolean = false,
     recoveryHeld: HeldPhrase = HeldPhrase.NONE,
+    // A parameter so the preview can pin it: the code is the commit count, and a screenshot
+    // reference that read it would go stale with every commit.
+    buildVersion: String = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
 ) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE) }
@@ -232,7 +235,7 @@ fun SettingsScreen(
                 // non-production build.
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_version).uppercase(),
-                    value = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})" +
+                    value = buildVersion +
                         if (BuildConfig.DEBUG) " " + stringResource(R.string.build_channel_beta).uppercase() else "",
                     valueColor = if (BuildConfig.DEBUG) CTColor.warning else CTColor.textDim,
                     icon = Icons.Outlined.Info,
@@ -399,5 +402,6 @@ private fun SettingsScreenPreview() {
         ),
         connection = ConnectionStatus.CONNECTED,
         navigation = SettingsNavigation(),
+        buildVersion = "v0.0.0 (1)",
     )
 }

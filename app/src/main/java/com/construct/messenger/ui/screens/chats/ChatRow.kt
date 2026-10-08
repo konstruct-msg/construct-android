@@ -168,6 +168,13 @@ private fun rowTimestamp(context: Context, timeMillis: Long): String {
     return DateFormat.getDateFormat(context).format(date)
 }
 
+/**
+ * 2026-10-01 12:00 UTC — fixed, so the screenshot reference does not change with the clock (a time
+ * relative to now prints a different hour on every run). Noon keeps the date the same in every
+ * time zone a machine running the tests is likely to be in.
+ */
+private const val PREVIEW_TIME = 1790856000000L
+
 @Preview(backgroundColor = 0xFF090909, showBackground = true)
 @Composable
 private fun ChatRowPreview() {
@@ -178,7 +185,7 @@ private fun ChatRowPreview() {
                 displayName = "Silent Fox",
                 username = "silent_fox",
                 lastMessagePreview = "The keys are rotated.",
-                lastMessageTime = System.currentTimeMillis() - 5 * 60 * 1000,
+                lastMessageTime = PREVIEW_TIME,
                 unreadCount = 2,
             ),
             onClick = {},
@@ -188,7 +195,7 @@ private fun ChatRowPreview() {
                 contactId = "14f28d31-aaaa-bbbb-cccc-000000000002",
                 displayName = "Swift Wolf",
                 lastMessagePreview = "See you in the mesh.",
-                lastMessageTime = System.currentTimeMillis() - 47 * 60 * 1000,
+                lastMessageTime = PREVIEW_TIME - DateUtils.DAY_IN_MILLIS,
                 unreadCount = 0,
             ),
             onClick = {},
@@ -199,7 +206,7 @@ private fun ChatRowPreview() {
                 displayName = "Deprecated Printer",
                 username = "deprecated_printer",
                 lastMessagePreview = "Out of toner, send help.",
-                lastMessageTime = System.currentTimeMillis() - 3 * 60 * 60 * 1000,
+                lastMessageTime = PREVIEW_TIME - 2 * DateUtils.DAY_IN_MILLIS,
                 unreadCount = 12,
                 isPinned = true,
             ),
