@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,7 +30,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.data.model.Contact
 import com.construct.messenger.ui.components.CTAvatar
-import com.construct.messenger.ui.components.CTButton
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSearchBar
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
@@ -77,11 +77,11 @@ fun SynapsScreen(
             // A pasted invite goes in through the scanner's "Paste invite link", as on iOS;
             // this screen only redeems it (PendingInviteStore) and says how it went below.
             if (uiState.query.isNotBlank()) {
-                CTButton(
-                    label = stringResource(R.string.synaps_find_request),
+                Button(
                     onClick = { viewModel.findAndRequest() },
                     enabled = !uiState.busy,
-                )
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.synaps_find_request)) }
             }
             uiState.status?.let { message ->
                 Spacer(Modifier.height(CTSpace.s))

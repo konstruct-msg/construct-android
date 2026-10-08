@@ -475,33 +475,11 @@ fun CTTabBar(
 // Tab content создаётся лениво (visitedTabs: Set<Int>)
 ```
 
-### 4.3 CTButton — кнопка
+### 4.3 CTButton — кнопка (удалён 2026-10-08)
 
-```kotlin
-// CTButton.kt
-@Composable
-fun CTButton(
-    label: String,
-    enabled: Boolean = true,
-    isDestructive: Boolean = false,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-)
-```
-
-**iOS Reference** (`ConstructTheme.swift`):
-- Full-width, `CTFont.bold(13)`
-- Normal: `fg = Color.CT.bg`, `bg = Color.CT.accent`
-- Destructive: `fg = white`, `bg = Color.CT.danger`
-- Disabled: `fg = Color.CT.textDim`, `bg = Color(dark: 0x1C1C1C)`
-- `cornerRadius = 8`
-
-```kotlin
-CTButton(
-    label = stringResource(R.string.reg_continue),
-    onClick = { onComplete() }
-)
-```
+Заменён на Material `Button` (`docs/MATERIAL3_MIGRATION.md`, шаг 2): `Button(onClick, Modifier.fillMaxWidth()) { Text(label) }`.
+Цвета, форма и шрифт — из темы (`primary`/`onPrimary`, `labelLarge`). Разрушительное действие —
+`ButtonDefaults.buttonColors(containerColor = colorScheme.error, contentColor = colorScheme.onError)`.
 
 ### 4.4 CTTextField — поле ввода
 

@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -70,7 +71,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.construct.messenger.R
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.invite.InviteQr
-import com.construct.messenger.ui.components.CTButton
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
@@ -308,13 +308,12 @@ private fun PermissionPrompt(
             color = CTColor.textDim,
             textAlign = TextAlign.Center,
         )
-        CTButton(
-            label = stringResource(
-                if (permanentlyDenied) R.string.camera_permission_settings else R.string.camera_permission_grant,
-            ),
+        Button(
             onClick = if (permanentlyDenied) onOpenSettings else onGrant,
             modifier = Modifier.fillMaxWidth(),
-        )
+        ) {
+            Text(stringResource(if (permanentlyDenied) R.string.camera_permission_settings else R.string.camera_permission_grant))
+        }
     }
 }
 
