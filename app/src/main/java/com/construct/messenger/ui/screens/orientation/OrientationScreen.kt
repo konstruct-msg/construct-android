@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,7 +48,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.construct.messenger.R
-import com.construct.messenger.ui.components.CTButton
 import com.construct.messenger.ui.components.TabIcons
 import com.construct.messenger.ui.components.ctBackground
 import com.construct.messenger.ui.theme.CTColor
@@ -172,16 +172,16 @@ private fun BottomChrome(currentPage: Int, isLastPage: Boolean, onPrimary: () ->
                 )
             }
         }
-        CTButton(
-            label = stringResource(
-                if (isLastPage) R.string.orientation_enter else R.string.orientation_next
-            ).uppercase(),
+        Button(
             onClick = onPrimary,
             // iOS: the 24 gutter sits outside the 360 cap.
             modifier = Modifier
                 .padding(horizontal = CTSpace.xl)
-                .widthIn(max = 360.dp),
-        )
+                .widthIn(max = 360.dp)
+                .fillMaxWidth(),
+        ) {
+            Text(stringResource(if (isLastPage) R.string.orientation_enter else R.string.orientation_next).uppercase())
+        }
     }
 }
 

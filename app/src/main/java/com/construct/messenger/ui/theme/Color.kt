@@ -43,10 +43,9 @@ object CTColor {
     val danger: Color get() = roles.error
     val warning: Color get() = roles.tertiary
 
-    // No Material role: a bubble, a disabled fill, a status. They stay CT tokens.
+    // No Material role: a bubble, a status. They stay CT tokens.
     val outMsgBg: Color get() = if (isDark) outMsgBgDark else outMsgBgLight
     val outMsgText: Color get() = if (isDark) outMsgTextDark else outMsgTextLight
-    val disabledBg: Color get() = if (isDark) disabledBgDark else disabledBgLight
     val online: Color get() = if (isDark) onlineDark else onlineLight
 
     // Backgrounds
@@ -64,7 +63,7 @@ object CTColor {
      * Adaptive, and it has to be: a single hex cannot clear 4.5:1 as text in both themes, and
      * accent *is* text here — `CTSettingsRow` action rows, `ConstructActionRow`, the onboarding
      * copy. The value this replaced, 0x0062FF, read 3.97 on [bg]: below the bar everywhere it was
-     * used as text, and below it under `CTButton`'s own label, which draws in [bg] on this fill.
+     * used as text, and below it under a filled button's own label, which draws in [bg] (`onPrimary`) on this fill.
      *
      * 0x008CFF is 5.87 on [bg] and 4.81 on a [bgMsg] card; 0x0057E0 is 5.45 / 4.71 on the light
      * pair. `CTColorContrastTest` measures all four — do not eyeball a replacement.
@@ -101,9 +100,6 @@ object CTColor {
     val noiseDark = Color(0xFF1E1E1E)       // dark 0x1E1E1E / light 0xC8C8C8
     val noiseLight = Color(0xFFC8C8C8)
 
-    // Disabled button background (ConstructTheme.swift CTButton)
-    val disabledBgDark = Color(0xFF1C1C1C)  // dark 0x1C1C1C / light 0xD8D8D8
-    val disabledBgLight = Color(0xFFD8D8D8)
 
     // Danger — one value in both themes; the [danger] token reads it through the `error` role.
     val dangerFixed = Color(0xFFDC3C3C)

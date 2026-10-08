@@ -71,7 +71,7 @@
    | `error` / `onError` | `danger` / `onFill` | белый на `danger` — 4.42, известно |
    | `scrim` | чёрный | Material сам кладёт 32 % |
 
-   Без роли остаются своими токенами: пузыри (`outMsgBg`, `outMsgText`), `disabledBg`, статусы
+   Без роли остаются своими токенами: пузыри (`outMsgBg`, `outMsgText`), статусы
    (`online`, `delivered`, `answer`), всё поверх медиа, QR, `scrim` приложения.
 2. **`Typography`**: роли, которые экраны уже читают, не тронуты (`Text` без стиля — это
    `bodyLarge`); display и headline — размеры Material в JetBrains Mono. Подгонка `labelLarge`

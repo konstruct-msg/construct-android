@@ -38,7 +38,7 @@ private fun ctColorScheme(dark: Boolean): ColorScheme {
     // The base only supplies the fixed-accent roles, which no component of the app draws.
     val base = if (dark) darkColorScheme() else lightColorScheme()
     return base.copy(
-        // The accent. Its label is the ground, as `CTButton` draws it: white on the dark accent
+        // The accent. Its label is the ground, as CT buttons always drew it: white on the dark accent
         // reads 3.39, the ground 5.87.
         primary = accent,
         onPrimary = bg,

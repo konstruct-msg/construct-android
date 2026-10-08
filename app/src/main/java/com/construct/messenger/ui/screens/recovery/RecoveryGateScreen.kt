@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -52,7 +53,6 @@ import com.construct.messenger.recovery.RecoveryPhraseVault
 import com.construct.messenger.recovery.RecoveryStage
 import com.construct.messenger.recovery.RecoveryUiState
 import com.construct.messenger.recovery.RecoveryViewModel
-import com.construct.messenger.ui.components.CTButton
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTTextField
 import com.construct.messenger.ui.theme.CTColor
@@ -201,13 +201,19 @@ private fun RecoveryGateScreen(
                     )
                 RecoveryStage.Explain -> {
                     Text(stringResource(R.string.recovery_gate_setup_note), style = CTFont.secondary, color = CTColor.textDim)
-                    CTButton(label = stringResource(R.string.recovery_gate_setup_action), onClick = viewModel::startSetup)
+                    Button(
+                        onClick = viewModel::startSetup,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.recovery_gate_setup_action)) }
                 }
                 is RecoveryStage.ShowWords -> {
                     Text(stringResource(R.string.recovery_write_down), style = CTFont.headline, color = CTColor.text)
                     WordGrid(stage.words)
                     Text(stringResource(R.string.recovery_never_share), style = CTFont.secondary, color = CTColor.danger)
-                    CTButton(label = stringResource(R.string.recovery_words_written), onClick = viewModel::toQuiz)
+                    Button(
+                        onClick = viewModel::toQuiz,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.recovery_words_written)) }
                 }
                 is RecoveryStage.Quiz -> {
                     Text(stringResource(R.string.recovery_quiz_prompt), style = CTFont.body, color = CTColor.textDim)
@@ -220,16 +226,19 @@ private fun RecoveryGateScreen(
                         )
                     }
                     ErrorLine(ui.errorRes)
-                    CTButton(
-                        label = stringResource(R.string.recovery_confirm_action),
+                    Button(
                         onClick = viewModel::submitSetup,
                         enabled = stage.indices.all { ui.quizAnswers[it] != null },
-                    )
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.recovery_confirm_action)) }
                 }
                 RecoveryStage.BackupIntro -> {
                     val unlock = rememberHeldUnlock(viewModel)
                     ErrorLine(ui.errorRes)
-                    CTButton(label = stringResource(R.string.recovery_backup_show), onClick = unlock)
+                    Button(
+                        onClick = unlock,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.recovery_backup_show)) }
                 }
                 RecoveryStage.BackupLost -> Unit
                 RecoveryStage.Confirm -> {
@@ -240,11 +249,11 @@ private fun RecoveryGateScreen(
                         onValueChange = viewModel::setConfirmPhrase,
                     )
                     ErrorLine(ui.errorRes)
-                    CTButton(
-                        label = stringResource(R.string.recovery_confirm_action),
+                    Button(
                         onClick = viewModel::submitConfirm,
                         enabled = ui.confirmPhrase.isNotBlank(),
-                    )
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.recovery_confirm_action)) }
                 }
             }
         }

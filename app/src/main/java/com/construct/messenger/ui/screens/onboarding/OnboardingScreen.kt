@@ -20,7 +20,10 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.IosShare
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,7 +47,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.diagnostics.Diagnostics
 import com.construct.messenger.domain.usecase.RegistrationStep
-import com.construct.messenger.ui.components.CTButton
 import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.CTTextField
 import com.construct.messenger.ui.components.ConvergingSignal
@@ -202,14 +204,14 @@ private fun IdentityFormContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(CTSpace.s),
         ) {
-            CTButton(
-                label = stringResource(R.string.onboarding_init_action),
+            Button(
                 onClick = onInitialize,
                 enabled = canProceed,
                 modifier = Modifier
                     .widthIn(max = 360.dp)
-                    .padding(bottom = CTSpace.m),
-            )
+                    .padding(bottom = CTSpace.m)
+                    .fillMaxWidth(),
+            ) { Text(stringResource(R.string.onboarding_init_action)) }
             Text(
                 text = stringResource(R.string.onboarding_already_have),
                 style = CTFont.body,
@@ -298,12 +300,18 @@ private fun RegistrationStageContent(
         Spacer(modifier = Modifier.weight(1f))
         Box(modifier = Modifier.padding(bottom = 20.dp)) {
             when {
-                complete -> CTButton(label = stringResource(R.string.reg_continue).uppercase(), onClick = onContinue)
-                step is RegistrationStep.Error -> CTButton(
-                    label = stringResource(R.string.reg_try_again).uppercase(),
+                complete -> Button(
+                    onClick = onContinue,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.reg_continue).uppercase()) }
+                step is RegistrationStep.Error -> Button(
                     onClick = onDismiss,
-                    isDestructive = true,
-                )
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+                ) { Text(stringResource(R.string.reg_try_again).uppercase()) }
                 else -> Text(
                     text = stringResource(R.string.reg_cancel),
                     style = CTFont.body,
