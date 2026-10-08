@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,7 +55,6 @@ import com.construct.messenger.recovery.RecoveryStage
 import com.construct.messenger.recovery.RecoveryUiState
 import com.construct.messenger.recovery.RecoveryViewModel
 import com.construct.messenger.ui.components.CTNavBar
-import com.construct.messenger.ui.components.CTTextField
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
@@ -243,10 +243,12 @@ private fun RecoveryGateScreen(
                 RecoveryStage.BackupLost -> Unit
                 RecoveryStage.Confirm -> {
                     Text(stringResource(R.string.recovery_gate_confirm_note), style = CTFont.secondary, color = CTColor.textDim)
-                    CTTextField(
-                        placeholder = stringResource(R.string.recovery_confirm_placeholder),
+                    OutlinedTextField(
                         value = ui.confirmPhrase,
                         onValueChange = viewModel::setConfirmPhrase,
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text(stringResource(R.string.recovery_confirm_placeholder)) },
+                        singleLine = true,
                     )
                     ErrorLine(ui.errorRes)
                     Button(

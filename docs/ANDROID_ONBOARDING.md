@@ -481,27 +481,11 @@ fun CTTabBar(
 Цвета, форма и шрифт — из темы (`primary`/`onPrimary`, `labelLarge`). Разрушительное действие —
 `ButtonDefaults.buttonColors(containerColor = colorScheme.error, contentColor = colorScheme.onError)`.
 
-### 4.4 CTTextField — поле ввода
+### 4.4 CTTextField — поле ввода (удалён 2026-10-08)
 
-```kotlin
-// CTTextField.kt
-@Composable
-fun CTTextField(
-    placeholder: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    isSecure: Boolean = false,
-    textAlign: TextAlign = TextAlign.Start,
-    modifier: Modifier = Modifier
-)
-```
-
-**iOS Reference** (`ConstructTheme.swift`):
-- `CTFont.regular(14)`, `foregroundColor = Color.CT.text`
-- `padding(.horizontal, 12).padding(.vertical, 11)`
-- `background(Color.CT.bgMsg)`
-- `clipShape(RoundedRectangle(cornerRadius: 8))`
-- `overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.CT.noise, lineWidth: 0.5))`
+Заменён на Material `OutlinedTextField(value, onValueChange, Modifier.fillMaxWidth(), placeholder = { Text(…) }, singleLine = true)`
+(`docs/MATERIAL3_MIGRATION.md`, шаг 2). Шрифт — `bodyLarge` (14, как у CT-полей), рамка `outline`,
+в фокусе `primary`. По центру (алиас в онбординге): `textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center)`.
 
 ### 4.5 CTSearchBar — строка поиска
 
