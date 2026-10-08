@@ -34,7 +34,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,7 +46,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -68,6 +66,7 @@ import com.construct.messenger.ui.components.CTSettingsRow
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.CTStatus
 import com.construct.messenger.ui.components.CTStatusBadge
+import com.construct.messenger.ui.components.DialogButton
 import com.construct.messenger.ui.screens.security.PinFlow
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
@@ -279,8 +278,7 @@ private fun PinBlock(
 private fun LockDelayDialog(current: LockDelay, onPick: (LockDelay) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = CTColor.outMsgBg,
-        title = { Text(stringResource(R.string.lock_delay), style = CTFont.ui(15, FontWeight.Bold), color = CTColor.text) },
+        title = { Text(stringResource(R.string.lock_delay)) },
         text = {
             Column {
                 LockDelay.entries.forEach { delay ->
@@ -305,11 +303,7 @@ private fun LockDelayDialog(current: LockDelay, onPick: (LockDelay) -> Unit, onD
             }
         },
         confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel), style = CTFont.body, color = CTColor.textDim)
-            }
-        },
+        dismissButton = { DialogButton(stringResource(R.string.action_cancel), onDismiss) },
     )
 }
 

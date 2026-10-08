@@ -12,6 +12,7 @@ import com.construct.messenger.ui.components.LocalDecorRandom
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.KonstructMessengerTheme
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.github.takahirom.roborazzi.captureScreenRoboImage
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -83,7 +84,11 @@ class PreviewScreenshotTest(
             }
         }
         compose.mainClock.advanceTimeBy(1_000)
-        compose.onRoot().captureRoboImage("src/test/screenshots/$id.${if (dark) "dark" else "light"}.png")
+        val path = "src/test/screenshots/$id.${if (dark) "dark" else "light"}.png"
+        // A dialog draws in its own window, which the root node does not include: a preview named
+        // …DialogPreview is captured as the whole screen, dim and all, as a person sees it.
+        if (preview.methodName.endsWith("DialogPreview")) captureScreenRoboImage(path)
+        else compose.onRoot().captureRoboImage(path)
     }
 
     companion object {

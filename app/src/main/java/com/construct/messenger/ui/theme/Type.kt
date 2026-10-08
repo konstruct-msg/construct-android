@@ -87,9 +87,9 @@ data class ChatText(val monospace: Boolean = false, val multiplier: Float = 1f)
 /**
  * Material's type roles, all in JetBrains Mono. Step 1 of the Material 3 move: the roles a screen
  * already reads keep today's values (a `Text` without a style is `bodyLarge`), and the ones nothing
- * set — display and headline — take Material's sizes in our face instead of Roboto. Matching
- * `labelLarge` (buttons), `titleLarge` (top bar) and the rest to the CT roles is part of each
- * component's swap in step 2, where the screenshot diff shows it.
+ * set — display and headline — take Material's sizes in our face instead of Roboto. A role is
+ * matched to its CT counterpart when the component that reads it is swapped (step 2), where the
+ * screenshot diff shows it: the dialog's (`headlineSmall`, `bodyMedium`, `labelLarge`) so far.
  */
 private val materialDefaults = Typography()
 
@@ -99,14 +99,17 @@ val Typography = Typography(
     displaySmall = materialDefaults.displaySmall.copy(fontFamily = CTFontFamily),
     headlineLarge = materialDefaults.headlineLarge.copy(fontFamily = CTFontFamily),
     headlineMedium = materialDefaults.headlineMedium.copy(fontFamily = CTFontFamily),
-    headlineSmall = materialDefaults.headlineSmall.copy(fontFamily = CTFontFamily),
+    // A dialog's title (AlertDialog). 15 bold, as CT dialogs have always set it by hand.
+    headlineSmall = CTFont.ui(15, FontWeight.Bold),
     bodyLarge = CTFont.ui(16),
-    bodyMedium = CTFont.ui(14),
+    // A dialog's text, a list item's supporting line.
+    bodyMedium = CTFont.body,
     bodySmall = CTFont.secondary,
     titleLarge = CTFont.ui(22, FontWeight.Bold),
     titleMedium = CTFont.title,
     titleSmall = CTFont.headline,
-    labelLarge = CTFont.ui(14),
+    // Buttons: TextButton, Button, a dialog's actions.
+    labelLarge = CTFont.bodyEmphasis,
     labelMedium = CTFont.secondary,
     labelSmall = CTFont.micro,
 )

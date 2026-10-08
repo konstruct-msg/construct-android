@@ -28,7 +28,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,6 +60,7 @@ import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTStatus
 import com.construct.messenger.ui.components.CTStatusBadge
 import com.construct.messenger.ui.components.CTTextField
+import com.construct.messenger.ui.components.DialogButton
 import com.construct.messenger.ui.components.rememberAvatar
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
@@ -140,7 +140,6 @@ fun ContactProfileScreen(
     ui.shareOutcome?.let { outcome ->
         AlertDialog(
             onDismissRequest = viewModel::shareOutcomeShown,
-            containerColor = CTColor.outMsgBg,
             text = {
                 Text(
                     stringResource(
@@ -150,34 +149,17 @@ fun ContactProfileScreen(
                             ShareOutcome.STOPPED -> R.string.profile_sharing_stopped
                         },
                     ),
-                    style = CTFont.body,
-                    color = CTColor.textDim,
                 )
             },
-            confirmButton = {
-                TextButton(onClick = viewModel::shareOutcomeShown) {
-                    Text(stringResource(R.string.close), style = CTFont.bodyEmphasis, color = CTColor.accent)
-                }
-            },
+            confirmButton = { DialogButton(stringResource(R.string.close), viewModel::shareOutcomeShown) },
         )
     }
 
     ui.reportAccepted?.let { accepted ->
         AlertDialog(
             onDismissRequest = viewModel::reportShown,
-            containerColor = CTColor.outMsgBg,
-            text = {
-                Text(
-                    stringResource(if (accepted) R.string.contact_report_sent else R.string.contact_report_failed),
-                    style = CTFont.body,
-                    color = CTColor.textDim,
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = viewModel::reportShown) {
-                    Text(stringResource(R.string.close), style = CTFont.bodyEmphasis, color = CTColor.accent)
-                }
-            },
+            text = { Text(stringResource(if (accepted) R.string.contact_report_sent else R.string.contact_report_failed)) },
+            confirmButton = { DialogButton(stringResource(R.string.close), viewModel::reportShown) },
         )
     }
 
@@ -450,8 +432,7 @@ private fun LocalNameDialog(current: String, onSave: (String) -> Unit, onClear: 
     var draft by remember { mutableStateOf(current) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = CTColor.outMsgBg,
-        title = { Text(stringResource(R.string.local_name), style = CTFont.ui(15, FontWeight.Bold), color = CTColor.text) },
+        title = { Text(stringResource(R.string.local_name)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(stringResource(R.string.local_name_footer), style = CTFont.secondary, color = CTColor.textDim)
@@ -463,20 +444,14 @@ private fun LocalNameDialog(current: String, onSave: (String) -> Unit, onClear: 
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(draft) }) {
-                Text(stringResource(R.string.action_save).replaceFirstChar { it.titlecase() }, style = CTFont.bodyEmphasis, color = CTColor.accent)
-            }
+            DialogButton(stringResource(R.string.action_save).replaceFirstChar { it.titlecase() }, { onSave(draft) })
         },
         dismissButton = {
             Row {
                 if (current.isNotEmpty()) {
-                    TextButton(onClick = onClear) {
-                        Text(stringResource(R.string.local_name_clear), style = CTFont.body, color = CTColor.danger)
-                    }
+                    DialogButton(stringResource(R.string.local_name_clear), onClear, isDestructive = true)
                 }
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.action_cancel), style = CTFont.body, color = CTColor.textDim)
-                }
+                DialogButton(stringResource(R.string.action_cancel), onDismiss)
             }
         },
     )
