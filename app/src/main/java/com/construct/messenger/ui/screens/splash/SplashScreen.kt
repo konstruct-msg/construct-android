@@ -8,11 +8,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
 import com.construct.messenger.R
-import com.construct.messenger.ui.theme.CTFont
+import com.construct.messenger.ui.components.DialogButton
 import kotlinx.coroutines.delay
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
@@ -101,13 +100,10 @@ private fun DeviceRemovedNotice(onErase: () -> Unit) {
     AlertDialog(
         onDismissRequest = {},
         properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
-        containerColor = CTColor.outMsgBg,
-        title = { Text(stringResource(R.string.device_removed_title), style = CTFont.title, color = CTColor.text) },
-        text = { Text(stringResource(R.string.device_removed_notice), style = CTFont.body, color = CTColor.text) },
+        title = { Text(stringResource(R.string.device_removed_title)) },
+        text = { Text(stringResource(R.string.device_removed_notice)) },
         confirmButton = {
-            TextButton(onClick = onErase) {
-                Text(stringResource(R.string.device_removed_erase, left), style = CTFont.bodyEmphasis, color = CTColor.danger)
-            }
+            DialogButton(stringResource(R.string.device_removed_erase, left), onErase, isDestructive = true)
         },
     )
 }

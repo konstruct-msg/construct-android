@@ -1,20 +1,20 @@
 package com.construct.messenger.ui.components
 
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.text.font.FontWeight
-import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.theme.CTFont
-import com.construct.messenger.ui.theme.CornerRadius
+import androidx.compose.ui.tooling.preview.Preview
 
 /**
  * A yes/no question before an action with consequences.
  *
- * **Canon:** iOS `.alert(title, isPresented:)` with a confirm button and a `.cancel` one.
- * Material `AlertDialog` in CT colours; [isDestructive] paints the confirm button `danger`.
+ * Material `AlertDialog` as the theme draws it — container, corners, title, text and buttons all
+ * come from `MaterialTheme` (`docs/MATERIAL3_MIGRATION.md`, step 2). What this adds is the one
+ * thing Material has no variant for: [isDestructive] sets the confirm button in `error`. Both
+ * buttons are otherwise the accent, as Material and iOS alerts both draw a cancel.
  */
 @Composable
 fun CTConfirmDialog(
@@ -29,25 +29,57 @@ fun CTConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = CTColor.outMsgBg,
-        shape = RoundedCornerShape(CornerRadius.medium),
-        title = { Text(title, style = CTFont.ui(15, FontWeight.Bold), color = CTColor.text) },
-        text = { Text(message, style = CTFont.body, color = CTColor.textDim) },
+        title = { Text(title) },
+        text = { Text(message) },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(
-                    confirmLabel,
-                    style = CTFont.bodyEmphasis,
-                    color = if (isDestructive) CTColor.danger else CTColor.accent,
-                )
-            }
+            DialogButton(confirmLabel, onConfirm, isDestructive)
         },
         dismissButton = dismissLabel?.let { label ->
-            {
-                TextButton(onClick = onDismiss) {
-                    Text(label, style = CTFont.body, color = CTColor.textDim)
-                }
-            }
+            { DialogButton(label, onDismiss) }
         },
+    )
+}
+
+/** A dialog's action: the theme's text button, or in `error` when it destroys something. */
+@Composable
+fun DialogButton(label: String, onClick: () -> Unit, isDestructive: Boolean = false) {
+    TextButton(
+        onClick = onClick,
+        colors = if (isDestructive) {
+            ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+        } else {
+            ButtonDefaults.textButtonColors()
+        },
+    ) {
+        Text(label)
+    }
+}
+
+// Previews named …DialogPreview: the screenshot test captures the dialog's window for them.
+
+@Preview
+@Composable
+private fun CTConfirmDialogPreview() {
+    CTConfirmDialog(
+        title = "Revoke this device?",
+        message = "It stops receiving messages for this account at once.",
+        confirmLabel = "Revoke",
+        dismissLabel = "Cancel",
+        onConfirm = {},
+        onDismiss = {},
+        isDestructive = true,
+    )
+}
+
+@Preview
+@Composable
+private fun CTConfirmNoticeDialogPreview() {
+    CTConfirmDialog(
+        title = "Profile shared",
+        message = "They can see your name and avatar now.",
+        confirmLabel = "Close",
+        dismissLabel = null,
+        onConfirm = {},
+        onDismiss = {},
     )
 }
