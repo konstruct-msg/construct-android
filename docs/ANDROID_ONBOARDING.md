@@ -487,25 +487,11 @@ fun CTTabBar(
 (`docs/MATERIAL3_MIGRATION.md`, шаг 2). Шрифт — `bodyLarge` (14, как у CT-полей), рамка `outline`,
 в фокусе `primary`. По центру (алиас в онбординге): `textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center)`.
 
-### 4.5 CTSearchBar — строка поиска
+### 4.5 CTSearchBar — строка поиска (удалён 2026-10-08)
 
-```kotlin
-// CTSearchBar.kt
-@Composable
-fun CTSearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    placeholder: String = stringResource(R.string.search_prompt),
-    modifier: Modifier = Modifier
-)
-```
-
-**iOS Reference** (`ConstructTheme.swift`):
-- HStack: `Image(systemName: "magnifyingglass")` + `TextField` + clear button
-- `CTFont.regular(13)`, `foregroundColor = Color.CT.text`
-- `.padding(.horizontal, 12).padding(.vertical, 9)`
-- `.background(Color.CT.bgMsg)`
-- Bottom border: `.ctBorderBottom()` (0.5pt line)
+Заменён на `FilterSearchBar` (`ui/components/FilterSearchBar.kt`): свёрнутый Material `SearchBar` с
+`SearchBarDefaults.InputField`, иконка поиска слева, очистка справа, когда что-то введено. Фильтрует
+список на месте (чаты, Synaps) и никогда не раскрывается в экран поиска.
 
 ### 4.6 CTSectionGroup — карточка секции
 

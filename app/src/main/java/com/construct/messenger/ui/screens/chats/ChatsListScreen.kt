@@ -58,7 +58,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.ui.components.CTMatrixBackground
-import com.construct.messenger.ui.components.CTSearchBar
+import com.construct.messenger.ui.components.FilterSearchBar
 import com.construct.messenger.ui.components.ConnectionStatusIndicator
 import com.construct.messenger.ui.components.TabIcons
 import com.construct.messenger.ui.components.ctBackground
@@ -123,7 +123,7 @@ fun ChatsListScreen(
             )
         }
 
-        CTSearchBar(
+        FilterSearchBar(
             query = query,
             onQueryChange = { query = it },
             modifier = Modifier.padding(horizontal = CTLayout.edgePad).padding(top = CTSpace.xs, bottom = CTSpace.s),
