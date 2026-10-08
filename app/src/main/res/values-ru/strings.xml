@@ -631,4 +631,7 @@
     <string name="chat_action_search">Поиск</string>
     <string name="chat_action_call">Звонок</string>
     <string name="chat_action_video">Видео</string>
+    <string name="device_removed_title">Устройство удалено</string>
+    <string name="device_removed_notice">Это устройство удалено из вашего аккаунта. Всё, что на нём есть, будет стёрто.</string>
+    <string name="device_removed_erase">стереть сейчас (%1$d с)</string>
 </resources>

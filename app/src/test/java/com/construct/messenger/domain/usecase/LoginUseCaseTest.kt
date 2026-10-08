@@ -30,6 +30,8 @@ class LoginUseCaseTest {
     @Before
     fun setUp() {
         whenever(grpcClient.auth).thenReturn(authStub)
+        // Direct TLS. Mockito answers 0, not null, for a boxed Int.
+        whenever(grpcClient.veilPort).thenReturn(null)
         loginUseCase = LoginUseCase(cryptoManager, grpcClient, keystoreManager)
     }
 
@@ -66,5 +68,42 @@ class LoginUseCaseTest {
 
         verify(cryptoManager).setLocalUserId("user-1")
         verify(keystoreManager).saveTokens(tokens, "device-1")
+    }
+
+    private fun refusedWith(number: String?): io.grpc.StatusRuntimeException =
+        io.grpc.Status.UNAUTHENTICATED.withDescription("Device is inactive").asRuntimeException(
+            io.grpc.Metadata().apply {
+                if (number != null) {
+                    put(io.grpc.Metadata.Key.of("construct-device-refusal", io.grpc.Metadata.ASCII_STRING_MARSHALLER), number)
+                }
+            },
+        )
+
+    private suspend fun loginFailure(): Throwable {
+        whenever(cryptoManager.signWithDeviceKey(any())).thenReturn(byteArrayOf(1))
+        return runCatching { loginUseCase("device-1", byteArrayOf(9)) }.exceptionOrNull()!!
+    }
+
+    @Test
+    fun `a removal heard over direct TLS erases the device`() = runTest {
+        whenever(authStub.authenticateDevice(any(), any())).thenThrow(refusedWith("1"))
+        val failure = loginFailure() as com.construct.messenger.data.auth.DeviceAuthRefused
+        assertEquals(true, failure.overDirectTLS)
+        assertEquals(true, failure.erasesDevice)
+    }
+
+    /** Mutation: read the route only before the call, or not at all — a relay's answer erases. */
+    @Test
+    fun `a removal heard through VEIL does not erase`() = runTest {
+        whenever(grpcClient.veilPort).thenReturn(40_000)
+        whenever(authStub.authenticateDevice(any(), any())).thenThrow(refusedWith("1"))
+        val failure = loginFailure() as com.construct.messenger.data.auth.DeviceAuthRefused
+        assertEquals(false, failure.erasesDevice)
+    }
+
+    @Test
+    fun `a refusal without a reason is thrown as it came`() = runTest {
+        whenever(authStub.authenticateDevice(any(), any())).thenThrow(refusedWith(null))
+        assertEquals(io.grpc.StatusRuntimeException::class, loginFailure()::class)
     }
 }

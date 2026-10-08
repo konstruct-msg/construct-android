@@ -627,4 +627,7 @@
     <string name="chat_action_search">Search</string>
     <string name="chat_action_call">Call</string>
     <string name="chat_action_video">Video</string>
+    <string name="device_removed_title">Device removed</string>
+    <string name="device_removed_notice">This device was removed from your account. Everything it holds will be erased.</string>
+    <string name="device_removed_erase">erase now (%1$d s)</string>
 </resources>

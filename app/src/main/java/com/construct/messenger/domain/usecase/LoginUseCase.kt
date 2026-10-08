@@ -2,8 +2,12 @@ package com.construct.messenger.domain.usecase
 
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
+import com.construct.messenger.data.auth.DeviceAuthRefused
+import com.construct.messenger.data.auth.DeviceRefusalReading
 import com.construct.messenger.data.local.KeystoreManager
 import com.google.protobuf.ByteString
+import io.grpc.StatusRuntimeException
+import shared.proto.services.v1.AuthServiceOuterClass.DeviceRefusal
 import shared.proto.services.v1.AuthServiceOuterClass.AuthTokensResponse
 import shared.proto.services.v1.AuthServiceOuterClass.AuthenticateDeviceRequest
 import javax.inject.Inject
@@ -19,6 +23,8 @@ import javax.inject.Inject
  * [savedPrivateKeys] restores the same identity [RegisterUseCase] created — without this,
  * `CryptoManager` would have no core loaded and [CryptoManager.signWithDeviceKey] (and any
  * later `encryptMessage`/`decryptMessage`) would fail.
+ *
+ * A refusal that names its reason is thrown as [DeviceAuthRefused]; everything else as it came.
  */
 class LoginUseCase @Inject constructor(
     private val cryptoManager: CryptoManager,
@@ -38,7 +44,15 @@ class LoginUseCase @Inject constructor(
             .setSignature(ByteString.copyFrom(signature))
             .build()
 
-        val tokens = grpcClient.auth.authenticateDevice(request).tokens
+        // Direct before and after: an answer that may erase this device counts only off VEIL.
+        val directBefore = grpcClient.veilPort == null
+        val tokens = try {
+            grpcClient.auth.authenticateDevice(request).tokens
+        } catch (e: StatusRuntimeException) {
+            val refusal = DeviceRefusalReading.refusalOf(e)
+            if (refusal == DeviceRefusal.DEVICE_REFUSAL_UNSPECIFIED) throw e
+            throw DeviceAuthRefused(refusal, directBefore && grpcClient.veilPort == null, e)
+        }
         cryptoManager.setLocalUserId(tokens.userId, keystoreManager.getKyberPrekeys())
         keystoreManager.saveTokens(tokens, deviceId)
         return tokens
