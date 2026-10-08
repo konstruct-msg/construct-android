@@ -89,7 +89,8 @@ data class ChatText(val monospace: Boolean = false, val multiplier: Float = 1f)
  * already reads keep today's values (a `Text` without a style is `bodyLarge`), and the ones nothing
  * set — display and headline — take Material's sizes in our face instead of Roboto. A role is
  * matched to its CT counterpart when the component that reads it is swapped (step 2), where the
- * screenshot diff shows it: the dialog's (`headlineSmall`, `bodyMedium`, `labelLarge`) so far.
+ * screenshot diff shows it: the dialog's (`headlineSmall`, `bodyMedium`, `labelLarge`) and the text field's (`bodyLarge`)
+ * so far.
  */
 private val materialDefaults = Typography()
 
@@ -101,7 +102,9 @@ val Typography = Typography(
     headlineMedium = materialDefaults.headlineMedium.copy(fontFamily = CTFontFamily),
     // A dialog's title (AlertDialog). 15 bold, as CT dialogs have always set it by hand.
     headlineSmall = CTFont.ui(15, FontWeight.Bold),
-    bodyLarge = CTFont.ui(16),
+    // A text field's input and placeholder (OutlinedTextField), and any Text given no style.
+    // 14, as CT fields were: at 16 the onboarding alias placeholder no longer fits a phone.
+    bodyLarge = CTFont.ui(14),
     // A dialog's text, a list item's supporting line.
     bodyMedium = CTFont.body,
     bodySmall = CTFont.secondary,

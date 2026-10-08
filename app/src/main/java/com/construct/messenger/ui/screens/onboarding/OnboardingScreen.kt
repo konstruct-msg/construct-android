@@ -23,7 +23,9 @@ import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,7 +50,6 @@ import com.construct.messenger.R
 import com.construct.messenger.diagnostics.Diagnostics
 import com.construct.messenger.domain.usecase.RegistrationStep
 import com.construct.messenger.ui.components.CTSep
-import com.construct.messenger.ui.components.CTTextField
 import com.construct.messenger.ui.components.ConvergingSignal
 import com.construct.messenger.ui.components.ctBackground
 import com.construct.messenger.ui.theme.CTColor
@@ -186,11 +187,19 @@ private fun IdentityFormContent(
                 .widthIn(max = 360.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            CTTextField(
-                placeholder = stringResource(R.string.onboarding_alias_placeholder),
+            OutlinedTextField(
                 value = alias,
                 onValueChange = onAliasChange,
-                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
+                placeholder = {
+                    Text(
+                        stringResource(R.string.onboarding_alias_placeholder),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                    )
+                },
+                singleLine = true,
             )
             aliasStatus.line()?.let { (text, color) ->
                 Text(text = text, style = CTFont.caption, color = color)

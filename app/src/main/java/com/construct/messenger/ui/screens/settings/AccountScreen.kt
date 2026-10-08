@@ -34,6 +34,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,7 +65,6 @@ import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTStatus
 import com.construct.messenger.ui.components.CTStatusBadge
-import com.construct.messenger.ui.components.CTTextField
 import com.construct.messenger.ui.components.DialogButton
 import com.construct.messenger.ui.components.rememberAvatar
 import com.construct.messenger.ui.theme.CTColor
@@ -403,11 +403,12 @@ private fun UsernameRow(ui: AccountUiState, onDraftChange: (String) -> Unit, onE
             val focus = remember { FocusRequester() }
             LaunchedEffect(Unit) { focus.requestFocus() }
             Spacer(Modifier.height(CTSpace.s))
-            CTTextField(
-                placeholder = stringResource(R.string.account_username),
+            OutlinedTextField(
                 value = ui.draftUsername,
                 onValueChange = onDraftChange,
-                modifier = Modifier.focusRequester(focus),
+                modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                placeholder = { Text(stringResource(R.string.account_username)) },
+                singleLine = true,
             )
         }
         val error = ui.usernameError
@@ -444,10 +445,12 @@ private fun DisplayNameRow(ui: AccountUiState, onDraftChange: (String) -> Unit, 
         }
         if (ui.editing) {
             Spacer(Modifier.height(CTSpace.s))
-            CTTextField(
-                placeholder = stringResource(R.string.account_display_name),
+            OutlinedTextField(
                 value = ui.draftDisplayName,
                 onValueChange = onDraftChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(stringResource(R.string.account_display_name)) },
+                singleLine = true,
             )
         } else {
             Spacer(Modifier.height(CTSpace.xs))

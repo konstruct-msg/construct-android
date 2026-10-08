@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,7 +46,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.ui.components.CTNavBar
-import com.construct.messenger.ui.components.CTTextField
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
@@ -93,10 +93,12 @@ fun RestoreAccountScreen(
             Text(stringResource(R.string.restore_body), style = CTFont.ui(14), color = CTColor.textDim)
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(stringResource(R.string.restore_identifier_label), style = CTFont.secondary, color = CTColor.textDim)
-                CTTextField(
-                    placeholder = stringResource(R.string.restore_identifier_placeholder),
+                OutlinedTextField(
                     value = ui.identifier,
                     onValueChange = viewModel::setIdentifier,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(stringResource(R.string.restore_identifier_placeholder)) },
+                    singleLine = true,
                 )
             }
             Text(stringResource(R.string.restore_phrase_label), style = CTFont.secondary, color = CTColor.textDim)

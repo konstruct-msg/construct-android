@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,7 +60,6 @@ import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTStatus
 import com.construct.messenger.ui.components.CTStatusBadge
-import com.construct.messenger.ui.components.CTTextField
 import com.construct.messenger.ui.components.DialogButton
 import com.construct.messenger.ui.components.rememberAvatar
 import com.construct.messenger.ui.theme.CTColor
@@ -436,10 +436,12 @@ private fun LocalNameDialog(current: String, onSave: (String) -> Unit, onClear: 
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(stringResource(R.string.local_name_footer), style = CTFont.secondary, color = CTColor.textDim)
-                CTTextField(
-                    placeholder = stringResource(R.string.local_name_placeholder),
+                OutlinedTextField(
                     value = draft,
                     onValueChange = { draft = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(stringResource(R.string.local_name_placeholder)) },
+                    singleLine = true,
                 )
             }
         },
