@@ -163,6 +163,9 @@ differ. Features, texts, behaviour and the wire are still one meaning across bot
 
 ### Migration (background work, one screen per commit)
 
+Full plan and order: **`docs/MATERIAL3_MIGRATION.md`** — code moves first with no visible change
+(proved by screenshot tests), the new look arrives later as one change of theme values.
+
 1. **Theme**: the file's roles into `ColorScheme` / `Typography` in `ui/theme/`.
 2. **Aliases**: `CTColor.*` / `CTFont.*` point at the roles, so the ~70 files reading them change
    colour without changing code.
