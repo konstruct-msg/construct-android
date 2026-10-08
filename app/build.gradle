@@ -5,6 +5,8 @@ plugins {
     id 'com.google.dagger.hilt.android'
     id 'com.google.devtools.ksp'
     id 'com.google.protobuf'
+    // Screenshot tests of every @Preview on the JVM (docs/MATERIAL3_MIGRATION.md, step 0).
+    id 'io.github.takahirom.roborazzi' version '1.76.0'
 }
 
 // Pinned versions for the protobuf/gRPC codegen toolchain. Keep protoc and the
@@ -81,6 +83,9 @@ android {
             // android.util.Log (and other Android stubs) throw "not mocked" by default
             // in JVM unit tests — return defaults instead, no Robolectric needed.
             returnDefaultValues = true
+            // Robolectric renders the screenshot tests from the app's real resources (fonts,
+            // strings, drawables).
+            includeAndroidResources = true
         }
     }
 }
@@ -163,6 +168,15 @@ dependencies {
     testImplementation 'org.mockito.kotlin:mockito-kotlin:5.4.0'
     testImplementation "io.grpc:grpc-testing:${grpcVersion}"
     testImplementation 'org.json:json:20231013'
+    // Screenshot tests (PreviewScreenshotTest): Robolectric draws each @Preview, Roborazzi compares
+    // it with the image in app/src/test/screenshots/. Build-time only, nothing reaches the device.
+    testImplementation 'org.robolectric:robolectric:4.17'
+    testImplementation 'io.github.takahirom.roborazzi:roborazzi:1.76.0'
+    testImplementation 'io.github.takahirom.roborazzi:roborazzi-compose:1.76.0'
+    testImplementation 'io.github.takahirom.roborazzi:roborazzi-junit-rule:1.76.0'
+    testImplementation 'io.github.sergio-sastre.ComposablePreviewScanner:android:0.9.3'
+    testImplementation platform('androidx.compose:compose-bom:2026.09.00')
+    testImplementation 'androidx.compose.ui:ui-test-junit4'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     androidTestImplementation platform('androidx.compose:compose-bom:2026.09.00')
@@ -170,6 +184,12 @@ dependencies {
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
 }
+// Screenshot references live beside the tests, in git: a diff of them is the review of a UI change.
+// `./gradlew recordRoborazziDebug` rewrites them, `verifyRoborazziDebug` fails on any change.
+roborazzi {
+    outputDir = file('src/test/screenshots')
+}
+
 // Native libs configuration
 android.sourceSets.main.jniLibs.srcDirs = ['src/main/jniLibs']
 

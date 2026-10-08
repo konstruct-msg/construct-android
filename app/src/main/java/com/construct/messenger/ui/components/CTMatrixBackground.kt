@@ -12,7 +12,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.construct.messenger.ui.theme.CTColor
-import kotlin.random.Random
 
 private const val MATRIX_CHARS = "01ABCDEFabcdef><[]{}|~."
 private val MATRIX_CELL = 36.dp
@@ -28,7 +27,8 @@ private const val MATRIX_OPACITY = 0.05f
 @Composable
 fun CTMatrixBackground(modifier: Modifier = Modifier) {
     // Enough cells for any phone; each draw uses only the ones that fit.
-    val grid = remember { Array(64) { CharArray(32) { MATRIX_CHARS[Random.nextInt(MATRIX_CHARS.length)] } } }
+    val random = LocalDecorRandom.current
+    val grid = remember { Array(64) { CharArray(32) { MATRIX_CHARS[random.nextInt(MATRIX_CHARS.length)] } } }
     Box(
         modifier = modifier.drawWithCache {
             val cell = MATRIX_CELL.toPx()

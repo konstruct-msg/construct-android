@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.nativeCanvas
@@ -33,6 +34,13 @@ internal val NOISE_CHARS = charArrayOf(
     '@', '%', '#', '+', '-', '=', ':', '.', '*', '/', '\\', '|', '~', '^', '<', '>',
 )
 
+/**
+ * Where the decorative randomness comes from — the noise grid, the matrix grid, the converging
+ * signal's phases. The app draws a new pattern each time; the screenshot test provides a seeded
+ * one, so its references do not change between runs.
+ */
+val LocalDecorRandom = staticCompositionLocalOf<Random> { Random.Default }
+
 @Composable
 private fun Modifier.ctNoiseOverlay(
     rows: Int = 40,
@@ -41,8 +49,9 @@ private fun Modifier.ctNoiseOverlay(
 ): Modifier {
     val dark = LocalIsDarkTheme.current
     val noiseColor = if (dark) CTColor.noise else CTColor.noiseLight
+    val random = LocalDecorRandom.current
     val grid = remember(rows, cols) {
-        Array(rows) { CharArray(cols) { NOISE_CHARS[Random.nextInt(NOISE_CHARS.size)] } }
+        Array(rows) { CharArray(cols) { NOISE_CHARS[random.nextInt(NOISE_CHARS.size)] } }
     }
 
     return drawWithCache {
