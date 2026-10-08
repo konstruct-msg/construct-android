@@ -269,7 +269,7 @@ object VideoEncoding {
     fun hevcEncodes(width: Int, height: Int): Boolean =
         android.media.MediaCodecList(android.media.MediaCodecList.REGULAR_CODECS).codecInfos.any { info ->
             info.isEncoder && MimeTypes.VIDEO_H265 in info.supportedTypes.map { it.lowercase() } &&
-                runCatching { info.getCapabilitiesForType(MimeTypes.VIDEO_H265).videoCapabilities.isSizeSupported(width, height) }
+                runCatching { info.getCapabilitiesForType(MimeTypes.VIDEO_H265).videoCapabilities?.isSizeSupported(width, height) == true }
                     .getOrDefault(false)
         }
 
