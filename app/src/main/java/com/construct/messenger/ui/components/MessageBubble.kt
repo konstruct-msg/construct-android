@@ -531,6 +531,9 @@ private fun formatMessageTime(timestamp: Long): String {
     return formatter.format(java.util.Date(timestamp))
 }
 
+/** Fixed, so the screenshot reference does not change with the clock: 2026-10-01 12:00 UTC. */
+private const val PREVIEW_TIME = 1790856000000L
+
 @Preview(backgroundColor = 0xFF090909, showBackground = true, widthDp = 360)
 @Composable
 private fun MessageBubblePreview() {
@@ -544,7 +547,7 @@ private fun MessageBubblePreview() {
                 chatId = "c1",
                 body = "hey, are we still on for tonight?",
                 isOutgoing = false,
-                timestamp = System.currentTimeMillis(),
+                timestamp = PREVIEW_TIME,
             ),
         )
         MessageBubble(
@@ -554,7 +557,7 @@ private fun MessageBubblePreview() {
                 body = "yeah, see you at 8.",
                 isOutgoing = true,
                 deliveryStatus = DeliveryStatus.READ,
-                timestamp = System.currentTimeMillis(),
+                timestamp = PREVIEW_TIME,
             ),
         )
         MessageBubble(
@@ -564,7 +567,7 @@ private fun MessageBubblePreview() {
                 body = "This one failed to send.",
                 isOutgoing = true,
                 deliveryStatus = DeliveryStatus.FAILED,
-                timestamp = System.currentTimeMillis(),
+                timestamp = PREVIEW_TIME,
             ),
         )
     }

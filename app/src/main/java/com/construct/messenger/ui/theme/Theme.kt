@@ -8,7 +8,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
+internal val DarkColorScheme = darkColorScheme(
     primary = CTColor.accentDark,
     secondary = CTColor.accentDimDark,
     tertiary = CTColor.danger,
@@ -21,7 +21,7 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = CTColor.textDark
 )
 
-private val LightColorScheme = lightColorScheme(
+internal val LightColorScheme = lightColorScheme(
     // The light halves, like every other token in this scheme. They were the dark ones while the
     // accent had a single value; it does not any more.
     primary = CTColor.accentLight,
