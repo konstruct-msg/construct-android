@@ -17,7 +17,7 @@ iOS-приложение** `construct-ios` (github.com/konstruct-msg/construct-i
 
 | Что                                | Где смотреть на iOS                                               |
 |------------------------------------|-------------------------------------------------------------------|
-| Дизайн-система, токены, компоненты | `construct-ios/ConstructMessenger/Utilities/ConstructTheme.swift` |
+| Дизайн-система, токены, компоненты | **не iOS** с 2026-10-08: Android — Material 3, канон — Figma-файл дизайнера (`AGENTS.md` → Design System) |
 | Аватары                            | `.../Views/Components/MainAvatarView.swift`                       |
 | Экраны                             | `.../Views/`                                                      |
 | ViewModels / бизнес-логика         | `.../ViewModels/`                                                 |
