@@ -139,52 +139,48 @@ never rewritten.
 
 ## Design System (read before touching any UI)
 
-The iOS app is the **design canon**. Android mirrors it — every CT* component carries a
-`**Canon:** iOS ConstructTheme.swift → …` reference. Full token tables, the SF Symbol →
-Material Icon map, and the `CTStatus`/`CTStatusBadge` pattern live in
-`docs/ANDROID_ONBOARDING.md` §3 — the only copy since 2026-09-28; the vault links here.
-Read §3 before changing any UI.
+**Android is Material 3** (decided 2026-10-08, `~/Code/construct-docs/decisions/android-is-material-3.md`).
+Until then the iOS app was the design canon and Android mirrored it; **that is over for the
+look.** iOS goes its own way in SwiftUI, Android in Material, and the two apps are allowed to
+differ. Features, texts, behaviour and the wire are still one meaning across both.
 
-### Design philosophy: CT + Material fusion
+- **Source of truth: the designer's Figma file** — a local copy of the Material 3 kit (theme
+  "Echo"), not iOS `ConstructTheme.swift`. New code carries no `**Canon:** iOS …` reference.
+  The file is not wired in yet; until it is, the CT tokens below stay as they are.
+- **Tokens are Material's roles**: colour = `ColorScheme` (Primary, On Primary, Primary
+  Container, Surface, Surface Container …; one scheme per theme mode of the file — set **every**
+  role, an unset one falls back to Compose's baseline purple), type = `Typography` from the font
+  roles Brand / Plain. Values come from the Figma variables by a repeatable step, never retyped.
+- **Controls are Material 3 components** themed by `MaterialTheme` — `Button`, `Switch`,
+  `NavigationBar`, `TopAppBar`, dialogs, sheets, menus. Do not hand-draw a control, and do not
+  build a new `CT*` look-alike of one.
+- **What stays ours:** JetBrains Mono for the chrome and dark as the default. The rest of the
+  identity (density, hairlines, identicon avatars, the `>` system-message prefix, terminal
+  diagnostics) is not removed without asking the owner.
+- **Terminal glyphs are decorative only** (since 2026-06-22): never `[ok] [err] [✓] [→]` for state
+  or controls — Material icons + semantic colour, `Switch`, `Icons.Default.Check`. ASCII stays only
+  as chrome: separators, the `>` prefix, `✷`.
 
-Terminal/cyberpunk CT aesthetic fused with Android/Material conventions so users intuitively
-understand how to interact. **Keep**: JetBrains Mono (mono `FontFamily`), `#090909` background,
-CT palette, information density, *decorative* terminal chrome (`-`/`=` separators, `>` prefix, `✷`,
-hex avatars). **Never** sacrifice usability or clash with Material guidelines.
+### Migration (background work, one screen per commit)
 
-> **Terminal glyphs are decorative-only — not functional (revised 2026-06-22).** Testers and
-> users did not embrace the `[…]` bracket pastiche on functional controls. **State and
-> affordance must read instantly**, so `[ok] [err] [on] [off] [✓] [ ] [!] [~] [?]` and similar
-> are replaced by **Material icons + semantic colour** (`CTStatus` / `CTStatusBadge`) or native
-> controls (`Switch`, selection `Icons.Default.Check`). ASCII may remain only as unobtrusive
-> *chrome* (separators, the `>` prefix on system messages / section headers, decorative `✷`).
-> This mirrors the iOS doctrine in `construct-messenger/AGENTS.md`.
+Full plan and order: **`docs/MATERIAL3_MIGRATION.md`** — code moves first with no visible change
+(proved by screenshot tests), the new look arrives later as one change of theme values.
 
-### Rules
+1. **Theme**: the file's roles into `ColorScheme` / `Typography` in `ui/theme/`.
+2. **Aliases**: `CTColor.*` / `CTFont.*` point at the roles, so the ~70 files reading them change
+   colour without changing code.
+3. **Components**: `CTNavBar`, `CTTabBar`, `CTButton`, `CTTextField`, `CTSearchBar`,
+   `CTModeSelector` … give way to their Material counterparts screen by screen; an alias goes
+   with its last caller. A screen built from now on is built in Material from the start.
 
-- **Material Icons** (`androidx.compose.material.icons`, `ImageVector`) for **all interactive
-  controls** — back/close, action buttons, tab bar, send, attach, mic, search. (Direct analogue
-  of iOS SF Symbols.)
-- **`CTSymbol.*` / ASCII** for **decorative chrome only** — `> SECTION` headers, `-`/`=`
-  separators, the `>` system-message prefix. Never ASCII for state/controls.
-- **Status**: `CTStatusBadge(status:)` with the `CTStatus` enum (`ok error warning on off busy
-  unknown`) — never a `"[ok]"` / `"[err]"` text token. Compose implementation:
-  `ui/components/CTStatusBadge.kt`; canon: `ANDROID_ONBOARDING.md` §3.3.
-- **Selection** → `Icons.Default.Check` in `accent`; **on/off** → Material3 `Switch`.
-- Tokens: `CTColor.*`, `CTFont.*` roles (JetBrains Mono; `CTFont.ui(size)` off the scale,
-  `CTFont.message` for message text), `CTIcon.*`, `CTSpace.*`, `CornerRadius.*`, `CTLayout.*` —
-  the same names and values as iOS `ConstructTheme.swift`. No inline magic numbers:
-  `scripts/check_ui_tokens.sh` (run by `verify.sh`) fails when a count of hand-set sizes, faces or
-  colours rises; a migration lowers its baseline in the same commit.
+### Today's tokens (until the migration replaces them)
 
-### Current state & migration
-
-`CTTabBar` and `CTSettingsRow` **already** use Material icons (ahead of iOS). But `CTSymbol.kt`
-still lists dead action/status glyphs — prune them to decorative-only when next touched
-(only `CTNavBar`/`CTSep`/`MainScreen`/`OnboardingScreen` consume `CTSymbol`). Bottom nav: iOS
-moved to native `TabView`; prefer Material3 `NavigationBar` (icon-only) over the hand-rolled
-`CTTabBar` when refactoring. Pending glyph phases match iOS: `[→]` → `ChevronRight`,
-`[ BUTTON ]` → `CTButton`, ASCII row icons → Material icons, contact-request action glyphs.
+`docs/ANDROID_ONBOARDING.md` §3 describes what the code has now — CT palette, `CTFont` roles,
+the `CTStatus`/`CTStatusBadge` pattern, the icon map. Use it to read existing code, not as the
+target. Tokens: `CTColor.*`, `CTFont.*` (`CTFont.message` for message text), `CTIcon.*`,
+`CTSpace.*`, `CornerRadius.*`, `CTLayout.*`. No inline magic numbers: `scripts/check_ui_tokens.sh`
+(run by `verify.sh`) fails when a count of hand-set sizes, faces or colours rises; a migration
+lowers its baseline in the same commit.
 
 ---
 
