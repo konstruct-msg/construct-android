@@ -158,5 +158,4 @@ object CTColor {
     val qrInk = Color.Black
     /** The far end of the logo's gradient in the middle of a QR code. */
     val qrInkSoft = Color(0xFF4A4A4A)
-
 }

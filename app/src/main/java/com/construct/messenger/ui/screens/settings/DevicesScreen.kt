@@ -1,6 +1,7 @@
 package com.construct.messenger.ui.screens.settings
 
 import android.text.format.DateFormat
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,8 +28,11 @@ import androidx.compose.material.icons.filled.HighlightOff
 import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PhoneIphone
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,8 +59,6 @@ import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
 import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
-import com.construct.messenger.ui.components.ConstructActionRow
-import com.construct.messenger.ui.components.ConstructRowRole
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
@@ -206,33 +208,27 @@ private fun DevicesScreen(
             }
 
             CTSettingsSectionHeader(title = stringResource(R.string.session_management))
-            // iOS: each a destructive `ConstructActionRow` card of its own, not rows in a group.
+            // Each its own destructive button, not rows in a group (iOS: a card each).
             Column(
                 modifier = Modifier.padding(horizontal = CTLayout.edgePad),
                 verticalArrangement = Arrangement.spacedBy(CTSpace.xs),
             ) {
-                ConstructActionRow(
+                SignOutButton(
                     icon = Icons.AutoMirrored.Filled.Logout,
                     title = stringResource(R.string.sign_out_this_device),
-                    role = ConstructRowRole.DESTRUCTIVE,
                     onClick = { onConfirm(DevicesConfirm.SignOutThis) },
-                    modifier = Modifier.fillMaxWidth(),
                 )
                 if (others.isNotEmpty()) {
-                    ConstructActionRow(
+                    SignOutButton(
                         icon = Icons.Default.PersonOff,
                         title = stringResource(R.string.sign_out_other_devices),
-                        role = ConstructRowRole.DESTRUCTIVE,
                         onClick = { onConfirm(DevicesConfirm.SignOutOthers) },
-                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
-                ConstructActionRow(
+                SignOutButton(
                     icon = Icons.Default.HighlightOff,
                     title = stringResource(R.string.sign_out_all_devices),
-                    role = ConstructRowRole.DESTRUCTIVE,
                     onClick = { onConfirm(DevicesConfirm.SignOutAll) },
-                    modifier = Modifier.fillMaxWidth(),
                 )
             }
             Hint(stringResource(R.string.sign_out_all_hint))
@@ -323,4 +319,23 @@ private fun DevicesScreenPreview() {
         onNavigateBack = {},
         onConfirm = {},
     )
+}
+
+/**
+ * A sign-out action: Material's outlined button in `error`, full width, with its icon — the
+ * destructive variant Material has no named style for. Each asks for confirmation first.
+ */
+@Composable
+private fun SignOutButton(icon: ImageVector, title: String, onClick: () -> Unit) {
+    val error = MaterialTheme.colorScheme.error
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = error),
+        border = BorderStroke(ButtonDefaults.outlinedButtonBorder().width, error),
+    ) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+        Text(title)
+    }
 }

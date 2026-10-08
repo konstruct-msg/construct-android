@@ -31,9 +31,10 @@ CHECKS=(
   "spacing set by hand — a step of CTSpace; off-scale values wait for a decision with iOS|padding\([^)]*[0-9]+(\.[0-9]+)?\.dp|spacedBy\([0-9.]+\.dp|Spacer\(Modifier\.(height|width)\([0-9.]+\.dp|157"
   "colour literal — use CTColor|Color\.(White|Black|Gray|Red|Green|Blue|Yellow|LightGray|DarkGray)\b|Color\(0x|1"
   # Material 3 move (docs/MATERIAL3_MIGRATION.md): a CT control that a Material component replaces.
-  # Definitions and previews count too — the number only has to fall. CTConfirmDialog left the
-  # list when it became a Material AlertDialog with one addition, the destructive button.
-  "CT control Material replaces — use the Material component|\b(CTNavBar|CTTabBar|CTSettingsRow|ConstructActionRow|ConstructNavRow|ConstructButtonRow)\(|68"
+  # Definitions and previews count too — the number only has to fall. CTConfirmDialog and
+  # CTSettingsRow left the list when they became Material (AlertDialog, ListItem) with the settings
+  # vocabulary added; the others were deleted.
+  "CT control Material replaces — use the Material component|\b(CTNavBar|CTTabBar)\(|23"
 )
 
 failed=0
