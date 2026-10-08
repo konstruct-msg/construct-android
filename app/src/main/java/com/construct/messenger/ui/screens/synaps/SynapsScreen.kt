@@ -31,7 +31,7 @@ import com.construct.messenger.R
 import com.construct.messenger.data.model.Contact
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.components.CTNavBar
-import com.construct.messenger.ui.components.CTSearchBar
+import com.construct.messenger.ui.components.FilterSearchBar
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.ctBackground
 import com.construct.messenger.ui.components.rememberAvatar
@@ -65,7 +65,7 @@ fun SynapsScreen(
             onTrailingAction = onScanQr,
         )
 
-        CTSearchBar(
+        FilterSearchBar(
             query = uiState.query,
             onQueryChange = viewModel::onQueryChange,
             modifier = Modifier.padding(horizontal = CTSpace.m, vertical = CTSpace.s),

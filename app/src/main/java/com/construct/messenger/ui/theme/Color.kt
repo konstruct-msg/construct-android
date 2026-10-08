@@ -159,6 +159,4 @@ object CTColor {
     /** The far end of the logo's gradient in the middle of a QR code. */
     val qrInkSoft = Color(0xFF4A4A4A)
 
-    /** The search field's hairline. */
-    val fieldStroke = Color.White.copy(alpha = 0.15f)
 }
