@@ -804,8 +804,6 @@ external fun uniffi_construct_core_checksum_func_open_media(
 ): Short
 external fun uniffi_construct_core_checksum_func_plan_initiation(
 ): Short
-external fun uniffi_construct_core_checksum_func_plan_receiving_decrypt(
-): Short
 external fun uniffi_construct_core_checksum_func_plan_send(
 ): Short
 external fun uniffi_construct_core_checksum_func_pp_blind_token(
@@ -916,17 +914,31 @@ external fun uniffi_construct_core_checksum_method_historysender_push_records(
 ): Short
 external fun uniffi_construct_core_checksum_method_historysender_snapshot_id(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_advance_chat_preview(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_all_messages_after(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_all_peer_devices(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_all_reactions(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_apply_session_archive(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_apply_shared_profile(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_calls(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_chat(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_chat_for_peer(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_chats(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_contact(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_contacts(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_contacts_with_pending_avatar(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_delete_chat(
 ): Short
@@ -938,21 +950,43 @@ external fun uniffi_construct_core_checksum_method_localstore_delete_reaction(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_edit_message(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_every_contact(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_expire_reactions(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_forget_server_message_ids_before(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_get(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_identity_key_pins(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_increment_retry_count(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_increment_unread(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_insert_chat(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_insert_message(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_local_message_id(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_mark_contact(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_message(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_message_count(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_messages_before(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_messages_from(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_own_profile(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_peer_device(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_peer_devices(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_pending_sends(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_put(
 ): Short
@@ -968,9 +1002,43 @@ external fun uniffi_construct_core_checksum_method_localstore_retain_peer_device
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_search(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_account_address(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_chat_pinned(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_chat_preview(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_contact_alias(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_contact_avatar(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_contact_blocked(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_contact_names(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_delivery_status(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_identity_key(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_kt_status(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_observer(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_order_key(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_own_profile(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_retry_count(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_security_notice(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_sharing_with(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_transcript(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_unread(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_sharing_with(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_upsert_call(
 ): Short
@@ -1293,17 +1361,31 @@ external fun uniffi_construct_core_fn_constructor_localstore_in_memory(`key`: Ru
 ): Long
 external fun uniffi_construct_core_fn_constructor_localstore_new(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_construct_core_fn_method_localstore_advance_chat_preview(`ptr`: Long,`id`: RustBuffer.ByValue,`text`: RustBuffer.ByValue,`time`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_all_messages_after(`ptr`: Long,`afterOrderKey`: RustBuffer.ByValue,`afterId`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_all_peer_devices(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_all_reactions(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_apply_session_archive(`ptr`: Long,`id`: RustBuffer.ByValue,`maxRetries`: Short,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_apply_shared_profile(`ptr`: Long,`id`: RustBuffer.ByValue,`displayName`: RustBuffer.ByValue,`sharedWithMeAt`: Long,`profileEditedAtMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_calls(`ptr`: Long,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_chat(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_chat_for_peer(`ptr`: Long,`peerId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_chats(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_contact(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_contacts(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_contacts_with_pending_avatar(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_delete_chat(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1315,21 +1397,43 @@ external fun uniffi_construct_core_fn_method_localstore_delete_reaction(`ptr`: L
 ): Unit
 external fun uniffi_construct_core_fn_method_localstore_edit_message(`ptr`: Long,`id`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`searchText`: RustBuffer.ByValue,`editedAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_method_localstore_every_contact(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_expire_reactions(`ptr`: Long,`cutoff`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Int
 external fun uniffi_construct_core_fn_method_localstore_forget_server_message_ids_before(`ptr`: Long,`cutoff`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_method_localstore_get(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_identity_key_pins(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_increment_retry_count(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_increment_unread(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_insert_chat(`ptr`: Long,`chat`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_insert_message(`ptr`: Long,`message`: RustBuffer.ByValue,`searchText`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_local_message_id(`ptr`: Long,`serverId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_mark_contact(`ptr`: Long,`id`: RustBuffer.ByValue,`addedAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_message(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_message_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
 external fun uniffi_construct_core_fn_method_localstore_messages_before(`ptr`: Long,`chatId`: RustBuffer.ByValue,`beforeOrderKey`: RustBuffer.ByValue,`beforeId`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_messages_from(`ptr`: Long,`chatId`: RustBuffer.ByValue,`fromOrderKey`: RustBuffer.ByValue,`fromId`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_own_profile(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_peer_device(`ptr`: Long,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_peer_devices(`ptr`: Long,`accountId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_pending_sends(`ptr`: Long,`chatId`: RustBuffer.ByValue,`retryCeiling`: Short,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_put(`ptr`: Long,`key`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1345,10 +1449,44 @@ external fun uniffi_construct_core_fn_method_localstore_retain_peer_devices(`ptr
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_search(`ptr`: Long,`query`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_set_account_address(`ptr`: Long,`id`: RustBuffer.ByValue,`address`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_chat_pinned(`ptr`: Long,`id`: RustBuffer.ByValue,`pinned`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_chat_preview(`ptr`: Long,`id`: RustBuffer.ByValue,`text`: RustBuffer.ByValue,`time`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_contact_alias(`ptr`: Long,`id`: RustBuffer.ByValue,`alias`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_contact_avatar(`ptr`: Long,`id`: RustBuffer.ByValue,`avatar`: RustBuffer.ByValue,`pendingRef`: RustBuffer.ByValue,`pendingSince`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_contact_blocked(`ptr`: Long,`id`: RustBuffer.ByValue,`blocked`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_contact_names(`ptr`: Long,`id`: RustBuffer.ByValue,`username`: RustBuffer.ByValue,`displayName`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_delivery_status(`ptr`: Long,`id`: RustBuffer.ByValue,`status`: Short,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_identity_key(`ptr`: Long,`id`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_kt_status(`ptr`: Long,`id`: RustBuffer.ByValue,`status`: Short,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_observer(`ptr`: Long,`observer`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_method_localstore_set_order_key(`ptr`: Long,`id`: RustBuffer.ByValue,`orderKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_own_profile(`ptr`: Long,`profile`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_localstore_set_retry_count(`ptr`: Long,`id`: RustBuffer.ByValue,`count`: Short,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_security_notice(`ptr`: Long,`id`: RustBuffer.ByValue,`notice`: Short,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_sharing_with(`ptr`: Long,`id`: RustBuffer.ByValue,`sharing`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_transcript(`ptr`: Long,`id`: RustBuffer.ByValue,`text`: RustBuffer.ByValue,`language`: RustBuffer.ByValue,`generatedAt`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_unread(`ptr`: Long,`id`: RustBuffer.ByValue,`count`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_sharing_with(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_upsert_call(`ptr`: Long,`call`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_localstore_upsert_chat(`ptr`: Long,`chat`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1655,8 +1793,6 @@ external fun uniffi_construct_core_fn_func_open_media(`key`: RustBuffer.ByValue,
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_plan_initiation(`context`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_func_plan_receiving_decrypt(`sessionDeviceIds`: RustBuffer.ByValue,`preferredDeviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_plan_send(`recipientDeviceIds`: RustBuffer.ByValue,`ownDeviceIds`: RustBuffer.ByValue,`ourDeviceId`: RustBuffer.ByValue,`recipientIsSelf`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_pp_blind_token(`nonce`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1948,9 +2084,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_plan_initiation() != 61324.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_func_plan_receiving_decrypt() != 26416.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_construct_core_checksum_func_plan_send() != 48521.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2116,13 +2249,31 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_historysender_snapshot_id() != 18376.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_advance_chat_preview() != 18597.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_all_messages_after() != 48577.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_all_peer_devices() != 59848.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_all_reactions() != 47486.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_apply_session_archive() != 5672.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_apply_shared_profile() != 40422.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_calls() != 50631.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_chat() != 45451.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_chat_for_peer() != 26460.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_chats() != 2703.toShort()) {
@@ -2132,6 +2283,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_contacts() != 43939.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_contacts_with_pending_avatar() != 30938.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_delete_chat() != 62753.toShort()) {
@@ -2149,10 +2303,28 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_edit_message() != 48649.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_every_contact() != 24186.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_expire_reactions() != 1251.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_forget_server_message_ids_before() != 29537.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_get() != 50579.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_identity_key_pins() != 6243.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_increment_retry_count() != 1246.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_increment_unread() != 19638.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_insert_chat() != 53415.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_insert_message() != 2107.toShort()) {
@@ -2161,16 +2333,31 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_local_message_id() != 42048.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_mark_contact() != 13229.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_message() != 63926.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_message_count() != 25863.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_messages_before() != 61408.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_messages_from() != 53099.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_own_profile() != 283.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_peer_device() != 48056.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_peer_devices() != 14816.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_pending_sends() != 61956.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_put() != 58855.toShort()) {
@@ -2194,10 +2381,61 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_search() != 46550.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_account_address() != 23284.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_chat_pinned() != 63084.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_chat_preview() != 13808.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_contact_alias() != 31575.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_contact_avatar() != 42614.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_contact_blocked() != 21924.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_contact_names() != 43680.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_set_delivery_status() != 61504.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_identity_key() != 39466.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_kt_status() != 19632.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_set_observer() != 60987.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_order_key() != 30671.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_own_profile() != 60092.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_retry_count() != 31877.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_security_notice() != 29437.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_sharing_with() != 40928.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_transcript() != 2133.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_unread() != 48624.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_sharing_with() != 63075.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_upsert_call() != 6097.toShort()) {
@@ -4330,11 +4568,41 @@ public object FfiConverterTypeHistorySender: FfiConverter<HistorySender, Long> {
 //
 public interface LocalStoreInterface {
     
+    /**
+     * Each write below changes its named fields of one chat in one statement; false: no such chat.
+     * Moves the preview unless the one shown is newer; false also when it is.
+     */
+    fun `advanceChatPreview`(`id`: kotlin.String, `text`: kotlin.String, `time`: kotlin.Long): kotlin.Boolean
+    
+    /**
+     * Every chat's messages after (`after_order_key`, `after_id`) — both null from the start — a
+     * page at a time, in that order: a history snapshot.
+     */
+    fun `allMessagesAfter`(`afterOrderKey`: kotlin.String?, `afterId`: kotlin.String?, `limit`: kotlin.UInt): List<LocalMessage>
+    
     fun `allPeerDevices`(): List<LocalPeerDevice>
+    
+    /**
+     * Every reaction, oldest first: a history snapshot.
+     */
+    fun `allReactions`(): List<LocalReaction>
+    
+    /**
+     * The session the message was encrypted under was archived: keep, queue again, or fail
+     * once `max_retries` is spent — the one write that may lower `sent`. Null: no message.
+     */
+    fun `applySessionArchive`(`id`: kotlin.String, `maxRetries`: kotlin.Short): LocalArchiveOutcome?
+    
+    /**
+     * Sharing on, with the name and both times the client chose.
+     */
+    fun `applySharedProfile`(`id`: kotlin.String, `displayName`: kotlin.String, `sharedWithMeAt`: kotlin.Long, `profileEditedAtMs`: kotlin.Long): kotlin.Boolean
     
     fun `calls`(`limit`: kotlin.UInt): List<LocalCall>
     
     fun `chat`(`id`: kotlin.String): LocalChat?
+    
+    fun `chatForPeer`(`peerId`: kotlin.String): LocalChat?
     
     /**
      * Pinned first, then most recent, chats with no message last.
@@ -4347,6 +4615,8 @@ public interface LocalStoreInterface {
      * People marked as contacts, by the name shown for them.
      */
     fun `contacts`(): List<LocalContact>
+    
+    fun `contactsWithPendingAvatar`(): List<LocalContact>
     
     fun `deleteChat`(`id`: kotlin.String)
     
@@ -4361,9 +4631,33 @@ public interface LocalStoreInterface {
     
     fun `editMessage`(`id`: kotlin.String, `body`: kotlin.ByteArray, `searchText`: kotlin.String?, `editedAt`: kotlin.Long): kotlin.Boolean
     
+    /**
+     * Every row, contacts or not, by id.
+     */
+    fun `everyContact`(): List<LocalContact>
+    
+    /**
+     * Forget reactions received at or before `cutoff` (ms); one with no receipt time stays.
+     */
+    fun `expireReactions`(`cutoff`: kotlin.Long): kotlin.UInt
+    
     fun `forgetServerMessageIdsBefore`(`cutoff`: kotlin.Long): kotlin.ULong
     
     fun `get`(`key`: kotlin.String): kotlin.ByteArray?
+    
+    fun `identityKeyPins`(): List<LocalIdentityKeyPin>
+    
+    /**
+     * One more attempt, counted in the store; the new count, null for no message.
+     */
+    fun `incrementRetryCount`(`id`: kotlin.String): kotlin.Short?
+    
+    fun `incrementUnread`(`id`: kotlin.String): kotlin.Boolean
+    
+    /**
+     * `AlreadyPresent` when the id or the peer has a chat — then use `chat_for_peer`.
+     */
+    fun `insertChat`(`chat`: LocalChat): LocalInsert
     
     /**
      * `search_text` is what the message says, for the full-text index; null for media/control.
@@ -4372,7 +4666,15 @@ public interface LocalStoreInterface {
     
     fun `localMessageId`(`serverId`: kotlin.String): kotlin.String?
     
+    /**
+     * Each write below changes its named fields of one row in one statement; false: no such row.
+     * A contact from now on; `added_at` is kept if it was set.
+     */
+    fun `markContact`(`id`: kotlin.String, `addedAt`: kotlin.Long): kotlin.Boolean
+    
     fun `message`(`id`: kotlin.String): LocalMessage?
+    
+    fun `messageCount`(): kotlin.ULong
     
     /**
      * Up to `limit` messages just before (`before_order_key`, `before_id`) — both null for the
@@ -4380,12 +4682,24 @@ public interface LocalStoreInterface {
      */
     fun `messagesBefore`(`chatId`: kotlin.String, `beforeOrderKey`: kotlin.String?, `beforeId`: kotlin.String?, `limit`: kotlin.UInt): List<LocalMessage>
     
+    /**
+     * Up to `limit` messages from (`from_order_key`, `from_id`), that one included, oldest first.
+     */
+    fun `messagesFrom`(`chatId`: kotlin.String, `fromOrderKey`: kotlin.String, `fromId`: kotlin.String, `limit`: kotlin.UInt): List<LocalMessage>
+    
+    fun `ownProfile`(): LocalOwnProfile?
+    
     fun `peerDevice`(`deviceId`: kotlin.String): LocalPeerDevice?
     
     /**
      * Oldest first; devices first seen in the same millisecond by id.
      */
     fun `peerDevices`(`accountId`: kotlin.String): List<LocalPeerDevice>
+    
+    /**
+     * Ours, queued or failed with `retry_count < retry_ceiling`; one chat, or every chat for null.
+     */
+    fun `pendingSends`(`chatId`: kotlin.String?, `retryCeiling`: kotlin.Short, `limit`: kotlin.UInt): List<LocalMessage>
     
     fun `put`(`key`: kotlin.String, `value`: kotlin.ByteArray)
     
@@ -4413,12 +4727,72 @@ public interface LocalStoreInterface {
      */
     fun `search`(`query`: kotlin.String, `limit`: kotlin.UInt): List<LocalSearchHit>
     
+    fun `setAccountAddress`(`id`: kotlin.String, `address`: kotlin.ByteArray?): kotlin.Boolean
+    
+    fun `setChatPinned`(`id`: kotlin.String, `pinned`: kotlin.Boolean): kotlin.Boolean
+    
+    /**
+     * Sets the preview whatever it was — after a deletion; both null when no message is left.
+     */
+    fun `setChatPreview`(`id`: kotlin.String, `text`: kotlin.String?, `time`: kotlin.Long?): kotlin.Boolean
+    
+    fun `setContactAlias`(`id`: kotlin.String, `alias`: kotlin.String?): kotlin.Boolean
+    
+    /**
+     * The avatar and the one still to download, set together.
+     */
+    fun `setContactAvatar`(`id`: kotlin.String, `avatar`: kotlin.ByteArray?, `pendingRef`: kotlin.ByteArray?, `pendingSince`: kotlin.Long?): kotlin.Boolean
+    
+    fun `setContactBlocked`(`id`: kotlin.String, `blocked`: kotlin.Boolean): kotlin.Boolean
+    
+    fun `setContactNames`(`id`: kotlin.String, `username`: kotlin.String, `displayName`: kotlin.String): kotlin.Boolean
+    
+    /**
+     * Statuses: 0 sending, 1 sent, 2 delivered, 3 queued, 4 failed. A write that would replace
+     * stronger evidence of arrival (delivered > sent > the rest) is refused: false, as for no
+     * change and no message.
+     */
     fun `setDeliveryStatus`(`id`: kotlin.String, `status`: kotlin.Short): kotlin.Boolean
+    
+    fun `setIdentityKey`(`id`: kotlin.String, `key`: kotlin.ByteArray?): kotlin.Boolean
+    
+    fun `setKtStatus`(`id`: kotlin.String, `status`: kotlin.Short): kotlin.Boolean
     
     fun `setObserver`(`observer`: LocalStoreObserver?)
     
+    fun `setOrderKey`(`id`: kotlin.String, `orderKey`: kotlin.String): kotlin.Boolean
+    
+    /**
+     * Replaces our profile — there is one.
+     */
+    fun `setOwnProfile`(`profile`: LocalOwnProfile)
+    
+    /**
+     * Each write below changes its named fields of one message; false: no message or no change.
+     */
+    fun `setRetryCount`(`id`: kotlin.String, `count`: kotlin.Short): kotlin.Boolean
+    
+    fun `setSecurityNotice`(`id`: kotlin.String, `notice`: kotlin.Short): kotlin.Boolean
+    
+    fun `setSharingWith`(`id`: kotlin.String, `sharing`: kotlin.Boolean): kotlin.Boolean
+    
+    /**
+     * All null clears the transcript.
+     */
+    fun `setTranscript`(`id`: kotlin.String, `text`: kotlin.String?, `language`: kotlin.String?, `generatedAt`: kotlin.Long?): kotlin.Boolean
+    
+    fun `setUnread`(`id`: kotlin.String, `count`: kotlin.Int): kotlin.Boolean
+    
+    /**
+     * The ids we share our profile with.
+     */
+    fun `sharingWith`(): List<kotlin.String>
+    
     fun `upsertCall`(`call`: LocalCall)
     
+    /**
+     * The whole row; a second chat for a peer that has one is an error.
+     */
     fun `upsertChat`(`chat`: LocalChat)
     
     fun `upsertContact`(`contact`: LocalContact)
@@ -4543,6 +4917,42 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     }
 
     
+    /**
+     * Each write below changes its named fields of one chat in one statement; false: no such chat.
+     * Moves the preview unless the one shown is newer; false also when it is.
+     */
+    @Throws(LocalStoreException::class)override fun `advanceChatPreview`(`id`: kotlin.String, `text`: kotlin.String, `time`: kotlin.Long): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_advance_chat_preview(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterString.lower(`text`),FfiConverterLong.lower(`time`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Every chat's messages after (`after_order_key`, `after_id`) — both null from the start — a
+     * page at a time, in that order: a history snapshot.
+     */
+    @Throws(LocalStoreException::class)override fun `allMessagesAfter`(`afterOrderKey`: kotlin.String?, `afterId`: kotlin.String?, `limit`: kotlin.UInt): List<LocalMessage> {
+            return FfiConverterSequenceTypeLocalMessage.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_all_messages_after(
+        it,
+        FfiConverterOptionalString.lower(`afterOrderKey`),FfiConverterOptionalString.lower(`afterId`),FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `allPeerDevices`(): List<LocalPeerDevice> {
             return FfiConverterSequenceTypeLocalPeerDevice.lift(
     callWithHandle {
@@ -4550,6 +4960,58 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_all_peer_devices(
         it,
         _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Every reaction, oldest first: a history snapshot.
+     */
+    @Throws(LocalStoreException::class)override fun `allReactions`(): List<LocalReaction> {
+            return FfiConverterSequenceTypeLocalReaction.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_all_reactions(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The session the message was encrypted under was archived: keep, queue again, or fail
+     * once `max_retries` is spent — the one write that may lower `sent`. Null: no message.
+     */
+    @Throws(LocalStoreException::class)override fun `applySessionArchive`(`id`: kotlin.String, `maxRetries`: kotlin.Short): LocalArchiveOutcome? {
+            return FfiConverterOptionalTypeLocalArchiveOutcome.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_apply_session_archive(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterShort.lower(`maxRetries`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Sharing on, with the name and both times the client chose.
+     */
+    @Throws(LocalStoreException::class)override fun `applySharedProfile`(`id`: kotlin.String, `displayName`: kotlin.String, `sharedWithMeAt`: kotlin.Long, `profileEditedAtMs`: kotlin.Long): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_apply_shared_profile(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterString.lower(`displayName`),FfiConverterLong.lower(`sharedWithMeAt`),FfiConverterLong.lower(`profileEditedAtMs`),_status)
 }
     }
     )
@@ -4578,6 +5040,20 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_chat(
         it,
         FfiConverterString.lower(`id`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `chatForPeer`(`peerId`: kotlin.String): LocalChat? {
+            return FfiConverterOptionalTypeLocalChat.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_chat_for_peer(
+        it,
+        FfiConverterString.lower(`peerId`),_status)
 }
     }
     )
@@ -4624,6 +5100,20 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     callWithHandle {
     uniffiRustCallWithError(LocalStoreException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_localstore_contacts(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `contactsWithPendingAvatar`(): List<LocalContact> {
+            return FfiConverterSequenceTypeLocalContact.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_contacts_with_pending_avatar(
         it,
         _status)
 }
@@ -4702,6 +5192,40 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * Every row, contacts or not, by id.
+     */
+    @Throws(LocalStoreException::class)override fun `everyContact`(): List<LocalContact> {
+            return FfiConverterSequenceTypeLocalContact.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_every_contact(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Forget reactions received at or before `cutoff` (ms); one with no receipt time stays.
+     */
+    @Throws(LocalStoreException::class)override fun `expireReactions`(`cutoff`: kotlin.Long): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_expire_reactions(
+        it,
+        FfiConverterLong.lower(`cutoff`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `forgetServerMessageIdsBefore`(`cutoff`: kotlin.Long): kotlin.ULong {
             return FfiConverterULong.lift(
     callWithHandle {
@@ -4723,6 +5247,68 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_get(
         it,
         FfiConverterString.lower(`key`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `identityKeyPins`(): List<LocalIdentityKeyPin> {
+            return FfiConverterSequenceTypeLocalIdentityKeyPin.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_identity_key_pins(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * One more attempt, counted in the store; the new count, null for no message.
+     */
+    @Throws(LocalStoreException::class)override fun `incrementRetryCount`(`id`: kotlin.String): kotlin.Short? {
+            return FfiConverterOptionalShort.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_increment_retry_count(
+        it,
+        FfiConverterString.lower(`id`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `incrementUnread`(`id`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_increment_unread(
+        it,
+        FfiConverterString.lower(`id`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * `AlreadyPresent` when the id or the peer has a chat — then use `chat_for_peer`.
+     */
+    @Throws(LocalStoreException::class)override fun `insertChat`(`chat`: LocalChat): LocalInsert {
+            return FfiConverterTypeLocalInsert.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_insert_chat(
+        it,
+        FfiConverterTypeLocalChat.lower(`chat`),_status)
 }
     }
     )
@@ -4761,6 +5347,24 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * Each write below changes its named fields of one row in one statement; false: no such row.
+     * A contact from now on; `added_at` is kept if it was set.
+     */
+    @Throws(LocalStoreException::class)override fun `markContact`(`id`: kotlin.String, `addedAt`: kotlin.Long): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_mark_contact(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterLong.lower(`addedAt`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `message`(`id`: kotlin.String): LocalMessage? {
             return FfiConverterOptionalTypeLocalMessage.lift(
     callWithHandle {
@@ -4768,6 +5372,20 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_message(
         it,
         FfiConverterString.lower(`id`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `messageCount`(): kotlin.ULong {
+            return FfiConverterULong.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_message_count(
+        it,
+        _status)
 }
     }
     )
@@ -4786,6 +5404,37 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_messages_before(
         it,
         FfiConverterString.lower(`chatId`),FfiConverterOptionalString.lower(`beforeOrderKey`),FfiConverterOptionalString.lower(`beforeId`),FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Up to `limit` messages from (`from_order_key`, `from_id`), that one included, oldest first.
+     */
+    @Throws(LocalStoreException::class)override fun `messagesFrom`(`chatId`: kotlin.String, `fromOrderKey`: kotlin.String, `fromId`: kotlin.String, `limit`: kotlin.UInt): List<LocalMessage> {
+            return FfiConverterSequenceTypeLocalMessage.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_messages_from(
+        it,
+        FfiConverterString.lower(`chatId`),FfiConverterString.lower(`fromOrderKey`),FfiConverterString.lower(`fromId`),FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `ownProfile`(): LocalOwnProfile? {
+            return FfiConverterOptionalTypeLocalOwnProfile.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_own_profile(
+        it,
+        _status)
 }
     }
     )
@@ -4817,6 +5466,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_peer_devices(
         it,
         FfiConverterString.lower(`accountId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Ours, queued or failed with `retry_count < retry_ceiling`; one chat, or every chat for null.
+     */
+    @Throws(LocalStoreException::class)override fun `pendingSends`(`chatId`: kotlin.String?, `retryCeiling`: kotlin.Short, `limit`: kotlin.UInt): List<LocalMessage> {
+            return FfiConverterSequenceTypeLocalMessage.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_pending_sends(
+        it,
+        FfiConverterOptionalString.lower(`chatId`),FfiConverterShort.lower(`retryCeiling`),FfiConverterUInt.lower(`limit`),_status)
 }
     }
     )
@@ -4931,11 +5597,148 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    @Throws(LocalStoreException::class)override fun `setAccountAddress`(`id`: kotlin.String, `address`: kotlin.ByteArray?): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_account_address(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterOptionalByteArray.lower(`address`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `setChatPinned`(`id`: kotlin.String, `pinned`: kotlin.Boolean): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_chat_pinned(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterBoolean.lower(`pinned`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Sets the preview whatever it was — after a deletion; both null when no message is left.
+     */
+    @Throws(LocalStoreException::class)override fun `setChatPreview`(`id`: kotlin.String, `text`: kotlin.String?, `time`: kotlin.Long?): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_chat_preview(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterOptionalString.lower(`text`),FfiConverterOptionalLong.lower(`time`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `setContactAlias`(`id`: kotlin.String, `alias`: kotlin.String?): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_contact_alias(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterOptionalString.lower(`alias`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The avatar and the one still to download, set together.
+     */
+    @Throws(LocalStoreException::class)override fun `setContactAvatar`(`id`: kotlin.String, `avatar`: kotlin.ByteArray?, `pendingRef`: kotlin.ByteArray?, `pendingSince`: kotlin.Long?): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_contact_avatar(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterOptionalByteArray.lower(`avatar`),FfiConverterOptionalByteArray.lower(`pendingRef`),FfiConverterOptionalLong.lower(`pendingSince`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `setContactBlocked`(`id`: kotlin.String, `blocked`: kotlin.Boolean): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_contact_blocked(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterBoolean.lower(`blocked`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `setContactNames`(`id`: kotlin.String, `username`: kotlin.String, `displayName`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_contact_names(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterString.lower(`username`),FfiConverterString.lower(`displayName`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Statuses: 0 sending, 1 sent, 2 delivered, 3 queued, 4 failed. A write that would replace
+     * stronger evidence of arrival (delivered > sent > the rest) is refused: false, as for no
+     * change and no message.
+     */
     @Throws(LocalStoreException::class)override fun `setDeliveryStatus`(`id`: kotlin.String, `status`: kotlin.Short): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     callWithHandle {
     uniffiRustCallWithError(LocalStoreException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_localstore_set_delivery_status(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterShort.lower(`status`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `setIdentityKey`(`id`: kotlin.String, `key`: kotlin.ByteArray?): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_identity_key(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterOptionalByteArray.lower(`key`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `setKtStatus`(`id`: kotlin.String, `status`: kotlin.Short): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_kt_status(
         it,
         FfiConverterString.lower(`id`),FfiConverterShort.lower(`status`),_status)
 }
@@ -4957,6 +5760,129 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    @Throws(LocalStoreException::class)override fun `setOrderKey`(`id`: kotlin.String, `orderKey`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_order_key(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterString.lower(`orderKey`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Replaces our profile — there is one.
+     */
+    @Throws(LocalStoreException::class)override fun `setOwnProfile`(`profile`: LocalOwnProfile)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_own_profile(
+        it,
+        FfiConverterTypeLocalOwnProfile.lower(`profile`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * Each write below changes its named fields of one message; false: no message or no change.
+     */
+    @Throws(LocalStoreException::class)override fun `setRetryCount`(`id`: kotlin.String, `count`: kotlin.Short): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_retry_count(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterShort.lower(`count`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `setSecurityNotice`(`id`: kotlin.String, `notice`: kotlin.Short): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_security_notice(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterShort.lower(`notice`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `setSharingWith`(`id`: kotlin.String, `sharing`: kotlin.Boolean): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_sharing_with(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterBoolean.lower(`sharing`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * All null clears the transcript.
+     */
+    @Throws(LocalStoreException::class)override fun `setTranscript`(`id`: kotlin.String, `text`: kotlin.String?, `language`: kotlin.String?, `generatedAt`: kotlin.Long?): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_transcript(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterOptionalString.lower(`text`),FfiConverterOptionalString.lower(`language`),FfiConverterOptionalLong.lower(`generatedAt`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `setUnread`(`id`: kotlin.String, `count`: kotlin.Int): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_unread(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterInt.lower(`count`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The ids we share our profile with.
+     */
+    @Throws(LocalStoreException::class)override fun `sharingWith`(): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_sharing_with(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `upsertCall`(`call`: LocalCall)
         = 
     callWithHandle {
@@ -4970,6 +5896,9 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * The whole row; a second chat for a peer that has one is an error.
+     */
     @Throws(LocalStoreException::class)override fun `upsertChat`(`chat`: LocalChat)
         = 
     callWithHandle {
@@ -8981,17 +9910,22 @@ public object FfiConverterTypeLocalCall: FfiConverterRustBuffer<LocalCall> {
 data class LocalChat (
     var `id`: kotlin.String
     , 
+    /**
+     * One chat per peer.
+     */
     var `peerId`: kotlin.String
     , 
+    /**
+     * The list's preview, as the client formatted it.
+     */
     var `lastMessageText`: kotlin.String?
     , 
+    /**
+     * Milliseconds since the Unix epoch.
+     */
     var `lastMessageTime`: kotlin.Long?
     , 
-    var `sessionId`: kotlin.String?
-    , 
     var `isPinned`: kotlin.Boolean
-    , 
-    var `isMuted`: kotlin.Boolean
     , 
     var `unreadCount`: kotlin.Int
     
@@ -9012,8 +9946,6 @@ public object FfiConverterTypeLocalChat: FfiConverterRustBuffer<LocalChat> {
             FfiConverterString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalLong.read(buf),
-            FfiConverterOptionalString.read(buf),
-            FfiConverterBoolean.read(buf),
             FfiConverterBoolean.read(buf),
             FfiConverterInt.read(buf),
         )
@@ -9024,9 +9956,7 @@ public object FfiConverterTypeLocalChat: FfiConverterRustBuffer<LocalChat> {
             FfiConverterString.allocationSize(value.`peerId`) +
             FfiConverterOptionalString.allocationSize(value.`lastMessageText`) +
             FfiConverterOptionalLong.allocationSize(value.`lastMessageTime`) +
-            FfiConverterOptionalString.allocationSize(value.`sessionId`) +
             FfiConverterBoolean.allocationSize(value.`isPinned`) +
-            FfiConverterBoolean.allocationSize(value.`isMuted`) +
             FfiConverterInt.allocationSize(value.`unreadCount`)
     )
 
@@ -9035,9 +9965,7 @@ public object FfiConverterTypeLocalChat: FfiConverterRustBuffer<LocalChat> {
             FfiConverterString.write(value.`peerId`, buf)
             FfiConverterOptionalString.write(value.`lastMessageText`, buf)
             FfiConverterOptionalLong.write(value.`lastMessageTime`, buf)
-            FfiConverterOptionalString.write(value.`sessionId`, buf)
             FfiConverterBoolean.write(value.`isPinned`, buf)
-            FfiConverterBoolean.write(value.`isMuted`, buf)
             FfiConverterInt.write(value.`unreadCount`, buf)
     }
 }
@@ -9054,8 +9982,6 @@ data class LocalContact (
     var `localAlias`: kotlin.String?
     , 
     var `avatar`: kotlin.ByteArray?
-    , 
-    var `publicKey`: kotlin.String?
     , 
     var `knownIdentityKey`: kotlin.ByteArray?
     , 
@@ -9075,9 +10001,19 @@ data class LocalContact (
     , 
     var `ktStatus`: kotlin.Short
     , 
-    var `hybridCapable`: kotlin.Boolean
-    , 
     var `securityNotice`: kotlin.Short
+    , 
+    /**
+     * When the peer last edited the profile they share; 0 when never told.
+     */
+    var `profileEditedAtMs`: kotlin.Long
+    , 
+    /**
+     * An announced avatar not yet downloaded, and since when.
+     */
+    var `pendingAvatarRef`: kotlin.ByteArray?
+    , 
+    var `pendingAvatarSince`: kotlin.Long?
     
 ){
     
@@ -9097,7 +10033,6 @@ public object FfiConverterTypeLocalContact: FfiConverterRustBuffer<LocalContact>
             FfiConverterString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalByteArray.read(buf),
-            FfiConverterOptionalString.read(buf),
             FfiConverterOptionalByteArray.read(buf),
             FfiConverterOptionalByteArray.read(buf),
             FfiConverterBoolean.read(buf),
@@ -9107,8 +10042,10 @@ public object FfiConverterTypeLocalContact: FfiConverterRustBuffer<LocalContact>
             FfiConverterOptionalLong.read(buf),
             FfiConverterOptionalLong.read(buf),
             FfiConverterShort.read(buf),
-            FfiConverterBoolean.read(buf),
             FfiConverterShort.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterOptionalLong.read(buf),
         )
     }
 
@@ -9118,7 +10055,6 @@ public object FfiConverterTypeLocalContact: FfiConverterRustBuffer<LocalContact>
             FfiConverterString.allocationSize(value.`displayName`) +
             FfiConverterOptionalString.allocationSize(value.`localAlias`) +
             FfiConverterOptionalByteArray.allocationSize(value.`avatar`) +
-            FfiConverterOptionalString.allocationSize(value.`publicKey`) +
             FfiConverterOptionalByteArray.allocationSize(value.`knownIdentityKey`) +
             FfiConverterOptionalByteArray.allocationSize(value.`accountAddress`) +
             FfiConverterBoolean.allocationSize(value.`isContact`) +
@@ -9128,8 +10064,10 @@ public object FfiConverterTypeLocalContact: FfiConverterRustBuffer<LocalContact>
             FfiConverterOptionalLong.allocationSize(value.`sharedWithMeAt`) +
             FfiConverterOptionalLong.allocationSize(value.`addedAt`) +
             FfiConverterShort.allocationSize(value.`ktStatus`) +
-            FfiConverterBoolean.allocationSize(value.`hybridCapable`) +
-            FfiConverterShort.allocationSize(value.`securityNotice`)
+            FfiConverterShort.allocationSize(value.`securityNotice`) +
+            FfiConverterLong.allocationSize(value.`profileEditedAtMs`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`pendingAvatarRef`) +
+            FfiConverterOptionalLong.allocationSize(value.`pendingAvatarSince`)
     )
 
     override fun write(value: LocalContact, buf: ByteBuffer) {
@@ -9138,7 +10076,6 @@ public object FfiConverterTypeLocalContact: FfiConverterRustBuffer<LocalContact>
             FfiConverterString.write(value.`displayName`, buf)
             FfiConverterOptionalString.write(value.`localAlias`, buf)
             FfiConverterOptionalByteArray.write(value.`avatar`, buf)
-            FfiConverterOptionalString.write(value.`publicKey`, buf)
             FfiConverterOptionalByteArray.write(value.`knownIdentityKey`, buf)
             FfiConverterOptionalByteArray.write(value.`accountAddress`, buf)
             FfiConverterBoolean.write(value.`isContact`, buf)
@@ -9148,8 +10085,46 @@ public object FfiConverterTypeLocalContact: FfiConverterRustBuffer<LocalContact>
             FfiConverterOptionalLong.write(value.`sharedWithMeAt`, buf)
             FfiConverterOptionalLong.write(value.`addedAt`, buf)
             FfiConverterShort.write(value.`ktStatus`, buf)
-            FfiConverterBoolean.write(value.`hybridCapable`, buf)
             FfiConverterShort.write(value.`securityNotice`, buf)
+            FfiConverterLong.write(value.`profileEditedAtMs`, buf)
+            FfiConverterOptionalByteArray.write(value.`pendingAvatarRef`, buf)
+            FfiConverterOptionalLong.write(value.`pendingAvatarSince`, buf)
+    }
+}
+
+
+
+data class LocalIdentityKeyPin (
+    var `contactId`: kotlin.String
+    , 
+    var `key`: kotlin.ByteArray
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalIdentityKeyPin: FfiConverterRustBuffer<LocalIdentityKeyPin> {
+    override fun read(buf: ByteBuffer): LocalIdentityKeyPin {
+        return LocalIdentityKeyPin(
+            FfiConverterString.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalIdentityKeyPin) = (
+            FfiConverterString.allocationSize(value.`contactId`) +
+            FfiConverterByteArray.allocationSize(value.`key`)
+    )
+
+    override fun write(value: LocalIdentityKeyPin, buf: ByteBuffer) {
+            FfiConverterString.write(value.`contactId`, buf)
+            FfiConverterByteArray.write(value.`key`, buf)
     }
 }
 
@@ -9271,6 +10246,60 @@ public object FfiConverterTypeLocalMessage: FfiConverterRustBuffer<LocalMessage>
             FfiConverterOptionalString.write(value.`transcriptText`, buf)
             FfiConverterOptionalString.write(value.`transcriptLanguage`, buf)
             FfiConverterOptionalLong.write(value.`transcriptGeneratedAt`, buf)
+    }
+}
+
+
+
+/**
+ * Our own profile — one row, not a contact.
+ */
+data class LocalOwnProfile (
+    var `accountId`: kotlin.String
+    , 
+    var `username`: kotlin.String
+    , 
+    var `displayName`: kotlin.String
+    , 
+    var `avatar`: kotlin.ByteArray?
+    , 
+    var `profileEditedAtMs`: kotlin.Long
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalOwnProfile: FfiConverterRustBuffer<LocalOwnProfile> {
+    override fun read(buf: ByteBuffer): LocalOwnProfile {
+        return LocalOwnProfile(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalOwnProfile) = (
+            FfiConverterString.allocationSize(value.`accountId`) +
+            FfiConverterString.allocationSize(value.`username`) +
+            FfiConverterString.allocationSize(value.`displayName`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`avatar`) +
+            FfiConverterLong.allocationSize(value.`profileEditedAtMs`)
+    )
+
+    override fun write(value: LocalOwnProfile, buf: ByteBuffer) {
+            FfiConverterString.write(value.`accountId`, buf)
+            FfiConverterString.write(value.`username`, buf)
+            FfiConverterString.write(value.`displayName`, buf)
+            FfiConverterOptionalByteArray.write(value.`avatar`, buf)
+            FfiConverterLong.write(value.`profileEditedAtMs`, buf)
     }
 }
 
@@ -12633,6 +13662,49 @@ public object FfiConverterTypeKtVerdict: FfiConverterRustBuffer<KtVerdict> {
 
 
 
+/**
+ * What a session archive did to an outgoing message encrypted under it.
+ */
+
+enum class LocalArchiveOutcome {
+    
+    /**
+     * The peer confirmed it; it stays delivered.
+     */
+    KEEP,
+    /**
+     * Queued to be sent again.
+     */
+    RESEND,
+    /**
+     * Attempts spent; failed.
+     */
+    GIVE_UP;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalArchiveOutcome: FfiConverterRustBuffer<LocalArchiveOutcome> {
+    override fun read(buf: ByteBuffer) = try {
+        LocalArchiveOutcome.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: LocalArchiveOutcome) = 4UL
+
+    override fun write(value: LocalArchiveOutcome, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 
 enum class LocalInsert {
     
@@ -12741,7 +13813,8 @@ enum class LocalStoreTable {
     MESSAGES,
     REACTIONS,
     CALLS,
-    PEER_DEVICES;
+    PEER_DEVICES,
+    OWN_PROFILE;
     companion object
 }
 
@@ -13244,6 +14317,38 @@ public object FfiConverterTypePowProgressCallback: FfiConverterCallbackInterface
 /**
  * @suppress
  */
+public object FfiConverterOptionalShort: FfiConverterRustBuffer<kotlin.Short?> {
+    override fun read(buf: ByteBuffer): kotlin.Short? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterShort.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.Short?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterShort.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.Short?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterShort.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalUInt: FfiConverterRustBuffer<kotlin.UInt?> {
     override fun read(buf: ByteBuffer): kotlin.UInt? {
         if (buf.get().toInt() == 0) {
@@ -13660,6 +14765,38 @@ public object FfiConverterOptionalTypeLocalMessage: FfiConverterRustBuffer<Local
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeLocalOwnProfile: FfiConverterRustBuffer<LocalOwnProfile?> {
+    override fun read(buf: ByteBuffer): LocalOwnProfile? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeLocalOwnProfile.read(buf)
+    }
+
+    override fun allocationSize(value: LocalOwnProfile?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeLocalOwnProfile.allocationSize(value)
+        }
+    }
+
+    override fun write(value: LocalOwnProfile?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeLocalOwnProfile.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeLocalPeerDevice: FfiConverterRustBuffer<LocalPeerDevice?> {
     override fun read(buf: ByteBuffer): LocalPeerDevice? {
         if (buf.get().toInt() == 0) {
@@ -13778,6 +14915,38 @@ public object FfiConverterOptionalTypeKtVerdict: FfiConverterRustBuffer<KtVerdic
         } else {
             buf.put(1)
             FfiConverterTypeKtVerdict.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeLocalArchiveOutcome: FfiConverterRustBuffer<LocalArchiveOutcome?> {
+    override fun read(buf: ByteBuffer): LocalArchiveOutcome? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeLocalArchiveOutcome.read(buf)
+    }
+
+    override fun allocationSize(value: LocalArchiveOutcome?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeLocalArchiveOutcome.allocationSize(value)
+        }
+    }
+
+    override fun write(value: LocalArchiveOutcome?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeLocalArchiveOutcome.write(value, buf)
         }
     }
 }
@@ -14098,6 +15267,34 @@ public object FfiConverterSequenceTypeLocalContact: FfiConverterRustBuffer<List<
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeLocalContact.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalIdentityKeyPin: FfiConverterRustBuffer<List<LocalIdentityKeyPin>> {
+    override fun read(buf: ByteBuffer): List<LocalIdentityKeyPin> {
+        val len = buf.getInt()
+        return List<LocalIdentityKeyPin>(len) {
+            FfiConverterTypeLocalIdentityKeyPin.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalIdentityKeyPin>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalIdentityKeyPin.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalIdentityKeyPin>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalIdentityKeyPin.write(it, buf)
         }
     }
 }
@@ -14778,16 +15975,6 @@ public object FfiConverterSequenceTypeHistoryEvent: FfiConverterRustBuffer<List<
     UniffiLib.uniffi_construct_core_fn_func_plan_initiation(
     
         FfiConverterTypeInitiationContext.lower(`context`),_status)
-}
-    )
-    }
-    
- fun `planReceivingDecrypt`(`sessionDeviceIds`: List<kotlin.String>, `preferredDeviceId`: kotlin.String): List<kotlin.String> {
-            return FfiConverterSequenceString.lift(
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_construct_core_fn_func_plan_receiving_decrypt(
-    
-        FfiConverterSequenceString.lower(`sessionDeviceIds`),FfiConverterString.lower(`preferredDeviceId`),_status)
 }
     )
     }
