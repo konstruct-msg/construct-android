@@ -633,4 +633,22 @@
     <string name="device_removed_title">Устройство удалено</string>
     <string name="device_removed_notice">Это устройство удалено из вашего аккаунта. Всё, что на нём есть, будет стёрто.</string>
     <string name="device_removed_erase">стереть сейчас (%1$d с)</string>
+    <!-- Настройки → Данные и память (iOS DataStorageSettingsView). -->
+    <string name="data_and_storage">Данные и память</string>
+    <string name="storage_media_cache">Медиакэш</string>
+    <string name="storage_media_cache_footer">Открытые фото, видео и файлы хранятся на этом устройстве в зашифрованном виде и открываются без повторной загрузки. Android сам их не удаляет.</string>
+    <string name="storage_of_quota">%1$s из %2$s</string>
+    <string name="storage_clear_media_cache">Очистить медиакэш</string>
+    <string name="storage_clear_confirm_title">Очистить медиакэш?</string>
+    <string name="storage_clear_confirm_message">Все загруженные фото, видео и файлы будут удалены с этого устройства. Сервер хранит медиа 7 дней: то, что пришло раньше, загрузить снова не получится.</string>
+    <string name="storage_limit">Лимит хранилища</string>
+    <string name="storage_limit_footer">При превышении лимита сначала удаляются медиа, которые ещё можно загрузить снова. Медиа старше 7 дней есть только на этом устройстве, и лимит их не удаляет.</string>
+    <string name="storage_no_limit">Без лимита</string>
+    <string name="storage_no_limit_footer">Медиа хранятся, пока вы их не очистите.</string>
+    <string name="storage_auto_clear">Хранить медиа</string>
+    <string name="storage_auto_clear_footer">Медиа, загруженные раньше выбранного срока, удаляются при каждом запуске приложения — в том числе те, что уже нельзя загрузить снова.</string>
+    <string name="storage_keep_forever">Всегда</string>
+    <string name="storage_keep_7_days">7 дней</string>
+    <string name="storage_keep_30_days">30 дней</string>
+    <string name="storage_keep_90_days">90 дней</string>
 </resources>

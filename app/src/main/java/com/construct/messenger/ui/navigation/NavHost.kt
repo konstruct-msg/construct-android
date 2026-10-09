@@ -31,6 +31,7 @@ import com.construct.messenger.ui.screens.security.PinSetupScreen
 import com.construct.messenger.ui.screens.settings.AccountScreen
 import com.construct.messenger.ui.screens.settings.AppearanceRoute
 import com.construct.messenger.ui.screens.settings.DevicesRoute
+import com.construct.messenger.ui.screens.settings.DataStorageRoute
 import com.construct.messenger.ui.screens.settings.DraftsRoute
 import com.construct.messenger.ui.screens.settings.IssuedInvitesRoute
 import com.construct.messenger.ui.screens.settings.DiagnosticsScreen
@@ -161,6 +162,7 @@ fun KonstructNavHost(
                     onDevices = { navController.navigate(Screen.Devices.route) { launchSingleTop = true } },
                     onAppearance = { navController.navigate(Screen.Appearance.route) { launchSingleTop = true } },
                     onSecurity = { navController.navigate(Screen.Security.route) { launchSingleTop = true } },
+                    onDataStorage = { navController.navigate(Screen.DataStorage.route) { launchSingleTop = true } },
                     onNotifications = { navController.navigate(Screen.Notifications.route) { launchSingleTop = true } },
                     onDrafts = { navController.navigate(Screen.Drafts.route) { launchSingleTop = true } },
                     onNetwork = { navController.navigate(Screen.Network.route) { launchSingleTop = true } },
@@ -271,6 +273,9 @@ fun KonstructNavHost(
                     }
                 },
             )
+        }
+        composable(Screen.DataStorage.route) {
+            DataStorageRoute(onNavigateBack = { navController.popBackStack() })
         }
         composable(Screen.Notifications.route) {
             NotificationsRoute(onNavigateBack = { navController.popBackStack() })
