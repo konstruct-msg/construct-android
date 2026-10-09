@@ -3,9 +3,17 @@ package com.construct.messenger.data.local
 import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import uniffi.construct_core.LocalStore
 import com.construct.messenger.data.local.db.ConstructDatabase
 import com.construct.messenger.util.DisplayNameGenerator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -19,7 +27,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * What every [ContactStore] does — Room's today, the core's `LocalStore` next (TODO 136). A case
+ * What every [ContactStore] does — Room's today and the core's `LocalStore` (TODO 136), which replaces it. A case
  * here is a promise callers lean on; an implementation that breaks one breaks them.
  */
 abstract class ContactStoreContract {
@@ -147,4 +155,28 @@ class RoomContactStoreTest : ContactStoreContract() {
 
 class FakeContactStoreTest : ContactStoreContract() {
     override val store: ContactStore = FakeContactStore()
+}
+
+/** The same cases on the core's encrypted store — the host build of the library the app ships. */
+class CoreContactStoreTest : ContactStoreContract() {
+    private val core = LocalStore.inMemory(ByteArray(32) { 1 })
+    override val store: ContactStore = CoreContactStore(LocalStoreFeed(core))
+
+    @After
+    fun close() = core.close()
+
+    /** What the screens rely on: a write shows on a list already watched, once. */
+    @Test
+    fun aWatchedListHearsALaterWrite() = runTest {
+        val id = "2d8a1b8c-5e3f-4b9a-9c4d-7f0e9a8b3c4d"
+        val seen = async(Dispatchers.Default) {
+            withTimeout(5_000) { store.observeContacts().take(2).toList() }
+        }
+        // Real time, off the test scheduler: let the watcher subscribe and read once.
+        withContext(Dispatchers.Default) { delay(300) }
+        store.ensure(id)
+        val lists = seen.await()
+        assertEquals(emptyList<String>(), lists[0].map { it.id })
+        assertEquals(listOf(id), lists[1].map { it.id })
+    }
 }
