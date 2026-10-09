@@ -1,59 +1,46 @@
 package com.construct.messenger.ui.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.construct.messenger.R
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
-import com.construct.messenger.ui.theme.CTIcon
-import com.construct.messenger.ui.theme.CTLayout
+import com.construct.messenger.ui.theme.HairlineBorder
 
 /**
- * Navigation bar — reusable header.
+ * A screen's top bar.
  *
- * **Canon:** iOS `ConstructTheme.swift` → `struct CTNavBar` for a pushed screen: the title as
- *   given, `CTFont.ui(17, FontWeight.SemiBold)`, no letter-spacing (iOS dropped the uppercase + tracking on all its
- *   screens — it read as a machine label, not a screen's name); back is a filled accent circle
- *   with a chevron (`chevron.backward.circle.fill`, 22pt). Bottom border.
- * - A tab's root (no back, not modal) is iOS's root header instead: uppercase, `CTFont.headline`,
- *   tracking 4, no border (iOS `SettingsView` header).
- * - Trailing: an icon ([trailingIcon]); an optional secondary icon
- *   ([trailingSecondaryIcon]) renders to its left (typically a muted cancel next
- *   to a primary confirm).
- * - Fixed height 44dp, horizontal padding 12dp, 0.5dp bottom border in `noise`.
+ * Material `TopAppBar` (`docs/MATERIAL3_MIGRATION.md`, step 2): height, title type, the back
+ * arrow and the 48 dp touch targets come from Material. The signature is the one the screens
+ * already call, so none of them changed.
  *
- * SF Symbols → interactive controls map to Material icons. ASCII glyphs are
- * never used for functional controls (see `CTSymbol` for decorative chrome only).
+ * - [showBack]: Material's back arrow, or a close cross when [isModal].
+ * - Trailing: [trailingIcon]; [trailingSecondaryIcon] sits to its left (typically a muted cancel
+ *   next to a primary confirm).
+ * - A tab's root (no back, not modal) keeps our header — uppercase, tracked — and no border; a
+ *   pushed screen gets our hairline divider under the bar.
+ * - No window insets: every screen pads itself clear of the status bar, and inside the tab
+ *   Scaffold the bars are already consumed.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CTNavBar(
     title: String,
@@ -69,114 +56,48 @@ fun CTNavBar(
     onTrailingSecondaryAction: () -> Unit = {},
 ) {
     val isRoot = !showBack && !isModal
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(CTLayout.navBarHeight)
-            .background(CTColor.bg)
-            .then(if (isRoot) Modifier else Modifier.ctBorderBottom())
-            .padding(horizontal = CTLayout.edgePad),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (showBack) {
-            NavBarBackButton(isModal = isModal, onClick = onBack)
-            Spacer(Modifier.width(14.dp))
-        }
-
-        // The title takes the row up to the trailing icons. A title weighted beside a weighted
-        // spacer got half the row and cut "Use existing identity" to "Use existing id…".
-        Text(
-            text = if (isRoot) title.uppercase() else title,
-            style = if (isRoot) CTFont.headline else CTFont.ui(17, FontWeight.SemiBold),
-            color = CTColor.text,
-            letterSpacing = if (isRoot) 4.sp else TextUnit.Unspecified,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
+    Column(modifier) {
+        TopAppBar(
+            windowInsets = WindowInsets(0),
+            title = {
+                if (isRoot) {
+                    Text(
+                        text = title.uppercase(),
+                        style = CTFont.headline,
+                        letterSpacing = 4.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else {
+                    Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            },
+            navigationIcon = {
+                if (showBack) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = if (isModal) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(if (isModal) R.string.close else R.string.back),
+                        )
+                    }
+                }
+            },
+            actions = {
+                trailingSecondaryIcon?.let { icon ->
+                    IconButton(onClick = onTrailingSecondaryAction) {
+                        Icon(imageVector = icon, contentDescription = null, tint = trailingSecondaryColor)
+                    }
+                }
+                trailingIcon?.let { icon ->
+                    IconButton(onClick = onTrailingAction) {
+                        Icon(imageVector = icon, contentDescription = null, tint = trailingColor)
+                    }
+                }
+            },
         )
-
-        trailingSecondaryIcon?.let { icon ->
-            NavBarIcon(
-                icon = icon,
-                tint = trailingSecondaryColor,
-                iconSize = TRAILING_ICON_SIZE,
-                onClick = onTrailingSecondaryAction,
-            )
-            Spacer(Modifier.width(10.dp))
-        }
-
-        trailingIcon?.let { icon ->
-            NavBarIcon(
-                icon = icon,
-                tint = trailingColor,
-                iconSize = TRAILING_ICON_SIZE,
-                onClick = onTrailingAction,
-            )
-        }
+        if (!isRoot) HorizontalDivider(thickness = HairlineBorder)
     }
 }
-
-/**
- * A nav-bar glyph with a touch target the height of the bar (44dp — iOS HIG's minimum, and the
- * design canon). The glyph alone was the target: 18dp, about 50px, and a tap one pixel off the
- * "my QR" icon did nothing on a device (2026-09-25).
- *
- * The target overhangs: the row is told the glyph's size, so spacing and alignment are exactly
- * what they were, and the 44dp box is centred on the glyph.
- */
-@Composable
-private fun NavBarIcon(
-    icon: ImageVector,
-    tint: Color,
-    iconSize: Dp,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .layout { measurable, _ ->
-                val target = CTLayout.navBarHeight.roundToPx()
-                val glyph = iconSize.roundToPx()
-                val placeable = measurable.measure(Constraints.fixed(target, target))
-                layout(glyph, glyph) { placeable.place((glyph - target) / 2, (glyph - target) / 2) }
-            }
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(iconSize))
-    }
-}
-
-/** iOS `chevron.backward.circle.fill` at 22pt: an accent disc, the chevron cut out of it. */
-@Composable
-private fun NavBarBackButton(isModal: Boolean, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .layout { measurable, _ ->
-                val target = CTLayout.navBarHeight.roundToPx()
-                val glyph = CTLayout.navIconSizeLg.roundToPx()
-                val placeable = measurable.measure(Constraints.fixed(target, target))
-                layout(glyph, glyph) { placeable.place((glyph - target) / 2, (glyph - target) / 2) }
-            }
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(CTLayout.navIconSizeLg)
-                .background(CTColor.accent, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = if (isModal) Icons.Default.Close else Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = null,
-                tint = CTColor.bg,
-                modifier = Modifier.size(CTIcon.nav),
-            )
-        }
-    }
-}
-
-private val TRAILING_ICON_SIZE = 18.dp
 
 @Preview(backgroundColor = 0xFF090909, showBackground = true)
 @Composable

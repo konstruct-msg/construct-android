@@ -9,9 +9,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -22,15 +22,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.CallMade
 import androidx.compose.material.icons.automirrored.filled.CallReceived
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
@@ -66,6 +72,7 @@ import com.construct.messenger.viewmodel.CallsViewModel
  * **Canon:** iOS `CallHistoryView`. A tap calls back, as there; iOS's swipe (delete, call back) is
  * a long press here, as on the chats list.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CallsScreen(viewModel: CallsViewModel = hiltViewModel()) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
@@ -85,25 +92,29 @@ fun CallsScreen(viewModel: CallsViewModel = hiltViewModel()) {
     Box(modifier = Modifier.fillMaxSize().background(CTColor.bg)) {
         CTMatrixBackground(modifier = Modifier.fillMaxSize())
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(CTLayout.navBarHeight)
-                    .padding(horizontal = CTLayout.edgePad),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.calls_recents).uppercase(),
-                    style = CTFont.ui(17, FontWeight.SemiBold),
-                    color = CTColor.text,
-                    modifier = Modifier.weight(1f),
-                )
-                if (ui.hasAny) {
-                    TextButton(onClick = { confirmClear = true }) {
-                        Text(stringResource(R.string.calls_clear), style = CTFont.bodyEmphasis, color = CTColor.danger)
+            // A tab's root: Material's top bar with the root header the other tabs have. The
+            // matrix background shows through it.
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.calls_recents).uppercase(),
+                        style = CTFont.headline,
+                        letterSpacing = 4.sp,
+                    )
+                },
+                actions = {
+                    if (ui.hasAny) {
+                        TextButton(
+                            onClick = { confirmClear = true },
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        ) {
+                            Text(stringResource(R.string.calls_clear))
+                        }
                     }
-                }
-            }
+                },
+                windowInsets = WindowInsets(0),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            )
             SingleChoiceSegmentedButtonRow(
                 modifier = Modifier.padding(start = CTLayout.edgePad, bottom = CTLayout.chromeGap),
             ) {
