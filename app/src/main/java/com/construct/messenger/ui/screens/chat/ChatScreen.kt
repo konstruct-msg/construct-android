@@ -25,8 +25,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.GppMaybe
@@ -35,10 +35,14 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material.icons.outlined.Phone
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -617,25 +621,12 @@ private fun ChatNavBar(
             .fillMaxWidth()
             .height(CTLayout.navBarHeight)
             .glassCapsule()
-            .padding(horizontal = CTLayout.edgePad),
+            .padding(horizontal = CTSpace.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .size(CTLayout.navIconSizeLg)
-                .clip(CircleShape)
-                .background(CTColor.accent)
-                .clickable(onClick = onBack),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = stringResource(R.string.back),
-                tint = CTColor.bg,
-                modifier = Modifier.size(CTIcon.nav),
-            )
+        IconButton(onClick = onBack) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
         }
-        Spacer(Modifier.width(CTLayout.inlinePad))
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = title.uppercase(),
@@ -652,14 +643,9 @@ private fun ChatNavBar(
             KtBadge(alerted = alerted, verified = ktVerified, onAlertTap = onVerify)
         }
         if (selecting) {
-            Text(
-                text = stringResource(R.string.done),
-                style = CTFont.headline,
-                color = CTColor.accent,
-                modifier = Modifier
-                    .clickable(onClick = onDoneSelecting)
-                    .padding(horizontal = CTLayout.inlinePad, vertical = 10.dp),
-            )
+            TextButton(onClick = onDoneSelecting) {
+                Text(stringResource(R.string.done))
+            }
         } else {
             // Search, call, video call — one button, one palette (decisions/chat-header-actions-are-one-palette).
             ChatActionButton(
@@ -706,11 +692,8 @@ private fun ChatSearchBar(query: String, onQueryChange: (String) -> Unit, result
                     modifier = Modifier.fillMaxWidth().focusRequester(focus),
                 )
             }
-            Box(
-                modifier = Modifier.size(CTLayout.hitTarget).clip(CircleShape).clickable(onClick = onClose),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Filled.Cancel, contentDescription = stringResource(R.string.close), tint = CTColor.textDim, modifier = Modifier.size(CTLayout.navIconSize))
+            IconButton(onClick = onClose) {
+                Icon(Icons.Filled.Cancel, contentDescription = stringResource(R.string.close), tint = CTColor.textDim)
             }
         }
         if (query.isNotEmpty()) {
@@ -736,14 +719,13 @@ private fun SelectionBar(count: Int, onDelete: () -> Unit) {
             .padding(horizontal = CTLayout.edgePad),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = stringResource(R.string.delete_selected).uppercase(),
-            style = CTFont.ui(14),
-            color = if (count > 0) CTColor.danger else CTColor.textDim,
-            modifier = Modifier
-                .clickable(enabled = count > 0, onClick = onDelete)
-                .padding(vertical = 10.dp),
-        )
+        TextButton(
+            onClick = onDelete,
+            enabled = count > 0,
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+        ) {
+            Text(stringResource(R.string.delete_selected).uppercase())
+        }
         Spacer(Modifier.weight(1f))
         Text(
             text = androidx.compose.ui.res.pluralStringResource(R.plurals.messages_selected, count, count),
