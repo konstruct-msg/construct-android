@@ -12,7 +12,7 @@ import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.model.IdentityIds
-import com.construct.messenger.data.local.db.ChatDao
+import com.construct.messenger.data.local.ChatStore
 import com.construct.messenger.domain.usecase.RotateSignedPreKeyUseCase
 import com.construct.messenger.domain.usecase.UploadPreKeysUseCase
 import com.construct.messenger.stealth.BlindTokenService
@@ -67,7 +67,7 @@ class MessagingRuntime @Inject constructor(
     private val router: MessageRouter,
     private val processor: MessageProcessor,
     private val messagingService: MessagingService,
-    private val chatDao: ChatDao,
+    private val chats: ChatStore,
     private val uploadPreKeys: UploadPreKeysUseCase,
     private val serverKeys: ServerKeysProvider,
     private val blindTokens: BlindTokenService,
@@ -137,8 +137,8 @@ class MessagingRuntime @Inject constructor(
         timerBridge.start()
         if (subscriptionJob?.isActive != true) {
             subscriptionJob = scope.launch {
-                chatDao.observeAll().collect { chats ->
-                    stream.updateSubscriptions(chats.map { it.id })
+                chats.observeAll().collect { rows ->
+                    stream.updateSubscriptions(rows.map { it.id })
                 }
             }
         }

@@ -101,7 +101,7 @@ internal suspend fun MessageDao.applyEdit(row: MessageEntity, text: String) {
 }
 
 /** Point the chat row at whatever message is now last. An empty transcript clears the preview. */
-internal suspend fun refreshChatPreview(chatDao: ChatDao, messageDao: MessageDao, chatId: String) {
+internal suspend fun refreshChatPreview(chats: com.construct.messenger.data.local.ChatStore, messageDao: MessageDao, chatId: String) {
     val latest = messageDao.latestVisible(chatId)
-    chatDao.updateLastMessage(chatId, latest?.text, latest?.timestamp ?: 0L)
+    chats.setPreview(chatId, latest?.text, latest?.timestamp)
 }

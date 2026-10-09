@@ -4,7 +4,7 @@ import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.construct.messenger.data.local.SessionStateStore
-import com.construct.messenger.data.local.db.ChatDao
+import com.construct.messenger.data.local.ChatStore
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.PeerDeviceEntity
 import com.construct.messenger.data.local.ContactStore
@@ -33,7 +33,7 @@ class ContactActionsUseCaseTest {
 
     private val keystore = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(me) }
     private val users = mock<ContactStore>()
-    private val chats = mock<ChatDao>()
+    private val chats = mock<ChatStore>()
     private val messages = mock<MessageDao>()
     private val registry = mock<PeerDeviceRegistry>()
     private val crypto = mock<CryptoManager>()

@@ -6,8 +6,8 @@ import com.construct.messenger.data.local.ReactionStore
 import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
-import com.construct.messenger.data.local.db.ChatDao
-import com.construct.messenger.data.local.db.ChatEntity
+import com.construct.messenger.data.local.ChatStore
+import com.construct.messenger.data.local.noteMessage
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.MessageEntity
 import com.construct.messenger.data.local.db.applyEdit
@@ -47,7 +47,7 @@ class ProcessorEffectsImpl @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val keystoreManager: KeystoreManager,
     private val messageDao: MessageDao,
-    private val chatDao: ChatDao,
+    private val chats: ChatStore,
     private val contacts: ContactStore,
     private val ackStore: AckStore,
     private val sessionStateStore: SessionStateStore,
@@ -447,22 +447,8 @@ class ProcessorEffectsImpl @Inject constructor(
         if (firstSight && media != null) mediaArrivals.onArrived(media.kind, media.bytes)
         // On screen, it is read as it lands.
         val unseen = firstSight && !alerts.isChatVisible(contactId)
-        val existing = chatDao.getById(chatId)
-        if (existing == null) {
-            chatDao.upsert(
-                ChatEntity(
-                    id = chatId,
-                    otherUserId = contactId,
-                    lastMessageText = media?.let(mediaPreview::of) ?: text,
-                    lastMessageTime = timestampMs,
-                    unreadCount = if (unseen) 1 else 0,
-                ),
-            )
-        } else {
-            chatDao.updateLastMessage(chatId, media?.let(mediaPreview::of) ?: text, timestampMs)
-            if (unseen) chatDao.incrementUnreadCount(chatId)
-        }
         contacts.ensure(contactId)
+        chats.noteMessage(chatId, contactId, media?.let(mediaPreview::of) ?: text, timestampMs, unread = unseen)
         if (unseen) {
             runCatching { alerts.onUnseenMessage(contactId) }
                 .onFailure { Log.w(TAG, "message notification failed", it) }
@@ -501,21 +487,8 @@ class ProcessorEffectsImpl @Inject constructor(
         )
         // Our own album, sent from another device: this one has not got the blob either.
         if (prior == null && media != null) mediaArrivals.onArrived(media.kind, media.bytes)
-        val existing = chatDao.getById(chatId)
-        if (existing == null) {
-            chatDao.upsert(
-                ChatEntity(
-                    id = chatId,
-                    otherUserId = partnerUserId,
-                    lastMessageText = media?.let(mediaPreview::of) ?: text,
-                    lastMessageTime = timestampMs,
-                    unreadCount = 0,
-                ),
-            )
-        } else {
-            chatDao.updateLastMessage(chatId, media?.let(mediaPreview::of) ?: text, timestampMs)
-        }
         contacts.ensure(partnerUserId)
+        chats.noteMessage(chatId, partnerUserId, media?.let(mediaPreview::of) ?: text, timestampMs, unread = false)
     }
 
     /**
@@ -547,14 +520,14 @@ class ProcessorEffectsImpl @Inject constructor(
         val text = edit.newText.ifEmpty { row.text }
         // iOS: `new_text` carries a photo's caption too, and the album keeps it.
         messageDao.applyEdit(row, text)
-        refreshChatPreview(chatDao, messageDao, row.chatId)
+        refreshChatPreview(chats, messageDao, row.chatId)
     }
 
     private suspend fun applyDelete(targetMessageId: String, sentByMe: Boolean) {
         val row = messageDao.getByIdIgnoreCase(targetMessageId) ?: return
         if (row.isSentByMe != sentByMe) return
         messageDao.deleteById(row.id)
-        refreshChatPreview(chatDao, messageDao, row.chatId)
+        refreshChatPreview(chats, messageDao, row.chatId)
     }
 
     /**
