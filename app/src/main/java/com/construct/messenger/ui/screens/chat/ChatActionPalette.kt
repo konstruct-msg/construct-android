@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -170,11 +171,8 @@ fun ChatActionButton(actions: List<ChatAction>, host: ChatActionPaletteHost, onA
     }
     if (actions.size == 1) {
         val only = actions.single()
-        Box(
-            modifier = Modifier.size(CTLayout.hitTarget).clickable { act(only) },
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(only.icon, contentDescription = stringResource(only.label), tint = CTColor.text, modifier = Modifier.size(CTLayout.navIconSize))
+        IconButton(onClick = { act(only) }) {
+            Icon(only.icon, contentDescription = stringResource(only.label), tint = CTColor.text)
         }
         return
     }
