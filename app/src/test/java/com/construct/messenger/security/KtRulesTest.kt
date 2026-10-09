@@ -1,7 +1,7 @@
 package com.construct.messenger.security
 
-import com.construct.messenger.data.local.db.UserDao
-import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.data.local.ContactStore
+import com.construct.messenger.data.local.ContactRecord
 import com.construct.messenger.data.model.ContactTrustAlert
 import com.construct.messenger.data.model.KtStatus
 import com.construct.messenger.data.model.SecurityNotice
@@ -65,14 +65,14 @@ class KtRulesTest {
      */
     @Test
     fun `acknowledging a failed proof does not mark it verified`() = runBlocking {
-        val dao = mock<UserDao>()
-        whenever(dao.getById("u")).thenReturn(UserEntity(id = "u", ktStatus = KtStatus.FAILED.code))
+        val dao = mock<ContactStore>()
+        whenever(dao.get("u")).thenReturn(ContactRecord(id = "u", ktStatus = KtStatus.FAILED.code))
         SecurityNotices(dao, mock()).acknowledge("u")
         verify(dao).setSecurityNotice("u", SecurityNotice.NONE.code)
         verify(dao).setKtStatus("u", KtStatus.UNVERIFIED.code)
 
-        val verified = mock<UserDao>()
-        whenever(verified.getById("v")).thenReturn(UserEntity(id = "v", ktStatus = KtStatus.VERIFIED.code))
+        val verified = mock<ContactStore>()
+        whenever(verified.get("v")).thenReturn(ContactRecord(id = "v", ktStatus = KtStatus.VERIFIED.code))
         SecurityNotices(verified, mock()).acknowledge("v")
         verify(verified, never()).setKtStatus(any(), any())
     }

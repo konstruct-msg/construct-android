@@ -1,7 +1,7 @@
 package com.construct.messenger.service
 
-import com.construct.messenger.data.local.db.UserEntity
-import com.construct.messenger.data.local.db.resolvedName
+import com.construct.messenger.data.local.ContactRecord
+import com.construct.messenger.data.local.resolvedName
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.LegacyProfileShare
 import com.construct.messenger.util.ProfileShare
@@ -15,9 +15,9 @@ import org.junit.Test
 class ProfileNameTest {
     private val id = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
     private val generated = DisplayNameGenerator.generate(id)
-    private val alice = UserEntity(id = id, username = "alice", isContact = true)
+    private val alice = ContactRecord(id = id, username = "alice", isContact = true)
 
-    private fun typed(row: UserEntity, name: String, at: Long) =
+    private fun typed(row: ContactRecord, name: String, at: Long) =
         ContactProfiles.typed(row, ProfileShare(name, at, ProfileShare.Avatar.Unchanged), nowMs = 0)!!.row
 
     /**

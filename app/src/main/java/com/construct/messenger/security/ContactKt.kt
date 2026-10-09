@@ -1,7 +1,7 @@
 package com.construct.messenger.security
 
 import com.construct.messenger.crypto.CryptoManager
-import com.construct.messenger.data.local.db.UserDao
+import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.stealth.ServerKeysProvider
 import javax.inject.Inject
@@ -19,7 +19,7 @@ import uniffi.construct_core.KtVerdict
 class ContactKt @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val serverKeys: ServerKeysProvider,
-    private val userDao: UserDao,
+    private val contacts: ContactStore,
     private val log: KtLog,
 ) {
     suspend fun judge(accountId: String, response: GetPreKeyBundleResponse) {
@@ -52,7 +52,7 @@ class ContactKt @Inject constructor(
         // The hybrid key's proof is defence in depth and logged only, as on iOS.
         verdicts?.hybrid?.takeIf { it != KtVerdict.VERIFIED && it != KtVerdict.UNAVAILABLE }
             ?.let { Log.e(TAG, "KT(hybrid): proof FAILED for device ${response.deviceId.take(8)}… — $it") }
-        status?.let { userDao.setKtStatus(accountId, it.code) }
+        status?.let { contacts.setKtStatus(accountId, it.code) }
     }
 
     private companion object {

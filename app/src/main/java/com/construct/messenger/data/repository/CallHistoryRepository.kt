@@ -5,8 +5,8 @@ import com.construct.messenger.calls.CallRecordStatus
 import com.construct.messenger.calls.CallSession
 import com.construct.messenger.data.local.db.CallRecordDao
 import com.construct.messenger.data.local.db.CallRecordEntity
-import com.construct.messenger.data.local.db.UserDao
-import com.construct.messenger.data.local.db.resolvedName
+import com.construct.messenger.data.local.ContactStore
+import com.construct.messenger.data.local.resolvedName
 import com.construct.messenger.data.model.CallHistoryEntry
 import com.construct.messenger.diagnostics.Log
 import javax.inject.Inject
@@ -32,7 +32,7 @@ interface CallHistoryRepository {
 @Singleton
 class CallHistoryRepositoryImpl @Inject constructor(
     private val dao: CallRecordDao,
-    private val users: UserDao,
+    private val users: ContactStore,
 ) : CallHistoryRepository, CallHistoryPort {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 

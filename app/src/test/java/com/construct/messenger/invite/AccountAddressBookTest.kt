@@ -2,8 +2,8 @@ package com.construct.messenger.invite
 
 import com.construct.messenger.data.local.ChatPresence
 import com.construct.messenger.data.local.KeystoreManager
-import com.construct.messenger.data.local.db.UserDao
-import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.data.local.FakeContactStore
+import com.construct.messenger.data.local.ContactRecord
 import com.construct.messenger.data.model.SecurityNotice
 import com.construct.messenger.security.SecurityNotices
 import kotlinx.coroutines.flow.Flow
@@ -25,7 +25,7 @@ class AccountAddressBookTest {
     private val peer = "11111111-2222-3333-4444-555555555555"
     private val pinned = ByteArray(32) { 1 }
     private val other = ByteArray(32) { 2 }
-    private val users = Users().also { it.rows[peer] = UserEntity(id = peer, isContact = true, accountAddress = pinned) }
+    private val users = FakeContactStore().also { it.rows[peer] = ContactRecord(id = peer, isContact = true, accountAddress = pinned) }
     private val presence = ChatPresence()
     private val book = AccountAddressBook(users, mock<KeystoreManager>(), SecurityNotices(users, presence))
 
@@ -81,41 +81,4 @@ class AccountAddressBookTest {
         assertEquals(listOf(SecurityNotices.Announcement(peer, SecurityNotice.ADDRESS_CHANGED)), heard)
     }
 
-    private class Users : UserDao {
-        val rows = linkedMapOf<String, UserEntity>()
-        override fun observeContacts(): Flow<List<UserEntity>> = MutableStateFlow(rows.values.toList())
-        override fun observeAll(): Flow<List<UserEntity>> = MutableStateFlow(rows.values.toList())
-        override fun observeBlocked(): Flow<List<UserEntity>> = MutableStateFlow(rows.values.filter { it.isBlocked })
-        override fun observeById(userId: String): Flow<UserEntity?> = MutableStateFlow(rows[userId])
-        override suspend fun getById(userId: String) = rows[userId]
-        override suspend fun pendingAvatarIds(): List<String> = rows.values.filter { it.pendingAvatarRef != null }.map { it.id }
-        override suspend fun clearPendingAvatar(userId: String, stored: ByteArray): Int {
-            val row = rows[userId]?.takeIf { it.pendingAvatarRef.contentEquals(stored) } ?: return 0
-            rows[userId] = row.copy(pendingAvatarRef = null, pendingAvatarSinceMs = null)
-            return 1
-        }
-        override suspend fun completePendingAvatar(userId: String, stored: ByteArray, avatar: ByteArray): Int {
-            val row = rows[userId]?.takeIf { it.pendingAvatarRef.contentEquals(stored) } ?: return 0
-            rows[userId] = row.copy(avatarData = avatar, pendingAvatarRef = null, pendingAvatarSinceMs = null)
-            return 1
-        }
-        override suspend fun upsert(user: UserEntity) { rows[user.id] = user }
-        override suspend fun delete(userId: String) { rows.remove(userId) }
-        override suspend fun setKtStatus(userId: String, code: Int) = Unit
-        override suspend fun setSecurityNotice(userId: String, code: Int) {
-            rows[userId]?.let { rows[userId] = it.copy(securityNotice = code) }
-        }
-        override suspend fun setLocalAlias(userId: String, alias: String?) {
-            rows[userId]?.let { rows[userId] = it.copy(localAlias = alias) }
-        }
-        override suspend fun setAmSharingWith(userId: String, sharing: Boolean) {
-            rows[userId]?.let { rows[userId] = it.copy(amSharingWith = sharing) }
-        }
-
-        override suspend fun sharingWithIds(): List<String> = rows.values.filter { it.amSharingWith && !it.isBlocked }.map { it.id }
-
-        override suspend fun setAvatar(userId: String, avatar: ByteArray?) {
-            rows[userId]?.let { rows[userId] = it.copy(avatarData = avatar) }
-        }
-    }
 }

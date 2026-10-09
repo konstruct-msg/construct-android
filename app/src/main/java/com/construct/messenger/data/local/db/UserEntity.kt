@@ -1,8 +1,9 @@
 package com.construct.messenger.data.local.db
 
 import com.construct.messenger.data.model.SecurityNotice
-import com.construct.messenger.util.DisplayNameGenerator
 import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Query
@@ -18,6 +19,8 @@ import kotlinx.coroutines.flow.Flow
  *
  * [id] is the **ServerUserId** (36-char UUID) — never the 32-hex CryptoDeviceId
  * (§8.1: the two id types must never be mixed).
+ *
+ * Read and written only through [com.construct.messenger.data.local.ContactStore] (TODO 136).
  */
 @Entity(tableName = "users")
 data class UserEntity(
@@ -93,24 +96,6 @@ data class UserEntity(
     }
 }
 
-/** The user's own name for them, when they gave one. */
-val UserEntity.localName: String?
-    get() = localAlias?.trim()?.takeIf { it.isNotEmpty() }
-
-/**
- * The name to show for [userId]: the one the user gave them, the name they shared, their
- * username, then the name generated from the id. **Canon:** iOS `User.resolvedDisplayName`.
- *
- * A generated name held in `displayName` is skipped, not shown: it stands for "no name", and
- * showing it hid a username the contact did have. Rows are created with it, and until 2026-10-02 a
- * profile carrying it overwrote the username from the invite — this repairs both.
- */
-fun UserEntity?.resolvedName(userId: String): String =
-    this?.localName
-        ?: this?.displayName?.takeIf { it.isNotBlank() && !DisplayNameGenerator.isGenerated(it, userId) }
-        ?: this?.username?.takeIf { it.isNotBlank() }
-        ?: DisplayNameGenerator.generate(userId)
-
 @Dao
 interface UserDao {
 
@@ -131,6 +116,18 @@ interface UserDao {
 
     @Upsert
     suspend fun upsert(user: UserEntity)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfAbsent(user: UserEntity)
+
+    @Query("UPDATE users SET isBlocked = :blocked WHERE id = :userId")
+    suspend fun setBlocked(userId: String, blocked: Boolean)
+
+    @Query("UPDATE users SET identityPublic = :identity WHERE id = :userId")
+    suspend fun setIdentityPublic(userId: String, identity: ByteArray)
+
+    @Query("UPDATE users SET accountAddress = :address WHERE id = :userId")
+    suspend fun setAccountAddress(userId: String, address: ByteArray?)
 
     @Query("UPDATE users SET securityNotice = :code WHERE id = :userId")
     suspend fun setSecurityNotice(userId: String, code: Int)

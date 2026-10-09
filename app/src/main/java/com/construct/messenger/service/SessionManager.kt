@@ -3,11 +3,9 @@ package com.construct.messenger.service
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
-import com.construct.messenger.data.local.db.UserDao
-import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.construct.messenger.data.model.IdentityIds
-import com.construct.messenger.util.DisplayNameGenerator
 import shared.proto.core.v1.Crypto.CryptoSuite
 import shared.proto.services.v1.KeyServiceOuterClass.GetIdentityKeyRequest
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundleRequest
@@ -30,7 +28,7 @@ import javax.inject.Singleton
 class SessionManager @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val grpcClient: GrpcClient,
-    private val userDao: UserDao,
+    private val contacts: ContactStore,
     private val peerDeviceRegistry: PeerDeviceRegistry,
     private val contactKt: com.construct.messenger.security.ContactKt,
 ) {
@@ -50,7 +48,7 @@ class SessionManager @Inject constructor(
      * Ensure a live Double-Ratchet session exists for [contactId].
      *
      * @return the peer's X25519 identity public key (needed for sealed sender).
-     *   Fetched with the prekey bundle on first init and remembered on [UserEntity].
+     *   Fetched with the prekey bundle on first init and remembered on its [com.construct.messenger.data.local.ContactRecord].
      *   GetPreKeyBundle is destructive (consumes an OTPK) — never call it just
      *   to read the identity key when a session already exists.
      */
@@ -58,7 +56,7 @@ class SessionManager @Inject constructor(
         val deviceId = peerDeviceRegistry.resolveDeviceId(contactId)
         if (deviceId != null && cryptoManager.hasSession(deviceId)) {
             val identity = peerDeviceRegistry.identityForDevice(deviceId)
-                ?: userDao.getById(contactId)?.identityPublic
+                ?: contacts.get(contactId)?.identityPublic
                 ?: error("missing identity key for $contactId")
             return SessionPeer(
                 accountId = peerDeviceRegistry.accountIdForDevice(deviceId) ?: contactId,
@@ -233,7 +231,7 @@ class SessionManager @Inject constructor(
         val stored = if (IdentityIds.isCryptoDeviceId(contactId)) {
             peerDeviceRegistry.identityForDevice(contactId)
         } else {
-            userDao.getById(contactId)?.identityPublic
+            contacts.get(contactId)?.identityPublic
         }
         if (stored != null && stored.isNotEmpty()) return stored
         val accountId = if (IdentityIds.isCryptoDeviceId(contactId)) {
@@ -295,13 +293,7 @@ class SessionManager @Inject constructor(
     }
 
     private suspend fun rememberIdentity(contactId: String, identity: ByteArray) {
-        val existing = userDao.getById(contactId)
-        val base = existing ?: UserEntity(
-            id = contactId,
-            displayName = DisplayNameGenerator.generate(contactId),
-            isContact = true,
-        )
-        userDao.upsert(base.copy(identityPublic = identity))
+        contacts.rememberIdentity(contactId, identity)
     }
 
     /**

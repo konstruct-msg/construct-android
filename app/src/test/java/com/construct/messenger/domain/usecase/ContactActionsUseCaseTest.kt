@@ -7,9 +7,13 @@ import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.PeerDeviceEntity
-import com.construct.messenger.data.local.db.UserDao
+import com.construct.messenger.data.local.ContactStore
+import com.construct.messenger.data.local.FakeContactStore
+import com.construct.messenger.data.local.ContactRecord
 import com.construct.messenger.util.ConversationId
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
@@ -28,7 +32,7 @@ class ContactActionsUseCaseTest {
     private val devices = listOf("a".repeat(32), "b".repeat(32))
 
     private val keystore = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(me) }
-    private val users = mock<UserDao>()
+    private val users = mock<ContactStore>()
     private val chats = mock<ChatDao>()
     private val messages = mock<MessageDao>()
     private val registry = mock<PeerDeviceRegistry>()
@@ -88,10 +92,11 @@ class ContactActionsUseCaseTest {
     /** Local only, trimmed; blank is "no name", not an empty one. Mutation: store it as typed — this reddens. */
     @Test
     fun `a local name is stored trimmed and a blank one clears it`() = runTest {
+        val store = FakeContactStore().also { it.rows[peer] = ContactRecord(id = peer, isContact = true) }
+        val actions = ContactActionsUseCase(keystore, store, chats, messages, registry, crypto, sessions, mock())
         actions.setLocalName(peer, "  Kostya ")
+        assertEquals("Kostya", store.rows[peer]!!.localAlias)
         actions.setLocalName(peer, "   ")
-
-        verify(users).setLocalAlias(peer, "Kostya")
-        verify(users).setLocalAlias(peer, null)
+        assertNull(store.rows[peer]!!.localAlias)
     }
 }

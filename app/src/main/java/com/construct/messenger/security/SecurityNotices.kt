@@ -3,7 +3,7 @@ package com.construct.messenger.security
 import com.construct.messenger.data.local.ChatPresence
 import com.construct.messenger.data.model.KtStatus
 import com.construct.messenger.data.model.SecurityNotice
-import com.construct.messenger.data.local.db.UserDao
+import com.construct.messenger.data.local.ContactStore
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.asSharedFlow
  */
 @Singleton
 class SecurityNotices @Inject constructor(
-    private val userDao: UserDao,
+    private val contacts: ContactStore,
     private val presence: ChatPresence,
 ) {
     data class Announcement(val userId: String, val notice: SecurityNotice)
@@ -26,7 +26,7 @@ class SecurityNotices @Inject constructor(
     val announced: SharedFlow<Announcement> = announcements.asSharedFlow()
 
     suspend fun raise(userId: String, notice: SecurityNotice) {
-        userDao.setSecurityNotice(userId, notice.code)
+        contacts.setSecurityNotice(userId, notice.code)
         if (userId.isNotEmpty() && !presence.isVisible(userId)) {
             announcements.tryEmit(Announcement(userId, notice))
         }
@@ -38,9 +38,9 @@ class SecurityNotices @Inject constructor(
      * mark for a proof that never passed. The next fetch with a proof writes the real verdict.
      */
     suspend fun acknowledge(userId: String) {
-        userDao.setSecurityNotice(userId, SecurityNotice.NONE.code)
-        if (userDao.getById(userId)?.ktStatus == KtStatus.FAILED.code) {
-            userDao.setKtStatus(userId, KtStatus.UNVERIFIED.code)
+        contacts.setSecurityNotice(userId, SecurityNotice.NONE.code)
+        if (contacts.get(userId)?.ktStatus == KtStatus.FAILED.code) {
+            contacts.setKtStatus(userId, KtStatus.UNVERIFIED.code)
         }
     }
 }

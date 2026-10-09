@@ -9,8 +9,7 @@ import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.ChatEntity
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.MessageEntity
-import com.construct.messenger.data.local.db.UserDao
-import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.service.MediaPreviewText
@@ -23,7 +22,6 @@ import com.construct.messenger.stealth.SealedEnvelopeType
 import com.construct.messenger.stealth.SealedSend
 import com.construct.messenger.stealth.StealthSenderService
 import com.construct.messenger.util.ConversationId
-import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.data.local.db.refreshChatPreview
 import com.construct.messenger.data.local.db.applyEdit
 import com.construct.messenger.util.EditWire
@@ -78,7 +76,7 @@ class SendMessageUseCase @Inject constructor(
     private val sealedSend: SealedSend,
     private val messageDao: MessageDao,
     private val chatDao: ChatDao,
-    private val userDao: UserDao,
+    private val contacts: ContactStore,
     private val sessionStateStore: SessionStateStore,
     private val serverMessageIds: ServerMessageIds,
     private val mediaPreview: MediaPreviewText,
@@ -713,15 +711,7 @@ class SendMessageUseCase @Inject constructor(
         } else {
             chatDao.updateLastMessage(chatId, preview, timestampMs)
         }
-        if (userDao.getById(contactId) == null) {
-            userDao.upsert(
-                UserEntity(
-                    id = contactId,
-                    displayName = DisplayNameGenerator.generate(contactId),
-                    isContact = true,
-                ),
-            )
-        }
+        contacts.ensure(contactId)
     }
 
     private suspend fun sendRecipientCopy(

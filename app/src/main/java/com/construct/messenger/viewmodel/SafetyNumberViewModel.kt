@@ -6,8 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.PeerDeviceRegistry
-import com.construct.messenger.data.local.db.UserDao
-import com.construct.messenger.data.local.db.localName
+import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.IdentityFingerprint
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,7 +36,7 @@ class SafetyNumberViewModel @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val keystoreManager: KeystoreManager,
     private val registry: PeerDeviceRegistry,
-    private val userDao: UserDao,
+    private val contacts: ContactStore,
 ) : ViewModel() {
     private val contactId: String = requireNotNull(savedStateHandle.get<String>("contactId"))
     private val state = MutableStateFlow(SafetyNumberUiState())
@@ -48,7 +47,7 @@ class SafetyNumberViewModel @Inject constructor(
     }
 
     private suspend fun load() {
-        val row = userDao.getById(contactId)
+        val row = contacts.get(contactId)
         val name = row?.localName
             ?: row?.username?.takeIf { it.isNotBlank() }?.let { "@$it" }
             ?: row?.displayName?.takeIf { it.isNotBlank() }

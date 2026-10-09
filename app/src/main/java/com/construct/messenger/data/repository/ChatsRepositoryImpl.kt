@@ -3,9 +3,9 @@ package com.construct.messenger.data.repository
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.ChatEntity
-import com.construct.messenger.data.local.db.UserDao
-import com.construct.messenger.data.local.db.UserEntity
-import com.construct.messenger.data.local.db.resolvedName
+import com.construct.messenger.data.local.ContactStore
+import com.construct.messenger.data.local.ContactRecord
+import com.construct.messenger.data.local.resolvedName
 import com.construct.messenger.data.model.ChatActivity
 import com.construct.messenger.data.model.ChatSummary
 import com.construct.messenger.util.ConversationId
@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.stateIn
 @Singleton
 class ChatsRepositoryImpl @Inject constructor(
     private val chatDao: ChatDao,
-    userDao: UserDao,
+    contacts: ContactStore,
     private val keystoreManager: KeystoreManager,
 ) : ChatsRepository {
 
@@ -31,7 +31,7 @@ class ChatsRepositoryImpl @Inject constructor(
 
     override val chats: StateFlow<List<ChatSummary>> = combine(
         chatDao.observeAll(),
-        userDao.observeAll(),
+        contacts.observeAll(),
     ) { chats, users ->
         val byId = users.associateBy { it.id }
         chats.map { it.toSummary(byId[it.otherUserId]) }
@@ -53,7 +53,7 @@ class ChatsRepositoryImpl @Inject constructor(
         keystoreManager.getUserId()?.let { ConversationId.direct(it, contactId) }
 }
 
-private fun ChatEntity.toSummary(user: UserEntity?): ChatSummary {
+private fun ChatEntity.toSummary(user: ContactRecord?): ChatSummary {
     val name = user.resolvedName(otherUserId)
     return ChatSummary(
         contactId = otherUserId,

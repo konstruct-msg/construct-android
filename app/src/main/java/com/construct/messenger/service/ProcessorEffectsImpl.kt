@@ -11,8 +11,8 @@ import com.construct.messenger.data.local.db.ChatEntity
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.MessageEntity
 import com.construct.messenger.data.local.db.applyEdit
-import com.construct.messenger.data.local.db.UserDao
-import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.data.local.ContactStore
+import com.construct.messenger.data.local.ContactRecord
 import com.construct.messenger.data.local.db.refreshChatPreview
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ReplyRef
@@ -25,7 +25,6 @@ import com.construct.messenger.invite.AccountAddressSource
 import com.construct.messenger.invite.ContactCardPayload
 import com.construct.messenger.domain.usecase.SessionControlUseCase
 import com.construct.messenger.util.ConversationId
-import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.IncomingPlaintext
 import com.construct.messenger.util.KnstFrame
 import com.construct.messenger.util.MediaWire
@@ -49,7 +48,7 @@ class ProcessorEffectsImpl @Inject constructor(
     private val keystoreManager: KeystoreManager,
     private val messageDao: MessageDao,
     private val chatDao: ChatDao,
-    private val userDao: UserDao,
+    private val contacts: ContactStore,
     private val ackStore: AckStore,
     private val sessionStateStore: SessionStateStore,
     private val sessionManager: SessionManager,
@@ -177,8 +176,8 @@ class ProcessorEffectsImpl @Inject constructor(
      * They shared their profile ([ContactProfiles] decides what it changes). A contact we have no
      * row for is not created by it; the avatar it names is fetched afterwards ([ContactAvatars]).
      */
-    private suspend fun applyProfile(accountId: String, decide: (UserEntity, Long) -> ContactProfiles.Applied?) {
-        val row = userDao.getById(accountId) ?: run {
+    private suspend fun applyProfile(accountId: String, decide: (ContactRecord, Long) -> ContactProfiles.Applied?) {
+        val row = contacts.get(accountId) ?: run {
             Log.w(TAG, "profile from ${accountId.take(8)}… for a contact we do not hold — ignored")
             return
         }
@@ -186,7 +185,7 @@ class ProcessorEffectsImpl @Inject constructor(
             Log.i(TAG, "profile from ${accountId.take(8)}… not newer than the one held — ignored")
             return
         }
-        userDao.upsert(applied.row)
+        contacts.upsert(applied.row)
         if (applied.fetchAvatar) contactAvatars.fetchPending(accountId)
         Log.i(TAG, "profile from ${accountId.take(8)}… applied")
     }
@@ -291,7 +290,7 @@ class ProcessorEffectsImpl @Inject constructor(
         ackStore.markProcessed(messageId, accountId)
     }
 
-    private suspend fun isBlocked(accountId: String): Boolean = userDao.getById(accountId)?.isBlocked == true
+    private suspend fun isBlocked(accountId: String): Boolean = contacts.get(accountId)?.isBlocked == true
 
     /**
      * A call signal the core opened: the `WebRTCSignal` itself (the core took the frame off).
@@ -302,7 +301,7 @@ class ProcessorEffectsImpl @Inject constructor(
     override suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray) {
         val accountId = sessionManager.accountIdForDevice(contactId) ?: contactId
         val signal = runCatching { shared.proto.signaling.v1.Webrtc.WebRTCSignal.parseFrom(protoBytes) }.getOrNull()
-        val user = userDao.getById(accountId)
+        val user = contacts.get(accountId)
         when {
             signal == null || signal.callId.isEmpty() ->
                 Log.w(TAG, "call signal from ${accountId.take(8)}… ${messageId.take(8)}… does not parse — dropped")
@@ -463,15 +462,7 @@ class ProcessorEffectsImpl @Inject constructor(
             chatDao.updateLastMessage(chatId, media?.let(mediaPreview::of) ?: text, timestampMs)
             if (unseen) chatDao.incrementUnreadCount(chatId)
         }
-        if (userDao.getById(contactId) == null) {
-            userDao.upsert(
-                UserEntity(
-                    id = contactId,
-                    displayName = DisplayNameGenerator.generate(contactId),
-                    isContact = true,
-                ),
-            )
-        }
+        contacts.ensure(contactId)
         if (unseen) {
             runCatching { alerts.onUnseenMessage(contactId) }
                 .onFailure { Log.w(TAG, "message notification failed", it) }
@@ -524,15 +515,7 @@ class ProcessorEffectsImpl @Inject constructor(
         } else {
             chatDao.updateLastMessage(chatId, media?.let(mediaPreview::of) ?: text, timestampMs)
         }
-        if (userDao.getById(partnerUserId) == null) {
-            userDao.upsert(
-                UserEntity(
-                    id = partnerUserId,
-                    displayName = DisplayNameGenerator.generate(partnerUserId),
-                    isContact = true,
-                ),
-            )
-        }
+        contacts.ensure(partnerUserId)
     }
 
     /**

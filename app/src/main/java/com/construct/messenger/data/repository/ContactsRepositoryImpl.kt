@@ -4,10 +4,9 @@ import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.db.IssuedInviteDao
 import com.construct.messenger.data.local.db.IssuedInviteEntity
-import com.construct.messenger.data.local.db.UserDao
-import com.construct.messenger.data.local.db.UserEntity
-import com.construct.messenger.data.local.db.localName
-import com.construct.messenger.data.local.db.resolvedName
+import com.construct.messenger.data.local.ContactStore
+import com.construct.messenger.data.local.ContactRecord
+import com.construct.messenger.data.local.resolvedName
 import com.construct.messenger.data.model.Contact
 import com.construct.messenger.data.model.SecurityNotice
 import com.construct.messenger.diagnostics.Log
@@ -45,7 +44,7 @@ import shared.proto.services.v1.UserServiceOuterClass.SetDiscoverableRequest
 
 @Singleton
 class ContactsRepositoryImpl @Inject constructor(
-    private val userDao: UserDao,
+    private val store: ContactStore,
     private val keystoreManager: KeystoreManager,
     private val generator: InviteGenerator,
     private val verifier: InviteVerifier,
@@ -59,7 +58,7 @@ class ContactsRepositoryImpl @Inject constructor(
     private val incoming = MutableStateFlow<List<IncomingContactRequest>>(emptyList())
     override val incomingRequests: Flow<List<IncomingContactRequest>> = incoming.asStateFlow()
 
-    override val contacts: Flow<List<Contact>> = userDao.observeContacts().map { rows ->
+    override val contacts: Flow<List<Contact>> = store.observeContacts().map { rows ->
         rows.map {
             Contact(
                 userId = it.id,
@@ -73,7 +72,7 @@ class ContactsRepositoryImpl @Inject constructor(
         }
     }
 
-    override val blocked: Flow<List<Contact>> = userDao.observeBlocked().map { rows ->
+    override val blocked: Flow<List<Contact>> = store.observeBlocked().map { rows ->
         rows.map {
             Contact(
                 userId = it.id,
@@ -224,9 +223,9 @@ class ContactsRepositoryImpl @Inject constructor(
                     .setAction(ContactRequestAction.CONTACT_REQUEST_ACTION_ACCEPT)
                     .build(),
             )
-            val existing = userDao.getById(fromUserId)
-            userDao.upsert(
-                (existing ?: UserEntity(id = fromUserId)).copy(
+            val existing = store.get(fromUserId)
+            store.upsert(
+                (existing ?: ContactRecord(id = fromUserId)).copy(
                     displayName = existing?.displayName?.ifBlank { null }
                         ?: DisplayNameGenerator.generate(fromUserId),
                     isContact = true,
@@ -234,8 +233,8 @@ class ContactsRepositoryImpl @Inject constructor(
             )
             incoming.value = incoming.value.filterNot { it.requestId == requestId }
             getProfile(fromUserId)?.let { profile ->
-                val row = userDao.getById(fromUserId) ?: return@let
-                userDao.upsert(
+                val row = store.get(fromUserId) ?: return@let
+                store.upsert(
                     row.copy(
                         displayName = ContactNames.offered(row, profile.displayName) ?: row.displayName,
                         username = profile.username.ifBlank { row.username },
@@ -290,12 +289,12 @@ class ContactsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun persistContact(userId: String, invite: InviteObject, identityPublic: ByteArray) {
-        val existing = userDao.getById(userId)
+        val existing = store.get(userId)
         val display = ContactNames.offered(existing, invite.un)
             ?: existing?.displayName?.takeIf { it.isNotBlank() }
             ?: DisplayNameGenerator.generate(userId)
-        userDao.upsert(
-            (existing ?: UserEntity(id = userId)).copy(
+        store.upsert(
+            (existing ?: ContactRecord(id = userId)).copy(
                 username = invite.un.orEmpty().ifEmpty { existing?.username.orEmpty() },
                 displayName = display,
                 isContact = true,
@@ -343,7 +342,7 @@ internal fun InviteObject.toProto(): InviteToken {
  * would quietly replace that until their next profile came. Null: keep what the row has.
  */
 internal object ContactNames {
-    fun offered(existing: UserEntity?, name: String?): String? {
+    fun offered(existing: ContactRecord?, name: String?): String? {
         if (existing?.isSharingWithMe == true) return null
         return name?.trim()?.takeIf { it.isNotEmpty() }
     }

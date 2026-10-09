@@ -1,7 +1,7 @@
 package com.construct.messenger.domain.usecase
 
 import com.construct.messenger.data.local.KeystoreManager
-import com.construct.messenger.data.local.db.UserDao
+import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.repository.AccountRepository
 import com.construct.messenger.data.repository.MediaRepository
 import com.construct.messenger.diagnostics.Log
@@ -35,7 +35,7 @@ class ShareProfileUseCase @Inject constructor(
     private val keystoreManager: KeystoreManager,
     private val account: AccountRepository,
     private val sendMessage: SendMessageUseCase,
-    private val userDao: UserDao,
+    private val contacts: ContactStore,
     private val media: MediaRepository,
 ) {
     // Outlives the screen that asked: leaving Account must not stop the rebroadcast.
@@ -44,12 +44,12 @@ class ShareProfileUseCase @Inject constructor(
     suspend fun share(contactId: String): Boolean {
         val profile = profile() ?: return false
         val sent = sendMessage.shareProfile(contactId, profile.encoded())
-        if (sent) userDao.setAmSharingWith(contactId, true)
+        if (sent) contacts.setSharingWith(contactId, true)
         return sent
     }
 
     suspend fun stop(contactId: String) {
-        userDao.setAmSharingWith(contactId, false)
+        contacts.setSharingWith(contactId, false)
     }
 
     /**
@@ -69,7 +69,7 @@ class ShareProfileUseCase @Inject constructor(
     }
 
     internal suspend fun rebroadcastNow() {
-        val contacts = userDao.sharingWithIds()
+        val contacts = contacts.sharingWith()
         if (contacts.isEmpty()) return
         val payload = profile()?.encoded() ?: return
         for (contactId in contacts) {
