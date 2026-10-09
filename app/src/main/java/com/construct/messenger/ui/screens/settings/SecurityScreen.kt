@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -61,7 +62,6 @@ import com.construct.messenger.recovery.RecoveryStatus
 import com.construct.messenger.security.KtTally
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
-import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.CTSettingsRow
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.CTStatus
@@ -168,15 +168,15 @@ private fun SecurityContent(
                 .verticalScroll(rememberScrollState()),
         ) {
             PinBlock(lock = lock, onPin = onPin, onBiometric = onBiometric, onLockDelay = onLockDelay)
-            CTSep()
+            HorizontalDivider()
 
             RecoveryRow(recovery = ui.recovery, held = ui.recoveryHeld, onClick = onRecovery)
             Hint(stringResource(R.string.security_recovery_hint))
-            CTSep()
+            HorizontalDivider()
 
             LockdownRow(lockdown = ui.lockdown, onChange = onLockdown)
             Hint(stringResource(R.string.security_lockdown_hint))
-            CTSep()
+            HorizontalDivider()
 
             // A statement, not a setting: sealed sender is always on (iOS stealth Phase 4). Read
             // rather than assumed, so a debug override shows honestly.
@@ -200,7 +200,7 @@ private fun SecurityContent(
                 color = if (ui.senderAnonymity) CTColor.textDim else CTColor.danger,
                 top = 2.dp,
             )
-            CTSep()
+            HorizontalDivider()
 
             CTSettingsRow(
                 label = stringResource(R.string.issued_invites_title).uppercase(),
@@ -208,10 +208,10 @@ private fun SecurityContent(
                 disclosure = true,
                 modifier = Modifier.fillMaxWidth().clickable(onClick = onIssuedInvites),
             )
-            CTSep()
+            HorizontalDivider()
 
             KtSection(ui.kt)
-            CTSep()
+            HorizontalDivider()
 
             DiscoveryRow(ui = ui, onChange = onDiscoverable)
             Hint(
@@ -243,7 +243,7 @@ private fun PinBlock(
         Chevron()
     }
     if (!lock.pinEnabled) return
-    CTSep()
+    HorizontalDivider()
     SecurityRow(vertical = CTLayout.chromeGap) {
         RowIcon(Icons.Default.Fingerprint, if (lock.biometricEnabled) CTColor.accent else CTColor.textDim)
         Text(
@@ -254,7 +254,7 @@ private fun PinBlock(
         )
         CTSwitch(checked = lock.biometricEnabled, onCheckedChange = onBiometric, enabled = lock.biometricAvailable)
     }
-    CTSep()
+    HorizontalDivider()
     SecurityRow(modifier = Modifier.clickable(onClick = onLockDelay)) {
         RowIcon(Icons.Default.Timer, CTColor.textDim)
         Text(
@@ -266,7 +266,7 @@ private fun PinBlock(
         Text(text = stringResource(lock.lockDelay.label), style = CTFont.secondary, color = CTColor.textDim)
         Chevron()
     }
-    CTSep()
+    HorizontalDivider()
     SecurityRow(modifier = Modifier.clickable { onPin(PinFlow.DISABLE) }) {
         RowIcon(Icons.Default.Cancel, CTColor.danger)
         Text(text = stringResource(R.string.pin_disable), style = CTFont.body, color = CTColor.danger)

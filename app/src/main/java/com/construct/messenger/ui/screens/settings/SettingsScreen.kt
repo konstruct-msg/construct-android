@@ -31,6 +31,7 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.QrCode
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,7 +59,6 @@ import com.construct.messenger.recovery.RecoveryViewModel
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
-import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.CTSettingsRow
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.CTStatus
@@ -185,28 +185,28 @@ fun SettingsScreen(
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onDevices),
                 )
-                CTSep()
+                HorizontalDivider()
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_appearance).uppercase(),
                     icon = Icons.Outlined.Brush,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onAppearance),
                 )
-                CTSep()
+                HorizontalDivider()
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_security).uppercase(),
                     icon = Icons.Outlined.Lock,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onSecurity),
                 )
-                CTSep()
+                HorizontalDivider()
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_notifications).uppercase(),
                     icon = Icons.Outlined.Notifications,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onNotifications),
                 )
-                CTSep()
+                HorizontalDivider()
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_network).uppercase(),
                     icon = Icons.Outlined.Public,
@@ -214,7 +214,7 @@ fun SettingsScreen(
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onNetwork),
                 )
-                CTSep()
+                HorizontalDivider()
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_drafts).uppercase(),
                     icon = Icons.Outlined.Folder,
@@ -230,7 +230,7 @@ fun SettingsScreen(
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onOrientation),
                 )
-                CTSep()
+                HorizontalDivider()
                 // iOS `versionDisplayString`: `v0.2.0 (2)`, and ` BETA` in orange on a
                 // non-production build.
                 CTSettingsRow(

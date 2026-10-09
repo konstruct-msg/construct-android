@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -52,7 +53,6 @@ import com.construct.messenger.R
 import com.construct.messenger.data.repository.NotificationSettingsRepository
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
-import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.CTSettingsRow
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.CTStatus
@@ -168,7 +168,7 @@ private fun NotificationsScreen(
                 when (permission) {
                     SystemPermission.ALLOWED -> Unit
                     SystemPermission.NOT_ASKED -> {
-                        CTSep()
+                        HorizontalDivider()
                         CTSettingsRow(
                             label = stringResource(R.string.notifications_grant),
                             labelColor = CTColor.accent,
@@ -177,7 +177,7 @@ private fun NotificationsScreen(
                         )
                     }
                     SystemPermission.DENIED -> {
-                        CTSep()
+                        HorizontalDivider()
                         CTSettingsRow(
                             label = stringResource(R.string.notifications_open_system_settings),
                             disclosure = true,
@@ -228,7 +228,7 @@ private fun NotificationsScreen(
                         color = CTColor.textDim,
                     )
                 }
-                CTSep()
+                HorizontalDivider()
                 CTSettingsRow(
                     label = stringResource(R.string.notifications_connection_notification),
                     icon = Icons.Default.NotificationsActive,

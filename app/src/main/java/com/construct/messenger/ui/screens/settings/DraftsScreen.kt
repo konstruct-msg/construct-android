@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -46,7 +47,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.data.model.Draft
 import com.construct.messenger.ui.components.CTNavBar
-import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTSpace
@@ -154,7 +154,7 @@ private fun DraftsScreen(
                 LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     items(drafts, key = { it.id }) { draft ->
                         DraftRow(draft = draft, onDelete = { onDelete(draft.id) })
-                        CTSep()
+                        HorizontalDivider()
                     }
                 }
             }

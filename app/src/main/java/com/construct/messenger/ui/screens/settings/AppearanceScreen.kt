@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,7 +43,6 @@ import com.construct.messenger.data.model.Appearance
 import com.construct.messenger.data.model.ChatFace
 import com.construct.messenger.data.model.TextSize
 import com.construct.messenger.ui.components.CTNavBar
-import com.construct.messenger.ui.components.CTRowDivider
 import com.construct.messenger.ui.components.CTSectionGroup
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.theme.CTColor
@@ -159,7 +159,7 @@ private fun <T> ChoiceSection(
     CTSettingsSectionHeader(title = title)
     CTSectionGroup {
         options.forEachIndexed { index, option ->
-            if (index > 0) CTRowDivider(indent = 52.dp)
+            if (index > 0) HorizontalDivider()
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

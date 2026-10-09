@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PhoneIphone
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -57,7 +58,6 @@ import com.construct.messenger.data.model.LinkedDevice
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
-import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
@@ -195,7 +195,7 @@ private fun DevicesScreen(
                 CTSettingsSectionHeader(title = stringResource(R.string.other_devices))
                 CTSectionGroup {
                     others.forEachIndexed { index, device ->
-                        if (index > 0) CTSep()
+                        if (index > 0) HorizontalDivider()
                         DeviceRow(
                             device = device,
                             // The server refuses to revoke the primary device; no control that

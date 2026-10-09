@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.VpnLock
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -39,7 +40,6 @@ import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.transport.TransportRoute
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
-import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.CTSettingsRow
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.CTStatus
@@ -131,7 +131,7 @@ private fun NetworkContent(ui: NetworkUiState, onNavigateBack: () -> Unit, onMod
                     }
                 }
                 ui.lastHeartbeatAt?.let { at ->
-                    CTSep()
+                    HorizontalDivider()
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -215,7 +215,7 @@ private fun TransportDetail(ui: NetworkUiState) {
             valueColor = CTColor.textDim,
             icon = Icons.Default.Dns,
         )
-        CTSep()
+        HorizontalDivider()
         CTSettingsRow(
             label = stringResource(R.string.veil_path).uppercase(),
             value = stringResource(if (onVeil) R.string.veil_path_veil else R.string.veil_path_direct),
@@ -224,7 +224,7 @@ private fun TransportDetail(ui: NetworkUiState) {
             status = if (onVeil) CTStatus.OK else null,
         )
         if (route is TransportRoute.State.VeilActive) {
-            CTSep()
+            HorizontalDivider()
             CTSettingsRow(
                 label = stringResource(R.string.veil_front).uppercase(),
                 value = route.relay,
@@ -232,7 +232,7 @@ private fun TransportDetail(ui: NetworkUiState) {
                 icon = Icons.Default.Shield,
             )
             ui.info.latencyMs?.let { ms ->
-                CTSep()
+                HorizontalDivider()
                 CTSettingsRow(
                     label = stringResource(R.string.veil_latency).uppercase(),
                     value = "$ms ms",

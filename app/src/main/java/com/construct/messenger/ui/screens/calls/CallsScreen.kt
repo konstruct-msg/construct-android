@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.CallReceived
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -49,7 +50,6 @@ import com.construct.messenger.data.model.CallHistoryEntry
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTMatrixBackground
-import com.construct.messenger.ui.components.CTRowDivider
 import com.construct.messenger.ui.components.rememberAvatar
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
@@ -169,6 +169,8 @@ private fun SectionHeader(kind: CallHistorySection.Kind) {
     )
 }
 
+private val CallAvatarSize = 40.dp
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CallHistoryRow(entry: CallHistoryEntry, onDelete: () -> Unit) {
@@ -195,7 +197,7 @@ private fun CallHistoryRow(entry: CallHistoryEntry, onDelete: () -> Unit) {
                     userId = entry.peerUserId,
                     displayName = entry.peerName,
                     image = rememberAvatar(entry.peerAvatar),
-                    size = 40.dp,
+                    size = CallAvatarSize,
                 )
                 Spacer(Modifier.width(CTSpace.m))
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -231,7 +233,10 @@ private fun CallHistoryRow(entry: CallHistoryEntry, onDelete: () -> Unit) {
                     modifier = Modifier.size(CTIcon.row),
                 )
             }
-            CTRowDivider(indent = 72.dp)
+            // Material's inset divider, from the text column.
+            HorizontalDivider(
+                Modifier.padding(start = CTLayout.sectionGap + CTIcon.row + CTSpace.m + CallAvatarSize + CTSpace.m),
+            )
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, modifier = Modifier.background(CTColor.outMsgBg)) {
             if (callBack != null) {

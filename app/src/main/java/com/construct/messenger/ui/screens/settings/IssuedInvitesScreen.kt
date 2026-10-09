@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,7 +45,6 @@ import com.construct.messenger.data.repository.InviteRevocation
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
-import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
@@ -133,7 +133,7 @@ private fun IssuedInvitesScreen(
             } else {
                 CTSectionGroup {
                     ui.acts.forEachIndexed { index, act ->
-                        if (index > 0) CTSep()
+                        if (index > 0) HorizontalDivider()
                         InviteRow(
                             act = act,
                             nowEpochSec = ui.nowEpochSec,
