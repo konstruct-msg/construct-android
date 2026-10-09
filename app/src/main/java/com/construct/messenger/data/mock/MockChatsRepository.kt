@@ -1,10 +1,13 @@
 package com.construct.messenger.data.mock
 
+import com.construct.messenger.data.model.ChatActivity
 import com.construct.messenger.data.model.ChatSummary
 import com.construct.messenger.data.repository.ChatsRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -47,6 +50,11 @@ class MockChatsRepository @Inject constructor() : ChatsRepository {
     )
 
     override val chats: StateFlow<List<ChatSummary>> = mutableChats.asStateFlow()
+
+    /** Earlier chats in the list count as busier, so the cloud has a centre to show. */
+    override val activity: Flow<List<ChatActivity>> = mutableChats.map { list ->
+        list.mapIndexed { i, c -> ChatActivity(c.contactId, (list.size - i) * 10, c.lastMessageTime, c.unreadCount) }
+    }
 
     override fun suggestedContactId(): String = "test_contact"
 

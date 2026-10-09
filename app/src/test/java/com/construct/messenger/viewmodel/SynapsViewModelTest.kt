@@ -1,6 +1,7 @@
 package com.construct.messenger.viewmodel
 
 import com.construct.messenger.data.local.PendingInviteStore
+import com.construct.messenger.data.mock.MockChatsRepository
 import com.construct.messenger.data.model.Contact
 import com.construct.messenger.data.repository.AcceptInviteResult
 import com.construct.messenger.data.repository.ContactsRepository
@@ -25,7 +26,7 @@ class SynapsViewModelTest {
     @Test
     fun acceptPasteAddsContactAndClearsField() = runTest {
         val repo = FakeContacts()
-        val viewModel = SynapsViewModel(repo, PendingInviteStore())
+        val viewModel = SynapsViewModel(repo, MockChatsRepository(), PendingInviteStore())
         viewModel.onPasteChange("konstruct://add?invite=abc")
         viewModel.accept()
         advanceUntilIdle()
@@ -38,7 +39,7 @@ class SynapsViewModelTest {
     @Test
     fun findAndRequestSendsWhenUserExists() = runTest {
         val repo = FakeContacts().apply { foundId = "u-found" }
-        val viewModel = SynapsViewModel(repo, PendingInviteStore())
+        val viewModel = SynapsViewModel(repo, MockChatsRepository(), PendingInviteStore())
         viewModel.onQueryChange("@alice")
         viewModel.findAndRequest()
         advanceUntilIdle()
@@ -50,7 +51,7 @@ class SynapsViewModelTest {
     @Test
     fun shareInviteStoresLink() = runTest {
         val repo = FakeContacts()
-        val viewModel = SynapsViewModel(repo, PendingInviteStore())
+        val viewModel = SynapsViewModel(repo, MockChatsRepository(), PendingInviteStore())
         viewModel.shareInvite()
         advanceUntilIdle()
 

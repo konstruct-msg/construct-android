@@ -1,10 +1,15 @@
 package com.construct.messenger.data.repository
 
+import com.construct.messenger.data.model.ChatActivity
 import com.construct.messenger.data.model.ChatSummary
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 interface ChatsRepository {
     val chats: StateFlow<List<ChatSummary>>
+
+    /** Each chat's message count, last message and unread — what places a contact in Synapses. */
+    val activity: Flow<List<ChatActivity>>
 
     fun suggestedContactId(): String
 

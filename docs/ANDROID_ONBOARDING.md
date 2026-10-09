@@ -52,7 +52,7 @@
    - 5.7 [AppearanceSettingsView — темы](#57-appearancesettingsview--темы)
    - 5.8 [NetworkSettingsView — сеть](#58-networksettingsview--сеть)
    - 5.9 [SecurityView — безопасность](#59-securityview--безопасность)
-   - 5.10 [SynapsView — контакты (соты)](#510-synapsview--контакты-соты)
+   - 5.10 [SynapsView — контакты (облако)](#510-synapsview--контакты-облако)
 6. [Генератор анонимных имён](#6-генератор-анонимных-имён)
 7. [Локализация (i18n)](#7-локализация-i18n)
 8. [Архитектура данных](#8-архитектура-данных)
@@ -605,19 +605,22 @@ Tab bar скрывается когда `isInChat || isInSettings == true`.
 - Security gate (PIN lock screen)
 - Safety Numbers verification
 
-### 5.10 SynapsView — контакты (соты)
+### 5.10 SynapsView — контакты (облако)
 
-> **Android сейчас (намеренно проще канона):** mint v5 (share/copy link),
-> paste-accept, список контактов → чат, FindUser и входящие contact requests.
-> Honeycomb / ZoomableCloud и профильный sheet ещё не реализованы. Deep link
-> `konstruct://add` пишется в `PendingInviteStore` и гасится после онбординга.
+Облако контактов, как на iOS (`SynapsLayoutEngine.swift`, vault TODO 133), с 2026-10-09:
 
-- «Honeycomb» layout: зуммируемый/панорамируемый облако из круглых аватаров
-- `ZoomableCloud` + `HoneycombCloud` composables
-- Proximity effect: центральные контакты крупнее и ярче
-- `CTSearchBar` + remote search (поиск пользователей на сервере)
-- Incoming contact requests секция
-- Tap avatar → sheet с `UserProfileView`
+- **Раскладка** — `SynapsCloudLayout`: шестиугольная спираль от центра (1, 6, 12, …), шаг 96 dp,
+  ряды разведены в 1.15 раза; самый активный в центре, при равенстве — по id. Диаметр кружка
+  `96·(0.50 + 0.16·частота)`.
+- **Активность** — `ContactMetrics.byContact` из `ChatsRepository.activity` (запрос Room: видимые
+  сообщения чата, последнее сообщение, непрочитанные). Обводка: непрочитанные — accent, < 24 ч —
+  accent 0.90, < 7 дней — 0.45, иначе textDim 0.50; заблокированный — красная, имя приглушено.
+- **Линза** — `SynapsLens`: овал на видимую часть (−14 dp), `tanh` подтягивает к краю, масштаб
+  1 → 0.35, гаснет только крайняя полоса, имена только у центра и первого кольца.
+- **Экран**: холст на весь экран, сверху поверх — панель, поиск, запросы (их высота меряется);
+  центр облака — середина остального. Открывается 1:1; пан и щипок 0.2…3 от центра линзы; тап
+  открывает профиль, перетаскивание — нет. Заблокированные — в облаке, отдельной секции нет.
+- Числа сверены тестами `SynapsCloudLayoutTest` (как iOS `SynapsCloudLayoutTests`).
 
 ---
 
