@@ -7,7 +7,7 @@ import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.ChatStore
-import com.construct.messenger.data.local.db.MessageDao
+import com.construct.messenger.data.local.MessageStore
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.util.ConversationId
 import javax.inject.Inject
@@ -27,7 +27,7 @@ class ContactActionsUseCase @Inject constructor(
     private val keystoreManager: KeystoreManager,
     private val contacts: ContactStore,
     private val chats: ChatStore,
-    private val messageDao: MessageDao,
+    private val messages: MessageStore,
     private val registry: PeerDeviceRegistry,
     private val cryptoManager: CryptoManager,
     private val sessionStateStore: SessionStateStore,
@@ -48,7 +48,7 @@ class ContactActionsUseCase @Inject constructor(
         val devices = devicesOf(userId)
         keystoreManager.getUserId()?.let { myId ->
             val chatId = ConversationId.direct(myId, userId)
-            messageDao.deleteChat(chatId)
+            messages.deleteChat(chatId)
             chats.delete(chatId)
         }
         contacts.delete(userId)
@@ -68,7 +68,7 @@ class ContactActionsUseCase @Inject constructor(
         val devices = devicesOf(userId)
         keystoreManager.getUserId()?.let { myId ->
             val chatId = ConversationId.direct(myId, userId)
-            messageDao.deleteChat(chatId)
+            messages.deleteChat(chatId)
             chats.delete(chatId)
         }
         forgetSessions(devices)

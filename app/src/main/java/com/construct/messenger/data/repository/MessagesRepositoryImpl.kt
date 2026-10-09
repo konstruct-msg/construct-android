@@ -4,10 +4,10 @@ import android.net.Uri
 import com.construct.messenger.data.local.ChatPresence
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.ChatStore
-import com.construct.messenger.data.local.db.MessageDao
-import com.construct.messenger.data.local.db.MessageEntity
+import com.construct.messenger.data.local.MessageStore
+import com.construct.messenger.data.local.MessageRecord
 import com.construct.messenger.util.MediaWire
-import com.construct.messenger.data.local.db.refreshChatPreview
+import com.construct.messenger.data.local.refreshChatPreview
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.Message
 import com.construct.messenger.data.model.ReplyRef
@@ -34,7 +34,7 @@ import com.construct.messenger.util.ReactionWire
 
 @Singleton
 class MessagesRepositoryImpl @Inject constructor(
-    private val messageDao: MessageDao,
+    private val messages: MessageStore,
     private val keystoreManager: KeystoreManager,
     private val sendMessage: SendMessageUseCase,
     private val chats: ChatStore,
@@ -53,7 +53,7 @@ class MessagesRepositoryImpl @Inject constructor(
         val myId = keystoreManager.getUserId() ?: return emptyFlow()
         val chatId = ConversationId.direct(myId, contactId)
         val me = myId.lowercase()
-        return combine(messageDao.observeChat(chatId), reactionDao.observeChat(chatId)) { rows, reacted ->
+        return combine(messages.observeChat(chatId), reactionDao.observeChat(chatId)) { rows, reacted ->
             val byTarget = reacted.groupBy { it.targetMessageId }
             rows.map { row ->
                 row.toModel().copy(
@@ -145,10 +145,10 @@ class MessagesRepositoryImpl @Inject constructor(
     override suspend fun delete(contactId: String, messageId: String) {
         val myId = keystoreManager.getUserId() ?: return
         val chatId = ConversationId.direct(myId, contactId)
-        val row = messageDao.getByIdIgnoreCase(messageId) ?: return
+        val row = messages.get(messageId) ?: return
         if (row.chatId != chatId) return
-        messageDao.deleteById(row.id)
-        refreshChatPreview(chats, messageDao, chatId)
+        messages.delete(row.id)
+        messages.refreshChatPreview(chats, chatId)
     }
 
     override suspend fun chatShown(contactId: String) {
@@ -163,14 +163,13 @@ class MessagesRepositoryImpl @Inject constructor(
     override fun chatHidden(contactId: String) = presence.hidden(contactId)
 }
 
-private fun MessageEntity.toModel(): Message = Message(
+private fun MessageRecord.toModel(): Message = Message(
     id = id,
     chatId = chatId,
     body = text,
     isOutgoing = isSentByMe,
-    timestamp = timestamp,
-    deliveryStatus = runCatching { DeliveryStatus.valueOf(deliveryStatus) }
-        .getOrDefault(DeliveryStatus.SENT),
+    timestamp = timestampMs,
+    deliveryStatus = deliveryStatus,
     replyToId = replyToId,
     replyPreview = replyPreview,
     replyMediaType = replyMediaType,

@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Room
 import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.ChatStore
+import com.construct.messenger.data.local.MessageStore
+import com.construct.messenger.data.local.RoomMessageStore
 import com.construct.messenger.data.local.RoomChatStore
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.RoomContactStore
@@ -11,7 +13,6 @@ import com.construct.messenger.data.local.PersistentAckStore
 import com.construct.messenger.data.local.db.AckDao
 import com.construct.messenger.data.local.db.CallRecordDao
 import com.construct.messenger.data.local.db.ConstructDatabase
-import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.SessionStateDao
 import com.construct.messenger.data.local.db.IssuedInviteDao
 import com.construct.messenger.data.local.db.PeerDeviceDao
@@ -63,8 +64,10 @@ object DatabaseModule {
     @Singleton
     fun provideChatStore(db: ConstructDatabase): ChatStore = RoomChatStore(db.chatDao())
 
+    /** The `messages` table only through here (TODO 136): no `MessageDao` is provided. */
     @Provides
-    fun provideMessageDao(db: ConstructDatabase): MessageDao = db.messageDao()
+    @Singleton
+    fun provideMessageStore(db: ConstructDatabase): MessageStore = RoomMessageStore(db.messageDao())
 
     /** The `users` table only through here (TODO 136): no `UserDao` is provided. */
     @Provides

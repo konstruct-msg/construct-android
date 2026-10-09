@@ -69,3 +69,11 @@ suspend fun ChatStore.noteMessage(id: String, peerId: String, preview: String, t
     advancePreview(id, preview, timeMs)
     if (unread) incrementUnread(id)
 }
+
+/**
+ * The chat with [peerId], created empty when there is none — before its first message is stored,
+ * which the core holds to it. [noteMessage] then sets its preview.
+ */
+suspend fun ChatStore.ensure(id: String, peerId: String) {
+    insert(ChatRecord(id, peerId))
+}

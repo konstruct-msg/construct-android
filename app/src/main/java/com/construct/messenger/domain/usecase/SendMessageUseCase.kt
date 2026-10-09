@@ -6,9 +6,10 @@ import com.construct.messenger.data.api.MessagingService
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.ChatStore
+import com.construct.messenger.data.local.ensure
 import com.construct.messenger.data.local.noteMessage
-import com.construct.messenger.data.local.db.MessageDao
-import com.construct.messenger.data.local.db.MessageEntity
+import com.construct.messenger.data.local.MessageStore
+import com.construct.messenger.data.local.MessageRecord
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ReplyRef
@@ -22,8 +23,8 @@ import com.construct.messenger.stealth.SealedEnvelopeType
 import com.construct.messenger.stealth.SealedSend
 import com.construct.messenger.stealth.StealthSenderService
 import com.construct.messenger.util.ConversationId
-import com.construct.messenger.data.local.db.refreshChatPreview
-import com.construct.messenger.data.local.db.applyEdit
+import com.construct.messenger.data.local.refreshChatPreview
+import com.construct.messenger.data.local.applyEdit
 import com.construct.messenger.util.EditWire
 import com.construct.messenger.util.KnstFrame
 import com.construct.messenger.util.MediaWire
@@ -74,7 +75,7 @@ class SendMessageUseCase @Inject constructor(
     private val stealthPolicy: StealthPolicy,
     private val stealthSender: StealthSenderService,
     private val sealedSend: SealedSend,
-    private val messageDao: MessageDao,
+    private val messages: MessageStore,
     private val chats: ChatStore,
     private val contacts: ContactStore,
     private val sessionStateStore: SessionStateStore,
@@ -161,25 +162,24 @@ class SendMessageUseCase @Inject constructor(
 
     /** The uploaded media, by the ids the store gave it, in place of the staged ones. */
     suspend fun replaceMedia(messageId: String, media: MediaWire.Stored) {
-        val row = messageDao.getById(messageId) ?: return
-        messageDao.insert(row.copy(mediaType = media.kind, mediaPayload = media.bytes))
+        messages.setMedia(messageId, media.kind, media.bytes)
     }
 
     suspend fun markFailed(messageId: String) {
-        messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
+        messages.setDeliveryStatus(messageId, DeliveryStatus.FAILED)
     }
 
     suspend fun markSending(messageId: String) {
-        messageDao.updateDeliveryStatus(messageId, DeliveryStatus.SENDING.name)
+        messages.setDeliveryStatus(messageId, DeliveryStatus.SENDING)
     }
 
     /** One of our messages in the chat with [contactId] that no device took — what Retry may send. */
-    suspend fun failedRow(contactId: String, messageId: String): MessageEntity? {
+    suspend fun failedRow(contactId: String, messageId: String): MessageRecord? {
         val myId = keystoreManager.getUserId() ?: return null
-        val row = messageDao.getByIdIgnoreCase(messageId) ?: return null
+        val row = messages.get(messageId) ?: return null
         return row.takeIf {
             it.isSentByMe && it.contentType == 0 && it.chatId == ConversationId.direct(myId, contactId) &&
-                it.deliveryStatus == DeliveryStatus.FAILED.name
+                it.deliveryStatus == DeliveryStatus.FAILED
         }
     }
 
@@ -187,10 +187,10 @@ class SendMessageUseCase @Inject constructor(
      * Retry ([failedRow]): the same message, under the same id, sent again — iOS
      * `MessageRetryManager`. Its text with its quote, or its media once uploaded.
      */
-    suspend fun retry(contactId: String, row: MessageEntity): SendOutcome {
+    suspend fun retry(contactId: String, row: MessageRecord): SendOutcome {
         val content = resendableContent(row) ?: return SendOutcome.Failed(row.id, "nothing to send")
-        messageDao.updateDeliveryStatus(row.id, DeliveryStatus.SENDING.name)
-        return deliverPrepared(contactId, row.id, row.timestamp, content)
+        messages.setDeliveryStatus(row.id, DeliveryStatus.SENDING)
+        return deliverPrepared(contactId, row.id, row.timestampMs, content)
     }
 
     /** Send [content] as the row [messageId] already written; its status follows the answer. */
@@ -222,17 +222,17 @@ class SendMessageUseCase @Inject constructor(
                 // `sent` has always meant "in the person's mailbox", and one accepted copy puts
                 // it there. Devices that refused are named in the log, not in the row — a per
                 // device status needs a per device carrier, which Room does not have yet.
-                messageDao.updateDeliveryStatus(messageId, DeliveryStatus.SENT.name)
+                messages.setDeliveryStatus(messageId, DeliveryStatus.SENT)
                 SendOutcome.Sent(messageId)
             } else {
-                messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
+                messages.setDeliveryStatus(messageId, DeliveryStatus.FAILED)
                 SendOutcome.Failed(messageId, tally.lastError)
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "send failed ${messageId.take(8)}…", e)
-            messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
+            messages.setDeliveryStatus(messageId, DeliveryStatus.FAILED)
             SendOutcome.Failed(messageId, e.message ?: "send failed")
         }
     }
@@ -253,7 +253,7 @@ class SendMessageUseCase @Inject constructor(
         val myId = keystoreManager.getUserId() ?: return ResendOutcome.FAILED
         // The peer names the id it received, which for a sealed copy is the server's.
         val localId = serverMessageIds.localId(messageId)
-        val row = messageDao.getById(localId) ?: messageDao.getByIdIgnoreCase(localId)
+        val row = messages.get(localId)
         val content = row?.let(::resendableContent)
         if (row == null || !row.isSentByMe || row.contentType != 0 || content == null ||
             row.chatId != ConversationId.direct(myId, contactId)
@@ -271,7 +271,7 @@ class SendMessageUseCase @Inject constructor(
                 myId = myId,
                 accountId = contactId,
                 localId = row.id,
-                timestampMs = row.timestamp,
+                timestampMs = row.timestampMs,
                 identityPublic = peer.identityPublic,
                 isOwnReplica = false,
             )
@@ -291,7 +291,7 @@ class SendMessageUseCase @Inject constructor(
      * resend, keeping no plaintext of it; the row here holds the wire message. Null when there is
      * nothing to send, or the media never finished uploading.
      */
-    private fun resendableContent(row: MessageEntity): ByteArray? {
+    private fun resendableContent(row: MessageRecord): ByteArray? {
         val reply = row.replyToId?.let { ReplyRef(it, row.replyPreview.orEmpty(), row.replyMediaType) }
         val payload = row.mediaPayload
         if (row.mediaType != null && payload != null) {
@@ -343,14 +343,14 @@ class SendMessageUseCase @Inject constructor(
         if (!cryptoManager.isMessagingReady) {
             return SendOutcome.Failed(targetMessageId, "orchestrator not ready")
         }
-        val row = messageDao.getByIdIgnoreCase(targetMessageId)
+        val row = messages.get(targetMessageId)
             ?: return SendOutcome.Failed(targetMessageId, "missing")
         if (!row.isSentByMe) return SendOutcome.Failed(targetMessageId, "not author")
 
         return when (val outcome = sendAction(myId, contactId, EditWire.encode(row.id, body), "edit")) {
             is SendOutcome.Sent -> {
-                messageDao.applyEdit(row, body)
-                refreshChatPreview(chats, messageDao, row.chatId)
+                messages.applyEdit(row, body)
+                messages.refreshChatPreview(chats, row.chatId)
                 outcome
             }
             is SendOutcome.Failed -> SendOutcome.Failed(targetMessageId, outcome.reason)
@@ -422,10 +422,10 @@ class SendMessageUseCase @Inject constructor(
             isOwnReplica = false,
         )
         if (result?.success != true) {
-            messageDao.updateDeliveryStatus(messageId, DeliveryStatus.FAILED.name)
+            messages.setDeliveryStatus(messageId, DeliveryStatus.FAILED)
             return SendOutcome.Failed(messageId, result?.errorCode?.ifEmpty { "send failed" } ?: "send failed")
         }
-        messageDao.updateDeliveryStatus(messageId, DeliveryStatus.SENT.name)
+        messages.setDeliveryStatus(messageId, DeliveryStatus.SENT)
         runCatching {
             deliverCopies(myId, myId, messageId, timestampMs, content, pinned)
         }.onFailure {
@@ -681,14 +681,17 @@ class SendMessageUseCase @Inject constructor(
         reply: ReplyRef?,
         media: MediaWire.Stored? = null,
     ) {
-        messageDao.insert(
-            MessageEntity(
+        // The core holds a message to its chat and the chat to its contact: both first.
+        contacts.ensure(contactId)
+        chats.ensure(chatId, contactId)
+        messages.insert(
+            MessageRecord(
                 id = messageId,
                 chatId = chatId,
                 text = text,
                 isSentByMe = true,
-                timestamp = timestampMs,
-                deliveryStatus = status.name,
+                timestampMs = timestampMs,
+                deliveryStatus = status,
                 replyToId = reply?.messageId,
                 replyPreview = reply?.preview?.ifEmpty { null },
                 replyMediaType = reply?.mediaType,
@@ -697,7 +700,6 @@ class SendMessageUseCase @Inject constructor(
             ),
         )
         val preview = media?.let(mediaPreview::of) ?: text
-        contacts.ensure(contactId)
         chats.noteMessage(chatId, contactId, preview, timestampMs, unread = false)
     }
 
