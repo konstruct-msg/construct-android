@@ -22,6 +22,27 @@ internal interface VeilLib : Library {
     fun veil_port(): Short
     fun veil_last_error(buf: ByteArray, cap: SizeT): SizeT
 
+    /**
+     * `veil_front_ferry_fd` in `src/ffi.rs` — the native-TLS veil-front seam. The host (Kotlin,
+     * [VeilFrontExternalDialer]) terminates TLS to the relay in Conscrypt — a genuine Android
+     * ClientHello instead of rustls-Chrome131 — and hands Rust, per accepted local gRPC connection:
+     * [localFd] the accepted gRPC TCP socket; [relayFd] one end of a socketpair carrying the
+     * **decrypted** relay duplex; the 32-byte TLS [exporter] ([exporterLen] = 32) Rust rebinds AUTH
+     * to; and the AUTH material (empty [veilSkHex] → AUTH v2 with [ticketB64], else AUTH v3 with
+     * [capabilityB64] + [veilSkHex]). Rust adopts and closes BOTH fds on every path — the caller
+     * must not touch them after the call. Returns immediately: 0 started, -1 bad args.
+     * **Canon:** iOS `VeilFrontExternalDialer`.
+     */
+    fun veil_front_ferry_fd(
+        localFd: Int,
+        relayFd: Int,
+        exporter: ByteArray,
+        exporterLen: SizeT,
+        capabilityB64: String?,
+        veilSkHex: String?,
+        ticketB64: String?,
+    ): Int
+
     companion object {
         val INSTANCE: VeilLib by lazy { Native.load("construct_core", VeilLib::class.java) }
     }

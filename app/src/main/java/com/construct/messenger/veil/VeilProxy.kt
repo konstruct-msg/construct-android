@@ -48,9 +48,26 @@ class VeilProxy @Inject constructor(
     private val info = MutableStateFlow(VeilStartInfo())
     val startInfo: StateFlow<VeilStartInfo> = info.asStateFlow()
 
+    /** Native-TLS veil-front dialer (Conscrypt). Used only when [nativeTlsEnabled]; off by default. */
+    private val externalDialer = VeilFrontExternalDialer()
+
     fun saveMode(value: VeilMode) {
         prefs.edit().putString(KEY_MODE, value.name).apply()
         mode.value = value
+    }
+
+    /**
+     * Terminate veil-front TLS in Conscrypt (a genuine Android ClientHello) instead of
+     * rustls-Chrome131. **Default on** — validated 2026-10-09 on a real device (Redmi, Android 11)
+     * against the production relay: exporter parity with the relay's rustls, a mainstream-Conscrypt
+     * ClientHello (not the Chrome131 oddball), end-to-end key-bound AUTH, and bucket-aligned L4. The
+     * rustls path stays the automatic fallback when the dial / SPKI pin / bind fails. Canon: iOS
+     * `veil_front_native_tls` (default on since #141).
+     */
+    fun nativeTlsEnabled(): Boolean = prefs.getBoolean(KEY_NATIVE_TLS, true)
+
+    fun setNativeTls(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_NATIVE_TLS, enabled).apply()
     }
 
     sealed interface StartResult {
@@ -76,6 +93,19 @@ class VeilProxy @Inject constructor(
         val keyBound = capabilities.currentKeyBound(relay)
         val bearer = if (keyBound != null) capabilities.current(relay).orEmpty() else {
             capabilities.ensure(relay) ?: return failed(relay, "no capability for ${relay.address}")
+        }
+        // Opt-in native-TLS path: Conscrypt terminates TLS to the relay (genuine Android hello),
+        // Rust runs the post-TLS ferry. Falls back to rustls (below) if the dial/pin/bind fails.
+        if (nativeTlsEnabled()) {
+            val nativePort = withContext(Dispatchers.IO) {
+                externalDialer.start(relay, bearer, keyBound?.capabilityB64.orEmpty(), keyBound?.veilSkHex.orEmpty())
+            }
+            if (nativePort != null) {
+                info.value = VeilStartInfo(relay.address, VeilMethod.VEIL_FRONT, latencyMs = null, lastError = null)
+                Log.i(TAG, "VEIL up: ${relay.address} via VEIL_FRONT (native Conscrypt), local :$nativePort, key-bound ${keyBound != null}")
+                return StartResult.Up(relay.address, nativePort)
+            }
+            Log.w(TAG, "native Conscrypt veil-front unavailable; falling back to rustls")
         }
         val outcome = withContext(Dispatchers.IO) { startNative(relay, bearer, keyBound) }
         if (outcome.port <= 0) return failed(relay, outcome.error ?: "veil_start failed")
@@ -104,6 +134,7 @@ class VeilProxy @Inject constructor(
     }
 
     fun stop() {
+        runCatching { externalDialer.stop() } // closes the native listener + live Conscrypt sessions
         runCatching { VeilLib.INSTANCE.veil_stop() }
         info.update { it.copy(relay = null, method = null, latencyMs = null) }
     }
@@ -160,6 +191,7 @@ class VeilProxy @Inject constructor(
         private const val TAG = "VEIL"
         private const val PREFS = "veil_prefs"
         private const val KEY_MODE = "mode"
+        private const val KEY_NATIVE_TLS = "native_tls"
         private const val SCORES_FILE = "veil_scores.sqlite"
         private const val ERROR_BUFFER = 512
     }
