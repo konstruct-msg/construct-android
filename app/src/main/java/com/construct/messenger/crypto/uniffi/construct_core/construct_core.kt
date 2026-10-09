@@ -1022,6 +1022,8 @@ external fun uniffi_construct_core_checksum_method_localstore_set_identity_key(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_kt_status(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_message_body(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_observer(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_order_key(
@@ -1468,6 +1470,8 @@ external fun uniffi_construct_core_fn_method_localstore_set_delivery_status(`ptr
 external fun uniffi_construct_core_fn_method_localstore_set_identity_key(`ptr`: Long,`id`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_kt_status(`ptr`: Long,`id`: RustBuffer.ByValue,`status`: Short,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_message_body(`ptr`: Long,`id`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`searchText`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_observer(`ptr`: Long,`observer`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -2409,6 +2413,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_set_kt_status() != 19632.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_message_body() != 28116.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_set_observer() != 60987.toShort()) {
@@ -4758,6 +4765,12 @@ public interface LocalStoreInterface {
     
     fun `setKtStatus`(`id`: kotlin.String, `status`: kotlin.Short): kotlin.Boolean
     
+    /**
+     * The body and its search text replaced, the message not marked edited: a body read late —
+     * stored undecryptable, sent again under the same id. False: no message.
+     */
+    fun `setMessageBody`(`id`: kotlin.String, `body`: kotlin.ByteArray, `searchText`: kotlin.String?): kotlin.Boolean
+    
     fun `setObserver`(`observer`: LocalStoreObserver?)
     
     fun `setOrderKey`(`id`: kotlin.String, `orderKey`: kotlin.String): kotlin.Boolean
@@ -5741,6 +5754,24 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_set_kt_status(
         it,
         FfiConverterString.lower(`id`),FfiConverterShort.lower(`status`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The body and its search text replaced, the message not marked edited: a body read late —
+     * stored undecryptable, sent again under the same id. False: no message.
+     */
+    @Throws(LocalStoreException::class)override fun `setMessageBody`(`id`: kotlin.String, `body`: kotlin.ByteArray, `searchText`: kotlin.String?): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_message_body(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterByteArray.lower(`body`),FfiConverterOptionalString.lower(`searchText`),_status)
 }
     }
     )
