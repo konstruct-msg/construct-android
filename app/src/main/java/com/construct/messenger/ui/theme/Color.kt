@@ -7,12 +7,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 
 /**
- * Design-system color tokens.
+ * The palette the Material colour schemes are built from (`Theme.kt`), and aliases onto them.
  *
- * **Canon:** iOS `ConstructMessenger/Utilities/ConstructTheme.swift` → `Color.CT`.
- * Values must match the iOS app exactly — do not eyeball them. iOS defines most
- * tokens as `dark/light` pairs; we mirror that with `<token>Dark` + `<token>Light`,
- * and `<token>` returns the half for the current theme ([isDark]).
+ * Android's look is Material 3 (vault `decisions/android-is-material-3.md`): the values here came
+ * from iOS `Color.CT` and stay until the designer's file replaces them, in this file and nowhere
+ * else. Most tokens are `<token>Dark` + `<token>Light` pairs; the unsuffixed `<token>` returns the
+ * half for the current theme ([isDark]) or reads the role. New code reads
+ * `MaterialTheme.colorScheme` instead. Do not eyeball a value: the contrast tests measure them.
  */
 object CTColor {
     /**

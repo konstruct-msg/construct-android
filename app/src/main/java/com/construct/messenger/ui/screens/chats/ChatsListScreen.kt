@@ -103,9 +103,8 @@ fun ChatsListScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        // Canon: iOS ChatsListView nav bar — no title; the connection dot, centred on the avatar
-        // column (40), and the scanner (qrcode.viewfinder), one tap away.
-        // Material's top bar; the dot sits in the navigation slot, moved to the avatar column.
+        // Material's top bar with no title: the connection dot in the navigation slot, centred on
+        // the avatar column (40), and the scanner one tap away.
         TopAppBar(
             title = {},
             navigationIcon = {
