@@ -4,7 +4,8 @@ import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Query
-import androidx.room.Upsert
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import com.construct.messenger.data.model.ChatActivity
 import kotlinx.coroutines.flow.Flow
 
@@ -37,16 +38,19 @@ interface ChatDao {
     @Query("SELECT * FROM chats WHERE id = :chatId")
     suspend fun getById(chatId: String): ChatEntity?
 
-    @Query("SELECT id FROM chats")
-    suspend fun getAllIds(): List<String>
+    /** -1 when the chat was already there. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfAbsent(chat: ChatEntity): Long
 
-    @Upsert
-    suspend fun upsert(chat: ChatEntity)
-
+    /** Forward only: an older message does not replace a newer preview; an equal time does. */
     @Query(
-        "UPDATE chats SET lastMessageText = :text, lastMessageTime = :timeMs WHERE id = :chatId",
+        "UPDATE chats SET lastMessageText = :text, lastMessageTime = :timeMs " +
+            "WHERE id = :chatId AND (lastMessageTime IS NULL OR lastMessageTime <= :timeMs)",
     )
-    suspend fun updateLastMessage(chatId: String, text: String?, timeMs: Long)
+    suspend fun advancePreview(chatId: String, text: String, timeMs: Long)
+
+    @Query("UPDATE chats SET lastMessageText = :text, lastMessageTime = :timeMs WHERE id = :chatId")
+    suspend fun setPreview(chatId: String, text: String?, timeMs: Long?)
 
     @Query("UPDATE chats SET unreadCount = :count WHERE id = :chatId")
     suspend fun updateUnreadCount(chatId: String, count: Int)

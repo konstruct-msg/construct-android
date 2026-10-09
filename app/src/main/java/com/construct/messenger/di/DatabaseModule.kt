@@ -3,11 +3,12 @@ package com.construct.messenger.di
 import android.content.Context
 import androidx.room.Room
 import com.construct.messenger.data.local.AckStore
+import com.construct.messenger.data.local.ChatStore
+import com.construct.messenger.data.local.RoomChatStore
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.RoomContactStore
 import com.construct.messenger.data.local.PersistentAckStore
 import com.construct.messenger.data.local.db.AckDao
-import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.CallRecordDao
 import com.construct.messenger.data.local.db.ConstructDatabase
 import com.construct.messenger.data.local.db.MessageDao
@@ -57,8 +58,10 @@ object DatabaseModule {
             .fallbackToDestructiveMigrationFrom(1, 2, 3)
             .build()
 
+    /** The `chats` table only through here (TODO 136): no `ChatDao` is provided. */
     @Provides
-    fun provideChatDao(db: ConstructDatabase): ChatDao = db.chatDao()
+    @Singleton
+    fun provideChatStore(db: ConstructDatabase): ChatStore = RoomChatStore(db.chatDao())
 
     @Provides
     fun provideMessageDao(db: ConstructDatabase): MessageDao = db.messageDao()

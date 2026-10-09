@@ -3,7 +3,7 @@ package com.construct.messenger.data.repository
 import android.net.Uri
 import com.construct.messenger.data.local.ChatPresence
 import com.construct.messenger.data.local.KeystoreManager
-import com.construct.messenger.data.local.db.ChatDao
+import com.construct.messenger.data.local.ChatStore
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.MessageEntity
 import com.construct.messenger.util.MediaWire
@@ -37,7 +37,7 @@ class MessagesRepositoryImpl @Inject constructor(
     private val messageDao: MessageDao,
     private val keystoreManager: KeystoreManager,
     private val sendMessage: SendMessageUseCase,
-    private val chatDao: ChatDao,
+    private val chats: ChatStore,
     private val presence: ChatPresence,
     private val alerts: IncomingAlerts,
     private val sendContactCard: SendContactCardUseCase,
@@ -148,14 +148,14 @@ class MessagesRepositoryImpl @Inject constructor(
         val row = messageDao.getByIdIgnoreCase(messageId) ?: return
         if (row.chatId != chatId) return
         messageDao.deleteById(row.id)
-        refreshChatPreview(chatDao, messageDao, chatId)
+        refreshChatPreview(chats, messageDao, chatId)
     }
 
     override suspend fun chatShown(contactId: String) {
         // Presence first: a message landing between these two lines is then not counted.
         presence.shown(contactId)
         keystoreManager.getUserId()?.let { myId ->
-            chatDao.updateUnreadCount(ConversationId.direct(myId, contactId), 0)
+            chats.setUnread(ConversationId.direct(myId, contactId), 0)
         }
         alerts.clear(contactId)
     }

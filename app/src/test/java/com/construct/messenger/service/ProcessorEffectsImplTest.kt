@@ -4,8 +4,8 @@ import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
-import com.construct.messenger.data.local.db.ChatDao
-import com.construct.messenger.data.local.db.ChatEntity
+import com.construct.messenger.data.local.FakeChatStore
+import com.construct.messenger.data.local.ChatRecord
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.MessageEntity
 import com.construct.messenger.data.local.FakeContactStore
@@ -54,7 +54,7 @@ class ProcessorEffectsImplTest {
     /** Just enough to receive text messages: Room fakes and a known local account. */
     private class Inbox(alerts: IncomingAlerts, myId: String) {
         val messages = FakeMessageDao()
-        val chats = FakeChatDao()
+        val chats = FakeChatStore()
         val users = FakeContactStore()
         val acks = FakeAckStore()
         val pendingChunks = FakePendingChunkDao()
@@ -69,7 +69,7 @@ class ProcessorEffectsImplTest {
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) },
             messageDao = messages,
-            chatDao = chats,
+            chats = chats,
             contacts = users,
             ackStore = acks,
             sessionStateStore = mock(),
@@ -106,7 +106,7 @@ class ProcessorEffectsImplTest {
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = keystore,
             messageDao = messages,
-            chatDao = FakeChatDao(),
+            chats = FakeChatStore(),
             contacts = users,
             ackStore = FakeAckStore(),
             sessionStateStore = mock(),
@@ -148,7 +148,7 @@ class ProcessorEffectsImplTest {
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = keystore,
             messageDao = messages,
-            chatDao = FakeChatDao(),
+            chats = FakeChatStore(),
             contacts = users,
             ackStore = FakeAckStore(),
             sessionStateStore = mock(),
@@ -213,7 +213,7 @@ class ProcessorEffectsImplTest {
     @Test
     fun `onDecrypted persists message chat and contact`() = runTest {
         val messages = FakeMessageDao()
-        val chats = FakeChatDao()
+        val chats = FakeChatStore()
         val users = FakeContactStore()
         val acks = FakeAckStore()
         val keystore: KeystoreManager = mock()
@@ -223,7 +223,7 @@ class ProcessorEffectsImplTest {
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = keystore,
             messageDao = messages,
-            chatDao = chats,
+            chats = chats,
             contacts = users,
             ackStore = acks,
             sessionStateStore = mock(),
@@ -250,7 +250,7 @@ class ProcessorEffectsImplTest {
         val chatId = ConversationId.direct(myId, peer)
         assertEquals("hello", messages.rows["msg-1"]?.text)
         assertEquals(chatId, messages.rows["msg-1"]?.chatId)
-        assertEquals(peer, chats.rows[chatId]?.otherUserId)
+        assertEquals(peer, chats.rows[chatId]?.peerId)
         assertEquals(1, chats.rows[chatId]?.unreadCount)
         assertEquals(peer, users.rows[peer]?.id)
         assertTrue(acks.isProcessed("msg-1"))
@@ -259,7 +259,7 @@ class ProcessorEffectsImplTest {
     @Test
     fun `onSenderSync strips SSR1 and persists sent copy under base id`() = runTest {
         val messages = FakeMessageDao()
-        val chats = FakeChatDao()
+        val chats = FakeChatStore()
         val users = FakeContactStore()
         val acks = FakeAckStore()
         val keystore: KeystoreManager = mock()
@@ -268,7 +268,7 @@ class ProcessorEffectsImplTest {
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = keystore,
             messageDao = messages,
-            chatDao = chats,
+            chats = chats,
             contacts = users,
             ackStore = acks,
             sessionStateStore = mock(),
@@ -761,7 +761,7 @@ class ProcessorEffectsImplTest {
             timestamp = 1L,
             deliveryStatus = DeliveryStatus.SENT.name,
         )
-        inbox.chats.rows[chatId] = ChatEntity(id = chatId, otherUserId = peer, lastMessageText = "before", lastMessageTime = 1L)
+        inbox.chats.rows[chatId] = ChatRecord(id = chatId, peerId = peer, lastMessageText = "before", lastMessageTimeMs = 1L)
         val edit = KnstFrame.pack(EditWire.encode(id, "after"), KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID())
         inbox.effects.onSenderSync(peer, "edit-ss-0123456789abcdef", SenderSyncRouting.encode(peer, edit), 50L)
 
@@ -826,7 +826,7 @@ class ProcessorEffectsImplTest {
             cryptoManager = crypto,
             keystoreManager = keystore,
             messageDao = FakeMessageDao(),
-            chatDao = FakeChatDao(),
+            chats = FakeChatStore(),
             contacts = FakeContactStore(),
             ackStore = acks,
             sessionStateStore = mock(),
@@ -935,28 +935,6 @@ private class FakeMessageDao : MessageDao {
     override suspend fun latestVisible(chatId: String) =
         rows.values.filter { it.chatId == chatId && it.contentType == 0 }.maxByOrNull { it.timestamp }
     override suspend fun deleteChat(chatId: String) { rows.values.removeAll { it.chatId == chatId } }
-}
-
-private class FakeChatDao : ChatDao {
-    val rows = linkedMapOf<String, ChatEntity>()
-    override fun observeAll() = MutableStateFlow(rows.values.toList())
-    override fun observeActivity() = MutableStateFlow(emptyList<com.construct.messenger.data.model.ChatActivity>())
-    override suspend fun getById(chatId: String) = rows[chatId]
-    override suspend fun getAllIds() = rows.keys.toList()
-    override suspend fun upsert(chat: ChatEntity) { rows[chat.id] = chat }
-    override suspend fun updateLastMessage(chatId: String, text: String?, timeMs: Long) {
-        rows[chatId]?.let { rows[chatId] = it.copy(lastMessageText = text, lastMessageTime = timeMs) }
-    }
-    override suspend fun updateUnreadCount(chatId: String, count: Int) {
-        rows[chatId]?.let { rows[chatId] = it.copy(unreadCount = count) }
-    }
-    override suspend fun incrementUnreadCount(chatId: String) {
-        rows[chatId]?.let { rows[chatId] = it.copy(unreadCount = it.unreadCount + 1) }
-    }
-    override suspend fun setPinned(chatId: String, pinned: Boolean) {
-        rows[chatId]?.let { rows[chatId] = it.copy(isPinned = pinned) }
-    }
-    override suspend fun delete(chatId: String) { rows.remove(chatId) }
 }
 
 private class FakeAckStore : AckStore {

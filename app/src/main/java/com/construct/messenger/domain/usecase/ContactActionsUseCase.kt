@@ -6,7 +6,7 @@ import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.construct.messenger.data.local.SessionStateStore
-import com.construct.messenger.data.local.db.ChatDao
+import com.construct.messenger.data.local.ChatStore
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.util.ConversationId
@@ -26,7 +26,7 @@ import uniffi.construct_core.CfeSecureStoreSlot
 class ContactActionsUseCase @Inject constructor(
     private val keystoreManager: KeystoreManager,
     private val contacts: ContactStore,
-    private val chatDao: ChatDao,
+    private val chats: ChatStore,
     private val messageDao: MessageDao,
     private val registry: PeerDeviceRegistry,
     private val cryptoManager: CryptoManager,
@@ -49,7 +49,7 @@ class ContactActionsUseCase @Inject constructor(
         keystoreManager.getUserId()?.let { myId ->
             val chatId = ConversationId.direct(myId, userId)
             messageDao.deleteChat(chatId)
-            chatDao.delete(chatId)
+            chats.delete(chatId)
         }
         contacts.delete(userId)
         forgetSessions(devices)
@@ -69,7 +69,7 @@ class ContactActionsUseCase @Inject constructor(
         keystoreManager.getUserId()?.let { myId ->
             val chatId = ConversationId.direct(myId, userId)
             messageDao.deleteChat(chatId)
-            chatDao.delete(chatId)
+            chats.delete(chatId)
         }
         forgetSessions(devices)
         Log.i(TAG, "chat with ${userId.take(8)}… deleted — forgot ${devices.size} device session(s)")

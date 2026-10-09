@@ -4,8 +4,8 @@ import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.MessagingService
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
-import com.construct.messenger.data.local.db.ChatDao
-import com.construct.messenger.data.local.db.ChatEntity
+import com.construct.messenger.data.local.FakeChatStore
+import com.construct.messenger.data.local.ChatRecord
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.MessageEntity
 import com.construct.messenger.data.local.FakeContactStore
@@ -66,7 +66,7 @@ class SendMessageUseCaseTest {
      */
     private class Harness {
         val messages = FakeMessageDao()
-        val chats = FakeChatDao()
+        val chats = FakeChatStore()
         val users = FakeContactStore()
         val serverIds = FakeServerMessageIdDao()
         val sessions: SessionStateStore = mock()
@@ -88,7 +88,7 @@ class SendMessageUseCaseTest {
             stealthSender = stealthSender,
             sealedSend = mock(),
             messageDao = messages,
-            chatDao = chats,
+            chats = chats,
             contacts = users,
             sessionStateStore = sessions,
             serverMessageIds = ServerMessageIds(serverIds),
@@ -560,27 +560,5 @@ private class FakeMessageDao : MessageDao {
     override suspend fun latestVisible(chatId: String) =
         rows.values.filter { it.chatId == chatId && it.contentType == 0 }.maxByOrNull { it.timestamp }
     override suspend fun deleteChat(chatId: String) { rows.values.removeAll { it.chatId == chatId } }
-}
-
-private class FakeChatDao : ChatDao {
-    val rows = linkedMapOf<String, ChatEntity>()
-    override fun observeAll() = MutableStateFlow(rows.values.toList())
-    override fun observeActivity() = MutableStateFlow(emptyList<com.construct.messenger.data.model.ChatActivity>())
-    override suspend fun getById(chatId: String) = rows[chatId]
-    override suspend fun getAllIds() = rows.keys.toList()
-    override suspend fun upsert(chat: ChatEntity) { rows[chat.id] = chat }
-    override suspend fun updateLastMessage(chatId: String, text: String?, timeMs: Long) {
-        rows[chatId]?.let { rows[chatId] = it.copy(lastMessageText = text, lastMessageTime = timeMs) }
-    }
-    override suspend fun updateUnreadCount(chatId: String, count: Int) {
-        rows[chatId]?.let { rows[chatId] = it.copy(unreadCount = count) }
-    }
-    override suspend fun incrementUnreadCount(chatId: String) {
-        rows[chatId]?.let { rows[chatId] = it.copy(unreadCount = it.unreadCount + 1) }
-    }
-    override suspend fun setPinned(chatId: String, pinned: Boolean) {
-        rows[chatId]?.let { rows[chatId] = it.copy(isPinned = pinned) }
-    }
-    override suspend fun delete(chatId: String) { rows.remove(chatId) }
 }
 

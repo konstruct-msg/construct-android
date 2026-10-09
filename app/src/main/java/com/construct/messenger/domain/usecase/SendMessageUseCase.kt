@@ -5,8 +5,8 @@ import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.MessagingService
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
-import com.construct.messenger.data.local.db.ChatDao
-import com.construct.messenger.data.local.db.ChatEntity
+import com.construct.messenger.data.local.ChatStore
+import com.construct.messenger.data.local.noteMessage
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.MessageEntity
 import com.construct.messenger.data.local.ContactStore
@@ -75,7 +75,7 @@ class SendMessageUseCase @Inject constructor(
     private val stealthSender: StealthSenderService,
     private val sealedSend: SealedSend,
     private val messageDao: MessageDao,
-    private val chatDao: ChatDao,
+    private val chats: ChatStore,
     private val contacts: ContactStore,
     private val sessionStateStore: SessionStateStore,
     private val serverMessageIds: ServerMessageIds,
@@ -350,7 +350,7 @@ class SendMessageUseCase @Inject constructor(
         return when (val outcome = sendAction(myId, contactId, EditWire.encode(row.id, body), "edit")) {
             is SendOutcome.Sent -> {
                 messageDao.applyEdit(row, body)
-                refreshChatPreview(chatDao, messageDao, row.chatId)
+                refreshChatPreview(chats, messageDao, row.chatId)
                 outcome
             }
             is SendOutcome.Failed -> SendOutcome.Failed(targetMessageId, outcome.reason)
@@ -697,21 +697,8 @@ class SendMessageUseCase @Inject constructor(
             ),
         )
         val preview = media?.let(mediaPreview::of) ?: text
-        val existing = chatDao.getById(chatId)
-        if (existing == null) {
-            chatDao.upsert(
-                ChatEntity(
-                    id = chatId,
-                    otherUserId = contactId,
-                    lastMessageText = preview,
-                    lastMessageTime = timestampMs,
-                    unreadCount = 0,
-                ),
-            )
-        } else {
-            chatDao.updateLastMessage(chatId, preview, timestampMs)
-        }
         contacts.ensure(contactId)
+        chats.noteMessage(chatId, contactId, preview, timestampMs, unread = false)
     }
 
     private suspend fun sendRecipientCopy(
