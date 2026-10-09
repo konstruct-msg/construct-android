@@ -55,11 +55,9 @@ data class MessageRecord(
 /**
  * How strong a delivery status is as evidence that the message arrived — the core's
  * `delivery::evidence_rank`. A status is written only over one no stronger: a slower writer with a
- * weaker fact is refused (a `SENT` written after the receipt already said `DELIVERED`). `READ` is
- * Android's alone; nothing writes it yet, and the core has no such status.
+ * weaker fact is refused (a `SENT` written after the receipt already said `DELIVERED`).
  */
 internal fun DeliveryStatus.evidenceRank(): Int = when (this) {
-    DeliveryStatus.READ -> 3
     DeliveryStatus.DELIVERED -> 2
     DeliveryStatus.SENT -> 1
     DeliveryStatus.SENDING, DeliveryStatus.FAILED -> 0

@@ -514,7 +514,7 @@ private fun DeliveryStatusIcon(status: DeliveryStatus) {
     val (icon, color) = when (status) {
         DeliveryStatus.SENDING -> Icons.Outlined.Circle to CTColor.textDim
         DeliveryStatus.SENT -> Icons.Filled.Circle to CTColor.textDim
-        DeliveryStatus.DELIVERED, DeliveryStatus.READ -> Icons.Outlined.CheckCircle to SYSTEM_GREEN
+        DeliveryStatus.DELIVERED -> Icons.Outlined.CheckCircle to SYSTEM_GREEN
         DeliveryStatus.FAILED -> Icons.Filled.Error to CTColor.danger
     }
     Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(CTIcon.caption))
@@ -556,7 +556,7 @@ private fun MessageBubblePreview() {
                 chatId = "c1",
                 body = "yeah, see you at 8.",
                 isOutgoing = true,
-                deliveryStatus = DeliveryStatus.READ,
+                deliveryStatus = DeliveryStatus.DELIVERED,
                 timestamp = PREVIEW_TIME,
             ),
         )

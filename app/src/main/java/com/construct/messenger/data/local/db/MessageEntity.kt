@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.Flow
  * it (`contentType = 0` = regular user-visible message only). Layer 3 is a
  * Kotlin-side display guard on decrypted text.
  *
- * [deliveryStatus] stores `DeliveryStatus.name` (SENDING/SENT/DELIVERED/READ/FAILED)
+ * [deliveryStatus] stores `DeliveryStatus.name` (SENDING/SENT/DELIVERED/FAILED)
  * as a plain String — no TypeConverter needed.
  *
  * Read and written only through [com.construct.messenger.data.local.MessageStore] (TODO 136).
@@ -77,7 +77,7 @@ interface MessageDao {
      */
     @Query(
         "UPDATE messages SET deliveryStatus = :status WHERE id = :messageId AND deliveryStatus != :status AND " +
-            "(CASE deliveryStatus WHEN 'READ' THEN 3 WHEN 'DELIVERED' THEN 2 WHEN 'SENT' THEN 1 ELSE 0 END) <= :rank",
+            "(CASE deliveryStatus WHEN 'DELIVERED' THEN 2 WHEN 'SENT' THEN 1 ELSE 0 END) <= :rank",
     )
     suspend fun raiseDeliveryStatus(messageId: String, status: String, rank: Int): Int
 
