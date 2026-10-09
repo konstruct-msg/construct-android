@@ -111,7 +111,7 @@
 | 4 | `CTTextField` | `OutlinedTextField` / `TextField` | 7 | клавиатура, `visualTransformation`, ошибки; PIN-экран не трогать вслепую |
 | 5 | `CTSearchBar` | `SearchBar` / `DockedSearchBar` | 5 | нужен свежий BOM |
 | 6 | `CTSettingsRow`, `ConstructActionRow`, `ConstructNavRow`, `ConstructButtonRow` | `ListItem` (+ `Switch` / `Icons.Default.Check` / шеврон в `trailingContent`) | 41 | самая заметная плотность — см. §6 |
-| 7 | `CTSectionGroup`, `CTSettingsSectionHeader` | `Card`/`Surface` на `surfaceContainer` + заголовок `labelLarge` | 10 + 12 файлов | `>` в заголовке секции — наш, остаётся |
+| 7 | `CTSectionGroup`, `CTSettingsSectionHeader` | `Card`/`Surface` на `surfaceContainer` + заголовок `labelLarge` | 35 (10 файлов) | сделано 2026-10-09 обёртками: `OutlinedCard` на `surfaceContainer` с волосяным контуром, заголовок `labelLarge`/`primary`; `>` — наш, остался |
 | 8 | `CTSep`, `CTRowDivider` | `HorizontalDivider` (`outlineVariant`) | 35 | сделано 2026-10-09: все 35 разделяли строки списка, хромом не был ни один; в карточке — во всю ширину, в списках с аватарами — от колонки текста |
 | 9 | `CTNavBar` | `TopAppBar` в `Scaffold` | 13 (18 файлов) | предиктивный «назад», `scrollBehavior`; чат с прозрачной «стеклянной» шапкой — отдельно, последним |
 | 10 | `CTTabBar` | `NavigationBar` | 2 | иконки уже Material |

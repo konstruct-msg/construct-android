@@ -29,8 +29,8 @@
    - 4.3 [CTButton — кнопка](#43-ctbutton--кнопка)
    - 4.4 [CTTextField — поле ввода](#44-cttextfield--поле-ввода)
    - 4.5 [CTSearchBar — поиск](#45-ctsearchbar--поиск)
-   - 4.6 [CTSectionGroup — карточка секции](#46-ctsectiongroup--карточка-секции)
-   - 4.7 [CTSettingsSectionHeader — заголовок секции](#47-ctsettingssectionheader--заголовок-секции)
+   - 4.6 [CTSectionGroup — карточка секции](#46-ctsectiongroup--карточка-секции-на-material-outlinedcard-с-2026-10-09)
+   - 4.7 [CTSettingsSectionHeader — заголовок секции](#47-ctsettingssectionheader--заголовок-секции-material-подзаголовок-с-2026-10-09)
    - 4.8 [CTSettingsRow — строка настроек](#48-ctsettingsrow--строка-настроек)
    - 4.9 [CTRowIcon — иконка строки](#49-ctrowicon--иконка-строки)
    - 4.10 [CTAvatar — аватар](#410-ctavatar--аватар)
@@ -491,35 +491,16 @@ fun CTTabBar(
 `SearchBarDefaults.InputField`, иконка поиска слева, очистка справа, когда что-то введено. Фильтрует
 список на месте (чаты, Synaps) и никогда не раскрывается в экран поиска.
 
-### 4.6 CTSectionGroup — карточка секции
+### 4.6 CTSectionGroup — карточка секции (на Material `OutlinedCard` с 2026-10-09)
 
-```kotlin
-@Composable
-fun CTSectionGroup(
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
-)
-```
+Сигнатура прежняя (`modifier`, `content`). Внутри — `OutlinedCard`: фон `surfaceContainer`, углы
+`shapes.medium` (12), контур — наш волосяной (`HairlineBorder`, `outlineVariant`), отступ от края
+экрана 12. Оборачивает строки одной секции, без заголовка.
 
-**iOS Reference** (`ConstructTheme.swift`):
-- `background(Color.CT.outMsgBg)`
-- `clipShape(RoundedRectangle(cornerRadius: 8))`
-- `overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.CT.noise, lineWidth: 0.5))`
-- `.padding(.horizontal, 12)`
+### 4.7 CTSettingsSectionHeader — заголовок секции (Material-подзаголовок с 2026-10-09)
 
-### 4.7 CTSettingsSectionHeader — заголовок секции
-
-```kotlin
-@Composable
-fun CTSettingsSectionHeader(
-    title: String,
-    color: Color = Color.CT.accentDim
-)
-```
-
-**iOS Reference** (`ConstructTheme.swift`):
-- `> TITLE` — `CTFont.bold(11)` + accent color
-- `.padding(.horizontal, 12).padding(.top, 16).padding(.bottom, 4)`
+`> TITLE` — `labelLarge` в `primary` (параметр `color` переопределяет); `>` — наш. Отступы:
+12 по горизонтали, 16 сверху (зазор между секциями), 4 снизу.
 
 ### 4.8 CTSettingsRow — строка настроек (на Material `ListItem` с 2026-10-08)
 
