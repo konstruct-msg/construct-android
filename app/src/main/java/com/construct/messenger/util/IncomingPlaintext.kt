@@ -180,7 +180,8 @@ object IncomingPlaintext {
         return replyOf(text.quoted)
     }
 
-    private fun replyOf(quoted: QuotedMessage): ReplyRef? {
+    /** The quote a text or an album carries; an empty message id is not a reply. */
+    internal fun replyOf(quoted: QuotedMessage): ReplyRef? {
         val media = if (quoted.hasMediaType()) {
             quoted.mediaType
                 .takeIf { it != MediaType.MEDIA_TYPE_UNSPECIFIED && it != MediaType.UNRECOGNIZED }
