@@ -565,6 +565,7 @@ private class FakeMessageDao : MessageDao {
 private class FakeChatDao : ChatDao {
     val rows = linkedMapOf<String, ChatEntity>()
     override fun observeAll() = MutableStateFlow(rows.values.toList())
+    override fun observeActivity() = MutableStateFlow(emptyList<com.construct.messenger.data.model.ChatActivity>())
     override suspend fun getById(chatId: String) = rows[chatId]
     override suspend fun getAllIds() = rows.keys.toList()
     override suspend fun upsert(chat: ChatEntity) { rows[chat.id] = chat }

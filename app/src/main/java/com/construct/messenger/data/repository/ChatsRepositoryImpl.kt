@@ -6,6 +6,7 @@ import com.construct.messenger.data.local.db.ChatEntity
 import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.local.db.UserEntity
 import com.construct.messenger.data.local.db.resolvedName
+import com.construct.messenger.data.model.ChatActivity
 import com.construct.messenger.data.model.ChatSummary
 import com.construct.messenger.util.ConversationId
 import javax.inject.Inject
@@ -13,6 +14,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -34,6 +36,8 @@ class ChatsRepositoryImpl @Inject constructor(
         val byId = users.associateBy { it.id }
         chats.map { it.toSummary(byId[it.otherUserId]) }
     }.stateIn(scope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    override val activity: Flow<List<ChatActivity>> = chatDao.observeActivity()
 
     override fun suggestedContactId(): String = chats.value.firstOrNull()?.contactId.orEmpty()
 

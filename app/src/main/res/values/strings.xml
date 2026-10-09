@@ -497,7 +497,6 @@
     <string name="contact_delete">Remove contact</string>
     <string name="contact_delete_title">Remove this contact?</string>
     <string name="contact_delete_message">%1$s, your chat and its messages are removed from this device. Nothing is sent to them. If they write again, they reappear — to stop that, block them.</string>
-    <string name="synaps_blocked">blocked</string>
     <!-- Restore an account with its recovery phrase (iOS AccountRecoveryViewModel) -->
     <string name="restore_nav_title">Restore from recovery key</string>
     <string name="restore_body">Enter your 12-word recovery phrase to restore your identity on this device.</string>

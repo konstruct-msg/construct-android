@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Upsert
+import com.construct.messenger.data.model.ChatActivity
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -58,4 +59,12 @@ interface ChatDao {
 
     @Query("DELETE FROM chats WHERE id = :chatId")
     suspend fun delete(chatId: String)
+
+    /** Every chat with its user-visible message count — how active each contact is (Synapses). */
+    @Query(
+        "SELECT c.otherUserId AS contactId, COUNT(m.id) AS messages, " +
+            "c.lastMessageTime AS lastMessageTime, c.unreadCount AS unreadCount " +
+            "FROM chats c LEFT JOIN messages m ON m.chatId = c.id AND m.contentType = 0 GROUP BY c.id",
+    )
+    fun observeActivity(): Flow<List<ChatActivity>>
 }

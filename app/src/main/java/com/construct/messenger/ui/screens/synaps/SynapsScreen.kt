@@ -2,6 +2,7 @@ package com.construct.messenger.ui.screens.synaps
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,16 +14,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -32,7 +36,6 @@ import com.construct.messenger.data.model.Contact
 import com.construct.messenger.ui.components.CTAvatar
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.FilterSearchBar
-import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.ctBackground
 import com.construct.messenger.ui.components.rememberAvatar
 import com.construct.messenger.ui.theme.CTColor
@@ -48,8 +51,12 @@ fun SynapsScreen(
     viewModel: SynapsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val density = LocalDensity.current
+    // How much of the screen the bar, search and requests cover: the cloud's centre is the middle
+    // of what is left. Measured, not a constant — the requests and the status come and go.
+    var topInset by remember { mutableStateOf(0.dp) }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .ctBackground()
@@ -58,87 +65,83 @@ fun SynapsScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        CTNavBar(
-            title = stringResource(R.string.synaps_title),
-            // Scanning only: your own QR lives in Settings → Invite.
-            trailingIcon = Icons.Default.QrCodeScanner,
-            onTrailingAction = onScanQr,
-        )
-
-        FilterSearchBar(
-            query = uiState.query,
-            onQueryChange = viewModel::onQueryChange,
-            modifier = Modifier.padding(horizontal = CTSpace.m, vertical = CTSpace.s),
-        )
+        val cloud = uiState.cloud
+        if (cloud.isNotEmpty()) {
+            SynapsCloud(
+                contacts = cloud,
+                metrics = uiState.metrics,
+                blockedIds = uiState.blocked.mapTo(HashSet()) { it.userId },
+                topInset = topInset,
+                onOpen = onOpenContact,
+            )
+        }
 
         Column(
-            modifier = Modifier.padding(horizontal = CTLayout.edgePad)
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { topInset = with(density) { it.size.height.toDp() } },
         ) {
-            // A pasted invite goes in through the scanner's "Paste invite link", as on iOS;
-            // this screen only redeems it (PendingInviteStore) and says how it went below.
-            if (uiState.query.isNotBlank()) {
-                Button(
-                    onClick = { viewModel.findAndRequest() },
-                    enabled = !uiState.busy,
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text(stringResource(R.string.synaps_find_request)) }
+            CTNavBar(
+                title = stringResource(R.string.synaps_title),
+                // Scanning only: your own QR lives in Settings → Invite.
+                trailingIcon = Icons.Default.QrCodeScanner,
+                onTrailingAction = onScanQr,
+            )
+
+            FilterSearchBar(
+                query = uiState.query,
+                onQueryChange = viewModel::onQueryChange,
+                modifier = Modifier.padding(horizontal = CTSpace.m, vertical = CTSpace.s),
+            )
+
+            Column(
+                modifier = Modifier.padding(horizontal = CTLayout.edgePad)
+            ) {
+                // A pasted invite goes in through the scanner's "Paste invite link", as on iOS;
+                // this screen only redeems it (PendingInviteStore) and says how it went below.
+                if (uiState.query.isNotBlank()) {
+                    Button(
+                        onClick = { viewModel.findAndRequest() },
+                        enabled = !uiState.busy,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.synaps_find_request)) }
+                }
+                uiState.status?.let { message ->
+                    Spacer(Modifier.height(CTSpace.s))
+                    Text(
+                        text = message,
+                        style = CTFont.secondary,
+                        color = CTColor.textDim,
+                    )
+                }
             }
-            uiState.status?.let { message ->
-                Spacer(Modifier.height(CTSpace.s))
+
+            if (uiState.incomingRequests.isNotEmpty()) {
                 Text(
-                    text = message,
+                    text = stringResource(R.string.synaps_requests_title),
                     style = CTFont.secondary,
                     color = CTColor.textDim,
+                    modifier = Modifier.padding(horizontal = CTLayout.edgePad, vertical = CTSpace.s),
                 )
+                uiState.incomingRequests.forEach { request ->
+                    ContactRow(
+                        contact = Contact(
+                            userId = request.fromUserId,
+                            displayName = request.displayName,
+                            username = request.username,
+                        ),
+                        onClick = { viewModel.acceptRequest(request) },
+                    )
+                }
             }
-        }
 
-        if (uiState.incomingRequests.isNotEmpty()) {
-            Text(
-                text = stringResource(R.string.synaps_requests_title),
-                style = CTFont.secondary,
-                color = CTColor.textDim,
-                modifier = Modifier.padding(horizontal = CTLayout.edgePad, vertical = CTSpace.s),
-            )
-            uiState.incomingRequests.forEach { request ->
-                ContactRow(
-                    contact = Contact(
-                        userId = request.fromUserId,
-                        displayName = request.displayName,
-                        username = request.username,
-                    ),
-                    onClick = { viewModel.acceptRequest(request) },
+            if (cloud.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.synaps_empty_title),
+                    style = CTFont.ui(14),
+                    color = CTColor.textDim,
+                    modifier = Modifier.padding(CTLayout.edgePad),
                 )
-            }
-        }
-
-        if (uiState.filtered.isEmpty() && uiState.blocked.isEmpty()) {
-            Text(
-                text = stringResource(R.string.synaps_empty_title),
-                style = CTFont.ui(14),
-                color = CTColor.textDim,
-                modifier = Modifier.padding(CTLayout.edgePad),
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
-            ) {
-                items(uiState.filtered, key = { it.userId }) { contact ->
-                    ContactRow(contact = contact, onClick = { onOpenContact(contact.userId) })
-                }
-                if (uiState.blocked.isNotEmpty()) {
-                    item(key = "blocked-header") {
-                        CTSettingsSectionHeader(
-                            title = stringResource(R.string.synaps_blocked),
-                            color = CTColor.textDim,
-                        )
-                    }
-                    items(uiState.blocked, key = { "blocked-" + it.userId }) { contact ->
-                        ContactRow(contact = contact, onClick = { onOpenContact(contact.userId) })
-                    }
-                }
             }
         }
     }

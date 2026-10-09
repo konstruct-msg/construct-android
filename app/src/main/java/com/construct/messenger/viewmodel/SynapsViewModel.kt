@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.local.PendingInviteStore
 import com.construct.messenger.data.model.Contact
 import com.construct.messenger.data.repository.AcceptInviteResult
+import com.construct.messenger.data.repository.ChatsRepository
 import com.construct.messenger.data.repository.ContactsRepository
 import com.construct.messenger.data.repository.FindUserResult
 import com.construct.messenger.data.repository.IncomingContactRequest
+import com.construct.messenger.ui.screens.synaps.ContactMetrics
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,21 +30,28 @@ data class SynapsUiState(
     val lastMintedLink: String? = null,
     val busy: Boolean = false,
     val blocked: List<Contact> = emptyList(),
+    /** Activity per contact id (blocked ones too) — where each sits in the cloud and its ring. */
+    val metrics: Map<String, ContactMetrics> = emptyMap(),
 ) {
     val filtered: List<Contact>
-        get() {
-            val q = query.trim().lowercase()
-            if (q.isEmpty()) return contacts
-            return contacts.filter {
-                it.displayName.lowercase().contains(q) ||
-                    it.username.lowercase().contains(q)
-            }
-        }
+        get() = contacts.filter(::matches)
+
+    /** The cloud: contacts and blocked ones (red ring, no separate section — as iOS), filtered by the query. */
+    val cloud: List<Contact>
+        get() = (contacts + blocked).distinctBy { it.userId }.filter(::matches)
+
+    private fun matches(contact: Contact): Boolean {
+        val q = query.trim().lowercase()
+        return q.isEmpty() ||
+            contact.displayName.lowercase().contains(q) ||
+            contact.username.lowercase().contains(q)
+    }
 }
 
 @HiltViewModel
 class SynapsViewModel @Inject constructor(
     private val contactsRepository: ContactsRepository,
+    chatsRepository: ChatsRepository,
     private val pendingInvites: PendingInviteStore,
 ) : ViewModel() {
     private val form = MutableStateFlow(SynapsUiState())
@@ -51,9 +60,16 @@ class SynapsViewModel @Inject constructor(
         contactsRepository.contacts,
         contactsRepository.incomingRequests,
         contactsRepository.blocked.onStart { emit(emptyList()) },
+        chatsRepository.activity.onStart { emit(emptyList()) },
         form,
-    ) { contacts, incoming, blocked, rest ->
-        rest.copy(contacts = contacts, incomingRequests = incoming, blocked = blocked)
+    ) { contacts, incoming, blocked, activity, rest ->
+        val ids = (contacts + blocked).map { it.userId }.distinct()
+        rest.copy(
+            contacts = contacts,
+            incomingRequests = incoming,
+            blocked = blocked,
+            metrics = ContactMetrics.byContact(ids, activity, System.currentTimeMillis()),
+        )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SynapsUiState())
 
     init {
