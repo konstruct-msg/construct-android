@@ -169,7 +169,7 @@ Full plan and order: **`docs/MATERIAL3_MIGRATION.md`** — code moves first with
 1. **Theme**: the file's roles into `ColorScheme` / `Typography` in `ui/theme/`.
 2. **Aliases**: `CTColor.*` / `CTFont.*` point at the roles, so the ~70 files reading them change
    colour without changing code.
-3. **Components**: `CTNavBar`, `CTTabBar`, `CTButton`, `CTTextField`, `CTSearchBar`,
+3. **Components**: `CTNavBar`, the tab bar, `CTButton`, `CTTextField`, `CTSearchBar`,
    `CTModeSelector` … give way to their Material counterparts screen by screen; an alias goes
    with its last caller. A screen built from now on is built in Material from the start.
 

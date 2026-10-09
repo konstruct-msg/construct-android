@@ -28,13 +28,14 @@ CHECKS=(
   "text size past CTFont — use a role or CTFont.ui(size)|fontSize *= *[0-9]|5"
   "fixed-size text helper — use a CTFont role|\bct(Regular|Medium|SemiBold|Bold|Message)\(|0"
   "system face — chrome is JetBrains Mono; message text is CTFont.message|FontFamily\.(Default|Monospace|SansSerif|Serif)|1"
-  "spacing set by hand — a step of CTSpace; off-scale values wait for a decision with iOS|padding\([^)]*[0-9]+(\.[0-9]+)?\.dp|spacedBy\([0-9.]+\.dp|Spacer\(Modifier\.(height|width)\([0-9.]+\.dp|144"
+  "spacing set by hand — a step of CTSpace; off-scale values wait for a decision with iOS|padding\([^)]*[0-9]+(\.[0-9]+)?\.dp|spacedBy\([0-9.]+\.dp|Spacer\(Modifier\.(height|width)\([0-9.]+\.dp|143"
   "colour literal — use CTColor|Color\.(White|Black|Gray|Red|Green|Blue|Yellow|LightGray|DarkGray)\b|Color\(0x|1"
   # Material 3 move (docs/MATERIAL3_MIGRATION.md): a CT control that a Material component replaces.
   # Definitions and previews count too — the number only has to fall. CTConfirmDialog and
   # CTSettingsRow left the list when they became Material (AlertDialog, ListItem) with the settings
-  # vocabulary added; the others were deleted.
-  "CT control Material replaces — use the Material component|\b(CTNavBar|CTTabBar)\(|23"
+  # vocabulary added; the others were deleted. CTNavBar is a TopAppBar inside but stays counted:
+  # its calls are unwrapped into Scaffold top bars (step 2b).
+  "CT control Material replaces — use the Material component|\bCTNavBar\(|21"
 )
 
 failed=0

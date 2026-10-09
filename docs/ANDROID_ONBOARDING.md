@@ -25,7 +25,7 @@
    - 3.7 [Анимации](#37-анимации)
 4. [UI Компоненты (Reusable)](#4-ui-компоненты-reusable)
    - 4.1 [CTNavBar — верхняя панель](#41-ctnavbar--верхняя-панель-на-material-topappbar-с-2026-10-09)
-   - 4.2 [CTTabBar — таб-бар](#42-cttabbar--таб-бар)
+   - 4.2 [CTTabBar — таб-бар (удалён)](#42-cttabbar--таб-бар-удалён-2026-10-09-не-использовался)
    - 4.3 [CTButton — кнопка](#43-ctbutton--кнопка)
    - 4.4 [CTTextField — поле ввода](#44-cttextfield--поле-ввода)
    - 4.5 [CTSearchBar — поиск](#45-ctsearchbar--поиск)
@@ -276,8 +276,7 @@ fun CTStatusBadge(status: CTStatus, size: Dp = 14.dp) {
 - **Ожидает**: `[→]` аффорданс строки → `chevron` (`Icons.Default.ChevronRight`);
   `[ BUTTON ]` подписи → настоящие `CTButton`; ASCII row-иконки → Material Icons; глифы
   действий в запросах контактов; позже — пересмотр `> SECTION` заголовков.
-- **Таб-бар**: iOS перешёл с кастомного бара на нативный `TabView`. Android-аналог канона —
-  Material3 `NavigationBar` (icon-only); предпочитать его кастомному `CTTabBar` при рефакторинге.
+- **Таб-бар**: Material3 `NavigationBar` с подписями (с 2026-10-09).
 
 **SF Symbols аналоги для Android (Material Icons / Custom):**
 
@@ -429,35 +428,11 @@ CTNavBar(
 )
 ```
 
-### 4.2 CTTabBar — таб-бар
+### 4.2 CTTabBar — таб-бар (удалён 2026-10-09, не использовался)
 
-```kotlin
-// CTTabBar.kt
-data class CTTabItem(
-    val symbol: String,     // ASCII-символ (CTSymbol)
-    val icon: ImageVector   // SF Symbol / Material Icon
-)
-
-@Composable
-fun CTTabBar(
-    selectedTab: Int,
-    items: List<CTTabItem>,
-    onTabSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
-)
-```
-
-**iOS Reference** (`ConstructTheme.swift`):
-- 3-4 таба: Chats / Synaps / Calls (опционально) / Settings
-- Иконки SF Symbol, selected `.fill` variant
-- Accent цвет для активного таба, `textDim` для неактивных
-- Верхняя граница: 0.5pt `Color.CT.noise`
-
-```kotlin
-// Экраны в ZStack с opacity/allowsHitTesting — аналогично Compose:
-// Box с AnimatedVisibility/alpha
-// Tab content создаётся лениво (visitedTabs: Set<Int>)
-```
+Нижняя навигация — Material `NavigationBar` в `MainTabView` (`TabBar`): высота, индикатор
+(`secondaryContainer`), подпись под иконкой и фон (`surfaceContainer`) — Material; иконка контурная,
+выбранная — залитая.
 
 ### 4.3 CTButton — кнопка (удалён 2026-10-08)
 
@@ -1098,7 +1073,6 @@ app/src/main/java/com/construct/messenger/
 
 ├── ui/components/                  // Reusable > ConstructTheme.swift (components)
 │   ├── CTNavBar.kt
-│   ├── CTTabBar.kt
 │   ├── CTButton.kt
 │   ├── CTTextField.kt
 │   ├── CTSearchBar.kt
