@@ -523,25 +523,11 @@ fun CTSettingsSectionHeader(
 - `> TITLE` — `CTFont.bold(11)` + accent color
 - `.padding(.horizontal, 12).padding(.top, 16).padding(.bottom, 4)`
 
-### 4.8 CTSettingsRow — строка настроек
+### 4.8 CTSettingsRow — строка настроек (на Material `ListItem` с 2026-10-08)
 
-```kotlin
-@Composable
-fun CTSettingsRow(
-    label: String,
-    value: String,
-    icon: ImageVector? = null,
-    labelColor: Color = Color.CT.text,
-    valueColor: Color = Color.CT.text,
-    isAction: Boolean = false,
-    isDestructive: Boolean = false
-)
-```
-
-**iOS Reference** (`ConstructTheme.swift`):
-- HStack: [icon] + label + Spacer + value
-- `CTFont.regular(13)` label / `CTFont.bold(13)` for action
-- `.padding(.horizontal, 12).padding(.vertical, 9)`
+Сигнатура прежняя (`label`, `value`, `icon`, `status`, `disclosure`, `isAction`, `isDestructive`);
+внутри — Material `ListItem` с прозрачным контейнером: высота от 56 dp, цвета ролей (`onSurface`,
+`onSurfaceVariant`, `error`, `primary`). Обернуть `clickable`-модификатором для нажатия.
 
 ### 4.9 CTRowIcon — иконка строки
 
@@ -678,52 +664,13 @@ fun CTLogoView(
 )
 ```
 
-### 4.17 ConstructActionRow — action-строка
+### 4.17 ConstructActionRow — action-строка (удалён 2026-10-08)
 
-```kotlin
-@Composable
-fun ConstructActionRow(
-    icon: ImageVector,
-    title: String,
-    role: ConstructRowRole,
-    badge: String? = null,
-    isLoading: Boolean = false,
-    onClick: () -> Unit
-)
+Единственное место — «Связанные устройства» → выход: теперь `OutlinedButton` в `error` с иконкой.
 
-enum class ConstructRowRole {
-    PRIMARY,    // electric-blue tint
-    ACCENT,     // lighter blue
-    SECONDARY,  // neutral
-    DESTRUCTIVE,// red
-    DISABLED    // dimmed + "soon" badge
-}
-```
+### 4.18 ConstructNavRow — строка навигации (удалён 2026-10-08, не использовался)
 
-### 4.18 ConstructNavRow — строка навигации
-
-```kotlin
-@Composable
-fun ConstructNavRow(
-    icon: ImageVector,
-    title: String,
-    iconColor: Color = Color.CT.accent,
-    onClick: () -> Unit
-)
-```
-
-### 4.19 ConstructButtonRow — строка-кнопка
-
-```kotlin
-@Composable
-fun ConstructButtonRow(
-    icon: ImageVector,
-    title: String,
-    iconColor: Color = Color.CT.accent,
-    showChevron: Boolean = false,
-    onClick: () -> Unit
-)
-```
+### 4.19 ConstructButtonRow — строка-кнопка (удалён 2026-10-08, не использовался)
 
 ### 4.20 ConnectionStatusIndicator — индикатор соединения
 
