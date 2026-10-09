@@ -73,6 +73,8 @@ class ProcessorEffectsImpl @Inject constructor(
     private val callSignals: com.construct.messenger.calls.CallSignalInbox,
     // Settings → Data & storage → Auto-download: an album is fetched as it arrives.
     private val mediaArrivals: com.construct.messenger.media.MediaArrivals = com.construct.messenger.media.MediaArrivals.NONE,
+    // Where the server put each envelope, from the router that saw it (the core carries only the id).
+    private val orderBook: ServerOrderBook = ServerOrderBook(),
 ) : ProcessorEffects {
 
     override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
@@ -125,7 +127,8 @@ class ProcessorEffectsImpl @Inject constructor(
         // The receipt and the row name the sender's KNST id. The envelope id is what
         // the server redelivers, so the ACK stays on that.
         val rowId = storageId(decoded.e2eMessageId, messageId, sentByMe = false)
-        persistIncoming(accountId, rowId, decoded.text, System.currentTimeMillis(), decoded.reply, decoded.media)
+        val now = System.currentTimeMillis()
+        persistIncoming(accountId, rowId, decoded.text, now, decoded.reply, decoded.media, orderBook.keyFor(messageId, rowId, now))
         ackStore.markProcessed(messageId, accountId)
         runCatching { sendReceiptUseCase.delivered(accountId, listOf(rowId)) }
             .onFailure { Log.w(TAG, "e2e receipt send failed", it) }
@@ -236,6 +239,7 @@ class ProcessorEffectsImpl @Inject constructor(
             timestampMs = timestampMs,
             reply = decoded.reply,
             media = decoded.media,
+            orderKey = orderBook.keyFor(messageId, rowId, timestampMs),
         )
         ackStore.markProcessed(messageId, accountId)
     }
@@ -417,6 +421,7 @@ class ProcessorEffectsImpl @Inject constructor(
         timestampMs: Long,
         reply: ReplyRef?,
         media: MediaWire.Stored? = null,
+        orderKey: String = "",
     ) {
         val myId = keystoreManager.getUserId() ?: run {
             Log.e(TAG, "persistIncoming: no local user id — dropping ${messageId.take(8)}…")
@@ -446,6 +451,7 @@ class ProcessorEffectsImpl @Inject constructor(
                 replyMediaType = reply?.mediaType,
                 mediaType = media?.kind,
                 mediaPayload = media?.bytes,
+                orderKey = orderKey,
             ),
         )
         if (firstSight && media != null) mediaArrivals.onArrived(media.kind, media.bytes)
@@ -465,6 +471,7 @@ class ProcessorEffectsImpl @Inject constructor(
         timestampMs: Long,
         reply: ReplyRef?,
         media: MediaWire.Stored? = null,
+        orderKey: String = "",
     ) {
         val myId = keystoreManager.getUserId() ?: run {
             Log.e(TAG, "persistOutgoingCopy: no local user id — dropping ${messageId.take(8)}…")
@@ -488,6 +495,7 @@ class ProcessorEffectsImpl @Inject constructor(
                 replyMediaType = reply?.mediaType,
                 mediaType = media?.kind,
                 mediaPayload = media?.bytes,
+                orderKey = orderKey,
             ),
         )
         // Our own album, sent from another device: this one has not got the blob either.

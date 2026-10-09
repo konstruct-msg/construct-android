@@ -1,5 +1,6 @@
 package com.construct.messenger.service
 
+import com.construct.messenger.util.ServerMessageOrder
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.data.api.MessageStreamService
 import com.construct.messenger.data.api.MessageStreamService.StreamEvent
@@ -45,6 +46,7 @@ import uniffi.construct_core.SenderCertificate
 class MessageRouter @Inject constructor(
     private val stream: MessageStreamService,
     private val stealthSender: StealthSenderService,
+    private val orderBook: ServerOrderBook,
 ) {
 
     sealed interface RoutedEvent {
@@ -99,7 +101,7 @@ class MessageRouter @Inject constructor(
         if (routeJob?.isActive == true) return
         routeJob = scope.launch {
             stream.events.collect { event ->
-                if (event is StreamEvent.Message) route(event.envelope)
+                if (event is StreamEvent.Message) route(event.envelope, ServerMessageOrder.key(event.envelope.serverMetadata.serverTimestamp, event.envelope.serverMetadata.messageNumber, event.cursor))
                 else passThrough(event)?.let { _routed.tryEmit(it) }
             }
         }
@@ -110,15 +112,19 @@ class MessageRouter @Inject constructor(
         routeJob = null
     }
 
-    /** Feed a catch-up envelope (pending-messages unary) through the same path as the stream. */
-    suspend fun ingest(envelope: Envelope) = route(envelope)
+    /**
+     * Feed a catch-up envelope (pending-messages unary) through the same path as the stream;
+     * [orderKey] is its place in the server's order, as the page gave it.
+     */
+    suspend fun ingest(envelope: Envelope, orderKey: String?) = route(envelope, orderKey)
 
-    private suspend fun route(envelope: Envelope) {
+    private suspend fun route(envelope: Envelope, orderKey: String?) {
         val messageId = envelope.messageId
         if (messageId.isNotEmpty() && seenMessageIds.put(messageId, Unit) != null) {
             Log.d(TAG, "duplicate message ${messageId.take(8)}… — dropped")
             return
         }
+        orderBook.remember(messageId, orderKey)
 
         val incoming = normalize(envelope) ?: return
         val event = if (incoming.contentType.isControl()) {

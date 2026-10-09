@@ -1,5 +1,6 @@
 package com.construct.messenger.service
 
+import com.construct.messenger.util.ServerMessageOrder
 import com.construct.messenger.transport.TransportRouter
 import com.construct.messenger.data.auth.AuthSessionManager
 import com.construct.messenger.diagnostics.Log
@@ -209,8 +210,11 @@ class MessagingRuntime @Inject constructor(
             // same cursor re-delivers these entries and advances over them properly.
             // Canon: iOS BackgroundFetchManager.
             val response = messagingService.getPendingMessages(sinceCursor = cursorTracker.committedCursor())
-            for (pending in response.messagesList) {
-                router.ingest(pending.toEnvelope())
+            response.messagesList.forEachIndexed { index, pending ->
+                // No message number on a page: its timestamp is the server's receive time (seconds),
+                // and the page is in mailbox order — the index breaks a tie (iOS `getPendingMessages`).
+                val key = ServerMessageOrder.key(pending.timestamp * 1000, index.toLong())
+                router.ingest(pending.toEnvelope(), key)
             }
             if (response.messagesCount > 0) {
                 Log.i(TAG, "drained ${response.messagesCount} pending message(s)")

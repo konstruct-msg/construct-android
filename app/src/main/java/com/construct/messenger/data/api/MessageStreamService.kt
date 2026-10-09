@@ -65,7 +65,8 @@ class MessageStreamService @Inject constructor(
     private val transportEvents: TransportEvents,
 ) {
     sealed interface StreamEvent {
-        data class Message(val envelope: Envelope) : StreamEvent
+        /** [cursor]: the stream entry's `serverMs-seq`, the order's tie-breaker (`ServerMessageOrder`). */
+        data class Message(val envelope: Envelope, val cursor: String? = null) : StreamEvent
         data class Receipt(val receipt: DeliveryReceipt) : StreamEvent
         data class Typing(val typing: TypingIndicator) : StreamEvent
         data class Connected(val attempt: Int) : StreamEvent
@@ -281,7 +282,7 @@ class MessageStreamService @Inject constructor(
                     }
                 }
                 when {
-                    response.hasMessage() -> _events.tryEmit(StreamEvent.Message(response.message))
+                    response.hasMessage() -> _events.tryEmit(StreamEvent.Message(response.message, cursor))
                     response.hasReceipt() -> _events.tryEmit(StreamEvent.Receipt(response.receipt))
                     response.hasTyping() -> _events.tryEmit(StreamEvent.Typing(response.typing))
                     response.hasHeartbeatAck() -> _lastHeartbeatAt.value = System.currentTimeMillis()

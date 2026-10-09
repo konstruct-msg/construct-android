@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.Flow
  */
 @Entity(
     tableName = "messages",
-    indices = [Index("chatId", "timestamp")],
+    indices = [Index("chatId", "timestamp"), Index("chatId", "orderKey")],
 )
 data class MessageEntity(
     @PrimaryKey val id: String,
@@ -54,13 +54,16 @@ data class MessageEntity(
     val contentType: Int = 0,
     /** The `MediaAlbumMessage` / `VoiceMessage` bytes as received — keys included, as iOS keeps them. */
     val mediaPayload: ByteArray? = null,
+    /** The server's order — `ServerMessageOrder`; the transcript sorts by it, then by id. */
+    @androidx.room.ColumnInfo(defaultValue = "")
+    val orderKey: String = "",
 )
 
 @Dao
 interface MessageDao {
 
     /** Chat history — user-visible rows only (control guard layer 3, §8.3). */
-    @Query("SELECT * FROM messages WHERE chatId = :chatId AND contentType = 0 ORDER BY timestamp ASC")
+    @Query("SELECT * FROM messages WHERE chatId = :chatId AND contentType = 0 ORDER BY orderKey ASC, id ASC")
     fun observeChat(chatId: String): Flow<List<MessageEntity>>
 
     /** Edits and quotes compare ids the way iOS does (`==[c]`). */
@@ -81,6 +84,9 @@ interface MessageDao {
     )
     suspend fun raiseDeliveryStatus(messageId: String, status: String, rank: Int): Int
 
+    @Query("UPDATE messages SET orderKey = :orderKey WHERE id = :id AND orderKey != :orderKey")
+    suspend fun setOrderKey(id: String, orderKey: String): Int
+
     @Query("UPDATE messages SET mediaType = :mediaType, mediaPayload = :mediaPayload WHERE id = :id")
     suspend fun setMedia(id: String, mediaType: String, mediaPayload: ByteArray)
 
@@ -96,7 +102,7 @@ interface MessageDao {
 
     @Query(
         "SELECT * FROM messages WHERE chatId = :chatId AND contentType = 0 " +
-            "ORDER BY timestamp DESC LIMIT 1",
+            "ORDER BY orderKey DESC, id DESC LIMIT 1",
     )
     suspend fun latestVisible(chatId: String): MessageEntity?
 

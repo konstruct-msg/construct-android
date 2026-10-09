@@ -27,6 +27,11 @@ class RoomMessageStore(private val dao: MessageDao) : MessageStore {
         if (mediaPayload != null) dao.markEditedMedia(stored.id, text, mediaPayload) else dao.markEdited(stored.id, text)
     }
 
+    override suspend fun setOrderKey(id: String, orderKey: String): Boolean {
+        val stored = dao.getByIdIgnoreCase(id) ?: return false
+        return dao.setOrderKey(stored.id, orderKey) > 0
+    }
+
     override suspend fun setMedia(id: String, mediaType: String, mediaPayload: ByteArray) {
         val stored = dao.getByIdIgnoreCase(id) ?: return
         dao.setMedia(stored.id, mediaType, mediaPayload)
@@ -57,6 +62,7 @@ private fun MessageEntity.record() = MessageRecord(
     mediaType = mediaType,
     contentType = contentType,
     mediaPayload = mediaPayload,
+    orderKey = orderKey,
 )
 
 private fun MessageRecord.entity() = MessageEntity(
@@ -73,4 +79,5 @@ private fun MessageRecord.entity() = MessageEntity(
     mediaType = mediaType,
     contentType = contentType,
     mediaPayload = mediaPayload,
+    orderKey = orderKeyOrLocal(),
 )

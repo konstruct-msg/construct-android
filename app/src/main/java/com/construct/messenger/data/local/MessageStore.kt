@@ -2,6 +2,7 @@ package com.construct.messenger.data.local
 
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.util.MediaWire
+import com.construct.messenger.util.ServerMessageOrder
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -29,6 +30,11 @@ data class MessageRecord(
     val contentType: Int = 0,
     /** The `MediaAlbumMessage` / `VoiceMessage` bytes as received — keys included, as iOS keeps them. */
     val mediaPayload: ByteArray? = null,
+    /**
+     * Its place in the server's order ([ServerMessageOrder]): the transcript sorts by it, then by
+     * id. Empty on insert means none known — the store puts it at its own time.
+     */
+    val orderKey: String = "",
 ) {
     // ByteArray field: structural equality must be explicit.
     override fun equals(other: Any?): Boolean {
@@ -37,7 +43,8 @@ data class MessageRecord(
         return id == other.id && chatId == other.chatId && text == other.text && isSentByMe == other.isSentByMe &&
             timestampMs == other.timestampMs && deliveryStatus == other.deliveryStatus && replyToId == other.replyToId &&
             replyPreview == other.replyPreview && replyMediaType == other.replyMediaType && isEdited == other.isEdited &&
-            mediaType == other.mediaType && contentType == other.contentType && mediaPayload.contentEquals(other.mediaPayload)
+            mediaType == other.mediaType && contentType == other.contentType && mediaPayload.contentEquals(other.mediaPayload) &&
+            orderKey == other.orderKey
     }
 
     override fun hashCode(): Int {
@@ -72,7 +79,7 @@ internal fun DeliveryStatus.evidenceRank(): Int = when (this) {
  * Its chat's row must exist first ([ChatStore]) — the core holds the message to it.
  */
 interface MessageStore {
-    /** A chat's user-visible messages, oldest first. */
+    /** A chat's user-visible messages in the server's order, oldest first. */
     fun observeChat(chatId: String): Flow<List<MessageRecord>>
 
     suspend fun get(id: String): MessageRecord?
@@ -86,10 +93,13 @@ interface MessageStore {
     /** New text, marked edited; for media also the wire message that carries the caption. */
     suspend fun edit(id: String, text: String, mediaPayload: ByteArray?)
 
+    /** Its place in the server's order, once the server acknowledged it. False: no message or no change. */
+    suspend fun setOrderKey(id: String, orderKey: String): Boolean
+
     /** The uploaded media, by the ids the store gave it, in place of the staged ones. */
     suspend fun setMedia(id: String, mediaType: String, mediaPayload: ByteArray)
 
-    /** The chat's newest user-visible message — what its preview shows. */
+    /** The chat's last user-visible message in the server's order — what its preview shows. */
     suspend fun latestVisible(chatId: String): MessageRecord?
 
     suspend fun delete(id: String)
@@ -97,6 +107,9 @@ interface MessageStore {
     /** Every message of the chat. */
     suspend fun deleteChat(chatId: String)
 }
+
+/** [orderKey], or — when none is known — the key that puts the message at its own time. */
+internal fun MessageRecord.orderKeyOrLocal(): String = orderKey.ifEmpty { ServerMessageOrder.local(timestampMs, id) }
 
 /** Apply an edit to [row]: the text, and for a photo also the caption inside its stored album. */
 suspend fun MessageStore.applyEdit(row: MessageRecord, text: String) =
