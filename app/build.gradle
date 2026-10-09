@@ -119,6 +119,9 @@ dependencies {
     // Ed25519 for the veil access key and capability checks. security-crypto already ships this
     // version at runtime; declared so the code may use it, not to add one.
     implementation 'com.google.crypto.tink:tink-android:1.8.0'
+    // Bundled Conscrypt: the native-TLS veil-front dialer terminates relay TLS in it (a genuine
+    // Android ClientHello) and uses its public exportKeyingMaterial. See VeilFrontExternalDialer.
+    implementation 'org.conscrypt:conscrypt-android:2.5.3'
     implementation 'androidx.work:work-runtime-ktx:2.9.0'
     // Invite QR: camera preview + frame analysis, and QR read/write. Both work without Google
     // Play Services — ML Kit's scanner is avoided for that reason (AGENTS.md, no GMS).
