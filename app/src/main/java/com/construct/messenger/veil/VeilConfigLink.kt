@@ -54,6 +54,18 @@ object VeilConfigLink {
     fun isLink(text: String): Boolean = blobOf(text) != null
 
     /**
+     * The blob in pasted [text]: a veil-config link, or the blob alone — base64url of a JSON
+     * object — as an issuer may hand it over without the link around it. Null for anything else.
+     * Being a blob says nothing about who signed it; [parseAndVerify] decides that.
+     */
+    fun blobOfPasted(text: String): String? {
+        blobOf(text)?.let { return it }
+        val trimmed = text.trim()
+        val json = runCatching { String(Base64.getUrlDecoder().decode(trimmed), Charsets.UTF_8) }.getOrNull()
+        return trimmed.takeIf { json != null && runCatching { JSONObject(json) }.isSuccess }
+    }
+
+    /**
      * The verified front and capability in [blobB64Url], or [Refused]. [signingKeyHex] is the
      * relay-config key, which also issues capabilities; injectable for tests only.
      */

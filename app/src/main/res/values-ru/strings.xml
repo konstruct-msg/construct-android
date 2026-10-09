@@ -544,6 +544,8 @@
     <string name="veil_front">Фронт</string>
     <string name="veil_latency">Задержка</string>
     <string name="veil_last_error">Последняя ошибка</string>
+    <string name="veil_config_paste">Вставить код конфигурации</string>
+    <string name="veil_config_import">Импорт</string>
     <string name="veil_config_import_ok">Доступ VEIL настроен</string>
     <string name="veil_import_err_malformed">Неверный код конфигурации</string>
     <string name="veil_import_err_signature">Недействительная подпись конфигурации</string>

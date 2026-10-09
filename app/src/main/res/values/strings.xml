@@ -540,6 +540,8 @@
     <string name="veil_front">Front</string>
     <string name="veil_latency">Latency</string>
     <string name="veil_last_error">Last error</string>
+    <string name="veil_config_paste">Paste configuration code</string>
+    <string name="veil_config_import">Import</string>
     <string name="veil_config_import_ok">VEIL access configured</string>
     <string name="veil_import_err_malformed">Invalid configuration code</string>
     <string name="veil_import_err_signature">Configuration signature is invalid</string>

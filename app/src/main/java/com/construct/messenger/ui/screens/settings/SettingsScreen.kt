@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -33,11 +34,14 @@ import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.QrCode
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,6 +51,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,6 +64,7 @@ import com.construct.messenger.diagnostics.Diagnostics
 import com.construct.messenger.recovery.HeldPhrase
 import com.construct.messenger.recovery.RecoveryViewModel
 import com.construct.messenger.ui.components.CTAvatar
+import com.construct.messenger.ui.components.DialogButton
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
 import com.construct.messenger.ui.components.CTSettingsRow
@@ -110,6 +117,7 @@ fun SettingsRoute(
         // Loading says nothing yet; a known "not set up", or a silent key not yet copied, shows it.
         recoveryMissing = recovery.needsBackup,
         recoveryHeld = recovery.held,
+        onImportConfig = viewModel::importConfig,
     )
 }
 
@@ -132,8 +140,12 @@ fun SettingsScreen(
     // A parameter so the preview can pin it: the code is the commit count, and a screenshot
     // reference that read it would go stale with every commit.
     buildVersion: String = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+    /** The hidden paste under the version row; null leaves the row inert. */
+    onImportConfig: ((String) -> Int)? = null,
 ) {
     val context = LocalContext.current
+    var versionTaps by remember { mutableIntStateOf(0) }
+    var pasteOpen by remember { mutableStateOf(false) }
     val prefs = remember { context.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE) }
     var bannerDismissed by remember { mutableStateOf(prefs.getBoolean(KEY_RECOVERY_BANNER_DISMISSED, false)) }
     Column(
@@ -146,6 +158,9 @@ fun SettingsScreen(
             .navigationBarsPadding(),
     ) {
         CTNavBar(title = stringResource(R.string.settings_title))
+        if (pasteOpen && onImportConfig != null) {
+            ConfigPasteDialog(onImport = onImportConfig, onDismiss = { pasteOpen = false })
+        }
 
         Column(
             modifier = Modifier
@@ -248,6 +263,20 @@ fun SettingsScreen(
                         if (BuildConfig.DEBUG) " " + stringResource(R.string.build_channel_beta).uppercase() else "",
                     valueColor = if (BuildConfig.DEBUG) CTColor.warning else CTColor.textDim,
                     icon = Icons.Outlined.Info,
+                    // iOS's escape hatch, in every build: ten taps open a paste for a configuration
+                    // code, for whoever cannot tap a link or scan its QR. Nothing on the screen
+                    // says it is there (`decisions/silent-transport-ui`); the code is verified as
+                    // a tapped link is.
+                    modifier = if (onImportConfig == null) {
+                        Modifier
+                    } else {
+                        Modifier.clickable(interactionSource = null, indication = null) {
+                            if (++versionTaps >= VERSION_TAPS) {
+                                versionTaps = 0
+                                pasteOpen = true
+                            }
+                        }
+                    },
                 )
             }
 
@@ -412,5 +441,49 @@ private fun SettingsScreenPreview() {
         connection = ConnectionStatus.CONNECTED,
         navigation = SettingsNavigation(),
         buildVersion = "v0.0.0 (1)",
+    )
+}
+
+private const val VERSION_TAPS = 10
+
+/**
+ * A configuration code pasted by hand: the link or the blob alone. Says how it went in place;
+ * after an import only the close is left.
+ */
+@Composable
+private fun ConfigPasteDialog(onImport: (String) -> Int, onDismiss: () -> Unit) {
+    var text by remember { mutableStateOf("") }
+    var outcome by remember { mutableStateOf<Int?>(null) }
+    val imported = outcome == R.string.veil_config_import_ok
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.veil_config_paste)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(CTSpace.s)) {
+                if (!imported) {
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = { text = it; outcome = null },
+                        maxLines = 4,
+                        // A code, not words: no correction, no capital first letter.
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.None,
+                            autoCorrectEnabled = false,
+                            keyboardType = KeyboardType.Uri,
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                outcome?.let { Text(stringResource(it), color = if (imported) CTColor.online else CTColor.danger) }
+            }
+        },
+        confirmButton = {
+            if (imported) {
+                DialogButton(stringResource(R.string.ok), onDismiss)
+            } else {
+                DialogButton(stringResource(R.string.veil_config_import), { outcome = onImport(text) })
+            }
+        },
+        dismissButton = if (imported) null else ({ DialogButton(stringResource(R.string.action_cancel), onDismiss) }),
     )
 }
