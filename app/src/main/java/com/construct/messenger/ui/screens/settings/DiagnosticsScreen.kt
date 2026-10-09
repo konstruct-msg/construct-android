@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,7 +34,6 @@ import com.construct.messenger.R
 import com.construct.messenger.diagnostics.Diagnostics
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
-import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.CTSettingsRow
 import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.theme.CTColor
@@ -88,7 +88,7 @@ fun DiagnosticsScreen(onNavigateBack: () -> Unit) {
                         }
                     },
                 )
-                CTSep()
+                HorizontalDivider()
                 CTSettingsRow(
                     label = stringResource(R.string.diagnostics_clear_logs).uppercase(),
                     icon = Icons.Default.Delete,

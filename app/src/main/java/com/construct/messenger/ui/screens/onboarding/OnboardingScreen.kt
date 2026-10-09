@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -49,7 +50,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.diagnostics.Diagnostics
 import com.construct.messenger.domain.usecase.RegistrationStep
-import com.construct.messenger.ui.components.CTSep
 import com.construct.messenger.ui.components.ConvergingSignal
 import com.construct.messenger.ui.components.ctBackground
 import com.construct.messenger.ui.theme.CTColor
@@ -407,7 +407,7 @@ private fun RegistrationCompleteContent(username: String?, deviceId: String?) {
                     value = stringResource(R.string.reg_mode_anonymous),
                 )
             }
-            CTSep()
+            HorizontalDivider()
             if (!deviceId.isNullOrEmpty()) {
                 DetailRow(label = stringResource(R.string.reg_label_device_id), value = "${deviceId.take(16)}…")
             }

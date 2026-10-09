@@ -35,7 +35,7 @@
    - 4.9 [CTRowIcon — иконка строки](#49-ctrowicon--иконка-строки)
    - 4.10 [CTAvatar — аватар](#410-ctavatar--аватар)
    - 4.11 [CTHexAvatar / MainAvatarView — гексагональный аватар](#411-cthexavatar--mainavatarview--гексагональный-аватар)
-   - 4.12 [CTSeparator — разделитель](#412-ctseparator--разделитель)
+   - 4.12 [CTSep / CTRowDivider — разделитель (удалены)](#412-ctsep--ctrowdivider--разделитель-удалены-2026-10-09)
    - 4.13 [CTSystemMessage — системное сообщение (> text)](#413-ctsystemmessage--системное-сообщение--text)
    - 4.14 [CTNoise — ASCII шум / фон](#414-ctnoise--ascii-шум--фон)
    - 4.15 [CTModeSelector — сегментированный контроль](#415-ctmodeselector--сегментированный-контроль)
@@ -215,9 +215,7 @@ object CTFont {            // = iOS CTFont
 // CTSymbol.kt — ТОЛЬКО декоративный хром
 object CTSymbol {
     const val star8 = "✷"
-    // Разделители (CTSep)
-    fun thin(count: Int = 25)  = "- ".repeat(count)
-    fun thick(count: Int = 25) = "= ".repeat(count)
+    // Разделители — Material `HorizontalDivider` (ASCII-линии удалены 2026-10-09)
 }
 // УДАЛЕНО из доктрины:
 //   back/forward/add/close/send/media/edit/retry/upload → Material Icons (интерактив)
@@ -598,20 +596,10 @@ enum class AvatarSize(val dp: Dp) {
 }
 ```
 
-### 4.12 CTSeparator — разделитель
+### 4.12 CTSep / CTRowDivider — разделитель (удалены 2026-10-09)
 
-```kotlin
-@Composable
-fun CTSep(
-    style: CTSep.Style = CTSep.Style.THIN
-) {
-    // THIN: "- - - ..."
-    // THICK: "= = = ..."
-    // CTFont.regular(10), Color.CT.noise
-    // frame(maxWidth = .infinity, alignment = .leading)
-    // .padding(.horizontal, 12)
-}
-```
+Material `HorizontalDivider` (цвет `outlineVariant`, толщина Material). Между строками в карточке —
+во всю ширину; в списках с аватарами (чаты, звонки) — с отступом до колонки текста.
 
 ### 4.13 CTSystemMessage — системное сообщение (> text)
 
@@ -838,7 +826,7 @@ Tab bar скрывается когда `isInChat || isInSettings == true`.
 - `CTNavBar` + `ScrollView` + `LazyColumn`
 - **Секции**: Profile, Share, Settings, About, Developer
 - Каждая секция: `CTSectionGroup { ... }`
-- Строки: `CTSettingsRow` + `CTSep(style = .thin)` между ними
+- Строки: `CTSettingsRow` + `HorizontalDivider()` между ними
 - Profile row: `CTHexAvatar` + VStack(name + username + discoverable) + `CTSymbol.forward`
 - Recovery banner (если recovery не настроен): красная карточка с предупреждением
 
@@ -1152,7 +1140,6 @@ app/src/main/java/com/construct/messenger/
 │   ├── CTSettingsRow.kt
 │   ├── CTRowIcon.kt
 │   ├── CTAvatar.kt                 // MainAvatarView
-│   ├── CTSep.kt
 │   ├── CTSystemMessage.kt
 │   ├── CTNoise.kt
 │   ├── CTModeSelector.kt

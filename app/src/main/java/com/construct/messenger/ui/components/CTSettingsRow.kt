@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -106,11 +107,11 @@ private fun SettingsSectionPreview() {
         CTSettingsSectionHeader(title = "Identity")
         CTSectionGroup {
             CTSettingsRow(label = "Username", value = "silent_fox", icon = Icons.Default.Person)
-            CTSep()
+            HorizontalDivider()
             CTSettingsRow(label = "Security", value = "PIN", icon = Icons.Default.Lock, isAction = true)
-            CTSep()
+            HorizontalDivider()
             CTSettingsRow(label = "Network", status = CTStatus.OK)
-            CTSep()
+            HorizontalDivider()
             CTSettingsRow(label = "Sign out", isDestructive = true)
         }
     }

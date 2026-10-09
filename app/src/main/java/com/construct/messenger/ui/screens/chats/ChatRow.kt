@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GppMaybe
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import com.construct.messenger.R
 import com.construct.messenger.data.model.ChatSummary
 import com.construct.messenger.ui.components.CTAvatar
-import com.construct.messenger.ui.components.CTRowDivider
 import com.construct.messenger.ui.components.rememberAvatar
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
@@ -42,6 +42,8 @@ import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import java.util.Date
+
+private val AvatarSize = 40.dp
 
 /**
  * One row in the chats list.
@@ -74,7 +76,7 @@ fun ChatRow(
                 userId = chat.contactId,
                 displayName = chat.displayName,
                 image = rememberAvatar(chat.avatar),
-                size = 40.dp,
+                size = AvatarSize,
             )
             Spacer(Modifier.width(CTLayout.chromeGap))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(CTSpace.xs)) {
@@ -151,8 +153,8 @@ fun ChatRow(
                 }
             }
         }
-        // The List separator, from the text column to the trailing inset.
-        CTRowDivider(indent = 16.dp + 40.dp + CTLayout.chromeGap, modifier = Modifier.padding(end = CTSpace.l))
+        // Material's inset divider: from the text column to the trailing inset.
+        HorizontalDivider(Modifier.padding(start = CTSpace.l + AvatarSize + CTLayout.chromeGap, end = CTSpace.l))
     }
 }
 
