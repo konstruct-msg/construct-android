@@ -2,6 +2,7 @@ package com.construct.messenger.data.repository
 
 import android.content.Context
 import com.construct.messenger.diagnostics.Log
+import com.construct.messenger.media.MediaAutoDownload
 import com.construct.messenger.media.MediaEvictionPolicy
 import com.construct.messenger.util.MediaWire
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -15,12 +16,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 
-/** Settings → Data & storage: the media store's limit and how long media is kept. */
+/** Settings → Data & storage: the media store's limit, how long media is kept, auto-download. */
 data class StorageSettings(
     /** The media store's limit in bytes; 0 = no limit. */
     val limitBytes: Long = StorageRepository.DEFAULT_LIMIT_BYTES,
     /** Media downloaded longer ago than this is removed at launch; 0 = kept until cleared. */
     val keepDays: Int = 0,
+    /** Whether received attachments are fetched as their messages arrive. */
+    val autoDownload: MediaAutoDownload = MediaAutoDownload.DEFAULT,
 )
 
 /**
@@ -49,6 +52,7 @@ class StorageRepository @Inject constructor(
         StorageSettings(
             limitBytes = prefs.getLong(KEY_LIMIT, DEFAULT_LIMIT_BYTES),
             keepDays = prefs.getInt(KEY_KEEP_DAYS, 0),
+            autoDownload = MediaAutoDownload.of(prefs.getInt(KEY_AUTO_DOWNLOAD, MediaAutoDownload.DEFAULT.raw)),
         ),
     )
     val settings: StateFlow<StorageSettings> = state.asStateFlow()
@@ -63,6 +67,11 @@ class StorageRepository @Inject constructor(
         prefs.edit().putInt(KEY_KEEP_DAYS, days).apply()
         state.update { it.copy(keepDays = days) }
         evictOld()
+    }
+
+    fun setAutoDownload(setting: MediaAutoDownload) {
+        prefs.edit().putInt(KEY_AUTO_DOWNLOAD, setting.raw).apply()
+        state.update { it.copy(autoDownload = setting) }
     }
 
     /** What the cached media takes, in bytes. */
@@ -124,6 +133,7 @@ class StorageRepository @Inject constructor(
         private const val PREFS = "storage_prefs"
         private const val KEY_LIMIT = "media.maxDiskCacheBytes"
         private const val KEY_KEEP_DAYS = "media.evictAfterDays"
+        private const val KEY_AUTO_DOWNLOAD = "media.autoDownload"
         private const val DAY_MS = 24L * 60 * 60 * 1000
 
         /** Where [MediaRepositoryImpl] keeps the blobs, under `filesDir`. */

@@ -27,6 +27,14 @@ interface MediaRepository {
     suspend fun bytes(item: MediaItem): ByteArray
 
     /**
+     * Fetch [item] into the store ahead of anyone looking at it (Settings → Data & storage →
+     * Auto-download), without opening it. Throws as [bytes] does.
+     */
+    suspend fun prefetch(item: MediaItem) {
+        bytes(item)
+    }
+
+    /**
      * Keep [blob], a photo of ours sealed and not yet uploaded, under [localId], so its bubble
      * shows it at once and the upload can be retried from it.
      */
@@ -92,6 +100,13 @@ class MediaRepositoryImpl @Inject constructor(
             Log.w(TAG, "media ${item.mediaId.take(8)}… does not open: ${e.javaClass.simpleName}")
             throw MediaUnavailable("does not decrypt")
         }
+    }
+
+    override suspend fun prefetch(item: MediaItem) = withContext(Dispatchers.IO) {
+        val name = fileName(item.mediaId) ?: throw MediaUnavailable("malformed media id")
+        val file = File(dir, name)
+        if (!file.exists()) blob(item.mediaId, file)
+        Unit
     }
 
     override suspend fun stage(localId: String, blob: ByteArray) = withContext(Dispatchers.IO) {

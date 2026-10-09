@@ -39,6 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.data.repository.StorageSettings
+import com.construct.messenger.media.MediaAutoDownload
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSectionGroup
@@ -71,13 +72,14 @@ fun DataStorageRoute(
         onNavigateBack = onNavigateBack,
         onLimit = viewModel::setLimit,
         onKeepDays = viewModel::setKeepDays,
+        onAutoDownload = viewModel::setAutoDownload,
         onClear = viewModel::clear,
     )
 }
 
 /**
- * Settings → Data & storage: what the media cache takes and clearing it, its limit, and how long
- * media is kept. Auto-download is not here yet: every media bubble downloads what it shows.
+ * Settings → Data & storage: what the media cache takes and clearing it, its limit, auto-download,
+ * and how long media is kept.
  *
  * **Canon:** iOS `DataStorageSettingsView` — the same sections and steps. The texts differ where
  * Android does: media lives in `files/`, which the system never clears, and the confirmation says
@@ -89,6 +91,7 @@ private fun DataStorageScreen(
     onNavigateBack: () -> Unit,
     onLimit: (Long) -> Unit,
     onKeepDays: (Int) -> Unit,
+    onAutoDownload: (MediaAutoDownload) -> Unit,
     onClear: () -> Unit,
 ) {
     fun size(bytes: Long) = formatBytes(bytes)
@@ -149,6 +152,25 @@ private fun DataStorageScreen(
                 LimitSlider(limit = limit, onLimit = onLimit)
             }
             Footer(stringResource(if (limit == 0L) R.string.storage_no_limit_footer else R.string.storage_limit_footer))
+
+            CTSettingsSectionHeader(title = stringResource(R.string.media_autodownload))
+            CTSectionGroup {
+                MediaAutoDownload.entries.forEachIndexed { i, setting ->
+                    if (i > 0) HorizontalDivider()
+                    ChoiceRow(
+                        label = stringResource(
+                            when (setting) {
+                                MediaAutoDownload.NEVER -> R.string.media_autodownload_never
+                                MediaAutoDownload.UNMETERED -> R.string.media_autodownload_unmetered
+                                MediaAutoDownload.ALWAYS -> R.string.media_autodownload_always
+                            },
+                        ),
+                        selected = state.settings.autoDownload == setting,
+                        onSelect = { onAutoDownload(setting) },
+                    )
+                }
+            }
+            Footer(stringResource(R.string.media_autodownload_footer))
 
             CTSettingsSectionHeader(title = stringResource(R.string.storage_auto_clear))
             CTSectionGroup {
@@ -252,7 +274,7 @@ private fun Footer(text: String) {
     )
 }
 
-@Preview(backgroundColor = 0xFF090909, showBackground = true, widthDp = 360, heightDp = 900)
+@Preview(backgroundColor = 0xFF090909, showBackground = true, widthDp = 360, heightDp = 1240)
 @Composable
 private fun DataStorageScreenPreview() {
     DataStorageScreen(
@@ -263,6 +285,7 @@ private fun DataStorageScreenPreview() {
         onNavigateBack = {},
         onLimit = {},
         onKeepDays = {},
+        onAutoDownload = {},
         onClear = {},
     )
 }

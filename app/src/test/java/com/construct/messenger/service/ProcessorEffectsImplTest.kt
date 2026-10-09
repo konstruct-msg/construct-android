@@ -60,6 +60,8 @@ class ProcessorEffectsImplTest {
         val pendingChunks = FakePendingChunkDao()
         val reactions = mock<com.construct.messenger.data.local.ReactionStore>()
         val callSignals = com.construct.messenger.calls.CallSignalInbox()
+        /** What auto-download was told arrived: the media kind of each stored message. */
+        val arrived = mutableListOf<String?>()
         val avatars = RecordingAvatars()
         val sessionManager = mock<SessionManager>()
         val sendReceipt = mock<com.construct.messenger.domain.usecase.SendReceiptUseCase>()
@@ -87,6 +89,7 @@ class ProcessorEffectsImplTest {
             contactAvatars = avatars,
             reactions = reactions,
             callSignals = callSignals,
+            mediaArrivals = { kind, _ -> arrived += kind },
         )
     }
 
@@ -694,6 +697,32 @@ class ProcessorEffectsImplTest {
         assertEquals(com.construct.messenger.util.MediaWire.KIND_ALBUM, row.mediaType)
         assertEquals(album.build().toByteArray().toList(), row.mediaPayload?.toList())
         assertEquals("Photo", inbox.chats.rows[ConversationId.direct(myId, peer)]?.lastMessageText)
+    }
+
+    /**
+     * Auto-download hears of an album once, as it is stored — not again when the same message is
+     * delivered a second time (a lost ACK, a replayed queue), and not for a text.
+     * Mutation that reddens it: drop `firstSight &&` from the call in `persistIncoming`.
+     */
+    @Test
+    fun `an arriving album is offered to auto-download once`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        val id = UUID.fromString("99999999-9999-4999-8999-999999999999")
+        val album = shared.proto.messaging.v1.Content.MediaAlbumMessage.newBuilder().addItems(
+            shared.proto.messaging.v1.Content.MediaMessage.newBuilder()
+                .setMediaId("m2")
+                .setEncryptionKey(com.google.protobuf.ByteString.copyFrom(ByteArray(32)))
+                .setMimeType("image/jpeg"),
+        )
+        val content = MessageContent.newBuilder().setMediaAlbum(album).build().toByteArray()
+        inbox.effects.onDecrypted(peer, "env-a", KnstFrame.pack(content, KnstFrame.TYPE_E2EE_SIGNAL, id))
+        inbox.effects.onDecrypted(peer, "env-b", KnstFrame.pack(content, KnstFrame.TYPE_E2EE_SIGNAL, id))
+        val text = MessageContent.newBuilder().setText(
+            shared.proto.messaging.v1.Content.TextMessage.newBuilder().setText("hi"),
+        ).build().toByteArray()
+        inbox.effects.onDecrypted(peer, "env-c", KnstFrame.pack(text, KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID()))
+
+        assertEquals(listOf<String?>(com.construct.messenger.util.MediaWire.KIND_ALBUM), inbox.arrived)
     }
 
     @Test
