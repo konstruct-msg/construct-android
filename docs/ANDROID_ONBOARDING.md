@@ -16,13 +16,11 @@
 1. [Обзор архитектуры](#1-обзор-архитектуры)
 2. [Глоссарий терминов](#2-глоссарий-терминов)
 3. [Дизайн-система (Design Tokens)](#3-дизайн-система-design-tokens)
-   - 3.1 [Цветовая палитра](#31-цветовая-палитра)
+   - 3.1 [Цвет — роли Material](#31-цвет--роли-material)
    - 3.2 [Типографика](#32-типографика)
-   - 3.3 [Символы / иконки](#33-символы--иконки)
-   - 3.4 [Геометрия / скругления](#34-геометрия--скругления)
+   - 3.3 [Иконки и статус](#33-иконки-и-статус)
+   - 3.4 [Формы / скругления](#34-формы--скругления)
    - 3.5 [Сетка, иконки / CTSpace, CTIcon](#35-сетка-иконки--ctspace-cticon)
-   - 3.6 [Тени](#36-тени)
-   - 3.7 [Анимации](#37-анимации)
 4. [UI Компоненты (Reusable)](#4-ui-компоненты-reusable)
    - 4.1 [CTNavBar — верхняя панель](#41-ctnavbar--верхняя-панель-на-material-topappbar-с-2026-10-09)
    - 4.2 [CTTabBar — таб-бар (удалён)](#42-cttabbar--таб-бар-удалён-2026-10-09-не-использовался)
@@ -32,9 +30,9 @@
    - 4.6 [CTSectionGroup — карточка секции](#46-ctsectiongroup--карточка-секции-на-material-outlinedcard-с-2026-10-09)
    - 4.7 [CTSettingsSectionHeader — заголовок секции](#47-ctsettingssectionheader--заголовок-секции-material-подзаголовок-с-2026-10-09)
    - 4.8 [CTSettingsRow — строка настроек](#48-ctsettingsrow--строка-настроек)
-   - 4.9 [CTRowIcon — иконка строки](#49-ctrowicon--иконка-строки)
+   - 4.9 [CTRowIcon — иконка строки (в коде нет)](#49-ctrowicon--иконка-строки-в-коде-нет)
    - 4.10 [CTAvatar — аватар](#410-ctavatar--аватар)
-   - 4.11 [CTHexAvatar / MainAvatarView — гексагональный аватар](#411-cthexavatar--mainavatarview--гексагональный-аватар)
+   - 4.11 [CTHexAvatar / MainAvatarView — гекса-аватар (в коде нет)](#411-cthexavatar--mainavatarview--гекса-аватар-в-коде-нет)
    - 4.12 [CTSep / CTRowDivider — разделитель (удалены)](#412-ctsep--ctrowdivider--разделитель-удалены-2026-10-09)
    - 4.13 [CTSystemMessage — системное сообщение (> text)](#413-ctsystemmessage--системное-сообщение--text)
    - 4.14 [CTNoise — ASCII шум / фон](#414-ctnoise--ascii-шум--фон)
@@ -78,7 +76,7 @@ Construct Messenger — privacy-first E2EE-мессенджер с термин�
 - Все строки — через `NSLocalizedString` (нет хардкода)
 - **Material Icons** (`ImageVector`) для интерактивных контролов (назад, закрыть, отправить,
   таб-бар) — прямой аналог iOS SF Symbols
-- **ASCII / `CTSymbol.*`** — только декоративный хром (`>` префикс, `-`/`=` разделители, `✷`).
+- **ASCII** — только декоративный хром: префикс `>`. Разделители — `HorizontalDivider`.
   Глифы состояния `[ok] [err] [✓] …` **не используются** — см. §3.3
 - **JetBrains Mono** — моноширинный шрифт для всего интерфейса
 - **Hexagon-аватары** (круглая форма с гексагональным акцентом цвета)
@@ -104,230 +102,78 @@ Construct Messenger — privacy-first E2EE-мессенджер с термин�
 
 ## 3. Дизайн-система (Design Tokens)
 
-> **Текущее состояние, не цель (2026-10-08).** Android переходит на Material 3: цвета — роли
-> `ColorScheme`, шрифты — `Typography`, элементы управления — компоненты Material; источник —
-> Figma-файл дизайнера, iOS больше не канон внешнего вида. Остаются JetBrains Mono и тёмная тема по
-> умолчанию. Таблицы ниже верны, пока миграция их не заменит; ссылки «Канон: iOS» и «iOS
-> Reference» — история. Решение: `construct-docs/decisions/android-is-material-3.md`.
+> **Android — Material 3 (решение 2026-10-08,** `construct-docs/decisions/android-is-material-3.md`**).**
+> Цвета — роли `ColorScheme`, шрифты — `Typography`, формы — `Shapes`, элементы управления —
+> компоненты Material. Источник вида — Figma-файл дизайнера; iOS больше не канон внешнего вида
+> (поведение, тексты и протокол по-прежнему общие). Наше: JetBrains Mono, тёмная тема по умолчанию,
+> волосяные линии, идентиконы, префикс `>`. Как шёл переход — `docs/MATERIAL3_MIGRATION.md`.
 
-### 3.1 Цветовая палитра
+### 3.1 Цвет — роли Material
 
-```kotlin
-// ConstructTheme.kt
-object CT {
-    // Фоны
-    val bg        = Color(0xFF090909)  // основной фон (dark)
-    val bgLight   = Color(0xFFF2F2F2)  // основной фон (light)
-    val bgMsg     = Color(0xFF202020)  // bubble incoming (dark)
-    val bgMsgLight = Color(0xFFE2E2E2) // bubble incoming (light)
-    val outMsgBg   = Color(0xFF111111) // bubble outgoing (dark)
-    val outMsgBgLight = Color(0xFFE9E9E9) // bubble outgoing (light)
+Всё, что видит пользователь, берёт цвет из `MaterialTheme.colorScheme`. Схемы строятся в
+`ui/theme/Theme.kt` (`ctColorScheme(dark)`) из палитры `CTColor.…Dark` / `…Light` в `Color.kt` —
+**одно место**, где меняются значения; Figma-файл заменит их там же. Заданы **все** роли: незаданная
+падает в фиолетовый Compose.
 
-    // Акцентный синий
-    val accent     = Color(0xFF0062FF) // Primary accent
-    val accentDim  = Color(0xFF1E68DF) // Secondary accent
+| Роль | Что это | Токен-алиас |
+|---|---|---|
+| `background`, `surface`, `surfaceContainerLowest` | фон экрана | `CTColor.bg` |
+| `surfaceContainer(Low/High)` | карточки секций, меню, диалоги, нижняя навигация | — |
+| `surfaceContainerHighest`, `surfaceVariant` | приподнятая карточка, входящий пузырь | `CTColor.bgMsg` |
+| `primary` / `onPrimary` | акцент; подпись на нём — цвет фона | `CTColor.accent` |
+| `primaryContainer` | нажатый / тональный акцент, точки статуса (не текст) | `CTColor.accentDim` |
+| `secondaryContainer` | выбранный сегмент, индикатор навигации — тон акцента | — |
+| `onSurface` / `onSurfaceVariant` | текст / вторичный текст и иконки | `CTColor.text` / `textDim` |
+| `outline` / `outlineVariant` | контур полей / разделители и волосяные линии | — / `CTColor.noise` |
+| `error` | опасное действие, ошибка | `CTColor.danger` |
+| `tertiary` | предупреждение | `CTColor.warning` |
 
-    // Текст
-    val text       = Color(0xFFE8E8E8) // primary text (dark)
-    val textLight  = Color(0xFF111111) // primary text (light)
-    val textDim    = Color(0xFF818181) // dim text (dark)
-    val textDimLight = Color(0xFF333333) // dim text (light)
+Бессуффиксные `CTColor.*` читают роли, поэтому старый код меняет цвет вместе с темой. У чего нет
+роли — токены: `outMsgBg`/`outMsgText` (исходящий пузырь), `online` (статус соединения), поверх
+медиа — `onMedia*`, `media*`, `answer`; ещё `onFill`, `scrim`, `delivered`, `qr*`. Новый код пишет
+`MaterialTheme.colorScheme.<роль>`.
 
-    // Структура
-    val noise      = Color(0xFF1E1E1E) // разделители, ASCII шум (dark)
-    val noiseLight = Color(0xFFC8C8C8) // разделители, ASCII шум (light)
-
-    // Опасность
-    val danger     = Color(0xFFDC3C3C)
-
-    // Статус «подключено»: точка соединения и статус сети. Только статус — не кнопка, не текст
-    val online      = Color(0xFF30D158) // dark
-    val onlineLight = Color(0xFF248A3D) // light: 3,9:1 на bgLight (0x34C759 даёт ~2,0)
-}
-```
-
-**Dark/Light**: цвета должны адаптироваться к системной теме.
+Контраст: `ColorSchemeContrastTest` держит каждую пару ролей на 4.5:1 (список известных
+исключений может только сокращаться), `CTColorContrastTest` — палитру.
 
 ### 3.2 Типографика
 
-```kotlin
-// ui/theme/Type.kt
-// JetBrains Mono вложен в приложение: res/font/jetbrains_mono_{regular,medium,semibold,bold}.ttf —
-// те же четыре файла, что в iOS `Fonts/` (OFL 1.1, лицензия в assets/licenses/).
-val CTFontFamily = FontFamily(Font(R.font.jetbrains_mono_regular, FontWeight.Normal), /* … */)
-object CTFont {            // = iOS CTFont
-    fun ui(size: Int, weight: FontWeight = FontWeight.Normal)   // кегль вне шкалы
-    fun mono(size: Int, weight: FontWeight = FontWeight.Normal) // id, отпечатки, логи
-    val title         // Bold 18 — заголовки экранов и листов
-    val headline      // Bold 14 — заголовок корня вкладки, подзаголовки
-    val body          // Regular 13 — строки, текст, пустые экраны
-    val bodyEmphasis  // Bold 13 — кнопки, имя в списке чатов
-    val secondary     // Regular 12 — значения, вторые строки, превью
-    val caption       // Regular 11 — время, подвалы, подсказки
-    val micro         // Regular 10 — время в пузыре, подписи кнопок звонка
-    val badge         // Bold 11 — заголовки секций, счётчики
-    @Composable fun message(size: Int) // текст сообщений: выбор читателя (System / JetBrains Mono) × размер
-}
-```
+JetBrains Mono вложен (`res/font/jetbrains_mono_*.ttf`, OFL 1.1) и задан в `Typography`
+(`ui/theme/Type.kt`) — компоненты Material набирают им сами:
 
-Экран выбирает **роль**, а не кегль; кегль вне шкалы — `CTFont.ui(size, weight)`. С 2026-10-07
-`ctRegular(n)` / `ctBold(n)` удалены, как на iOS старые `CTFont.regular/medium/bold`: при них один и
-тот же тип элемента набирался 2–5 кеглями. Системный шрифт — только в тексте сообщений
-(`CTFont.message`) и в строке «системный» выбора шрифта в Оформлении. Живая сверка ролей iOS ↔ Android —
-документ «Konstruct: типографика iOS и Android» (ссылка в vault, TODO 122).
+| Роль `Typography` | Где её берёт Material | Значение |
+|---|---|---|
+| `titleLarge` | заголовок `TopAppBar` | 22 Bold |
+| `headlineSmall` | заголовок диалога | 15 Bold |
+| `bodyLarge` | поля ввода | 14 |
+| `bodyMedium` | текст диалога, строки | `CTFont.body` (13) |
+| `labelLarge` | кнопки, подзаголовки секций | `CTFont.bodyEmphasis` (13 Bold) |
+| `labelMedium` / `labelSmall` | подписи навигации и мелкое | `CTFont.secondary` / `micro` |
 
-**Частые места:**
-- `CTFont.ui(17, FontWeight.SemiBold)` — заголовок `CTNavBar` подэкрана, без разрядки
-- `CTFont.headline` + `letterSpacing(4.sp)` + капс — шапка корня вкладки (Settings, Chats, Synaps)
-- `CTFont.body` — текст в строках настроек
-- `CTFont.badge` — > SECTION заголовки
-- `CTFont.caption` — таймстемпы, метаданные
-- `CTFont.ui(16, FontWeight.Bold)` — заголовки в `ConstructActionRow` и строках выбора
+Свой текст вне компонентов — роль `CTFont` (`title`, `headline`, `body`, `bodyEmphasis`,
+`secondary`, `caption`, `micro`, `badge`), кегль вне шкалы — `CTFont.ui(size, weight)`, технический
+текст — `CTFont.mono`. Текст сообщений — `CTFont.message(size)`: выбор читателя (системный /
+JetBrains Mono) × размер. Корень вкладки — наш заголовок: капс, `CTFont.headline`,
+`letterSpacing = 4.sp`.
 
-В Kotlin/Compose для `tracking(4)` использовать `letterSpacing(4.sp)`.
+### 3.3 Иконки и статус
 
-### 3.3 Символы / иконки
+> **Терминальные глифы — только декорация (с 2026-06-22).** Состояние и аффорданс читаются
+> мгновенно: никогда `[ok] [err] [✓] [→]` для состояния или контролов.
 
-> **Терминальные глифы — только декорация, не функциональные элементы (ревизия 2026-06-22).**
-> Тестировщики и пользователи не приняли скобочную стилистику `[…]` на функциональных
-> контролах. **Состояние и аффорданс должны читаться мгновенно**, поэтому
-> `[ok] [err] [on] [off] [✓] [ ] [!] [~] [?]` и подобные заменяются на **Material-иконку +
-> семантический цвет** (`CTStatus` / `CTStatusBadge`) либо на нативный контрол
-> (`Switch`; галочка `Icons.Default.Check` для выбора). ASCII остаётся только как
-> ненавязчивый *хром*: разделители, префикс `>` у системных сообщений и заголовков
-> секций, декоративная `✷`.
->
-> Это зеркалит обновлённую доктрину iOS (`construct-messenger/AGENTS.md`, раздел *Design
-> System*). iOS-приложение — канон дизайна; Android повторяет за ним.
+- **Material Icons** (`androidx.compose.material.icons`) — все интерактивные элементы, внутри
+  Material-компонентов (`IconButton`, `NavigationBarItem`, `ListItem`).
+- **Статус** — `CTStatus` / `CTStatusBadge` (Material-иконка + семантический цвет); в строке
+  настроек — параметр `status` у `CTSettingsRow`. Выбор — `Icons.Default.Check`, вкл/выкл — `Switch`.
+- **ASCII — только хром:** префикс `>` у системных сообщений и заголовков секций. Разделители —
+  `HorizontalDivider` (ASCII-линии и `CTSymbol` удалены 2026-10-09).
 
-**Правило**:
-- **Material Icons** (`androidx.compose.material.icons`, `ImageVector`) — для **всех
-  интерактивных контролов**: назад/закрыть, кнопки действий, таб-бар, отправка, вложение,
-  микрофон, поиск. Прямой аналог iOS SF Symbols.
-- **`CTSymbol.*` / ASCII** — только **декоративный хром**: заголовки секций (`> TITLE`),
-  разделители `-`/`=`, префикс `>` у системных сообщений.
-- **Никогда** ASCII для **состояния или контролов**: статус → `CTStatusBadge`; выбор →
-  `Icons.Default.Check`; вкл/выкл → `Switch`.
-- Граница решения: *передаёт состояние или это тап-действие?* → Material-иконка / нативный
-  контрол. *Чисто декоративный терминальный хром?* → ASCII.
+### 3.4 Формы / скругления
 
-```kotlin
-// CTSymbol.kt — ТОЛЬКО декоративный хром
-object CTSymbol {
-    const val star8 = "✷"
-    // Разделители — Material `HorizontalDivider` (ASCII-линии удалены 2026-10-09)
-}
-// УДАЛЕНО из доктрины:
-//   back/forward/add/close/send/media/edit/retry/upload → Material Icons (интерактив)
-//   ok/delivered/error/online                           → CTStatus / CTStatusBadge
-//   tabChats/tabSynaps/tabCalls/tabSettings             → таб-бар рисует Material-иконки
-```
-
-#### Статусы — `CTStatus` / `CTStatusBadge`
-
-Канон: iOS `ConstructTheme.swift` → `enum CTStatus` + `struct CTStatusBadge`. Никогда не
-рендерить статус текстовым токеном `"[ok]"` / `"[err]"`. Compose-зеркало:
-
-```kotlin
-enum class CTStatus {
-    OK, ERROR, WARNING, ON, OFF, BUSY, UNKNOWN;
-
-    val icon: ImageVector get() = when (this) {
-        OK, ON  -> Icons.Filled.CheckCircle
-        ERROR   -> Icons.Filled.Error
-        WARNING -> Icons.Filled.Warning
-        OFF     -> Icons.Outlined.Circle
-        BUSY    -> Icons.Filled.Sync
-        UNKNOWN -> Icons.AutoMirrored.Filled.HelpOutline
-    }
-    val color: Color get() = when (this) {
-        OK                 -> CTColor.accent
-        ON                 -> CTColor.accentDim
-        ERROR              -> CTColor.danger
-        WARNING            -> Color(0xFFFF9500)        // orange
-        OFF, BUSY, UNKNOWN -> CTColor.textDim
-    }
-}
-
-@Composable
-fun CTStatusBadge(status: CTStatus, size: Dp = 14.dp) {
-    Icon(
-        imageVector = status.icon,
-        contentDescription = null,
-        tint = status.color,
-        modifier = Modifier.size(size),
-    )
-}
-```
-
-`CTSettingsRow` получает опциональный слот `status: CTStatus? = null` (как iOS
-`CTSettingsRow(status:)`) и рендерит `CTStatusBadge` вместо текстового значения. Выбор в
-списках — `Icons.Default.Check` в `accent`; переключатели — Material3 `Switch`.
-
-> **Текущее состояние Android-кода**: `CTTabBar` и `CTSettingsRow` **уже** используют
-> Material-иконки (опережая iOS). Но `CTSymbol.kt` всё ещё содержит мёртвые глифы
-> действий/статуса — их следует выпилить при следующем касании файла (`CTNavBar`/`CTSep`/
-> `MainScreen`/`OnboardingScreen` — единственные потребители). `CTStatus`/`CTStatusBadge`
-> ещё не существует в коде — добавить при первой строке со статусом, не текстовый токен.
-
-#### Фазы миграции (как на iOS — не регрессировать ранние фазы)
-
-- **Фаза 1 (на iOS готово)**: статус-значения + галочки выбора → `CTStatusBadge` / `Check`.
-- **Ожидает**: `[→]` аффорданс строки → `chevron` (`Icons.Default.ChevronRight`);
-  `[ BUTTON ]` подписи → настоящие `CTButton`; ASCII row-иконки → Material Icons; глифы
-  действий в запросах контактов; позже — пересмотр `> SECTION` заголовков.
-- **Таб-бар**: Material3 `NavigationBar` с подписями (с 2026-10-09).
-
-**SF Symbols аналоги для Android (Material Icons / Custom):**
-
-| iOS SF Symbol | Android Vector / Icon |
-|---|---|
-| `chevron.backward.circle.fill` | `Icons.Default.ArrowBack` |
-| `xmark.circle` | `Icons.Default.Close` |
-| `magnifyingglass` | `Icons.Default.Search` |
-| `qrcode.viewfinder` | `Icons.Default.QrCodeScanner` |
-| `message` / `message.fill` | `Icons.Default.Chat` |
-| `gearshape` | `Icons.Default.Settings` |
-| `phone` / `phone.fill` | `Icons.Default.Phone` |
-| `circle.grid.cross` | `Icons.Default.Groups` |
-| `checkmark.circle.fill` | `Icons.Default.CheckCircle` |
-| `trash` | `Icons.Default.Delete` |
-| `chevron.right` | `Icons.Default.ChevronRight` |
-| `link` | `Icons.Default.Link` |
-| `lock` | `Icons.Default.Lock` |
-| `paintbrush` | `Icons.Default.Palette` |
-| `bell` | `Icons.Default.Notifications` |
-| `globe` | `Icons.Default.Language` |
-| `info.circle` | `Icons.Default.Info` |
-| `square.and.pencil` | `Icons.Default.Edit` |
-| `xmark.circle.fill` (clear search) | `Icons.Default.Clear` |
-| `exclamationmark.circle.fill` | `Icons.Default.Warning` |
-| `chevron.down.circle.fill` | `Icons.Default.ExpandMore` |
-| `qrcode` | `Icons.Default.QrCode` |
-| `externaldrive` | `Icons.Default.Storage` |
-| `arrow.clockwise.circle` | `Icons.Default.Refresh` |
-| `laptopcomputer` | `Icons.Outlined.Computer` |
-| `circle.lefthalf.filled` | `Icons.Default.DarkMode` |
-| `sun.max.fill` | `Icons.Default.LightMode` |
-| `moon.fill` | `Icons.Default.DarkMode` |
-
-### 3.4 Геометрия / скругления
-
-```kotlin
-// CTGeometry.kt
-object CornerRadius {
-    val small       = 8.dp   // карточки, баги, кнопки
-    val medium      = 12.dp
-    val large       = 16.dp  // message bubbles
-    val extraLarge  = 20.dp
-}
-
-// MainTabView: Rectangle() для nav bar, разделителей
-// MessageBubble: RoundedRectangle(cornerRadius = 10)
-// Ввод текста: RoundedRectangle(cornerRadius = 10)
-// Бейджи: RoundedRectangle(cornerRadius = 6)
-// SettingsSectionGroup: RoundedRectangle(cornerRadius = 8)
-```
+Компоненты Material берут углы из `Shapes` темы (`CTShapes` в `Theme.kt`): `extraSmall` 6 (меню),
+`small` 8 (чипы, снекбары), `medium` 12 (карточки), `large` 16, `extraLarge` 20 (листы, диалоги).
+Своё (пузыри, медиа, плашки) — `CornerRadius.*` в `Dimens.kt`: `bubble`/`control` 10, `badge` 6,
+шкала `small`…`extraLarge`.
 
 ### 3.5 Сетка, иконки / CTSpace, CTIcon
 
@@ -360,7 +206,7 @@ object CTLayout {
 `mediaScrim`, `mediaControl`, `mediaControlOn`, `answer` (= iOS `Color.CT`) и `mediaGround` (чёрная
 подложка медиа и камеры), `mediaBadge` (плашка на картинке, 55 %), `onMediaControlOn`. Ещё: `onFill`
 (значок на залитой accent/danger кнопке), `scrim` (затемнение поверх приложения), `delivered` (зелёная
-галочка), `qrPaper`/`qrInk`/`qrInkSoft` (QR всегда тёмный на белом), `fieldStroke` (рамка поиска).
+галочка), `qrPaper`/`qrInk`/`qrInkSoft` (QR всегда тёмный на белом).
 С 2026-10-07 вне `ui/theme` цвет-литерал один — цвет контура в `TabIcons`, который перекрывает tint.
 
 Отступ, равный ступени, пишется через `CTSpace`; значения вне шкалы (6, 10, 2, 14, 20 …) пока остаются
@@ -369,38 +215,6 @@ object CTLayout {
 `scripts/check_ui_tokens.sh` (часть `verify.sh`, значит и CI) считает размеры, кегли, системный
 шрифт, отступы и цвета, заданные мимо токенов, и падает, если счётчик вырос. Миграция, которая его понижает,
 понижает базовую линию в том же коммите.
-
-### 3.6 Тени
-
-```kotlin
-// Shadows.kt
-object ShadowStyle {
-    val card = Shadow(
-        color = Color.Black.copy(alpha = 0.1f),
-        radius = 4.dp,
-        x = 0.dp,
-        y = 2.dp
-    )
-    val inputBar = Shadow(
-        color = Color.Black.copy(alpha = 0.1f),
-        radius = 2.dp,
-        x = 0.dp,
-        y = 1.dp
-    )
-}
-```
-
-### 3.7 Анимации
-
-```kotlin
-object AnimationDuration {
-    val veryQuick = 100.ms
-    val quick     = 200.ms
-    val standard  = 250.ms
-    val medium    = 300.ms
-    val slow      = 500.ms
-}
-```
 
 ---
 
@@ -469,21 +283,10 @@ CTNavBar(
 внутри — Material `ListItem` с прозрачным контейнером: высота от 56 dp, цвета ролей (`onSurface`,
 `onSurfaceVariant`, `error`, `primary`). Обернуть `clickable`-модификатором для нажатия.
 
-### 4.9 CTRowIcon — иконка строки
+### 4.9 CTRowIcon — иконка строки (в коде нет)
 
-```kotlin
-@Composable
-fun CTRowIcon(
-    symbol: String,         // ASCII (CTSymbol)
-    icon: ImageVector? = null,  // SF Symbol
-    color: Color = Color.CT.textDim,
-    size: Int = 14
-)
-```
-
-**iOS Reference** (`ConstructTheme.swift`):
-- Fixed-width column: `frame(minWidth: 36, alignment: .leading)`
-- ASCII: `CTFont.bold(size)`, SF: `.system(size: size, weight: .medium)`
+Иконка строки — слот `leadingContent` у `ListItem` (через `CTSettingsRow(icon = …)`), цвет и размер
+задаёт Material. В `SecurityScreen` есть локальный помощник с тем же смыслом.
 
 ### 4.10 CTAvatar — аватар
 
@@ -529,14 +332,9 @@ fun hexagonHue(userId: String): Int {
 }
 ```
 
-### 4.11 CTHexAvatar / MainAvatarView — гекса-аватар
+### 4.11 CTHexAvatar / MainAvatarView — гекса-аватар (в коде нет)
 
-```kotlin
-// Аналогично CTAvatar, но с гексагональной формой (используется крайне редко)
-enum class AvatarSize(val dp: Dp) {
-    SMALL(32.dp), MEDIUM(40.dp), LARGE(56.dp), XLARGE(80.dp)
-}
-```
+Аватар один — `CTAvatar` (идентикон или картинка), см. §4.10.
 
 ### 4.12 CTSep / CTRowDivider — разделитель (удалены 2026-10-09)
 
@@ -769,7 +567,7 @@ Tab bar скрывается когда `isInChat || isInSettings == true`.
 - **Секции**: Profile, Share, Settings, About, Developer
 - Каждая секция: `CTSectionGroup { ... }`
 - Строки: `CTSettingsRow` + `HorizontalDivider()` между ними
-- Profile row: `CTHexAvatar` + VStack(name + username + discoverable) + `CTSymbol.forward`
+- Profile row: `CTHexAvatar` + VStack(name + username + discoverable) + шеврон `Icons.AutoMirrored.Filled.KeyboardArrowRight`
 - Recovery banner (если recovery не настроен): красная карточка с предупреждением
 
 ### 5.6 AccountSettingsView — профиль
@@ -1067,7 +865,6 @@ app/src/main/java/com/construct/messenger/
 ├── design/                         // Design System > ConstructTheme.swift
 │   ├── CTColor.kt                  // Color.CT palette
 │   ├── CTTypography.kt             // CTFont
-│   ├── CTSymbol.kt                 // ASCII-символы
 │   ├── Dimens.kt                   // CTLayout, CTSpace, CTIcon, corner radius
 │   └── CTShadows.kt                // Shadow tokens
 

@@ -11,10 +11,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * JetBrains Mono, bundled — iOS `ConstructFont.mono` sets the chrome in it (`Fonts/` in
- * construct-messenger; the same four files here, OFL 1.1, licence in `assets/licenses/`).
- * `FontFamily.Monospace` this replaces was whatever the phone ships (Droid Sans Mono on most),
- * so every screen read differently from iOS.
+ * JetBrains Mono, bundled — the chrome's face on both platforms (the same four files as iOS
+ * `Fonts/`, OFL 1.1, licence in `assets/licenses/`). `FontFamily.Monospace` this replaced was
+ * whatever the phone ships (Droid Sans Mono on most).
  */
 val CTFontFamily = FontFamily(
     Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
@@ -24,7 +23,9 @@ val CTFontFamily = FontFamily(
 )
 
 /**
- * The chrome's type scale. **Canon:** iOS `CTFont` (`ConstructTheme.swift`).
+ * The chrome's type scale, for text outside Material components; Material's `Typography` below
+ * is built from these roles. The scale came from iOS `CTFont`; it is ours now, and the designer's
+ * file may change it here.
  *
  * A screen picks a role, not a size: a change to "what body text is" happens here once. The roles
  * are the (weight, size) pairs that cover most of the chrome on both platforms; a size not in the

@@ -159,7 +159,7 @@ differ. Features, texts, behaviour and the wire are still one meaning across bot
   diagnostics) is not removed without asking the owner.
 - **Terminal glyphs are decorative only** (since 2026-06-22): never `[ok] [err] [✓] [→]` for state
   or controls — Material icons + semantic colour, `Switch`, `Icons.Default.Check`. ASCII stays only
-  as chrome: separators, the `>` prefix, `✷`.
+  as chrome: the `>` prefix. A separator is `HorizontalDivider`.
 
 ### Migration (background work, one screen per commit)
 
@@ -173,14 +173,15 @@ Full plan and order: **`docs/MATERIAL3_MIGRATION.md`** — code moves first with
    `CTModeSelector` … give way to their Material counterparts screen by screen; an alias goes
    with its last caller. A screen built from now on is built in Material from the start.
 
-### Today's tokens (until the migration replaces them)
+### Tokens
 
-`docs/ANDROID_ONBOARDING.md` §3 describes what the code has now — CT palette, `CTFont` roles,
-the `CTStatus`/`CTStatusBadge` pattern, the icon map. Use it to read existing code, not as the
-target. Tokens: `CTColor.*`, `CTFont.*` (`CTFont.message` for message text), `CTIcon.*`,
-`CTSpace.*`, `CornerRadius.*`, `CTLayout.*`. No inline magic numbers: `scripts/check_ui_tokens.sh`
-(run by `verify.sh`) fails when a count of hand-set sizes, faces or colours rises; a migration
-lowers its baseline in the same commit.
+`docs/ANDROID_ONBOARDING.md` §3 maps them: colour is `MaterialTheme.colorScheme` (the unsuffixed
+`CTColor.*` aliases read the roles; bubbles, status and media keep their own tokens), type is
+`Typography` inside Material components and a `CTFont` role outside them (`CTFont.message` for
+message text), shapes are the theme's. Spacing and sizes: `CTSpace.*`, `CTIcon.*`, `CTLayout.*`,
+`CornerRadius.*`. No inline magic numbers: `scripts/check_ui_tokens.sh` (run by `verify.sh`) fails
+when a count of hand-set sizes, faces or colours rises, or a deleted CT control comes back; a
+change that lowers a count lowers its baseline in the same commit.
 
 ---
 
