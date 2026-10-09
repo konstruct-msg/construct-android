@@ -24,7 +24,7 @@
    - 3.6 [Тени](#36-тени)
    - 3.7 [Анимации](#37-анимации)
 4. [UI Компоненты (Reusable)](#4-ui-компоненты-reusable)
-   - 4.1 [CTNavBar — навигационная панель](#41-ctnavbar--навигационная-панель)
+   - 4.1 [CTNavBar — верхняя панель](#41-ctnavbar--верхняя-панель-на-material-topappbar-с-2026-10-09)
    - 4.2 [CTTabBar — таб-бар](#42-cttabbar--таб-бар)
    - 4.3 [CTButton — кнопка](#43-ctbutton--кнопка)
    - 4.4 [CTTextField — поле ввода](#44-cttextfield--поле-ввода)
@@ -407,35 +407,21 @@ object AnimationDuration {
 
 ## 4. UI Компоненты (Reusable)
 
-### 4.1 CTNavBar — навигационная панель
+### 4.1 CTNavBar — верхняя панель (на Material `TopAppBar` с 2026-10-09)
+
+Сигнатура прежняя (`title`, `showBack`, `isModal`, `trailingIcon`/`trailingColor`,
+`trailingSecondaryIcon`/`trailingSecondaryColor`, колбэки). Внутри — `TopAppBar`: высота 64,
+заголовок `titleLarge`, стрелка «назад» Material (`ArrowBack`, крест при `isModal`), кнопки
+действий — `IconButton` с целью 48 dp. Отступы системных панелей — ноль: экран сам отступает от
+статус-бара.
+
+- Корень вкладки (без back, не модальный): наш заголовок — капс, `CTFont.headline`, разрядка 4,
+  без линии.
+- Подэкран: под панелью наш волосяной `HorizontalDivider`.
+- Корни «Чаты» и «Звонки» — `TopAppBar` напрямую (точка соединения + сканер; «Очистить»
+  кнопкой `error`). Шапка чата пока своя — отдельный шаг.
 
 ```kotlin
-// CTNavBar.kt
-@Composable
-fun CTNavBar(
-    title: String,
-    showBack: Boolean = false,
-    isModal: Boolean = false, // macOS: true = xmark вместо chevron
-    trailingIcon: ImageVector? = null,
-    trailingText: String? = null, // ASCII-символ вместо SF Symbol
-    onBack: () -> Unit = {},
-    onTrailingAction: () -> Unit = {},
-    modifier: Modifier = Modifier
-)
-```
-
-**iOS Reference** (`ConstructTheme.swift`):
-- Title (подэкран): как задан, `CTFont.ui(17, .semibold)`, без разрядки — iOS снял капс и
-  `tracking(4)` со всех экранов («читалось как машинная метка, а не имя экрана»)
-- Корень вкладки (без back): капс, `bold(14)`, `tracking(4)`, без нижней линии (шапка `SettingsView`)
-- Back: SF Symbol `chevron.backward.circle.fill` 22pt в accent → на Android акцентный круг со
-  шевроном, вырезанным цветом фона
-- Trailing: SF Symbol или CTSymbol
-- Frame: `frame(height: CTLayout.navBarHeight)` + `.padding(.horizontal, CTLayout.edgePad)`
-- Bottom border: 0.5pt line in `Color.CT.noise`
-
-```kotlin
-// Пример использования:
 CTNavBar(
     title = stringResource(R.string.settings),
     showBack = true,

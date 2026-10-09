@@ -8,10 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -35,9 +34,13 @@ import androidx.compose.material.icons.outlined.MarkChatUnread
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,6 +77,7 @@ import com.construct.messenger.viewmodel.MainViewModel
 /** What the plain iOS `List` adds above its first row, measured side by side. */
 private val LIST_TOP_INSET = 44.dp
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatsListScreen(
     onNavigateToChat: (String) -> Unit,
@@ -101,27 +105,29 @@ fun ChatsListScreen(
     ) {
         // Canon: iOS ChatsListView nav bar — no title; the connection dot, centred on the avatar
         // column (40), and the scanner (qrcode.viewfinder), one tap away.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(CTLayout.navBarHeight)
-                .padding(horizontal = CTLayout.edgePad),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(modifier = Modifier.width(40.dp), contentAlignment = Alignment.Center) {
-                ConnectionStatusIndicator(status = uiState.connection)
-            }
-            Spacer(Modifier.weight(1f))
-            Icon(
-                imageVector = Icons.Default.QrCodeScanner,
-                contentDescription = stringResource(R.string.scan_qr_code),
-                tint = CTColor.accent,
-                modifier = Modifier
-                    .size(CTIcon.hero)
-                    .clickable(onClick = onScanQr)
-                    .padding(CTSpace.m),
-            )
-        }
+        // Material's top bar; the dot sits in the navigation slot, moved to the avatar column.
+        TopAppBar(
+            title = {},
+            navigationIcon = {
+                Box(
+                    modifier = Modifier.padding(start = CTSpace.m).width(40.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    ConnectionStatusIndicator(status = uiState.connection)
+                }
+            },
+            actions = {
+                IconButton(onClick = onScanQr) {
+                    Icon(
+                        imageVector = Icons.Default.QrCodeScanner,
+                        contentDescription = stringResource(R.string.scan_qr_code),
+                        tint = CTColor.accent,
+                    )
+                }
+            },
+            windowInsets = WindowInsets(0),
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+        )
 
         FilterSearchBar(
             query = query,
