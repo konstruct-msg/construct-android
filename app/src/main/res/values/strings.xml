@@ -629,4 +629,22 @@
     <string name="device_removed_title">Device removed</string>
     <string name="device_removed_notice">This device was removed from your account. Everything it holds will be erased.</string>
     <string name="device_removed_erase">erase now (%1$d s)</string>
+    <!-- Settings → Data & storage (iOS DataStorageSettingsView). Android keeps media in files/, not in a cache the system clears, and the store keeps it 7 days: the texts say so. -->
+    <string name="data_and_storage">Data &amp; storage</string>
+    <string name="storage_media_cache">Media cache</string>
+    <string name="storage_media_cache_footer">Photos, videos and files you have opened stay on this device, encrypted, so they open without downloading again. Android does not clear them by itself.</string>
+    <string name="storage_of_quota">%1$s of %2$s</string>
+    <string name="storage_clear_media_cache">Clear media cache</string>
+    <string name="storage_clear_confirm_title">Clear media cache?</string>
+    <string name="storage_clear_confirm_message">All downloaded photos, videos and files will be removed from this device. The server keeps media for 7 days: anything that arrived earlier cannot be downloaded again.</string>
+    <string name="storage_limit">Storage limit</string>
+    <string name="storage_limit_footer">Past this limit, media that can still be downloaded again is removed first. Media older than 7 days exists only on this device and is never removed by the limit.</string>
+    <string name="storage_no_limit">No limit</string>
+    <string name="storage_no_limit_footer">Media is kept until you clear it.</string>
+    <string name="storage_auto_clear">Keep media for</string>
+    <string name="storage_auto_clear_footer">Media downloaded longer ago than this is removed each time the app starts — including media that cannot be downloaded again.</string>
+    <string name="storage_keep_forever">Forever</string>
+    <string name="storage_keep_7_days">7 days</string>
+    <string name="storage_keep_30_days">30 days</string>
+    <string name="storage_keep_90_days">90 days</string>
 </resources>

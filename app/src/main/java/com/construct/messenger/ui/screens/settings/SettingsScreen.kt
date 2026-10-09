@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Laptop
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.QrCode
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -79,6 +80,7 @@ data class SettingsNavigation(
     val onDevices: () -> Unit = {},
     val onAppearance: () -> Unit = {},
     val onSecurity: () -> Unit = {},
+    val onDataStorage: () -> Unit = {},
     val onNotifications: () -> Unit = {},
     val onNetwork: () -> Unit = {},
     val onDrafts: () -> Unit = {},
@@ -198,6 +200,13 @@ fun SettingsScreen(
                     icon = Icons.Outlined.Lock,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onSecurity),
+                )
+                HorizontalDivider()
+                CTSettingsRow(
+                    label = stringResource(R.string.data_and_storage).uppercase(),
+                    icon = Icons.Outlined.Storage,
+                    disclosure = true,
+                    modifier = Modifier.clickable(onClick = navigation.onDataStorage),
                 )
                 HorizontalDivider()
                 CTSettingsRow(

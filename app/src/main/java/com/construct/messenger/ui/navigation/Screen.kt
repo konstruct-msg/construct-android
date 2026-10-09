@@ -36,6 +36,8 @@ sealed class Screen(val route: String) {
     data object Devices : Screen("settings/devices")
     /** The app's switch, the system permission, channels, delivery (iOS `NotificationsSettingsView`). */
     data object Notifications : Screen("settings/notifications")
+
+    data object DataStorage : Screen("settings/storage")
     /** Local notes, never sent (iOS `DraftsView`). */
     data object Drafts : Screen("settings/drafts")
     /** Theme, message face and size (iOS `AppearanceSettingsView`). */

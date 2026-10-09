@@ -62,15 +62,16 @@ class MediaUnavailable(message: String) : Exception(message)
  *
  * What is cached is the blob as the store served it, still encrypted, under `files/media/<id>`:
  * the key stays in the message row, and a copy of the file alone reads as nothing. (iOS seals
- * its decrypted copy under a device key instead; the effect at rest is the same.) Nothing here
- * evicts yet — the quota is the Data & Storage screen's (B7), which comes with sending.
+ * its decrypted copy under a device key instead; the effect at rest is the same.) Its bounds —
+ * the limit after each download, "keep media for", clearing — are [StorageRepository]'s.
  */
 @Singleton
 class MediaRepositoryImpl @Inject constructor(
     @ApplicationContext context: Context,
     private val mediaService: MediaService,
+    private val storage: StorageRepository,
 ) : MediaRepository {
-    private val dir = File(context.filesDir, "media")
+    private val dir = File(context.filesDir, StorageRepository.MEDIA_DIR)
     private val openDir = File(context.cacheDir, OPEN_DIR).also { it.deleteRecursively() }
     private val authority = "${context.packageName}.media"
     private val appContext = context
@@ -177,6 +178,8 @@ class MediaRepositoryImpl @Inject constructor(
                     val tmp = File(dir, "${file.name}.part")
                     tmp.writeBytes(blob)
                     tmp.renameTo(file)
+                    // Each download can take the store past its limit (Settings → Data & storage).
+                    storage.evictToQuota()
                     blob
                 } finally {
                     inFlight.remove(mediaId)

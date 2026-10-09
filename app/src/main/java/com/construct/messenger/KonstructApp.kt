@@ -31,6 +31,9 @@ class KonstructApp : Application(), ImageLoaderFactory {
     @Inject
     lateinit var callTelecom: com.construct.messenger.calls.CallTelecom
 
+    @Inject
+    lateinit var storage: com.construct.messenger.data.repository.StorageRepository
+
     /** Every `AsyncImage` in the app: message media among the images it can load. */
     override fun newImageLoader(): ImageLoader = MediaImages.loader(this, media)
 
@@ -41,6 +44,11 @@ class KonstructApp : Application(), ImageLoaderFactory {
         // The packs in the APK, into the sticker store — once each, off the main thread (iOS
         // seeds on every launch too; a pack already there costs one file check).
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { stickers.seedBundled() }
+        // Settings → Data & storage: "keep media for", then the limit — at each launch, as iOS.
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            storage.evictOld()
+            storage.evictToQuota()
+        }
         // Before any service can decrypt a call signal: the inbox keeps nothing for a late listener.
         calls.start()
         callTelecom.start()
