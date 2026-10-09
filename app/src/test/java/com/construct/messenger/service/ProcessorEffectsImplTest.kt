@@ -256,6 +256,52 @@ class ProcessorEffectsImplTest {
         assertTrue(acks.isProcessed("msg-1"))
     }
 
+    /** Mutation: store the sender's clock instead of the book's key — this reddens. */
+    @Test
+    fun `a message is stored in the server order its envelope arrived with`() = runTest {
+        val messages = FakeMessageStore()
+        val chats = FakeChatStore()
+        val users = FakeContactStore()
+        val acks = FakeAckStore()
+        val book = ServerOrderBook().also { it.remember("MSG-1", com.construct.messenger.util.ServerMessageOrder.key(1_760_000_000_000, 3)) }
+        val keystore: KeystoreManager = mock()
+        whenever(keystore.getUserId()).thenReturn(myId)
+
+        val effects = ProcessorEffectsImpl(
+            cryptoManager = mock<CryptoManager>(),
+            keystoreManager = keystore,
+            messages = messages,
+            chats = chats,
+            contacts = users,
+            ackStore = acks,
+            sessionStateStore = mock(),
+            sessionManager = mock(),
+            sessionControl = mock(),
+            sendReceiptUseCase = mock(),
+            sendContactCard = mock(),
+            addressBook = mock(),
+            intake = mock(),
+            receivingOpen = mock(),
+            actionExecutor = { mock<CfeTimerBridge>() },
+            pendingResends = mock(),
+            held = HeldEnvelopes(),
+            alerts = alerts,
+            chunks = ChunkReassembler(FakePendingChunkDao()),
+            mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
+            contactAvatars = RecordingAvatars(),
+            reactions = mock(),
+            callSignals = com.construct.messenger.calls.CallSignalInbox(),
+            orderBook = book,
+        )
+
+        effects.onDecrypted(peer, "msg-1", "hello".toByteArray())
+        effects.onDecrypted(peer, "msg-2", "no key".toByteArray())
+
+        assertEquals("00000001760000000000-00000000000000000003", messages.rows["msg-1"]?.orderKey)
+        // Its key gone (a restart, a chunked message): at its own time, as iOS stores a row with no position.
+        assertTrue(messages.rows["msg-2"]!!.orderKey.endsWith("-00000000000000000000-msg-2"))
+    }
+
     @Test
     fun `onSenderSync strips SSR1 and persists sent copy under base id`() = runTest {
         val messages = FakeMessageStore()

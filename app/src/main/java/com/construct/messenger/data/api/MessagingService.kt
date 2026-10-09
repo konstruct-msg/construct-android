@@ -1,5 +1,6 @@
 package com.construct.messenger.data.api
 
+import com.construct.messenger.util.ServerMessageOrder
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.stealth.StealthPolicy
 import com.construct.messenger.stealth.StealthSenderService
@@ -44,6 +45,8 @@ class MessagingService @Inject constructor(
         val retryable: Boolean,
         val retryAfterMs: Long,
         val attemptId: String,
+        /** Where the server put it in the recipient's mailbox (`ServerMessageOrder`); null when it did not say. */
+        val orderKey: String? = null,
     )
 
     /** Identified send: sender and content type on the outer envelope, authenticated channel. */
@@ -84,6 +87,7 @@ class MessagingService @Inject constructor(
                 response.error.retryAfterMs
             } else 0,
             attemptId = if (response.hasAttemptId()) response.attemptId else attemptId,
+            orderKey = ServerMessageOrder.key(response.serverTimestamp, response.messageNumber.toLong()),
         ).also {
             Log.i(TAG, "sendMessage ${if (it.success) "sent" else "failed(${it.errorCode})"} attemptId=${it.attemptId}")
         }
@@ -108,6 +112,7 @@ class MessagingService @Inject constructor(
                 response.error.retryAfterMs
             } else 0,
             attemptId = if (response.hasAttemptId()) response.attemptId else attemptId,
+            orderKey = ServerMessageOrder.key(response.serverTimestamp, response.messageNumber.toLong()),
         ).also {
             Log.i(TAG, "sendSealedMessage ${if (it.success) "sent" else "failed(${it.errorCode})"} attemptId=${it.attemptId}")
         }

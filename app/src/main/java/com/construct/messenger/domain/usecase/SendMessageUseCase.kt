@@ -1,5 +1,6 @@
 package com.construct.messenger.domain.usecase
 
+import com.construct.messenger.util.ServerMessageOrder
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.MessagingService
@@ -223,6 +224,8 @@ class SendMessageUseCase @Inject constructor(
                 // it there. Devices that refused are named in the log, not in the row — a per
                 // device status needs a per device carrier, which Room does not have yet.
                 messages.setDeliveryStatus(messageId, DeliveryStatus.SENT)
+                // Out of the pending place at the bottom, into the server's order.
+                tally.orderKey?.let { messages.setOrderKey(messageId, it) }
                 SendOutcome.Sent(messageId)
             } else {
                 messages.setDeliveryStatus(messageId, DeliveryStatus.FAILED)
@@ -426,6 +429,7 @@ class SendMessageUseCase @Inject constructor(
             return SendOutcome.Failed(messageId, result?.errorCode?.ifEmpty { "send failed" } ?: "send failed")
         }
         messages.setDeliveryStatus(messageId, DeliveryStatus.SENT)
+        result.orderKey?.let { messages.setOrderKey(messageId, it) }
         runCatching {
             deliverCopies(myId, myId, messageId, timestampMs, content, pinned)
         }.onFailure {
@@ -438,6 +442,8 @@ class SendMessageUseCase @Inject constructor(
         val recipientAccepted: Int,
         val replicaAccepted: Int,
         val lastError: String,
+        /** The server's order of the first recipient copy it took — where the message now sits. */
+        val orderKey: String? = null,
     )
 
     /**
@@ -495,6 +501,7 @@ class SendMessageUseCase @Inject constructor(
         var recipientAccepted = 0
         var replicaAccepted = 0
         var lastError = "send failed"
+        var orderKey: String? = null
         for (target in targets) {
             val isOwnReplica = target.audience == DeliveryAudience.OWN_REPLICA
             val accountId = if (isOwnReplica) myId else contactId
@@ -534,12 +541,13 @@ class SendMessageUseCase @Inject constructor(
             )
             if (result?.success == true) {
                 if (isOwnReplica) replicaAccepted++ else recipientAccepted++
+                if (!isOwnReplica && orderKey == null) orderKey = result.orderKey
             } else {
                 lastError = result?.errorCode?.ifEmpty { "send failed" } ?: "send failed"
                 Log.w(TAG, "copy rejected ${target.deviceId.take(8)}… $lastError")
             }
         }
-        return DeliveryTally(recipientAccepted, replicaAccepted, lastError)
+        return DeliveryTally(recipientAccepted, replicaAccepted, lastError, orderKey)
     }
 
     /**
@@ -692,6 +700,8 @@ class SendMessageUseCase @Inject constructor(
                 isSentByMe = true,
                 timestampMs = timestampMs,
                 deliveryStatus = status,
+                // At the bottom until the server answers with its place (`setOrderKey`).
+                orderKey = ServerMessageOrder.pending(messageId),
                 replyToId = reply?.messageId,
                 replyPreview = reply?.preview?.ifEmpty { null },
                 replyMediaType = reply?.mediaType,

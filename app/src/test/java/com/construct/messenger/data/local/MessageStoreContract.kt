@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.construct.messenger.data.local.db.ConstructDatabase
 import com.construct.messenger.data.model.DeliveryStatus
+import com.construct.messenger.util.ServerMessageOrder
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -106,6 +107,25 @@ abstract class MessageStoreContract {
         store.insert(message("control", 20, contentType = 25))
         assertEquals(listOf("early", "late"), store.observeChat(chat).first().map { it.id })
         assertEquals("late", store.latestVisible(chat)!!.id)
+    }
+
+    /** The server's order, not the sender's clock; a key of none puts a message at its own time. */
+    @Test
+    fun theTranscriptFollowsTheServersOrder() = runTest {
+        store.insert(message("late-clock", 99).copy(orderKey = ServerMessageOrder.key(1_000, 1)!!))
+        store.insert(message("early-clock", 5).copy(orderKey = ServerMessageOrder.key(2_000, 0)!!))
+        store.insert(message("mine", 50).copy(orderKey = ServerMessageOrder.pending("mine")))
+        assertEquals(listOf("late-clock", "early-clock", "mine"), store.observeChat(chat).first().map { it.id })
+        assertEquals("mine", store.latestVisible(chat)!!.id)
+
+        // Acknowledged: out of the pending place, into the server's.
+        assertTrue(store.setOrderKey("MINE", ServerMessageOrder.key(1_500, 0)!!))
+        assertEquals(listOf("late-clock", "mine", "early-clock"), store.observeChat(chat).first().map { it.id })
+        assertFalse("unchanged", store.setOrderKey("mine", ServerMessageOrder.key(1_500, 0)!!))
+        assertFalse(store.setOrderKey("nobody", ServerMessageOrder.key(1, 0)!!))
+
+        store.insert(message("local", 1_200))
+        assertEquals(ServerMessageOrder.local(1_200, "local"), store.get("local")!!.orderKey)
     }
 
     @Test

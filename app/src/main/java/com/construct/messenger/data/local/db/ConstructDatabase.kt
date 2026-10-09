@@ -27,7 +27,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ReactionEntity::class,
         CallRecordEntity::class,
     ],
-    version = 20,
+    version = 21,
     exportSchema = false,
 )
 abstract class ConstructDatabase : RoomDatabase() {
@@ -204,6 +204,19 @@ abstract class ConstructDatabase : RoomDatabase() {
         val MIGRATION_19_20 = object : Migration(19, 20) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE users ADD COLUMN ktStatus INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
+         * The server's order (`ServerMessageOrder`, as iOS keeps it). Rows already here have no
+         * server position recorded: each sits at its own time — `ServerMessageOrder.local`,
+         * written in SQL, the same string.
+         */
+        val MIGRATION_20_21 = object : Migration(20, 21) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE messages ADD COLUMN orderKey TEXT NOT NULL DEFAULT ''")
+                db.execSQL("UPDATE messages SET orderKey = printf('%020d-%020d-%s', max(timestamp, 1), 0, lower(id))")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_messages_chatId_orderKey ON messages (chatId, orderKey)")
             }
         }
     }
