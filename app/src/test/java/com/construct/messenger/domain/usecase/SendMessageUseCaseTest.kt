@@ -6,8 +6,8 @@ import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.FakeChatStore
 import com.construct.messenger.data.local.ChatRecord
-import com.construct.messenger.data.local.db.MessageDao
-import com.construct.messenger.data.local.db.MessageEntity
+import com.construct.messenger.data.local.FakeMessageStore
+import com.construct.messenger.data.local.MessageRecord
 import com.construct.messenger.data.local.FakeContactStore
 import com.construct.messenger.data.local.ContactRecord
 import com.construct.messenger.data.model.DeliveryStatus
@@ -65,7 +65,7 @@ class SendMessageUseCaseTest {
      * ordinary case is the thing a reader has to notice.
      */
     private class Harness {
-        val messages = FakeMessageDao()
+        val messages = FakeMessageStore()
         val chats = FakeChatStore()
         val users = FakeContactStore()
         val serverIds = FakeServerMessageIdDao()
@@ -87,7 +87,7 @@ class SendMessageUseCaseTest {
             stealthPolicy = policy,
             stealthSender = stealthSender,
             sealedSend = mock(),
-            messageDao = messages,
+            messages = messages,
             chats = chats,
             contacts = users,
             sessionStateStore = sessions,
@@ -249,8 +249,8 @@ class SendMessageUseCaseTest {
         val chatId = com.construct.messenger.util.ConversationId.direct(myId, peer)
         val sent = "11111111-1111-4111-8111-111111111111"
         val staged = "22222222-2222-4222-8222-222222222222"
-        h.messages.rows[sent] = MessageEntity(sent, chatId, "", true, 1L, DeliveryStatus.SENT.name, mediaType = "album", mediaPayload = album("store-id"))
-        h.messages.rows[staged] = MessageEntity(staged, chatId, "", true, 1L, DeliveryStatus.SENDING.name, mediaType = "album", mediaPayload = album("local-x"))
+        h.messages.rows[sent] = MessageRecord(sent, chatId, "", true, 1L, DeliveryStatus.SENT, mediaType = "album", mediaPayload = album("store-id"))
+        h.messages.rows[staged] = MessageRecord(staged, chatId, "", true, 1L, DeliveryStatus.SENDING, mediaType = "album", mediaPayload = album("local-x"))
 
         assertEquals(ResendOutcome.SENT, h.useCase().resend(peer, pinnedDevice, sent))
         val frame = framesSentTo(h, pinnedDevice).single()
@@ -269,15 +269,15 @@ class SendMessageUseCaseTest {
         val chatId = com.construct.messenger.util.ConversationId.direct(myId, peer)
         val failed = "33333333-3333-4333-8333-333333333333"
         val sent = "44444444-4444-4444-8444-444444444444"
-        h.messages.rows[failed] = MessageEntity(failed, chatId, "again", true, 5L, DeliveryStatus.FAILED.name)
-        h.messages.rows[sent] = MessageEntity(sent, chatId, "once", true, 6L, DeliveryStatus.SENT.name)
+        h.messages.rows[failed] = MessageRecord(failed, chatId, "again", true, 5L, DeliveryStatus.FAILED)
+        h.messages.rows[sent] = MessageRecord(sent, chatId, "once", true, 6L, DeliveryStatus.SENT)
 
         val useCase = h.useCase()
         assertNull(useCase.failedRow(peer, sent))
         val outcome = useCase.retry(peer, useCase.failedRow(peer, failed)!!)
 
         assertEquals(SendOutcome.Sent(failed), outcome)
-        assertEquals(DeliveryStatus.SENT.name, h.messages.rows[failed]?.deliveryStatus)
+        assertEquals(DeliveryStatus.SENT, h.messages.rows[failed]?.deliveryStatus)
         val frame = framesSentTo(h, pinnedDevice).single()
         assertEquals(java.util.UUID.fromString(failed), frame.messageId)
         assertEquals("again", shared.proto.messaging.v1.Content.MessageContent.parseFrom(frame.payload).text.text)
@@ -297,7 +297,7 @@ class SendMessageUseCaseTest {
             .addItems(shared.proto.messaging.v1.Content.MediaMessage.newBuilder().setMediaId("store-id").setMimeType("image/jpeg"))
             .setCaption("old")
             .build().toByteArray()
-        h.messages.rows[id] = MessageEntity(id, chatId, "old", true, 1L, DeliveryStatus.SENT.name, mediaType = "album", mediaPayload = album)
+        h.messages.rows[id] = MessageRecord(id, chatId, "old", true, 1L, DeliveryStatus.SENT, mediaType = "album", mediaPayload = album)
 
         assertTrue(h.useCase().edit(peer, id, "new") is SendOutcome.Sent)
 
@@ -316,7 +316,7 @@ class SendMessageUseCaseTest {
 
         assertTrue(outcome is SendOutcome.Sent)
         val id = (outcome as SendOutcome.Sent).messageId
-        assertEquals(DeliveryStatus.SENT.name, h.messages.rows[id]?.deliveryStatus)
+        assertEquals(DeliveryStatus.SENT, h.messages.rows[id]?.deliveryStatus)
         assertEquals("hello", h.messages.rows[id]?.text)
         assertTrue(h.messages.rows[id]?.isSentByMe == true)
     }
@@ -404,7 +404,7 @@ class SendMessageUseCaseTest {
 
         assertTrue(outcome is SendOutcome.Failed)
         val failed = outcome as SendOutcome.Failed
-        assertEquals(DeliveryStatus.FAILED.name, h.messages.rows[failed.messageId]?.deliveryStatus)
+        assertEquals(DeliveryStatus.FAILED, h.messages.rows[failed.messageId]?.deliveryStatus)
     }
 
     /**
@@ -428,7 +428,7 @@ class SendMessageUseCaseTest {
         assertTrue(outcome is SendOutcome.Failed)
         val failed = outcome as SendOutcome.Failed
         assertTrue(failed.reason.contains("identity"))
-        assertEquals(DeliveryStatus.FAILED.name, h.messages.rows[failed.messageId]?.deliveryStatus)
+        assertEquals(DeliveryStatus.FAILED, h.messages.rows[failed.messageId]?.deliveryStatus)
     }
 
     /**
@@ -538,27 +538,5 @@ private class FakeServerMessageIdDao : ServerMessageIdDao {
         old.forEach(rows::remove)
         return old.size
     }
-}
-
-private class FakeMessageDao : MessageDao {
-    val rows = linkedMapOf<String, MessageEntity>()
-    override fun observeChat(chatId: String) = MutableStateFlow(rows.values.filter { it.chatId == chatId })
-    override suspend fun getById(messageId: String) = rows[messageId]
-    override suspend fun getByIdIgnoreCase(messageId: String) =
-        rows.entries.firstOrNull { it.key.equals(messageId, ignoreCase = true) }?.value
-    override suspend fun insert(message: MessageEntity) { rows[message.id] = message }
-    override suspend fun updateDeliveryStatus(messageId: String, status: String) {
-        rows[messageId]?.let { rows[messageId] = it.copy(deliveryStatus = status) }
-    }
-    override suspend fun markEditedMedia(id: String, text: String, mediaPayload: ByteArray) {
-        rows[id]?.let { rows[id] = it.copy(text = text, mediaPayload = mediaPayload, isEdited = true) }
-    }
-    override suspend fun markEdited(id: String, text: String) {
-        rows[id]?.let { rows[id] = it.copy(text = text, isEdited = true) }
-    }
-    override suspend fun deleteById(id: String) { rows.remove(id) }
-    override suspend fun latestVisible(chatId: String) =
-        rows.values.filter { it.chatId == chatId && it.contentType == 0 }.maxByOrNull { it.timestamp }
-    override suspend fun deleteChat(chatId: String) { rows.values.removeAll { it.chatId == chatId } }
 }
 

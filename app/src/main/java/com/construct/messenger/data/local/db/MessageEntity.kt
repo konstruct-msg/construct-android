@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.Flow
  *
  * [deliveryStatus] stores `DeliveryStatus.name` (SENDING/SENT/DELIVERED/READ/FAILED)
  * as a plain String — no TypeConverter needed.
+ *
+ * Read and written only through [com.construct.messenger.data.local.MessageStore] (TODO 136).
  */
 @Entity(
     tableName = "messages",
@@ -61,18 +63,26 @@ interface MessageDao {
     @Query("SELECT * FROM messages WHERE chatId = :chatId AND contentType = 0 ORDER BY timestamp ASC")
     fun observeChat(chatId: String): Flow<List<MessageEntity>>
 
-    @Query("SELECT * FROM messages WHERE id = :messageId")
-    suspend fun getById(messageId: String): MessageEntity?
-
     /** Edits and quotes compare ids the way iOS does (`==[c]`). */
     @Query("SELECT * FROM messages WHERE id = :messageId COLLATE NOCASE LIMIT 1")
     suspend fun getByIdIgnoreCase(messageId: String): MessageEntity?
 
-    @androidx.room.Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
-    suspend fun insert(message: MessageEntity)
+    /** -1 when a message with its id was already there. */
+    @androidx.room.Insert(onConflict = androidx.room.OnConflictStrategy.IGNORE)
+    suspend fun insertIfAbsent(message: MessageEntity): Long
 
-    @Query("UPDATE messages SET deliveryStatus = :status WHERE id = :messageId")
-    suspend fun updateDeliveryStatus(messageId: String, status: String)
+    /**
+     * [status] (of evidence rank [rank]) unless the stored one is stronger — the core's rule,
+     * `com.construct.messenger.data.local.evidenceRank`. Returns rows changed.
+     */
+    @Query(
+        "UPDATE messages SET deliveryStatus = :status WHERE id = :messageId AND deliveryStatus != :status AND " +
+            "(CASE deliveryStatus WHEN 'READ' THEN 3 WHEN 'DELIVERED' THEN 2 WHEN 'SENT' THEN 1 ELSE 0 END) <= :rank",
+    )
+    suspend fun raiseDeliveryStatus(messageId: String, status: String, rank: Int): Int
+
+    @Query("UPDATE messages SET mediaType = :mediaType, mediaPayload = :mediaPayload WHERE id = :id")
+    suspend fun setMedia(id: String, mediaType: String, mediaPayload: ByteArray)
 
     @Query("UPDATE messages SET text = :text, isEdited = 1 WHERE id = :id")
     suspend fun markEdited(id: String, text: String)
@@ -92,16 +102,4 @@ interface MessageDao {
 
     @Query("DELETE FROM messages WHERE chatId = :chatId")
     suspend fun deleteChat(chatId: String)
-}
-
-/** Apply an edit to [row]: the text, and for a photo also the caption inside its stored album. */
-internal suspend fun MessageDao.applyEdit(row: MessageEntity, text: String) {
-    val album = com.construct.messenger.util.MediaWire.withCaption(row.mediaType, row.mediaPayload, text)
-    if (album != null) markEditedMedia(row.id, text, album) else markEdited(row.id, text)
-}
-
-/** Point the chat row at whatever message is now last. An empty transcript clears the preview. */
-internal suspend fun refreshChatPreview(chats: com.construct.messenger.data.local.ChatStore, messageDao: MessageDao, chatId: String) {
-    val latest = messageDao.latestVisible(chatId)
-    chats.setPreview(chatId, latest?.text, latest?.timestamp)
 }

@@ -6,8 +6,8 @@ import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.FakeChatStore
 import com.construct.messenger.data.local.ChatRecord
-import com.construct.messenger.data.local.db.MessageDao
-import com.construct.messenger.data.local.db.MessageEntity
+import com.construct.messenger.data.local.FakeMessageStore
+import com.construct.messenger.data.local.MessageRecord
 import com.construct.messenger.data.local.FakeContactStore
 import com.construct.messenger.data.local.ContactRecord
 import com.construct.messenger.data.model.DeliveryStatus
@@ -53,7 +53,7 @@ class ProcessorEffectsImplTest {
 
     /** Just enough to receive text messages: Room fakes and a known local account. */
     private class Inbox(alerts: IncomingAlerts, myId: String) {
-        val messages = FakeMessageDao()
+        val messages = FakeMessageStore()
         val chats = FakeChatStore()
         val users = FakeContactStore()
         val acks = FakeAckStore()
@@ -68,7 +68,7 @@ class ProcessorEffectsImplTest {
         val effects = ProcessorEffectsImpl(
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) },
-            messageDao = messages,
+            messages = messages,
             chats = chats,
             contacts = users,
             ackStore = acks,
@@ -101,11 +101,11 @@ class ProcessorEffectsImplTest {
     fun `a contact card pins the sender's address`() = runTest {
         val users = FakeContactStore().also { it.rows[peer] = ContactRecord(id = peer, isContact = true) }
         val keystore = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) }
-        val messages = FakeMessageDao()
+        val messages = FakeMessageStore()
         val effects = ProcessorEffectsImpl(
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = keystore,
-            messageDao = messages,
+            messages = messages,
             chats = FakeChatStore(),
             contacts = users,
             ackStore = FakeAckStore(),
@@ -142,12 +142,12 @@ class ProcessorEffectsImplTest {
     fun `a contact card hands over the sender's intake key`() = runTest {
         val users = FakeContactStore().also { it.rows[peer] = ContactRecord(id = peer, isContact = true) }
         val keystore = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) }
-        val messages = FakeMessageDao()
+        val messages = FakeMessageStore()
         val intake = mock<com.construct.messenger.stealth.IntakeCredentials>()
         val effects = ProcessorEffectsImpl(
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = keystore,
-            messageDao = messages,
+            messages = messages,
             chats = FakeChatStore(),
             contacts = users,
             ackStore = FakeAckStore(),
@@ -212,7 +212,7 @@ class ProcessorEffectsImplTest {
 
     @Test
     fun `onDecrypted persists message chat and contact`() = runTest {
-        val messages = FakeMessageDao()
+        val messages = FakeMessageStore()
         val chats = FakeChatStore()
         val users = FakeContactStore()
         val acks = FakeAckStore()
@@ -222,7 +222,7 @@ class ProcessorEffectsImplTest {
         val effects = ProcessorEffectsImpl(
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = keystore,
-            messageDao = messages,
+            messages = messages,
             chats = chats,
             contacts = users,
             ackStore = acks,
@@ -258,7 +258,7 @@ class ProcessorEffectsImplTest {
 
     @Test
     fun `onSenderSync strips SSR1 and persists sent copy under base id`() = runTest {
-        val messages = FakeMessageDao()
+        val messages = FakeMessageStore()
         val chats = FakeChatStore()
         val users = FakeContactStore()
         val acks = FakeAckStore()
@@ -267,7 +267,7 @@ class ProcessorEffectsImplTest {
         val effects = ProcessorEffectsImpl(
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = keystore,
-            messageDao = messages,
+            messages = messages,
             chats = chats,
             contacts = users,
             ackStore = acks,
@@ -307,7 +307,7 @@ class ProcessorEffectsImplTest {
         val chatId = ConversationId.direct(myId, peer)
         assertEquals("mirrored", messages.rows[baseId]?.text)
         assertEquals(true, messages.rows[baseId]?.isSentByMe)
-        assertEquals(42L, messages.rows[baseId]?.timestamp)
+        assertEquals(42L, messages.rows[baseId]?.timestampMs)
         assertEquals(chatId, messages.rows[baseId]?.chatId)
         assertEquals(0, chats.rows[chatId]?.unreadCount)
         assertTrue(acks.isProcessed("$baseId-ss-0123456789abcdef"))
@@ -544,9 +544,9 @@ class ProcessorEffectsImplTest {
     @Test
     fun `a receipt frame marks our message delivered`() = runTest {
         val inbox = Inbox(alerts, myId)
-        inbox.messages.rows["ours-1"] = com.construct.messenger.data.local.db.MessageEntity(
-            id = "ours-1", chatId = "c", text = "x", isSentByMe = true, timestamp = 1,
-            deliveryStatus = com.construct.messenger.data.model.DeliveryStatus.SENT.name,
+        inbox.messages.rows["ours-1"] = MessageRecord(
+            id = "ours-1", chatId = "c", text = "x", isSentByMe = true, timestampMs = 1,
+            deliveryStatus = com.construct.messenger.data.model.DeliveryStatus.SENT,
         )
         val receipt = shared.proto.signaling.v1.Presence.DeliveryReceipt.newBuilder()
             .setDirect(shared.proto.signaling.v1.Presence.DirectReceipt.newBuilder().addMessageIds("ours-1"))
@@ -554,7 +554,7 @@ class ProcessorEffectsImplTest {
 
         inbox.effects.onControlFrame(peer, "r1", ContentType.CONTENT_TYPE_DELIVERY_RECEIPT_VALUE, receipt)
 
-        assertEquals(com.construct.messenger.data.model.DeliveryStatus.DELIVERED.name, inbox.messages.rows["ours-1"]?.deliveryStatus)
+        assertEquals(com.construct.messenger.data.model.DeliveryStatus.DELIVERED, inbox.messages.rows["ours-1"]?.deliveryStatus)
         assertTrue(inbox.acks.isProcessed("r1"))
     }
 
@@ -562,9 +562,9 @@ class ProcessorEffectsImplTest {
     @Test
     fun `a receipt naming a message we received changes nothing`() = runTest {
         val inbox = Inbox(alerts, myId)
-        inbox.messages.rows["theirs-1"] = com.construct.messenger.data.local.db.MessageEntity(
-            id = "theirs-1", chatId = "c", text = "x", isSentByMe = false, timestamp = 1,
-            deliveryStatus = com.construct.messenger.data.model.DeliveryStatus.SENT.name,
+        inbox.messages.rows["theirs-1"] = MessageRecord(
+            id = "theirs-1", chatId = "c", text = "x", isSentByMe = false, timestampMs = 1,
+            deliveryStatus = com.construct.messenger.data.model.DeliveryStatus.SENT,
         )
         val receipt = shared.proto.signaling.v1.Presence.DeliveryReceipt.newBuilder()
             .setDirect(shared.proto.signaling.v1.Presence.DirectReceipt.newBuilder().addMessageIds("theirs-1"))
@@ -572,7 +572,7 @@ class ProcessorEffectsImplTest {
 
         inbox.effects.onControlFrame(peer, "r2", ContentType.CONTENT_TYPE_DELIVERY_RECEIPT_VALUE, receipt)
 
-        assertEquals(com.construct.messenger.data.model.DeliveryStatus.SENT.name, inbox.messages.rows["theirs-1"]?.deliveryStatus)
+        assertEquals(com.construct.messenger.data.model.DeliveryStatus.SENT, inbox.messages.rows["theirs-1"]?.deliveryStatus)
         assertTrue(inbox.acks.isProcessed("r2"))
     }
 
@@ -580,9 +580,9 @@ class ProcessorEffectsImplTest {
     @Test
     fun `a receipt id in another case still marks our message`() = runTest {
         val inbox = Inbox(alerts, myId)
-        inbox.messages.rows["ours-2"] = com.construct.messenger.data.local.db.MessageEntity(
-            id = "ours-2", chatId = "c", text = "x", isSentByMe = true, timestamp = 1,
-            deliveryStatus = com.construct.messenger.data.model.DeliveryStatus.SENT.name,
+        inbox.messages.rows["ours-2"] = MessageRecord(
+            id = "ours-2", chatId = "c", text = "x", isSentByMe = true, timestampMs = 1,
+            deliveryStatus = com.construct.messenger.data.model.DeliveryStatus.SENT,
         )
         val receipt = shared.proto.signaling.v1.Presence.DeliveryReceipt.newBuilder()
             .setDirect(shared.proto.signaling.v1.Presence.DirectReceipt.newBuilder().addMessageIds("OURS-2"))
@@ -590,7 +590,7 @@ class ProcessorEffectsImplTest {
 
         inbox.effects.onControlFrame(peer, "r3", ContentType.CONTENT_TYPE_DELIVERY_RECEIPT_VALUE, receipt)
 
-        assertEquals(com.construct.messenger.data.model.DeliveryStatus.DELIVERED.name, inbox.messages.rows["ours-2"]?.deliveryStatus)
+        assertEquals(com.construct.messenger.data.model.DeliveryStatus.DELIVERED, inbox.messages.rows["ours-2"]?.deliveryStatus)
     }
 
     /**
@@ -730,13 +730,13 @@ class ProcessorEffectsImplTest {
         val inbox = Inbox(alerts, myId)
         val id = "33333333-3333-4333-8333-333333333333"
         val chatId = ConversationId.direct(myId, peer)
-        inbox.messages.rows[id] = MessageEntity(
+        inbox.messages.rows[id] = MessageRecord(
             id = id,
             chatId = chatId,
             text = "mine",
             isSentByMe = true,
-            timestamp = 1L,
-            deliveryStatus = DeliveryStatus.SENT.name,
+            timestampMs = 1L,
+            deliveryStatus = DeliveryStatus.SENT,
         )
         inbox.effects.onDecrypted(
             peer,
@@ -753,13 +753,13 @@ class ProcessorEffectsImplTest {
         val inbox = Inbox(alerts, myId)
         val id = "44444444-4444-4444-8444-444444444444"
         val chatId = ConversationId.direct(myId, peer)
-        inbox.messages.rows[id] = MessageEntity(
+        inbox.messages.rows[id] = MessageRecord(
             id = id,
             chatId = chatId,
             text = "before",
             isSentByMe = true,
-            timestamp = 1L,
-            deliveryStatus = DeliveryStatus.SENT.name,
+            timestampMs = 1L,
+            deliveryStatus = DeliveryStatus.SENT,
         )
         inbox.chats.rows[chatId] = ChatRecord(id = chatId, peerId = peer, lastMessageText = "before", lastMessageTimeMs = 1L)
         val edit = KnstFrame.pack(EditWire.encode(id, "after"), KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID())
@@ -825,7 +825,7 @@ class ProcessorEffectsImplTest {
         return ProcessorEffectsImpl(
             cryptoManager = crypto,
             keystoreManager = keystore,
-            messageDao = FakeMessageDao(),
+            messages = FakeMessageStore(),
             chats = FakeChatStore(),
             contacts = FakeContactStore(),
             ackStore = acks,
@@ -913,28 +913,6 @@ class ProcessorEffectsImplTest {
         assertEquals(ProcessingOutcome.Deferred, outcome)
         assertFalse(acks.isProcessed("init-1"))
     }
-}
-
-private class FakeMessageDao : MessageDao {
-    val rows = linkedMapOf<String, MessageEntity>()
-    override fun observeChat(chatId: String) = MutableStateFlow(rows.values.filter { it.chatId == chatId })
-    override suspend fun getById(messageId: String) = rows[messageId]
-    override suspend fun getByIdIgnoreCase(messageId: String) =
-        rows.entries.firstOrNull { it.key.equals(messageId, ignoreCase = true) }?.value
-    override suspend fun insert(message: MessageEntity) { rows[message.id] = message }
-    override suspend fun updateDeliveryStatus(messageId: String, status: String) {
-        rows[messageId]?.let { rows[messageId] = it.copy(deliveryStatus = status) }
-    }
-    override suspend fun markEditedMedia(id: String, text: String, mediaPayload: ByteArray) {
-        rows[id]?.let { rows[id] = it.copy(text = text, mediaPayload = mediaPayload, isEdited = true) }
-    }
-    override suspend fun markEdited(id: String, text: String) {
-        rows[id]?.let { rows[id] = it.copy(text = text, isEdited = true) }
-    }
-    override suspend fun deleteById(id: String) { rows.remove(id) }
-    override suspend fun latestVisible(chatId: String) =
-        rows.values.filter { it.chatId == chatId && it.contentType == 0 }.maxByOrNull { it.timestamp }
-    override suspend fun deleteChat(chatId: String) { rows.values.removeAll { it.chatId == chatId } }
 }
 
 private class FakeAckStore : AckStore {

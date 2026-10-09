@@ -7,13 +7,14 @@ import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.ChatStore
+import com.construct.messenger.data.local.ensure
 import com.construct.messenger.data.local.noteMessage
-import com.construct.messenger.data.local.db.MessageDao
-import com.construct.messenger.data.local.db.MessageEntity
-import com.construct.messenger.data.local.db.applyEdit
+import com.construct.messenger.data.local.MessageStore
+import com.construct.messenger.data.local.MessageRecord
+import com.construct.messenger.data.local.applyEdit
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.ContactRecord
-import com.construct.messenger.data.local.db.refreshChatPreview
+import com.construct.messenger.data.local.refreshChatPreview
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.domain.usecase.ReceivingOpenUseCase
@@ -46,7 +47,7 @@ import uniffi.construct_core.CfeSecureStoreSlot
 class ProcessorEffectsImpl @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val keystoreManager: KeystoreManager,
-    private val messageDao: MessageDao,
+    private val messages: MessageStore,
     private val chats: ChatStore,
     private val contacts: ContactStore,
     private val ackStore: AckStore,
@@ -333,9 +334,9 @@ class ProcessorEffectsImpl @Inject constructor(
      * `StreamLifecycleCoordinator.handleDeliveryReceipts` (`message.isSentByMe`).
      */
     override suspend fun markDelivered(messageId: String) {
-        val row = messageDao.getByIdIgnoreCase(messageId) ?: return
+        val row = messages.get(messageId) ?: return
         if (!row.isSentByMe) return
-        messageDao.updateDeliveryStatus(row.id, DeliveryStatus.DELIVERED.name)
+        messages.setDeliveryStatus(row.id, DeliveryStatus.DELIVERED)
     }
 
     override suspend fun markProcessed(messageId: String, senderId: String) {
@@ -422,21 +423,24 @@ class ProcessorEffectsImpl @Inject constructor(
             return
         }
         val chatId = ConversationId.direct(myId, contactId)
-        val prior = messageDao.getByIdIgnoreCase(messageId)
+        val prior = messages.get(messageId)
         // A later edit already replaced this text. Putting the original back is how a
         // redelivery undoes the peer's correction. A row we sent is not this incoming one.
         if (prior != null && (prior.isSentByMe || prior.isEdited)) return
         // A redelivered message (the ACK was lost, or the queue was replayed) is already here:
         // counting it again would inflate unread, and alerting again would ring for nothing.
         val firstSight = prior == null
-        messageDao.insert(
-            MessageEntity(
+        // The core holds a message to its chat and the chat to its contact: both first.
+        contacts.ensure(contactId)
+        chats.ensure(chatId, contactId)
+        messages.insert(
+            MessageRecord(
                 id = messageId,
                 chatId = chatId,
                 text = text,
                 isSentByMe = false,
-                timestamp = timestampMs,
-                deliveryStatus = DeliveryStatus.DELIVERED.name,
+                timestampMs = timestampMs,
+                deliveryStatus = DeliveryStatus.DELIVERED,
                 replyToId = reply?.messageId,
                 replyPreview = reply?.preview?.ifEmpty { null },
                 replyMediaType = reply?.mediaType,
@@ -447,7 +451,6 @@ class ProcessorEffectsImpl @Inject constructor(
         if (firstSight && media != null) mediaArrivals.onArrived(media.kind, media.bytes)
         // On screen, it is read as it lands.
         val unseen = firstSight && !alerts.isChatVisible(contactId)
-        contacts.ensure(contactId)
         chats.noteMessage(chatId, contactId, media?.let(mediaPreview::of) ?: text, timestampMs, unread = unseen)
         if (unseen) {
             runCatching { alerts.onUnseenMessage(contactId) }
@@ -468,16 +471,18 @@ class ProcessorEffectsImpl @Inject constructor(
             return
         }
         val chatId = ConversationId.direct(myId, partnerUserId)
-        val prior = messageDao.getByIdIgnoreCase(messageId)
+        val prior = messages.get(messageId)
         if (prior != null && (!prior.isSentByMe || prior.isEdited)) return
-        messageDao.insert(
-            MessageEntity(
+        contacts.ensure(partnerUserId)
+        chats.ensure(chatId, partnerUserId)
+        messages.insert(
+            MessageRecord(
                 id = messageId,
                 chatId = chatId,
                 text = text,
                 isSentByMe = true,
-                timestamp = timestampMs,
-                deliveryStatus = DeliveryStatus.SENT.name,
+                timestampMs = timestampMs,
+                deliveryStatus = DeliveryStatus.SENT,
                 replyToId = reply?.messageId,
                 replyPreview = reply?.preview?.ifEmpty { null },
                 replyMediaType = reply?.mediaType,
@@ -487,7 +492,6 @@ class ProcessorEffectsImpl @Inject constructor(
         )
         // Our own album, sent from another device: this one has not got the blob either.
         if (prior == null && media != null) mediaArrivals.onArrived(media.kind, media.bytes)
-        contacts.ensure(partnerUserId)
         chats.noteMessage(chatId, partnerUserId, media?.let(mediaPreview::of) ?: text, timestampMs, unread = false)
     }
 
@@ -502,14 +506,14 @@ class ProcessorEffectsImpl @Inject constructor(
                 ?: DeviceCopyRoute.parse(envelopeMessageId)?.baseMessageId
                 ?: envelopeMessageId
             ).lowercase()
-        val existing = messageDao.getByIdIgnoreCase(preferred)
+        val existing = messages.get(preferred)
         if (existing == null || existing.isSentByMe == sentByMe) return existing?.id ?: preferred
         return envelopeMessageId.lowercase()
     }
 
     /** A peer may only edit what they sent. A sender-sync copy may only edit what we sent. */
     private suspend fun applyEdit(edit: IncomingPlaintext.Edit, sentByMe: Boolean) {
-        val row = messageDao.getByIdIgnoreCase(edit.targetMessageId) ?: run {
+        val row = messages.get(edit.targetMessageId) ?: run {
             Log.w(TAG, "edit target missing ${edit.targetMessageId.take(8)}…")
             return
         }
@@ -519,15 +523,15 @@ class ProcessorEffectsImpl @Inject constructor(
         }
         val text = edit.newText.ifEmpty { row.text }
         // iOS: `new_text` carries a photo's caption too, and the album keeps it.
-        messageDao.applyEdit(row, text)
-        refreshChatPreview(chats, messageDao, row.chatId)
+        messages.applyEdit(row, text)
+        messages.refreshChatPreview(chats, row.chatId)
     }
 
     private suspend fun applyDelete(targetMessageId: String, sentByMe: Boolean) {
-        val row = messageDao.getByIdIgnoreCase(targetMessageId) ?: return
+        val row = messages.get(targetMessageId) ?: return
         if (row.isSentByMe != sentByMe) return
-        messageDao.deleteById(row.id)
-        refreshChatPreview(chats, messageDao, row.chatId)
+        messages.delete(row.id)
+        messages.refreshChatPreview(chats, row.chatId)
     }
 
     /**
