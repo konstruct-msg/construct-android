@@ -641,6 +641,11 @@
     <string name="storage_limit_footer">Past this limit, media that can still be downloaded again is removed first. Media older than 7 days exists only on this device and is never removed by the limit.</string>
     <string name="storage_no_limit">No limit</string>
     <string name="storage_no_limit_footer">Media is kept until you clear it.</string>
+    <string name="media_autodownload">Auto-download media</string>
+    <string name="media_autodownload_never">Never</string>
+    <string name="media_autodownload_unmetered">Wi-Fi only</string>
+    <string name="media_autodownload_always">Always</string>
+    <string name="media_autodownload_footer">Attachments are fetched as messages arrive; on Wi-Fi, ones over 16 MB wait until you open them, and Data Saver counts as mobile data. The server keeps files for 7 days, so media in a chat you have not opened within a week cannot be downloaded later.</string>
     <string name="storage_auto_clear">Keep media for</string>
     <string name="storage_auto_clear_footer">Media downloaded longer ago than this is removed each time the app starts — including media that cannot be downloaded again.</string>
     <string name="storage_keep_forever">Forever</string>

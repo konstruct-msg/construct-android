@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.repository.StorageRepository
 import com.construct.messenger.data.repository.StorageSettings
+import com.construct.messenger.media.MediaAutoDownload
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +54,8 @@ class DataStorageViewModel @Inject constructor(
             usage.update { it.copy(cachedBytes = storage.cachedBytes()) }
         }
     }
+
+    fun setAutoDownload(setting: MediaAutoDownload) = storage.setAutoDownload(setting)
 
     fun clear() {
         if (usage.value.clearing) return

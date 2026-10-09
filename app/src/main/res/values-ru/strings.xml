@@ -645,6 +645,11 @@
     <string name="storage_limit_footer">При превышении лимита сначала удаляются медиа, которые ещё можно загрузить снова. Медиа старше 7 дней есть только на этом устройстве, и лимит их не удаляет.</string>
     <string name="storage_no_limit">Без лимита</string>
     <string name="storage_no_limit_footer">Медиа хранятся, пока вы их не очистите.</string>
+    <string name="media_autodownload">Автозагрузка медиа</string>
+    <string name="media_autodownload_never">Никогда</string>
+    <string name="media_autodownload_unmetered">Только Wi-Fi</string>
+    <string name="media_autodownload_always">Всегда</string>
+    <string name="media_autodownload_footer">Вложения загружаются по мере поступления сообщений; по Wi-Fi файлы больше 16 МБ ждут, пока вы их откроете, а экономия трафика считается мобильной сетью. Сервер хранит файлы 7 дней, поэтому медиа в чате, который не открывали неделю, скачать уже не получится.</string>
     <string name="storage_auto_clear">Хранить медиа</string>
     <string name="storage_auto_clear_footer">Медиа, загруженные раньше выбранного срока, удаляются при каждом запуске приложения — в том числе те, что уже нельзя загрузить снова.</string>
     <string name="storage_keep_forever">Всегда</string>

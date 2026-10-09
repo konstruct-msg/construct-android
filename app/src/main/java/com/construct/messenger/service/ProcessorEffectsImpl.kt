@@ -71,6 +71,8 @@ class ProcessorEffectsImpl @Inject constructor(
     private val contactAvatars: ContactAvatars,
     private val reactions: ReactionStore,
     private val callSignals: com.construct.messenger.calls.CallSignalInbox,
+    // Settings → Data & storage → Auto-download: an album is fetched as it arrives.
+    private val mediaArrivals: com.construct.messenger.media.MediaArrivals = com.construct.messenger.media.MediaArrivals.NONE,
 ) : ProcessorEffects {
 
     override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
@@ -443,6 +445,7 @@ class ProcessorEffectsImpl @Inject constructor(
                 mediaPayload = media?.bytes,
             ),
         )
+        if (firstSight && media != null) mediaArrivals.onArrived(media.kind, media.bytes)
         // On screen, it is read as it lands.
         val unseen = firstSight && !alerts.isChatVisible(contactId)
         val existing = chatDao.getById(chatId)
@@ -505,6 +508,8 @@ class ProcessorEffectsImpl @Inject constructor(
                 mediaPayload = media?.bytes,
             ),
         )
+        // Our own album, sent from another device: this one has not got the blob either.
+        if (prior == null && media != null) mediaArrivals.onArrived(media.kind, media.bytes)
         val existing = chatDao.getById(chatId)
         if (existing == null) {
             chatDao.upsert(
