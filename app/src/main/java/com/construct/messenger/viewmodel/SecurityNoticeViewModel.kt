@@ -1,8 +1,7 @@
 package com.construct.messenger.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.construct.messenger.data.local.db.UserDao
-import com.construct.messenger.data.local.db.localName
+import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.model.SecurityNotice
 import com.construct.messenger.security.SecurityNotices
 import com.construct.messenger.util.DisplayNameGenerator
@@ -17,10 +16,10 @@ data class SecurityNoticeAnnouncement(val userId: String, val name: String, val 
 @HiltViewModel
 class SecurityNoticeViewModel @Inject constructor(
     securityNotices: SecurityNotices,
-    private val userDao: UserDao,
+    private val contacts: ContactStore,
 ) : ViewModel() {
     val announcements: Flow<SecurityNoticeAnnouncement> = securityNotices.announced.map { event ->
-        val row = userDao.getById(event.userId)
+        val row = contacts.get(event.userId)
         val name = row?.localName
             ?: row?.username?.takeIf { it.isNotBlank() }?.let { "@$it" }
             ?: row?.displayName?.takeIf { it.isNotBlank() }

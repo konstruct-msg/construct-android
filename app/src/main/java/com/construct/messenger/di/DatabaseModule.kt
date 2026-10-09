@@ -3,6 +3,8 @@ package com.construct.messenger.di
 import android.content.Context
 import androidx.room.Room
 import com.construct.messenger.data.local.AckStore
+import com.construct.messenger.data.local.ContactStore
+import com.construct.messenger.data.local.RoomContactStore
 import com.construct.messenger.data.local.PersistentAckStore
 import com.construct.messenger.data.local.db.AckDao
 import com.construct.messenger.data.local.db.ChatDao
@@ -16,7 +18,6 @@ import com.construct.messenger.data.local.db.PendingChunkDao
 import com.construct.messenger.data.local.db.PendingResendDao
 import com.construct.messenger.data.local.db.ReactionDao
 import com.construct.messenger.data.local.db.ServerMessageIdDao
-import com.construct.messenger.data.local.db.UserDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -62,8 +63,10 @@ object DatabaseModule {
     @Provides
     fun provideMessageDao(db: ConstructDatabase): MessageDao = db.messageDao()
 
+    /** The `users` table only through here (TODO 136): no `UserDao` is provided. */
     @Provides
-    fun provideUserDao(db: ConstructDatabase): UserDao = db.userDao()
+    @Singleton
+    fun provideContactStore(db: ConstructDatabase): ContactStore = RoomContactStore(db.userDao())
 
     @Provides
     fun provideAckDao(db: ConstructDatabase): AckDao = db.ackDao()

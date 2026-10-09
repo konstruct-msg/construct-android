@@ -1,6 +1,7 @@
 package com.construct.messenger.service
 
-import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.data.local.ContactRecord
+import com.construct.messenger.data.local.FakeContactStore
 import com.construct.messenger.data.model.MediaItem
 import com.construct.messenger.data.repository.MediaRepository
 import com.construct.messenger.data.repository.MediaUnavailable
@@ -25,10 +26,10 @@ class ContactAvatarsTest {
 
     private val ref = ProfileShare.AvatarRef("m-1", "https://media.example/m-1", ByteArray(32) { 7 }, "image/jpeg")
     private val now = 10_000_000_000L
-    private val users = FakeUserDao()
+    private val users = FakeContactStore()
 
     private fun pending(stored: ByteArray = ref.stored(), sinceMs: Long = now - 1_000) {
-        users.rows["peer"] = UserEntity(id = "peer", isContact = true, avatarData = byteArrayOf(1), pendingAvatarRef = stored, pendingAvatarSinceMs = sinceMs)
+        users.rows["peer"] = ContactRecord(id = "peer", isContact = true, avatarData = byteArrayOf(1), pendingAvatarRef = stored, pendingAvatarSinceMs = sinceMs)
     }
 
     private fun avatars(media: Media, picture: Boolean = true) = MediaContactAvatars(media, users, { now }, { picture })

@@ -4,7 +4,6 @@ import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.local.db.PeerDeviceDao
 import com.construct.messenger.data.local.db.PeerDeviceEntity
-import com.construct.messenger.data.local.db.UserDao
 import com.construct.messenger.data.model.IdentityIds
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,7 +21,7 @@ import javax.inject.Singleton
 @Singleton
 class PeerDeviceRegistry @Inject constructor(
     private val peerDeviceDao: PeerDeviceDao,
-    private val userDao: UserDao,
+    private val contacts: ContactStore,
     private val cryptoManager: CryptoManager,
 ) {
     suspend fun record(
@@ -73,7 +72,7 @@ class PeerDeviceRegistry @Inject constructor(
     suspend fun resolveDeviceId(accountOrDeviceId: String): String? {
         if (IdentityIds.isCryptoDeviceId(accountOrDeviceId)) return accountOrDeviceId
         peerDeviceDao.forAccount(accountOrDeviceId).firstOrNull()?.let { return it.deviceId }
-        val legacyIdentity = userDao.getById(accountOrDeviceId)?.identityPublic ?: return null
+        val legacyIdentity = contacts.get(accountOrDeviceId)?.identityPublic ?: return null
         if (legacyIdentity.isEmpty()) return null
         val derived = cryptoManager.deriveDeviceIdFromIdentity(legacyIdentity)
         if (!IdentityIds.isCryptoDeviceId(derived)) return null

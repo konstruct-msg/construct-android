@@ -1,4 +1,4 @@
-package com.construct.messenger.data.local.db
+package com.construct.messenger.data.local
 
 import com.construct.messenger.util.DisplayNameGenerator
 import org.junit.Assert.assertEquals
@@ -12,14 +12,14 @@ class ResolvedNameTest {
     /** Mutation: put the shared name first — this reddens. */
     @Test
     fun `the name the user gave them wins`() {
-        val row = UserEntity(id, username = "kostya", displayName = "Konstantin", localAlias = " Kostya ")
+        val row = ContactRecord(id, username = "kostya", displayName = "Konstantin", localAlias = " Kostya ")
         assertEquals("Kostya", row.resolvedName(id))
     }
 
     @Test
     fun `without one, the shared name, then the username, then the generated name`() {
-        assertEquals("Konstantin", UserEntity(id, username = "kostya", displayName = "Konstantin", localAlias = " ").resolvedName(id))
-        assertEquals("kostya", UserEntity(id, username = "kostya").resolvedName(id))
-        assertEquals(DisplayNameGenerator.generate(id), (null as UserEntity?).resolvedName(id))
+        assertEquals("Konstantin", ContactRecord(id, username = "kostya", displayName = "Konstantin", localAlias = " ").resolvedName(id))
+        assertEquals("kostya", ContactRecord(id, username = "kostya").resolvedName(id))
+        assertEquals(DisplayNameGenerator.generate(id), (null as ContactRecord?).resolvedName(id))
     }
 }

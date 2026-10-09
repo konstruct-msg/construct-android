@@ -3,9 +3,8 @@ package com.construct.messenger.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.construct.messenger.data.local.db.UserDao
-import com.construct.messenger.data.local.db.localName
-import com.construct.messenger.data.local.db.resolvedName
+import com.construct.messenger.data.local.ContactStore
+import com.construct.messenger.data.local.resolvedName
 import com.construct.messenger.data.model.ContactTrustAlert
 import com.construct.messenger.data.model.KtStatus
 import com.construct.messenger.data.model.SecurityNotice
@@ -61,7 +60,7 @@ enum class ShareOutcome { SHARED, FAILED, STOPPED }
 @HiltViewModel
 class ContactProfileViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    userDao: UserDao,
+    contactStore: ContactStore,
     private val actions: ContactActionsUseCase,
     private val securityNotices: SecurityNotices,
     private val sessionSecurity: SessionSecurityRepository,
@@ -81,7 +80,7 @@ class ContactProfileViewModel @Inject constructor(
     }
 
     val uiState: StateFlow<ContactProfileUiState> = combine(
-        userDao.observeById(userId),
+        contactStore.observe(userId),
         busy,
         reported,
         session,

@@ -8,8 +8,8 @@ import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.ChatEntity
 import com.construct.messenger.data.local.db.MessageDao
 import com.construct.messenger.data.local.db.MessageEntity
-import com.construct.messenger.data.local.db.UserDao
-import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.data.local.FakeContactStore
+import com.construct.messenger.data.local.ContactRecord
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.EditWire
@@ -55,7 +55,7 @@ class ProcessorEffectsImplTest {
     private class Inbox(alerts: IncomingAlerts, myId: String) {
         val messages = FakeMessageDao()
         val chats = FakeChatDao()
-        val users = FakeUserDao()
+        val users = FakeContactStore()
         val acks = FakeAckStore()
         val pendingChunks = FakePendingChunkDao()
         val reactions = mock<com.construct.messenger.data.local.ReactionStore>()
@@ -70,7 +70,7 @@ class ProcessorEffectsImplTest {
             keystoreManager = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) },
             messageDao = messages,
             chatDao = chats,
-            userDao = users,
+            contacts = users,
             ackStore = acks,
             sessionStateStore = mock(),
             sessionManager = sessionManager,
@@ -99,7 +99,7 @@ class ProcessorEffectsImplTest {
      */
     @Test
     fun `a contact card pins the sender's address`() = runTest {
-        val users = FakeUserDao().also { it.rows[peer] = UserEntity(id = peer, isContact = true) }
+        val users = FakeContactStore().also { it.rows[peer] = ContactRecord(id = peer, isContact = true) }
         val keystore = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) }
         val messages = FakeMessageDao()
         val effects = ProcessorEffectsImpl(
@@ -107,7 +107,7 @@ class ProcessorEffectsImplTest {
             keystoreManager = keystore,
             messageDao = messages,
             chatDao = FakeChatDao(),
-            userDao = users,
+            contacts = users,
             ackStore = FakeAckStore(),
             sessionStateStore = mock(),
             sessionManager = mock(),
@@ -140,7 +140,7 @@ class ProcessorEffectsImplTest {
 
     @Test
     fun `a contact card hands over the sender's intake key`() = runTest {
-        val users = FakeUserDao().also { it.rows[peer] = UserEntity(id = peer, isContact = true) }
+        val users = FakeContactStore().also { it.rows[peer] = ContactRecord(id = peer, isContact = true) }
         val keystore = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) }
         val messages = FakeMessageDao()
         val intake = mock<com.construct.messenger.stealth.IntakeCredentials>()
@@ -149,7 +149,7 @@ class ProcessorEffectsImplTest {
             keystoreManager = keystore,
             messageDao = messages,
             chatDao = FakeChatDao(),
-            userDao = users,
+            contacts = users,
             ackStore = FakeAckStore(),
             sessionStateStore = mock(),
             sessionManager = mock(),
@@ -214,7 +214,7 @@ class ProcessorEffectsImplTest {
     fun `onDecrypted persists message chat and contact`() = runTest {
         val messages = FakeMessageDao()
         val chats = FakeChatDao()
-        val users = FakeUserDao()
+        val users = FakeContactStore()
         val acks = FakeAckStore()
         val keystore: KeystoreManager = mock()
         whenever(keystore.getUserId()).thenReturn(myId)
@@ -224,7 +224,7 @@ class ProcessorEffectsImplTest {
             keystoreManager = keystore,
             messageDao = messages,
             chatDao = chats,
-            userDao = users,
+            contacts = users,
             ackStore = acks,
             sessionStateStore = mock(),
             sessionManager = mock(),
@@ -260,7 +260,7 @@ class ProcessorEffectsImplTest {
     fun `onSenderSync strips SSR1 and persists sent copy under base id`() = runTest {
         val messages = FakeMessageDao()
         val chats = FakeChatDao()
-        val users = FakeUserDao()
+        val users = FakeContactStore()
         val acks = FakeAckStore()
         val keystore: KeystoreManager = mock()
         whenever(keystore.getUserId()).thenReturn(myId)
@@ -269,7 +269,7 @@ class ProcessorEffectsImplTest {
             keystoreManager = keystore,
             messageDao = messages,
             chatDao = chats,
-            userDao = users,
+            contacts = users,
             ackStore = acks,
             sessionStateStore = mock(),
             sessionManager = mock(),
@@ -321,7 +321,7 @@ class ProcessorEffectsImplTest {
     @Test
     fun `a shared profile renames the contact and adds no bubble`() = runTest {
         val inbox = Inbox(alerts, myId)
-        inbox.users.rows[peer] = UserEntity(id = peer, displayName = "quick hotfix", isContact = true, localAlias = "Kostya")
+        inbox.users.rows[peer] = ContactRecord(id = peer, displayName = "quick hotfix", isContact = true, localAlias = "Kostya")
         val frame = KnstFrame.pack(
             com.construct.messenger.util.LegacyProfileShare("Konstantin", timestampSec = 1).encode(),
             KnstFrame.TYPE_E2EE_SIGNAL,
@@ -350,7 +350,7 @@ class ProcessorEffectsImplTest {
     @Test
     fun `a typed profile applies only when newer, and names its avatar to fetch`() = runTest {
         val inbox = Inbox(alerts, myId)
-        inbox.users.rows[peer] = UserEntity(id = peer, displayName = "quick hotfix", isContact = true)
+        inbox.users.rows[peer] = ContactRecord(id = peer, displayName = "quick hotfix", isContact = true)
 
         inbox.profile("p1", "Konstantin", 20, ProfileShare.Avatar.Set(avatarRef))
         var row = inbox.users.rows[peer]!!
@@ -375,7 +375,7 @@ class ProcessorEffectsImplTest {
     @Test
     fun `a typed profile with the avatar removed clears it`() = runTest {
         val inbox = Inbox(alerts, myId)
-        inbox.users.rows[peer] = UserEntity(
+        inbox.users.rows[peer] = ContactRecord(
             id = peer, isContact = true, avatarData = byteArrayOf(1), profileEditedAtMs = 5,
             pendingAvatarRef = avatarRef.stored(), pendingAvatarSinceMs = 1,
         )
@@ -398,7 +398,7 @@ class ProcessorEffectsImplTest {
     @Test
     fun `an untyped profile is ignored once a typed one is held`() = runTest {
         val inbox = Inbox(alerts, myId)
-        inbox.users.rows[peer] = UserEntity(id = peer, displayName = "Konstantin", isContact = true, profileEditedAtMs = 20)
+        inbox.users.rows[peer] = ContactRecord(id = peer, displayName = "Konstantin", isContact = true, profileEditedAtMs = 20)
         val frame = KnstFrame.pack(
             com.construct.messenger.util.LegacyProfileShare("quick hotfix", timestampSec = 99).encode(),
             KnstFrame.TYPE_E2EE_SIGNAL,
@@ -451,7 +451,7 @@ class ProcessorEffectsImplTest {
     @Test
     fun `a call signal from a contact is delivered, from a stranger dropped`() = runTest {
         val inbox = Inbox(alerts, myId)
-        inbox.users.rows[peer] = UserEntity(id = peer, isContact = true)
+        inbox.users.rows[peer] = ContactRecord(id = peer, isContact = true)
         val got = mutableListOf<com.construct.messenger.calls.CallSignalInbox.Incoming>()
         val job = backgroundScope.launch(kotlinx.coroutines.Dispatchers.Unconfined) { inbox.callSignals.signals.collect { got += it } }
         val signal = com.construct.messenger.calls.CallSignalWire.ringing("call-1", "dev", 1)
@@ -479,7 +479,7 @@ class ProcessorEffectsImplTest {
     @Test
     fun `a control frame in a decrypted message is dropped, not handled`() = runTest {
         val inbox = Inbox(alerts, myId)
-        inbox.users.rows[peer] = UserEntity(id = peer, displayName = "before", isContact = true)
+        inbox.users.rows[peer] = ContactRecord(id = peer, displayName = "before", isContact = true)
         val got = mutableListOf<com.construct.messenger.calls.CallSignalInbox.Incoming>()
         val job = backgroundScope.launch(kotlinx.coroutines.Dispatchers.Unconfined) { inbox.callSignals.signals.collect { got += it } }
         val signal = com.construct.messenger.calls.CallSignalWire.frame(
@@ -510,7 +510,7 @@ class ProcessorEffectsImplTest {
     @Test
     fun `a control frame named by a device lands on its account`() = runTest {
         val inbox = Inbox(alerts, myId)
-        inbox.users.rows[peer] = UserEntity(id = peer, displayName = "before", isContact = true)
+        inbox.users.rows[peer] = ContactRecord(id = peer, displayName = "before", isContact = true)
         val device = "dddddddd-dddd-dddd-dddd-dddddddddddd"
         org.mockito.kotlin.wheneverBlocking { inbox.sessionManager.accountIdForDevice(device) }.thenReturn(peer)
 
@@ -528,7 +528,7 @@ class ProcessorEffectsImplTest {
     @Test
     fun `a blocked contact's frames and messages are dropped`() = runTest {
         val inbox = Inbox(alerts, myId)
-        inbox.users.rows[peer] = UserEntity(id = peer, displayName = "before", isContact = true, isBlocked = true)
+        inbox.users.rows[peer] = ContactRecord(id = peer, displayName = "before", isContact = true, isBlocked = true)
 
         inbox.effects.onControlFrame(peer, "p1", ContentType.CONTENT_TYPE_PROFILE_VALUE, ProfileShare("after", 9, ProfileShare.Avatar.Removed).encoded())
         inbox.effects.onDecrypted(peer, "m1", "hi".toByteArray())
@@ -827,7 +827,7 @@ class ProcessorEffectsImplTest {
             keystoreManager = keystore,
             messageDao = FakeMessageDao(),
             chatDao = FakeChatDao(),
-            userDao = FakeUserDao(),
+            contacts = FakeContactStore(),
             ackStore = acks,
             sessionStateStore = mock(),
             sessionManager = mock(),
@@ -957,44 +957,6 @@ private class FakeChatDao : ChatDao {
         rows[chatId]?.let { rows[chatId] = it.copy(isPinned = pinned) }
     }
     override suspend fun delete(chatId: String) { rows.remove(chatId) }
-}
-
-internal class FakeUserDao : UserDao {
-    val rows = linkedMapOf<String, UserEntity>()
-    override suspend fun pendingAvatarIds(): List<String> = rows.values.filter { it.pendingAvatarRef != null }.map { it.id }
-    override suspend fun clearPendingAvatar(userId: String, stored: ByteArray): Int {
-        val row = rows[userId]?.takeIf { it.pendingAvatarRef.contentEquals(stored) } ?: return 0
-        rows[userId] = row.copy(pendingAvatarRef = null, pendingAvatarSinceMs = null)
-        return 1
-    }
-    override suspend fun completePendingAvatar(userId: String, stored: ByteArray, avatar: ByteArray): Int {
-        val row = rows[userId]?.takeIf { it.pendingAvatarRef.contentEquals(stored) } ?: return 0
-        rows[userId] = row.copy(avatarData = avatar, pendingAvatarRef = null, pendingAvatarSinceMs = null)
-        return 1
-    }
-    override fun observeContacts(): Flow<List<UserEntity>> = MutableStateFlow(rows.values.filter { it.isContact })
-    override fun observeAll(): Flow<List<UserEntity>> = MutableStateFlow(rows.values.toList())
-    override fun observeBlocked(): Flow<List<UserEntity>> = MutableStateFlow(rows.values.filter { it.isBlocked })
-    override fun observeById(userId: String): Flow<UserEntity?> = MutableStateFlow(rows[userId])
-    override suspend fun getById(userId: String) = rows[userId]
-    override suspend fun upsert(user: UserEntity) { rows[user.id] = user }
-    override suspend fun delete(userId: String) { rows.remove(userId) }
-    override suspend fun setKtStatus(userId: String, code: Int) = Unit
-    override suspend fun setSecurityNotice(userId: String, code: Int) {
-        rows[userId]?.let { rows[userId] = it.copy(securityNotice = code) }
-    }
-    override suspend fun setLocalAlias(userId: String, alias: String?) {
-        rows[userId]?.let { rows[userId] = it.copy(localAlias = alias) }
-    }
-    override suspend fun setAmSharingWith(userId: String, sharing: Boolean) {
-        rows[userId]?.let { rows[userId] = it.copy(amSharingWith = sharing) }
-    }
-
-    override suspend fun sharingWithIds(): List<String> = rows.values.filter { it.amSharingWith && !it.isBlocked }.map { it.id }
-
-    override suspend fun setAvatar(userId: String, avatar: ByteArray?) {
-        rows[userId]?.let { rows[userId] = it.copy(avatarData = avatar) }
-    }
 }
 
 private class FakeAckStore : AckStore {

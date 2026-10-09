@@ -8,7 +8,7 @@ import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.db.ChatDao
 import com.construct.messenger.data.local.db.MessageDao
-import com.construct.messenger.data.local.db.UserDao
+import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.util.ConversationId
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,7 +25,7 @@ import uniffi.construct_core.CfeSecureStoreSlot
 @Singleton
 class ContactActionsUseCase @Inject constructor(
     private val keystoreManager: KeystoreManager,
-    private val userDao: UserDao,
+    private val contacts: ContactStore,
     private val chatDao: ChatDao,
     private val messageDao: MessageDao,
     private val registry: PeerDeviceRegistry,
@@ -51,7 +51,7 @@ class ContactActionsUseCase @Inject constructor(
             messageDao.deleteChat(chatId)
             chatDao.delete(chatId)
         }
-        userDao.delete(userId)
+        contacts.delete(userId)
         forgetSessions(devices)
         Log.i(TAG, "contact ${userId.take(8)}… removed — forgot ${devices.size} device session(s)")
     }
@@ -85,17 +85,17 @@ class ContactActionsUseCase @Inject constructor(
         }
     }
 
+    /** A name only this device shows; blank clears it. Nothing is sent (iOS `saveLocalName`). */
+    suspend fun setLocalName(userId: String, name: String?) {
+        contacts.setAlias(userId, name)
+    }
+
     /**
      * Block or unblock. The local flag stands whatever the server says: it is what this device
      * shows, and the server row is what refuses delivery — a failed sync is logged, not undone.
      */
-    /** A name only this device shows; blank clears it. Nothing is sent (iOS `saveLocalName`). */
-    suspend fun setLocalName(userId: String, name: String?) {
-        userDao.setLocalAlias(userId, name?.trim()?.takeIf { it.isNotEmpty() })
-    }
-
     suspend fun setBlocked(userId: String, blocked: Boolean) {
-        userDao.getById(userId)?.let { userDao.upsert(it.copy(isBlocked = blocked)) }
+        contacts.setBlocked(userId, blocked)
         val myId = keystoreManager.getUserId().orEmpty()
         runCatching {
             if (blocked) {

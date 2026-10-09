@@ -1,6 +1,6 @@
 package com.construct.messenger.service
 
-import com.construct.messenger.data.local.db.UserEntity
+import com.construct.messenger.data.local.ContactRecord
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.LegacyProfileShare
 import com.construct.messenger.util.ProfileShare
@@ -14,10 +14,10 @@ import com.construct.messenger.util.ProfileShare
  * to us. The name is theirs to choose; a local name the user gave still outranks it on screen.
  */
 internal object ContactProfiles {
-    class Applied(val row: UserEntity, val fetchAvatar: Boolean)
+    class Applied(val row: ContactRecord, val fetchAvatar: Boolean)
 
     /** Content type 29. Null: not newer than the profile held — ignored whole. */
-    fun typed(row: UserEntity, profile: ProfileShare, nowMs: Long): Applied? {
+    fun typed(row: ContactRecord, profile: ProfileShare, nowMs: Long): Applied? {
         val action = profile.decision(row.profileEditedAtMs) ?: return null
         val named = row.copy(
             // A profile is the sender's whole state at its version: no chosen name means none, so a
@@ -42,7 +42,7 @@ internal object ContactProfiles {
      * build that predates the type and could put an older name back — ignored. Without an avatar
      * it leaves the one held, as it always did.
      */
-    fun legacy(row: UserEntity, profile: LegacyProfileShare, nowMs: Long): Applied? {
+    fun legacy(row: ContactRecord, profile: LegacyProfileShare, nowMs: Long): Applied? {
         if (row.profileEditedAtMs != 0L) return null
         // The generated name is no name: the one held stays (`ProfileShare.chosenName`).
         val shared = profile.displayName.trim().takeUnless { DisplayNameGenerator.isGenerated(it, row.id) }.orEmpty()

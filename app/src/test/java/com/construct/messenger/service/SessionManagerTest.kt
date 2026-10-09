@@ -2,7 +2,7 @@ package com.construct.messenger.service
 
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
-import com.construct.messenger.data.local.db.UserDao
+import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.test.runTest
@@ -30,7 +30,7 @@ class SessionManagerTest {
 
     private val cryptoManager: CryptoManager = mock()
     private val grpcClient: GrpcClient = mock()
-    private val userDao: UserDao = mock()
+    private val userDao: ContactStore = mock()
     private val peerDeviceRegistry: PeerDeviceRegistry = mock()
     private val keyStub: KeyServiceCoroutineStub = mock()
 

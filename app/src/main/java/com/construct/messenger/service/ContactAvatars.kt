@@ -1,6 +1,6 @@
 package com.construct.messenger.service
 
-import com.construct.messenger.data.local.db.UserDao
+import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.model.MediaItem
 import com.construct.messenger.data.repository.MediaRepository
 import com.construct.messenger.data.repository.MediaUnavailable
@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
  * The avatar a contact's profile named, fetched onto their row. **Canon:** iOS
  * `ProfileSharingManager.fetchPendingAvatar` and `AvatarRetryService`.
  *
- * The profile leaves the reference on the row (`UserEntity.pendingAvatarRef`); it stays there until
+ * The profile leaves the reference on the row (`ContactRecord.pendingAvatarRef`); it stays there until
  * the picture arrives, the store says the file is gone, or it is older than the store keeps
  * anything (7 days). Any other failure — offline, the transport still choosing a path — leaves it
  * for the next stream connect. Before 2026-10-02 nothing was kept, so a failed download was final.
@@ -38,13 +38,13 @@ interface ContactAvatars {
 @Singleton
 class MediaContactAvatars internal constructor(
     private val media: MediaRepository,
-    private val userDao: UserDao,
+    private val contacts: ContactStore,
     private val nowMs: () -> Long,
     private val isPicture: (ByteArray) -> Boolean,
 ) : ContactAvatars {
     @Inject
-    constructor(media: MediaRepository, userDao: UserDao) :
-        this(media, userDao, System::currentTimeMillis, AvatarPreparer::isAcceptable)
+    constructor(media: MediaRepository, contacts: ContactStore) :
+        this(media, contacts, System::currentTimeMillis, AvatarPreparer::isAcceptable)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -54,7 +54,7 @@ class MediaContactAvatars internal constructor(
 
     override fun retryPending() {
         scope.launch {
-            val pending = runCatching { userDao.pendingAvatarIds() }.getOrDefault(emptyList())
+            val pending = runCatching { contacts.pendingAvatarIds() }.getOrDefault(emptyList())
             if (pending.isEmpty()) return@launch
             Log.i(TAG, "${pending.size} avatar(s) pending")
             pending.forEach { fetchNow(it) }
@@ -64,18 +64,18 @@ class MediaContactAvatars internal constructor(
     enum class Outcome { NOTHING_PENDING, STORED, DROPPED, LEFT_PENDING }
 
     internal suspend fun fetchNow(accountId: String): Outcome {
-        val row = userDao.getById(accountId) ?: return Outcome.NOTHING_PENDING
+        val row = contacts.get(accountId) ?: return Outcome.NOTHING_PENDING
         val stored = row.pendingAvatarRef ?: return Outcome.NOTHING_PENDING
         val who = accountId.take(8)
         val since = row.pendingAvatarSinceMs
         if (since != null && nowMs() - since > PENDING_LIFETIME_MS) {
             Log.i(TAG, "avatar of $who… expired in the media store — dropped")
-            userDao.clearPendingAvatar(accountId, stored)
+            contacts.clearPendingAvatar(accountId, stored)
             return Outcome.DROPPED
         }
         val ref = ProfileShare.AvatarRef.fromStored(stored)
         if (ref == null || !ref.mimeType.startsWith("image/")) {
-            userDao.clearPendingAvatar(accountId, stored)
+            contacts.clearPendingAvatar(accountId, stored)
             return Outcome.DROPPED
         }
         return try {
@@ -84,19 +84,19 @@ class MediaContactAvatars internal constructor(
             )
             if (!isPicture(bytes)) {
                 Log.w(TAG, "avatar of $who… is not a picture we keep — dropped")
-                userDao.clearPendingAvatar(accountId, stored)
+                contacts.clearPendingAvatar(accountId, stored)
                 return Outcome.DROPPED
             }
             // Guarded by the reference: a newer profile may have named another meanwhile, and a
             // contact deleted meanwhile has no row to update.
-            if (userDao.completePendingAvatar(accountId, stored, bytes) == 0) return Outcome.NOTHING_PENDING
+            if (!contacts.completePendingAvatar(accountId, stored, bytes)) return Outcome.NOTHING_PENDING
             Log.i(TAG, "avatar of $who… stored (${bytes.size}B)")
             Outcome.STORED
         } catch (e: CancellationException) {
             throw e
         } catch (e: MediaUnavailable) {
             Log.i(TAG, "avatar of $who… is gone from the media store (${e.message}) — dropped")
-            userDao.clearPendingAvatar(accountId, stored)
+            contacts.clearPendingAvatar(accountId, stored)
             Outcome.DROPPED
         } catch (e: Exception) {
             Log.i(TAG, "avatar of $who… not fetched (${e.javaClass.simpleName}) — retried on reconnect")
