@@ -136,7 +136,7 @@ Material-иконках), экраны звонка и камеры поверх
 1. Ответы дизайнера на открытые вопросы (vault `sessions/2026-10-08-android-material-3.md`):
    шрифт Plain, фон, палитра, светлая тема, контраст черновика, недостающие роли.
 2. Значения переменных Figma → `ColorScheme`/`Typography` повторяемым шагом (Figma MCP
-   `get_variable_defs` или экспорт плагина `construct-design`), не перепечатыванием hex.
+   `get_variable_defs` или экспорт плагина «Konstruct tokens» из репозитория `construct-design`, `figma-plugin/`), не перепечатыванием hex.
 3. Один PR: новая тема + обновлённые эталоны скриншотов + зелёный `CTColorContrastTest`.
    Дифф скриншотов — это и есть ревью дизайна, его смотрит дизайнер.
 
