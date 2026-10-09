@@ -6,6 +6,7 @@ import com.construct.messenger.data.repository.AccountRepository
 import com.construct.messenger.data.repository.ConnectionRepository
 import com.construct.messenger.data.repository.OwnAccount
 import com.construct.messenger.ui.components.ConnectionStatus
+import com.construct.messenger.veil.VeilConfigImporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,6 +25,7 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val accountRepository: AccountRepository,
     connectionRepository: ConnectionRepository,
+    private val veilConfig: VeilConfigImporter,
 ) : ViewModel() {
     val uiState: StateFlow<SettingsUiState> =
         combine(accountRepository.account, connectionRepository.status, ::SettingsUiState)
@@ -33,4 +35,7 @@ class SettingsViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch { accountRepository.refresh() }
     }
+
+    /** The hidden paste under the version row; returns the message saying how it went. */
+    fun importConfig(text: String): Int = VeilConfigImporter.messageOf(veilConfig.redeem(text))
 }

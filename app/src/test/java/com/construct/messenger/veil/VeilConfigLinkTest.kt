@@ -71,6 +71,17 @@ class VeilConfigLinkTest {
     }
 
     @Test
+    fun `a pasted blob is taken with or without its link`() {
+        val d = VeilConfigLink.blobOf(LINK)!!
+        assertEquals(d, VeilConfigLink.blobOfPasted(LINK))
+        assertEquals(d, VeilConfigLink.blobOfPasted("\n $d \n"))
+        // Base64url that is not a JSON object, or not base64url at all, is not a blob.
+        assertNull(VeilConfigLink.blobOfPasted(Base64.getUrlEncoder().encodeToString("not json".toByteArray())))
+        assertNull(VeilConfigLink.blobOfPasted("hello"))
+        assertNull(VeilConfigLink.blobOfPasted("konstruct://add?invite=$d"))
+    }
+
+    @Test
     fun `canonical JSON is the signer's`() {
         val obj = JSONObject("""{"b":"a/b","a":4944562082,"c":[true,null,"x\"y\n"]}""")
         assertEquals("""{"a":4944562082,"b":"a/b","c":[true,null,"x\"y\n"]}""", VeilConfigLink.canonical(obj))
@@ -97,6 +108,17 @@ class VeilConfigLinkTest {
         assertEquals(VeilRelay("front.example.test:443", "front.example.test", "00112233445566778899aabbccddeeff".repeat(2)), fronts.preferred())
         verify(keystore).saveVeilCapability(eq("front.example.test:443"), eq(VeilConfigLink.parseAndVerify(VeilConfigLink.blobOf(LINK)!!, TEST_KEY, NOW).capabilityB64), eq(EXP))
         verify(events).post(TransportRoute.Event.VeilConfigChanged)
+    }
+
+    /** The blob alone, as pasted, imports the same — and is checked the same. */
+    @Test
+    fun `a pasted blob imports like its link`() {
+        assertEquals(VeilConfigImporter.Outcome.Imported, importer.redeem(VeilConfigLink.blobOf(LINK)!!, TEST_KEY, NOW))
+        assertEquals(VeilRelay("front.example.test:443", "front.example.test", "00112233445566778899aabbccddeeff".repeat(2)), fronts.preferred())
+        assertEquals(
+            VeilConfigImporter.Outcome.Refused(VeilConfigLink.Refusal.BAD_SIGNATURE),
+            importer.redeem(encode(blob().put("relay", "evil.example:443")), TEST_KEY, NOW),
+        )
     }
 
     @Test

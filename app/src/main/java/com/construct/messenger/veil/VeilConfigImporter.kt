@@ -9,9 +9,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Redeems a `konstruct://veil-config` link, tapped or scanned: verify it ([VeilConfigLink]), pin
- * its front, keep its capability, and let the route pick the front up. **Canon:** iOS
- * `VeilConfigImporter.importBlob` + `VeilVoucherRedemption`.
+ * Redeems a `konstruct://veil-config` link, tapped, scanned or pasted (a pasted blob without the
+ * link around it too): verify it ([VeilConfigLink]), pin its front, keep its capability, and let
+ * the route pick the front up. **Canon:** iOS `VeilConfigImporter.importScannedOrPasted` +
+ * `VeilVoucherRedemption` — except a bare capability, which iOS pairs with a bundled front and
+ * Android has none to pair it with (`decisions/no-bundled-veil-fronts.md`).
  */
 @Singleton
 class VeilConfigImporter @Inject constructor(
@@ -30,7 +32,7 @@ class VeilConfigImporter @Inject constructor(
         signingKeyHex: String = VeilCapabilityBlob.ISSUER_KEY_HEX,
         nowSeconds: Long = System.currentTimeMillis() / 1000,
     ): Outcome {
-        val blob = VeilConfigLink.blobOf(text) ?: return Outcome.Refused(VeilConfigLink.Refusal.MALFORMED)
+        val blob = VeilConfigLink.blobOfPasted(text) ?: return Outcome.Refused(VeilConfigLink.Refusal.MALFORMED)
         val config = try {
             VeilConfigLink.parseAndVerify(blob, signingKeyHex, nowSeconds)
         } catch (e: VeilConfigLink.Refused) {
