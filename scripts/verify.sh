@@ -2,7 +2,8 @@
 # One command that says whether a change to this app is ready to push.
 #
 #   scripts/verify.sh              static checks + compile + unit tests          (~2 min)
-#   scripts/verify.sh --device     + install over existing data, launch, read logcat (~+1.5 min)
+#   scripts/verify.sh --device     + install over existing data, launch, read logcat (~+1.5 min);
+#                                  ANDROID_SERIAL=<serial> chooses the device when several are attached
 #   scripts/verify.sh --device --boot   boot the first AVD if nothing is connected
 #   scripts/verify.sh --since REF  range the commit checks read (default: the upstream branch)
 #   scripts/verify.sh --watch SECS how long --device reads logcat (default 45; the core's PQ
@@ -136,7 +137,9 @@ fi
 # ── 6. On a device: install over existing data, launch, read what happens ─────
 if [ "$DEVICE" = 1 ]; then
   step "device"
-  serial=$("$ADB" devices | awk 'NR>1 && $2=="device"{print $1; exit}')
+  # ANDROID_SERIAL picks the device when more than one is attached — a tester's phone runs the
+  # release build, signed with another key, and a debug build cannot install over it.
+  serial=${ANDROID_SERIAL:-$("$ADB" devices | awk 'NR>1 && $2=="device"{print $1; exit}')}
   if [ -z "$serial" ] && [ "$BOOT" = 1 ]; then
     avd=$("$SDK/emulator/emulator" -list-avds | head -1)
     echo "booting $avd …"

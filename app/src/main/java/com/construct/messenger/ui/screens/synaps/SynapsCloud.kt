@@ -47,8 +47,8 @@ private const val MAX_ZOOM = 3.0f
 
 /**
  * The Synapses cloud: every contact as a circle on a hexagonal spiral, the most active in the
- * middle, seen through the lens ([SynapsCloudLayout], [SynapsLens]). Pinch zooms (from the lens
- * centre), a drag pans the cloud through the lens, a tap opens the profile. A drag that ends over a
+ * middle, seen through the lens ([SynapsCloudLayout], [SynapsLens]). Pinch zooms (around the
+ * fingers), a drag pans the cloud through the lens, a tap opens the profile. A drag that ends over a
  * circle does not open it: the drag consumes the gesture.
  *
  * The canvas fills its parent; [topInset] is how much of it is covered at the top (the bar, search
@@ -85,11 +85,16 @@ fun SynapsCloud(
             // On the container, not on a layer under the circles: a drag that starts on a circle
             // must pan too. The circles still get a plain tap; a drag consumes it, so a drag that
             // ends over a circle does not open its profile.
-            .pointerInput(extent) {
-                detectTransformGestures { _, panChange, zoomChange, _ ->
+            .pointerInput(extent, topInset) {
+                detectTransformGestures { centroid, panChange, zoomChange, _ ->
                     val next = (zoom * zoomChange).coerceIn(MIN_ZOOM, MAX_ZOOM)
-                    // The zoom grows from the lens centre: what is under it stays under it.
-                    val scaled = pan * (next / zoom) + panChange
+                    // The zoom grows from between the fingers: what is under them stays under them.
+                    // From the lens centre (as iOS anchors it), a pinch over a contact near the edge
+                    // pushed it out from under the fingers and into the lens's squeeze, and the
+                    // pinch seemed to work only in the middle.
+                    val topPx = topInset.toPx()
+                    val lensCentre = Offset(size.width / 2f, topPx + (size.height - topPx) / 2f)
+                    val scaled = centroid - lensCentre - (centroid - lensCentre - pan) * (next / zoom) + panChange
                     val maxX = extent.x * px * next
                     val maxY = extent.y * px * next
                     pan = Offset(scaled.x.coerceIn(-maxX, maxX), scaled.y.coerceIn(-maxY, maxY))
