@@ -80,22 +80,10 @@ class CoreMessageStore(
     }
 
     override suspend fun deleteChat(chatId: String) {
-        io { s -> every(s, chatId).forEach { s.deleteMessage(it.id) } }
+        io { s -> s.chatMessages(chatId).forEach { s.deleteMessage(it.id) } }
     }
 
-    /** The chat's messages in the store's order, oldest first: newest page, then the pages before it. */
-    private fun every(s: LocalStore, chatId: String): List<LocalMessage> {
-        val pages = ArrayDeque<List<LocalMessage>>()
-        var page = s.messagesBefore(chatId, null, null, PAGE)
-        while (page.isNotEmpty()) {
-            pages.addFirst(page)
-            if (page.size.toUInt() < PAGE) break
-            page = s.messagesBefore(chatId, page.first().orderKey, page.first().id, PAGE)
-        }
-        return pages.flatten()
-    }
-
-    private fun visible(s: LocalStore, chatId: String) = every(s, chatId).filter { it.contentType.toInt() == 0 }
+    private fun visible(s: LocalStore, chatId: String) = s.chatMessages(chatId).filter { it.contentType.toInt() == 0 }
 
     private fun MessageRecord.local(s: LocalStore): LocalMessage? {
         val me = myUserId() ?: return null
@@ -124,9 +112,19 @@ class CoreMessageStore(
         )
     }
 
-    private companion object {
-        val PAGE = 500u
+}
+
+/** The chat's messages in the store's order, oldest first: newest page, then the pages before it. */
+internal fun LocalStore.chatMessages(chatId: String): List<LocalMessage> {
+    val page = 500u
+    val pages = ArrayDeque<List<LocalMessage>>()
+    var next = messagesBefore(chatId, null, null, page)
+    while (next.isNotEmpty()) {
+        pages.addFirst(next)
+        if (next.size.toUInt() < page) break
+        next = messagesBefore(chatId, next.first().orderKey, next.first().id, page)
     }
+    return pages.flatten()
 }
 
 /** What the full-text index reads: the words a person wrote — a text, or a media caption. */

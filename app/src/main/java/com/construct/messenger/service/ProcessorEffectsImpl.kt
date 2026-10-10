@@ -3,6 +3,7 @@ package com.construct.messenger.service
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.local.ReactionStore
+import com.construct.messenger.data.local.applyIncoming
 import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore

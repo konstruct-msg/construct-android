@@ -27,7 +27,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.combine
 import com.construct.messenger.data.local.ReactionStore
-import com.construct.messenger.data.local.db.ReactionDao
+import com.construct.messenger.data.local.applyIncoming
+import com.construct.messenger.data.local.current
+import com.construct.messenger.data.local.restoreLocal
 import com.construct.messenger.data.model.MessageReaction
 import com.construct.messenger.util.ReactionRules
 import com.construct.messenger.util.ReactionWire
@@ -44,7 +46,6 @@ class MessagesRepositoryImpl @Inject constructor(
     private val sendMedia: SendMediaUseCase,
     private val media: MediaRepository,
     private val pickedFiles: com.construct.messenger.media.PickedFiles,
-    private val reactionDao: ReactionDao,
     private val reactions: ReactionStore,
     private val stickers: com.construct.messenger.stickers.StickerStore,
 ) : MessagesRepository {
@@ -53,7 +54,7 @@ class MessagesRepositoryImpl @Inject constructor(
         val myId = keystoreManager.getUserId() ?: return emptyFlow()
         val chatId = ConversationId.direct(myId, contactId)
         val me = myId.lowercase()
-        return combine(messages.observeChat(chatId), reactionDao.observeChat(chatId)) { rows, reacted ->
+        return combine(messages.observeChat(chatId), reactions.observeChat(chatId)) { rows, reacted ->
             val byTarget = reacted.groupBy { it.targetMessageId }
             rows.map { row ->
                 row.toModel().copy(
