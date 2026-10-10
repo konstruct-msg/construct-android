@@ -58,7 +58,7 @@ class ProcessorEffectsImplTest {
         val users = FakeContactStore()
         val acks = FakeAckStore()
         val pendingChunks = FakePendingChunkDao()
-        val reactions = mock<com.construct.messenger.data.local.ReactionStore>()
+        val reactions = com.construct.messenger.data.local.FakeReactionStore(messages)
         val callSignals = com.construct.messenger.calls.CallSignalInbox()
         /** What auto-download was told arrived: the media kind of each stored message. */
         val arrived = mutableListOf<String?>()
@@ -642,20 +642,22 @@ class ProcessorEffectsImplTest {
     /**
      * A reaction is metadata on its target: applied under the peer's account, never a row. From a
      * sibling device it is ours. Mutation: drop either reaction branch — its message turns into
-     * nothing at all and the store is never called.
+     * nothing at all and the reaction stays. A removal, because adding one checks the emoji with
+     * `android.icu`, a stub on the JVM.
      */
     @Test
     fun `a reaction is applied under its reactor and adds no bubble`() = runTest {
         val inbox = Inbox(alerts, myId)
         val target = "22222222-2222-4222-8222-222222222222"
         val reaction = com.construct.messenger.util.ReactionWire.encode(
-            target, com.construct.messenger.util.ReactionRules.Incoming.Add("😂"), 77,
+            target, com.construct.messenger.util.ReactionRules.Incoming.Remove, 77,
         )
-        inbox.effects.onDecrypted(peer, "env-r", KnstFrame.pack(reaction, KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID()))
-        verifyBlocking(inbox.reactions) {
-            applyIncoming(org.mockito.kotlin.eq(target), org.mockito.kotlin.eq(peer), org.mockito.kotlin.eq(1),
-                org.mockito.kotlin.eq("😂"), org.mockito.kotlin.eq(77L), any(), any(), any())
+        for (reactor in listOf(peer, myId)) {
+            inbox.reactions.rows[target to reactor] = com.construct.messenger.data.local.ReactionRecord(target, reactor, "😂", 10, System.currentTimeMillis())
         }
+        inbox.effects.onDecrypted(peer, "env-r", KnstFrame.pack(reaction, KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID()))
+        assertNull(inbox.reactions.rows[target to peer])
+        assertEquals("😂", inbox.reactions.rows[target to myId]?.emoji)
         assertTrue(inbox.messages.rows.isEmpty())
         assertTrue(inbox.acks.isProcessed("env-r"))
 
@@ -664,10 +666,7 @@ class ProcessorEffectsImplTest {
             "sibling", "$id-ss-0123456789abcdef",
             KnstFrame.pack(SenderSyncRouting.encode(peer, reaction), KnstFrame.TYPE_SENDER_SYNC, id), 42L,
         )
-        verifyBlocking(inbox.reactions) {
-            applyIncoming(org.mockito.kotlin.eq(target), org.mockito.kotlin.eq(myId), org.mockito.kotlin.eq(1),
-                org.mockito.kotlin.eq("😂"), org.mockito.kotlin.eq(77L), org.mockito.kotlin.eq(42L), any(), any())
-        }
+        assertNull(inbox.reactions.rows[target to myId])
         assertTrue(inbox.messages.rows.isEmpty())
     }
 

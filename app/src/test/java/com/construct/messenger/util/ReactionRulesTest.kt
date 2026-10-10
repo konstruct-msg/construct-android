@@ -14,18 +14,7 @@ import shared.proto.messaging.v1.Content.ReactionAction
 /** Port of iOS `ReactionReducerTests` and `ReactionWireTests`. */
 class ReactionRulesTest {
 
-    /**
-     * `android.icu` is a stub in a JVM test; the JDK 21 running it has the same Unicode tables.
-     * Reflection, because the compile classpath is `android.jar`, which lacks these methods.
-     */
-    private object Jdk : ReactionRules.EmojiProperties {
-        private val emoji = Character::class.java.getMethod("isEmoji", Int::class.javaPrimitiveType)
-        private val presentation = Character::class.java.getMethod("isEmojiPresentation", Int::class.javaPrimitiveType)
-        override fun isEmoji(codePoint: Int) = emoji.invoke(null, codePoint) as Boolean
-        override fun isEmojiPresentation(codePoint: Int) = presentation.invoke(null, codePoint) as Boolean
-    }
-
-    private fun valid(s: String) = ReactionRules.isValidEmoji(s, Jdk)
+    private fun valid(s: String) = ReactionRules.isValidEmoji(s, JdkEmoji)
 
     @Test fun `add on nothing sets`() =
         assertEquals(Decision.Set("❤️", 10), ReactionRules.apply(null, Incoming.Add("❤️"), 10, "m"))
@@ -50,17 +39,17 @@ class ReactionRulesTest {
     }
 
     @Test fun `actions map as on iOS`() {
-        assertEquals(Incoming.Add("😂"), ReactionRules.incoming(0, "😂", Jdk))
-        assertEquals(Incoming.Add("😂"), ReactionRules.incoming(1, "😂", Jdk))
-        assertNull(ReactionRules.incoming(1, "", Jdk))
-        assertEquals(Incoming.Remove, ReactionRules.incoming(2, "whatever", Jdk))
-        assertNull(ReactionRules.incoming(7, "😂", Jdk))
+        assertEquals(Incoming.Add("😂"), ReactionRules.incoming(0, "😂", JdkEmoji))
+        assertEquals(Incoming.Add("😂"), ReactionRules.incoming(1, "😂", JdkEmoji))
+        assertNull(ReactionRules.incoming(1, "", JdkEmoji))
+        assertEquals(Incoming.Remove, ReactionRules.incoming(2, "whatever", JdkEmoji))
+        assertNull(ReactionRules.incoming(7, "😂", JdkEmoji))
     }
 
     /** iOS device log 2026-08-21: a peer's reaction arrived as `set(emoji: "H")`. */
     @Test fun `a letter or a word is not a reaction`() {
         assertFalse(valid("H"))
-        assertNull(ReactionRules.incoming(1, "H", Jdk))
+        assertNull(ReactionRules.incoming(1, "H", JdkEmoji))
         assertFalse(valid("pwned"))
         assertFalse(valid("❤️❤️"))
         assertFalse(valid("❤️ "))
@@ -86,9 +75,9 @@ class ReactionRulesTest {
     }
 
     @Test fun `a repeat tap removes, another replaces, the first adds`() {
-        assertEquals(Incoming.Remove, ReactionRules.localToggle("❤️", "❤️", Jdk))
-        assertEquals(Incoming.Add("🔥"), ReactionRules.localToggle("❤️", "🔥", Jdk))
-        assertEquals(Incoming.Add("❤️"), ReactionRules.localToggle(null, "❤️", Jdk))
+        assertEquals(Incoming.Remove, ReactionRules.localToggle("❤️", "❤️", JdkEmoji))
+        assertEquals(Incoming.Add("🔥"), ReactionRules.localToggle("❤️", "🔥", JdkEmoji))
+        assertEquals(Incoming.Add("❤️"), ReactionRules.localToggle(null, "❤️", JdkEmoji))
         assertEquals("❤️", ReactionRules.LIKE)
     }
 
