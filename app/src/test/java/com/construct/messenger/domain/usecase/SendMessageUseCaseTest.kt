@@ -11,8 +11,7 @@ import com.construct.messenger.data.local.MessageRecord
 import com.construct.messenger.data.local.FakeContactStore
 import com.construct.messenger.data.local.ContactRecord
 import com.construct.messenger.data.model.DeliveryStatus
-import com.construct.messenger.data.local.db.ServerMessageIdDao
-import com.construct.messenger.data.local.db.ServerMessageIdEntity
+import com.construct.messenger.data.local.FakeServerMessageIdStore
 import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.ServerMessageIds
 import com.construct.messenger.util.IncomingPlaintext
@@ -68,7 +67,7 @@ class SendMessageUseCaseTest {
         val messages = FakeMessageStore()
         val chats = FakeChatStore()
         val users = FakeContactStore()
-        val serverIds = FakeServerMessageIdDao()
+        val serverIds = FakeServerMessageIdStore()
         val sessions: SessionStateStore = mock()
         val keystore: KeystoreManager = mock()
         val crypto: CryptoManager = mock()
@@ -509,34 +508,23 @@ class SendMessageUseCaseTest {
         ).thenReturn(MessagingService.SendResult("SERVER-ID-1", true, "", false, 0, "a"))
         val sent = h.useCase()(peer, "hello") as SendOutcome.Sent
 
-        assertEquals(sent.messageId.lowercase(), h.serverIds.rows["server-id-1"]?.localId)
+        assertEquals(sent.messageId.lowercase(), h.serverIds.rows["server-id-1"]?.first)
         assertEquals(ResendOutcome.SENT, h.useCase().resend(peer, pinnedDevice, "SERVER-ID-1"))
     }
 
     @Test
     fun `an id the table does not hold is taken as our own`() = runTest {
-        val ids = ServerMessageIds(FakeServerMessageIdDao())
+        val ids = ServerMessageIds(FakeServerMessageIdStore())
         assertEquals("abc-fd-1", ids.localId("abc-fd-1"))
     }
 
     /** Older than the server keeps a queue, no error can name it. Mutation: never prune — this reddens. */
     @Test
     fun `pairs older than the queue are dropped`() = runTest {
-        val dao = FakeServerMessageIdDao()
-        dao.upsert(ServerMessageIdEntity("old", "m1", recordedAtMs = 0))
-        ServerMessageIds(dao).record("new", "m2", nowMs = ServerMessageIds.RETENTION_MS + 1)
-        assertEquals(setOf("new"), dao.rows.keys)
-    }
-}
-
-private class FakeServerMessageIdDao : ServerMessageIdDao {
-    val rows = linkedMapOf<String, ServerMessageIdEntity>()
-    override suspend fun upsert(entry: ServerMessageIdEntity) { rows[entry.serverId] = entry }
-    override suspend fun localId(serverId: String) = rows[serverId]?.localId
-    override suspend fun pruneOlderThan(thresholdMs: Long): Int {
-        val old = rows.values.filter { it.recordedAtMs < thresholdMs }.map { it.serverId }
-        old.forEach(rows::remove)
-        return old.size
+        val store = FakeServerMessageIdStore()
+        store.record("old", "m1", recordedAtMs = 0)
+        ServerMessageIds(store).record("new", "m2", nowMs = ServerMessageIds.RETENTION_MS + 1)
+        assertEquals(setOf("new"), store.rows.keys)
     }
 }
 
