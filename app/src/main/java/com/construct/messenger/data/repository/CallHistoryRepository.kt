@@ -3,8 +3,8 @@ package com.construct.messenger.data.repository
 import com.construct.messenger.calls.CallHistoryPort
 import com.construct.messenger.calls.CallRecordStatus
 import com.construct.messenger.calls.CallSession
-import com.construct.messenger.data.local.db.CallRecordDao
-import com.construct.messenger.data.local.db.CallRecordEntity
+import com.construct.messenger.data.local.CallRecord
+import com.construct.messenger.data.local.CallStore
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.resolvedName
 import com.construct.messenger.data.model.CallHistoryEntry
@@ -31,13 +31,13 @@ interface CallHistoryRepository {
  */
 @Singleton
 class CallHistoryRepositoryImpl @Inject constructor(
-    private val dao: CallRecordDao,
+    private val calls: CallStore,
     private val users: ContactStore,
 ) : CallHistoryRepository, CallHistoryPort {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override val recent: Flow<List<CallHistoryEntry>> =
-        combine(dao.observeRecent(), users.observeAll()) { rows, people ->
+        combine(calls.observeRecent(), users.observeAll()) { rows, people ->
             val byId = people.associateBy { it.id }
             rows.map { row ->
                 val user = byId[row.peerUserId]
@@ -47,8 +47,7 @@ class CallHistoryRepositoryImpl @Inject constructor(
                     peerName = if (user != null) user.resolvedName(row.peerUserId) else row.peerName,
                     peerAvatar = user?.avatarData,
                     incoming = row.incoming,
-                    status = runCatching { CallHistoryEntry.Status.valueOf(row.status) }
-                        .getOrDefault(CallHistoryEntry.Status.COMPLETED),
+                    status = CallHistoryEntry.Status.valueOf(row.status.name),
                     startedAtMs = row.startedAtMs,
                     durationSeconds = row.durationSeconds,
                 )
@@ -64,13 +63,13 @@ class CallHistoryRepositoryImpl @Inject constructor(
     ) {
         scope.launch {
             runCatching {
-                dao.insert(
-                    CallRecordEntity(
+                calls.put(
+                    CallRecord(
                         id = session.id,
                         peerUserId = session.peerUserId,
                         peerName = session.peerName,
                         incoming = session.isIncoming,
-                        status = status.name,
+                        status = status,
                         startedAtMs = startedAtMs,
                         endedAtMs = endedAtMs,
                         durationSeconds = durationSeconds,
@@ -80,9 +79,9 @@ class CallHistoryRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun delete(id: String) = dao.delete(id)
+    override suspend fun delete(id: String) = calls.delete(id)
 
-    override suspend fun clear() = dao.deleteAll()
+    override suspend fun clear() = calls.deleteAll()
 
     private companion object {
         const val TAG = "CallHistory"

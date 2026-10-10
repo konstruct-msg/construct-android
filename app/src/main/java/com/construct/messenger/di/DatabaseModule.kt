@@ -6,14 +6,15 @@ import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.ChatStore
 import com.construct.messenger.data.local.MessageStore
 import com.construct.messenger.data.local.RoomMessageStore
+import com.construct.messenger.data.local.CallStore
 import com.construct.messenger.data.local.ReactionStore
+import com.construct.messenger.data.local.RoomCallStore
 import com.construct.messenger.data.local.RoomChatStore
 import com.construct.messenger.data.local.RoomReactionStore
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.RoomContactStore
 import com.construct.messenger.data.local.PersistentAckStore
 import com.construct.messenger.data.local.db.AckDao
-import com.construct.messenger.data.local.db.CallRecordDao
 import com.construct.messenger.data.local.db.ConstructDatabase
 import com.construct.messenger.data.local.db.SessionStateDao
 import com.construct.messenger.data.local.db.IssuedInviteDao
@@ -102,8 +103,10 @@ object DatabaseModule {
     @Provides
     fun providePendingChunkDao(db: ConstructDatabase): PendingChunkDao = db.pendingChunkDao()
 
+    /** The `call_records` table only through here (TODO 136): no `CallRecordDao` is provided. */
     @Provides
-    fun provideCallRecordDao(db: ConstructDatabase): CallRecordDao = db.callRecordDao()
+    @Singleton
+    fun provideCallStore(db: ConstructDatabase): CallStore = RoomCallStore(db.callRecordDao())
 
     @Provides
     @Singleton
