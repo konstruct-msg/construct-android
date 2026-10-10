@@ -4,6 +4,7 @@ import com.construct.messenger.data.model.ChatActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import uniffi.construct_core.LocalChat
 import uniffi.construct_core.LocalInsert
@@ -17,9 +18,9 @@ import uniffi.construct_core.LocalStoreTable
  *
  * Every write is one of the core's field writes; the preview's forward-only rule is the core's.
  *
- * [observeActivity] counts each chat's visible messages by walking them — the core has no per-chat
- * count yet. Correct, and slow on a long history: a core operation is to replace it before this
- * store is switched on.
+ * [observeActivity] counts a chat's messages with the core's `chat_message_count` (0.39.0). It
+ * counts every row, Room's query only `contentType = 0`; the same number, since a control message
+ * is consumed before it is stored and a non-zero type is only the guard behind that.
  */
 class CoreChatStore(private val feed: LocalStoreFeed) : ChatStore {
     private val store: LocalStore get() = feed.store
@@ -30,19 +31,8 @@ class CoreChatStore(private val feed: LocalStoreFeed) : ChatStore {
 
     override fun observeActivity(): Flow<List<ChatActivity>> =
         combine(feed.watch(LocalStoreTable.CHATS) { it.chats() }, feed.watch(LocalStoreTable.MESSAGES) { }) { chats, _ ->
-            chats.map { c -> ChatActivity(c.peerId, visibleCount(c.id), c.lastMessageTime, c.unreadCount) }
-        }
-
-    private fun visibleCount(chatId: String): Int {
-        var count = 0
-        var page = store.messagesBefore(chatId, null, null, PAGE)
-        while (page.isNotEmpty()) {
-            count += page.count { it.contentType.toInt() == 0 }
-            if (page.size.toUInt() < PAGE) break
-            page = store.messagesBefore(chatId, page.first().orderKey, page.first().id, PAGE)
-        }
-        return count
-    }
+            chats.map { c -> ChatActivity(c.peerId, store.chatMessageCount(c.id).toInt(), c.lastMessageTime, c.unreadCount) }
+        }.flowOn(Dispatchers.IO)
 
     override suspend fun get(id: String): ChatRecord? = io { it.chat(id)?.record() }
 
@@ -80,10 +70,6 @@ class CoreChatStore(private val feed: LocalStoreFeed) : ChatStore {
     }
 
     override suspend fun delete(id: String) = io { it.deleteChat(id) }
-
-    private companion object {
-        val PAGE = 500u
-    }
 }
 
 private fun LocalChat.record() = ChatRecord(

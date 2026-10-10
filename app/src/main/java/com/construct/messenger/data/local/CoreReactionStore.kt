@@ -3,6 +3,7 @@ package com.construct.messenger.data.local
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import uniffi.construct_core.LocalReaction
 import uniffi.construct_core.LocalStore
@@ -14,12 +15,8 @@ import uniffi.construct_core.LocalStoreTable
  * store until the import moves its rows here. The row is iOS's: `received_at` is when this phone
  * stored the reaction, as iOS writes it.
  *
- * Two answers the core does not give yet, worked out here — correct, and slow on a long history;
- * core operations are to replace both before this store is switched on:
- * - a chat's reactions: [observeChat] asks for each of the chat's messages in turn;
- * - the orphan sweep: the core's `expire_reactions` forgets **every** reaction received before
- *   the cutoff, the ones on messages that are here too — Android and iOS forget only orphans. So
- *   [deleteOrphansBefore] reads them all and keeps any whose message exists.
+ * A chat's reactions are one read (`reactions_in_chat`), and the sweep is the core's
+ * `expire_reactions`, which forgets only orphans — iOS's and Android's rule (both core 0.39.0).
  */
 class CoreReactionStore(private val feed: LocalStoreFeed) : ReactionStore {
     private val store: LocalStore get() = feed.store
@@ -29,11 +26,11 @@ class CoreReactionStore(private val feed: LocalStoreFeed) : ReactionStore {
     // A message arriving makes its waiting reactions visible, so both tables are watched.
     override fun observeChat(chatId: String): Flow<List<ReactionRecord>> =
         combine(feed.watch(LocalStoreTable.REACTIONS) { }, feed.watch(LocalStoreTable.MESSAGES) { }) { _, _ ->
-            store.chatMessages(chatId)
-                .flatMap { store.reactions(it.id) }
+            // The core lists them by message, then time; the badges line up by time alone.
+            store.reactionsInChat(chatId)
                 .sortedBy { it.timestampMs }
                 .map { it.record() }
-        }
+        }.flowOn(Dispatchers.IO)
 
     override suspend fun get(targetMessageId: String, reactorUserId: String): ReactionRecord? = io { s ->
         s.reactions(targetMessageId).firstOrNull { it.reactorUserId == reactorUserId }?.record()
@@ -58,11 +55,7 @@ class CoreReactionStore(private val feed: LocalStoreFeed) : ReactionStore {
     }
 
     override suspend fun deleteOrphansBefore(cutoffMs: Long) {
-        io { s ->
-            s.allReactions()
-                .filter { r -> r.receivedAt.let { it != null && it <= cutoffMs } && s.message(r.targetMessageId) == null }
-                .forEach { s.deleteReaction(it.targetMessageId, it.reactorUserId) }
-        }
+        io { it.expireReactions(cutoffMs) }
     }
 }
 

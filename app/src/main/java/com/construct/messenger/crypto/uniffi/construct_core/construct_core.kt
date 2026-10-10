@@ -932,6 +932,8 @@ external fun uniffi_construct_core_checksum_method_localstore_chat(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_chat_for_peer(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_chat_message_count(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_chats(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_contact(
@@ -991,6 +993,8 @@ external fun uniffi_construct_core_checksum_method_localstore_pending_sends(
 external fun uniffi_construct_core_checksum_method_localstore_put(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_reactions(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_reactions_in_chat(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_record_peer_device(
 ): Short
@@ -1381,6 +1385,8 @@ external fun uniffi_construct_core_fn_method_localstore_chat(`ptr`: Long,`id`: R
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_chat_for_peer(`ptr`: Long,`peerId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_chat_message_count(`ptr`: Long,`chatId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
 external fun uniffi_construct_core_fn_method_localstore_chats(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_contact(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1440,6 +1446,8 @@ external fun uniffi_construct_core_fn_method_localstore_pending_sends(`ptr`: Lon
 external fun uniffi_construct_core_fn_method_localstore_put(`ptr`: Long,`key`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_localstore_reactions(`ptr`: Long,`targetMessageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_reactions_in_chat(`ptr`: Long,`chatId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_record_peer_device(`ptr`: Long,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -2280,6 +2288,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_chat_for_peer() != 26460.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_chat_message_count() != 28786.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_chats() != 2703.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2368,6 +2379,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_reactions() != 33658.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_reactions_in_chat() != 41794.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_record_peer_device() != 19683.toShort()) {
@@ -4612,6 +4626,11 @@ public interface LocalStoreInterface {
     fun `chatForPeer`(`peerId`: kotlin.String): LocalChat?
     
     /**
+     * How many messages a chat holds.
+     */
+    fun `chatMessageCount`(`chatId`: kotlin.String): kotlin.ULong
+    
+    /**
      * Pinned first, then most recent, chats with no message last.
      */
     fun `chats`(): List<LocalChat>
@@ -4644,7 +4663,8 @@ public interface LocalStoreInterface {
     fun `everyContact`(): List<LocalContact>
     
     /**
-     * Forget reactions received at or before `cutoff` (ms); one with no receipt time stays.
+     * Forget reactions whose message is not here, received at or before `cutoff` (ms). A reaction
+     * on a held message is never expired; one with no receipt time stays.
      */
     fun `expireReactions`(`cutoff`: kotlin.Long): kotlin.UInt
     
@@ -4711,6 +4731,11 @@ public interface LocalStoreInterface {
     fun `put`(`key`: kotlin.String, `value`: kotlin.ByteArray)
     
     fun `reactions`(`targetMessageId`: kotlin.String): List<LocalReaction>
+    
+    /**
+     * Every reaction on a chat's messages, by message then time — one read per transcript.
+     */
+    fun `reactionsInChat`(`chatId`: kotlin.String): List<LocalReaction>
     
     /**
      * An id already known keeps its first account.
@@ -5075,6 +5100,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
 
     
     /**
+     * How many messages a chat holds.
+     */
+    @Throws(LocalStoreException::class)override fun `chatMessageCount`(`chatId`: kotlin.String): kotlin.ULong {
+            return FfiConverterULong.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_chat_message_count(
+        it,
+        FfiConverterString.lower(`chatId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
      * Pinned first, then most recent, chats with no message last.
      */
     @Throws(LocalStoreException::class)override fun `chats`(): List<LocalChat> {
@@ -5223,7 +5265,8 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
 
     
     /**
-     * Forget reactions received at or before `cutoff` (ms); one with no receipt time stays.
+     * Forget reactions whose message is not here, received at or before `cutoff` (ms). A reaction
+     * on a held message is never expired; one with no receipt time stays.
      */
     @Throws(LocalStoreException::class)override fun `expireReactions`(`cutoff`: kotlin.Long): kotlin.UInt {
             return FfiConverterUInt.lift(
@@ -5523,6 +5566,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_reactions(
         it,
         FfiConverterString.lower(`targetMessageId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Every reaction on a chat's messages, by message then time — one read per transcript.
+     */
+    @Throws(LocalStoreException::class)override fun `reactionsInChat`(`chatId`: kotlin.String): List<LocalReaction> {
+            return FfiConverterSequenceTypeLocalReaction.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_reactions_in_chat(
+        it,
+        FfiConverterString.lower(`chatId`),_status)
 }
     }
     )
