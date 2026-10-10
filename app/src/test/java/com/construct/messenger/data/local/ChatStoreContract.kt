@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.construct.messenger.data.local.db.ConstructDatabase
+import uniffi.construct_core.LocalStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -131,4 +132,15 @@ class RoomChatStoreTest : ChatStoreContract() {
 class FakeChatStoreTest : ChatStoreContract() {
     override val contacts: ContactStore = FakeContactStore()
     override val store: ChatStore = FakeChatStore()
+}
+
+/** The same cases on the core's encrypted store — the host build of the library the app ships. */
+class CoreChatStoreTest : ChatStoreContract() {
+    private val core = LocalStore.inMemory(ByteArray(32) { 1 })
+    private val feed = LocalStoreFeed(core)
+    override val contacts: ContactStore = CoreContactStore(feed)
+    override val store: ChatStore = CoreChatStore(feed)
+
+    @After
+    fun close() = core.close()
 }

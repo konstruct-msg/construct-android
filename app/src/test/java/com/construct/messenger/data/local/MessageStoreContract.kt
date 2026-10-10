@@ -4,8 +4,14 @@ import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.construct.messenger.data.local.db.ConstructDatabase
+import uniffi.construct_core.LocalStore
 import com.construct.messenger.data.model.DeliveryStatus
+import com.construct.messenger.util.MediaWire
 import com.construct.messenger.util.ServerMessageOrder
+import com.google.protobuf.ByteString
+import shared.proto.messaging.v1.Content.MediaAlbumMessage
+import shared.proto.messaging.v1.Content.MediaMessage
+import shared.proto.messaging.v1.Content.MediaType
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -38,6 +44,12 @@ abstract class MessageStoreContract {
         chats.ensure(chat, peer)
     }
 
+    private fun album(caption: String, mediaId: String = "store-1"): ByteArray = MediaAlbumMessage.newBuilder()
+        .addItems(MediaMessage.newBuilder().setMediaType(MediaType.MEDIA_TYPE_IMAGE).setFileUrl(mediaId).setEncryptionKey(ByteString.copyFrom(ByteArray(32) { 7 })))
+        .setCaption(caption)
+        .build()
+        .toByteArray()
+
     private fun message(id: String, at: Long, status: DeliveryStatus = DeliveryStatus.SENT, text: String = "m-$id", contentType: Int = 0) =
         MessageRecord(id, chat, text, isSentByMe = true, timestampMs = at, deliveryStatus = status, contentType = contentType)
 
@@ -50,11 +62,11 @@ abstract class MessageStoreContract {
         assertEquals(DeliveryStatus.DELIVERED, row.deliveryStatus)
     }
 
-    /** iOS compares ids `==[c]`; a write lands on the stored id. */
+    /** iOS compares ids `==[c]`; the core stores them lowercase. Either way a write finds the row. */
     @Test
     fun idsAreFoundWithoutCase() = runTest {
         store.insert(message("AbC-1", 1, DeliveryStatus.SENDING))
-        assertEquals("AbC-1", store.get("abc-1")!!.id)
+        assertTrue(store.get("abc-1")!!.id.equals("AbC-1", ignoreCase = true))
         store.setDeliveryStatus("ABC-1", DeliveryStatus.SENT)
         assertEquals(DeliveryStatus.SENT, store.get("AbC-1")!!.deliveryStatus)
         store.delete("abc-1")
@@ -85,19 +97,43 @@ abstract class MessageStoreContract {
     }
 
     @Test
-    fun anEditMarksItAndKeepsTheMediaUnlessGiven() = runTest {
-        store.insert(message("a", 1).copy(mediaType = "album", mediaPayload = byteArrayOf(1)))
-        store.edit("a", "caption", null)
-        assertEquals("caption", store.get("a")!!.text)
-        assertTrue(store.get("a")!!.isEdited)
-        assertArrayEquals(byteArrayOf(1), store.get("a")!!.mediaPayload)
+    fun anEditOfTextMarksIt() = runTest {
+        store.insert(message("t", 1, text = "helo"))
+        store.applyEdit(store.get("t")!!, "hello")
+        assertEquals("hello", store.get("t")!!.text)
+        assertTrue(store.get("t")!!.isEdited)
+    }
 
-        store.edit("a", "caption 2", byteArrayOf(2))
-        assertArrayEquals(byteArrayOf(2), store.get("a")!!.mediaPayload)
+    /** A photo's caption edit rewrites the album it is sent from again (`applyEdit`). */
+    @Test
+    fun aCaptionEditRewritesTheAlbum() = runTest {
+        store.insert(message("a", 1, text = "look").copy(mediaType = MediaWire.KIND_ALBUM, mediaPayload = album("look")))
+        store.applyEdit(store.get("a")!!, "look at this")
+        val row = store.get("a")!!
+        assertEquals("look at this", row.text)
+        assertTrue(row.isEdited)
+        assertArrayEquals(album("look at this"), row.mediaPayload)
+    }
 
-        store.setMedia("a", "voice", byteArrayOf(3))
-        assertEquals("voice", store.get("a")!!.mediaType)
-        assertArrayEquals(byteArrayOf(3), store.get("a")!!.mediaPayload)
+    /** The uploaded media in place of the staged copy: the same message, not an edit. */
+    @Test
+    fun setMediaIsNotAnEdit() = runTest {
+        store.insert(message("a", 1, text = "look").copy(mediaType = MediaWire.KIND_ALBUM, mediaPayload = album("look", "local-1")))
+        store.setMedia("a", MediaWire.KIND_ALBUM, album("look", "store-1"))
+        val row = store.get("a")!!
+        assertArrayEquals(album("look", "store-1"), row.mediaPayload)
+        assertEquals("look", row.text)
+        assertFalse(row.isEdited)
+    }
+
+    /** A quote and its kind come back as they went in. */
+    @Test
+    fun aReplyRoundTrips() = runTest {
+        store.insert(message("r", 1, text = "yes").copy(replyToId = "q-1", replyPreview = "the photo", replyMediaType = "MEDIA_TYPE_IMAGE"))
+        val row = store.get("r")!!
+        assertEquals("q-1", row.replyToId)
+        assertEquals("the photo", row.replyPreview)
+        assertEquals("MEDIA_TYPE_IMAGE", row.replyMediaType)
     }
 
     @Test
@@ -177,4 +213,16 @@ class FakeMessageStoreTest : MessageStoreContract() {
     override val contacts: ContactStore = FakeContactStore()
     override val chats: ChatStore = FakeChatStore()
     override val store: MessageStore = FakeMessageStore()
+}
+
+/** The same cases on the core's encrypted store — the host build of the library the app ships. */
+class CoreMessageStoreTest : MessageStoreContract() {
+    private val core = LocalStore.inMemory(ByteArray(32) { 1 })
+    private val feed = LocalStoreFeed(core)
+    override val contacts: ContactStore = CoreContactStore(feed)
+    override val chats: ChatStore = CoreChatStore(feed)
+    override val store: MessageStore = CoreMessageStore(feed, myUserId = { "me" })
+
+    @After
+    fun close() = core.close()
 }
