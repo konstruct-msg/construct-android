@@ -6,7 +6,7 @@ import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.ChatStore
 import com.construct.messenger.data.local.MessageStore
-import com.construct.messenger.data.local.db.PeerDeviceEntity
+import com.construct.messenger.data.local.PeerDeviceRecord
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.FakeContactStore
 import com.construct.messenger.data.local.ContactRecord
@@ -49,7 +49,7 @@ class ContactActionsUseCaseTest {
     @Test
     fun `removing a contact forgets every device session and deletes its rows`() = runTest {
         whenever(registry.knownDevices(peer)).thenReturn(
-            devices.map { PeerDeviceEntity(peer, it, ByteArray(32), firstSeenAtMs = 0, lastSeenAtMs = 0) },
+            devices.map { PeerDeviceRecord(it, peer, ByteArray(32), firstSeenAtMs = 0) },
         )
 
         actions.delete(peer)
@@ -74,7 +74,7 @@ class ContactActionsUseCaseTest {
     @Test
     fun `deleting a chat keeps the contact and forgets its sessions`() = runTest {
         whenever(registry.knownDevices(peer)).thenReturn(
-            devices.map { PeerDeviceEntity(peer, it, ByteArray(32), firstSeenAtMs = 0, lastSeenAtMs = 0) },
+            devices.map { PeerDeviceRecord(it, peer, ByteArray(32), firstSeenAtMs = 0) },
         )
 
         actions.deleteChat(peer)

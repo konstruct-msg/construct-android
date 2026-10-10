@@ -134,7 +134,7 @@ class SessionManager @Inject constructor(
     /** Refresh the account -> all active device mappings without consuming OTPKs. */
     suspend fun discoverPeerDevices(contactId: String): List<PeerDeviceRegistry.PeerDevice> {
         return discoverPeerBundles(contactId).map { bundle ->
-            PeerDeviceRegistry.PeerDevice(bundle.deviceId, bundle.identityPublic, bundle.platform)
+            PeerDeviceRegistry.PeerDevice(bundle.deviceId, bundle.identityPublic)
         }
     }
 
@@ -169,7 +169,7 @@ class SessionManager @Inject constructor(
         }
         peerDeviceRegistry.recordAll(
             accountId,
-            bundles.map { PeerDeviceRegistry.PeerDevice(it.deviceId, it.identityPublic, it.platform) },
+            bundles.map { PeerDeviceRegistry.PeerDevice(it.deviceId, it.identityPublic) },
             response.activeDevicesList,
         )
         if (rememberAsContact) {

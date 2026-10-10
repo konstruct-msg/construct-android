@@ -7,6 +7,10 @@ import com.construct.messenger.data.local.ChatStore
 import com.construct.messenger.data.local.MessageStore
 import com.construct.messenger.data.local.RoomMessageStore
 import com.construct.messenger.data.local.CallStore
+import com.construct.messenger.data.local.PeerDeviceStore
+import com.construct.messenger.data.local.RoomPeerDeviceStore
+import com.construct.messenger.data.local.RoomServerMessageIdStore
+import com.construct.messenger.data.local.ServerMessageIdStore
 import com.construct.messenger.data.local.ReactionStore
 import com.construct.messenger.data.local.RoomCallStore
 import com.construct.messenger.data.local.RoomChatStore
@@ -18,10 +22,8 @@ import com.construct.messenger.data.local.db.AckDao
 import com.construct.messenger.data.local.db.ConstructDatabase
 import com.construct.messenger.data.local.db.SessionStateDao
 import com.construct.messenger.data.local.db.IssuedInviteDao
-import com.construct.messenger.data.local.db.PeerDeviceDao
 import com.construct.messenger.data.local.db.PendingChunkDao
 import com.construct.messenger.data.local.db.PendingResendDao
-import com.construct.messenger.data.local.db.ServerMessageIdDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -91,11 +93,15 @@ object DatabaseModule {
     @Provides
     fun provideIssuedInviteDao(db: ConstructDatabase): IssuedInviteDao = db.issuedInviteDao()
 
+    /** The `peer_devices` table only through here (TODO 136): no `PeerDeviceDao` is provided. */
     @Provides
-    fun providePeerDeviceDao(db: ConstructDatabase): PeerDeviceDao = db.peerDeviceDao()
+    @Singleton
+    fun providePeerDeviceStore(db: ConstructDatabase): PeerDeviceStore = RoomPeerDeviceStore(db.peerDeviceDao())
 
+    /** The `server_message_ids` table only through here (TODO 136): no `ServerMessageIdDao` is provided. */
     @Provides
-    fun provideServerMessageIdDao(db: ConstructDatabase): ServerMessageIdDao = db.serverMessageIdDao()
+    @Singleton
+    fun provideServerMessageIdStore(db: ConstructDatabase): ServerMessageIdStore = RoomServerMessageIdStore(db.serverMessageIdDao())
 
     @Provides
     fun providePendingResendDao(db: ConstructDatabase): PendingResendDao = db.pendingResendDao()
