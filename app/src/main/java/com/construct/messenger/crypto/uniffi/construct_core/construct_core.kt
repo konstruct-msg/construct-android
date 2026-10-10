@@ -914,6 +914,8 @@ external fun uniffi_construct_core_checksum_method_historysender_push_records(
 ): Short
 external fun uniffi_construct_core_checksum_method_historysender_snapshot_id(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_add_pending_chunk(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_advance_chat_preview(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_all_messages_after(
@@ -942,19 +944,35 @@ external fun uniffi_construct_core_checksum_method_localstore_contacts(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_contacts_with_pending_avatar(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_count_resend_attempt(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_delete_chat(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_delete_contact(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_delete_issued_invites(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_delete_message(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_delete_pending_chunks(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_delete_reaction(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_delete_resend(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_edit_message(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_entries_with_prefix(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_every_contact(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_expire_reactions(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_forget_pending_chunks_before(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_forget_processed_before(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_forget_resends_before(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_forget_server_message_ids_before(
 ): Short
@@ -970,9 +988,15 @@ external fun uniffi_construct_core_checksum_method_localstore_insert_chat(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_insert_message(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_is_processed(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_issued_invites(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_local_message_id(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_mark_contact(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_mark_processed(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_message(
 ): Short
@@ -988,13 +1012,27 @@ external fun uniffi_construct_core_checksum_method_localstore_peer_device(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_peer_devices(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_pending_chunk_count(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_pending_chunk_messages(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_pending_chunks(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_pending_resends(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_pending_sends(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_processed_message_ids(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_put(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_queue_resend(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_reactions(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_reactions_in_chat(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_record_issued_invite(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_record_peer_device(
 ): Short
@@ -1367,6 +1405,8 @@ external fun uniffi_construct_core_fn_constructor_localstore_in_memory(`key`: Ru
 ): Long
 external fun uniffi_construct_core_fn_constructor_localstore_new(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_construct_core_fn_method_localstore_add_pending_chunk(`ptr`: Long,`chunk`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_advance_chat_preview(`ptr`: Long,`id`: RustBuffer.ByValue,`text`: RustBuffer.ByValue,`time`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_all_messages_after(`ptr`: Long,`afterOrderKey`: RustBuffer.ByValue,`afterId`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
@@ -1395,20 +1435,36 @@ external fun uniffi_construct_core_fn_method_localstore_contacts(`ptr`: Long,uni
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_contacts_with_pending_avatar(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_count_resend_attempt(`ptr`: Long,`messageId`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_delete_chat(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_localstore_delete_contact(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_method_localstore_delete_issued_invites(`ptr`: Long,`jtis`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_construct_core_fn_method_localstore_delete_message(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_localstore_delete_pending_chunks(`ptr`: Long,`senderId`: RustBuffer.ByValue,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_localstore_delete_reaction(`ptr`: Long,`targetMessageId`: RustBuffer.ByValue,`reactorUserId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_method_localstore_delete_resend(`ptr`: Long,`messageId`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_construct_core_fn_method_localstore_edit_message(`ptr`: Long,`id`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`searchText`: RustBuffer.ByValue,`editedAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_method_localstore_entries_with_prefix(`ptr`: Long,`prefix`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_every_contact(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_expire_reactions(`ptr`: Long,`cutoff`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
+external fun uniffi_construct_core_fn_method_localstore_forget_pending_chunks_before(`ptr`: Long,`cutoff`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_method_localstore_forget_processed_before(`ptr`: Long,`cutoff`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_method_localstore_forget_resends_before(`ptr`: Long,`cutoff`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
 external fun uniffi_construct_core_fn_method_localstore_forget_server_message_ids_before(`ptr`: Long,`cutoff`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_method_localstore_get(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1423,9 +1479,15 @@ external fun uniffi_construct_core_fn_method_localstore_insert_chat(`ptr`: Long,
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_insert_message(`ptr`: Long,`message`: RustBuffer.ByValue,`searchText`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_is_processed(`ptr`: Long,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_issued_invites(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_local_message_id(`ptr`: Long,`serverId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_mark_contact(`ptr`: Long,`id`: RustBuffer.ByValue,`addedAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_mark_processed(`ptr`: Long,`messageId`: RustBuffer.ByValue,`senderId`: RustBuffer.ByValue,`processedAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_message(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1441,14 +1503,28 @@ external fun uniffi_construct_core_fn_method_localstore_peer_device(`ptr`: Long,
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_peer_devices(`ptr`: Long,`accountId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_pending_chunk_count(`ptr`: Long,`senderId`: RustBuffer.ByValue,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Int
+external fun uniffi_construct_core_fn_method_localstore_pending_chunk_messages(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_pending_chunks(`ptr`: Long,`senderId`: RustBuffer.ByValue,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_pending_resends(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_pending_sends(`ptr`: Long,`chatId`: RustBuffer.ByValue,`retryCeiling`: Short,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_processed_message_ids(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_put(`ptr`: Long,`key`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_method_localstore_queue_resend(`ptr`: Long,`resend`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_reactions(`ptr`: Long,`targetMessageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_reactions_in_chat(`ptr`: Long,`chatId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_record_issued_invite(`ptr`: Long,`invite`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_construct_core_fn_method_localstore_record_peer_device(`ptr`: Long,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_record_server_message_id(`ptr`: Long,`serverId`: RustBuffer.ByValue,`localId`: RustBuffer.ByValue,`recordedAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -2261,6 +2337,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_historysender_snapshot_id() != 18376.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_add_pending_chunk() != 42119.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_advance_chat_preview() != 18597.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2303,25 +2382,49 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_contacts_with_pending_avatar() != 30938.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_count_resend_attempt() != 33415.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_delete_chat() != 62753.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_delete_contact() != 25391.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_delete_issued_invites() != 54416.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_delete_message() != 53751.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_delete_pending_chunks() != 19253.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_delete_reaction() != 1671.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_delete_resend() != 36433.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_edit_message() != 48649.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_entries_with_prefix() != 686.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_every_contact() != 24186.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_expire_reactions() != 1251.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_forget_pending_chunks_before() != 26227.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_forget_processed_before() != 4143.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_forget_resends_before() != 16607.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_forget_server_message_ids_before() != 29537.toShort()) {
@@ -2345,10 +2448,19 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_insert_message() != 2107.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_is_processed() != 48882.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_issued_invites() != 39927.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_local_message_id() != 42048.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_mark_contact() != 13229.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_mark_processed() != 32160.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_message() != 63926.toShort()) {
@@ -2372,16 +2484,37 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_peer_devices() != 14816.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_pending_chunk_count() != 56798.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_pending_chunk_messages() != 17861.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_pending_chunks() != 22010.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_pending_resends() != 27270.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_pending_sends() != 61956.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_processed_message_ids() != 40709.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_put() != 58855.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_queue_resend() != 37524.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_reactions() != 33658.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_reactions_in_chat() != 41794.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_record_issued_invite() != 58843.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_record_peer_device() != 19683.toShort()) {
@@ -4590,6 +4723,11 @@ public object FfiConverterTypeHistorySender: FfiConverter<HistorySender, Long> {
 public interface LocalStoreInterface {
     
     /**
+     * A redelivered chunk keeps the copy held. Returns whether it was new.
+     */
+    fun `addPendingChunk`(`chunk`: LocalPendingChunk): kotlin.Boolean
+    
+    /**
      * Each write below changes its named fields of one chat in one statement; false: no such chat.
      * Moves the preview unless the one shown is newer; false also when it is.
      */
@@ -4644,6 +4782,11 @@ public interface LocalStoreInterface {
     
     fun `contactsWithPendingAvatar`(): List<LocalContact>
     
+    /**
+     * The attempts now, or null when not queued.
+     */
+    fun `countResendAttempt`(`messageId`: kotlin.String, `deviceId`: kotlin.String): kotlin.UInt?
+    
     fun `deleteChat`(`id`: kotlin.String)
     
     /**
@@ -4651,11 +4794,22 @@ public interface LocalStoreInterface {
      */
     fun `deleteContact`(`id`: kotlin.String)
     
+    fun `deleteIssuedInvites`(`jtis`: List<kotlin.String>)
+    
     fun `deleteMessage`(`id`: kotlin.String)
+    
+    fun `deletePendingChunks`(`senderId`: kotlin.String, `messageId`: kotlin.String)
     
     fun `deleteReaction`(`targetMessageId`: kotlin.String, `reactorUserId`: kotlin.String)
     
+    fun `deleteResend`(`messageId`: kotlin.String, `deviceId`: kotlin.String)
+    
     fun `editMessage`(`id`: kotlin.String, `body`: kotlin.ByteArray, `searchText`: kotlin.String?, `editedAt`: kotlin.Long): kotlin.Boolean
+    
+    /**
+     * Every entry whose key starts with `prefix`, by key; no pattern characters.
+     */
+    fun `entriesWithPrefix`(`prefix`: kotlin.String): List<LocalKvEntry>
     
     /**
      * Every row, contacts or not, by id.
@@ -4667,6 +4821,12 @@ public interface LocalStoreInterface {
      * on a held message is never expired; one with no receipt time stays.
      */
     fun `expireReactions`(`cutoff`: kotlin.Long): kotlin.UInt
+    
+    fun `forgetPendingChunksBefore`(`cutoff`: kotlin.Long): kotlin.ULong
+    
+    fun `forgetProcessedBefore`(`cutoff`: kotlin.Long): kotlin.ULong
+    
+    fun `forgetResendsBefore`(`cutoff`: kotlin.Long): kotlin.ULong
     
     fun `forgetServerMessageIdsBefore`(`cutoff`: kotlin.Long): kotlin.ULong
     
@@ -4691,6 +4851,13 @@ public interface LocalStoreInterface {
      */
     fun `insertMessage`(`message`: LocalMessage, `searchText`: kotlin.String?): LocalInsert
     
+    fun `isProcessed`(`messageId`: kotlin.String): kotlin.Boolean
+    
+    /**
+     * Newest first.
+     */
+    fun `issuedInvites`(): List<LocalIssuedInvite>
+    
     fun `localMessageId`(`serverId`: kotlin.String): kotlin.String?
     
     /**
@@ -4698,6 +4865,11 @@ public interface LocalStoreInterface {
      * A contact from now on; `added_at` is kept if it was set.
      */
     fun `markContact`(`id`: kotlin.String, `addedAt`: kotlin.Long): kotlin.Boolean
+    
+    /**
+     * An envelope processed, so a redelivery is not; exact ids. Returns whether it was new.
+     */
+    fun `markProcessed`(`messageId`: kotlin.String, `senderId`: kotlin.String, `processedAt`: kotlin.Long): kotlin.Boolean
     
     fun `message`(`id`: kotlin.String): LocalMessage?
     
@@ -4723,12 +4895,39 @@ public interface LocalStoreInterface {
      */
     fun `peerDevices`(`accountId`: kotlin.String): List<LocalPeerDevice>
     
+    fun `pendingChunkCount`(`senderId`: kotlin.String, `messageId`: kotlin.String): kotlin.UInt
+    
+    /**
+     * Every message with chunks held, by its first chunk's arrival.
+     */
+    fun `pendingChunkMessages`(): List<LocalPendingChunkMessage>
+    
+    /**
+     * One sender's message, by chunk index.
+     */
+    fun `pendingChunks`(`senderId`: kotlin.String, `messageId`: kotlin.String): List<LocalPendingChunk>
+    
+    /**
+     * Oldest first.
+     */
+    fun `pendingResends`(): List<LocalPendingResend>
+    
     /**
      * Ours, queued or failed with `retry_count < retry_ceiling`; one chat, or every chat for null.
      */
     fun `pendingSends`(`chatId`: kotlin.String?, `retryCeiling`: kotlin.Short, `limit`: kotlin.UInt): List<LocalMessage>
     
+    /**
+     * Every id held: to warm an in-memory cache at launch.
+     */
+    fun `processedMessageIds`(): List<kotlin.String>
+    
     fun `put`(`key`: kotlin.String, `value`: kotlin.ByteArray)
+    
+    /**
+     * A second request for the same copy keeps the first row. Returns whether it was new.
+     */
+    fun `queueResend`(`resend`: LocalPendingResend): kotlin.Boolean
     
     fun `reactions`(`targetMessageId`: kotlin.String): List<LocalReaction>
     
@@ -4736,6 +4935,11 @@ public interface LocalStoreInterface {
      * Every reaction on a chat's messages, by message then time — one read per transcript.
      */
     fun `reactionsInChat`(`chatId`: kotlin.String): List<LocalReaction>
+    
+    /**
+     * Insert, or replace the row of its jti.
+     */
+    fun `recordIssuedInvite`(`invite`: LocalIssuedInvite)
     
     /**
      * An id already known keeps its first account.
@@ -4953,6 +5157,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
             UniffiLib.uniffi_construct_core_fn_clone_localstore(handle, status)
         }
     }
+
+    
+    /**
+     * A redelivered chunk keeps the copy held. Returns whether it was new.
+     */
+    @Throws(LocalStoreException::class)override fun `addPendingChunk`(`chunk`: LocalPendingChunk): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_add_pending_chunk(
+        it,
+        FfiConverterTypeLocalPendingChunk.lower(`chunk`),_status)
+}
+    }
+    )
+    }
+    
 
     
     /**
@@ -5178,6 +5399,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * The attempts now, or null when not queued.
+     */
+    @Throws(LocalStoreException::class)override fun `countResendAttempt`(`messageId`: kotlin.String, `deviceId`: kotlin.String): kotlin.UInt? {
+            return FfiConverterOptionalUInt.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_count_resend_attempt(
+        it,
+        FfiConverterString.lower(`messageId`),FfiConverterString.lower(`deviceId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `deleteChat`(`id`: kotlin.String)
         = 
     callWithHandle {
@@ -5207,6 +5445,19 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    @Throws(LocalStoreException::class)override fun `deleteIssuedInvites`(`jtis`: List<kotlin.String>)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_delete_issued_invites(
+        it,
+        FfiConverterSequenceString.lower(`jtis`),_status)
+}
+    }
+    
+    
+
+    
     @Throws(LocalStoreException::class)override fun `deleteMessage`(`id`: kotlin.String)
         = 
     callWithHandle {
@@ -5214,6 +5465,19 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_delete_message(
         it,
         FfiConverterString.lower(`id`),_status)
+}
+    }
+    
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `deletePendingChunks`(`senderId`: kotlin.String, `messageId`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_delete_pending_chunks(
+        it,
+        FfiConverterString.lower(`senderId`),FfiConverterString.lower(`messageId`),_status)
 }
     }
     
@@ -5233,6 +5497,19 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    @Throws(LocalStoreException::class)override fun `deleteResend`(`messageId`: kotlin.String, `deviceId`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_delete_resend(
+        it,
+        FfiConverterString.lower(`messageId`),FfiConverterString.lower(`deviceId`),_status)
+}
+    }
+    
+    
+
+    
     @Throws(LocalStoreException::class)override fun `editMessage`(`id`: kotlin.String, `body`: kotlin.ByteArray, `searchText`: kotlin.String?, `editedAt`: kotlin.Long): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     callWithHandle {
@@ -5240,6 +5517,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_edit_message(
         it,
         FfiConverterString.lower(`id`),FfiConverterByteArray.lower(`body`),FfiConverterOptionalString.lower(`searchText`),FfiConverterLong.lower(`editedAt`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Every entry whose key starts with `prefix`, by key; no pattern characters.
+     */
+    @Throws(LocalStoreException::class)override fun `entriesWithPrefix`(`prefix`: kotlin.String): List<LocalKvEntry> {
+            return FfiConverterSequenceTypeLocalKvEntry.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_entries_with_prefix(
+        it,
+        FfiConverterString.lower(`prefix`),_status)
 }
     }
     )
@@ -5273,6 +5567,48 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     callWithHandle {
     uniffiRustCallWithError(LocalStoreException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_localstore_expire_reactions(
+        it,
+        FfiConverterLong.lower(`cutoff`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `forgetPendingChunksBefore`(`cutoff`: kotlin.Long): kotlin.ULong {
+            return FfiConverterULong.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_forget_pending_chunks_before(
+        it,
+        FfiConverterLong.lower(`cutoff`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `forgetProcessedBefore`(`cutoff`: kotlin.Long): kotlin.ULong {
+            return FfiConverterULong.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_forget_processed_before(
+        it,
+        FfiConverterLong.lower(`cutoff`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `forgetResendsBefore`(`cutoff`: kotlin.Long): kotlin.ULong {
+            return FfiConverterULong.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_forget_resends_before(
         it,
         FfiConverterLong.lower(`cutoff`),_status)
 }
@@ -5389,6 +5725,37 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    @Throws(LocalStoreException::class)override fun `isProcessed`(`messageId`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_is_processed(
+        it,
+        FfiConverterString.lower(`messageId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Newest first.
+     */
+    @Throws(LocalStoreException::class)override fun `issuedInvites`(): List<LocalIssuedInvite> {
+            return FfiConverterSequenceTypeLocalIssuedInvite.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_issued_invites(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `localMessageId`(`serverId`: kotlin.String): kotlin.String? {
             return FfiConverterOptionalString.lift(
     callWithHandle {
@@ -5414,6 +5781,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_mark_contact(
         it,
         FfiConverterString.lower(`id`),FfiConverterLong.lower(`addedAt`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * An envelope processed, so a redelivery is not; exact ids. Returns whether it was new.
+     */
+    @Throws(LocalStoreException::class)override fun `markProcessed`(`messageId`: kotlin.String, `senderId`: kotlin.String, `processedAt`: kotlin.Long): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_mark_processed(
+        it,
+        FfiConverterString.lower(`messageId`),FfiConverterString.lower(`senderId`),FfiConverterLong.lower(`processedAt`),_status)
 }
     }
     )
@@ -5529,6 +5913,71 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    @Throws(LocalStoreException::class)override fun `pendingChunkCount`(`senderId`: kotlin.String, `messageId`: kotlin.String): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_pending_chunk_count(
+        it,
+        FfiConverterString.lower(`senderId`),FfiConverterString.lower(`messageId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Every message with chunks held, by its first chunk's arrival.
+     */
+    @Throws(LocalStoreException::class)override fun `pendingChunkMessages`(): List<LocalPendingChunkMessage> {
+            return FfiConverterSequenceTypeLocalPendingChunkMessage.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_pending_chunk_messages(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * One sender's message, by chunk index.
+     */
+    @Throws(LocalStoreException::class)override fun `pendingChunks`(`senderId`: kotlin.String, `messageId`: kotlin.String): List<LocalPendingChunk> {
+            return FfiConverterSequenceTypeLocalPendingChunk.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_pending_chunks(
+        it,
+        FfiConverterString.lower(`senderId`),FfiConverterString.lower(`messageId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Oldest first.
+     */
+    @Throws(LocalStoreException::class)override fun `pendingResends`(): List<LocalPendingResend> {
+            return FfiConverterSequenceTypeLocalPendingResend.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_pending_resends(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
     /**
      * Ours, queued or failed with `retry_count < retry_ceiling`; one chat, or every chat for null.
      */
@@ -5546,6 +5995,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * Every id held: to warm an in-memory cache at launch.
+     */
+    @Throws(LocalStoreException::class)override fun `processedMessageIds`(): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_processed_message_ids(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `put`(`key`: kotlin.String, `value`: kotlin.ByteArray)
         = 
     callWithHandle {
@@ -5556,6 +6022,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
 }
     }
     
+    
+
+    
+    /**
+     * A second request for the same copy keeps the first row. Returns whether it was new.
+     */
+    @Throws(LocalStoreException::class)override fun `queueResend`(`resend`: LocalPendingResend): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_queue_resend(
+        it,
+        FfiConverterTypeLocalPendingResend.lower(`resend`),_status)
+}
+    }
+    )
+    }
     
 
     
@@ -5587,6 +6070,22 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     }
     )
     }
+    
+
+    
+    /**
+     * Insert, or replace the row of its jti.
+     */
+    @Throws(LocalStoreException::class)override fun `recordIssuedInvite`(`invite`: LocalIssuedInvite)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_record_issued_invite(
+        it,
+        FfiConverterTypeLocalIssuedInvite.lower(`invite`),_status)
+}
+    }
+    
     
 
     
@@ -10221,6 +10720,96 @@ public object FfiConverterTypeLocalIdentityKeyPin: FfiConverterRustBuffer<LocalI
 
 
 
+/**
+ * An invite capability this device minted; `sitting` groups the codes of one QR showing.
+ */
+data class LocalIssuedInvite (
+    var `jti`: kotlin.String
+    , 
+    var `kind`: kotlin.String
+    , 
+    var `issuedAt`: kotlin.Long
+    , 
+    var `ttlSeconds`: kotlin.UInt
+    , 
+    var `sitting`: kotlin.String?
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalIssuedInvite: FfiConverterRustBuffer<LocalIssuedInvite> {
+    override fun read(buf: ByteBuffer): LocalIssuedInvite {
+        return LocalIssuedInvite(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalIssuedInvite) = (
+            FfiConverterString.allocationSize(value.`jti`) +
+            FfiConverterString.allocationSize(value.`kind`) +
+            FfiConverterLong.allocationSize(value.`issuedAt`) +
+            FfiConverterUInt.allocationSize(value.`ttlSeconds`) +
+            FfiConverterOptionalString.allocationSize(value.`sitting`)
+    )
+
+    override fun write(value: LocalIssuedInvite, buf: ByteBuffer) {
+            FfiConverterString.write(value.`jti`, buf)
+            FfiConverterString.write(value.`kind`, buf)
+            FfiConverterLong.write(value.`issuedAt`, buf)
+            FfiConverterUInt.write(value.`ttlSeconds`, buf)
+            FfiConverterOptionalString.write(value.`sitting`, buf)
+    }
+}
+
+
+
+data class LocalKvEntry (
+    var `key`: kotlin.String
+    , 
+    var `value`: kotlin.ByteArray
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalKvEntry: FfiConverterRustBuffer<LocalKvEntry> {
+    override fun read(buf: ByteBuffer): LocalKvEntry {
+        return LocalKvEntry(
+            FfiConverterString.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalKvEntry) = (
+            FfiConverterString.allocationSize(value.`key`) +
+            FfiConverterByteArray.allocationSize(value.`value`)
+    )
+
+    override fun write(value: LocalKvEntry, buf: ByteBuffer) {
+            FfiConverterString.write(value.`key`, buf)
+            FfiConverterByteArray.write(value.`value`, buf)
+    }
+}
+
+
+
 data class LocalMessage (
     var `id`: kotlin.String
     , 
@@ -10437,6 +11026,176 @@ public object FfiConverterTypeLocalPeerDevice: FfiConverterRustBuffer<LocalPeerD
             FfiConverterString.write(value.`accountId`, buf)
             FfiConverterByteArray.write(value.`identityKey`, buf)
             FfiConverterLong.write(value.`firstSeenAt`, buf)
+    }
+}
+
+
+
+/**
+ * One decrypted chunk of an incoming message not yet complete.
+ */
+data class LocalPendingChunk (
+    var `senderId`: kotlin.String
+    , 
+    var `messageId`: kotlin.String
+    , 
+    var `chunkIndex`: kotlin.UInt
+    , 
+    var `totalChunks`: kotlin.UInt
+    , 
+    var `plaintextLength`: kotlin.ULong
+    , 
+    var `contentType`: kotlin.UByte
+    , 
+    var `payload`: kotlin.ByteArray
+    , 
+    /**
+     * The envelope that carried it.
+     */
+    var `envelopeId`: kotlin.String?
+    , 
+    var `receivedAt`: kotlin.Long
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalPendingChunk: FfiConverterRustBuffer<LocalPendingChunk> {
+    override fun read(buf: ByteBuffer): LocalPendingChunk {
+        return LocalPendingChunk(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterUByte.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalPendingChunk) = (
+            FfiConverterString.allocationSize(value.`senderId`) +
+            FfiConverterString.allocationSize(value.`messageId`) +
+            FfiConverterUInt.allocationSize(value.`chunkIndex`) +
+            FfiConverterUInt.allocationSize(value.`totalChunks`) +
+            FfiConverterULong.allocationSize(value.`plaintextLength`) +
+            FfiConverterUByte.allocationSize(value.`contentType`) +
+            FfiConverterByteArray.allocationSize(value.`payload`) +
+            FfiConverterOptionalString.allocationSize(value.`envelopeId`) +
+            FfiConverterLong.allocationSize(value.`receivedAt`)
+    )
+
+    override fun write(value: LocalPendingChunk, buf: ByteBuffer) {
+            FfiConverterString.write(value.`senderId`, buf)
+            FfiConverterString.write(value.`messageId`, buf)
+            FfiConverterUInt.write(value.`chunkIndex`, buf)
+            FfiConverterUInt.write(value.`totalChunks`, buf)
+            FfiConverterULong.write(value.`plaintextLength`, buf)
+            FfiConverterUByte.write(value.`contentType`, buf)
+            FfiConverterByteArray.write(value.`payload`, buf)
+            FfiConverterOptionalString.write(value.`envelopeId`, buf)
+            FfiConverterLong.write(value.`receivedAt`, buf)
+    }
+}
+
+
+
+/**
+ * One message with chunks held.
+ */
+data class LocalPendingChunkMessage (
+    var `senderId`: kotlin.String
+    , 
+    var `messageId`: kotlin.String
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalPendingChunkMessage: FfiConverterRustBuffer<LocalPendingChunkMessage> {
+    override fun read(buf: ByteBuffer): LocalPendingChunkMessage {
+        return LocalPendingChunkMessage(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalPendingChunkMessage) = (
+            FfiConverterString.allocationSize(value.`senderId`) +
+            FfiConverterString.allocationSize(value.`messageId`)
+    )
+
+    override fun write(value: LocalPendingChunkMessage, buf: ByteBuffer) {
+            FfiConverterString.write(value.`senderId`, buf)
+            FfiConverterString.write(value.`messageId`, buf)
+    }
+}
+
+
+
+/**
+ * A message the core asked to send again to one device; `message_id` is the id the reader named.
+ */
+data class LocalPendingResend (
+    var `messageId`: kotlin.String
+    , 
+    var `deviceId`: kotlin.String
+    , 
+    var `accountId`: kotlin.String
+    , 
+    var `createdAt`: kotlin.Long
+    , 
+    var `attempts`: kotlin.UInt
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalPendingResend: FfiConverterRustBuffer<LocalPendingResend> {
+    override fun read(buf: ByteBuffer): LocalPendingResend {
+        return LocalPendingResend(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalPendingResend) = (
+            FfiConverterString.allocationSize(value.`messageId`) +
+            FfiConverterString.allocationSize(value.`deviceId`) +
+            FfiConverterString.allocationSize(value.`accountId`) +
+            FfiConverterLong.allocationSize(value.`createdAt`) +
+            FfiConverterUInt.allocationSize(value.`attempts`)
+    )
+
+    override fun write(value: LocalPendingResend, buf: ByteBuffer) {
+            FfiConverterString.write(value.`messageId`, buf)
+            FfiConverterString.write(value.`deviceId`, buf)
+            FfiConverterString.write(value.`accountId`, buf)
+            FfiConverterLong.write(value.`createdAt`, buf)
+            FfiConverterUInt.write(value.`attempts`, buf)
     }
 }
 
@@ -13905,7 +14664,8 @@ enum class LocalStoreTable {
     REACTIONS,
     CALLS,
     PEER_DEVICES,
-    OWN_PROFILE;
+    OWN_PROFILE,
+    ISSUED_INVITES;
     companion object
 }
 
@@ -15396,6 +16156,62 @@ public object FfiConverterSequenceTypeLocalIdentityKeyPin: FfiConverterRustBuffe
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeLocalIssuedInvite: FfiConverterRustBuffer<List<LocalIssuedInvite>> {
+    override fun read(buf: ByteBuffer): List<LocalIssuedInvite> {
+        val len = buf.getInt()
+        return List<LocalIssuedInvite>(len) {
+            FfiConverterTypeLocalIssuedInvite.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalIssuedInvite>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalIssuedInvite.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalIssuedInvite>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalIssuedInvite.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalKvEntry: FfiConverterRustBuffer<List<LocalKvEntry>> {
+    override fun read(buf: ByteBuffer): List<LocalKvEntry> {
+        val len = buf.getInt()
+        return List<LocalKvEntry>(len) {
+            FfiConverterTypeLocalKvEntry.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalKvEntry>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalKvEntry.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalKvEntry>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalKvEntry.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeLocalMessage: FfiConverterRustBuffer<List<LocalMessage>> {
     override fun read(buf: ByteBuffer): List<LocalMessage> {
         val len = buf.getInt()
@@ -15442,6 +16258,90 @@ public object FfiConverterSequenceTypeLocalPeerDevice: FfiConverterRustBuffer<Li
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeLocalPeerDevice.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalPendingChunk: FfiConverterRustBuffer<List<LocalPendingChunk>> {
+    override fun read(buf: ByteBuffer): List<LocalPendingChunk> {
+        val len = buf.getInt()
+        return List<LocalPendingChunk>(len) {
+            FfiConverterTypeLocalPendingChunk.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalPendingChunk>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalPendingChunk.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalPendingChunk>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalPendingChunk.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalPendingChunkMessage: FfiConverterRustBuffer<List<LocalPendingChunkMessage>> {
+    override fun read(buf: ByteBuffer): List<LocalPendingChunkMessage> {
+        val len = buf.getInt()
+        return List<LocalPendingChunkMessage>(len) {
+            FfiConverterTypeLocalPendingChunkMessage.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalPendingChunkMessage>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalPendingChunkMessage.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalPendingChunkMessage>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalPendingChunkMessage.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalPendingResend: FfiConverterRustBuffer<List<LocalPendingResend>> {
+    override fun read(buf: ByteBuffer): List<LocalPendingResend> {
+        val len = buf.getInt()
+        return List<LocalPendingResend>(len) {
+            FfiConverterTypeLocalPendingResend.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalPendingResend>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalPendingResend.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalPendingResend>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalPendingResend.write(it, buf)
         }
     }
 }
