@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.construct.messenger.data.local.db.ConstructDatabase
+import com.construct.messenger.data.model.DeliveryStatus
 import uniffi.construct_core.LocalStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -140,6 +141,20 @@ class CoreChatStoreTest : ChatStoreContract() {
     private val feed = LocalStoreFeed(core)
     override val contacts: ContactStore = CoreContactStore(feed)
     override val store: ChatStore = CoreChatStore(feed)
+
+    /** Synapses ranks contacts by how much was said: the core's per-chat count, not the store's total. */
+    @Test
+    fun activityCountsEachChatsMessages() = runTest {
+        val peer = "0b6e9f6a-3c1d-4f7e-9a2b-5d8c7e6f1a2b"
+        val other = "1c7f0a7b-4d2e-4a8f-8b3c-6e9d8f7a2b3c"
+        val messages = CoreMessageStore(feed, myUserId = { "me" })
+        for ((p, chat, n) in listOf(Triple(peer, "chat-a", 2), Triple(other, "chat-b", 1))) {
+            contacts.ensure(p)
+            store.ensure(chat, p)
+            repeat(n) { messages.insert(MessageRecord("$chat-$it", chat, "m", isSentByMe = true, timestampMs = 1, deliveryStatus = DeliveryStatus.SENT)) }
+        }
+        assertEquals(mapOf(peer to 2, other to 1), store.observeActivity().first().associate { it.contactId to it.messages })
+    }
 
     @After
     fun close() = core.close()
