@@ -1,7 +1,7 @@
 package com.construct.messenger.service
 
-import com.construct.messenger.data.local.db.PendingResendDao
-import com.construct.messenger.data.local.db.PendingResendEntity
+import com.construct.messenger.data.local.FakePendingResendStore
+import com.construct.messenger.data.local.PendingResend
 import com.construct.messenger.domain.usecase.ResendOutcome
 import com.construct.messenger.domain.usecase.SendMessageUseCase
 import kotlinx.coroutines.test.runTest
@@ -20,12 +20,12 @@ import org.mockito.kotlin.whenever
  */
 class PendingResendsTest {
 
-    private val dao = FakePendingResendDao()
+    private val dao = FakePendingResendStore()
     private val send: SendMessageUseCase = mock()
     private val resends = PendingResends(dao) { send }
 
     private suspend fun queued(id: String = "srv-1", attempts: Int = 0, createdAtMs: Long = 1_000) {
-        dao.insert(PendingResendEntity(id, "dev-1", "acct-1", createdAtMs, attempts))
+        dao.queue(PendingResend(id, "dev-1", "acct-1", createdAtMs, attempts))
     }
 
     /** Mutation: delete the row on FAILED — this reddens. */
@@ -80,25 +80,5 @@ class PendingResendsTest {
         queued(attempts = 0)
 
         assertEquals(3, dao.rows.single().attempts)
-    }
-}
-
-private class FakePendingResendDao : PendingResendDao {
-    val rows = mutableListOf<PendingResendEntity>()
-    override suspend fun insert(entry: PendingResendEntity) {
-        if (rows.none { it.messageId == entry.messageId && it.deviceId == entry.deviceId }) rows += entry
-    }
-    override suspend fun all() = rows.sortedBy { it.createdAtMs }
-    override suspend fun delete(messageId: String, deviceId: String) {
-        rows.removeAll { it.messageId == messageId && it.deviceId == deviceId }
-    }
-    override suspend fun countAttempt(messageId: String, deviceId: String) {
-        val i = rows.indexOfFirst { it.messageId == messageId && it.deviceId == deviceId }
-        if (i >= 0) rows[i] = rows[i].copy(attempts = rows[i].attempts + 1)
-    }
-    override suspend fun pruneOlderThan(thresholdMs: Long): Int {
-        val n = rows.count { it.createdAtMs < thresholdMs }
-        rows.removeAll { it.createdAtMs < thresholdMs }
-        return n
     }
 }

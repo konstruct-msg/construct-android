@@ -1,8 +1,8 @@
 package com.construct.messenger.service
 
 import android.util.Log
-import com.construct.messenger.data.local.db.PendingResendDao
-import com.construct.messenger.data.local.db.PendingResendEntity
+import com.construct.messenger.data.local.PendingResend
+import com.construct.messenger.data.local.PendingResendStore
 import com.construct.messenger.domain.usecase.ResendOutcome
 import com.construct.messenger.domain.usecase.SendMessageUseCase
 import javax.inject.Inject
@@ -21,7 +21,7 @@ import kotlinx.coroutines.sync.withLock
  * loop — so a resend that fails is not asked for again. Until 2026-09-30 it ran inline and was
  * given up on a network error: on the stand the stream died unnoticed after a restart, the resend
  * waited 60 s, failed, and the message was lost — and the incoming pipeline it ran on waited too.
- * Now the request is a Room row, [drainSoon] sends it off the pipeline, and every reconnect of
+ * Now the request is a stored row, [drainSoon] sends it off the pipeline, and every reconnect of
  * the stream tries what is left.
  *
  * A row goes when the copy is sent or the message is not one we can resend (media, someone
@@ -30,14 +30,14 @@ import kotlinx.coroutines.sync.withLock
  */
 @Singleton
 class PendingResends @Inject constructor(
-    private val dao: PendingResendDao,
+    private val store: PendingResendStore,
     private val sendMessage: dagger.Lazy<SendMessageUseCase>,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val draining = Mutex()
 
     suspend fun enqueue(accountId: String, deviceId: String, messageId: String, nowMs: Long = System.currentTimeMillis()) {
-        dao.insert(PendingResendEntity(messageId, deviceId, accountId, createdAtMs = nowMs))
+        store.queue(PendingResend(messageId, deviceId, accountId, createdAtMs = nowMs))
         drainSoon()
     }
 
@@ -47,16 +47,16 @@ class PendingResends @Inject constructor(
     }
 
     suspend fun drain(nowMs: Long = System.currentTimeMillis()) = draining.withLock {
-        dao.pruneOlderThan(nowMs - ServerMessageIds.RETENTION_MS)
-        for (row in dao.all()) {
+        store.forgetBefore(nowMs - ServerMessageIds.RETENTION_MS)
+        for (row in store.all()) {
             when (sendMessage.get().resend(row.accountId, row.deviceId, row.messageId)) {
-                ResendOutcome.SENT, ResendOutcome.NOT_OURS -> dao.delete(row.messageId, row.deviceId)
+                ResendOutcome.SENT, ResendOutcome.NOT_OURS -> store.delete(row.messageId, row.deviceId)
                 ResendOutcome.FAILED ->
                     if (row.attempts + 1 >= MAX_ATTEMPTS) {
                         Log.w(TAG, "resend ${row.messageId.take(8)}… to ${row.deviceId.take(8)}… — given up after $MAX_ATTEMPTS tries")
-                        dao.delete(row.messageId, row.deviceId)
+                        store.delete(row.messageId, row.deviceId)
                     } else {
-                        dao.countAttempt(row.messageId, row.deviceId)
+                        store.countAttempt(row.messageId, row.deviceId)
                     }
             }
         }
