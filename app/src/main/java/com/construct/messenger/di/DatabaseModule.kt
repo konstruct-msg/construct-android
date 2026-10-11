@@ -3,6 +3,12 @@ package com.construct.messenger.di
 import android.content.Context
 import androidx.room.Room
 import com.construct.messenger.data.local.AckStore
+import com.construct.messenger.data.local.PendingChunkStore
+import com.construct.messenger.data.local.PendingResendStore
+import com.construct.messenger.data.local.ProcessedStore
+import com.construct.messenger.data.local.RoomPendingChunkStore
+import com.construct.messenger.data.local.RoomPendingResendStore
+import com.construct.messenger.data.local.RoomProcessedStore
 import com.construct.messenger.data.local.ChatStore
 import com.construct.messenger.data.local.MessageStore
 import com.construct.messenger.data.local.RoomMessageStore
@@ -18,12 +24,9 @@ import com.construct.messenger.data.local.RoomReactionStore
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.RoomContactStore
 import com.construct.messenger.data.local.PersistentAckStore
-import com.construct.messenger.data.local.db.AckDao
 import com.construct.messenger.data.local.db.ConstructDatabase
 import com.construct.messenger.data.local.db.SessionStateDao
 import com.construct.messenger.data.local.db.IssuedInviteDao
-import com.construct.messenger.data.local.db.PendingChunkDao
-import com.construct.messenger.data.local.db.PendingResendDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -84,8 +87,10 @@ object DatabaseModule {
     @Singleton
     fun provideContactStore(db: ConstructDatabase): ContactStore = RoomContactStore(db.userDao())
 
+    /** The `acked_messages` table only through here (TODO 136): no `AckDao` is provided. */
     @Provides
-    fun provideAckDao(db: ConstructDatabase): AckDao = db.ackDao()
+    @Singleton
+    fun provideProcessedStore(db: ConstructDatabase): ProcessedStore = RoomProcessedStore(db.ackDao())
 
     @Provides
     fun provideSessionStateDao(db: ConstructDatabase): SessionStateDao = db.sessionStateDao()
@@ -103,11 +108,15 @@ object DatabaseModule {
     @Singleton
     fun provideServerMessageIdStore(db: ConstructDatabase): ServerMessageIdStore = RoomServerMessageIdStore(db.serverMessageIdDao())
 
+    /** The `pending_resends` table only through here (TODO 136): no `PendingResendDao` is provided. */
     @Provides
-    fun providePendingResendDao(db: ConstructDatabase): PendingResendDao = db.pendingResendDao()
+    @Singleton
+    fun providePendingResendStore(db: ConstructDatabase): PendingResendStore = RoomPendingResendStore(db.pendingResendDao())
 
+    /** The `pending_chunks` table only through here (TODO 136): no `PendingChunkDao` is provided. */
     @Provides
-    fun providePendingChunkDao(db: ConstructDatabase): PendingChunkDao = db.pendingChunkDao()
+    @Singleton
+    fun providePendingChunkStore(db: ConstructDatabase): PendingChunkStore = RoomPendingChunkStore(db.pendingChunkDao())
 
     /** The `call_records` table only through here (TODO 136): no `CallRecordDao` is provided. */
     @Provides
@@ -116,5 +125,5 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideAckStore(ackDao: AckDao): AckStore = PersistentAckStore(ackDao)
+    fun provideAckStore(processed: ProcessedStore): AckStore = PersistentAckStore(processed)
 }

@@ -2,6 +2,7 @@ package com.construct.messenger.service
 
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.local.AckStore
+import com.construct.messenger.data.local.FakePendingChunkStore
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.FakeChatStore
@@ -57,7 +58,7 @@ class ProcessorEffectsImplTest {
         val chats = FakeChatStore()
         val users = FakeContactStore()
         val acks = FakeAckStore()
-        val pendingChunks = FakePendingChunkDao()
+        val pendingChunks = FakePendingChunkStore()
         val reactions = com.construct.messenger.data.local.FakeReactionStore(messages)
         val callSignals = com.construct.messenger.calls.CallSignalInbox()
         /** What auto-download was told arrived: the media kind of each stored message. */
@@ -125,7 +126,7 @@ class ProcessorEffectsImplTest {
             pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
-            chunks = ChunkReassembler(FakePendingChunkDao()),
+            chunks = ChunkReassembler(FakePendingChunkStore()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = RecordingAvatars(),
             reactions = mock(),
@@ -167,7 +168,7 @@ class ProcessorEffectsImplTest {
             pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
-            chunks = ChunkReassembler(FakePendingChunkDao()),
+            chunks = ChunkReassembler(FakePendingChunkStore()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = RecordingAvatars(),
             reactions = mock(),
@@ -238,7 +239,7 @@ class ProcessorEffectsImplTest {
             pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
-            chunks = ChunkReassembler(FakePendingChunkDao()),
+            chunks = ChunkReassembler(FakePendingChunkStore()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = RecordingAvatars(),
             reactions = mock(),
@@ -286,7 +287,7 @@ class ProcessorEffectsImplTest {
             pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
-            chunks = ChunkReassembler(FakePendingChunkDao()),
+            chunks = ChunkReassembler(FakePendingChunkStore()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = RecordingAvatars(),
             reactions = mock(),
@@ -329,7 +330,7 @@ class ProcessorEffectsImplTest {
             pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
-            chunks = ChunkReassembler(FakePendingChunkDao()),
+            chunks = ChunkReassembler(FakePendingChunkStore()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = RecordingAvatars(),
             reactions = mock(),
@@ -886,7 +887,7 @@ class ProcessorEffectsImplTest {
             pendingResends = mock(),
             held = HeldEnvelopes(),
             alerts = alerts,
-            chunks = ChunkReassembler(FakePendingChunkDao()),
+            chunks = ChunkReassembler(FakePendingChunkStore()),
             mediaPreview = { if (it.caption.isNotBlank()) it.caption else "Photo" },
             contactAvatars = RecordingAvatars(),
             reactions = mock(),

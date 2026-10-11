@@ -1,5 +1,6 @@
 package com.construct.messenger.service
 
+import com.construct.messenger.data.local.FakePendingChunkStore
 import com.construct.messenger.util.KnstFrame
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
@@ -11,7 +12,7 @@ import org.junit.Test
 
 class ChunkReassemblerTest {
 
-    private val dao = FakePendingChunkDao()
+    private val dao = FakePendingChunkStore()
     private val reassembler = ChunkReassembler(dao)
     private val id = UUID.fromString("12345678-1234-4234-8234-123456789abc")
     private val sender = "sender"

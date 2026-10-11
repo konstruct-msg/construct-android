@@ -1,7 +1,7 @@
 package com.construct.messenger.service
 
-import com.construct.messenger.data.local.db.PendingChunkDao
-import com.construct.messenger.data.local.db.PendingChunkEntity
+import com.construct.messenger.data.local.PendingChunk
+import com.construct.messenger.data.local.PendingChunkStore
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.util.KnstFrame
 import javax.inject.Inject
@@ -13,14 +13,14 @@ import javax.inject.Singleton
  * **Canon:** iOS `ChunkedMessageReassembler` + `PendingReassemblyStore`,
  * `decisions/durable-chunk-reassembly.md`. A chunk's ratchet key is spent when it is decrypted, so
  * a chunk the server delivers again after a restart cannot be read twice: the decrypted bytes are
- * in Room before the envelope is acknowledged, or the message is gone. Hence a table, not a map.
+ * in the store before the envelope is acknowledged, or the message is gone. Hence a table, not a map.
  *
  * Until 2026-09-30 Android hid every frame of a message that did not fit one: a long text, and
  * nearly every attachment, from iOS never appeared.
  */
 @Singleton
 class ChunkReassembler @Inject constructor(
-    private val dao: PendingChunkDao,
+    private val store: PendingChunkStore,
 ) {
     sealed interface Assembly {
         /**
@@ -37,7 +37,7 @@ class ChunkReassembler @Inject constructor(
     }
 
     suspend fun accept(senderId: String, plaintext: ByteArray, nowMs: Long = System.currentTimeMillis()): Assembly {
-        val expired = dao.pruneOlderThan(nowMs - RETENTION_MS)
+        val expired = store.forgetBefore(nowMs - RETENTION_MS)
         if (expired > 0) Log.w(TAG, "dropped $expired chunk(s) of messages that never completed in 24 h")
 
         val chunk = KnstFrame.parse(plaintext) ?: return Assembly.Ready(plaintext)
@@ -49,17 +49,17 @@ class ChunkReassembler @Inject constructor(
         }
 
         val id = chunk.messageId.toString()
-        val held = dao.chunks(senderId, id)
+        val held = store.chunks(senderId, id)
         val first = held.firstOrNull()
         if (first != null &&
             (first.totalChunks != chunk.total || first.plaintextLength != chunk.length || first.contentType != chunk.contentType)
         ) {
             // Two messages cannot share an id; the frames disagree, so what is held is not this one.
             Log.w(TAG, "chunks of ${id.take(8)}… disagree on their header — starting over")
-            dao.delete(senderId, id)
+            store.delete(senderId, id)
         }
-        dao.insert(
-            PendingChunkEntity(
+        store.add(
+            PendingChunk(
                 senderId = senderId,
                 messageId = id,
                 chunkIndex = chunk.index,
@@ -70,10 +70,10 @@ class ChunkReassembler @Inject constructor(
                 receivedAtMs = nowMs,
             ),
         )
-        val all = dao.chunks(senderId, id)
+        val all = store.chunks(senderId, id)
         if (all.size < chunk.total) return Assembly.Pending
 
-        dao.delete(senderId, id)
+        store.delete(senderId, id)
         val joined = java.io.ByteArrayOutputStream(chunk.length)
         all.forEach { joined.write(it.payload) }
         val bytes = joined.toByteArray()
