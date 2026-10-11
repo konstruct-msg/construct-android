@@ -122,6 +122,9 @@ class TransportRouter @Inject constructor(
                     is VeilProxy.StartResult.Failed -> Event.ProxyStartFailed(result.relay, result.reason)
                 },
             )
+            // Keep ≥2 usable fronts: on a failure, fetch a replacement without delaying the event
+            // into cooldown; on success, make sure a spare is on hand for the next block.
+            scope.launch { veil.maintainFloor() }
         }
     }
 
@@ -133,12 +136,14 @@ class TransportRouter @Inject constructor(
             override fun onAvailable(network: Network) {
                 if (network == last) return
                 last = network
+                veil.onNetworkChanged() // old failure counts say nothing about the new path
                 events.post(Event.NetworkPathChanged(reachable = true, censored = false))
             }
 
             override fun onLost(network: Network) {
                 if (network != last) return
                 last = null
+                veil.onNetworkChanged()
                 events.post(Event.NetworkPathChanged(reachable = false, censored = false))
             }
 
