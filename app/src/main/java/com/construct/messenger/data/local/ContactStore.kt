@@ -145,8 +145,11 @@ interface ContactStore {
 
     suspend fun setSharingWith(id: String, sharing: Boolean)
 
-    /** Ids we share our profile with, blocked ones left out. */
-    suspend fun sharingWith(): List<String>
+    /**
+     * Ids we share our profile with, blocked ones and [exceptAccount] (our own: its row is the
+     * note-to-self chat's) left out — as the core's `sharing_with` and iOS `ContactStore` do.
+     */
+    suspend fun sharingWith(exceptAccount: String?): List<String>
 
     /** Their identity key, creating the row as [ensure] does when there is none. */
     suspend fun rememberIdentity(id: String, identityPublic: ByteArray)

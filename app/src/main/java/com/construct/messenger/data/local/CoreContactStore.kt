@@ -16,10 +16,13 @@ import kotlinx.coroutines.withContext
  * until the import moves its rows here.
  *
  * Every write runs under one lock. Most are single statements in the core already; the lock is
- * for the few that read first — [ensure], [upsert] (it keeps `added_at` and `shared_with_me_at`,
- * which [ContactRecord] does not carry), and the pending-avatar guard, which the core has no
- * conditional write for. Every contact write on the device goes through this one instance, so the
- * lock makes those read-then-writes atomic against each other.
+ * for the two that read first — [ensure] and [upsert] (it keeps `added_at` and
+ * `shared_with_me_at`, which [ContactRecord] does not carry). Every contact write on the device
+ * goes through this one instance, so the lock makes those read-then-writes atomic against each
+ * other. The pending-avatar guard is the core's own since 0.42.0: one statement, no read before it.
+ *
+ * Every list keeps our own account's row — it is the note-to-self chat's peer, whose name and
+ * avatar the chat list reads — except [sharingWith].
  */
 class CoreContactStore(
     private val feed: LocalStoreFeed,
@@ -38,10 +41,10 @@ class CoreContactStore(
         feed.watch(LocalStoreTable.CONTACTS) { s -> s.contacts().filterNot { it.isBlocked }.map { it.record() } }
 
     override fun observeBlocked(): Flow<List<ContactRecord>> =
-        feed.watch(LocalStoreTable.CONTACTS) { s -> s.everyContact().filter { it.isBlocked }.map { it.record() } }
+        feed.watch(LocalStoreTable.CONTACTS) { s -> s.everyContact(null).filter { it.isBlocked }.map { it.record() } }
 
     override fun observeAll(): Flow<List<ContactRecord>> =
-        feed.watch(LocalStoreTable.CONTACTS) { s -> s.everyContact().map { it.record() } }
+        feed.watch(LocalStoreTable.CONTACTS) { s -> s.everyContact(null).map { it.record() } }
 
     override fun observe(id: String): Flow<ContactRecord?> =
         feed.watch(LocalStoreTable.CONTACTS) { s -> s.contact(id)?.record() }
@@ -72,9 +75,9 @@ class CoreContactStore(
     }
 
     // The core's `sharing_with()` keeps blocked people in.
-    override suspend fun sharingWith(): List<String> = read { s ->
-        val blocked = s.everyContact().filter { it.isBlocked }.mapTo(HashSet()) { it.id }
-        s.sharingWith().filterNot { it in blocked }
+    override suspend fun sharingWith(exceptAccount: String?): List<String> = read { s ->
+        val blocked = s.everyContact(null).filter { it.isBlocked }.mapTo(HashSet()) { it.id }
+        s.sharingWith(exceptAccount).filterNot { it in blocked }
     }
 
     override suspend fun rememberIdentity(id: String, identityPublic: ByteArray) {
@@ -98,15 +101,11 @@ class CoreContactStore(
 
     override suspend fun pendingAvatarIds(): List<String> = read { s -> s.contactsWithPendingAvatar().map { it.id } }
 
-    override suspend fun clearPendingAvatar(id: String, stored: ByteArray): Boolean = write { s ->
-        val row = s.contact(id)?.takeIf { it.pendingAvatarRef.contentEquals(stored) } ?: return@write false
-        s.setContactAvatar(id, row.avatar, null, null)
-    }
+    override suspend fun clearPendingAvatar(id: String, stored: ByteArray): Boolean =
+        write { it.dropPendingAvatar(id, stored) }
 
-    override suspend fun completePendingAvatar(id: String, stored: ByteArray, avatar: ByteArray): Boolean = write { s ->
-        s.contact(id)?.takeIf { it.pendingAvatarRef.contentEquals(stored) } ?: return@write false
-        s.setContactAvatar(id, avatar, null, null)
-    }
+    override suspend fun completePendingAvatar(id: String, stored: ByteArray, avatar: ByteArray): Boolean =
+        write { it.completePendingAvatar(id, stored, avatar) }
 
     /** The core's row for [this]; the two times [ContactRecord] does not carry come from [held]. */
     private fun ContactRecord.local(held: LocalContact?) = LocalContact(

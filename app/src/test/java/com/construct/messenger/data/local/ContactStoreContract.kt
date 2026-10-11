@@ -110,7 +110,31 @@ abstract class ContactStoreContract {
         store.setSharingWith(id, true)
         store.setSharingWith(other, true)
         store.setBlocked(other, true)
-        assertEquals(listOf(id), store.sharingWith())
+        assertEquals(listOf(id), store.sharingWith(exceptAccount = null))
+    }
+
+    /** Our own row is the note-to-self chat's peer: listed, never shared with. */
+    @Test
+    fun ourOwnAccountIsListedButNotSharedWith() = runTest {
+        val me = "2d8a1b8c-5e3f-4b9a-9c4d-7fae9a8b3c4d"
+        store.ensure(id)
+        store.ensure(me)
+        store.setSharingWith(id, true)
+        store.setSharingWith(me, true)
+        assertEquals(listOf(id), store.sharingWith(exceptAccount = me))
+        assertEquals(setOf(id, me), store.observeAll().first().map { it.id }.toSet())
+    }
+
+    /** A download given up on ends the wait; the avatar already shown stays. */
+    @Test
+    fun clearingAPendingAvatarKeepsTheOneShown() = runTest {
+        val held = byteArrayOf(1, 2)
+        store.upsert(ContactRecord(id = id, isContact = true, avatarData = byteArrayOf(7), pendingAvatarRef = held, pendingAvatarSinceMs = 5))
+        assertTrue(store.clearPendingAvatar(id, held))
+        val row = store.get(id)!!
+        assertArrayEquals(byteArrayOf(7), row.avatarData)
+        assertNull(row.pendingAvatarRef)
+        assertNull(row.pendingAvatarSinceMs)
     }
 
     @Test
