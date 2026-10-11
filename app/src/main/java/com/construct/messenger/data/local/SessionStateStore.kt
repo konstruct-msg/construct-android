@@ -1,7 +1,5 @@
 package com.construct.messenger.data.local
 
-import com.construct.messenger.data.local.db.SessionStateDao
-import com.construct.messenger.data.local.db.SessionStateEntity
 import javax.inject.Inject
 import javax.inject.Singleton
 import uniffi.construct_core.CfeAction
@@ -9,7 +7,7 @@ import uniffi.construct_core.CfeSecureStoreSlot
 
 /**
  * Persistence for CFE session bytes. The Rust core names the durable object with
- * `CfeSecureStoreSlot`; Android only maps that type to a Room key. Blobs are opaque CFE binary
+ * `CfeSecureStoreSlot`; Android only maps that type to a key in a [SessionBlobStore]. Blobs are opaque CFE binary
  * (`docs/FFI_BINARY_FORMAT.md`) and are never parsed here.
  *
  * Every session save writes the orchestrator state beside it, as iOS `handleStorageAction` does.
@@ -20,7 +18,7 @@ import uniffi.construct_core.CfeSecureStoreSlot
  */
 @Singleton
 class SessionStateStore @Inject constructor(
-    private val sessionStateDao: SessionStateDao,
+    private val blobs: SessionBlobStore,
     private val orchestratorState: OrchestratorStateSource,
 ) {
 
@@ -28,7 +26,7 @@ class SessionStateStore @Inject constructor(
     suspend fun saveSecureStore(slot: CfeSecureStoreSlot, cfeBytes: ByteArray) {
         val key = keyFor(slot)
         if (cfeBytes.isEmpty()) {
-            sessionStateDao.delete(key)
+            blobs.remove(key)
         } else {
             saveSession(key, cfeBytes)
         }
@@ -52,23 +50,17 @@ class SessionStateStore @Inject constructor(
     // ── Session blobs ────────────────────────────────────────────────────────
 
     suspend fun saveSession(storeKey: String, cfeBytes: ByteArray) {
-        sessionStateDao.upsert(
-            SessionStateEntity(
-                storeKey = storeKey,
-                cfeBytes = cfeBytes,
-                updatedAtMs = System.currentTimeMillis(),
-            ),
-        )
+        blobs.put(storeKey, cfeBytes)
     }
 
     suspend fun loadSession(storeKey: String): ByteArray? =
-        sessionStateDao.get(storeKey)?.cfeBytes
+        blobs.get(storeKey)
 
     /** All persisted blobs, keyed by their opaque store key — for startup restore. */
     suspend fun loadAllSessions(): Map<String, ByteArray> =
-        sessionStateDao.getAll().associate { it.storeKey to it.cfeBytes }
+        blobs.withPrefix("")
 
-    suspend fun removeSession(storeKey: String) = sessionStateDao.delete(storeKey)
+    suspend fun removeSession(storeKey: String) = blobs.remove(storeKey)
 
     private fun keyFor(slot: CfeSecureStoreSlot): String = when (slot) {
         is CfeSecureStoreSlot.Session -> "session:${slot.contactId}"

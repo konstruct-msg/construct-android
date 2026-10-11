@@ -1,5 +1,8 @@
 package com.construct.messenger.data.local
 
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+
 /** [ProcessedStore] in memory, held to [ProcessedStoreContract]. */
 internal class FakeProcessedStore : ProcessedStore {
     /** Id → (sender, processed at). */
@@ -66,4 +69,32 @@ internal class FakePendingResendStore : PendingResendStore {
         rows.removeAll { it.createdAtMs < cutoffMs }
         return before - rows.size
     }
+}
+
+/** [IssuedInviteStore] in memory, held to [IssuedInviteStoreContract]. */
+internal class FakeIssuedInviteStore : IssuedInviteStore {
+    private val rows = kotlinx.coroutines.flow.MutableStateFlow<Map<String, IssuedInviteRecord>>(emptyMap())
+
+    override fun observeAll() = rows.map { it.values.sortedWith(compareByDescending<IssuedInviteRecord> { r -> r.issuedAtEpochSec }.thenBy { r -> r.jti }) }
+
+    override suspend fun record(invite: IssuedInviteRecord) = rows.update { it + (invite.jti to invite) }
+
+    override suspend fun delete(jti: String) = rows.update { it - jti }
+}
+
+/** [SessionBlobStore] in memory, held to [SessionBlobStoreContract]. */
+internal class FakeSessionBlobStore : SessionBlobStore {
+    val rows = mutableMapOf<String, ByteArray>()
+
+    override suspend fun put(key: String, bytes: ByteArray) {
+        rows[key] = bytes
+    }
+
+    override suspend fun get(key: String): ByteArray? = rows[key]
+
+    override suspend fun remove(key: String) {
+        rows.remove(key)
+    }
+
+    override suspend fun withPrefix(prefix: String): Map<String, ByteArray> = rows.filterKeys { it.startsWith(prefix) }
 }

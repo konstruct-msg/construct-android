@@ -22,7 +22,7 @@ interface IssuedInviteDao {
     @Upsert
     suspend fun upsert(row: IssuedInviteEntity)
 
-    @Query("SELECT * FROM issued_invites ORDER BY issuedAtEpochSec DESC")
+    @Query("SELECT * FROM issued_invites ORDER BY issuedAtEpochSec DESC, jti")
     fun observeAll(): Flow<List<IssuedInviteEntity>>
 
     @Query("SELECT * FROM issued_invites")

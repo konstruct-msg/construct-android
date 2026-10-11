@@ -2,8 +2,8 @@ package com.construct.messenger.data.repository
 
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager
-import com.construct.messenger.data.local.db.IssuedInviteDao
-import com.construct.messenger.data.local.db.IssuedInviteEntity
+import com.construct.messenger.data.local.IssuedInviteRecord
+import com.construct.messenger.data.local.IssuedInviteStore
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.ContactRecord
 import com.construct.messenger.data.local.resolvedName
@@ -49,7 +49,7 @@ class ContactsRepositoryImpl @Inject constructor(
     private val generator: InviteGenerator,
     private val verifier: InviteVerifier,
     private val grpcClient: GrpcClient,
-    private val issuedInviteDao: IssuedInviteDao,
+    private val issuedInviteStore: IssuedInviteStore,
     private val addressBook: AccountAddressBook,
     private val accountRepository: AccountRepository,
     private val ownAddress: OwnAccountAddress,
@@ -98,8 +98,8 @@ class ContactsRepositoryImpl @Inject constructor(
         val userId = keystoreManager.getUserId() ?: error("not authenticated")
         val deviceId = keystoreManager.getDeviceId() ?: error("no device id")
         val minted = mint(userId, deviceId)
-        issuedInviteDao.upsert(
-            IssuedInviteEntity(
+        issuedInviteStore.record(
+            IssuedInviteRecord(
                 jti = minted.jti,
                 kind = kind,
                 issuedAtEpochSec = minted.issuedAtEpochSec,
@@ -149,7 +149,7 @@ class ContactsRepositoryImpl @Inject constructor(
             )
             // Either answer is final: burned now, or already redeemed / unknown. Only a missing
             // answer keeps the row, since the invite may still be good.
-            issuedInviteDao.delete(jti)
+            issuedInviteStore.delete(jti)
             if (response.success) InviteRevocation.REVOKED else InviteRevocation.ALREADY_USED
         } catch (e: CancellationException) {
             throw e
@@ -159,7 +159,7 @@ class ContactsRepositoryImpl @Inject constructor(
         }
     }
 
-    override val issuedInvites: Flow<List<IssuedInvite>> = issuedInviteDao.observeAll().map { rows ->
+    override val issuedInvites: Flow<List<IssuedInvite>> = issuedInviteStore.observeAll().map { rows ->
         rows.map { IssuedInvite(it.jti, it.kind, it.issuedAtEpochSec, it.ttlSeconds, it.sitting) }
     }
 
