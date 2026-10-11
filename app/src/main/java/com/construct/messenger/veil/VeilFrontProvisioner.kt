@@ -14,6 +14,7 @@ import kotlinx.coroutines.sync.Mutex
 import org.json.JSONObject
 import shared.proto.services.v1.VeilServiceOuterClass.IssueBootstrapVoucherRequest
 import shared.proto.services.v1.VeilServiceOuterClass.IssueVeilCapabilityRequest
+import shared.proto.services.v1.VeilServiceOuterClass.IssueVeilCapabilityResponse
 
 /**
  * A front offered by the server with its coordinates signed: the primary of an
@@ -108,6 +109,7 @@ class VeilFrontProvisioner @Inject constructor(
 ) {
     private val lock = Mutex()
     private var lastAttemptMs = 0L
+    private var lastTopUpMs = 0L
 
     /** True when a front is known afterwards. Rate-limited: a failed ask is not repeated for [RETRY_MS]. */
     suspend fun ensureFront(nowMs: Long = System.currentTimeMillis()): Boolean {
@@ -125,6 +127,37 @@ class VeilFrontProvisioner @Inject constructor(
         }
     }
 
+    /**
+     * Keep a floor of [VeilFrontPool.FLOOR] usable fronts. A usable front holds a live bearer
+     * capability and is not in [excluding] (the ones currently failing, so a capped-but-blocked
+     * front does not mask the shortage). When below the floor and at least one usable front remains
+     * to carry the request, ask it for a fresh capability and **learn its signed alternates** — with
+     * N≥3 relays the answer brings in a front this device does not yet hold. Rate-limited; add-only.
+     * **Canon:** iOS `VeilFrontFloorMaintainer`.
+     */
+    suspend fun topUpFloorIfNeeded(excluding: Set<String> = emptySet(), nowMs: Long = System.currentTimeMillis()): Boolean {
+        val nowSeconds = nowMs / 1000
+        val known = fronts.all()
+        val usable = VeilFrontPool.usableCount(known.map { it.address }, excluding) { hasLiveCap(it, nowSeconds) }
+        if (!VeilFrontPool.isBelowFloor(usable) || usable < 1) return false
+        if (!lock.tryLock()) return false
+        try {
+            if (lastTopUpMs != 0L && nowMs - lastTopUpMs < RETRY_MS) return false
+            // Ask through a usable, non-excluded front; its alternates carry the missing one.
+            val through = known.firstOrNull { it.address !in excluding && hasLiveCap(it.address, nowSeconds) } ?: return false
+            lastTopUpMs = nowMs
+            authSession.ensureFresh()
+            val learned = harvestFrom(through.relay)
+            if (learned > 0) Log.i(TAG, "floor top-up via ${through.address}: learned $learned front(s)")
+            return learned > 0
+        } finally {
+            lock.unlock()
+        }
+    }
+
+    private fun hasLiveCap(address: String, nowSeconds: Long): Boolean =
+        keystore.veilCapability(address)?.let { (_, notAfter) -> notAfter > nowSeconds } ?: false
+
     /** How many fronts the answer taught. */
     private suspend fun fromCapability(): Int {
         val response = runCatching {
@@ -134,6 +167,25 @@ class VeilFrontProvisioner @Inject constructor(
             Log.w(TAG, "front request (capability) failed: ${it.message}")
             return 0
         }
+        return learnOffers(response)
+    }
+
+    /** Ask a specific front for a capability (named, so it works with N>1 relays) and learn the
+     *  primary plus every signed alternate it returns. */
+    private suspend fun harvestFrom(relay: VeilRelay): Int {
+        val response = runCatching {
+            grpcClient.veil.withDeadlineAfter(DEADLINE_S, TimeUnit.SECONDS)
+                .issueVeilCapability(IssueVeilCapabilityRequest.newBuilder().setRelayAddress(relay.address).build())
+        }.getOrElse {
+            Log.w(TAG, "floor top-up via ${relay.address} failed: ${it.message}")
+            return 0
+        }
+        return learnOffers(response)
+    }
+
+    /** The primary and every alternate of [response], each accepted only if its coordinates are
+     *  signed by the relay-config key (or already pinned). Returns how many were learned. */
+    private fun learnOffers(response: IssueVeilCapabilityResponse): Int {
         val offers = listOf(
             OfferedFront(
                 response.relayAddress, response.sni, response.spki, response.notAfter, response.signature,
