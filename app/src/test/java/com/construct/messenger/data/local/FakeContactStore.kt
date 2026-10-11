@@ -30,7 +30,8 @@ internal class FakeContactStore : ContactStore {
     override suspend fun setAlias(id: String, alias: String?) =
         change(id) { it.copy(localAlias = alias?.trim()?.takeIf { a -> a.isNotEmpty() }) }
     override suspend fun setSharingWith(id: String, sharing: Boolean) = change(id) { it.copy(amSharingWith = sharing) }
-    override suspend fun sharingWith(): List<String> = rows.values.filter { it.amSharingWith && !it.isBlocked }.map { it.id }
+    override suspend fun sharingWith(exceptAccount: String?): List<String> =
+        rows.values.filter { it.amSharingWith && !it.isBlocked && it.id != exceptAccount }.map { it.id }
 
     override suspend fun rememberIdentity(id: String, identityPublic: ByteArray) {
         ensure(id)

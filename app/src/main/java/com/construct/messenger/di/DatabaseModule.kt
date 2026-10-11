@@ -3,6 +3,10 @@ package com.construct.messenger.di
 import android.content.Context
 import androidx.room.Room
 import com.construct.messenger.data.local.AckStore
+import com.construct.messenger.data.local.IssuedInviteStore
+import com.construct.messenger.data.local.RoomIssuedInviteStore
+import com.construct.messenger.data.local.RoomSessionBlobStore
+import com.construct.messenger.data.local.SessionBlobStore
 import com.construct.messenger.data.local.PendingChunkStore
 import com.construct.messenger.data.local.PendingResendStore
 import com.construct.messenger.data.local.ProcessedStore
@@ -25,8 +29,6 @@ import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.RoomContactStore
 import com.construct.messenger.data.local.PersistentAckStore
 import com.construct.messenger.data.local.db.ConstructDatabase
-import com.construct.messenger.data.local.db.SessionStateDao
-import com.construct.messenger.data.local.db.IssuedInviteDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -92,11 +94,15 @@ object DatabaseModule {
     @Singleton
     fun provideProcessedStore(db: ConstructDatabase): ProcessedStore = RoomProcessedStore(db.ackDao())
 
+    /** The `session_state` table only through here (TODO 136): no `SessionStateDao` is provided. */
     @Provides
-    fun provideSessionStateDao(db: ConstructDatabase): SessionStateDao = db.sessionStateDao()
+    @Singleton
+    fun provideSessionBlobStore(db: ConstructDatabase): SessionBlobStore = RoomSessionBlobStore(db.sessionStateDao())
 
+    /** The `issued_invites` table only through here (TODO 136): no `IssuedInviteDao` is provided. */
     @Provides
-    fun provideIssuedInviteDao(db: ConstructDatabase): IssuedInviteDao = db.issuedInviteDao()
+    @Singleton
+    fun provideIssuedInviteStore(db: ConstructDatabase): IssuedInviteStore = RoomIssuedInviteStore(db.issuedInviteDao())
 
     /** The `peer_devices` table only through here (TODO 136): no `PeerDeviceDao` is provided. */
     @Provides
