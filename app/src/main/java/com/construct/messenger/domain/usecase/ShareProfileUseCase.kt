@@ -69,7 +69,7 @@ class ShareProfileUseCase @Inject constructor(
     }
 
     internal suspend fun rebroadcastNow() {
-        val contacts = contacts.sharingWith()
+        val contacts = contacts.sharingWith(exceptAccount = keystoreManager.getUserId())
         if (contacts.isEmpty()) return
         val payload = profile()?.encoded() ?: return
         for (contactId in contacts) {

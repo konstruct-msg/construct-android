@@ -34,7 +34,7 @@ class RoomContactStore(private val dao: UserDao) : ContactStore {
 
     override suspend fun setSharingWith(id: String, sharing: Boolean) = dao.setAmSharingWith(id, sharing)
 
-    override suspend fun sharingWith(): List<String> = dao.sharingWithIds()
+    override suspend fun sharingWith(exceptAccount: String?): List<String> = dao.sharingWithIds().filterNot { it == exceptAccount }
 
     override suspend fun rememberIdentity(id: String, identityPublic: ByteArray) {
         dao.insertIfAbsent(fresh(id))

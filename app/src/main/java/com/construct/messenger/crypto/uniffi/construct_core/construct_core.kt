@@ -968,6 +968,8 @@ external fun uniffi_construct_core_checksum_method_localstore_chat_message_count
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_chats(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_complete_pending_avatar(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_contact(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_contacts(
@@ -989,6 +991,8 @@ external fun uniffi_construct_core_checksum_method_localstore_delete_pending_chu
 external fun uniffi_construct_core_checksum_method_localstore_delete_reaction(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_delete_resend(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_drop_pending_avatar(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_edit_message(
 ): Short
@@ -1084,6 +1088,8 @@ external fun uniffi_construct_core_checksum_method_localstore_set_contact_alias(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_contact_avatar(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_contact_avatar_keeping_pending(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_contact_blocked(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_contact_names(
@@ -1101,6 +1107,8 @@ external fun uniffi_construct_core_checksum_method_localstore_set_observer(
 external fun uniffi_construct_core_checksum_method_localstore_set_order_key(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_own_profile(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_pending_avatar(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_retry_count(
 ): Short
@@ -1459,6 +1467,8 @@ external fun uniffi_construct_core_fn_method_localstore_chat_message_count(`ptr`
 ): Long
 external fun uniffi_construct_core_fn_method_localstore_chats(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_complete_pending_avatar(`ptr`: Long,`id`: RustBuffer.ByValue,`expectedRef`: RustBuffer.ByValue,`avatar`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_contact(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_contacts(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1481,11 +1491,13 @@ external fun uniffi_construct_core_fn_method_localstore_delete_reaction(`ptr`: L
 ): Unit
 external fun uniffi_construct_core_fn_method_localstore_delete_resend(`ptr`: Long,`messageId`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_method_localstore_drop_pending_avatar(`ptr`: Long,`id`: RustBuffer.ByValue,`expectedRef`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_edit_message(`ptr`: Long,`id`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`searchText`: RustBuffer.ByValue,`editedAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_entries_with_prefix(`ptr`: Long,`prefix`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_construct_core_fn_method_localstore_every_contact(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_method_localstore_every_contact(`ptr`: Long,`exceptAccount`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_expire_reactions(`ptr`: Long,`cutoff`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
@@ -1575,6 +1587,8 @@ external fun uniffi_construct_core_fn_method_localstore_set_contact_alias(`ptr`:
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_contact_avatar(`ptr`: Long,`id`: RustBuffer.ByValue,`avatar`: RustBuffer.ByValue,`pendingRef`: RustBuffer.ByValue,`pendingSince`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_contact_avatar_keeping_pending(`ptr`: Long,`id`: RustBuffer.ByValue,`avatar`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_contact_blocked(`ptr`: Long,`id`: RustBuffer.ByValue,`blocked`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_contact_names(`ptr`: Long,`id`: RustBuffer.ByValue,`username`: RustBuffer.ByValue,`displayName`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1593,6 +1607,8 @@ external fun uniffi_construct_core_fn_method_localstore_set_order_key(`ptr`: Lon
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_own_profile(`ptr`: Long,`profile`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_method_localstore_set_pending_avatar(`ptr`: Long,`id`: RustBuffer.ByValue,`pendingRef`: RustBuffer.ByValue,`since`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_retry_count(`ptr`: Long,`id`: RustBuffer.ByValue,`count`: Short,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_security_notice(`ptr`: Long,`id`: RustBuffer.ByValue,`notice`: Short,uniffi_out_err: UniffiRustCallStatus, 
@@ -1603,7 +1619,7 @@ external fun uniffi_construct_core_fn_method_localstore_set_transcript(`ptr`: Lo
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_unread(`ptr`: Long,`id`: RustBuffer.ByValue,`count`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
-external fun uniffi_construct_core_fn_method_localstore_sharing_with(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+external fun uniffi_construct_core_fn_method_localstore_sharing_with(`ptr`: Long,`exceptAccount`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_upsert_call(`ptr`: Long,`call`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -2463,6 +2479,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_chats() != 2703.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_complete_pending_avatar() != 13444.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_contact() != 43265.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2496,13 +2515,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_delete_resend() != 36433.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_drop_pending_avatar() != 33118.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_edit_message() != 48649.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_entries_with_prefix() != 686.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_localstore_every_contact() != 24186.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_localstore_every_contact() != 10711.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_expire_reactions() != 1251.toShort()) {
@@ -2637,6 +2659,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_set_contact_avatar() != 42614.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_contact_avatar_keeping_pending() != 50769.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_set_contact_blocked() != 21924.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2664,6 +2689,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_set_own_profile() != 60092.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_pending_avatar() != 12015.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_set_retry_count() != 31877.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2679,7 +2707,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_set_unread() != 48624.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_localstore_sharing_with() != 63075.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_localstore_sharing_with() != 44917.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_upsert_call() != 6097.toShort()) {
@@ -4863,6 +4891,13 @@ public interface LocalStoreInterface {
      */
     fun `chats`(): List<LocalChat>
     
+    /**
+     * Each of the two below acts only while `expected_ref` is still the one waiting, checked in
+     * the same statement; false when another was announced meanwhile, or there is no such row.
+     * The download finished: it becomes the avatar and the wait ends.
+     */
+    fun `completePendingAvatar`(`id`: kotlin.String, `expectedRef`: kotlin.ByteArray, `avatar`: kotlin.ByteArray): kotlin.Boolean
+    
     fun `contact`(`id`: kotlin.String): LocalContact?
     
     /**
@@ -4894,6 +4929,11 @@ public interface LocalStoreInterface {
     
     fun `deleteResend`(`messageId`: kotlin.String, `deviceId`: kotlin.String)
     
+    /**
+     * The wait ends without it; the avatar shown stays.
+     */
+    fun `dropPendingAvatar`(`id`: kotlin.String, `expectedRef`: kotlin.ByteArray): kotlin.Boolean
+    
     fun `editMessage`(`id`: kotlin.String, `body`: kotlin.ByteArray, `searchText`: kotlin.String?, `editedAt`: kotlin.Long): kotlin.Boolean
     
     /**
@@ -4902,9 +4942,9 @@ public interface LocalStoreInterface {
     fun `entriesWithPrefix`(`prefix`: kotlin.String): List<LocalKvEntry>
     
     /**
-     * Every row, contacts or not, by id.
+     * Every row, contacts or not, by id; `except_account` (our own) left out.
      */
-    fun `everyContact`(): List<LocalContact>
+    fun `everyContact`(`exceptAccount`: kotlin.String?): List<LocalContact>
     
     /**
      * Forget reactions whose message is not here, received at or before `cutoff` (ms). A reaction
@@ -5069,6 +5109,11 @@ public interface LocalStoreInterface {
      */
     fun `setContactAvatar`(`id`: kotlin.String, `avatar`: kotlin.ByteArray?, `pendingRef`: kotlin.ByteArray?, `pendingSince`: kotlin.Long?): kotlin.Boolean
     
+    /**
+     * The avatar alone; one announced and still waiting keeps waiting.
+     */
+    fun `setContactAvatarKeepingPending`(`id`: kotlin.String, `avatar`: kotlin.ByteArray?): kotlin.Boolean
+    
     fun `setContactBlocked`(`id`: kotlin.String, `blocked`: kotlin.Boolean): kotlin.Boolean
     
     fun `setContactNames`(`id`: kotlin.String, `username`: kotlin.String, `displayName`: kotlin.String): kotlin.Boolean
@@ -5100,6 +5145,11 @@ public interface LocalStoreInterface {
     fun `setOwnProfile`(`profile`: LocalOwnProfile)
     
     /**
+     * An avatar announced; the one shown stays until the download replaces it.
+     */
+    fun `setPendingAvatar`(`id`: kotlin.String, `pendingRef`: kotlin.ByteArray, `since`: kotlin.Long): kotlin.Boolean
+    
+    /**
      * Each write below changes its named fields of one message; false: no message or no change.
      */
     fun `setRetryCount`(`id`: kotlin.String, `count`: kotlin.Short): kotlin.Boolean
@@ -5116,9 +5166,9 @@ public interface LocalStoreInterface {
     fun `setUnread`(`id`: kotlin.String, `count`: kotlin.Int): kotlin.Boolean
     
     /**
-     * The ids we share our profile with.
+     * The ids we share our profile with; `except_account` (our own) left out.
      */
-    fun `sharingWith`(): List<kotlin.String>
+    fun `sharingWith`(`exceptAccount`: kotlin.String?): List<kotlin.String>
     
     fun `upsertCall`(`call`: LocalCall)
     
@@ -5444,6 +5494,25 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * Each of the two below acts only while `expected_ref` is still the one waiting, checked in
+     * the same statement; false when another was announced meanwhile, or there is no such row.
+     * The download finished: it becomes the avatar and the wait ends.
+     */
+    @Throws(LocalStoreException::class)override fun `completePendingAvatar`(`id`: kotlin.String, `expectedRef`: kotlin.ByteArray, `avatar`: kotlin.ByteArray): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_complete_pending_avatar(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterByteArray.lower(`expectedRef`),FfiConverterByteArray.lower(`avatar`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `contact`(`id`: kotlin.String): LocalContact? {
             return FfiConverterOptionalTypeLocalContact.lift(
     callWithHandle {
@@ -5600,6 +5669,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * The wait ends without it; the avatar shown stays.
+     */
+    @Throws(LocalStoreException::class)override fun `dropPendingAvatar`(`id`: kotlin.String, `expectedRef`: kotlin.ByteArray): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_drop_pending_avatar(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterByteArray.lower(`expectedRef`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `editMessage`(`id`: kotlin.String, `body`: kotlin.ByteArray, `searchText`: kotlin.String?, `editedAt`: kotlin.Long): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     callWithHandle {
@@ -5632,15 +5718,15 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
 
     
     /**
-     * Every row, contacts or not, by id.
+     * Every row, contacts or not, by id; `except_account` (our own) left out.
      */
-    @Throws(LocalStoreException::class)override fun `everyContact`(): List<LocalContact> {
+    @Throws(LocalStoreException::class)override fun `everyContact`(`exceptAccount`: kotlin.String?): List<LocalContact> {
             return FfiConverterSequenceTypeLocalContact.lift(
     callWithHandle {
     uniffiRustCallWithError(LocalStoreException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_localstore_every_contact(
         it,
-        _status)
+        FfiConverterOptionalString.lower(`exceptAccount`),_status)
 }
     }
     )
@@ -6335,6 +6421,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * The avatar alone; one announced and still waiting keeps waiting.
+     */
+    @Throws(LocalStoreException::class)override fun `setContactAvatarKeepingPending`(`id`: kotlin.String, `avatar`: kotlin.ByteArray?): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_contact_avatar_keeping_pending(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterOptionalByteArray.lower(`avatar`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `setContactBlocked`(`id`: kotlin.String, `blocked`: kotlin.Boolean): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     callWithHandle {
@@ -6471,6 +6574,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
 
     
     /**
+     * An avatar announced; the one shown stays until the download replaces it.
+     */
+    @Throws(LocalStoreException::class)override fun `setPendingAvatar`(`id`: kotlin.String, `pendingRef`: kotlin.ByteArray, `since`: kotlin.Long): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_pending_avatar(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterByteArray.lower(`pendingRef`),FfiConverterLong.lower(`since`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
      * Each write below changes its named fields of one message; false: no message or no change.
      */
     @Throws(LocalStoreException::class)override fun `setRetryCount`(`id`: kotlin.String, `count`: kotlin.Short): kotlin.Boolean {
@@ -6547,15 +6667,15 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
 
     
     /**
-     * The ids we share our profile with.
+     * The ids we share our profile with; `except_account` (our own) left out.
      */
-    @Throws(LocalStoreException::class)override fun `sharingWith`(): List<kotlin.String> {
+    @Throws(LocalStoreException::class)override fun `sharingWith`(`exceptAccount`: kotlin.String?): List<kotlin.String> {
             return FfiConverterSequenceString.lift(
     callWithHandle {
     uniffiRustCallWithError(LocalStoreException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_localstore_sharing_with(
         it,
-        _status)
+        FfiConverterOptionalString.lower(`exceptAccount`),_status)
 }
     }
     )
