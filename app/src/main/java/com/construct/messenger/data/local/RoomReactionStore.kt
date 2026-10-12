@@ -25,4 +25,4 @@ class RoomReactionStore(private val dao: ReactionDao) : ReactionStore {
     override suspend fun deleteOrphansBefore(cutoffMs: Long) = dao.deleteOrphansBefore(cutoffMs)
 }
 
-private fun ReactionEntity.record() = ReactionRecord(targetMessageId, reactorUserId, emoji, timestampMs, receivedAtMs)
+internal fun ReactionEntity.record() = ReactionRecord(targetMessageId, reactorUserId, emoji, timestampMs, receivedAtMs)

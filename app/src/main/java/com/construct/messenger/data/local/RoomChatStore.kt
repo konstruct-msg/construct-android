@@ -32,7 +32,7 @@ class RoomChatStore(private val dao: ChatDao) : ChatStore {
     override suspend fun delete(id: String) = dao.delete(id)
 }
 
-private fun ChatEntity.record() = ChatRecord(
+internal fun ChatEntity.record() = ChatRecord(
     id = id,
     peerId = otherUserId,
     lastMessageText = lastMessageText,
