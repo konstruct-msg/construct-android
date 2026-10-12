@@ -60,7 +60,9 @@ class CoreContactStore(
 
     override suspend fun upsert(record: ContactRecord) = write { it.upsertContact(record.local(it.contact(record.id))) }
 
-    override suspend fun delete(id: String) = write { it.deleteContact(id) }
+    override suspend fun delete(id: String) {
+        write { it.deleteContact(id) }
+    }
 
     override suspend fun setBlocked(id: String, blocked: Boolean) {
         write { it.setContactBlocked(id, blocked) }
