@@ -8,8 +8,7 @@ import java.io.File
 
 /**
  * The app's one core store (TODO 136): `construct.db`, SQLCipher under [LocalStoreKey]. **Canon:**
- * iOS `LocalStoreSession`. Not opened by the app yet — Room stays the store until the import moves
- * its rows here.
+ * iOS `LocalStoreSession`. Opened by [LocalStores], which decides whether it or Room answers.
  *
  * **No failure creates a store.** Each one means the data is probably still on this device and
  * something would not hand it over; a fresh empty store over it is how an account loses its

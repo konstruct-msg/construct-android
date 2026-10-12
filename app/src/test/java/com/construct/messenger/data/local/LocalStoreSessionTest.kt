@@ -10,11 +10,13 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
 /** A wrap that XORs: what [LocalStoreKey] does around it is the subject, not the Keystore. */
-private class FakeWrap : LocalStoreKey.KeyWrap {
+internal class FakeWrap : LocalStoreKey.KeyWrap {
     var held = true
     var forgotten = 0
+    var failWrap = false
 
     override fun wrap(key: ByteArray): ByteArray {
+        check(!failWrap) { "the Keystore did not answer" }
         held = true
         return key.map { (it.toInt() xor 0x5A).toByte() }.toByteArray()
     }

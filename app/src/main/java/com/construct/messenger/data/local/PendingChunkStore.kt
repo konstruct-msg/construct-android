@@ -36,7 +36,7 @@ interface PendingChunkStore {
     suspend fun forgetBefore(cutoffMs: Long): Int
 }
 
-/** Built by `DatabaseModule`, which provides no `PendingChunkDao`. */
+/** Built by `LocalStores`; nothing provides a `PendingChunkDao`. */
 class RoomPendingChunkStore(private val dao: PendingChunkDao) : PendingChunkStore {
     override suspend fun add(chunk: PendingChunk) = with(chunk) {
         dao.insert(PendingChunkEntity(senderId, messageId, chunkIndex, totalChunks, plaintextLength, contentType, payload, receivedAtMs))
@@ -52,7 +52,7 @@ class RoomPendingChunkStore(private val dao: PendingChunkDao) : PendingChunkStor
     override suspend fun forgetBefore(cutoffMs: Long): Int = dao.pruneOlderThan(cutoffMs)
 }
 
-/** On the core's `LocalStore`, which keeps the same table. Not wired into the app yet. */
+/** On the core's `LocalStore`, which keeps the same table. */
 class CorePendingChunkStore(private val store: LocalStore) : PendingChunkStore {
     override suspend fun add(chunk: PendingChunk) {
         withContext(Dispatchers.IO) {

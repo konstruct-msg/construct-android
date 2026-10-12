@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.map
 
 /**
  * [ReactionStore] on Room's `reactions` table — until the core's `LocalStore` takes it (TODO 136).
- * Built by `DatabaseModule`, which provides no `ReactionDao`: nothing else can reach the table.
+ * Built by `LocalStores`; nothing provides a `ReactionDao`: nothing else can reach the table.
  */
 class RoomReactionStore(private val dao: ReactionDao) : ReactionStore {
     override fun observeChat(chatId: String): Flow<List<ReactionRecord>> =

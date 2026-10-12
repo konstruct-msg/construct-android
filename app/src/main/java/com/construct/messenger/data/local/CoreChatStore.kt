@@ -13,8 +13,8 @@ import uniffi.construct_core.LocalStoreTable
 
 /**
  * [ChatStore] on the core's encrypted `LocalStore` (TODO 136, step 3) — held to the same
- * [ChatStoreContract] as [RoomChatStore]. Not wired into the app yet: Room stays the store until
- * the import moves its rows here.
+ * [ChatStoreContract] as [RoomChatStore]. The store once [RoomImport] has moved
+ * Room's rows ([LocalStores]).
  *
  * Every write is one of the core's field writes; the preview's forward-only rule is the core's.
  *

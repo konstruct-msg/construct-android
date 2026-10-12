@@ -21,7 +21,7 @@ interface ProcessedStore {
     suspend fun forgetBefore(cutoffMs: Long): Int
 }
 
-/** Built by `DatabaseModule`, which provides no `AckDao`. */
+/** Built by `LocalStores`; nothing provides a `AckDao`. */
 class RoomProcessedStore(private val dao: AckDao) : ProcessedStore {
     override suspend fun record(messageId: String, senderId: String, processedAtMs: Long) =
         dao.insert(AckedMessageEntity(messageId, senderId, processedAtMs))
@@ -31,7 +31,7 @@ class RoomProcessedStore(private val dao: AckDao) : ProcessedStore {
     override suspend fun forgetBefore(cutoffMs: Long): Int = dao.pruneOlderThan(cutoffMs)
 }
 
-/** On the core's `LocalStore`, which keeps the same table. Not wired into the app yet. */
+/** On the core's `LocalStore`, which keeps the same table. */
 class CoreProcessedStore(private val store: LocalStore) : ProcessedStore {
     override suspend fun record(messageId: String, senderId: String, processedAtMs: Long) {
         withContext(Dispatchers.IO) { store.markProcessed(messageId, senderId, processedAtMs) }

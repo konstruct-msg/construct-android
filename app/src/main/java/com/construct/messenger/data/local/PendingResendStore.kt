@@ -38,7 +38,7 @@ interface PendingResendStore {
     suspend fun forgetBefore(cutoffMs: Long): Int
 }
 
-/** Built by `DatabaseModule`, which provides no `PendingResendDao`. */
+/** Built by `LocalStores`; nothing provides a `PendingResendDao`. */
 class RoomPendingResendStore(private val dao: PendingResendDao) : PendingResendStore {
     override suspend fun queue(resend: PendingResend) = with(resend) {
         dao.insert(PendingResendEntity(messageId, deviceId, accountId, createdAtMs, attempts))
@@ -54,7 +54,7 @@ class RoomPendingResendStore(private val dao: PendingResendDao) : PendingResendS
     override suspend fun forgetBefore(cutoffMs: Long): Int = dao.pruneOlderThan(cutoffMs)
 }
 
-/** On the core's `LocalStore`, which keeps the same table. Not wired into the app yet. */
+/** On the core's `LocalStore`, which keeps the same table. */
 class CorePendingResendStore(private val store: LocalStore) : PendingResendStore {
     override suspend fun queue(resend: PendingResend) {
         withContext(Dispatchers.IO) {

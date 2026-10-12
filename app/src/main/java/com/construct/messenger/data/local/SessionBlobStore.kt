@@ -23,7 +23,7 @@ interface SessionBlobStore {
     suspend fun withPrefix(prefix: String): Map<String, ByteArray>
 }
 
-/** Built by `DatabaseModule`, which provides no `SessionStateDao`. */
+/** Built by `LocalStores`; nothing provides a `SessionStateDao`. */
 class RoomSessionBlobStore(
     private val dao: SessionStateDao,
     private val nowMs: () -> Long = System::currentTimeMillis,
@@ -38,7 +38,7 @@ class RoomSessionBlobStore(
         dao.getAll().filter { it.storeKey.startsWith(prefix) }.associate { it.storeKey to it.cfeBytes }
 }
 
-/** On the core's `LocalStore` `kv`. Not wired into the app yet. */
+/** On the core's `LocalStore` `kv`. */
 class CoreSessionBlobStore(private val store: LocalStore) : SessionBlobStore {
     override suspend fun put(key: String, bytes: ByteArray) {
         withContext(Dispatchers.IO) { store.put(key, bytes) }

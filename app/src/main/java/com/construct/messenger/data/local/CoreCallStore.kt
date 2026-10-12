@@ -10,8 +10,8 @@ import uniffi.construct_core.LocalStoreTable
 
 /**
  * [CallStore] on the core's encrypted `LocalStore` (TODO 136) — held to the same
- * [CallStoreContract] as [RoomCallStore]. Not wired into the app yet: Room stays the store until
- * the import moves its rows here.
+ * [CallStoreContract] as [RoomCallStore]. The store once [RoomImport] has moved
+ * Room's rows ([LocalStores]).
  *
  * The row is iOS's `CallRecord`: direction `0` outgoing, `1` incoming; status `0` completed,
  * `1` missed, `2` declined, `3` failed — [CallRecordStatus] in the same order.

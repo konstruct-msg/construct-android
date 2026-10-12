@@ -21,7 +21,7 @@ interface ServerMessageIdStore {
     suspend fun forgetBefore(cutoffMs: Long)
 }
 
-/** Built by `DatabaseModule`, which provides no `ServerMessageIdDao`. */
+/** Built by `LocalStores`; nothing provides a `ServerMessageIdDao`. */
 class RoomServerMessageIdStore(private val dao: ServerMessageIdDao) : ServerMessageIdStore {
     override suspend fun record(serverId: String, localId: String, recordedAtMs: Long) =
         dao.upsert(ServerMessageIdEntity(serverId, localId, recordedAtMs))
@@ -33,7 +33,7 @@ class RoomServerMessageIdStore(private val dao: ServerMessageIdDao) : ServerMess
     }
 }
 
-/** On the core's `LocalStore`, which keeps the same table. Not wired into the app yet. */
+/** On the core's `LocalStore`, which keeps the same table. */
 class CoreServerMessageIdStore(private val store: LocalStore) : ServerMessageIdStore {
     override suspend fun record(serverId: String, localId: String, recordedAtMs: Long) =
         withContext(Dispatchers.IO) { store.recordServerMessageId(serverId, localId, recordedAtMs) }

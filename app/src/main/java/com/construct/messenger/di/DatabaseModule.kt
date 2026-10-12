@@ -3,31 +3,34 @@ package com.construct.messenger.di
 import android.content.Context
 import androidx.room.Room
 import com.construct.messenger.data.local.AckStore
+import com.construct.messenger.data.local.CallStore
+import com.construct.messenger.data.local.ChatStore
+import com.construct.messenger.data.local.ContactStore
+import com.construct.messenger.data.local.GatedCallStore
+import com.construct.messenger.data.local.GatedChatStore
+import com.construct.messenger.data.local.GatedContactStore
+import com.construct.messenger.data.local.GatedIssuedInviteStore
+import com.construct.messenger.data.local.GatedMessageStore
+import com.construct.messenger.data.local.GatedPeerDeviceStore
+import com.construct.messenger.data.local.GatedPendingChunkStore
+import com.construct.messenger.data.local.GatedPendingResendStore
+import com.construct.messenger.data.local.GatedProcessedStore
+import com.construct.messenger.data.local.GatedReactionStore
+import com.construct.messenger.data.local.GatedServerMessageIdStore
+import com.construct.messenger.data.local.GatedSessionBlobStore
 import com.construct.messenger.data.local.IssuedInviteStore
-import com.construct.messenger.data.local.RoomIssuedInviteStore
-import com.construct.messenger.data.local.RoomSessionBlobStore
-import com.construct.messenger.data.local.SessionBlobStore
+import com.construct.messenger.data.local.KeystoreManager
+import com.construct.messenger.data.local.LocalStoreSession
+import com.construct.messenger.data.local.LocalStores
+import com.construct.messenger.data.local.MessageStore
+import com.construct.messenger.data.local.PeerDeviceStore
 import com.construct.messenger.data.local.PendingChunkStore
 import com.construct.messenger.data.local.PendingResendStore
-import com.construct.messenger.data.local.ProcessedStore
-import com.construct.messenger.data.local.RoomPendingChunkStore
-import com.construct.messenger.data.local.RoomPendingResendStore
-import com.construct.messenger.data.local.RoomProcessedStore
-import com.construct.messenger.data.local.ChatStore
-import com.construct.messenger.data.local.MessageStore
-import com.construct.messenger.data.local.RoomMessageStore
-import com.construct.messenger.data.local.CallStore
-import com.construct.messenger.data.local.PeerDeviceStore
-import com.construct.messenger.data.local.RoomPeerDeviceStore
-import com.construct.messenger.data.local.RoomServerMessageIdStore
-import com.construct.messenger.data.local.ServerMessageIdStore
-import com.construct.messenger.data.local.ReactionStore
-import com.construct.messenger.data.local.RoomCallStore
-import com.construct.messenger.data.local.RoomChatStore
-import com.construct.messenger.data.local.RoomReactionStore
-import com.construct.messenger.data.local.ContactStore
-import com.construct.messenger.data.local.RoomContactStore
 import com.construct.messenger.data.local.PersistentAckStore
+import com.construct.messenger.data.local.ProcessedStore
+import com.construct.messenger.data.local.ReactionStore
+import com.construct.messenger.data.local.ServerMessageIdStore
+import com.construct.messenger.data.local.SessionBlobStore
 import com.construct.messenger.data.local.db.ConstructDatabase
 import dagger.Module
 import dagger.Provides
@@ -69,65 +72,75 @@ object DatabaseModule {
             .fallbackToDestructiveMigrationFrom(1, 2, 3)
             .build()
 
-    /** The `chats` table only through here (TODO 136): no `ChatDao` is provided. */
+    /**
+     * Which store answers — the core's, or Room until its rows have moved (TODO 136). Every store
+     * below waits for it; Room is opened only if it is still the store or has rows to move.
+     */
     @Provides
     @Singleton
-    fun provideChatStore(db: ConstructDatabase): ChatStore = RoomChatStore(db.chatDao())
+    fun provideLocalStores(
+        @ApplicationContext context: Context,
+        db: dagger.Lazy<ConstructDatabase>,
+        keystore: KeystoreManager,
+    ): LocalStores = LocalStores(
+        file = LocalStoreSession.defaultFile(context),
+        key = LocalStoreSession.defaultKey(context),
+        room = { db.get() },
+        roomExists = { context.getDatabasePath(ConstructDatabase.NAME).exists() },
+        deleteRoom = {
+            db.get().close()
+            context.deleteDatabase(ConstructDatabase.NAME)
+        },
+        myUserId = keystore::getUserId,
+    )
 
-    /** The `messages` table only through here (TODO 136): no `MessageDao` is provided. */
     @Provides
     @Singleton
-    fun provideMessageStore(db: ConstructDatabase): MessageStore = RoomMessageStore(db.messageDao())
+    fun provideChatStore(stores: LocalStores): ChatStore = GatedChatStore(stores)
 
-    /** The `reactions` table only through here (TODO 136): no `ReactionDao` is provided. */
     @Provides
     @Singleton
-    fun provideReactionStore(db: ConstructDatabase): ReactionStore = RoomReactionStore(db.reactionDao())
+    fun provideMessageStore(stores: LocalStores): MessageStore = GatedMessageStore(stores)
 
-    /** The `users` table only through here (TODO 136): no `UserDao` is provided. */
     @Provides
     @Singleton
-    fun provideContactStore(db: ConstructDatabase): ContactStore = RoomContactStore(db.userDao())
+    fun provideReactionStore(stores: LocalStores): ReactionStore = GatedReactionStore(stores)
 
-    /** The `acked_messages` table only through here (TODO 136): no `AckDao` is provided. */
     @Provides
     @Singleton
-    fun provideProcessedStore(db: ConstructDatabase): ProcessedStore = RoomProcessedStore(db.ackDao())
+    fun provideContactStore(stores: LocalStores): ContactStore = GatedContactStore(stores)
 
-    /** The `session_state` table only through here (TODO 136): no `SessionStateDao` is provided. */
     @Provides
     @Singleton
-    fun provideSessionBlobStore(db: ConstructDatabase): SessionBlobStore = RoomSessionBlobStore(db.sessionStateDao())
+    fun provideProcessedStore(stores: LocalStores): ProcessedStore = GatedProcessedStore(stores)
 
-    /** The `issued_invites` table only through here (TODO 136): no `IssuedInviteDao` is provided. */
     @Provides
     @Singleton
-    fun provideIssuedInviteStore(db: ConstructDatabase): IssuedInviteStore = RoomIssuedInviteStore(db.issuedInviteDao())
+    fun provideSessionBlobStore(stores: LocalStores): SessionBlobStore = GatedSessionBlobStore(stores)
 
-    /** The `peer_devices` table only through here (TODO 136): no `PeerDeviceDao` is provided. */
     @Provides
     @Singleton
-    fun providePeerDeviceStore(db: ConstructDatabase): PeerDeviceStore = RoomPeerDeviceStore(db.peerDeviceDao())
+    fun provideIssuedInviteStore(stores: LocalStores): IssuedInviteStore = GatedIssuedInviteStore(stores)
 
-    /** The `server_message_ids` table only through here (TODO 136): no `ServerMessageIdDao` is provided. */
     @Provides
     @Singleton
-    fun provideServerMessageIdStore(db: ConstructDatabase): ServerMessageIdStore = RoomServerMessageIdStore(db.serverMessageIdDao())
+    fun providePeerDeviceStore(stores: LocalStores): PeerDeviceStore = GatedPeerDeviceStore(stores)
 
-    /** The `pending_resends` table only through here (TODO 136): no `PendingResendDao` is provided. */
     @Provides
     @Singleton
-    fun providePendingResendStore(db: ConstructDatabase): PendingResendStore = RoomPendingResendStore(db.pendingResendDao())
+    fun provideServerMessageIdStore(stores: LocalStores): ServerMessageIdStore = GatedServerMessageIdStore(stores)
 
-    /** The `pending_chunks` table only through here (TODO 136): no `PendingChunkDao` is provided. */
     @Provides
     @Singleton
-    fun providePendingChunkStore(db: ConstructDatabase): PendingChunkStore = RoomPendingChunkStore(db.pendingChunkDao())
+    fun providePendingResendStore(stores: LocalStores): PendingResendStore = GatedPendingResendStore(stores)
 
-    /** The `call_records` table only through here (TODO 136): no `CallRecordDao` is provided. */
     @Provides
     @Singleton
-    fun provideCallStore(db: ConstructDatabase): CallStore = RoomCallStore(db.callRecordDao())
+    fun providePendingChunkStore(stores: LocalStores): PendingChunkStore = GatedPendingChunkStore(stores)
+
+    @Provides
+    @Singleton
+    fun provideCallStore(stores: LocalStores): CallStore = GatedCallStore(stores)
 
     @Provides
     @Singleton

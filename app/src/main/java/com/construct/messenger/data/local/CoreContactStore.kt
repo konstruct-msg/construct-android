@@ -12,8 +12,8 @@ import kotlinx.coroutines.withContext
 
 /**
  * [ContactStore] on the core's encrypted `LocalStore` (TODO 136, step 3) — held to the same
- * [ContactStoreContract] as [RoomContactStore]. Not wired into the app yet: Room stays the store
- * until the import moves its rows here.
+ * [ContactStoreContract] as [RoomContactStore]. The store once [RoomImport] has moved
+ * Room's rows ([LocalStores]).
  *
  * Every write runs under one lock. Most are single statements in the core already; the lock is
  * for the two that read first — [ensure] and [upsert] (it keeps `added_at` and
