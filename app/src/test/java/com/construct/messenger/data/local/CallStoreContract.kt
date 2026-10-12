@@ -14,10 +14,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import uniffi.construct_core.LocalStore
 
 /**
- * What every [CallStore] does — Room's today, the core's `LocalStore` once it can delete a call
- * (TODO 136). A call names its peer by id and keeps the name it had: no contact is required.
+ * What every [CallStore] does — Room's today, the core's `LocalStore` next (TODO 136).
+ * A call names its peer by id and keeps the name it had: no contact is required.
  */
 abstract class CallStoreContract {
     protected abstract val store: CallStore
@@ -85,4 +86,22 @@ class RoomCallStoreTest : CallStoreContract() {
 
 class FakeCallStoreTest : CallStoreContract() {
     override val store: CallStore = FakeCallStore()
+}
+
+/** The same cases on the core's encrypted store — the host build of the library the app ships. */
+class CoreCallStoreTest : CallStoreContract() {
+    private val core = LocalStore.inMemory(ByteArray(32) { 1 })
+    override val store: CallStore = CoreCallStore(LocalStoreFeed(core))
+
+    /** iOS's numbers, so a row reads the same whichever client wrote it. */
+    @Test
+    fun theRowHoldsIosNumbers() = runTest {
+        store.put(CallRecord("a", "p", "Ann", incoming = true, CallRecordStatus.DECLINED, 10, 15_010, 15))
+        val row = core.calls(1u).single()
+        assertEquals(1, row.direction.toInt())
+        assertEquals(2, row.status.toInt())
+    }
+
+    @After
+    fun close() = core.close()
 }

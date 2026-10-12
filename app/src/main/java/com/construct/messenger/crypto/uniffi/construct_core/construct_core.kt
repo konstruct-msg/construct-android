@@ -1000,6 +1000,8 @@ external fun uniffi_construct_core_checksum_method_localstore_contacts_with_pend
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_count_resend_attempt(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_delete_all_calls(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_delete_call(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_delete_chat(
@@ -1514,6 +1516,8 @@ external fun uniffi_construct_core_fn_method_localstore_contacts_with_pending_av
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_count_resend_attempt(`ptr`: Long,`messageId`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_delete_all_calls(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Int
 external fun uniffi_construct_core_fn_method_localstore_delete_call(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_delete_chat(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -2547,6 +2551,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_count_resend_attempt() != 33415.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_delete_all_calls() != 55495.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_delete_call() != 58601.toShort()) {
@@ -4989,6 +4996,11 @@ public interface LocalStoreInterface {
     fun `countResendAttempt`(`messageId`: kotlin.String, `deviceId`: kotlin.String): kotlin.UInt?
     
     /**
+     * The whole call log out ("clear history"); how many entries it held.
+     */
+    fun `deleteAllCalls`(): kotlin.UInt
+    
+    /**
      * One entry out of the call log; false: no such row.
      */
     fun `deleteCall`(`id`: kotlin.String): kotlin.Boolean
@@ -5672,6 +5684,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_count_resend_attempt(
         it,
         FfiConverterString.lower(`messageId`),FfiConverterString.lower(`deviceId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The whole call log out ("clear history"); how many entries it held.
+     */
+    @Throws(LocalStoreException::class)override fun `deleteAllCalls`(): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_delete_all_calls(
+        it,
+        _status)
 }
     }
     )
