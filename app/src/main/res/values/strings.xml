@@ -335,7 +335,7 @@
     <string name="other_devices_hint">Tap ⊗ to remove a device from your identity.</string>
     <string name="session_management">Session Management</string>
     <string name="sign_out_this_device">Sign Out This Device</string>
-    <string name="sign_out_this_device_message">You will be signed out on this device only. Other linked devices remain active.</string>
+    <string name="sign_out_this_device_message">Everything on this device — chats, media, contacts — will be erased, and the app will close. Other linked devices remain active.</string>
     <string name="sign_out_other_devices">Sign Out Other Devices</string>
     <string name="sign_out_other_devices_message">All other linked devices will be signed out. This device stays active.</string>
     <string name="sign_out_all_devices">Sign Out All Devices</string>
@@ -343,7 +343,7 @@
     <string name="sign_out_all_hint">Signing out of all devices invalidates all sessions immediately. You will need to re-authenticate on every device.</string>
     <string name="device_revoke">Remove Device</string>
     <string name="device_revoke_confirm_title">Remove Device</string>
-    <string name="device_revoke_confirm_message">Sign out \"%1$s\" remotely? This device will be disconnected from your identity.</string>
+    <string name="device_revoke_confirm_message">Remove \"%1$s\"? It will be signed out and erase everything it holds the next time it connects.</string>
     <string name="device_active_now">Active now</string>
     <string name="device_added">Added %1$s</string>
     <string name="devices_load_failed">Couldn’t load the device list. Check the connection and try again.</string>
@@ -386,7 +386,7 @@
     <string name="account_user_id_copied">copied</string>
     <string name="account_sign_out">sign out</string>
     <string name="logout_confirm_title">Sign out?</string>
-    <string name="logout_confirm_message">You will be signed out on this device.</string>
+    <string name="logout_confirm_message">You will be signed out on this device, and everything it holds — chats, media, contacts — will be erased; the app will close. Sign back in with your seed phrase; your other devices can send the history back.</string>
     <string name="logout_confirm_action">Sign out</string>
     <string name="changes_encrypted_footer">&gt; changes are end-to-end encrypted</string>
     <string name="username_length_error">username must be 3–20 characters</string>
