@@ -21,7 +21,7 @@ data class CallRecord(
 
 /**
  * This device's call history (TODO 136): Room's table today ([RoomCallStore]); the core's
- * `LocalStore` once it can delete a call. [CallStoreContract] holds every store to one behaviour.
+ * `LocalStore` next ([CoreCallStore]). [CallStoreContract] holds every store to one behaviour.
  */
 interface CallStore {
     /** iOS `CallHistoryView.loadRecords`: the newest 200, newest first. */
