@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.auth.AuthSessionManager
 import com.construct.messenger.data.local.KeystoreManager
+import com.construct.messenger.data.local.LocalDataWipe
 import com.construct.messenger.data.model.AuthState
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.domain.usecase.LoginUseCase
@@ -181,6 +182,10 @@ class AuthRepositoryImpl @Inject constructor(
         recoveryVault.forgetHeld()
         cryptoManager.close()
         mutableAuthState.value = AuthState()
+        // Then everything else this device holds for the account: a device that still reads as
+        // the account after signing out has not signed out (decisions/sign-out-wipes-the-device.md).
+        // The steps above stay, so the keys and tokens are gone even if this does not run.
+        LocalDataWipe.run(context, if (allDevices) "sign-out-all" else "sign-out")
     }
 
     override suspend fun deleteAccount() {

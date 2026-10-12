@@ -1,12 +1,12 @@
 package com.construct.messenger.data.repository
 
-import android.app.ActivityManager
 import android.content.Context
 import android.os.SystemClock
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import com.construct.messenger.data.local.KeystoreManager
+import com.construct.messenger.data.local.LocalDataWipe
 import com.construct.messenger.data.local.PinRecord
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.security.MessageDigest
@@ -110,9 +110,7 @@ class AppLockRepository @Inject constructor(
      * "Clear storage" does, and ends the process. The next start is a fresh onboarding; the
      * identity comes back only through the recovery phrase. Nothing is sent to the server.
      */
-    fun eraseDevice() {
-        context.getSystemService(ActivityManager::class.java).clearApplicationUserData()
-    }
+    fun eraseDevice() = LocalDataWipe.run(context, "erase")
 
     fun setBiometricEnabled(enabled: Boolean) {
         val applied = enabled && state.value.pinEnabled && state.value.biometricAvailable

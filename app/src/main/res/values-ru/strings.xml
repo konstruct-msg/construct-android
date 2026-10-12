@@ -339,7 +339,7 @@
     <string name="other_devices_hint">Нажмите ⊗, чтобы удалить устройство из вашей идентичности.</string>
     <string name="session_management">Управление сессиями</string>
     <string name="sign_out_this_device">Выйти с этого устройства</string>
-    <string name="sign_out_this_device_message">Вы выйдете только с этого устройства. Другие привязанные устройства останутся активными.</string>
+    <string name="sign_out_this_device_message">Всё, что есть на этом устройстве, — чаты, медиа, контакты — будет стёрто, и приложение закроется. Другие привязанные устройства останутся активными.</string>
     <string name="sign_out_other_devices">Выйти с других устройств</string>
     <string name="sign_out_other_devices_message">Все другие привязанные устройства будут отключены. Это устройство останется активным.</string>
     <string name="sign_out_all_devices">Выйти со всех устройств</string>
@@ -347,7 +347,7 @@
     <string name="sign_out_all_hint">Выход со всех устройств немедленно аннулирует все сессии. Потребуется повторная аутентификация на каждом устройстве.</string>
     <string name="device_revoke">Удалить устройство</string>
     <string name="device_revoke_confirm_title">Удалить устройство</string>
-    <string name="device_revoke_confirm_message">Удалённо выйти с устройства «%1$s»? Оно будет отключено от вашей идентичности.</string>
+    <string name="device_revoke_confirm_message">Удалить «%1$s»? Устройство выйдет и сотрёт всё, что на нём есть, как только подключится.</string>
     <string name="device_active_now">Активно сейчас</string>
     <string name="device_added">Добавлено %1$s</string>
     <string name="devices_load_failed">Не удалось загрузить список устройств. Проверьте соединение и попробуйте ещё раз.</string>
@@ -390,7 +390,7 @@
     <string name="account_user_id_copied">скопировано</string>
     <string name="account_sign_out">выйти</string>
     <string name="logout_confirm_title">Выйти?</string>
-    <string name="logout_confirm_message">Вы выйдете из аккаунта на этом устройстве.</string>
+    <string name="logout_confirm_message">Вы выйдете с этого устройства, и всё, что на нём есть, — чаты, медиа, контакты — будет стёрто; приложение закроется. Войти снова можно по сид-фразе; историю пришлёт другое ваше устройство.</string>
     <string name="logout_confirm_action">Выйти</string>
     <string name="changes_encrypted_footer">&gt; изменения защищены сквозным шифрованием</string>
     <string name="username_length_error">username должен быть от 3 до 20 символов</string>
