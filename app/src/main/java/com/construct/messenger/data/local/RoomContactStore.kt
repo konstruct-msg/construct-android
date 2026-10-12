@@ -57,7 +57,7 @@ class RoomContactStore(private val dao: UserDao) : ContactStore {
     private fun fresh(id: String) = UserEntity(id = id, displayName = DisplayNameGenerator.generate(id), isContact = true)
 }
 
-private fun UserEntity.record() = ContactRecord(
+internal fun UserEntity.record() = ContactRecord(
     id = id,
     username = username,
     displayName = displayName,

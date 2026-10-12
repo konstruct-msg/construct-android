@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import uniffi.construct_core.LocalInsert
 import uniffi.construct_core.LocalMessage
+import uniffi.construct_core.LocalMessageInsert
 import uniffi.construct_core.LocalStore
 import uniffi.construct_core.LocalStoreTable
 
@@ -43,6 +44,16 @@ class CoreMessageStore(
     override suspend fun insert(message: MessageRecord): Boolean = io { s ->
         val local = message.local(s) ?: return@io false
         s.insertMessage(local, message.searchText()) == LocalInsert.INSERTED
+    }
+
+    /**
+     * [messages] in one transaction (`insert_messages`) — the import's write. A message whose chat
+     * is not here is left out, as [insert] leaves it; one already here is not counted. How many
+     * were added.
+     */
+    internal suspend fun insertAll(messages: List<MessageRecord>): Int = io { s ->
+        val rows = messages.mapNotNull { m -> m.local(s)?.let { LocalMessageInsert(it, m.searchText()) } }
+        if (rows.isEmpty()) 0 else s.insertMessages(rows).size
     }
 
     override suspend fun setDeliveryStatus(id: String, status: DeliveryStatus): Boolean = io { s ->

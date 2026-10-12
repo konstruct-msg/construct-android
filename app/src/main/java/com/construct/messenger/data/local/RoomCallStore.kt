@@ -31,7 +31,7 @@ class RoomCallStore(private val dao: CallRecordDao) : CallStore {
     override suspend fun deleteAll() = dao.deleteAll()
 }
 
-private fun CallRecordEntity.record() = CallRecord(
+internal fun CallRecordEntity.record() = CallRecord(
     id = id,
     peerUserId = peerUserId,
     peerName = peerName,

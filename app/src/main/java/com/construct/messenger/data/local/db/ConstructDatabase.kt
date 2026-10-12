@@ -43,6 +43,7 @@ abstract class ConstructDatabase : RoomDatabase() {
     abstract fun pendingChunkDao(): PendingChunkDao
     abstract fun reactionDao(): ReactionDao
     abstract fun callRecordDao(): CallRecordDao
+    abstract fun exportDao(): RoomExportDao
 
     companion object {
         const val NAME = "construct.db"

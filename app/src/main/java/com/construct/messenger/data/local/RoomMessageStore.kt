@@ -47,7 +47,7 @@ class RoomMessageStore(private val dao: MessageDao) : MessageStore {
     override suspend fun deleteChat(chatId: String) = dao.deleteChat(chatId)
 }
 
-private fun MessageEntity.record() = MessageRecord(
+internal fun MessageEntity.record() = MessageRecord(
     id = id,
     chatId = chatId,
     text = text,

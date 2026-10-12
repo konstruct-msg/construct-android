@@ -68,7 +68,7 @@ class RoomPeerDeviceStore(private val dao: PeerDeviceDao) : PeerDeviceStore {
     }
 }
 
-private fun PeerDeviceEntity.record() = PeerDeviceRecord(deviceId, accountId, identityPublic, firstSeenAtMs)
+internal fun PeerDeviceEntity.record() = PeerDeviceRecord(deviceId, accountId, identityPublic, firstSeenAtMs)
 
 /** On the core's `LocalStore`. Not wired into the app yet. */
 class CorePeerDeviceStore(private val store: LocalStore) : PeerDeviceStore {
