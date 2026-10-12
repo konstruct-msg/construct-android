@@ -1070,6 +1070,8 @@ external fun uniffi_construct_core_checksum_method_localstore_messages_before(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_messages_from(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_own_messages_in_status(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_own_profile(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_peer_device(
@@ -1585,6 +1587,8 @@ external fun uniffi_construct_core_fn_method_localstore_message_count(`ptr`: Lon
 external fun uniffi_construct_core_fn_method_localstore_messages_before(`ptr`: Long,`chatId`: RustBuffer.ByValue,`beforeOrderKey`: RustBuffer.ByValue,`beforeId`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_messages_from(`ptr`: Long,`chatId`: RustBuffer.ByValue,`fromOrderKey`: RustBuffer.ByValue,`fromId`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_own_messages_in_status(`ptr`: Long,`status`: Short,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_own_profile(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -2656,6 +2660,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_messages_from() != 53099.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_own_messages_in_status() != 26389.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_own_profile() != 283.toShort()) {
@@ -5123,6 +5130,11 @@ public interface LocalStoreInterface {
      */
     fun `messagesFrom`(`chatId`: kotlin.String, `fromOrderKey`: kotlin.String, `fromId`: kotlin.String, `limit`: kotlin.UInt): List<LocalMessage>
     
+    /**
+     * Ours in `status`, every chat, transcript order.
+     */
+    fun `ownMessagesInStatus`(`status`: kotlin.Short, `limit`: kotlin.UInt): List<LocalMessage>
+    
     fun `ownProfile`(): LocalOwnProfile?
     
     fun `peerDevice`(`deviceId`: kotlin.String): LocalPeerDevice?
@@ -6226,6 +6238,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_messages_from(
         it,
         FfiConverterString.lower(`chatId`),FfiConverterString.lower(`fromOrderKey`),FfiConverterString.lower(`fromId`),FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Ours in `status`, every chat, transcript order.
+     */
+    @Throws(LocalStoreException::class)override fun `ownMessagesInStatus`(`status`: kotlin.Short, `limit`: kotlin.UInt): List<LocalMessage> {
+            return FfiConverterSequenceTypeLocalMessage.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_own_messages_in_status(
+        it,
+        FfiConverterShort.lower(`status`),FfiConverterUInt.lower(`limit`),_status)
 }
     }
     )
