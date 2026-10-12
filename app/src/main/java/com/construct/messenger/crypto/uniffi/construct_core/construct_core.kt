@@ -620,6 +620,9 @@ internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
 internal interface UniffiCallbackInterfaceLocalStoreObserverMethod0 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`change`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
+internal interface UniffiCallbackInterfacePeekSessionSourceMethod0 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`deviceId`: RustBuffer.ByValue,`uniffiOutReturn`: RustBuffer,uniffiCallStatus: UniffiRustCallStatus,)
+}
 internal interface UniffiCallbackInterfacePlatformBridgeMethod0 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`key`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
@@ -654,6 +657,25 @@ internal open class UniffiVTableCallbackInterfaceLocalStoreObserver(
         `uniffiFree` = other.`uniffiFree`
         `uniffiClone` = other.`uniffiClone`
         `onChange` = other.`onChange`
+    }
+
+}
+@Structure.FieldOrder("uniffiFree", "uniffiClone", "session")
+internal open class UniffiVTableCallbackInterfacePeekSessionSource(
+    @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+    @JvmField internal var `uniffiClone`: UniffiCallbackInterfaceClone? = null,
+    @JvmField internal var `session`: UniffiCallbackInterfacePeekSessionSourceMethod0? = null,
+) : Structure() {
+    class UniffiByValue(
+        `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+        `uniffiClone`: UniffiCallbackInterfaceClone? = null,
+        `session`: UniffiCallbackInterfacePeekSessionSourceMethod0? = null,
+    ): UniffiVTableCallbackInterfacePeekSessionSource(`uniffiFree`,`uniffiClone`,`session`,), Structure.ByValue
+
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfacePeekSessionSource) {
+        `uniffiFree` = other.`uniffiFree`
+        `uniffiClone` = other.`uniffiClone`
+        `session` = other.`session`
     }
 
 }
@@ -978,6 +1000,8 @@ external fun uniffi_construct_core_checksum_method_localstore_contacts_with_pend
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_count_resend_attempt(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_delete_call(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_delete_chat(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_delete_contact(
@@ -1020,7 +1044,11 @@ external fun uniffi_construct_core_checksum_method_localstore_increment_unread(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_insert_chat(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_insert_contact(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_insert_message(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_insert_messages(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_is_processed(
 ): Short
@@ -1073,6 +1101,8 @@ external fun uniffi_construct_core_checksum_method_localstore_record_peer_device
 external fun uniffi_construct_core_checksum_method_localstore_record_server_message_id(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_remove(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_replace_contact(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_retain_peer_devices(
 ): Short
@@ -1155,6 +1185,8 @@ external fun uniffi_construct_core_checksum_method_mlsstore_member_count(
 external fun uniffi_construct_core_checksum_method_mlsstore_process_commit(
 ): Short
 external fun uniffi_construct_core_checksum_method_mlsstore_remove_member(
+): Short
+external fun uniffi_construct_core_checksum_method_notificationpeek_peek(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_ack_is_processed(
 ): Short
@@ -1326,11 +1358,15 @@ external fun uniffi_construct_core_checksum_constructor_localstore_in_memory(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_localstore_new(
 ): Short
+external fun uniffi_construct_core_checksum_constructor_notificationpeek_new(
+): Short
 external fun uniffi_construct_core_checksum_constructor_rustackstore_new(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_trafficprotectionmanager_new(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstoreobserver_on_change(
+): Short
+external fun uniffi_construct_core_checksum_method_peeksessionsource_session(
 ): Short
 external fun uniffi_construct_core_checksum_method_platformbridge_save_to_secure_store(
 ): Short
@@ -1361,6 +1397,7 @@ internal object UniffiLib {
     init {
         Native.register(UniffiLib::class.java, findLibraryName(componentName = "construct_core"))
         uniffiCallbackInterfaceLocalStoreObserver.register(this)
+        uniffiCallbackInterfacePeekSessionSource.register(this)
         uniffiCallbackInterfacePlatformBridge.register(this)
         uniffiCallbackInterfacePowProgressCallback.register(this)
         
@@ -1477,10 +1514,12 @@ external fun uniffi_construct_core_fn_method_localstore_contacts_with_pending_av
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_count_resend_attempt(`ptr`: Long,`messageId`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_delete_call(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_delete_chat(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_localstore_delete_contact(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_delete_issued_invites(`ptr`: Long,`jtis`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_localstore_delete_message(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1519,7 +1558,11 @@ external fun uniffi_construct_core_fn_method_localstore_increment_unread(`ptr`: 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_insert_chat(`ptr`: Long,`chat`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_insert_contact(`ptr`: Long,`contact`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_insert_message(`ptr`: Long,`message`: RustBuffer.ByValue,`searchText`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_insert_messages(`ptr`: Long,`messages`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_is_processed(`ptr`: Long,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
@@ -1573,6 +1616,8 @@ external fun uniffi_construct_core_fn_method_localstore_record_server_message_id
 ): Unit
 external fun uniffi_construct_core_fn_method_localstore_remove(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_method_localstore_replace_contact(`ptr`: Long,`contact`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_retain_peer_devices(`ptr`: Long,`accountId`: RustBuffer.ByValue,`active`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_search(`ptr`: Long,`query`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
@@ -1658,6 +1703,14 @@ external fun uniffi_construct_core_fn_method_mlsstore_member_count(`ptr`: Long,`
 external fun uniffi_construct_core_fn_method_mlsstore_process_commit(`ptr`: Long,`groupId`: RustBuffer.ByValue,`commit`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_mlsstore_remove_member(`ptr`: Long,`groupId`: RustBuffer.ByValue,`leafIndex`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_clone_notificationpeek(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_free_notificationpeek(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_constructor_notificationpeek_new(`keyRecord`: RustBuffer.ByValue,`myUserId`: RustBuffer.ByValue,`orchestratorState`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_method_notificationpeek_peek(`ptr`: Long,`messageId`: RustBuffer.ByValue,`sealedInner`: RustBuffer.ByValue,`sessions`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_clone_orchestratorcore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
@@ -1842,6 +1895,8 @@ external fun uniffi_construct_core_fn_method_trafficprotectionmanager_should_sen
 external fun uniffi_construct_core_fn_method_trafficprotectionmanager_update_battery_level(`ptr`: Long,`level`: Float,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_init_callback_vtable_localstoreobserver(`vtable`: UniffiVTableCallbackInterfaceLocalStoreObserver,
+): Unit
+external fun uniffi_construct_core_fn_init_callback_vtable_peeksessionsource(`vtable`: UniffiVTableCallbackInterfacePeekSessionSource,
 ): Unit
 external fun uniffi_construct_core_fn_init_callback_vtable_platformbridge(`vtable`: UniffiVTableCallbackInterfacePlatformBridge,
 ): Unit
@@ -2494,10 +2549,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_count_resend_attempt() != 33415.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_delete_call() != 58601.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_delete_chat() != 62753.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_construct_core_checksum_method_localstore_delete_contact() != 25391.toShort()) {
+    if (lib.uniffi_construct_core_checksum_method_localstore_delete_contact() != 42745.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_delete_issued_invites() != 54416.toShort()) {
@@ -2557,7 +2615,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_insert_chat() != 53415.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_insert_contact() != 61515.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_insert_message() != 2107.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_insert_messages() != 25547.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_is_processed() != 48882.toShort()) {
@@ -2636,6 +2700,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_remove() != 30144.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_replace_contact() != 29124.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_retain_peer_devices() != 39765.toShort()) {
@@ -2759,6 +2826,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_mlsstore_remove_member() != 48469.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_notificationpeek_peek() != 41718.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_ack_is_processed() != 63134.toShort()) {
@@ -3016,6 +3086,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_constructor_localstore_new() != 34198.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_constructor_notificationpeek_new() != 3700.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_constructor_rustackstore_new() != 64675.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3023,6 +3096,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstoreobserver_on_change() != 28445.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_peeksessionsource_session() != 52815.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_platformbridge_save_to_secure_store() != 64407.toShort()) {
@@ -4912,12 +4988,17 @@ public interface LocalStoreInterface {
      */
     fun `countResendAttempt`(`messageId`: kotlin.String, `deviceId`: kotlin.String): kotlin.UInt?
     
+    /**
+     * One entry out of the call log; false: no such row.
+     */
+    fun `deleteCall`(`id`: kotlin.String): kotlin.Boolean
+    
     fun `deleteChat`(`id`: kotlin.String)
     
     /**
-     * Takes the contact's chats and their messages with it.
+     * Takes the contact's chats and their messages with it; false: no such row.
      */
-    fun `deleteContact`(`id`: kotlin.String)
+    fun `deleteContact`(`id`: kotlin.String): kotlin.Boolean
     
     fun `deleteIssuedInvites`(`jtis`: List<kotlin.String>)
     
@@ -4962,6 +5043,9 @@ public interface LocalStoreInterface {
     
     fun `get`(`key`: kotlin.String): kotlin.ByteArray?
     
+    /**
+     * An empty key pins nothing.
+     */
     fun `identityKeyPins`(): List<LocalIdentityKeyPin>
     
     /**
@@ -4977,9 +5061,20 @@ public interface LocalStoreInterface {
     fun `insertChat`(`chat`: LocalChat): LocalInsert
     
     /**
+     * The whole row, unless one with its id is held — that row is left as it is.
+     */
+    fun `insertContact`(`contact`: LocalContact): LocalInsert
+    
+    /**
      * `search_text` is what the message says, for the full-text index; null for media/control.
      */
     fun `insertMessage`(`message`: LocalMessage, `searchText`: kotlin.String?): LocalInsert
+    
+    /**
+     * `insert_message` for each, in one transaction; the ids added, in order. One failure (a
+     * chat that is not there) writes none of them.
+     */
+    fun `insertMessages`(`messages`: List<LocalMessageInsert>): List<kotlin.String>
     
     fun `isProcessed`(`messageId`: kotlin.String): kotlin.Boolean
     
@@ -5084,6 +5179,12 @@ public interface LocalStoreInterface {
     fun `remove`(`key`: kotlin.String)
     
     /**
+     * Every field of the row `contact.id` set to `contact`'s, for a merge already decided; false:
+     * no such row (a row deleted meanwhile stays deleted).
+     */
+    fun `replaceContact`(`contact`: LocalContact): kotlin.Boolean
+    
+    /**
      * Forget devices the server no longer lists; an empty list forgets nothing. Returns the removed.
      */
     fun `retainPeerDevices`(`accountId`: kotlin.String, `active`: List<kotlin.String>): List<kotlin.String>
@@ -5177,6 +5278,9 @@ public interface LocalStoreInterface {
      */
     fun `upsertChat`(`chat`: LocalChat)
     
+    /**
+     * The whole row, created or overwritten.
+     */
     fun `upsertContact`(`contact`: LocalContact)
     
     fun `upsertReaction`(`reaction`: LocalReaction)
@@ -5575,6 +5679,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * One entry out of the call log; false: no such row.
+     */
+    @Throws(LocalStoreException::class)override fun `deleteCall`(`id`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_delete_call(
+        it,
+        FfiConverterString.lower(`id`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `deleteChat`(`id`: kotlin.String)
         = 
     callWithHandle {
@@ -5589,10 +5710,10 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
 
     
     /**
-     * Takes the contact's chats and their messages with it.
+     * Takes the contact's chats and their messages with it; false: no such row.
      */
-    @Throws(LocalStoreException::class)override fun `deleteContact`(`id`: kotlin.String)
-        = 
+    @Throws(LocalStoreException::class)override fun `deleteContact`(`id`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
     callWithHandle {
     uniffiRustCallWithError(LocalStoreException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_localstore_delete_contact(
@@ -5600,7 +5721,8 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
         FfiConverterString.lower(`id`),_status)
 }
     }
-    
+    )
+    }
     
 
     
@@ -5822,6 +5944,9 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * An empty key pins nothing.
+     */
     @Throws(LocalStoreException::class)override fun `identityKeyPins`(): List<LocalIdentityKeyPin> {
             return FfiConverterSequenceTypeLocalIdentityKeyPin.lift(
     callWithHandle {
@@ -5885,6 +6010,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
 
     
     /**
+     * The whole row, unless one with its id is held — that row is left as it is.
+     */
+    @Throws(LocalStoreException::class)override fun `insertContact`(`contact`: LocalContact): LocalInsert {
+            return FfiConverterTypeLocalInsert.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_insert_contact(
+        it,
+        FfiConverterTypeLocalContact.lower(`contact`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
      * `search_text` is what the message says, for the full-text index; null for media/control.
      */
     @Throws(LocalStoreException::class)override fun `insertMessage`(`message`: LocalMessage, `searchText`: kotlin.String?): LocalInsert {
@@ -5894,6 +6036,24 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_insert_message(
         it,
         FfiConverterTypeLocalMessage.lower(`message`),FfiConverterOptionalString.lower(`searchText`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * `insert_message` for each, in one transaction; the ids added, in order. One failure (a
+     * chat that is not there) writes none of them.
+     */
+    @Throws(LocalStoreException::class)override fun `insertMessages`(`messages`: List<LocalMessageInsert>): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_insert_messages(
+        it,
+        FfiConverterSequenceTypeLocalMessageInsert.lower(`messages`),_status)
 }
     }
     )
@@ -6312,6 +6472,24 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
 
     
     /**
+     * Every field of the row `contact.id` set to `contact`'s, for a merge already decided; false:
+     * no such row (a row deleted meanwhile stays deleted).
+     */
+    @Throws(LocalStoreException::class)override fun `replaceContact`(`contact`: LocalContact): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_replace_contact(
+        it,
+        FfiConverterTypeLocalContact.lower(`contact`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
      * Forget devices the server no longer lists; an empty list forgets nothing. Returns the removed.
      */
     @Throws(LocalStoreException::class)override fun `retainPeerDevices`(`accountId`: kotlin.String, `active`: List<kotlin.String>): List<kotlin.String> {
@@ -6712,6 +6890,9 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * The whole row, created or overwritten.
+     */
     @Throws(LocalStoreException::class)override fun `upsertContact`(`contact`: LocalContact)
         = 
     callWithHandle {
@@ -7332,6 +7513,283 @@ public object FfiConverterTypeMlsStore: FfiConverter<MlsStore, Long> {
     override fun allocationSize(value: MlsStore) = 8UL
 
     override fun write(value: MlsStore, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+//
+/**
+ * A throwaway view of this device's sessions for the notification extension. Built from the key
+ * record and the orchestrator state the app saved; it answers `peek` and nothing else. Nothing it
+ * does is saved, sent or marked, and no session state leaves it.
+ */
+public interface NotificationPeekInterface {
+    
+    /**
+     * The verdict on one delivery: `sealed_inner` is its `SealedInner` as the server returned it.
+     * Peek a fetch's deliveries in server order on one instance.
+     */
+    fun `peek`(`messageId`: kotlin.String, `sealedInner`: kotlin.ByteArray, `sessions`: PeekSessionSource): PeekVerdict
+    
+    companion object
+}
+
+/**
+ * A throwaway view of this device's sessions for the notification extension. Built from the key
+ * record and the orchestrator state the app saved; it answers `peek` and nothing else. Nothing it
+ * does is saved, sent or marked, and no session state leaves it.
+ */
+open class NotificationPeek: Disposable, AutoCloseable, NotificationPeekInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+    constructor(`keyRecord`: kotlin.ByteArray, `myUserId`: kotlin.String, `orchestratorState`: kotlin.ByteArray?) :
+        this(UniffiWithHandle, 
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_constructor_notificationpeek_new(
+    
+        FfiConverterByteArray.lower(`keyRecord`),FfiConverterString.lower(`myUserId`),FfiConverterOptionalByteArray.lower(`orchestratorState`),_status)
+}
+    )
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_construct_core_fn_free_notificationpeek(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_construct_core_fn_clone_notificationpeek(handle, status)
+        }
+    }
+
+    
+    /**
+     * The verdict on one delivery: `sealed_inner` is its `SealedInner` as the server returned it.
+     * Peek a fetch's deliveries in server order on one instance.
+     */override fun `peek`(`messageId`: kotlin.String, `sealedInner`: kotlin.ByteArray, `sessions`: PeekSessionSource): PeekVerdict {
+            return FfiConverterTypePeekVerdict.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_notificationpeek_peek(
+        it,
+        FfiConverterString.lower(`messageId`),FfiConverterByteArray.lower(`sealedInner`),FfiConverterTypePeekSessionSource.lower(`sessions`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
+
+
+    
+    
+    /**
+     * @suppress
+     */
+    companion object
+    
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNotificationPeek: FfiConverter<NotificationPeek, Long> {
+    override fun lower(value: NotificationPeek): Long {
+        return value.uniffiCloneHandle()
+    }
+
+    override fun lift(value: Long): NotificationPeek {
+        return NotificationPeek(UniffiWithHandle, value)
+    }
+
+    override fun read(buf: ByteBuffer): NotificationPeek {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: NotificationPeek) = 8UL
+
+    override fun write(value: NotificationPeek, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
@@ -11221,6 +11679,46 @@ public object FfiConverterTypeLocalMessage: FfiConverterRustBuffer<LocalMessage>
 
 
 /**
+ * One message with chunks held.
+ * A message and what it says, for the full-text index (null for media and control).
+ */
+data class LocalMessageInsert (
+    var `message`: LocalMessage
+    , 
+    var `searchText`: kotlin.String?
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalMessageInsert: FfiConverterRustBuffer<LocalMessageInsert> {
+    override fun read(buf: ByteBuffer): LocalMessageInsert {
+        return LocalMessageInsert(
+            FfiConverterTypeLocalMessage.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalMessageInsert) = (
+            FfiConverterTypeLocalMessage.allocationSize(value.`message`) +
+            FfiConverterOptionalString.allocationSize(value.`searchText`)
+    )
+
+    override fun write(value: LocalMessageInsert, buf: ByteBuffer) {
+            FfiConverterTypeLocalMessage.write(value.`message`, buf)
+            FfiConverterOptionalString.write(value.`searchText`, buf)
+    }
+}
+
+
+
+/**
  * Our own profile — one row, not a contact.
  */
 data class LocalOwnProfile (
@@ -11397,9 +11895,6 @@ public object FfiConverterTypeLocalPendingChunk: FfiConverterRustBuffer<LocalPen
 
 
 
-/**
- * One message with chunks held.
- */
 data class LocalPendingChunkMessage (
     var `senderId`: kotlin.String
     , 
@@ -15259,6 +15754,53 @@ public object FfiConverterTypeMlsError : FfiConverterRustBuffer<MlsException> {
 
 
 /**
+ * What a sealed delivery is, decided without acting on it.
+ */
+
+enum class PeekVerdict {
+    
+    /**
+     * Already processed by the app: its message key is spent in the stored session.
+     */
+    ALREADY_HANDLED,
+    /**
+     * A message the app would announce.
+     */
+    VISIBLE,
+    /**
+     * A silent control frame, a call signal or a DECRYPTION_ERROR: nothing to announce.
+     */
+    CONTROL,
+    /**
+     * Not read here, for any reason. The alert shows.
+     */
+    UNREADABLE;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePeekVerdict: FfiConverterRustBuffer<PeekVerdict> {
+    override fun read(buf: ByteBuffer) = try {
+        PeekVerdict.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: PeekVerdict) = 4UL
+
+    override fun write(value: PeekVerdict, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
  * Read-only health snapshot of a Double Ratchet session.
  * Whose Kyber key a session's post-quantum layer came from. Anything a person sees about
  * "PQ" reads this — `is_pq_strengthened` only says a KEM secret was mixed in.
@@ -15430,6 +15972,69 @@ internal object uniffiCallbackInterfaceLocalStoreObserver {
  * @suppress
  */
 public object FfiConverterTypeLocalStoreObserver: FfiConverterCallbackInterface<LocalStoreObserver>()
+
+
+
+
+
+/**
+ * The stored session state of a peer device, as the platform's secure store holds it.
+ */
+public interface PeekSessionSource {
+    
+    fun `session`(`deviceId`: kotlin.String): kotlin.ByteArray?
+    
+    companion object
+}
+
+
+
+// Put the implementation in an object so we don't pollute the top-level namespace
+internal object uniffiCallbackInterfacePeekSessionSource {
+    internal object `session`: UniffiCallbackInterfacePeekSessionSourceMethod0 {
+        override fun callback(`uniffiHandle`: Long,`deviceId`: RustBuffer.ByValue,`uniffiOutReturn`: RustBuffer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypePeekSessionSource.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`session`(
+                    FfiConverterString.lift(`deviceId`),
+                )
+            }
+            val writeReturn = { value: kotlin.ByteArray? -> uniffiOutReturn.setValue(FfiConverterOptionalByteArray.lower(value)) }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
+        override fun callback(handle: Long) {
+            FfiConverterTypePeekSessionSource.handleMap.remove(handle)
+        }
+    }
+
+    internal object uniffiClone: UniffiCallbackInterfaceClone {
+        override fun callback(handle: Long): Long {
+            return FfiConverterTypePeekSessionSource.handleMap.clone(handle)
+        }
+    }
+
+    internal var vtable = UniffiVTableCallbackInterfacePeekSessionSource.UniffiByValue(
+        uniffiFree,
+        uniffiClone,
+        `session`,
+    )
+
+    // Registers the foreign callback with the Rust side.
+    // This method is generated for each callback interface.
+    internal fun register(lib: UniffiLib) {
+        lib.uniffi_construct_core_fn_init_callback_vtable_peeksessionsource(vtable)
+    }
+}
+
+/**
+ * The ffiConverter which transforms the Callbacks in to handles to pass to Rust.
+ *
+ * @suppress
+ */
+public object FfiConverterTypePeekSessionSource: FfiConverterCallbackInterface<PeekSessionSource>()
 
 
 
@@ -16738,6 +17343,34 @@ public object FfiConverterSequenceTypeLocalMessage: FfiConverterRustBuffer<List<
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeLocalMessage.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalMessageInsert: FfiConverterRustBuffer<List<LocalMessageInsert>> {
+    override fun read(buf: ByteBuffer): List<LocalMessageInsert> {
+        val len = buf.getInt()
+        return List<LocalMessageInsert>(len) {
+            FfiConverterTypeLocalMessageInsert.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalMessageInsert>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalMessageInsert.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalMessageInsert>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalMessageInsert.write(it, buf)
         }
     }
 }
