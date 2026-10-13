@@ -125,6 +125,10 @@ fun MessageBubble(
     onToggleSelected: () -> Unit = {},
     voicePlayback: VoicePlayback = VoicePlayback(),
     onToggleVoice: () -> Unit = {},
+    /** This note is being read on the device now (TODO 116). */
+    transcribing: Boolean = false,
+    /** Read a voice or video note; null where there is no engine. */
+    onTranscribe: (() -> Unit)? = null,
     fileLoading: Set<String> = emptySet(),
     fileUnavailable: Set<String> = emptySet(),
     tracks: TrackPlayback = TrackPlayback(),
@@ -210,6 +214,9 @@ fun MessageBubble(
                     onToggle = onToggleVoice,
                     onLongPress = onLongPress,
                     onDoubleTap = { onReact(ReactionRules.LIKE) },
+                    transcript = message.transcript,
+                    transcribing = transcribing,
+                    onTranscribe = onTranscribe,
                 )
             } else if (album != null) {
                 // iOS: photos stand on their own, no bubble; the quote above, the caption below.
@@ -231,6 +238,21 @@ fun MessageBubble(
                         onLongPress = onLongPress,
                         onDoubleTap = { onReact(ReactionRules.LIKE) },
                     )
+                    // iOS `VideoNoteBubbleView`: the captions button, the text below the card.
+                    if (onTranscribe != null && !note.mediaId.startsWith(com.construct.messenger.util.MediaWire.LOCAL_PREFIX)) {
+                        var shown by remember(message.transcript) { mutableStateOf(message.transcript != null) }
+                        TranscribeButton(
+                            hasTranscript = message.transcript != null,
+                            shown = shown,
+                            transcribing = transcribing,
+                            tint = CTColor.accent,
+                            dim = CTColor.textDim,
+                            onClick = { if (message.transcript != null) shown = !shown else onTranscribe() },
+                        )
+                        if (message.transcript != null && shown) {
+                            Box(Modifier.widthIn(max = maxBubble)) { TranscriptText(message.transcript, outgoing = false) }
+                        }
+                    }
                 } else {
                     MediaAlbumView(
                         album = album,

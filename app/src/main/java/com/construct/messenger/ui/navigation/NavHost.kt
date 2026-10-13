@@ -178,6 +178,7 @@ fun KonstructNavHost(
                     onAppearance = { navController.navigate(Screen.Appearance.route) { launchSingleTop = true } },
                     onSecurity = { navController.navigate(Screen.Security.route) { launchSingleTop = true } },
                     onDataStorage = { navController.navigate(Screen.DataStorage.route) { launchSingleTop = true } },
+                    onTranscription = { navController.navigate(Screen.Transcription.route) { launchSingleTop = true } },
                     onNotifications = { navController.navigate(Screen.Notifications.route) { launchSingleTop = true } },
                     onDrafts = { navController.navigate(Screen.Drafts.route) { launchSingleTop = true } },
                     onNetwork = { navController.navigate(Screen.Network.route) { launchSingleTop = true } },
@@ -289,6 +290,9 @@ fun KonstructNavHost(
                     }
                 },
             )
+        }
+        composable(Screen.Transcription.route) {
+            com.construct.messenger.ui.screens.settings.TranscriptionRoute(onNavigateBack = { navController.popBackStack() })
         }
         composable(Screen.DataStorage.route) {
             DataStorageRoute(onNavigateBack = { navController.popBackStack() })

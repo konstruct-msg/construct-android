@@ -46,6 +46,9 @@ interface MessagesRepository {
     /** The decrypted bytes of an item of a message, fetched if they are not here. */
     suspend fun mediaBytes(item: com.construct.messenger.data.model.MediaItem): ByteArray
 
+    /** Keep what [messageId] says, read on this device (TODO 116). Local only: nothing is sent. */
+    suspend fun setTranscript(messageId: String, text: String, language: String?)
+
     /**
      * Replace the text of a message this account sent. The edit travels as
      * `MessageContent.edit` inside the ciphertext. The row changes only after a

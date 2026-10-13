@@ -55,6 +55,12 @@ internal class FakeMessageStore : MessageStore {
         stored(id)?.let(rows::remove)
     }
 
+    override suspend fun setTranscript(id: String, text: String?, language: String?, atMs: Long): Boolean {
+        val key = stored(id) ?: return false
+        rows[key] = rows.getValue(key).copy(transcript = text, transcriptLanguage = language?.takeIf { text != null })
+        return true
+    }
+
     override suspend fun deleteChat(chatId: String) {
         rows.values.removeAll { it.chatId == chatId }
     }

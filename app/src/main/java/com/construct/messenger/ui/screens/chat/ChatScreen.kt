@@ -103,7 +103,11 @@ fun ChatScreen(
     val voiceUnavailable by viewModel.voiceUnavailable.collectAsStateWithLifecycle()
     val fileLoading by viewModel.fileLoading.collectAsStateWithLifecycle()
     val fileUnavailable by viewModel.fileUnavailable.collectAsStateWithLifecycle()
+    val transcribing by viewModel.transcribing.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(Unit) {
+        viewModel.transcriptionProblem.collect { android.widget.Toast.makeText(context, context.getString(it), android.widget.Toast.LENGTH_LONG).show() }
+    }
     val micDenied = stringResource(R.string.voice_mic_denied)
     val noApp = stringResource(R.string.no_app_to_open)
     val tooLarge = stringResource(R.string.attachment_too_large)
@@ -339,6 +343,8 @@ fun ChatScreen(
         ) {
             itemsIndexed(visible, key = { _, message -> message.id }) { index, message ->
                 val voice = message.media as? com.construct.messenger.data.model.MessageMedia.Voice
+                // Settings → Transcription → automatic: a voice note is read when it comes on screen.
+                if (voice != null && message.transcript == null) LaunchedEffect(message.id) { viewModel.autoTranscribe(message) }
                 val voiceId = voice?.audio?.mediaId
                 MessageBubble(
                     voicePlayback = if (voice == null) VoicePlayback() else VoicePlayback(
@@ -350,6 +356,8 @@ fun ChatScreen(
                         uploading = voiceId!!.startsWith(com.construct.messenger.util.MediaWire.LOCAL_PREFIX),
                     ),
                     onToggleVoice = { voice?.let(viewModel::toggleVoice) },
+                    transcribing = message.id in transcribing,
+                    onTranscribe = if (viewModel.canTranscribe) { { viewModel.transcribe(message) } } else null,
                     videoNote = videoNote.takeIf { it.expanded?.messageId == message.id }?.let {
                         VideoNoteUi(expanded = true, paused = it.paused, progress = it.progress, rate = it.rate)
                     } ?: VideoNoteUi(),

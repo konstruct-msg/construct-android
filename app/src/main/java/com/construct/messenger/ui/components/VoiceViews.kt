@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowCircleUp
 import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -31,7 +33,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -140,7 +145,9 @@ data class VoicePlayback(
 /**
  * **Canon:** iOS `VoiceMessageBubbleView` — a bubble in the message colours, radius 10 with a
  * hairline: play/pause (a spinner while fetching), the waveform 28 high, and the length, counting
- * down while it plays. Transcription is not here.
+ * down while it plays. Between the waveform and the length, the transcription button (iOS
+ * `textformat`): it reads the note on this device, then shows or hides what it says, below a
+ * hairline (TODO 116).
  */
 @Composable
 fun VoiceBubble(
@@ -151,7 +158,13 @@ fun VoiceBubble(
     onToggle: () -> Unit,
     onLongPress: () -> Unit,
     onDoubleTap: (() -> Unit)? = null,
+    transcript: String? = null,
+    transcribing: Boolean = false,
+    /** Null: no transcription here (no engine in this build). */
+    onTranscribe: (() -> Unit)? = null,
 ) {
+    // A new reading opens itself, as on iOS; a tap folds it away.
+    var expanded by remember(transcript) { mutableStateOf(transcript != null) }
     val shape = RoundedCornerShape(10.dp)
     val tint = if (outgoing) CTColor.outMsgText else CTColor.accent
     val durationMs = voice.audio.durationMs ?: 0L
@@ -160,7 +173,7 @@ fun VoiceBubble(
     } else {
         durationMs
     }
-    Row(
+    Column(
         modifier = Modifier
             .widthIn(max = maxWidth)
             .fillMaxWidth()
@@ -175,8 +188,8 @@ fun VoiceBubble(
                 onDoubleClick = onDoubleTap,
             )
             .padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.width(38.dp).height(28.dp), contentAlignment = Alignment.Center) {
             when {
                 playback.uploading || playback.loading ->
@@ -204,6 +217,16 @@ fun VoiceBubble(
                 .padding(horizontal = 6.dp)
                 .alpha(if (playback.uploading) 0.4f else 1f),
         )
+        if (onTranscribe != null && !playback.uploading) {
+            TranscribeButton(
+                hasTranscript = transcript != null,
+                shown = expanded,
+                transcribing = transcribing,
+                tint = tint,
+                dim = if (outgoing) CTColor.outMsgText.copy(alpha = 0.6f) else CTColor.textDim,
+                onClick = { if (transcript != null) expanded = !expanded else onTranscribe() },
+            )
+        }
         Text(
             text = formatVoiceDuration(shownMs),
             style = CTFont.caption,
@@ -211,6 +234,54 @@ fun VoiceBubble(
             textAlign = TextAlign.End,
             modifier = Modifier.width(34.dp),
         )
+    }
+    if (transcript != null && expanded) {
+        TranscriptText(transcript, outgoing)
+    }
+    }
+}
+
+/**
+ * Read a note, or show and hide what it says: a spinner while it is read, the accent while the
+ * text shows. **Canon:** iOS `VoiceMessageBubbleView` (textformat), `VideoNoteBubbleView` (captions).
+ */
+@Composable
+internal fun TranscribeButton(
+    hasTranscript: Boolean,
+    shown: Boolean,
+    transcribing: Boolean,
+    tint: androidx.compose.ui.graphics.Color,
+    dim: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier.size(CTIcon.control + CTSpace.s), contentAlignment = Alignment.Center) {
+        if (transcribing) {
+            CircularProgressIndicator(color = tint, strokeWidth = 2.dp, modifier = Modifier.size(CTIcon.row))
+        } else {
+            Icon(
+                imageVector = Icons.Filled.ClosedCaption,
+                contentDescription = stringResource(R.string.stt_transcribe),
+                tint = if (hasTranscript && shown) tint else dim,
+                modifier = Modifier.clip(CircleShape).clickable(onClick = onClick).padding(CTSpace.xs).size(CTIcon.row),
+            )
+        }
+    }
+}
+
+/** What a note says, below a hairline: selectable, so it can be copied. */
+@Composable
+internal fun TranscriptText(text: String, outgoing: Boolean, modifier: Modifier = Modifier) {
+    Column(modifier.padding(top = CTSpace.xs)) {
+        androidx.compose.material3.HorizontalDivider(color = if (outgoing) CTColor.outMsgText.copy(alpha = 0.3f) else CTColor.noise, thickness = 0.5.dp)
+        androidx.compose.foundation.text.selection.SelectionContainer {
+            Text(
+                text = text.ifBlank { stringResource(R.string.stt_nothing_heard) },
+                style = CTFont.message(13),
+                color = if (outgoing) CTColor.outMsgText else CTColor.text,
+                modifier = Modifier.padding(top = CTSpace.xs),
+            )
+        }
     }
 }
 

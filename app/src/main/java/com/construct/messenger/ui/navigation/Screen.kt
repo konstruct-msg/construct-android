@@ -41,6 +41,8 @@ sealed class Screen(val route: String) {
     data object Notifications : Screen("settings/notifications")
 
     data object DataStorage : Screen("settings/storage")
+    /** Settings → Transcription: models, language, automatic reading (TODO 116). */
+    data object Transcription : Screen("settings/transcription")
     /** Local notes, never sent (iOS `DraftsView`). */
     data object Drafts : Screen("settings/drafts")
     /** Theme, message face and size (iOS `AppearanceSettingsView`). */

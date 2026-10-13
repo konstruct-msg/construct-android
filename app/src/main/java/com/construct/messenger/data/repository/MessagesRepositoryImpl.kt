@@ -117,6 +117,10 @@ class MessagesRepositoryImpl @Inject constructor(
             skipped
         }.await()
 
+    override suspend fun setTranscript(messageId: String, text: String, language: String?) {
+        messages.setTranscript(messageId, text, language, System.currentTimeMillis())
+    }
+
     override suspend fun retry(contactId: String, messageId: String): SendOutcome =
         scope.async { sendMedia.retry(contactId, messageId) }.await()
 
@@ -225,4 +229,5 @@ private fun MessageRecord.toModel(): Message = Message(
     replyMediaType = replyMediaType,
     isEdited = isEdited,
     media = MediaWire.decode(mediaType, mediaPayload),
+    transcript = transcript,
 )

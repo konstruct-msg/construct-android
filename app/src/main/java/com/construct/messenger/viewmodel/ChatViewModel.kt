@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import com.construct.messenger.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -75,6 +76,7 @@ class ChatViewModel @Inject constructor(
     private val videoNotes: VideoNotePlayback,
     private val quickReactions: ReactionQuickSetRepository,
     private val forwardDrafts: com.construct.messenger.data.repository.ForwardDrafts,
+    private val transcription: com.construct.messenger.transcription.NoteTranscription,
 ) : ViewModel() {
     /** The voice note being recorded or waiting to be sent; the composer shows its bar. */
     val recording: StateFlow<VoiceRecorder.State> = recorder.state
@@ -228,6 +230,62 @@ class ChatViewModel @Inject constructor(
     fun cancelEdit() {
         editing.value = null
         draft.value = ""
+    }
+
+    /** Notes being read on this device now, by message id (TODO 116). */
+    private val _transcribing = MutableStateFlow<Set<String>>(emptySet())
+    val transcribing: StateFlow<Set<String>> = _transcribing.asStateFlow()
+
+    /** Why a note the person asked to read was not: a string resource. */
+    private val _transcriptionProblem = kotlinx.coroutines.flow.MutableSharedFlow<Int>(extraBufferCapacity = 1)
+    val transcriptionProblem: kotlinx.coroutines.flow.SharedFlow<Int> = _transcriptionProblem
+
+    val canTranscribe: Boolean get() = transcription.available
+
+    /** Notes already read automatically this time, so a failure is not tried on every frame. */
+    private val autoTried = mutableSetOf<String>()
+
+    /** The audio a voice note or a video note carries; null for anything else. */
+    private fun noteAudio(message: Message): com.construct.messenger.data.model.MediaItem? = when (val m = message.media) {
+        is MessageMedia.Voice -> m.audio
+        is MessageMedia.Album -> m.videoNote
+        else -> null
+    }?.takeUnless { it.mediaId.startsWith(com.construct.messenger.util.MediaWire.LOCAL_PREFIX) }
+
+    /** Read [message] on this device and keep what it says. **Canon:** iOS `ChatViewModel.transcribe`. */
+    fun transcribe(message: Message) = read(message, quiet = false)
+
+    /** A voice note on screen, when the person turned automatic reading on. Quiet: no complaint. */
+    fun autoTranscribe(message: Message) {
+        if (!transcription.available || !transcription.autoTranscribe || message.transcript != null) return
+        if (message.media !is MessageMedia.Voice || !autoTried.add(message.id)) return
+        read(message, quiet = true)
+    }
+
+    private fun read(message: Message, quiet: Boolean) {
+        val item = noteAudio(message) ?: return
+        if (message.id in _transcribing.value) return
+        _transcribing.value = _transcribing.value + message.id
+        viewModelScope.launch {
+            val problem = try {
+                when (val outcome = transcription.read(messagesRepository.mediaBytes(item))) {
+                    is com.construct.messenger.transcription.Transcriber.Outcome.Done -> {
+                        messagesRepository.setTranscript(message.id, outcome.transcript.text, outcome.transcript.language)
+                        null
+                    }
+                    com.construct.messenger.transcription.Transcriber.Outcome.NoModel -> R.string.stt_error_no_model
+                    com.construct.messenger.transcription.Transcriber.Outcome.Unavailable -> R.string.stt_error_unavailable
+                    com.construct.messenger.transcription.Transcriber.Outcome.Failed -> R.string.stt_error_failed
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                R.string.stt_error_failed
+            } finally {
+                _transcribing.value = _transcribing.value - message.id
+            }
+            if (problem != null && !quiet) _transcriptionProblem.tryEmit(problem)
+        }
     }
 
     private val _forwardFailed = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 1)

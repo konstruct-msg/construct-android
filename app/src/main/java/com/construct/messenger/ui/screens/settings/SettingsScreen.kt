@@ -31,6 +31,7 @@ import androidx.compose.material.icons.outlined.Laptop
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.ClosedCaption
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.QrCode
 import androidx.compose.material3.HorizontalDivider
@@ -88,6 +89,7 @@ data class SettingsNavigation(
     val onAppearance: () -> Unit = {},
     val onSecurity: () -> Unit = {},
     val onDataStorage: () -> Unit = {},
+    val onTranscription: () -> Unit = {},
     val onNotifications: () -> Unit = {},
     val onNetwork: () -> Unit = {},
     val onDrafts: () -> Unit = {},
@@ -126,9 +128,8 @@ fun SettingsRoute(
  *
  * **Canon:** iOS `SettingsView` (compact layout) — cards separated by space, no section headers,
  * uppercase row labels. Rows appear only for what Android actually has: a row that opens
- * nothing reads as broken. Missing against iOS: data & storage and transcription — both wait
- * for media, and a row that opens nothing reads as broken. Diagnostics is the log half of iOS
- * `DiagnosticsView`, in debug builds only.
+ * nothing reads as broken. Transcription (TODO 116) is whisper.cpp on the device. Diagnostics is
+ * the log half of iOS `DiagnosticsView`, in debug builds only.
  */
 @Composable
 fun SettingsScreen(
@@ -222,6 +223,13 @@ fun SettingsScreen(
                     icon = Icons.Outlined.Storage,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onDataStorage),
+                )
+                HorizontalDivider()
+                CTSettingsRow(
+                    label = stringResource(R.string.stt_section_title).uppercase(),
+                    icon = Icons.Outlined.ClosedCaption,
+                    disclosure = true,
+                    modifier = Modifier.clickable(onClick = navigation.onTranscription),
                 )
                 HorizontalDivider()
                 CTSettingsRow(

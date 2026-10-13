@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -34,7 +36,69 @@ class ChatViewModelTest {
     private fun chat(id: String, messages: FakeMessagesRepository): ChatViewModel {
         val handle = SavedStateHandle()
         handle["contactId"] = id
-        return ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
+        return ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts, org.mockito.kotlin.mock())
+    }
+
+    private val voiceNote = Message(
+        id = "v1", chatId = "peer-1", body = "", isOutgoing = false,
+        media = com.construct.messenger.data.model.MessageMedia.Voice(
+            com.construct.messenger.data.model.MediaItem("store-1", ByteArray(32), ByteArray(32), 10, "audio/m4a"), emptyList(),
+        ),
+    )
+
+    private fun reading(outcome: com.construct.messenger.transcription.Transcriber.Outcome, auto: Boolean = false): com.construct.messenger.transcription.NoteTranscription =
+        org.mockito.kotlin.mock<com.construct.messenger.transcription.NoteTranscription>().also {
+            org.mockito.kotlin.whenever(it.available).thenReturn(true)
+            org.mockito.kotlin.whenever(it.autoTranscribe).thenReturn(auto)
+            kotlinx.coroutines.runBlocking { org.mockito.kotlin.whenever(it.read(org.mockito.kotlin.any())).thenReturn(outcome) }
+        }
+
+    private fun chatReading(messages: FakeMessagesRepository, transcription: com.construct.messenger.transcription.NoteTranscription): ChatViewModel {
+        val handle = SavedStateHandle()
+        handle["contactId"] = "peer-1"
+        return ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts, transcription)
+    }
+
+    /** What a voice note says, read on the device, is kept with it (TODO 116). */
+    @Test
+    fun aTranscribedNoteKeepsWhatItSays() = runTest {
+        val messages = FakeMessagesRepository()
+        val vm = chatReading(messages, reading(com.construct.messenger.transcription.Transcriber.Outcome.Done(com.construct.messenger.transcription.Transcriber.Transcript("hello", "en"))))
+        vm.transcribe(voiceNote)
+        advanceUntilIdle()
+        assertEquals(listOf("v1" to "hello"), messages.transcripts)
+        assertTrue(vm.transcribing.value.isEmpty())
+    }
+
+    /** No model yet: the person is told where to get one; nothing is kept. */
+    @Test
+    fun noModelSaysSo() = runTest {
+        val messages = FakeMessagesRepository()
+        val vm = chatReading(messages, reading(com.construct.messenger.transcription.Transcriber.Outcome.NoModel))
+        val problems = mutableListOf<Int>()
+        val job = launch { vm.transcriptionProblem.collect { problems += it } }
+        // Subscribed before the read: the flow keeps nothing for a late collector.
+        runCurrent()
+        vm.transcribe(voiceNote)
+        advanceUntilIdle()
+        assertEquals(listOf(com.construct.messenger.R.string.stt_error_no_model), problems)
+        assertTrue(messages.transcripts.isEmpty())
+        job.cancel()
+    }
+
+    /** Automatic reading is off unless the person turned it on (iOS default). */
+    @Test
+    fun automaticReadingWaitsForTheSetting() = runTest {
+        val messages = FakeMessagesRepository()
+        val off = chatReading(messages, reading(com.construct.messenger.transcription.Transcriber.Outcome.Done(com.construct.messenger.transcription.Transcriber.Transcript("x", null)), auto = false))
+        off.autoTranscribe(voiceNote)
+        advanceUntilIdle()
+        assertTrue(messages.transcripts.isEmpty())
+        val on = chatReading(messages, reading(com.construct.messenger.transcription.Transcriber.Outcome.Done(com.construct.messenger.transcription.Transcriber.Transcript("x", null)), auto = true))
+        on.autoTranscribe(voiceNote)
+        on.autoTranscribe(voiceNote)
+        advanceUntilIdle()
+        assertEquals("read once", 1, messages.transcripts.size)
     }
 
     /**
@@ -83,6 +147,7 @@ class ChatViewModelTest {
             org.mockito.kotlin.mock(),
             org.mockito.kotlin.mock(),
             drafts,
+            org.mockito.kotlin.mock(),
         )
         viewModel.onDraftChange("hello")
         viewModel.send()
@@ -103,7 +168,7 @@ class ChatViewModelTest {
     fun `the composer is free before the send ends`() = runTest {
         val messages = FakeMessagesRepository().also { it.gate = kotlinx.coroutines.CompletableDeferred() }
         val handle = SavedStateHandle().apply { set("contactId", "peer-1") }
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts, org.mockito.kotlin.mock())
         viewModel.startReply(Message(id = "q", chatId = "peer-1", body = "quoted", isOutgoing = false))
         viewModel.onDraftChange("hello")
         viewModel.send()
@@ -127,7 +192,7 @@ class ChatViewModelTest {
         val contacts = FakeContactsRepository()
         contacts.contacts.value = listOf(Contact(userId = "peer-1", displayName = "Alice", username = "alice"))
         val handle = SavedStateHandle().apply { set("contactId", "peer-1") }
-        val viewModel = ChatViewModel(handle, FakeMessagesRepository(), contacts, org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
+        val viewModel = ChatViewModel(handle, FakeMessagesRepository(), contacts, org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts, org.mockito.kotlin.mock())
         advanceUntilIdle()
 
         assertEquals("ALICE", viewModel.uiState.value.title)
@@ -139,7 +204,7 @@ class ChatViewModelTest {
     fun `a send refused before any bubble gives the text back`() = runTest {
         val messages = FakeMessagesRepository().also { it.refuseSend = true }
         val handle = SavedStateHandle().apply { set("contactId", "peer-1") }
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts, org.mockito.kotlin.mock())
         viewModel.onDraftChange("hello ")
         viewModel.send()
         advanceUntilIdle()
@@ -152,7 +217,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository()
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts, org.mockito.kotlin.mock())
 
         viewModel.startReply(
             Message(id = "ABC", chatId = "peer-1", body = "  original  ", isOutgoing = false),
@@ -176,7 +241,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository()
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts, org.mockito.kotlin.mock())
         viewModel.startReply(Message(id = "ABC", chatId = "peer-1", body = "original", isOutgoing = false))
         advanceUntilIdle()
 
@@ -193,7 +258,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository()
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts, org.mockito.kotlin.mock())
         val reply = Message(id = "ABC", chatId = "peer-1", body = "original", isOutgoing = false)
 
         viewModel.startReply(reply)
@@ -215,7 +280,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository()
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts, org.mockito.kotlin.mock())
         val original = Message(id = "mine", chatId = "peer-1", body = "hello", isOutgoing = true)
 
         viewModel.startEdit(original)
@@ -240,7 +305,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository().also { it.failEdit = true }
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts, org.mockito.kotlin.mock())
         viewModel.startEdit(Message(id = "mine", chatId = "peer-1", body = "hello", isOutgoing = true))
         viewModel.onDraftChange("hello there")
         viewModel.send()
@@ -255,7 +320,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository()
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts, org.mockito.kotlin.mock())
         val original = Message(id = "mine", chatId = "peer-1", body = "hello", isOutgoing = true)
         viewModel.startEdit(original)
         viewModel.delete(original)
@@ -270,7 +335,7 @@ class ChatViewModelTest {
     fun `picked photos are sent with the draft as caption`() = runTest {
         val handle = SavedStateHandle().apply { set("contactId", "peer") }
         val messages = FakeMessagesRepository()
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts, org.mockito.kotlin.mock())
         val a = org.mockito.kotlin.mock<android.net.Uri>()
         val b = org.mockito.kotlin.mock<android.net.Uri>()
         viewModel.attach(listOf(a, b, a))
@@ -289,7 +354,7 @@ class ChatViewModelTest {
     fun `a selected quote replaces the preview of the reply`() = runTest {
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, FakeMessagesRepository(), FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
+        val viewModel = ChatViewModel(handle, FakeMessagesRepository(), FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts, org.mockito.kotlin.mock())
         val message = Message(id = "M-1", chatId = "c", body = "one two three", isOutgoing = false)
         viewModel.startReply(message, "two")
         advanceUntilIdle()
@@ -338,6 +403,10 @@ private class FakeMessagesRepository : MessagesRepository {
         return SendOutcome.Sent("n")
     }
     override suspend fun mediaBytes(item: com.construct.messenger.data.model.MediaItem) = ByteArray(0)
+    val transcripts = mutableListOf<Pair<String, String>>()
+    override suspend fun setTranscript(messageId: String, text: String, language: String?) {
+        transcripts += messageId to text
+    }
     override suspend fun saveToGallery(item: com.construct.messenger.data.model.MediaItem) = Unit
     override suspend fun sendPhotos(contactId: String, uris: List<android.net.Uri>, caption: String, reply: ReplyRef?): SendOutcome {
         photos += uris to caption
