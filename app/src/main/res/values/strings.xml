@@ -668,4 +668,8 @@
     <string name="forward">Forward</string>
     <string name="forward_to">Forward to</string>
     <string name="forward_failed">Some items were not forwarded: they are no longer on this device or the server.</string>
+    <!-- iOS audio_file: an album of music files in the chat list. -->
+    <string name="audio_file">Audio</string>
+    <string name="track_play">Play</string>
+    <string name="track_pause">Pause</string>
 </resources>

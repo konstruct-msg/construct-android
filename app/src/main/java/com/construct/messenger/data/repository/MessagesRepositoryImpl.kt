@@ -169,11 +169,11 @@ class MessagesRepositoryImpl @Inject constructor(
     override suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>): SendOutcome =
         scope.async { sendMedia.voice(contactId, recording, durationMs, waveform) }.await()
 
-    override suspend fun sendVideoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake): SendOutcome =
-        scope.async { sendMedia.videoNote(contactId, take) }.await()
+    override suspend fun sendVideoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake, reply: ReplyRef?): SendOutcome =
+        scope.async { sendMedia.videoNote(contactId, take, reply) }.await()
 
-    override suspend fun sendFiles(contactId: String, uris: List<Uri>, caption: String): SendOutcome =
-        scope.async { sendMedia.files(contactId, uris, caption) }.await()
+    override suspend fun sendFiles(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef?): SendOutcome =
+        scope.async { sendMedia.files(contactId, uris, caption, reply) }.await()
 
     override suspend fun openable(item: com.construct.messenger.data.model.MediaItem, name: String): Uri = media.openable(item, name)
 

@@ -100,16 +100,19 @@ class SendMediaUseCaseTest {
         val file = java.io.File.createTempFile("note", ".mp4").apply { writeBytes(ByteArray(10)) }
         val take = com.construct.messenger.media.VideoNoteTake(listOf(com.construct.messenger.media.VideoNoteTake.Segment(file, 4_000)), 500L..3_500L)
 
-        SendMediaUseCase(images, pickedFiles, notes, media, send).videoNote("peer", take)
+        val reply = com.construct.messenger.data.model.ReplyRef.of("abc", "original")
+        SendMediaUseCase(images, pickedFiles, notes, media, send).videoNote("peer", take, reply)
 
         verify(notes, never()).prepare(org.mockito.kotlin.anyOrNull())
         verify(notes).prepareNote(take)
         val shown = argumentCaptor<MediaWire.Stored>()
-        verify(send).persistMedia(eq("peer"), any(), any(), shown.capture(), eq(null))
+        verify(send).persistMedia(eq("peer"), any(), any(), shown.capture(), eq(reply))
         val placeholder = MediaWire.decode(shown.firstValue.kind, shown.firstValue.bytes) as com.construct.messenger.data.model.MessageMedia.Album
         assertTrue(placeholder.videoNote != null)
         val content = argumentCaptor<ByteArray>()
         verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        // The answer travels with the note, as with a photo. Mutation: pass null on — reddens.
+        assertEquals("abc", MessageContent.parseFrom(content.firstValue).mediaAlbum.quoted.messageId)
         val item = MessageContent.parseFrom(content.firstValue).mediaAlbum.getItems(0)
         assertEquals(shared.proto.messaging.v1.Content.MediaPresentation.MEDIA_PRESENTATION_VIDEO_NOTE, item.presentation)
         assertEquals(MediaType.MEDIA_TYPE_VIDEO, item.mediaType)
@@ -151,7 +154,7 @@ class SendMediaUseCaseTest {
         val send: SendMessageUseCase = mock()
         whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
 
-        SendMediaUseCase(images, pickedFiles, videos, media, send).files("peer", listOf(mock<Uri>()), "q3")
+        SendMediaUseCase(images, pickedFiles, videos, media, send).files("peer", listOf(mock<Uri>()), "q3", null)
 
         val content = argumentCaptor<ByteArray>()
         verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
