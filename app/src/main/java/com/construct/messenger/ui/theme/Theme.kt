@@ -94,6 +94,11 @@ internal val LightColorScheme = ctColorScheme(dark = false)
  * Material's corner roles on the CT scale. Material components read these: menus `extraSmall`,
  * chips and snackbars `small`, cards `medium`, sheets and dialogs `extraLarge`. The library's own
  * 28 on a dialog was rounder than anything else in the app.
+ *
+ * A button is not one of these roles: Material draws it as a pill whatever the theme says. Ours
+ * have the text field's corners (owner, 2026-10-13: a pill under a squared field read as two
+ * designs on one screen), so every `Button` / `OutlinedButton` passes
+ * `shape = OutlinedTextFieldDefaults.shape`.
  */
 internal val CTShapes = Shapes(
     extraSmall = RoundedCornerShape(CornerRadius.badge),

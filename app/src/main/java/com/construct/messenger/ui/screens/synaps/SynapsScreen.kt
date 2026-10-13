@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -101,6 +102,7 @@ fun SynapsScreen(
                 // this screen only redeems it (PendingInviteStore) and says how it went below.
                 if (uiState.query.isNotBlank()) {
                     Button(
+                        shape = OutlinedTextFieldDefaults.shape,
                         onClick = { viewModel.findAndRequest() },
                         enabled = !uiState.busy,
                         modifier = Modifier.fillMaxWidth(),

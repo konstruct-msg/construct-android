@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.HighlightOff
 import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PhoneIphone
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -329,6 +330,7 @@ private fun DevicesScreenPreview() {
 private fun SignOutButton(icon: ImageVector, title: String, onClick: () -> Unit) {
     val error = MaterialTheme.colorScheme.error
     OutlinedButton(
+        shape = OutlinedTextFieldDefaults.shape,
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = error),
