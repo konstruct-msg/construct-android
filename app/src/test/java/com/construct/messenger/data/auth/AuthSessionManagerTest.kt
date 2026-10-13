@@ -211,6 +211,21 @@ class AuthSessionManagerTest {
         verify(tokenRefreshCoordinator, never()).refreshIfPossible()
     }
 
+    /**
+     * Once per start the token is refreshed with time left: it is where a removed device hears it
+     * (TODO 126); a 24-hour token otherwise kept it from hearing for a day. Mutation: ignore force — reddens.
+     */
+    @Test
+    fun `a forced refresh goes out with time left`() = runTest {
+        whenever(keystoreManager.getAccessToken()).thenReturn("v4.public.x")
+        whenever(keystoreManager.getAccessTokenExpiresAt()).thenReturn(10_000L)
+        whenever(tokenRefreshCoordinator.refreshIfPossible())
+            .thenReturn(TokenRefreshResult.Success("new", null, 99_999L))
+
+        assertTrue(manager.ensureFresh(nowSeconds = 1_000L, force = true))
+        verify(tokenRefreshCoordinator).refreshIfPossible()
+    }
+
     /** A background refresh that fails must not wipe the session: that is device re-auth's call. */
     @Test
     fun `a failed refresh reports false and clears nothing`() = runTest {
