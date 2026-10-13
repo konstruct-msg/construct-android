@@ -32,7 +32,7 @@ interface IssuedInviteStore {
     suspend fun delete(jti: String)
 }
 
-/** Built by `DatabaseModule`, which provides no `IssuedInviteDao`. */
+/** Built by `LocalStores`; nothing provides a `IssuedInviteDao`. */
 class RoomIssuedInviteStore(private val dao: IssuedInviteDao) : IssuedInviteStore {
     override fun observeAll(): Flow<List<IssuedInviteRecord>> = dao.observeAll().map { rows ->
         rows.map { IssuedInviteRecord(it.jti, it.kind, it.issuedAtEpochSec, it.ttlSeconds, it.sitting) }
@@ -46,8 +46,8 @@ class RoomIssuedInviteStore(private val dao: IssuedInviteDao) : IssuedInviteStor
 }
 
 /**
- * On the core's `LocalStore`, which keeps the same table. Not wired into the app yet. The core's
- * times are ms, like every time in its store; Android's are the token's seconds.
+ * On the core's `LocalStore`, which keeps the same table. The core's times are ms, like every time
+ * in its store; Android's are the token's seconds.
  */
 class CoreIssuedInviteStore(private val feed: LocalStoreFeed) : IssuedInviteStore {
     override fun observeAll(): Flow<List<IssuedInviteRecord>> = feed.watch(LocalStoreTable.ISSUED_INVITES) { s ->

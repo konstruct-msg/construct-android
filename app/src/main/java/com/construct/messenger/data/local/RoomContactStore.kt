@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.map
 
 /**
  * [ContactStore] on Room's `users` table — until the core's `LocalStore` takes it (TODO 136).
- * Built by `DatabaseModule`, which provides no `UserDao`: nothing else can reach the table.
+ * Built by `LocalStores`; nothing provides a `UserDao`: nothing else can reach the table.
  */
 class RoomContactStore(private val dao: UserDao) : ContactStore {
     override fun observeContacts(): Flow<List<ContactRecord>> = dao.observeContacts().map { rows -> rows.map { it.record() } }

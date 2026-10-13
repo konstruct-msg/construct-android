@@ -12,8 +12,8 @@ import uniffi.construct_core.LocalStoreTable
 
 /**
  * [MessageStore] on the core's encrypted `LocalStore` (TODO 136, step 3) — held to the same
- * [MessageStoreContract] as [RoomMessageStore]. Not wired into the app yet: Room stays the store
- * until the import moves its rows here.
+ * [MessageStoreContract] as [RoomMessageStore]. The store once [RoomImport] has moved
+ * Room's rows ([LocalStores]).
  *
  * The row is iOS's, field for field — the owner's decision that both clients write one format:
  * - `body` is CTM1 ([LocalMessagePayload]): the whole wire `MessageContent`;

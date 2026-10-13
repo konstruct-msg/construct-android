@@ -21,7 +21,8 @@ import uniffi.construct_core.LocalStore
 class RoomImport(
     private val room: RoomExportDao,
     private val feed: LocalStoreFeed,
-    private val myUserId: String,
+    /** Null signed out: our messages cannot be addressed, so none go in and the counts fail. */
+    private val myUserId: String?,
 ) {
     /** What went in, per table; [skipped]: rows the core cannot hold (a message with no chat). */
     data class Report(val imported: Map<String, Int>, val skipped: Map<String, Int>)
@@ -32,7 +33,7 @@ class RoomImport(
 
     private val store: LocalStore get() = feed.store
 
-    suspend fun isDone(): Boolean = withContext(Dispatchers.IO) { store.get(MARKER) != null }
+    suspend fun isDone(): Boolean = withContext(Dispatchers.IO) { isDone(store) }
 
     suspend fun run(): Report {
         val imported = linkedMapOf<String, Int>()
@@ -137,5 +138,7 @@ class RoomImport(
         /** In the core's key-value table, beside the session blobs; `MessagingRuntime` reads only `session:` keys and the orchestrator's. */
         const val MARKER = "store:room-import:v1"
         private const val PAGE = 200
+
+        fun isDone(store: LocalStore): Boolean = store.get(MARKER) != null
     }
 }

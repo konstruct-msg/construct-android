@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.map
 
 /**
  * [CallStore] on Room's `call_records` table — until the core's `LocalStore` takes it (TODO 136).
- * Built by `DatabaseModule`, which provides no `CallRecordDao`: nothing else can reach the table.
+ * Built by `LocalStores`; nothing provides a `CallRecordDao`: nothing else can reach the table.
  */
 class RoomCallStore(private val dao: CallRecordDao) : CallStore {
     override fun observeRecent(): Flow<List<CallRecord>> = dao.observeRecent().map { rows -> rows.map { it.record() } }

@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
+import com.construct.messenger.data.local.LocalDataWipe
+import com.construct.messenger.data.local.LocalStores
 import com.construct.messenger.data.local.PendingChatStore
 import com.construct.messenger.data.model.AppTheme
 import com.construct.messenger.data.model.ChatFace
@@ -32,6 +34,8 @@ import com.construct.messenger.data.local.PendingInviteStore
 import com.construct.messenger.service.MessageNotifier
 import com.construct.messenger.ui.navigation.KonstructNavHost
 import com.construct.messenger.ui.theme.CTColor
+import com.construct.messenger.ui.screens.security.LocalStoreImportingScreen
+import com.construct.messenger.ui.screens.security.LocalStoreUnreadableScreen
 import com.construct.messenger.ui.screens.security.PinLockScreen
 import com.construct.messenger.ui.theme.ChatText
 import com.construct.messenger.ui.theme.KonstructMessengerTheme
@@ -64,6 +68,9 @@ class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var calls: com.construct.messenger.data.repository.CallsRepository
+
+    @Inject
+    lateinit var localStores: LocalStores
 
     @Inject
     lateinit var veilConfig: com.construct.messenger.veil.VeilConfigImporter
@@ -134,6 +141,16 @@ class MainActivity : FragmentActivity() {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             setRecentsScreenshotEnabled(!lock.pinEnabled)
                         }
+                    }
+                    // Over the app, under the lock: the screens below wait for the store (TODO 136).
+                    val store by localStores.state.collectAsStateWithLifecycle()
+                    when (store) {
+                        LocalStores.State.Importing -> LocalStoreImportingScreen()
+                        is LocalStores.State.Failed -> LocalStoreUnreadableScreen(
+                            onRetry = localStores::retry,
+                            onErase = { LocalDataWipe.run(this@MainActivity, "store_unreadable") },
+                        )
+                        LocalStores.State.Opening, is LocalStores.State.Ready -> Unit
                     }
                     if (lock.requiresUnlock) PinLockScreen()
                 }

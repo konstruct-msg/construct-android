@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.map
 
 /**
  * [ChatStore] on Room's `chats` table — until the core's `LocalStore` takes it (TODO 136).
- * Built by `DatabaseModule`, which provides no `ChatDao`: nothing else can reach the table.
+ * Built by `LocalStores`; nothing provides a `ChatDao`: nothing else can reach the table.
  */
 class RoomChatStore(private val dao: ChatDao) : ChatStore {
     override fun observeAll(): Flow<List<ChatRecord>> = dao.observeAll().map { rows -> rows.map { it.record() } }

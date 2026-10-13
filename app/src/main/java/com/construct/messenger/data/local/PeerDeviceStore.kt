@@ -42,7 +42,7 @@ interface PeerDeviceStore {
     suspend fun retain(accountId: String, active: List<String>)
 }
 
-/** Built by `DatabaseModule`, which provides no `PeerDeviceDao`. */
+/** Built by `LocalStores`; nothing provides a `PeerDeviceDao`. */
 class RoomPeerDeviceStore(private val dao: PeerDeviceDao) : PeerDeviceStore {
     override suspend fun forAccount(accountId: String): List<PeerDeviceRecord> = dao.forAccount(accountId).map { it.record() }
 
@@ -70,7 +70,7 @@ class RoomPeerDeviceStore(private val dao: PeerDeviceDao) : PeerDeviceStore {
 
 internal fun PeerDeviceEntity.record() = PeerDeviceRecord(deviceId, accountId, identityPublic, firstSeenAtMs)
 
-/** On the core's `LocalStore`. Not wired into the app yet. */
+/** On the core's `LocalStore`. */
 class CorePeerDeviceStore(private val store: LocalStore) : PeerDeviceStore {
     private suspend fun <T> io(block: (LocalStore) -> T): T = withContext(Dispatchers.IO) { block(store) }
 
