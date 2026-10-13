@@ -667,4 +667,12 @@
     <!-- The quiet reminder above the chat list: the key made at registration is not copied yet. -->
     <string name="recovery_nudge_title">Save your recovery key</string>
     <string name="recovery_nudge_body">12 words — the only way back if you lose every device.</string>
+    <!-- Forwarding (TODO 143): the content only, no author — iOS forward, forward_to, forward_failed. -->
+    <string name="forward">Forward</string>
+    <string name="forward_to">Forward to</string>
+    <string name="forward_failed">Some items were not forwarded: they are no longer on this device or the server.</string>
+    <!-- iOS audio_file: an album of music files in the chat list. -->
+    <string name="audio_file">Audio</string>
+    <string name="track_play">Play</string>
+    <string name="track_pause">Pause</string>
 </resources>

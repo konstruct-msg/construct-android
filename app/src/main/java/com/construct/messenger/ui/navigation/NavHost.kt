@@ -225,6 +225,7 @@ fun KonstructNavHost(
                         navController.navigate(Screen.Contact.createRoute(it, fromChat = true)) { launchSingleTop = true }
                     }
                 },
+                onOpenChat = { contactId -> navController.navigate(Screen.Chat.createRoute(contactId)) },
             )
         }
         composable(

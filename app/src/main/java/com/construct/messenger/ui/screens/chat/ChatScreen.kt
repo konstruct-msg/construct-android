@@ -73,6 +73,7 @@ import com.construct.messenger.ui.components.MessageInputView
 import com.construct.messenger.ui.components.VideoNoteActions
 import com.construct.messenger.ui.components.VideoNoteUi
 import com.construct.messenger.ui.components.VoiceComposerBar
+import com.construct.messenger.ui.components.TrackPlayback
 import com.construct.messenger.ui.components.VoicePlayback
 import com.construct.messenger.ui.components.glassCapsule
 import com.construct.messenger.ui.theme.CTColor
@@ -89,6 +90,8 @@ fun ChatScreen(
     onNavigateBack: () -> Unit,
     onOpenSafetyNumbers: () -> Unit,
     onOpenProfile: () -> Unit,
+    /** Another chat, opened over this one — where a forward went. */
+    onOpenChat: (String) -> Unit = {},
     viewModel: ChatViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -190,6 +193,10 @@ fun ChatScreen(
         }
     }
     var quoting by remember { mutableStateOf<Message?>(null) }
+    // iOS `forwarding`: what the chat picker on screen will send.
+    var forwarding by remember { mutableStateOf<List<Message>?>(null) }
+    var forwardFailed by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { viewModel.forwardFailed.collect { forwardFailed = true } }
     // iOS `isEditMode`: a tap selects, the menu and the composer give way to the selection bar.
     var selectedIds by remember { mutableStateOf<Set<String>?>(null) }
     // iOS `isSearchActive`: search takes the nav bar's place and the transcript shows the matches.
@@ -358,6 +365,12 @@ fun ChatScreen(
                     },
                     fileLoading = fileLoading,
                     fileUnavailable = fileUnavailable,
+                    tracks = TrackPlayback(
+                        playing = playing?.let { TrackPlayback.Playing(it.mediaId, it.progress, it.durationMs, it.paused) },
+                        loading = voiceLoading,
+                        unavailable = voiceUnavailable,
+                    ),
+                    onToggleTrack = viewModel::toggleTrack,
                     onOpenFile = viewModel::openFile,
                     loadMedia = viewModel::mediaBytes,
                     message = message,
@@ -399,6 +412,14 @@ fun ChatScreen(
                         quoting = message
                         menuMessageId = null
                     },
+                    onForward = if (com.construct.messenger.data.model.ForwardItem.of(message) != null) {
+                        {
+                            forwarding = listOf(message)
+                            menuMessageId = null
+                        }
+                    } else {
+                        null
+                    },
                     onSelectMessages = {
                         searching = false
                         query = ""
@@ -429,6 +450,28 @@ fun ChatScreen(
                     .padding(CTLayout.edgePad),
             )
         }
+        }
+
+        forwarding?.let { chosen ->
+            ForwardPickerSheet(
+                onPick = { chat ->
+                    viewModel.forward(chosen, chat.contactId)
+                    selectedIds = null
+                    // This chat takes it at once; any other when it opens, over this one.
+                    if (chat.contactId != viewModel.contactId) onOpenChat(chat.contactId)
+                },
+                onDismiss = { forwarding = null },
+            )
+        }
+        if (forwardFailed) {
+            com.construct.messenger.ui.components.CTConfirmDialog(
+                title = stringResource(R.string.forward),
+                message = stringResource(R.string.forward_failed),
+                confirmLabel = stringResource(android.R.string.ok),
+                dismissLabel = null,
+                onConfirm = { forwardFailed = false },
+                onDismiss = { forwardFailed = false },
+            )
         }
 
         quoting?.let { target ->
@@ -470,6 +513,8 @@ fun ChatScreen(
                     viewModel.deleteAll(chosen)
                     selectedIds = null
                 },
+                // In the transcript's order, whatever order they were picked in.
+                onForward = { forwarding = uiState.messages.filter { it.id in chosen } },
             )
             return@Column
         }
@@ -707,9 +752,9 @@ private fun ChatSearchBar(query: String, onQueryChange: (String) -> Unit, result
     }
 }
 
-/** iOS `ChatSelectionBarView`: Delete Selected and how many are chosen, in the composer's place. */
+/** iOS `ChatSelectionBarView`: Delete Selected, how many are chosen, Forward — in the composer's place. */
 @Composable
-private fun SelectionBar(count: Int, onDelete: () -> Unit) {
+private fun SelectionBar(count: Int, onDelete: () -> Unit, onForward: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -732,6 +777,10 @@ private fun SelectionBar(count: Int, onDelete: () -> Unit) {
             style = CTFont.secondary,
             color = CTColor.textDim,
         )
+        Spacer(Modifier.weight(1f))
+        TextButton(onClick = onForward, enabled = count > 0) {
+            Text(stringResource(R.string.forward).uppercase())
+        }
     }
 }
 

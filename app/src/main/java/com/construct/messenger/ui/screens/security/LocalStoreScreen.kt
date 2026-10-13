@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -79,7 +80,7 @@ fun LocalStoreUnreadableScreen(onRetry: () -> Unit, onErase: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+            Button(onClick = onRetry, shape = OutlinedTextFieldDefaults.shape) { Text(stringResource(R.string.retry)) }
             HorizontalDivider()
             Text(
                 stringResource(R.string.local_store_unreadable_erase_hint),
@@ -87,6 +88,7 @@ fun LocalStoreUnreadableScreen(onRetry: () -> Unit, onErase: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             OutlinedButton(
+                shape = OutlinedTextFieldDefaults.shape,
                 onClick = { confirmErase = true },
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
             ) { Text(stringResource(R.string.local_store_unreadable_erase)) }

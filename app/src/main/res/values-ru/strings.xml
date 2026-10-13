@@ -671,4 +671,12 @@
     <!-- The quiet reminder above the chat list: the key made at registration is not copied yet. -->
     <string name="recovery_nudge_title">Сохраните ключ восстановления</string>
     <string name="recovery_nudge_body">12 слов — единственный способ вернуть аккаунт, если потеряете все устройства.</string>
+    <!-- Forwarding (TODO 143): the content only, no author — iOS forward, forward_to, forward_failed. -->
+    <string name="forward">Переслать</string>
+    <string name="forward_to">Переслать в</string>
+    <string name="forward_failed">Часть вложений не переслана: их уже нет ни на устройстве, ни на сервере.</string>
+    <!-- iOS audio_file: an album of music files in the chat list. -->
+    <string name="audio_file">Аудио</string>
+    <string name="track_play">Воспроизвести</string>
+    <string name="track_pause">Пауза</string>
 </resources>
