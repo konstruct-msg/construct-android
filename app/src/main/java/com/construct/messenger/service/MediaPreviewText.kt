@@ -9,8 +9,9 @@ import javax.inject.Inject
 
 /**
  * The chat list's line for a message with media. **Canon:** iOS `Chat.lastMessagePreview` — the
- * caption if there is one, else the album named by its first item — "Video note", "Video" or "Photo" — the file's name (or
- * "N files") for files, "Voice message" for a voice note. Stored with the chat, as the text is.
+ * caption if there is one, else the album named by its first item — "Video note", "Video" or "Photo" —
+ * "Audio" when every file is a track, the file's name (or "N files") for files, "Voice message"
+ * for a voice note. Stored with the chat, as the text is.
  */
 fun interface MediaPreviewText {
     fun of(media: MediaWire.Stored): String
@@ -31,6 +32,7 @@ class AndroidMediaPreviewText @Inject constructor(
                 decoded.videoNote != null -> context.getString(R.string.video_note)
                 decoded.items.first().isVideo -> context.getString(R.string.video)
                 !decoded.isFiles -> context.getString(R.string.photo)
+                decoded.isAudio -> context.getString(R.string.audio_file)
                 decoded.items.size == 1 -> decoded.items[0].filename ?: context.getString(R.string.file_attachment)
                 else -> context.resources.getQuantityString(R.plurals.n_files, decoded.items.size, decoded.items.size)
             }

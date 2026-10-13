@@ -383,8 +383,17 @@ class ChatViewModel @Inject constructor(
      * Play or pause [voice]. iOS fetches a voice note only when it is played, never ahead; so
      * does this.
      */
-    fun toggleVoice(voice: MessageMedia.Voice) {
-        val id = voice.audio.mediaId
+    fun toggleVoice(voice: MessageMedia.Voice) = play(voice.audio, music = false)
+
+    /**
+     * Play or pause a music file in place, in the voice notes' player — one sound at a time —
+     * at its own speed. **Canon:** iOS `FileAttachmentBubbleView` (2026-10-13). Fetched on the
+     * first tap, as a voice note is.
+     */
+    fun toggleTrack(item: com.construct.messenger.data.model.MediaItem) = play(item, music = true)
+
+    private fun play(item: com.construct.messenger.data.model.MediaItem, music: Boolean) {
+        val id = item.mediaId
         if (player.state.value?.mediaId == id) {
             player.toggle(id, ByteArray(0))
             return
@@ -393,7 +402,7 @@ class ChatViewModel @Inject constructor(
         _voiceLoading.value = _voiceLoading.value + id
         viewModelScope.launch {
             try {
-                player.toggle(id, messagesRepository.mediaBytes(voice.audio))
+                player.toggle(id, messagesRepository.mediaBytes(item), music)
             } catch (e: MediaUnavailable) {
                 _voiceUnavailable.value = _voiceUnavailable.value + id
             } catch (e: Exception) {

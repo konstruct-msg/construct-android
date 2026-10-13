@@ -664,4 +664,8 @@
     <string name="local_store_unreadable_erase">Erase this device</string>
     <string name="local_store_unreadable_erase_hint">Start over with an empty device. The chats kept here are lost; your identity comes back only with your recovery phrase.</string>
     <string name="local_store_unreadable_erase_confirm">Everything on this device — chats, media, contacts, keys — will be erased, and the app will close. This cannot be undone.</string>
+    <!-- iOS audio_file: an album of music files in the chat list. -->
+    <string name="audio_file">Audio</string>
+    <string name="track_play">Play</string>
+    <string name="track_pause">Pause</string>
 </resources>

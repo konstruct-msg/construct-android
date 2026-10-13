@@ -73,6 +73,7 @@ import com.construct.messenger.ui.components.MessageInputView
 import com.construct.messenger.ui.components.VideoNoteActions
 import com.construct.messenger.ui.components.VideoNoteUi
 import com.construct.messenger.ui.components.VoiceComposerBar
+import com.construct.messenger.ui.components.TrackPlayback
 import com.construct.messenger.ui.components.VoicePlayback
 import com.construct.messenger.ui.components.glassCapsule
 import com.construct.messenger.ui.theme.CTColor
@@ -358,6 +359,12 @@ fun ChatScreen(
                     },
                     fileLoading = fileLoading,
                     fileUnavailable = fileUnavailable,
+                    tracks = TrackPlayback(
+                        playing = playing?.let { TrackPlayback.Playing(it.mediaId, it.progress, it.durationMs, it.paused) },
+                        loading = voiceLoading,
+                        unavailable = voiceUnavailable,
+                    ),
+                    onToggleTrack = viewModel::toggleTrack,
                     onOpenFile = viewModel::openFile,
                     loadMedia = viewModel::mediaBytes,
                     message = message,
