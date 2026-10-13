@@ -39,10 +39,13 @@ sealed class TokenRefreshError(cause: Throwable? = null) : Exception(cause) {
     data object NoRefreshToken : TokenRefreshError()
     data object NoDeviceId : TokenRefreshError()
     data object TokenRevoked : TokenRefreshError()
+
+    /** REMOVED, over direct TLS: [DeviceRemoval] has been told; nothing to sign in again to. */
+    data object DeviceRemoved : TokenRefreshError()
     data class NetworkError(override val cause: Throwable) : TokenRefreshError(cause)
 
     val isPermanent: Boolean
-        get() = this is TokenRevoked || this is NoRefreshToken || this is NoDeviceId
+        get() = this is TokenRevoked || this is DeviceRemoved || this is NoRefreshToken || this is NoDeviceId
 }
 
 /**
@@ -67,6 +70,7 @@ sealed class TokenRefreshError(cause: Throwable? = null) : Exception(cause) {
 class TokenRefreshCoordinator @Inject constructor(
     private val keystoreManager: KeystoreManager,
     private val grpcClient: GrpcClient,
+    private val removal: DeviceRemoval,
 ) {
     private val mutex = Mutex()
 
@@ -133,6 +137,8 @@ class TokenRefreshCoordinator @Inject constructor(
         refreshToken: String,
         deviceId: String,
     ): TokenRefreshResult {
+        // As at sign-in: direct before and after the call, or a switch to VEIL mid-call counts as VEIL.
+        val directBefore = grpcClient.veilPort == null
         return try {
             val request = RefreshTokenRequest.newBuilder()
                 .setRefreshToken(refreshToken)
@@ -154,15 +160,25 @@ class TokenRefreshCoordinator @Inject constructor(
                 refreshToken = if (response.hasRefreshToken()) response.refreshToken else null,
                 expiresAt = response.expiresAt,
             )
-        } catch (e: StatusRuntimeException) {
-            when (e.status.code) {
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // grpc-kotlin's stubs throw `StatusException`; only `StatusRuntimeException` was
+            // caught until 2026-10-13, so a revoked refresh token read as a network error.
+            if (e !is io.grpc.StatusException && e !is StatusRuntimeException) {
+                return TokenRefreshResult.Failure(TokenRefreshError.NetworkError(e))
+            }
+            val refusal = DeviceRefusalReading.refusalOf(e)
+            if (DeviceRefusalReading.erasesDevice(refusal, directBefore && grpcClient.veilPort == null)) {
+                removal.heard("token refresh")
+                return TokenRefreshResult.Failure(TokenRefreshError.DeviceRemoved)
+            }
+            when (Status.fromThrowable(e).code) {
                 Status.Code.UNAUTHENTICATED,
                 Status.Code.PERMISSION_DENIED,
                     -> TokenRefreshResult.Failure(TokenRefreshError.TokenRevoked)
                 else -> TokenRefreshResult.Failure(TokenRefreshError.NetworkError(e))
             }
-        } catch (e: Exception) {
-            TokenRefreshResult.Failure(TokenRefreshError.NetworkError(e))
         }
     }
 

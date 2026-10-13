@@ -106,4 +106,17 @@ class LoginUseCaseTest {
         whenever(authStub.authenticateDevice(any(), any())).thenThrow(refusedWith(null))
         assertEquals(io.grpc.StatusRuntimeException::class, loginFailure()::class)
     }
+
+    /**
+     * The stub on a device throws `StatusException` (grpc-kotlin), not the runtime one the tests
+     * above use. Until 2026-10-13 only the runtime one was caught, so on a device no refusal was
+     * ever read and a removed device never erased. Mutation: catch only `StatusRuntimeException` — reddens.
+     */
+    @Test
+    fun `a removal thrown as the coroutine stub throws it erases the device`() = runTest {
+        val checked = io.grpc.StatusException(refusedWith("1").status, refusedWith("1").trailers)
+        whenever(authStub.authenticateDevice(any(), any())).thenAnswer { throw checked }
+        val failure = loginFailure() as com.construct.messenger.data.auth.DeviceAuthRefused
+        assertEquals(true, failure.erasesDevice)
+    }
 }

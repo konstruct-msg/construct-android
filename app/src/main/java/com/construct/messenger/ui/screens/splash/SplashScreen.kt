@@ -88,7 +88,7 @@ fun SplashScreen(
  * the next start, which asks the server again.
  */
 @Composable
-private fun DeviceRemovedNotice(onErase: () -> Unit) {
+internal fun DeviceRemovedNotice(onErase: () -> Unit) {
     var left by remember { mutableIntStateOf(ERASE_AFTER_SECONDS) }
     LaunchedEffect(Unit) {
         while (left > 0) {

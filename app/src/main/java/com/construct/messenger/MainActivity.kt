@@ -73,6 +73,9 @@ class MainActivity : FragmentActivity() {
     lateinit var localStores: LocalStores
 
     @Inject
+    lateinit var deviceRemoval: com.construct.messenger.data.auth.DeviceRemoval
+
+    @Inject
     lateinit var veilConfig: com.construct.messenger.veil.VeilConfigImporter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -153,6 +156,14 @@ class MainActivity : FragmentActivity() {
                         LocalStores.State.Opening, is LocalStores.State.Ready -> Unit
                     }
                     if (lock.requiresUnlock) PinLockScreen()
+                    // Heard at a token refresh while the app runs (TODO 126): over everything, the
+                    // lock included — there is nothing left to protect once the erase starts.
+                    val removed by deviceRemoval.removed.collectAsStateWithLifecycle()
+                    if (removed) {
+                        com.construct.messenger.ui.screens.splash.DeviceRemovedNotice(
+                            onErase = { LocalDataWipe.run(this@MainActivity, "removed") },
+                        )
+                    }
                 }
             }
         }

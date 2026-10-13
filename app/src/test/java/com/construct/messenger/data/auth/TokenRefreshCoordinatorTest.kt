@@ -31,11 +31,14 @@ class TokenRefreshCoordinatorTest {
     private val authStub: AuthServiceCoroutineStub = mock()
 
     private lateinit var coordinator: TokenRefreshCoordinator
+    private val removal = DeviceRemoval()
 
     @Before
     fun setUp() {
         whenever(grpcClient.auth).thenReturn(authStub)
-        coordinator = TokenRefreshCoordinator(keystoreManager, grpcClient)
+        // Direct TLS unless a test says otherwise; Mockito would answer 0 — a VEIL port.
+        whenever(grpcClient.veilPort).thenReturn(null)
+        coordinator = TokenRefreshCoordinator(keystoreManager, grpcClient, removal)
     }
 
     // ── Success ─────────────────────────────────────────────────────────────
@@ -295,5 +298,60 @@ class TokenRefreshCoordinatorTest {
 
         coordinator.refreshIfPossible()
         verify(authStub, times(2)).refreshToken(any(), any())
+    }
+
+    // ── Refused device (TODO 126) ───────────────────────────────────────────
+
+    /** How the coroutine stub throws on a device: `StatusException`, with the reason in the trailers. */
+    private fun refused(number: String?): io.grpc.StatusException =
+        io.grpc.StatusException(
+            Status.UNAUTHENTICATED.withDescription("Device is inactive"),
+            io.grpc.Metadata().apply {
+                if (number != null) put(io.grpc.Metadata.Key.of("construct-device-refusal", io.grpc.Metadata.ASCII_STRING_MARSHALLER), number)
+            },
+        )
+
+    private suspend fun refreshRefused(number: String?): TokenRefreshResult {
+        whenever(keystoreManager.getRefreshToken()).thenReturn("old_refresh_token")
+        whenever(keystoreManager.getDeviceId()).thenReturn("device-1")
+        whenever(authStub.refreshToken(any(), any())).thenAnswer { throw refused(number) }
+        return coordinator.refreshIfPossible()
+    }
+
+    /**
+     * A device with a stored session never signs in again; it only refreshes. A removal is heard
+     * here or not at all. Mutation: drop the reading — reddens.
+     */
+    @Test
+    fun `a removal heard at refresh over direct TLS erases the device`() = runTest {
+        val result = refreshRefused("1")
+        assertEquals(TokenRefreshError.DeviceRemoved, (result as TokenRefreshResult.Failure).error)
+        assertTrue(removal.removed.value)
+    }
+
+    /** Mutation: ignore the route — a relay could erase the device. */
+    @Test
+    fun `a removal heard through VEIL at refresh does not erase`() = runTest {
+        whenever(grpcClient.veilPort).thenReturn(40_000)
+        val result = refreshRefused("1")
+        assertEquals(TokenRefreshError.TokenRevoked, (result as TokenRefreshResult.Failure).error)
+        assertFalse(removal.removed.value)
+    }
+
+    /** NOT_FOUND answers an unapproved join request too: never an erase. */
+    @Test
+    fun `not found at refresh does not erase`() = runTest {
+        refreshRefused("2")
+        assertFalse(removal.removed.value)
+    }
+
+    /**
+     * A revoked token, thrown as the stub throws it, is permanent — not a network error retried
+     * forever. Mutation: catch only `StatusRuntimeException` — reddens.
+     */
+    @Test
+    fun `a revoked token thrown as StatusException is permanent`() = runTest {
+        val result = refreshRefused(null)
+        assertEquals(TokenRefreshError.TokenRevoked, (result as TokenRefreshResult.Failure).error)
     }
 }

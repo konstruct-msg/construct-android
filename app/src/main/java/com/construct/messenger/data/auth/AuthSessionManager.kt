@@ -110,8 +110,10 @@ class AuthSessionManager @Inject constructor(
     suspend fun <T> withAuthRetry(block: suspend () -> T): T {
         try {
             return block()
-        } catch (e: StatusRuntimeException) {
-            if (e.status.code != Status.Code.UNAUTHENTICATED) throw e
+        } catch (e: Exception) {
+            // grpc-kotlin's stubs throw `StatusException`, plain calls `StatusRuntimeException`.
+            if (e !is io.grpc.StatusException && e !is StatusRuntimeException) throw e
+            if (Status.fromThrowable(e).code != Status.Code.UNAUTHENTICATED) throw e
 
             Log.w(TAG, "UNAUTHENTICATED — attempting single-flight token refresh")
             return when (val result = tokenRefreshCoordinator.refreshIfPossible()) {
