@@ -29,6 +29,45 @@ class ChatViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    private val drafts = com.construct.messenger.data.repository.ForwardDrafts()
+
+    private fun chat(id: String, messages: FakeMessagesRepository): ChatViewModel {
+        val handle = SavedStateHandle()
+        handle["contactId"] = id
+        return ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
+    }
+
+    /**
+     * A forward goes to the picked chat as content only, in transcript order, and that chat sends
+     * it when it opens — not the chat it was picked in. iOS `ForwardDrafts`.
+     */
+    @Test
+    fun aForwardIsSentByTheChatItGoesTo() = runTest {
+        val here = FakeMessagesRepository()
+        val source = chat("peer-1", here)
+        val replyAndQuote = Message(id = "m1", chatId = "peer-1", body = " hello ", isOutgoing = false, replyToId = "m0", replyPreview = "earlier")
+        val empty = Message(id = "m2", chatId = "peer-1", body = "  ", isOutgoing = true)
+        assertTrue(source.forward(listOf(replyAndQuote, empty), "peer-2"))
+        advanceUntilIdle()
+        assertTrue("not sent by the chat it was picked in", here.forwarded.isEmpty())
+
+        val there = FakeMessagesRepository()
+        chat("peer-2", there)
+        advanceUntilIdle()
+        assertEquals(listOf("peer-2" to listOf<com.construct.messenger.data.model.ForwardItem>(com.construct.messenger.data.model.ForwardItem.Text("hello"))), there.forwarded)
+        assertTrue("taken once", drafts.pending.value.isEmpty())
+    }
+
+    @Test
+    fun aForwardToTheChatOnScreenGoesAtOnce() = runTest {
+        val here = FakeMessagesRepository()
+        val vm = chat("peer-1", here)
+        advanceUntilIdle()
+        vm.forward(listOf(Message(id = "m1", chatId = "peer-1", body = "again", isOutgoing = true)), "peer-1")
+        advanceUntilIdle()
+        assertEquals(1, here.forwarded.size)
+    }
+
     @Test
     fun sendClearsDraftAndRecordsOutgoing() = runTest {
         val messages = FakeMessagesRepository()
@@ -43,6 +82,7 @@ class ChatViewModelTest {
             org.mockito.kotlin.mock(),
             org.mockito.kotlin.mock(),
             org.mockito.kotlin.mock(),
+            drafts,
         )
         viewModel.onDraftChange("hello")
         viewModel.send()
@@ -63,7 +103,7 @@ class ChatViewModelTest {
     fun `the composer is free before the send ends`() = runTest {
         val messages = FakeMessagesRepository().also { it.gate = kotlinx.coroutines.CompletableDeferred() }
         val handle = SavedStateHandle().apply { set("contactId", "peer-1") }
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
         viewModel.startReply(Message(id = "q", chatId = "peer-1", body = "quoted", isOutgoing = false))
         viewModel.onDraftChange("hello")
         viewModel.send()
@@ -87,7 +127,7 @@ class ChatViewModelTest {
         val contacts = FakeContactsRepository()
         contacts.contacts.value = listOf(Contact(userId = "peer-1", displayName = "Alice", username = "alice"))
         val handle = SavedStateHandle().apply { set("contactId", "peer-1") }
-        val viewModel = ChatViewModel(handle, FakeMessagesRepository(), contacts, org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val viewModel = ChatViewModel(handle, FakeMessagesRepository(), contacts, org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
         advanceUntilIdle()
 
         assertEquals("ALICE", viewModel.uiState.value.title)
@@ -99,7 +139,7 @@ class ChatViewModelTest {
     fun `a send refused before any bubble gives the text back`() = runTest {
         val messages = FakeMessagesRepository().also { it.refuseSend = true }
         val handle = SavedStateHandle().apply { set("contactId", "peer-1") }
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
         viewModel.onDraftChange("hello ")
         viewModel.send()
         advanceUntilIdle()
@@ -112,7 +152,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository()
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
 
         viewModel.startReply(
             Message(id = "ABC", chatId = "peer-1", body = "  original  ", isOutgoing = false),
@@ -135,7 +175,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository()
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
         val original = Message(id = "mine", chatId = "peer-1", body = "hello", isOutgoing = true)
 
         viewModel.startEdit(original)
@@ -160,7 +200,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository().also { it.failEdit = true }
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
         viewModel.startEdit(Message(id = "mine", chatId = "peer-1", body = "hello", isOutgoing = true))
         viewModel.onDraftChange("hello there")
         viewModel.send()
@@ -175,7 +215,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository()
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
         val original = Message(id = "mine", chatId = "peer-1", body = "hello", isOutgoing = true)
         viewModel.startEdit(original)
         viewModel.delete(original)
@@ -190,7 +230,7 @@ class ChatViewModelTest {
     fun `picked photos are sent with the draft as caption`() = runTest {
         val handle = SavedStateHandle().apply { set("contactId", "peer") }
         val messages = FakeMessagesRepository()
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
         val a = org.mockito.kotlin.mock<android.net.Uri>()
         val b = org.mockito.kotlin.mock<android.net.Uri>()
         viewModel.attach(listOf(a, b, a))
@@ -209,7 +249,7 @@ class ChatViewModelTest {
     fun `a selected quote replaces the preview of the reply`() = runTest {
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, FakeMessagesRepository(), FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val viewModel = ChatViewModel(handle, FakeMessagesRepository(), FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
         val message = Message(id = "M-1", chatId = "c", body = "one two three", isOutgoing = false)
         viewModel.startReply(message, "two")
         advanceUntilIdle()
@@ -272,6 +312,11 @@ private class FakeMessagesRepository : MessagesRepository {
         flow.value = flow.value.filter { it.id != messageId }
     }
     override suspend fun sendSticker(contactId: String, ref: com.construct.messenger.stickers.StickerReference) = SendOutcome.Sent("s")
+    val forwarded = mutableListOf<Pair<String, List<com.construct.messenger.data.model.ForwardItem>>>()
+    override suspend fun forward(contactId: String, items: List<com.construct.messenger.data.model.ForwardItem>): Int {
+        forwarded += contactId to items
+        return 0
+    }
     val retried = mutableListOf<String>()
     override suspend fun retry(contactId: String, messageId: String): SendOutcome {
         retried += messageId

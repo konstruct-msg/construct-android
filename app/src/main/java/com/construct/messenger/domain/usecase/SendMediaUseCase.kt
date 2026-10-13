@@ -24,6 +24,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import shared.proto.messaging.v1.Content.MediaAlbumMessage
+import com.construct.messenger.data.model.MediaItem
 import shared.proto.messaging.v1.Content.MediaDimensions
 import shared.proto.messaging.v1.Content.MediaMessage
 import shared.proto.messaging.v1.Content.MediaType
@@ -215,6 +216,68 @@ class SendMediaUseCase @Inject constructor(
         return sendMessage.deliverPrepared(contactId, messageId, timestampMs, MediaWire.content(album.kind, album.bytes)!!)
     }
 
+    /**
+     * A forwarded album (TODO 143, `decisions/forward-carries-no-author.md`): each item's [plain]
+     * bytes sealed again under a new key, staged and uploaded as a new object, and described as the
+     * original was — kind, size, dimensions, length, BlurHash, poster, name, the video-note mark.
+     * Nothing of the original's object goes: not its id, key, digest or address. No quote. Sent as
+     * the bytes it arrived as — compressing again would only lose more of it. **Canon:** iOS
+     * `ChatSendCoordinator+Forward`.
+     */
+    suspend fun forward(contactId: String, items: List<MediaItem>, plain: List<ByteArray>, caption: String): SendOutcome {
+        require(items.isNotEmpty() && items.size == plain.size)
+        val messageId = UUID.randomUUID().toString().lowercase()
+        val timestampMs = System.currentTimeMillis()
+        val staged = withContext(Dispatchers.Default) {
+            items.zip(plain).map { (item, bytes) ->
+                val localId = MediaWire.LOCAL_PREFIX + UUID.randomUUID()
+                val sealed = MediaCrypto.seal(bytes)
+                media.stage(localId, sealed.blob)
+                Forwarded(localId, sealed, item, bytes.size.toLong())
+            }
+        }
+        val caption = caption.trim()
+        sendMessage.persistMedia(contactId, messageId, timestampMs, stored(staged.map { it.wire(it.localId, "") }, caption, null), null)
+        val uploaded = try {
+            coroutineScope {
+                val gate = Semaphore(PARALLEL_UPLOADS)
+                staged.map { f -> async { gate.withPermit { media.upload(f.localId, f.sealed.sha256).let { f.wire(it.mediaId, it.downloadUrl) } } } }.awaitAll()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "forward upload for ${messageId.take(8)}… failed", e)
+            sendMessage.markFailed(messageId)
+            return SendOutcome.Failed(messageId, "upload failed")
+        }
+        val album = stored(uploaded, caption, null)
+        sendMessage.replaceMedia(messageId, album)
+        return sendMessage.deliverPrepared(contactId, messageId, timestampMs, MediaWire.content(album.kind, album.bytes)!!)
+    }
+
+    /** A forwarded item: the original's description, this upload's object. */
+    private class Forwarded(val localId: String, val sealed: MediaCrypto.Sealed, val original: MediaItem, val plainSize: Long) {
+        fun wire(mediaId: String, url: String): MediaMessage {
+            val o = original
+            val m = MediaMessage.newBuilder()
+                .setMediaType(MediaWire.mediaTypeOf(o.mimeType))
+                .setMimeType(o.mimeType)
+                .setFileUrl(url)
+                .setEncryptionKey(ByteString.copyFrom(sealed.key))
+                .setFileHash(ByteString.copyFrom(sealed.sha256))
+                .setMediaId(mediaId)
+                // As the first send counted it: the blob for pictures and video, the file itself for files.
+                .setFileSize(if (o.isImage || o.isVideo) sealed.blob.size.toLong() else plainSize)
+            if (o.width != null && o.height != null) m.setDimensions(MediaDimensions.newBuilder().setWidth(o.width).setHeight(o.height))
+            o.durationMs?.let { m.setDurationMs(it.toInt()) }
+            o.blurhash?.let { m.setBlurhash(it) }
+            o.thumbnail?.let { m.setThumbnail(ByteString.copyFrom(it)) }
+            o.filename?.let { m.setFilename(it) }
+            if (o.isVideoNote) m.setPresentation(shared.proto.messaging.v1.Content.MediaPresentation.MEDIA_PRESENTATION_VIDEO_NOTE)
+            return m.build()
+        }
+    }
+
     private class StagedFile(val localId: String, val sealed: MediaCrypto.Sealed, val name: String, val mime: String, val size: Long) {
         fun item(mediaId: String, url: String): MediaMessage = MediaMessage.newBuilder()
             .setMediaType(MediaWire.mediaTypeOf(mime))
@@ -235,10 +298,15 @@ class SendMediaUseCase @Inject constructor(
      * The recording is sealed, kept under a local id for the bubble, and deleted from the cache.
      */
     suspend fun voice(contactId: String, recording: File, durationMs: Long, waveform: List<Float>): SendOutcome {
+        val audio = withContext(Dispatchers.IO) { recording.readBytes().also { recording.delete() } }
+        return voice(contactId, audio, durationMs, waveform)
+    }
+
+    /** A voice note from its bytes — a recording, or one being forwarded. */
+    suspend fun voice(contactId: String, audio: ByteArray, durationMs: Long, waveform: List<Float>): SendOutcome {
         val messageId = UUID.randomUUID().toString().lowercase()
         val timestampMs = System.currentTimeMillis()
         val localId = MediaWire.LOCAL_PREFIX + UUID.randomUUID()
-        val audio = withContext(Dispatchers.IO) { recording.readBytes().also { recording.delete() } }
         val sealed = MediaCrypto.seal(audio)
         media.stage(localId, sealed.blob)
         fun wire(mediaId: String, url: String) = MediaWire.stored(

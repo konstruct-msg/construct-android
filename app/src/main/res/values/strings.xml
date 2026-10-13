@@ -664,4 +664,8 @@
     <string name="local_store_unreadable_erase">Erase this device</string>
     <string name="local_store_unreadable_erase_hint">Start over with an empty device. The chats kept here are lost; your identity comes back only with your recovery phrase.</string>
     <string name="local_store_unreadable_erase_confirm">Everything on this device — chats, media, contacts, keys — will be erased, and the app will close. This cannot be undone.</string>
+    <!-- Forwarding (TODO 143): the content only, no author — iOS forward, forward_to, forward_failed. -->
+    <string name="forward">Forward</string>
+    <string name="forward_to">Forward to</string>
+    <string name="forward_failed">Some items were not forwarded: they are no longer on this device or the server.</string>
 </resources>
