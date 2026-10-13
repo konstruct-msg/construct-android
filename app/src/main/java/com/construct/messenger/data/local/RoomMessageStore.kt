@@ -45,6 +45,9 @@ class RoomMessageStore(private val dao: MessageDao) : MessageStore {
     }
 
     override suspend fun deleteChat(chatId: String) = dao.deleteChat(chatId)
+
+    /** Room has no column for it: a launch left on Room (an import that did not pass) keeps none. */
+    override suspend fun setTranscript(id: String, text: String?, language: String?, atMs: Long): Boolean = false
 }
 
 internal fun MessageEntity.record() = MessageRecord(

@@ -685,4 +685,25 @@
     <string name="veil_bootstrap_ok_hint">Go back and create or restore your identity — it will now go through this connection.</string>
     <string name="veil_config_scan">Scan configuration QR</string>
 ||||||| 713a68a
+    <!-- On-device transcription (TODO 116) — iOS stt_*. -->
+    <string name="stt_transcribe">Transcribe</string>
+    <string name="stt_nothing_heard">No speech heard.</string>
+    <string name="stt_error_no_model">No transcription model is downloaded yet.</string>
+    <string name="stt_error_unavailable">Transcription isn\'t available on this device.</string>
+    <string name="stt_error_failed">Could not transcribe this note.</string>
+    <string name="stt_section_title">Transcription</string>
+    <string name="stt_footer">On-device transcription via whisper.cpp. No audio leaves your device. The model is downloaded from Hugging Face.</string>
+    <string name="stt_auto_transcribe">Auto-transcribe voice messages</string>
+    <string name="stt_language_label">Language</string>
+    <string name="stt_language_auto">Auto-detect</string>
+    <string name="stt_translate_toggle">Translate to English</string>
+    <string name="stt_translate_footer">Transcription will be translated to English using the model.</string>
+    <string name="stt_models">Models</string>
+    <string name="stt_model_download">Download</string>
+    <string name="stt_model_delete">Delete</string>
+    <string name="stt_model_use">Use</string>
+    <string name="stt_model_in_use">In use</string>
+    <string name="stt_model_failed">Download failed — try again</string>
+    <string name="stt_models_on_disk">On disk: %1$s</string>
+    <string name="stt_model_delete_confirm">Delete the %1$s model? Transcription needs a model; you can download it again.</string>
 </resources>

@@ -43,6 +43,7 @@ class GatedMessageStore(private val gate: LocalStoreGate) : MessageStore {
     override suspend fun latestVisible(chatId: String) = s().latestVisible(chatId)
     override suspend fun delete(id: String) = s().delete(id)
     override suspend fun deleteChat(chatId: String) = s().deleteChat(chatId)
+    override suspend fun setTranscript(id: String, text: String?, language: String?, atMs: Long) = s().setTranscript(id, text, language, atMs)
 }
 
 class GatedReactionStore(private val gate: LocalStoreGate) : ReactionStore {

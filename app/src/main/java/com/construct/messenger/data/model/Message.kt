@@ -19,6 +19,8 @@ data class Message(
     val media: MessageMedia? = null,
     /** One per reactor, oldest first. A reaction is never a row of its own. */
     val reactions: List<MessageReaction> = emptyList(),
+    /** What a voice or video note says, read on this device (TODO 116); never sent. */
+    val transcript: String? = null,
 ) {
     /** The emoji this account has on it, if any — what a repeat tap takes off. */
     val myReaction: String? get() = reactions.firstOrNull { it.isMine }?.emoji

@@ -225,4 +225,21 @@ class CoreMessageStoreTest : MessageStoreContract() {
 
     @After
     fun close() = core.close()
+
+    /**
+     * What a note says, read on this phone (TODO 116), is kept beside it — and survives the edits
+     * and the media swap that rewrite the body. Room keeps none (no column; a fallback launch only).
+     */
+    @org.junit.Test
+    fun aTranscriptIsKeptAndSurvivesTheBodyChanging() = runTest {
+        val id = "v1"
+        store.insert(MessageRecord(id, "chat-0b6e9f6a", "", isSentByMe = false, timestampMs = 5, deliveryStatus = DeliveryStatus.DELIVERED))
+        assertTrue(store.setTranscript(id, "привет", "ru", 10))
+        assertEquals("привет" to "ru", store.get(id)!!.let { it.transcript to it.transcriptLanguage })
+        store.edit(id, "caption", null)
+        assertEquals("привет", store.get(id)!!.transcript)
+        assertTrue(store.setTranscript(id, null, "ru", 11))
+        assertNull(store.get(id)!!.transcript)
+        assertFalse(store.setTranscript("missing", "x", null, 12))
+    }
 }

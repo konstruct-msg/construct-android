@@ -90,6 +90,11 @@ class CoreMessageStore(
         io { s -> find(s, id)?.let { s.deleteMessage(it.id) } }
     }
 
+    override suspend fun setTranscript(id: String, text: String?, language: String?, atMs: Long): Boolean = io { s ->
+        val stored = find(s, id) ?: return@io false
+        s.setTranscript(stored.id, text, language?.takeIf { text != null }, atMs.takeIf { text != null })
+    }
+
     override suspend fun deleteChat(chatId: String) {
         io { s -> s.chatMessages(chatId).forEach { s.deleteMessage(it.id) } }
     }
@@ -177,5 +182,7 @@ private fun LocalMessage.record(): MessageRecord {
         contentType = contentType.toInt(),
         mediaPayload = fields.mediaPayload,
         orderKey = orderKey,
+        transcript = transcriptText,
+        transcriptLanguage = transcriptLanguage,
     )
 }

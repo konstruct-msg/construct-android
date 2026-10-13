@@ -35,6 +35,13 @@ data class MessageRecord(
      * id. Empty on insert means none known — the store puts it at its own time.
      */
     val orderKey: String = "",
+    /**
+     * What a voice or video note says, transcribed on this device (TODO 116). Never sent: it is
+     * this phone's reading, not the message. Null until someone asks for it.
+     */
+    val transcript: String? = null,
+    /** The language whisper heard it in (ISO 639-1). */
+    val transcriptLanguage: String? = null,
 ) {
     // ByteArray field: structural equality must be explicit.
     override fun equals(other: Any?): Boolean {
@@ -44,7 +51,7 @@ data class MessageRecord(
             timestampMs == other.timestampMs && deliveryStatus == other.deliveryStatus && replyToId == other.replyToId &&
             replyPreview == other.replyPreview && replyMediaType == other.replyMediaType && isEdited == other.isEdited &&
             mediaType == other.mediaType && contentType == other.contentType && mediaPayload.contentEquals(other.mediaPayload) &&
-            orderKey == other.orderKey
+            orderKey == other.orderKey && transcript == other.transcript && transcriptLanguage == other.transcriptLanguage
     }
 
     override fun hashCode(): Int {
@@ -106,6 +113,9 @@ interface MessageStore {
 
     /** Every message of the chat. */
     suspend fun deleteChat(chatId: String)
+
+    /** Keep [text] as [id]'s transcript; null clears it. False when there is no such message. */
+    suspend fun setTranscript(id: String, text: String?, language: String?, atMs: Long): Boolean
 }
 
 /** [orderKey], or — when none is known — the key that puts the message at its own time. */

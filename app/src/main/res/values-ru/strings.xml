@@ -689,4 +689,25 @@
     <string name="veil_bootstrap_ok_hint">Вернитесь и создайте или восстановите личность — теперь это пойдёт через это подключение.</string>
     <string name="veil_config_scan">Сканировать QR конфигурации</string>
 ||||||| 713a68a
+    <!-- On-device transcription (TODO 116) — iOS stt_*. -->
+    <string name="stt_transcribe">Расшифровать</string>
+    <string name="stt_nothing_heard">Речи не слышно.</string>
+    <string name="stt_error_no_model">Модель распознавания ещё не скачана.</string>
+    <string name="stt_error_unavailable">Распознавание на этом устройстве недоступно.</string>
+    <string name="stt_error_failed">Не удалось расшифровать это сообщение.</string>
+    <string name="stt_section_title">Транскрипция</string>
+    <string name="stt_footer">Транскрипция на устройстве через whisper.cpp. Аудио не покидает устройство. Модель скачивается с Hugging Face.</string>
+    <string name="stt_auto_transcribe">Автотранскрипция голосовых</string>
+    <string name="stt_language_label">Язык</string>
+    <string name="stt_language_auto">Автоопределение</string>
+    <string name="stt_translate_toggle">Переводить на английский</string>
+    <string name="stt_translate_footer">Транскрипция будет переведена на английский с помощью модели.</string>
+    <string name="stt_models">Модели</string>
+    <string name="stt_model_download">Скачать</string>
+    <string name="stt_model_delete">Удалить</string>
+    <string name="stt_model_use">Использовать</string>
+    <string name="stt_model_in_use">Используется</string>
+    <string name="stt_model_failed">Не скачалась — попробуйте ещё раз</string>
+    <string name="stt_models_on_disk">На диске: %1$s</string>
+    <string name="stt_model_delete_confirm">Удалить модель %1$s? Для транскрипции нужна модель; её можно скачать снова.</string>
 </resources>
