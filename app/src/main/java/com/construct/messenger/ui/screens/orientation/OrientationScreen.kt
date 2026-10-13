@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -173,6 +174,7 @@ private fun BottomChrome(currentPage: Int, isLastPage: Boolean, onPrimary: () ->
             }
         }
         Button(
+            shape = OutlinedTextFieldDefaults.shape,
             onClick = onPrimary,
             // iOS: the 24 gutter sits outside the 360 cap.
             modifier = Modifier

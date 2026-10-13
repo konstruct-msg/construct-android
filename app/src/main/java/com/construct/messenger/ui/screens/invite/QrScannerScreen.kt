@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -309,6 +310,7 @@ private fun PermissionPrompt(
             textAlign = TextAlign.Center,
         )
         Button(
+            shape = OutlinedTextFieldDefaults.shape,
             onClick = if (permanentlyDenied) onOpenSettings else onGrant,
             modifier = Modifier.fillMaxWidth(),
         ) {

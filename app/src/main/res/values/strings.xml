@@ -664,6 +664,17 @@
     <string name="local_store_unreadable_erase">Erase this device</string>
     <string name="local_store_unreadable_erase_hint">Start over with an empty device. The chats kept here are lost; your identity comes back only with your recovery phrase.</string>
     <string name="local_store_unreadable_erase_confirm">Everything on this device — chats, media, contacts, keys — will be erased, and the app will close. This cannot be undone.</string>
+    <!-- The quiet reminder above the chat list: the key made at registration is not copied yet. -->
+    <string name="recovery_nudge_title">Save your recovery key</string>
+    <string name="recovery_nudge_body">12 words — the only way back if you lose every device.</string>
+    <!-- Forwarding (TODO 143): the content only, no author — iOS forward, forward_to, forward_failed. -->
+    <string name="forward">Forward</string>
+    <string name="forward_to">Forward to</string>
+    <string name="forward_failed">Some items were not forwarded: they are no longer on this device or the server.</string>
+    <!-- iOS audio_file: an album of music files in the chat list. -->
+    <string name="audio_file">Audio</string>
+    <string name="track_play">Play</string>
+    <string name="track_pause">Pause</string>
     <!-- "Can't connect?" on the first screen — iOS onboarding_cant_connect, veil_bootstrap_*. -->
     <string name="onboarding_cant_connect">Can\'t connect?</string>
     <string name="veil_bootstrap_title">Can\'t connect</string>
@@ -673,4 +684,5 @@
     <string name="veil_bootstrap_ok">Connection configured</string>
     <string name="veil_bootstrap_ok_hint">Go back and create or restore your identity — it will now go through this connection.</string>
     <string name="veil_config_scan">Scan configuration QR</string>
+||||||| 713a68a
 </resources>

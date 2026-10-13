@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.IosShare
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -223,6 +224,7 @@ private fun IdentityFormContent(
             verticalArrangement = Arrangement.spacedBy(CTSpace.s),
         ) {
             Button(
+                shape = OutlinedTextFieldDefaults.shape,
                 onClick = onInitialize,
                 enabled = canProceed,
                 modifier = Modifier
@@ -327,10 +329,12 @@ private fun RegistrationStageContent(
         Box(modifier = Modifier.padding(bottom = 20.dp)) {
             when {
                 complete -> Button(
+                    shape = OutlinedTextFieldDefaults.shape,
                     onClick = onContinue,
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(stringResource(R.string.reg_continue).uppercase()) }
                 step is RegistrationStep.Error -> Button(
+                    shape = OutlinedTextFieldDefaults.shape,
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(

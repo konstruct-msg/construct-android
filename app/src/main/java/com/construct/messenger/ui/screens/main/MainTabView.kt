@@ -88,6 +88,7 @@ fun MainTabView(
                     onFindPeople = { selectedTab = 1 },
                     onScanQr = onScanQr,
                     onShowMyQr = onShowMyQr,
+                    onRecoverySetup = settingsNavigation.onRecoverySetup,
                 )
                 1 -> SynapsScreen(
                     onOpenContact = onOpenContact,

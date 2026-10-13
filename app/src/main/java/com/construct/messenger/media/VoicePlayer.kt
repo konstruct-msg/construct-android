@@ -23,6 +23,9 @@ import kotlinx.coroutines.launch
  * voice note starts ([SoundFocus]).
  *
  * Plays from memory: the decrypted note is handed over as bytes and never written to disk.
+ *
+ * A music file sent as a file plays here too ([toggle] with `music`), as on iOS: one sound at a
+ * time across both.
  */
 @Singleton
 class VoicePlayer @Inject constructor(private val focus: SoundFocus) {
@@ -35,7 +38,7 @@ class VoicePlayer @Inject constructor(private val focus: SoundFocus) {
     private var player: MediaPlayer? = null
     private var ticker: Job? = null
 
-    fun toggle(mediaId: String, audio: ByteArray) {
+    fun toggle(mediaId: String, audio: ByteArray, music: Boolean = false) {
         val current = _state.value
         val p = player
         if (current != null && current.mediaId == mediaId && p != null) {
@@ -55,7 +58,7 @@ class VoicePlayer @Inject constructor(private val focus: SoundFocus) {
             mp.setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .setContentType(if (music) AudioAttributes.CONTENT_TYPE_MUSIC else AudioAttributes.CONTENT_TYPE_SPEECH)
                     .build(),
             )
             mp.setDataSource(BytesSource(audio))

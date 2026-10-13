@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -202,6 +203,7 @@ private fun RecoveryGateScreen(
                 RecoveryStage.Explain -> {
                     Text(stringResource(R.string.recovery_gate_setup_note), style = CTFont.secondary, color = CTColor.textDim)
                     Button(
+                        shape = OutlinedTextFieldDefaults.shape,
                         onClick = viewModel::startSetup,
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text(stringResource(R.string.recovery_gate_setup_action)) }
@@ -211,6 +213,7 @@ private fun RecoveryGateScreen(
                     WordGrid(stage.words)
                     Text(stringResource(R.string.recovery_never_share), style = CTFont.secondary, color = CTColor.danger)
                     Button(
+                        shape = OutlinedTextFieldDefaults.shape,
                         onClick = viewModel::toQuiz,
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text(stringResource(R.string.recovery_words_written)) }
@@ -227,6 +230,7 @@ private fun RecoveryGateScreen(
                     }
                     ErrorLine(ui.errorRes)
                     Button(
+                        shape = OutlinedTextFieldDefaults.shape,
                         onClick = viewModel::submitSetup,
                         enabled = stage.indices.all { ui.quizAnswers[it] != null },
                         modifier = Modifier.fillMaxWidth(),
@@ -236,6 +240,7 @@ private fun RecoveryGateScreen(
                     val unlock = rememberHeldUnlock(viewModel)
                     ErrorLine(ui.errorRes)
                     Button(
+                        shape = OutlinedTextFieldDefaults.shape,
                         onClick = unlock,
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text(stringResource(R.string.recovery_backup_show)) }
@@ -252,6 +257,7 @@ private fun RecoveryGateScreen(
                     )
                     ErrorLine(ui.errorRes)
                     Button(
+                        shape = OutlinedTextFieldDefaults.shape,
                         onClick = viewModel::submitConfirm,
                         enabled = ui.confirmPhrase.isNotBlank(),
                         modifier = Modifier.fillMaxWidth(),

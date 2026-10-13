@@ -668,6 +668,17 @@
     <string name="local_store_unreadable_erase">Стереть устройство</string>
     <string name="local_store_unreadable_erase_hint">Начать с пустого устройства. Чаты, сохранённые здесь, будут потеряны; идентичность вернётся только по фразе восстановления.</string>
     <string name="local_store_unreadable_erase_confirm">Всё на этом устройстве — чаты, медиа, контакты, ключи — будет стёрто, и приложение закроется. Отменить невозможно.</string>
+    <!-- The quiet reminder above the chat list: the key made at registration is not copied yet. -->
+    <string name="recovery_nudge_title">Сохраните ключ восстановления</string>
+    <string name="recovery_nudge_body">12 слов — единственный способ вернуть аккаунт, если потеряете все устройства.</string>
+    <!-- Forwarding (TODO 143): the content only, no author — iOS forward, forward_to, forward_failed. -->
+    <string name="forward">Переслать</string>
+    <string name="forward_to">Переслать в</string>
+    <string name="forward_failed">Часть вложений не переслана: их уже нет ни на устройстве, ни на сервере.</string>
+    <!-- iOS audio_file: an album of music files in the chat list. -->
+    <string name="audio_file">Аудио</string>
+    <string name="track_play">Воспроизвести</string>
+    <string name="track_pause">Пауза</string>
     <!-- "Can't connect?" on the first screen — iOS onboarding_cant_connect, veil_bootstrap_*. -->
     <string name="onboarding_cant_connect">Не подключается?</string>
     <string name="veil_bootstrap_title">Не подключается</string>
@@ -677,4 +688,5 @@
     <string name="veil_bootstrap_ok">Подключение настроено</string>
     <string name="veil_bootstrap_ok_hint">Вернитесь и создайте или восстановите личность — теперь это пойдёт через это подключение.</string>
     <string name="veil_config_scan">Сканировать QR конфигурации</string>
+||||||| 713a68a
 </resources>

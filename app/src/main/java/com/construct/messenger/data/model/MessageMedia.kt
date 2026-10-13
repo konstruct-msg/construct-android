@@ -11,9 +11,18 @@ sealed interface MessageMedia {
 
     /** One or more items sent together; its caption is the message text. */
     data class Album(val items: List<MediaItem>) : MessageMedia {
-        /** iOS `looksLikeFileAlbum`: nothing in it is a picture, a video or audio. */
+        /**
+         * iOS `looksLikeFileAlbum`: nothing in it is a picture or a video. A music file is a file —
+         * a row with a play button ([MediaItem.isAudio]). Until 2026-10-13 `audio/` was excluded
+         * here too, copied from iOS, where it was a mistake: a sent mp3 went to the picture bubble
+         * and the chat list said "Photo". A voice note is not an album ([Voice]).
+         */
         val isFiles: Boolean
-            get() = items.isNotEmpty() && items.none { it.isImage || it.isVideo || it.mimeType.startsWith("audio/") }
+            get() = items.isNotEmpty() && items.none { it.isImage || it.isVideo }
+
+        /** Every item a track: "Audio" in the chat list rather than a file's name. */
+        val isAudio: Boolean
+            get() = items.isNotEmpty() && items.all { it.isAudio }
 
         /**
          * The video note this album is, if it is one: a single video marked so. The mark on
@@ -53,6 +62,7 @@ class MediaItem(
 ) {
     val isImage: Boolean get() = mimeType.startsWith("image/")
     val isVideo: Boolean get() = mimeType.startsWith("video/")
+    val isAudio: Boolean get() = mimeType.lowercase().startsWith("audio/")
 
     override fun equals(other: Any?): Boolean = other is MediaItem && mediaId == other.mediaId && key.contentEquals(other.key)
     override fun hashCode(): Int = mediaId.hashCode()

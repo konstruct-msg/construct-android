@@ -9,6 +9,9 @@ import com.construct.messenger.data.local.MessageRecord
 import com.construct.messenger.util.MediaWire
 import com.construct.messenger.data.local.refreshChatPreview
 import com.construct.messenger.data.model.DeliveryStatus
+import com.construct.messenger.data.model.ForwardItem
+import com.construct.messenger.diagnostics.Log
+import kotlinx.coroutines.CancellationException
 import com.construct.messenger.data.model.Message
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.domain.usecase.SendContactCardUseCase
@@ -72,6 +75,48 @@ class MessagesRepositoryImpl @Inject constructor(
         return outcome
     }
 
+    /**
+     * In order and one at a time: each waits for the one before it, uploads included, so a text
+     * never overtakes the photo forwarded before it (iOS sends them as their uploads finish).
+     * On the repository's scope: leaving the chat must not cut a forward short.
+     */
+    override suspend fun forward(contactId: String, items: List<ForwardItem>): Int =
+        scope.async {
+            var skipped = 0
+            for (item in items) {
+                when (item) {
+                    is ForwardItem.Text -> send(contactId, item.text, null)
+                    is ForwardItem.Sticker -> sendSticker(contactId, item.ref)
+                    is ForwardItem.Album -> {
+                        val plain = try {
+                            item.items.map { media.bytes(it) }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            // All or nothing: an album sent half would be another message.
+                            Log.w(TAG, "forward: an album item is gone — skipped", e)
+                            skipped++
+                            continue
+                        }
+                        sendMedia.forward(contactId, item.items, plain, item.caption)
+                    }
+                    is ForwardItem.Voice -> {
+                        val audio = try {
+                            media.bytes(item.audio)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            Log.w(TAG, "forward: a voice note is gone — skipped", e)
+                            skipped++
+                            continue
+                        }
+                        sendMedia.voice(contactId, audio, item.audio.durationMs ?: 0, item.waveform.map { it / 255f })
+                    }
+                }
+            }
+            skipped
+        }.await()
+
     override suspend fun retry(contactId: String, messageId: String): SendOutcome =
         scope.async { sendMedia.retry(contactId, messageId) }.await()
 
@@ -124,11 +169,11 @@ class MessagesRepositoryImpl @Inject constructor(
     override suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>): SendOutcome =
         scope.async { sendMedia.voice(contactId, recording, durationMs, waveform) }.await()
 
-    override suspend fun sendVideoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake): SendOutcome =
-        scope.async { sendMedia.videoNote(contactId, take) }.await()
+    override suspend fun sendVideoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake, reply: ReplyRef?): SendOutcome =
+        scope.async { sendMedia.videoNote(contactId, take, reply) }.await()
 
-    override suspend fun sendFiles(contactId: String, uris: List<Uri>, caption: String): SendOutcome =
-        scope.async { sendMedia.files(contactId, uris, caption) }.await()
+    override suspend fun sendFiles(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef?): SendOutcome =
+        scope.async { sendMedia.files(contactId, uris, caption, reply) }.await()
 
     override suspend fun openable(item: com.construct.messenger.data.model.MediaItem, name: String): Uri = media.openable(item, name)
 
@@ -162,6 +207,10 @@ class MessagesRepositoryImpl @Inject constructor(
     }
 
     override fun chatHidden(contactId: String) = presence.hidden(contactId)
+
+    private companion object {
+        const val TAG = "MessagesRepository"
+    }
 }
 
 private fun MessageRecord.toModel(): Message = Message(
