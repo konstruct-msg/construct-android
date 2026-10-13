@@ -87,4 +87,35 @@ class MediaWireTest {
         assertTrue(album.isFiles)
         assertEquals("a.pdf", album.items[0].filename)
     }
+
+    private fun album(vararg mimes: String): MessageMedia.Album {
+        val builder = MediaAlbumMessage.newBuilder()
+        mimes.forEachIndexed { n, mime -> builder.addItems(photo("i$n").toBuilder().setMimeType(mime).setFilename("f$n")) }
+        val stored = MediaWire.stored(MessageContent.newBuilder().setMediaAlbum(builder).build())!!
+        return MediaWire.decode(stored.kind, stored.bytes) as MessageMedia.Album
+    }
+
+    /**
+     * A music file is a file — a row with a play button — not a picture (iOS, 2026-10-13).
+     * Mutation: exclude `audio/` from [MessageMedia.Album.isFiles] again — reddens.
+     */
+    @Test
+    fun `an album of music is a file message`() {
+        val tracks = album("audio/mpeg", "audio/flac")
+        assertTrue(tracks.isFiles)
+        assertTrue(tracks.isAudio)
+    }
+
+    @Test
+    fun `a photo beside a track keeps the album a picture album`() {
+        val mixed = album("image/jpeg", "audio/mpeg")
+        assertTrue(!mixed.isFiles)
+    }
+
+    @Test
+    fun `a track beside a document is files but not audio`() {
+        val mixed = album("audio/mpeg", "application/pdf")
+        assertTrue(mixed.isFiles)
+        assertTrue(!mixed.isAudio)
+    }
 }
