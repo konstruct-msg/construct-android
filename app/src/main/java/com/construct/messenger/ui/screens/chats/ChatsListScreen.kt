@@ -42,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -84,9 +85,17 @@ fun ChatsListScreen(
     onFindPeople: () -> Unit = {},
     onScanQr: () -> Unit = {},
     onShowMyQr: () -> Unit = {},
-    viewModel: MainViewModel = hiltViewModel()
+    onRecoverySetup: () -> Unit = {},
+    viewModel: MainViewModel = hiltViewModel(),
+    recoveryViewModel: com.construct.messenger.recovery.RecoveryViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val recovery by recoveryViewModel.uiState.collectAsStateWithLifecycle()
+    // Each time the tab is shown: a key copied behind the reminder takes it away.
+    LaunchedEffect(Unit) { recoveryViewModel.refresh() }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember { context.getSharedPreferences(CHATS_PREFS, android.content.Context.MODE_PRIVATE) }
+    var nudgeDismissed by remember { mutableStateOf(prefs.getBoolean(KEY_RECOVERY_NUDGE_DISMISSED, false)) }
     var query by rememberSaveable { mutableStateOf("") }
     // The row whose swipe buttons are showing; opening another closes it.
     var openRow by remember { mutableStateOf<String?>(null) }
@@ -133,6 +142,18 @@ fun ChatsListScreen(
             onQueryChange = { query = it },
             modifier = Modifier.padding(horizontal = CTLayout.edgePad).padding(top = CTSpace.xs, bottom = CTSpace.s),
         )
+
+        // A key lost with the screen lock has nothing left to copy; Settings states that.
+        if (recovery.needsBackup && recovery.held != com.construct.messenger.recovery.HeldPhrase.LOST && !nudgeDismissed) {
+            com.construct.messenger.ui.components.RecoveryNudge(
+                onOpen = onRecoverySetup,
+                onDismiss = {
+                    nudgeDismissed = true
+                    prefs.edit().putBoolean(KEY_RECOVERY_NUDGE_DISMISSED, true).apply()
+                },
+                modifier = Modifier.padding(horizontal = CTLayout.edgePad).padding(bottom = CTSpace.s),
+            )
+        }
 
         // iOS `filteredChats`: name, @username or the last message, case-insensitive. An empty
         // result is the same empty state as no chats at all.
@@ -310,3 +331,8 @@ private fun ChatMenuItem(label: String, icon: ImageVector, color: Color, onClick
         onClick = onClick,
     )
 }
+
+private const val CHATS_PREFS = "chats_prefs"
+
+/** Its own: put away here, the reminder stays in Settings. */
+private const val KEY_RECOVERY_NUDGE_DISMISSED = "recovery_nudge_dismissed"
