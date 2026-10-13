@@ -146,10 +146,14 @@ class AuthSessionManager @Inject constructor(
      *
      * A permanent failure is logged, not acted on: wiping the session belongs to the device
      * re-auth path, and this runs from background loops.
+     *
+     * [force]: refresh even with time left — once per start (TODO 126). A device with a stored
+     * session never signs in again, and the access token lives 24 h, so a device removed from
+     * another one heard it only near the token's end; the refresh is where the server says so.
      */
-    suspend fun ensureFresh(nowSeconds: Long = System.currentTimeMillis() / 1000): Boolean {
+    suspend fun ensureFresh(nowSeconds: Long = System.currentTimeMillis() / 1000, force: Boolean = false): Boolean {
         if (keystoreManager.getAccessToken() == null) return false
-        if (!needsRefresh(keystoreManager.getAccessTokenExpiresAt(), nowSeconds)) return true
+        if (!force && !needsRefresh(keystoreManager.getAccessTokenExpiresAt(), nowSeconds)) return true
         return when (val result = tokenRefreshCoordinator.refreshIfPossible()) {
             is TokenRefreshResult.Success -> {
                 Log.i(TAG, "access token refreshed ahead of expiry")

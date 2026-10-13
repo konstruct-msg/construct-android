@@ -119,7 +119,8 @@ class MessagingRuntime @Inject constructor(
         ackStore.hydrate()
         // Every RPC below carries the stored token; one that expired overnight was refused
         // across the board (device log 2026-09-29).
-        authSession.ensureFresh()
+        // Forced, once per start: a removed device hears it now, not when its 24-hour token ends.
+        authSession.ensureFresh(force = true)
         if (refreshJob?.isActive != true) refreshJob = scope.launch { authSession.keepFresh() }
         // Before the first RPC: with VEIL on, the route machine starts the proxy now.
         transportRouter.start()
