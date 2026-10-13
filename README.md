@@ -85,6 +85,15 @@ APK несёт только `arm64-v8a` (`coreAbis` в `app/build.gradle`, с 20
 сборку для этой машины (`app/src/test/host/<os>-<cpu>/`, тоже не в git); `checkHostCoreLibrary`
 сверяет и его штамп.
 
+### Распознавание речи (whisper.cpp)
+
+`libconstruct_whisper.so` — whisper.cpp за мостом `native/whisper/whisper_jni.c` — тоже в
+`app/src/main/jniLibs/<abi>/` и тоже не в git. Собирается из исходников закреплённой версии,
+проверенных по SHA-256: `scripts/build_whisper.sh` (нужны NDK, cmake; ninja — если есть). Без неё
+приложение работает, но без расшифровки голосовых. CI и релиз собирают её сами; релиз без неё
+останавливается. Модели (tiny/base/small) скачиваются в приложении по запросу с Hugging Face
+и проверяются по SHA-256, вшитому в `transcription/WhisperModel.kt` (TODO 116).
+
 Пересборка под все ABI и генерация Kotlin-биндингов локально:
 
 ```bash

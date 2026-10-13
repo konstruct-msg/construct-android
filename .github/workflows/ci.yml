@@ -42,6 +42,9 @@ jobs:
       - name: Core from the lock
         run: scripts/fetch_core.sh
 
+      - name: Speech recognition (whisper.cpp, TODO 116)
+        run: scripts/build_whisper.sh
+
       - name: Verify
         env:
           EVENT: ${{ github.event_name }}

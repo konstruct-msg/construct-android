@@ -49,6 +49,15 @@ jobs:
       - name: Core from the lock
         run: scripts/fetch_core.sh
 
+      - name: Speech recognition (whisper.cpp, TODO 116)
+        run: scripts/build_whisper.sh
+        # A release without it would ship transcription that never works: stop here instead.
+      - name: Speech recognition in every ABI
+        run: |
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            [ -s "app/src/main/jniLibs/$abi/libconstruct_whisper.so" ] || { echo "::error::no libconstruct_whisper.so for $abi"; exit 1; }
+          done
+
       - name: Version
         id: version
         run: |
