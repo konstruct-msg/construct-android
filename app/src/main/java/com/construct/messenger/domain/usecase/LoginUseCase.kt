@@ -48,7 +48,10 @@ class LoginUseCase @Inject constructor(
         val directBefore = grpcClient.veilPort == null
         val tokens = try {
             grpcClient.auth.authenticateDevice(request).tokens
-        } catch (e: StatusRuntimeException) {
+        } catch (e: Exception) {
+            // grpc-kotlin's stubs throw `StatusException`; until 2026-10-13 only
+            // `StatusRuntimeException` was caught here, so no refusal was ever read on a device.
+            if (e !is io.grpc.StatusException && e !is StatusRuntimeException) throw e
             val refusal = DeviceRefusalReading.refusalOf(e)
             if (refusal == DeviceRefusal.DEVICE_REFUSAL_UNSPECIFIED) throw e
             throw DeviceAuthRefused(refusal, directBefore && grpcClient.veilPort == null, e)
