@@ -52,9 +52,9 @@ class SendMediaUseCase @Inject constructor(
      * 3:4 at 720×960. The placeholder carries the mark too, so the uploading row is already the
      * note. **Canon:** iOS `MediaAttachment(presentation: .videoNote)`. The segments are deleted.
      */
-    suspend fun videoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake): SendOutcome =
+    suspend fun videoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake, reply: ReplyRef?): SendOutcome =
         try {
-            photos(contactId, emptyList(), "", null, note = take)
+            photos(contactId, emptyList(), "", reply, note = take)
         } finally {
             take.delete()
         }
@@ -176,7 +176,7 @@ class SendMediaUseCase @Inject constructor(
      * its own size. Never compressed: iOS's receiver cannot tell a compressed file (the flag is
      * not on the wire), so Android does not make any.
      */
-    suspend fun files(contactId: String, uris: List<Uri>, caption: String): SendOutcome {
+    suspend fun files(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef?): SendOutcome {
         require(uris.isNotEmpty())
         val messageId = UUID.randomUUID().toString().lowercase()
         val timestampMs = System.currentTimeMillis()
@@ -197,7 +197,7 @@ class SendMediaUseCase @Inject constructor(
             return SendOutcome.Failed(messageId, if (e is PickedFiles.TooLarge) "file too large" else "file unreadable")
         }
         val caption = caption.trim()
-        sendMessage.persistMedia(contactId, messageId, timestampMs, stored(staged.map { it.item(it.localId, "") }, caption, null), null)
+        sendMessage.persistMedia(contactId, messageId, timestampMs, stored(staged.map { it.item(it.localId, "") }, caption, reply), reply)
         val uploaded = try {
             coroutineScope {
                 val gate = Semaphore(PARALLEL_UPLOADS)
@@ -210,7 +210,7 @@ class SendMediaUseCase @Inject constructor(
             sendMessage.markFailed(messageId)
             return SendOutcome.Failed(messageId, "upload failed")
         }
-        val album = stored(uploaded, caption, null)
+        val album = stored(uploaded, caption, reply)
         sendMessage.replaceMedia(messageId, album)
         return sendMessage.deliverPrepared(contactId, messageId, timestampMs, MediaWire.content(album.kind, album.bytes)!!)
     }

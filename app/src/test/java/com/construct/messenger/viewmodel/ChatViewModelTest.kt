@@ -130,6 +130,46 @@ class ChatViewModelTest {
         assertEquals(ReplyRef.of("abc", "original"), messages.sent.single().reply)
     }
 
+    /** A video note recorded while quoting answers that message, as a photo would (iOS: a note is an attachment). */
+    @Test
+    fun aVideoNoteCarriesTheReplyAndClearsTheBar() = runTest {
+        val messages = FakeMessagesRepository()
+        val handle = SavedStateHandle()
+        handle["contactId"] = "peer-1"
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        viewModel.startReply(Message(id = "ABC", chatId = "peer-1", body = "original", isOutgoing = false))
+        advanceUntilIdle()
+
+        viewModel.sendVideoNote(com.construct.messenger.media.VideoNoteTake(emptyList()))
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.replyingTo)
+        assertEquals(ReplyRef.of("abc", "original"), messages.notes.single())
+    }
+
+    /** Files alone take the reply; beside photos, the photos do — the text and the quote go with the first message. */
+    @Test
+    fun filesCarryTheReplyOnlyWhenTheyGoFirst() = runTest {
+        val messages = FakeMessagesRepository()
+        val handle = SavedStateHandle()
+        handle["contactId"] = "peer-1"
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val reply = Message(id = "ABC", chatId = "peer-1", body = "original", isOutgoing = false)
+
+        viewModel.startReply(reply)
+        viewModel.attachFiles(listOf(org.mockito.kotlin.mock()))
+        viewModel.send()
+        advanceUntilIdle()
+        assertEquals(ReplyRef.of("abc", "original"), messages.files.single())
+
+        viewModel.startReply(reply)
+        viewModel.attach(listOf(org.mockito.kotlin.mock()))
+        viewModel.attachFiles(listOf(org.mockito.kotlin.mock()))
+        viewModel.send()
+        advanceUntilIdle()
+        assertNull(messages.files.last())
+    }
+
     @Test
     fun sendEditsTheTargetAndClearsTheBar() = runTest {
         val messages = FakeMessagesRepository()
@@ -244,11 +284,19 @@ private class FakeMessagesRepository : MessagesRepository {
 
     data class Sent(val contactId: String, val text: String, val reply: ReplyRef?)
     val photos = mutableListOf<Pair<List<android.net.Uri>, String>>()
-    override suspend fun sendFiles(contactId: String, uris: List<android.net.Uri>, caption: String) = SendOutcome.Sent("f")
+    val files = mutableListOf<ReplyRef?>()
+    override suspend fun sendFiles(contactId: String, uris: List<android.net.Uri>, caption: String, reply: ReplyRef?): SendOutcome {
+        files += reply
+        return SendOutcome.Sent("f")
+    }
     override suspend fun openable(item: com.construct.messenger.data.model.MediaItem, name: String): android.net.Uri = org.mockito.kotlin.mock()
     override fun describe(uri: android.net.Uri) = "a.pdf" to 10L
     override suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>) = SendOutcome.Sent("v")
-    override suspend fun sendVideoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake) = SendOutcome.Sent("n")
+    val notes = mutableListOf<ReplyRef?>()
+    override suspend fun sendVideoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake, reply: ReplyRef?): SendOutcome {
+        notes += reply
+        return SendOutcome.Sent("n")
+    }
     override suspend fun mediaBytes(item: com.construct.messenger.data.model.MediaItem) = ByteArray(0)
     override suspend fun saveToGallery(item: com.construct.messenger.data.model.MediaItem) = Unit
     override suspend fun sendPhotos(contactId: String, uris: List<android.net.Uri>, caption: String, reply: ReplyRef?): SendOutcome {
