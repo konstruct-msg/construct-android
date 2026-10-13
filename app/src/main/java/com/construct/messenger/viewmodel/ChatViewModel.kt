@@ -74,6 +74,7 @@ class ChatViewModel @Inject constructor(
     private val player: VoicePlayer,
     private val videoNotes: VideoNotePlayback,
     private val quickReactions: ReactionQuickSetRepository,
+    private val forwardDrafts: com.construct.messenger.data.repository.ForwardDrafts,
 ) : ViewModel() {
     /** The voice note being recorded or waiting to be sent; the composer shows its bar. */
     val recording: StateFlow<VoiceRecorder.State> = recorder.state
@@ -227,6 +228,34 @@ class ChatViewModel @Inject constructor(
     fun cancelEdit() {
         editing.value = null
         draft.value = ""
+    }
+
+    private val _forwardFailed = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** Part of a forward sent here was not: its bytes are on neither this device nor the server. */
+    val forwardFailed: kotlinx.coroutines.flow.SharedFlow<Unit> = _forwardFailed
+
+    /**
+     * Forward [messages] — in the order given, the transcript's — to [toContactId]: their content
+     * only (`ForwardItem`), handed to that chat, which sends it when it opens. True when anything
+     * goes. **Canon:** iOS `ChatView.finishForward`.
+     */
+    fun forward(messages: List<Message>, toContactId: String): Boolean {
+        val items = com.construct.messenger.data.model.ForwardItem.of(messages)
+        forwardDrafts.hand(items, toContactId)
+        return items.isNotEmpty()
+    }
+
+    init {
+        // What was forwarded to this chat: taken once, sent through this chat's own path.
+        viewModelScope.launch {
+            forwardDrafts.pending.collect { pending ->
+                if (contactId !in pending) return@collect
+                val items = forwardDrafts.take(contactId)
+                if (items.isEmpty()) return@collect
+                launch { if (messagesRepository.forward(contactId, items) > 0) _forwardFailed.tryEmit(Unit) }
+            }
+        }
     }
 
     private val _reactionFailed = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 1)

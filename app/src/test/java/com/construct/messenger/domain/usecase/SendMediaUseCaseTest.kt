@@ -205,4 +205,61 @@ class SendMediaUseCaseTest {
         verify(send).markFailed(any())
         verify(send, never()).deliverPrepared(any(), any(), any(), any())
     }
+
+    /**
+     * A forward (TODO 143) goes as new content: each item sealed again under a fresh key and
+     * uploaded as a new object, described as the original was, with no quote. Nothing of the
+     * original's object — id, key, digest — is on the wire. Mutation: reuse the original's key or
+     * id — reddens.
+     */
+    @Test
+    fun `a forward is a new object under a new key with the original's description`() = runTest {
+        val media = FakeMedia()
+        val send: SendMessageUseCase = mock()
+        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        val originalKey = ByteArray(32) { 9 }
+        val original = MediaItem(
+            mediaId = "original-object", key = originalKey, hash = ByteArray(32) { 8 }, sizeBytes = 1234,
+            mimeType = "video/mp4", width = 720, height = 960, durationMs = 4_000, blurhash = "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
+            thumbnail = ByteArray(10) { 3 }, isVideoNote = true,
+        )
+        val plain = ByteArray(300) { 2 }
+
+        SendMediaUseCase(images, pickedFiles, videos, media, send).forward("peer", listOf(original), listOf(plain), "")
+
+        verify(send).persistMedia(eq("peer"), any(), any(), any(), eq(null))
+        val content = argumentCaptor<ByteArray>()
+        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        val album = MessageContent.parseFrom(content.firstValue).mediaAlbum
+        assertFalse("no quote", album.hasQuoted())
+        val item = album.getItems(0)
+        assertEquals("store-0", item.mediaId)
+        assertFalse("a new key", item.encryptionKey.toByteArray().contentEquals(originalKey))
+        assertFalse(item.fileHash.toByteArray().contentEquals(original.hash))
+        assertTrue(plain.contentEquals(MediaCrypto.open(media.staged.values.first(), item.encryptionKey.toByteArray())))
+        assertEquals(shared.proto.messaging.v1.Content.MediaPresentation.MEDIA_PRESENTATION_VIDEO_NOTE, item.presentation)
+        assertEquals(MediaType.MEDIA_TYPE_VIDEO, item.mediaType)
+        assertEquals(720, item.dimensions.width)
+        assertEquals(4_000, item.durationMs)
+        assertEquals(10, item.thumbnail.size())
+    }
+
+    /** A file keeps its name and is counted by its own size, as on its first send. */
+    @Test
+    fun `a forwarded file keeps its name`() = runTest {
+        val media = FakeMedia()
+        val send: SendMessageUseCase = mock()
+        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        val doc = MediaItem("orig", ByteArray(32) { 1 }, ByteArray(32), 700, "application/pdf", filename = "report.pdf")
+
+        SendMediaUseCase(images, pickedFiles, videos, media, send).forward("peer", listOf(doc), listOf(ByteArray(700) { 5 }), "q")
+
+        val content = argumentCaptor<ByteArray>()
+        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        val album = MessageContent.parseFrom(content.firstValue).mediaAlbum
+        assertEquals("q", album.caption)
+        assertEquals("report.pdf", album.getItems(0).filename)
+        assertEquals(MediaType.MEDIA_TYPE_FILE, album.getItems(0).mediaType)
+        assertEquals(700L, album.getItems(0).fileSize)
+    }
 }

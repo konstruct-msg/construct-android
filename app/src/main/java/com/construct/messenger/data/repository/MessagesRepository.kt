@@ -56,6 +56,13 @@ interface MessagesRepository {
     /** Send [ref], a sticker from a pack on this phone. Recorded among the recents. */
     suspend fun sendSticker(contactId: String, ref: com.construct.messenger.stickers.StickerReference): SendOutcome
 
+    /**
+     * Send [items] to [contactId], one after another in their order, each as an ordinary message
+     * of its kind (`ForwardItem`). An item whose bytes are on neither this device nor the server
+     * is skipped. How many were skipped.
+     */
+    suspend fun forward(contactId: String, items: List<com.construct.messenger.data.model.ForwardItem>): Int
+
     /** Send again one of ours that no device took (iOS Retry). */
     suspend fun retry(contactId: String, messageId: String): SendOutcome
 
