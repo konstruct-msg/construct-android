@@ -664,6 +664,9 @@
     <string name="local_store_unreadable_erase">Erase this device</string>
     <string name="local_store_unreadable_erase_hint">Start over with an empty device. The chats kept here are lost; your identity comes back only with your recovery phrase.</string>
     <string name="local_store_unreadable_erase_confirm">Everything on this device — chats, media, contacts, keys — will be erased, and the app will close. This cannot be undone.</string>
+    <!-- The quiet reminder above the chat list: the key made at registration is not copied yet. -->
+    <string name="recovery_nudge_title">Save your recovery key</string>
+    <string name="recovery_nudge_body">12 words — the only way back if you lose every device.</string>
     <!-- Forwarding (TODO 143): the content only, no author — iOS forward, forward_to, forward_failed. -->
     <string name="forward">Forward</string>
     <string name="forward_to">Forward to</string>
