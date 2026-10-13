@@ -668,4 +668,13 @@
     <string name="local_store_unreadable_erase">Стереть устройство</string>
     <string name="local_store_unreadable_erase_hint">Начать с пустого устройства. Чаты, сохранённые здесь, будут потеряны; идентичность вернётся только по фразе восстановления.</string>
     <string name="local_store_unreadable_erase_confirm">Всё на этом устройстве — чаты, медиа, контакты, ключи — будет стёрто, и приложение закроется. Отменить невозможно.</string>
+    <!-- "Can't connect?" on the first screen — iOS onboarding_cant_connect, veil_bootstrap_*. -->
+    <string name="onboarding_cant_connect">Не подключается?</string>
+    <string name="veil_bootstrap_title">Не подключается</string>
+    <string name="veil_bootstrap_intro">Если Конструкт не может подключиться к сети, человек с работающим подключением может дать вам одноразовый код доступа. Попросите код, затем отсканируйте его или вставьте ниже.</string>
+    <string name="veil_bootstrap_scan_subtitle">Наведите камеру на его код</string>
+    <string name="veil_bootstrap_paste_subtitle">Если код прислали текстом</string>
+    <string name="veil_bootstrap_ok">Подключение настроено</string>
+    <string name="veil_bootstrap_ok_hint">Вернитесь и создайте или восстановите личность — теперь это пойдёт через это подключение.</string>
+    <string name="veil_config_scan">Сканировать QR конфигурации</string>
 </resources>

@@ -69,9 +69,13 @@ import kotlinx.coroutines.delay
 fun OnboardingScreen(
     onInitialized: () -> Unit,
     onExistingIdentity: () -> Unit,
-    viewModel: OnboardingViewModel = hiltViewModel()
+    onCantConnect: () -> Unit = {},
+    viewModel: OnboardingViewModel = hiltViewModel(),
+    veil: com.construct.messenger.viewmodel.VeilBootstrapViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // A code imported on an earlier run: this run's registration goes through it too.
+    LaunchedEffect(Unit) { veil.startIfConfigured() }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -88,6 +92,7 @@ fun OnboardingScreen(
         onContinue = viewModel::continueToMain,
         onDismissError = viewModel::dismissError,
         onExistingIdentity = onExistingIdentity,
+        onCantConnect = onCantConnect,
     )
 }
 
@@ -97,7 +102,8 @@ fun OnboardingScreen(
  * iOS stages — preparing (every pre-complete step as one converging signal), complete (welcome
  * + username/device-id), error (try again).
  *
- * iOS's "Can't connect?" is not here: it imports a VEIL access code, which Android cannot do yet.
+ * "Can't connect?" under the actions opens [VeilBootstrapScreen]: a VEIL access code for a network
+ * where the server cannot be reached.
  */
 @Composable
 private fun OnboardingContent(
@@ -107,6 +113,7 @@ private fun OnboardingContent(
     onContinue: () -> Unit,
     onDismissError: () -> Unit,
     onExistingIdentity: () -> Unit,
+    onCantConnect: () -> Unit = {},
 ) {
     Box(
         modifier = Modifier
@@ -124,6 +131,7 @@ private fun OnboardingContent(
                 onAliasChange = onAliasChange,
                 onInitialize = onInitialize,
                 onExistingIdentity = onExistingIdentity,
+                onCantConnect = onCantConnect,
             )
             else -> RegistrationStageContent(
                 step = step,
@@ -144,6 +152,7 @@ private fun IdentityFormContent(
     onAliasChange: (String) -> Unit,
     onInitialize: () -> Unit,
     onExistingIdentity: () -> Unit,
+    onCantConnect: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -227,6 +236,14 @@ private fun IdentityFormContent(
                 color = CTColor.textDim,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.clickable(onClick = onExistingIdentity),
+            )
+            // iOS: deliberately secondary — quieter than "Already have", never beside the button.
+            Text(
+                text = stringResource(R.string.onboarding_cant_connect),
+                style = CTFont.caption,
+                color = CTColor.textDim,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.clickable(onClick = onCantConnect).padding(top = CTSpace.xs),
             )
 
             // Before any account exists: a failed registration or restore is diagnosed from these

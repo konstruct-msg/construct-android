@@ -88,6 +88,21 @@ fun KonstructNavHost(
                 onExistingIdentity = {
                     navController.navigate(Screen.ExistingIdentity.route) { launchSingleTop = true }
                 },
+                onCantConnect = { navController.navigate(Screen.VeilBootstrap.route) { launchSingleTop = true } },
+            )
+        }
+        composable(Screen.VeilBootstrap.route) {
+            com.construct.messenger.ui.screens.onboarding.VeilBootstrapScreen(
+                onBack = { navController.popBackStack() },
+                onScan = { navController.navigate(Screen.VeilBootstrapScan.route) { launchSingleTop = true } },
+            )
+        }
+        // The scanner the invites use: it knows a configuration code and redeems it. No recovery
+        // gate here — there is no account yet.
+        composable(Screen.VeilBootstrapScan.route) {
+            QrScannerScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onScanned = { navController.popBackStack() },
             )
         }
         composable(Screen.ExistingIdentity.route) {

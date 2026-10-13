@@ -18,10 +18,16 @@ import javax.inject.Inject
 class QrScannerViewModel @Inject constructor(
     private val pendingInvites: PendingInviteStore,
     private val veilConfig: VeilConfigImporter,
+    private val beforeAccount: com.construct.messenger.veil.VeilBeforeAccount,
 ) : ViewModel() {
     /** Null for an invite; for a VEIL configuration, the message saying how it went. */
     fun deliver(link: String): Int? {
-        if (VeilConfigLink.isLink(link)) return VeilConfigImporter.messageOf(veilConfig.redeem(link))
+        if (VeilConfigLink.isLink(link)) {
+            val message = VeilConfigImporter.messageOf(veilConfig.redeem(link))
+            // Scanned from the first screen, before any account: the route starts on it now.
+            if (message == com.construct.messenger.R.string.veil_config_import_ok) beforeAccount.startIfConfigured()
+            return message
+        }
         pendingInvites.offer(link)
         return null
     }

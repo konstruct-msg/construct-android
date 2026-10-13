@@ -451,7 +451,7 @@ private const val VERSION_TAPS = 10
  * after an import only the close is left.
  */
 @Composable
-private fun ConfigPasteDialog(onImport: (String) -> Int, onDismiss: () -> Unit) {
+internal fun ConfigPasteDialog(onImport: (String) -> Int, onDismiss: () -> Unit) {
     var text by remember { mutableStateOf("") }
     var outcome by remember { mutableStateOf<Int?>(null) }
     val imported = outcome == R.string.veil_config_import_ok
