@@ -366,9 +366,14 @@ class ChatViewModel @Inject constructor(
 
     fun cancelRecording() = recorder.cancel()
 
-    /** A recorded video note, sent in the background like a voice note; the file goes with it. */
+    /**
+     * A recorded video note, sent in the background like a voice note; the file goes with it. It
+     * answers the message being quoted, as on iOS, where a note is an attachment of the composer.
+     */
     fun sendVideoNote(take: com.construct.messenger.media.VideoNoteTake) {
-        viewModelScope.launch { messagesRepository.sendVideoNote(contactId, take) }
+        val reply = replying.value
+        replying.value = null
+        viewModelScope.launch { messagesRepository.sendVideoNote(contactId, take, reply) }
     }
 
     fun sendRecording() {
@@ -422,7 +427,7 @@ class ChatViewModel @Inject constructor(
         replying.value = null
         editing.value = null
         if ((photos.isNotEmpty() || picked.isNotEmpty()) && edit == null) {
-            // Photos and files go as two messages, the text with the first. Each started now, on
+            // Photos and files go as two messages, the text and the reply with the first. Each started now, on
             // its own: the files must not wait for a video to encode and upload — leaving the chat
             // meanwhile cancelled this coroutine, and with it the files, which were never sent
             // (stand, 2026-09-30).
@@ -430,8 +435,10 @@ class ChatViewModel @Inject constructor(
             files.value = emptyList()
             if (photos.isNotEmpty()) viewModelScope.launch { report(messagesRepository.sendPhotos(contactId, photos, text, reply)) }
             if (picked.isNotEmpty()) {
-                val caption = if (photos.isEmpty()) text else ""
-                viewModelScope.launch { report(messagesRepository.sendFiles(contactId, picked.map { it.uri }, caption)) }
+                val first = photos.isEmpty()
+                viewModelScope.launch {
+                    report(messagesRepository.sendFiles(contactId, picked.map { it.uri }, if (first) text else "", if (first) reply else null))
+                }
             }
             return
         }

@@ -26,7 +26,7 @@ interface MessagesRepository {
     suspend fun sendPhotos(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef? = null): SendOutcome
 
     /** Send the files at [uris] as one message, [caption] its text. */
-    suspend fun sendFiles(contactId: String, uris: List<Uri>, caption: String): SendOutcome
+    suspend fun sendFiles(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef? = null): SendOutcome
 
     /** A received file, ready to hand to another app: a content URI with a read grant to give. */
     suspend fun openable(item: com.construct.messenger.data.model.MediaItem, name: String): Uri
@@ -38,7 +38,7 @@ interface MessagesRepository {
     suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>): SendOutcome
 
     /** A recorded video note; its files are deleted once handed over. */
-    suspend fun sendVideoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake): SendOutcome
+    suspend fun sendVideoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake, reply: ReplyRef? = null): SendOutcome
 
     /** [item] decrypted into the phone's gallery (Android 10+). Throws when it could not be. */
     suspend fun saveToGallery(item: com.construct.messenger.data.model.MediaItem)
