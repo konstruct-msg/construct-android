@@ -176,7 +176,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository()
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
         viewModel.startReply(Message(id = "ABC", chatId = "peer-1", body = "original", isOutgoing = false))
         advanceUntilIdle()
 
@@ -193,7 +193,7 @@ class ChatViewModelTest {
         val messages = FakeMessagesRepository()
         val handle = SavedStateHandle()
         handle["contactId"] = "peer-1"
-        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts)
         val reply = Message(id = "ABC", chatId = "peer-1", body = "original", isOutgoing = false)
 
         viewModel.startReply(reply)

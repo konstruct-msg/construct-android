@@ -675,4 +675,14 @@
     <string name="audio_file">Audio</string>
     <string name="track_play">Play</string>
     <string name="track_pause">Pause</string>
+    <!-- "Can't connect?" on the first screen — iOS onboarding_cant_connect, veil_bootstrap_*. -->
+    <string name="onboarding_cant_connect">Can\'t connect?</string>
+    <string name="veil_bootstrap_title">Can\'t connect</string>
+    <string name="veil_bootstrap_intro">If Konstruct cannot reach the network here, someone who is already connected can give you a one-off access code. Ask them for it, then scan or paste it below.</string>
+    <string name="veil_bootstrap_scan_subtitle">Point the camera at their code</string>
+    <string name="veil_bootstrap_paste_subtitle">If they sent you the code as text</string>
+    <string name="veil_bootstrap_ok">Connection configured</string>
+    <string name="veil_bootstrap_ok_hint">Go back and create or restore your identity — it will now go through this connection.</string>
+    <string name="veil_config_scan">Scan configuration QR</string>
+||||||| 713a68a
 </resources>
