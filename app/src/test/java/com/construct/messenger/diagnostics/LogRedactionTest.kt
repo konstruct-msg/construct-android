@@ -84,6 +84,25 @@ class LogRedactionTest {
         assertEquals(line, LogRedaction.redact(line))
     }
 
+    /** Mutation: drop the IPv6 pass in `redact` — the resolved address is in logcat. */
+    @Test
+    fun `an IPv6 address a front resolved to never reaches logcat`() {
+        Log.w("VEIL", "front failed", ConnectException("connect to [2001:db8:85a3::8a2e:370:7334]:443 timed out"))
+        Log.w("VEIL", "veil_start: 2001:0db8:0000:0000:0000:ff00:0042:8329 refused; mapped ::ffff:198.51.100.7")
+
+        val written = logcat()
+        assertFalse(written, written.contains("2001:db8:85a3"))
+        assertFalse(written, written.contains("2001:0db8"))
+        assertFalse(written, written.contains("198.51.100.7"))
+        assertTrue(written, written.contains(LogRedaction.label("2001:db8:85a3::8a2e:370:7334").replace("front#", "ip#")))
+    }
+
+    @Test
+    fun `times, MACs, loopback and code references are not addresses`() {
+        val line = "at 12:34:56.789 wifi aa:bb:cc:dd:ee:ff, gRPC via [::1]:41000, Foo.kt:42, Log::write"
+        assertEquals(line, LogRedaction.redact(line))
+    }
+
     @Test
     fun `a debug build writes names as they are`() {
         LogRedaction.install(keyFile, plain = true)
