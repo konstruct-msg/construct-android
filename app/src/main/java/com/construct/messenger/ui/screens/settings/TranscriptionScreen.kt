@@ -69,6 +69,7 @@ fun TranscriptionRoute(onNavigateBack: () -> Unit, viewModel: TranscriptionViewM
         onNavigateBack = onNavigateBack,
         actions = TranscriptionActions(
             autoTranscribe = viewModel::setAutoTranscribe,
+            continuousVoice = viewModel::setContinuousVoice,
             language = viewModel::setLanguage,
             translate = viewModel::setTranslate,
             download = viewModel::download,
@@ -81,6 +82,7 @@ fun TranscriptionRoute(onNavigateBack: () -> Unit, viewModel: TranscriptionViewM
 
 class TranscriptionActions(
     val autoTranscribe: (Boolean) -> Unit = {},
+    val continuousVoice: (Boolean) -> Unit = {},
     val language: (String) -> Unit = {},
     val translate: (Boolean) -> Unit = {},
     val download: (WhisperModel) -> Unit = {},
@@ -92,7 +94,8 @@ class TranscriptionActions(
 /**
  * Settings → Transcription (TODO 116). **Canon:** iOS `STTSettingsSection` — automatic reading of
  * voice notes, the language, translation to English, and the models: download, use, delete, the
- * room they take. One engine on Android (whisper.cpp), so no engine picker.
+ * room they take. One engine on Android (whisper.cpp), so no engine picker. Above them, as on iOS
+ * `TranscriptionSettingsView`, how voice notes play: one after another (TODO 149).
  */
 @Composable
 private fun TranscriptionScreen(state: TranscriptionUiState, onNavigateBack: () -> Unit, actions: TranscriptionActions) {
@@ -102,6 +105,12 @@ private fun TranscriptionScreen(state: TranscriptionUiState, onNavigateBack: () 
     Column(Modifier.fillMaxSize().background(CTColor.bg).statusBarsPadding().navigationBarsPadding()) {
         CTNavBar(title = stringResource(R.string.stt_section_title), showBack = true, onBack = onNavigateBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = CTLayout.edgePad)) {
+            CTSettingsSectionHeader(title = stringResource(R.string.voice_section_title))
+            CTSectionGroup {
+                SwitchRow(stringResource(R.string.voice_continuous_playback), state.continuousVoice, actions.continuousVoice)
+            }
+            Footer(stringResource(R.string.voice_continuous_playback_footer))
+
             if (!state.available) {
                 Footer(stringResource(R.string.stt_error_unavailable))
                 return@Column

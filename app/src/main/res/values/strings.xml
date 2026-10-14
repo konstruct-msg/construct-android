@@ -690,6 +690,9 @@
     <string name="stt_error_no_model">No transcription model is downloaded yet.</string>
     <string name="stt_error_unavailable">Transcription isn\'t available on this device.</string>
     <string name="stt_error_failed">Could not transcribe this note.</string>
+    <string name="voice_section_title">Voice messages</string>
+    <string name="voice_continuous_playback">Play continuously</string>
+    <string name="voice_continuous_playback_footer">When several voice messages arrive in a row, play them one after another automatically until the last one finishes.</string>
     <string name="stt_section_title">Transcription</string>
     <string name="stt_footer">On-device transcription via whisper.cpp. No audio leaves your device. The model is downloaded from Hugging Face.</string>
     <string name="stt_auto_transcribe">Auto-transcribe voice messages</string>

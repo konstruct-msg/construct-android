@@ -8,6 +8,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,11 +49,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.R
 import com.construct.messenger.data.model.MessageMedia
+import com.construct.messenger.media.VoicePlaybackSettings
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
@@ -140,6 +148,8 @@ data class VoicePlayback(
     val unavailable: Boolean = false,
     /** Ours, still uploading. */
     val uploading: Boolean = false,
+    /** The voice notes' speed; shown while this note is the one loaded. */
+    val rate: Float = 1f,
 )
 
 /**
@@ -148,6 +158,10 @@ data class VoicePlayback(
  * down while it plays. Between the waveform and the length, the transcription button (iOS
  * `textformat`): it reads the note on this device, then shows or hides what it says, below a
  * hairline (TODO 116).
+ *
+ * A tap on the waveform plays from that point; a sideways drag moves along it and lands when the
+ * finger lifts, a vertical one is still the list's scroll. While the note is loaded, the speed
+ * beside the waveform: 1× → 1.25× → 1.5× → 2× (TODO 149, iOS `scrubSurface`, `rateButton`).
  */
 @Composable
 fun VoiceBubble(
@@ -158,6 +172,8 @@ fun VoiceBubble(
     onToggle: () -> Unit,
     onLongPress: () -> Unit,
     onDoubleTap: (() -> Unit)? = null,
+    onSeek: (Float) -> Unit = {},
+    onCycleRate: () -> Unit = {},
     transcript: String? = null,
     transcribing: Boolean = false,
     /** Null: no transcription here (no engine in this build). */
@@ -168,11 +184,15 @@ fun VoiceBubble(
     val shape = RoundedCornerShape(10.dp)
     val tint = if (outgoing) CTColor.outMsgText else CTColor.accent
     val durationMs = voice.audio.durationMs ?: 0L
-    val shownMs = if (playback.progress != null && playback.playingDurationMs > 0) {
-        (playback.playingDurationMs * (1 - playback.progress)).toLong()
-    } else {
-        durationMs
-    }
+    // Where a finger is on the waveform while it drags; the seek lands when it lifts.
+    var scrub by remember { mutableStateOf<Float?>(null) }
+    val shownProgress = scrub ?: playback.progress
+    val totalMs = if (playback.progress != null && playback.playingDurationMs > 0) playback.playingDurationMs else durationMs
+    val shownMs = if (shownProgress != null) (totalMs * (1 - shownProgress)).toLong() else durationMs
+    val canSeek = !playback.uploading && !playback.unavailable
+    // The gesture detectors outlive recompositions (progress ticks every 50 ms); they call the latest.
+    val seekNow by rememberUpdatedState(onSeek)
+    val longPressNow by rememberUpdatedState(onLongPress)
     Column(
         modifier = Modifier
             .widthIn(max = maxWidth)
@@ -210,13 +230,29 @@ fun VoiceBubble(
         }
         VoiceWaveform(
             samples = voice.waveform.map { it / 255f },
-            style = WaveStyle.Playback(playback.progress ?: 0f, outgoing),
+            style = WaveStyle.Playback(shownProgress ?: 0f, outgoing),
             modifier = Modifier
                 .weight(1f)
                 .height(28.dp)
                 .padding(horizontal = 6.dp)
+                .then(if (canSeek) Modifier.scrubbable({ longPressNow() }, { scrub = it }, { seekNow(it) }) else Modifier)
                 .alpha(if (playback.uploading) 0.4f else 1f),
         )
+        if (playback.progress != null) {
+            val speed = stringResource(R.string.playback_speed)
+            val label = VoicePlaybackSettings.rateLabel(playback.rate)
+            Text(
+                text = label,
+                style = CTFont.caption.copy(fontWeight = FontWeight.SemiBold),
+                color = tint,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .clickable(onClickLabel = speed, onClick = onCycleRate)
+                    .semantics { contentDescription = "$speed $label" }
+                    .padding(horizontal = CTSpace.xs, vertical = CTSpace.xs),
+            )
+        }
         if (onTranscribe != null && !playback.uploading) {
             TranscribeButton(
                 hasTranscript = transcript != null,
@@ -336,6 +372,35 @@ fun VoiceComposerBar(
         )
     }
 }
+
+/**
+ * A tap plays from that point; a sideways drag shows where it would land and seeks when it lifts.
+ * The drag detector takes only horizontal movement, so a vertical one stays the list's scroll; a
+ * long press is still the message menu.
+ */
+private fun Modifier.scrubbable(onLongPress: () -> Unit, onScrub: (Float?) -> Unit, onSeek: (Float) -> Unit): Modifier =
+    pointerInput(Unit) {
+        detectTapGestures(
+            onTap = { onSeek(scrubFraction(it.x, size.width.toFloat())) },
+            onLongPress = { onLongPress() },
+        )
+    }.pointerInput(Unit) {
+        var at: Float? = null
+        detectHorizontalDragGestures(
+            onDragStart = { at = scrubFraction(it.x, size.width.toFloat()); onScrub(at) },
+            onHorizontalDrag = { change, _ ->
+                change.consume()
+                at = scrubFraction(change.position.x, size.width.toFloat())
+                onScrub(at)
+            },
+            onDragEnd = { at?.let(onSeek); at = null; onScrub(null) },
+            onDragCancel = { at = null; onScrub(null) },
+        )
+    }
+
+/** The point of the track under [x] on a waveform [width] wide, 0…1 — iOS `VoiceScrub.fraction`. */
+internal fun scrubFraction(x: Float, width: Float): Float =
+    if (width <= 0f || !x.isFinite()) 0f else (x / width).coerceIn(0f, 1f)
 
 /** iOS `VoiceUIDurationFormatter`: m:ss. */
 fun formatVoiceDuration(ms: Long): String {

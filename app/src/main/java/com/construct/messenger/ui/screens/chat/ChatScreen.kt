@@ -97,6 +97,7 @@ fun ChatScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val recording by viewModel.recording.collectAsStateWithLifecycle()
     val playing by viewModel.playing.collectAsStateWithLifecycle()
+    val voiceRate by viewModel.voiceRate.collectAsStateWithLifecycle()
     val videoNote by viewModel.videoNote.collectAsStateWithLifecycle()
     val reactionRow by viewModel.reactionRow.collectAsStateWithLifecycle()
     val voiceLoading by viewModel.voiceLoading.collectAsStateWithLifecycle()
@@ -275,6 +276,16 @@ fun ChatScreen(
         listState.animateScrollBy((item.offset + item.size / 2 - viewportCenter).toFloat())
     }
 
+    // Continuous playback moved on to the next voice note: bring it into view (iOS
+    // `voicePlaybackScrollTarget`), unless it already is.
+    val currentVisible by androidx.compose.runtime.rememberUpdatedState(visible)
+    LaunchedEffect(Unit) {
+        viewModel.voiceFollow.collect { id ->
+            val index = currentVisible.indexOfFirst { it.id == id }
+            if (index >= 0 && listState.layoutInfo.visibleItemsInfo.none { it.index == index }) listState.animateScrollToItem(index)
+        }
+    }
+
     LaunchedEffect(jumpToId) {
         val id = jumpToId ?: return@LaunchedEffect
         if (searching) {
@@ -354,8 +365,11 @@ fun ChatScreen(
                         loading = voiceId in voiceLoading,
                         unavailable = voiceId in voiceUnavailable,
                         uploading = voiceId!!.startsWith(com.construct.messenger.util.MediaWire.LOCAL_PREFIX),
+                        rate = voiceRate,
                     ),
                     onToggleVoice = { voice?.let(viewModel::toggleVoice) },
+                    onSeekVoice = { fraction -> voice?.let { viewModel.seekVoice(it, fraction) } },
+                    onCycleVoiceRate = viewModel::cycleVoiceRate,
                     transcribing = message.id in transcribing,
                     onTranscribe = if (viewModel.canTranscribe) { { viewModel.transcribe(message) } } else null,
                     videoNote = videoNote.takeIf { it.expanded?.messageId == message.id }?.let {
