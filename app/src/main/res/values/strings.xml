@@ -389,6 +389,7 @@
     <string name="changes_encrypted_footer">&gt; changes are end-to-end encrypted</string>
     <string name="username_length_error">username must be 3–20 characters</string>
     <string name="username_unavailable">Username is already taken.</string>
+    <string name="username_reserved">This username is reserved.</string>
     <string name="username_save_failed">could not save — check the connection</string>
     <string name="action_edit">edit</string>
     <string name="action_save">save</string>
@@ -715,6 +716,7 @@
     <string name="invite_error_expired">This invite has expired</string>
     <string name="invite_error_used">This invite has already been used</string>
     <string name="invite_error_damaged">This invite is damaged</string>
+    <string name="invite_error_update_app">This invite needs a newer version of the app. Update it and try again.</string>
     <string name="invite_error_unreachable">Could not reach the sender. Try again.</string>
     <string name="invite_error_no_recovery_phrase">Set up your recovery phrase first, then add contacts</string>
     <string name="synaps_user_not_found">User not found</string>

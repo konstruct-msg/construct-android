@@ -191,6 +191,8 @@ data class InviteObject(
 enum class InviteProblem(@StringRes val text: Int) {
     EXPIRED(R.string.invite_error_expired),
     ALREADY_USED(R.string.invite_error_used),
+    /** Made by a newer app: updating this one is the fix. */
+    NEWER_VERSION(R.string.invite_error_update_app),
     /** Any parse, format, signature or identity mismatch: nothing the person can fix. */
     DAMAGED(R.string.invite_error_damaged),
     /** The inviter's keys could not be fetched. */
@@ -202,7 +204,10 @@ enum class InviteProblem(@StringRes val text: Int) {
 }
 
 sealed class InviteException(message: String, val problem: InviteProblem) : Exception(message) {
-    data class UnsupportedVersion(val version: Int) : InviteException("unsupported invite version $version", InviteProblem.DAMAGED)
+    data class UnsupportedVersion(val version: Int) : InviteException(
+        "unsupported invite version $version",
+        if (version > InviteConfig.VERSION) InviteProblem.NEWER_VERSION else InviteProblem.DAMAGED,
+    )
     data object InvalidJti : InviteException("invalid jti", InviteProblem.DAMAGED)
     data object InvalidUserId : InviteException("invalid user uuid", InviteProblem.DAMAGED)
     data object InvalidDeviceId : InviteException("invalid device id", InviteProblem.DAMAGED)

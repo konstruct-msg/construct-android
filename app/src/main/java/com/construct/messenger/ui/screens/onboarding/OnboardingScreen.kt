@@ -289,6 +289,7 @@ private fun AliasStatus.line(): Pair<String, Color>? = when (this) {
     AliasStatus.CHECKING -> stringResource(R.string.username_checking) to CTColor.textDim
     AliasStatus.AVAILABLE -> stringResource(R.string.username_available) to CTColor.accent
     AliasStatus.UNAVAILABLE -> stringResource(R.string.username_unavailable) to CTColor.danger
+    AliasStatus.RESERVED -> stringResource(R.string.username_reserved) to CTColor.danger
     AliasStatus.CHECK_FAILED -> stringResource(R.string.username_check_failed) to CTColor.danger
 }
 

@@ -5,6 +5,7 @@ import android.system.ErrnoException
 import android.system.OsConstants
 import com.construct.messenger.data.repository.ServerRefusedException
 import com.construct.messenger.invite.InviteException
+import com.construct.messenger.invite.InviteConfig
 import com.construct.messenger.invite.InviteProblem
 import io.grpc.Status
 import java.io.File
@@ -95,6 +96,9 @@ class UserErrorTest {
         assertEquals(InviteProblem.DAMAGED, InviteException.TtlBelowFloor(1).problem)
         assertEquals(InviteProblem.NO_RECOVERY_PHRASE, InviteException.NoAccountAddress.problem)
         assertEquals(InviteProblem.UNREACHABLE, InviteException.PublicKeyFetchFailed.problem)
+        // A newer app's invite asks for an update; an older one is just unreadable.
+        assertEquals(InviteProblem.NEWER_VERSION, InviteException.UnsupportedVersion(InviteConfig.VERSION + 1).problem)
+        assertEquals(InviteProblem.DAMAGED, InviteException.UnsupportedVersion(InviteConfig.VERSION - 1).problem)
     }
 
     /** Every text the closed sets can show exists, and is translated. */
@@ -113,7 +117,7 @@ class UserErrorTest {
         listOf(
             "synaps_user_not_found", "synaps_request_failed", "synaps_accept_failed",
             "synaps_status_added", "synaps_status_requested", "veil_start_failed",
-            "username_unavailable", "username_check_failed",
+            "username_unavailable", "username_reserved", "username_check_failed",
         ).forEach {
             assertTrue("$it missing in values/strings.xml", it in en)
             assertTrue("$it missing in values-ru/strings.xml", it in ru)

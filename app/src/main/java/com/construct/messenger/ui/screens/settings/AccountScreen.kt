@@ -589,6 +589,8 @@ private fun RowDivider() {
 private fun UsernameError.message(): Int = when (this) {
     UsernameError.LENGTH -> R.string.username_length_error
     UsernameError.UNAVAILABLE -> R.string.username_unavailable
+    UsernameError.RESERVED -> R.string.username_reserved
+    UsernameError.INVALID -> R.string.username_invalid_chars
     UsernameError.FAILED -> R.string.username_save_failed
 }
 

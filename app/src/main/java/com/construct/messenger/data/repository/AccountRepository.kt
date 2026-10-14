@@ -20,8 +20,8 @@ sealed interface UsernameChange {
     data class Saved(val username: String) : UsernameChange
     /** Outside [AccountRepository.USERNAME_LENGTH]. */
     data object InvalidLength : UsernameChange
-    /** Taken or refused by the server; [reason] is its code, if any. */
-    data class Unavailable(val reason: String?) : UsernameChange
+    /** Refused by the server, and why. */
+    data class Unavailable(val refusal: UsernameRefusal) : UsernameChange
     data object Failed : UsernameChange
 }
 
