@@ -99,8 +99,7 @@ fun DeleteAccountSheet(
             )
             if (deletion is Deletion.Failed) {
                 Text(
-                    text = deletion.message?.let { stringResource(R.string.delete_account_failed, it) }
-                        ?: stringResource(R.string.delete_account_not_available),
+                    text = stringResource(deletion.text),
                     style = CTFont.secondary,
                     color = CTColor.danger,
                     textAlign = TextAlign.Center,

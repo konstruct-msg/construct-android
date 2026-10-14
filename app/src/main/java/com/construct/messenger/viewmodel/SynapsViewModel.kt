@@ -1,7 +1,9 @@
 package com.construct.messenger.viewmodel
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.construct.messenger.R
 import com.construct.messenger.data.local.PendingInviteStore
 import com.construct.messenger.data.model.Contact
 import com.construct.messenger.data.repository.AcceptInviteResult
@@ -9,9 +11,13 @@ import com.construct.messenger.data.repository.ChatsRepository
 import com.construct.messenger.data.repository.ContactsRepository
 import com.construct.messenger.data.repository.FindUserResult
 import com.construct.messenger.data.repository.IncomingContactRequest
+import com.construct.messenger.diagnostics.Log
+import com.construct.messenger.invite.InviteException
+import com.construct.messenger.ui.UserError
 import com.construct.messenger.ui.screens.synaps.ContactMetrics
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,12 +27,23 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/**
+ * The line under the buttons. Names, usernames and the minted link are data; every word around
+ * them is a string resource, and a failure is a resource id — never an exception's text.
+ */
+sealed interface SynapsStatus {
+    data class Minted(val link: String) : SynapsStatus
+    data class Added(val name: String) : SynapsStatus
+    data class Requested(val username: String) : SynapsStatus
+    data class Failed(@StringRes val text: Int) : SynapsStatus
+}
+
 data class SynapsUiState(
     val contacts: List<Contact> = emptyList(),
     val incomingRequests: List<IncomingContactRequest> = emptyList(),
     val query: String = "",
     val paste: String = "",
-    val status: String? = null,
+    val status: SynapsStatus? = null,
     val lastMintedLink: String? = null,
     val busy: Boolean = false,
     val blocked: List<Contact> = emptyList(),
@@ -100,10 +117,14 @@ class SynapsViewModel @Inject constructor(
             try {
                 val minted = contactsRepository.mintLink()
                 form.update {
-                    it.copy(busy = false, lastMintedLink = minted.deepLink, status = minted.deepLink)
+                    it.copy(busy = false, lastMintedLink = minted.deepLink, status = SynapsStatus.Minted(minted.deepLink))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                form.update { it.copy(busy = false, status = e.message ?: "mint failed") }
+                Log.w(TAG, "mint link failed", e)
+                val text = (e as? InviteException)?.problem?.text ?: UserError.from(e).text
+                form.update { it.copy(busy = false, status = SynapsStatus.Failed(text)) }
             }
         }
     }
@@ -115,10 +136,10 @@ class SynapsViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = contactsRepository.accept(raw)) {
                 is AcceptInviteResult.Ok -> form.update {
-                    it.copy(busy = false, paste = "", status = result.contact.displayName)
+                    it.copy(busy = false, paste = "", status = SynapsStatus.Added(result.contact.displayName))
                 }
                 is AcceptInviteResult.Failed -> form.update {
-                    it.copy(busy = false, status = result.reason)
+                    it.copy(busy = false, status = SynapsStatus.Failed(result.text))
                 }
             }
         }
@@ -135,15 +156,19 @@ class SynapsViewModel @Inject constructor(
                     form.update {
                         it.copy(
                             busy = false,
-                            status = if (sent) "@$raw" else "request failed",
+                            status = if (sent) {
+                                SynapsStatus.Requested(raw)
+                            } else {
+                                SynapsStatus.Failed(R.string.synaps_request_failed)
+                            },
                         )
                     }
                 }
                 FindUserResult.NotFound -> form.update {
-                    it.copy(busy = false, status = "not found")
+                    it.copy(busy = false, status = SynapsStatus.Failed(R.string.synaps_user_not_found))
                 }
                 is FindUserResult.Failed -> form.update {
-                    it.copy(busy = false, status = found.reason)
+                    it.copy(busy = false, status = SynapsStatus.Failed(found.text))
                 }
             }
         }
@@ -154,7 +179,20 @@ class SynapsViewModel @Inject constructor(
         form.update { it.copy(busy = true) }
         viewModelScope.launch {
             val ok = contactsRepository.acceptRequest(request.requestId, request.fromUserId)
-            form.update { it.copy(busy = false, status = if (ok) request.displayName else "accept failed") }
+            form.update {
+                it.copy(
+                    busy = false,
+                    status = if (ok) {
+                        SynapsStatus.Added(request.displayName)
+                    } else {
+                        SynapsStatus.Failed(R.string.synaps_accept_failed)
+                    },
+                )
+            }
         }
+    }
+
+    private companion object {
+        const val TAG = "SynapsViewModel"
     }
 }

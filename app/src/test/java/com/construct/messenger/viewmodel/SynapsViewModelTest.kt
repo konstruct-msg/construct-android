@@ -1,5 +1,6 @@
 package com.construct.messenger.viewmodel
 
+import com.construct.messenger.R
 import com.construct.messenger.data.local.PendingInviteStore
 import com.construct.messenger.data.mock.MockChatsRepository
 import com.construct.messenger.data.model.Contact
@@ -7,13 +8,16 @@ import com.construct.messenger.data.repository.AcceptInviteResult
 import com.construct.messenger.data.repository.ContactsRepository
 import com.construct.messenger.data.repository.FindUserResult
 import com.construct.messenger.data.repository.IncomingContactRequest
+import com.construct.messenger.invite.InviteException
 import com.construct.messenger.invite.MintedInvite
+import io.grpc.Status
 import com.construct.messenger.test.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -32,7 +36,7 @@ class SynapsViewModelTest {
         advanceUntilIdle()
 
         assertEquals("", viewModel.uiState.value.paste)
-        assertEquals("swift fox", viewModel.uiState.value.status)
+        assertEquals(SynapsStatus.Added("swift fox"), viewModel.uiState.value.status)
         assertEquals(1, repo.accepted.size)
     }
 
@@ -45,7 +49,34 @@ class SynapsViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf("u-found"), repo.requested)
-        assertEquals("@alice", viewModel.uiState.value.status)
+        assertEquals(SynapsStatus.Requested("alice"), viewModel.uiState.value.status)
+    }
+
+    @Test
+    fun aRefusedInviteShowsItsKindNotItsMessage() = runTest {
+        val repo = FakeContacts().apply { acceptError = InviteException.Expired }
+        val viewModel = SynapsViewModel(repo, MockChatsRepository(), PendingInviteStore())
+        viewModel.onPasteChange("konstruct://add?invite=abc")
+        viewModel.accept()
+        advanceUntilIdle()
+
+        assertEquals(SynapsStatus.Failed(R.string.invite_error_expired), viewModel.uiState.value.status)
+    }
+
+    @Test
+    fun noExceptionTextReachesTheState() = runTest {
+        val repo = FakeContacts().apply { mintError = IllegalStateException(LEAK) }
+        val viewModel = SynapsViewModel(repo, MockChatsRepository(), PendingInviteStore())
+        viewModel.shareInvite()
+        advanceUntilIdle()
+        assertEquals(SynapsStatus.Failed(R.string.error_something_went_wrong), viewModel.uiState.value.status)
+
+        repo.mintError = Status.UNAVAILABLE.withDescription(LEAK).asRuntimeException()
+        viewModel.shareInvite()
+        advanceUntilIdle()
+        assertEquals(SynapsStatus.Failed(R.string.error_no_connection), viewModel.uiState.value.status)
+
+        assertFalse(viewModel.uiState.value.toString().contains("LEAK-1234"))
     }
 
     @Test
@@ -57,12 +88,18 @@ class SynapsViewModelTest {
 
         assertTrue(viewModel.uiState.value.lastMintedLink!!.startsWith("konstruct://add"))
     }
+
+    private companion object {
+        const val LEAK = "LEAK-1234 UNAVAILABLE: io exception"
+    }
 }
 
 private class FakeContacts : ContactsRepository {
     override val contacts = MutableStateFlow<List<Contact>>(emptyList())
     val accepted = mutableListOf<String>()
-    override suspend fun mintLink() = MintedInvite(
+    var acceptError: InviteException? = null
+    var mintError: Exception? = null
+    override suspend fun mintLink() = mintError?.let { throw it } ?: MintedInvite(
         jti = "jti",
         issuedAtEpochSec = 1,
         ttlSeconds = 300,
@@ -72,6 +109,7 @@ private class FakeContacts : ContactsRepository {
     override suspend fun mintQr(sitting: String): MintedInvite = mintLink()
     override suspend fun accept(raw: String): AcceptInviteResult {
         accepted += raw
+        acceptError?.let { return AcceptInviteResult.Failed(it.problem.text) }
         val contact = Contact("u1", "swift fox")
         contacts.value = listOf(contact)
         return AcceptInviteResult.Ok(contact)

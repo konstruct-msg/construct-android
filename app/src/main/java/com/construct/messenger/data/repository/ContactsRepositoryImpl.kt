@@ -19,6 +19,7 @@ import com.construct.messenger.invite.InviteObject
 import com.construct.messenger.invite.InviteVerifier
 import com.construct.messenger.invite.MintedInvite
 import com.construct.messenger.invite.OwnAccountAddress
+import com.construct.messenger.ui.UserError
 import com.construct.messenger.util.DisplayNameGenerator
 import com.google.protobuf.ByteString
 import io.grpc.Status
@@ -135,10 +136,10 @@ class ContactsRepositoryImpl @Inject constructor(
             throw e
         } catch (e: InviteException) {
             Log.w(TAG, "accept invite: ${e.message}")
-            AcceptInviteResult.Failed(e.message ?: "invite failed")
+            AcceptInviteResult.Failed(e.problem.text)
         } catch (e: Exception) {
             Log.w(TAG, "accept invite rpc failed", e)
-            AcceptInviteResult.Failed(e.message ?: "accept failed")
+            AcceptInviteResult.Failed(UserError.from(e).text)
         }
     }
 
@@ -165,7 +166,7 @@ class ContactsRepositoryImpl @Inject constructor(
 
     override suspend fun findByUsername(username: String): FindUserResult {
         val needle = username.trim().removePrefix("@").lowercase()
-        if (needle.isEmpty()) return FindUserResult.Failed("empty")
+        if (needle.isEmpty()) return FindUserResult.Failed(UserError.SOMETHING_WENT_WRONG.text)
         return try {
             val response = grpcClient.user.findUser(
                 FindUserRequest.newBuilder().setUsername(needle).build(),
@@ -173,12 +174,17 @@ class ContactsRepositoryImpl @Inject constructor(
             val id = response.userId
             if (id.isEmpty()) FindUserResult.NotFound else FindUserResult.Found(id)
         } catch (e: StatusRuntimeException) {
-            if (e.status.code == Status.Code.NOT_FOUND) FindUserResult.NotFound
-            else FindUserResult.Failed(e.status.code.name)
+            if (e.status.code == Status.Code.NOT_FOUND) {
+                FindUserResult.NotFound
+            } else {
+                Log.w(TAG, "findUser failed: ${e.status.code}", e)
+                FindUserResult.Failed(UserError.from(e).text)
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            FindUserResult.Failed(e.message ?: "find failed")
+            Log.w(TAG, "findUser failed", e)
+            FindUserResult.Failed(UserError.from(e).text)
         }
     }
 
@@ -250,14 +256,18 @@ class ContactsRepositoryImpl @Inject constructor(
 
     override suspend fun checkUsername(username: String): UsernameAvailability {
         val needle = username.trim().removePrefix("@")
-        if (needle.isEmpty()) return UsernameAvailability(false, "invalid_format")
+        if (needle.isEmpty()) return UsernameAvailability(false)
         return try {
             val response = grpcClient.user.checkUsernameAvailability(
                 CheckUsernameAvailabilityRequest.newBuilder().setUsername(needle).build(),
             )
-            UsernameAvailability(response.available, if (response.hasReason()) response.reason else null)
+            if (!response.available && response.hasReason()) Log.i(TAG, "username unavailable: ${response.reason}")
+            UsernameAvailability(response.available)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            UsernameAvailability(false, e.message, checkFailed = true)
+            Log.w(TAG, "checkUsername failed", e)
+            UsernameAvailability(false, checkFailed = true)
         }
     }
 

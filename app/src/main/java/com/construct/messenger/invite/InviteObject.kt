@@ -1,5 +1,7 @@
 package com.construct.messenger.invite
 
+import androidx.annotation.StringRes
+import com.construct.messenger.R
 import java.nio.ByteBuffer
 import java.util.Base64
 import java.util.UUID
@@ -182,28 +184,45 @@ data class InviteObject(
     }
 }
 
-sealed class InviteException(message: String) : Exception(message) {
-    data class UnsupportedVersion(val version: Int) : InviteException("unsupported invite version $version")
-    data object InvalidJti : InviteException("invalid jti")
-    data object InvalidUserId : InviteException("invalid user uuid")
-    data object InvalidDeviceId : InviteException("invalid device id")
-    data object InvalidServer : InviteException("invalid server")
-    data object InvalidTimestamp : InviteException("invalid timestamp")
-    data object InvalidSignature : InviteException("invalid signature")
-    data class TtlBelowFloor(val ttl: Int) : InviteException("ttl ${ttl}s below floor")
-    data object InvalidAddress : InviteException("invite address must be a 32-byte key")
-    data object BadMagic : InviteException("bad CIv1 magic")
-    data object TrailingBytes : InviteException("trailing bytes")
-    data object InvalidEncoding : InviteException("invalid base64")
-    data object UnrecognizedPayload : InviteException("unrecognized invite payload")
-    data object Expired : InviteException("invite expired")
-    data object AlreadyUsed : InviteException("invite already used")
-    data object DeviceIdMismatch : InviteException("device id does not match identity key")
-    data object PublicKeyFetchFailed : InviteException("could not fetch inviter keys")
-    data object SigningFailed : InviteException("invite self-verify failed")
-    data object MissingIdentityKey : InviteException("signing key not available")
+/**
+ * Why an invite was refused, in the words a person can act on. Set at the throw site — never
+ * worked out from [Exception.message], which is English for the log only.
+ */
+enum class InviteProblem(@StringRes val text: Int) {
+    EXPIRED(R.string.invite_error_expired),
+    ALREADY_USED(R.string.invite_error_used),
+    /** Any parse, format, signature or identity mismatch: nothing the person can fix. */
+    DAMAGED(R.string.invite_error_damaged),
+    /** The inviter's keys could not be fetched. */
+    UNREACHABLE(R.string.invite_error_unreachable),
+    /** This device does not know its own address yet. */
+    NO_RECOVERY_PHRASE(R.string.invite_error_no_recovery_phrase),
+    /** Our own side failed while making an invite. */
+    FAILED(R.string.error_something_went_wrong),
+}
+
+sealed class InviteException(message: String, val problem: InviteProblem) : Exception(message) {
+    data class UnsupportedVersion(val version: Int) : InviteException("unsupported invite version $version", InviteProblem.DAMAGED)
+    data object InvalidJti : InviteException("invalid jti", InviteProblem.DAMAGED)
+    data object InvalidUserId : InviteException("invalid user uuid", InviteProblem.DAMAGED)
+    data object InvalidDeviceId : InviteException("invalid device id", InviteProblem.DAMAGED)
+    data object InvalidServer : InviteException("invalid server", InviteProblem.DAMAGED)
+    data object InvalidTimestamp : InviteException("invalid timestamp", InviteProblem.DAMAGED)
+    data object InvalidSignature : InviteException("invalid signature", InviteProblem.DAMAGED)
+    data class TtlBelowFloor(val ttl: Int) : InviteException("ttl ${ttl}s below floor", InviteProblem.DAMAGED)
+    data object InvalidAddress : InviteException("invite address must be a 32-byte key", InviteProblem.DAMAGED)
+    data object BadMagic : InviteException("bad CIv1 magic", InviteProblem.DAMAGED)
+    data object TrailingBytes : InviteException("trailing bytes", InviteProblem.DAMAGED)
+    data object InvalidEncoding : InviteException("invalid base64", InviteProblem.DAMAGED)
+    data object UnrecognizedPayload : InviteException("unrecognized invite payload", InviteProblem.DAMAGED)
+    data object Expired : InviteException("invite expired", InviteProblem.EXPIRED)
+    data object AlreadyUsed : InviteException("invite already used", InviteProblem.ALREADY_USED)
+    data object DeviceIdMismatch : InviteException("device id does not match identity key", InviteProblem.DAMAGED)
+    data object PublicKeyFetchFailed : InviteException("could not fetch inviter keys", InviteProblem.UNREACHABLE)
+    data object SigningFailed : InviteException("invite self-verify failed", InviteProblem.FAILED)
+    data object MissingIdentityKey : InviteException("signing key not available", InviteProblem.FAILED)
     /** This device does not know the account's address — the recovery phrase is needed. */
-    data object NoAccountAddress : InviteException("recovery phrase not set up on this device")
+    data object NoAccountAddress : InviteException("recovery phrase not set up on this device", InviteProblem.NO_RECOVERY_PHRASE)
 }
 
 internal fun uuidBytes(s: String): ByteArray? = runCatching {

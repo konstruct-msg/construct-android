@@ -272,8 +272,6 @@
     <string name="delete_account_message">Финальное подтверждение: Ваша идентичность будет удалена с сервера, и все локальные ключи шифрования будут очищены после подтверждения сервера. Это действие необратимо.</string>
     <string name="delete_account_button">Удалить идентичность</string>
     <string name="delete_account_abort_hint">нажмите, чтобы отменить · %1$d с</string>
-    <string name="delete_account_failed">Ошибка удаления: %1$s</string>
-    <string name="delete_account_not_available">Удаление идентичности пока недоступно. Попробуйте позже.</string>
     <string name="delete_account_local_only">Удалить только локально</string>
     <string name="delete_account_local_title">Удалить только локально?</string>
     <string name="delete_account_local_warning">Аккаунт может остаться на сервере. Все ключи шифрования и данные приложения будут навсегда удалены с этого устройства. Вы больше не сможете использовать этот аккаунт здесь.</string>
@@ -544,7 +542,6 @@
     <string name="veil_establishing">Устанавливаем veil-front туннель…</string>
     <string name="veil_front">Фронт</string>
     <string name="veil_latency">Задержка</string>
-    <string name="veil_last_error">Последняя ошибка</string>
     <string name="veil_config_paste">Вставить код конфигурации</string>
     <string name="veil_config_import">Импорт</string>
     <string name="veil_config_import_ok">Доступ VEIL настроен</string>
@@ -711,4 +708,23 @@
     <string name="stt_model_failed">Не скачалась — попробуйте ещё раз</string>
     <string name="stt_models_on_disk">На диске: %1$s</string>
     <string name="stt_model_delete_confirm">Удалить модель %1$s? Для транскрипции нужна модель; её можно скачать снова.</string>
+
+    <!-- Errors a person sees: a closed set, picked by type and code (ui/UserError.kt) — never an exception's text -->
+    <string name="error_no_connection">Нет соединения</string>
+    <string name="error_server_failed">Сервер не смог выполнить запрос</string>
+    <string name="error_sign_in_again">Войдите снова</string>
+    <string name="error_too_many_attempts">Слишком много попыток — попробуйте позже</string>
+    <string name="error_no_space">На устройстве мало места</string>
+    <string name="error_something_went_wrong">Что-то пошло не так</string>
+    <string name="invite_error_expired">Приглашение истекло</string>
+    <string name="invite_error_used">Приглашение уже использовано</string>
+    <string name="invite_error_damaged">Приглашение повреждено</string>
+    <string name="invite_error_unreachable">Не удалось связаться с отправителем. Попробуйте ещё раз.</string>
+    <string name="invite_error_no_recovery_phrase">Сначала настройте фразу восстановления, затем добавляйте контакты</string>
+    <string name="synaps_user_not_found">Пользователь не найден</string>
+    <string name="synaps_request_failed">Не удалось отправить запрос</string>
+    <string name="synaps_accept_failed">Не удалось принять запрос</string>
+    <string name="synaps_status_added">Добавлено: %1$s</string>
+    <string name="synaps_status_requested">Запрос отправлен: @%1$s</string>
+    <string name="veil_start_failed">Не удалось запустить туннель</string>
 </resources>
