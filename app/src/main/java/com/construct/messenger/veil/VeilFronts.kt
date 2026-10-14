@@ -2,17 +2,25 @@ package com.construct.messenger.veil
 
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.diagnostics.Log
+import com.construct.messenger.diagnostics.LogRedaction
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
-/** A front this client may dial: its address, the TLS name it presents, and its pinned key. */
-data class VeilRelay(val address: String, val sni: String, val spkiHex: String)
+/**
+ * A front this client may dial: its address, the TLS name it presents, and its pinned key. Its
+ * names are logged only as labels from the moment it exists ([LogRedaction], TODO 135).
+ */
+data class VeilRelay(val address: String, val sni: String, val spkiHex: String) {
+    init { LogRedaction.register(address, sni) }
+}
 
 /** One front learned from a signed config link. Newest first when there are several. */
 data class LearnedFront(val address: String, val sni: String, val spki: String, val learnedAtMs: Long) {
+    init { LogRedaction.register(address, sni) }
+
     val relay: VeilRelay get() = VeilRelay(address, sni, spki)
 }
 
