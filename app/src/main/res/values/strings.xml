@@ -536,6 +536,7 @@
     <string name="censorship_protection">Censorship protection</string>
     <string name="censorship_protection_footer_off">Off. Connection goes directly to Konstruct.</string>
     <string name="censorship_protection_footer_on">Always routes around network blocks. Setup happens in the background.</string>
+    <string name="censorship_protection_footer_on_no_front">The relay is not answering. Until it does, nothing is sent or received: with On, the app never connects directly. Choose Auto to connect directly while the relay is unreachable.</string>
     <string name="veil_establishing">Establishing veil-front tunnel…</string>
     <string name="veil_front">Front</string>
     <string name="veil_latency">Latency</string>

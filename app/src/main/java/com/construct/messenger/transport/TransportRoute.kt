@@ -115,6 +115,15 @@ object TransportRoute {
             for (e in listOf(Effect.RequestProxyStop, Effect.SetVeilPort(null))) if (e !in effects) effects += e
             return Outcome(State.Direct(0), effects)
         }
+        // On never goes direct (vault decisions/veil-on-never-goes-direct.md, iOS 3e64d6a8).
+        // Whatever would have put it on the direct path — a cooldown that elapsed, a manual
+        // reset — sends it back to the front. Until 2026-10-13 a cooldown ended in Direct
+        // whatever the mode.
+        if (mode == Mode.ON && outcome.state is State.Direct) {
+            val effects = outcome.effects.toMutableList()
+            if (Effect.RequestProxyStart !in effects) effects += Effect.RequestProxyStart
+            return Outcome(State.VeilProbing, effects)
+        }
         return outcome
     }
 

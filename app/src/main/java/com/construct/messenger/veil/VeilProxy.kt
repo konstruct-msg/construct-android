@@ -14,12 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 
-/**
- * Off: always direct. Auto: direct first, VEIL once the direct path actually fails. On: always
- * VEIL. Canon: iOS `VeilMode`, and its platform default (Auto).
- */
-enum class VeilMode { OFF, AUTO, ON }
-
 /** What the last start did, for the Network screen. Which path is in use is the router's state. */
 data class VeilStartInfo(
     val relay: String? = null,
@@ -41,10 +35,10 @@ class VeilProxy @Inject constructor(
     private val authSession: AuthSessionManager,
     private val fronts: VeilFrontStore,
     private val provisioner: VeilFrontProvisioner,
+    private val modes: VeilModeStore,
 ) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-    private val mode = MutableStateFlow(loadMode())
-    val modeState: StateFlow<VeilMode> = mode.asStateFlow()
+    val modeState: StateFlow<VeilMode> get() = modes.state
     private val info = MutableStateFlow(VeilStartInfo())
     val startInfo: StateFlow<VeilStartInfo> = info.asStateFlow()
 
@@ -61,10 +55,7 @@ class VeilProxy @Inject constructor(
      */
     private val failures = java.util.concurrent.ConcurrentHashMap<String, Int>()
 
-    fun saveMode(value: VeilMode) {
-        prefs.edit().putString(KEY_MODE, value.name).apply()
-        mode.value = value
-    }
+    fun saveMode(value: VeilMode) = modes.save(value)
 
     /**
      * Terminate veil-front TLS in Conscrypt (a genuine Android ClientHello) instead of
@@ -162,7 +153,7 @@ class VeilProxy @Inject constructor(
      * forget from the router on a tunnel coming up, a start failure, and front preparation.
      */
     suspend fun maintainFloor() {
-        if (mode.value == VeilMode.OFF) return
+        if (modes.state.value == VeilMode.OFF) return
         provisioner.topUpFloorIfNeeded(excluding = failingAddresses())
     }
 
@@ -184,7 +175,7 @@ class VeilProxy @Inject constructor(
      * with VEIL off or a front known; rate-limited in [VeilFrontProvisioner].
      */
     suspend fun prepareFront() {
-        if (mode.value == VeilMode.OFF) return
+        if (modes.state.value == VeilMode.OFF) return
         provisioner.ensureFront()
         provisioner.topUpFloorIfNeeded(excluding = failingAddresses())
     }
@@ -237,16 +228,11 @@ class VeilProxy @Inject constructor(
         if (len <= 0) null else String(buf, 0, minOf(len, buf.size - 1), Charsets.UTF_8)
     }.getOrNull()
 
-    /** Never set means Auto — iOS's platform default. */
-    private fun loadMode(): VeilMode =
-        prefs.getString(KEY_MODE, null)?.let { runCatching { VeilMode.valueOf(it) }.getOrNull() } ?: VeilMode.AUTO
-
     companion object {
         /** [StartResult.Failed.reason] when no front has been learned; the Network screen names it. */
         const val NO_FRONT = "no VEIL front: import a veil-config link"
         private const val TAG = "VEIL"
         private const val PREFS = "veil_prefs"
-        private const val KEY_MODE = "mode"
         private const val KEY_NATIVE_TLS = "native_tls"
         private const val SCORES_FILE = "veil_scores.sqlite"
         private const val ERROR_BUFFER = 512
