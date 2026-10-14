@@ -25,6 +25,8 @@ object Diagnostics {
 
     fun install(context: Context) {
         if (collector != null) return
+        // Before the first line: a front's name is never written in a release build (TODO 135).
+        LogRedaction.install(File(context.noBackupFilesDir, "log_label.key"), plain = BuildConfig.DEBUG)
         val created = LogCollector(
             // Not backed up and not user-visible: a log is this device's, never a backup's.
             directory = File(context.noBackupFilesDir, "logs"),

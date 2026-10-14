@@ -32,7 +32,10 @@ data class OfferedFront(
     val signature: String,
     val capability: ByteArray,
     val capabilityVersion: Int,
-)
+) {
+    // Named in the log only as a label, refused or not: it is a front either way (TODO 135).
+    init { com.construct.messenger.diagnostics.LogRedaction.register(relay, sni) }
+}
 
 object VeilEntryPoints {
 
