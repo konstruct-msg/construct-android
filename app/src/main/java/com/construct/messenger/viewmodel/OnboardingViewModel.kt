@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.construct.messenger.R
 import com.construct.messenger.data.repository.AuthRepository
 import com.construct.messenger.data.repository.ContactsRepository
+import com.construct.messenger.data.repository.UsernameRefusal
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.domain.usecase.RegistrationStep
 import com.construct.messenger.ui.UserError
@@ -44,8 +45,16 @@ data class OnboardingUiState(
         get() = step != null && step !is RegistrationStep.Complete && step !is RegistrationStep.Error
 }
 
+/** A refusal in the words of the alias screen; null (no refusal given) reads as taken. */
+private val UsernameRefusal?.text: Int
+    get() = when (this) {
+        UsernameRefusal.RESERVED -> R.string.username_reserved
+        UsernameRefusal.INVALID -> R.string.username_invalid_chars
+        UsernameRefusal.TAKEN, null -> R.string.username_unavailable
+    }
+
 /** What the line under the alias field says. **Canon:** iOS `OnboardingView.validateUsername`. */
-enum class AliasStatus { NONE, TOO_SHORT, INVALID_CHARS, CHECKING, AVAILABLE, UNAVAILABLE, CHECK_FAILED }
+enum class AliasStatus { NONE, TOO_SHORT, INVALID_CHARS, CHECKING, AVAILABLE, UNAVAILABLE, RESERVED, CHECK_FAILED }
 
 sealed interface OnboardingEvent {
     data object NavigateToMain : OnboardingEvent
@@ -89,6 +98,8 @@ class OnboardingViewModel @Inject constructor(
             val status = when {
                 answer.checkFailed -> AliasStatus.CHECK_FAILED
                 answer.available -> AliasStatus.AVAILABLE
+                answer.refusal == UsernameRefusal.RESERVED -> AliasStatus.RESERVED
+                answer.refusal == UsernameRefusal.INVALID -> AliasStatus.INVALID_CHARS
                 else -> AliasStatus.UNAVAILABLE
             }
             mutableUiState.update { it.copy(aliasStatus = status) }
@@ -112,7 +123,10 @@ class OnboardingViewModel @Inject constructor(
                 if (username != null) {
                     val availability = contactsRepository.checkUsername(username)
                     if (!availability.available) {
-                        val text = if (availability.checkFailed) R.string.username_check_failed else R.string.username_unavailable
+                        val text = when {
+                            availability.checkFailed -> R.string.username_check_failed
+                            else -> availability.refusal.text
+                        }
                         mutableUiState.update { it.copy(step = RegistrationStep.Error(text)) }
                         return@launch
                     }

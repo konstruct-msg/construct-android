@@ -74,7 +74,23 @@ interface ContactsRepository {
 data class UsernameAvailability(
     val available: Boolean,
     val checkFailed: Boolean = false,
+    /** Why the server said no; null when available or the check failed. */
+    val refusal: UsernameRefusal? = null,
 )
+
+/** The server's `CheckUsernameAvailabilityResponse.reason` codes ("taken", "reserved", "invalid_format"). */
+enum class UsernameRefusal {
+    TAKEN, RESERVED, INVALID;
+
+    companion object {
+        /** An unknown or missing code reads as taken — the one answer that is never wrong to show. */
+        fun of(code: String?): UsernameRefusal = when (code) {
+            "reserved" -> RESERVED
+            "invalid_format" -> INVALID
+            else -> TAKEN
+        }
+    }
+}
 
 data class UserProfile(
     val userId: String,

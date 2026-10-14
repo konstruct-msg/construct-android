@@ -8,6 +8,7 @@ import com.construct.messenger.data.repository.AppLockRepository
 import com.construct.messenger.data.repository.AuthRepository
 import com.construct.messenger.data.repository.OwnAccount
 import com.construct.messenger.data.repository.UsernameChange
+import com.construct.messenger.data.repository.UsernameRefusal
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.domain.usecase.ShareProfileUseCase
 import com.construct.messenger.recovery.RecoveryRepository
@@ -27,7 +28,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class UsernameError { LENGTH, UNAVAILABLE, FAILED }
+enum class UsernameError { LENGTH, UNAVAILABLE, RESERVED, INVALID, FAILED }
 
 data class AccountUiState(
     val account: OwnAccount? = null,
@@ -146,10 +147,14 @@ class AccountViewModel @Inject constructor(
             val error = if (!usernameChanged) {
                 null
             } else {
-                when (accountRepository.changeUsername(current.draftUsername)) {
+                when (val change = accountRepository.changeUsername(current.draftUsername)) {
                     is UsernameChange.Saved -> null
                     UsernameChange.InvalidLength -> UsernameError.LENGTH
-                    is UsernameChange.Unavailable -> UsernameError.UNAVAILABLE
+                    is UsernameChange.Unavailable -> when (change.refusal) {
+                        UsernameRefusal.TAKEN -> UsernameError.UNAVAILABLE
+                        UsernameRefusal.RESERVED -> UsernameError.RESERVED
+                        UsernameRefusal.INVALID -> UsernameError.INVALID
+                    }
                     UsernameChange.Failed -> UsernameError.FAILED
                 }
             }

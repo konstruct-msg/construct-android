@@ -87,6 +87,23 @@ class OnboardingViewModelTest {
     }
 
     @Test
+    fun aReservedAliasSaysReservedNotTaken() = runTest {
+        val contacts = object : com.construct.messenger.data.repository.ContactsRepository by FakeOnboardingContacts() {
+            override suspend fun checkUsername(username: String) =
+                com.construct.messenger.data.repository.UsernameAvailability(
+                    false,
+                    refusal = com.construct.messenger.data.repository.UsernameRefusal.of("reserved"),
+                )
+        }
+        val viewModel = OnboardingViewModel(MockAuthRepository(), contacts)
+
+        viewModel.initializeIdentity("admin")
+        advanceUntilIdle()
+
+        assertEquals(RegistrationStep.Error(R.string.username_reserved), viewModel.uiState.value.step)
+    }
+
+    @Test
     fun initializeIdentityIgnoresRapidDuplicateCalls() = runTest {
         val repository = DelayedCountingAuthRepository()
         val viewModel = OnboardingViewModel(repository, FakeOnboardingContacts())

@@ -118,7 +118,7 @@ class AccountViewModelTest {
 
     @Test
     fun `a taken alias keeps the field open and says why`() {
-        val repo = FakeAccountRepository().apply { nextUsernameResult = UsernameChange.Unavailable("taken") }
+        val repo = FakeAccountRepository().apply { nextUsernameResult = UsernameChange.Unavailable(com.construct.messenger.data.repository.UsernameRefusal.TAKEN) }
         val vm = AccountViewModel(repo, auth, org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
         vm.startEditing()
         vm.onDraftChange("fox")
@@ -126,6 +126,18 @@ class AccountViewModelTest {
         assertTrue(vm.uiState.value.editing)
         assertEquals(UsernameError.UNAVAILABLE, vm.uiState.value.usernameError)
         assertEquals("fox", vm.uiState.value.draftUsername)
+    }
+
+    @Test
+    fun `a reserved alias says it is reserved, not taken`() {
+        val repo = FakeAccountRepository().apply {
+            nextUsernameResult = UsernameChange.Unavailable(com.construct.messenger.data.repository.UsernameRefusal.RESERVED)
+        }
+        val vm = AccountViewModel(repo, auth, org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), org.mockito.kotlin.mock())
+        vm.startEditing()
+        vm.onDraftChange("admin")
+        vm.save()
+        assertEquals(UsernameError.RESERVED, vm.uiState.value.usernameError)
     }
 
     @Test

@@ -393,6 +393,7 @@
     <string name="changes_encrypted_footer">&gt; изменения защищены сквозным шифрованием</string>
     <string name="username_length_error">username должен быть от 3 до 20 символов</string>
     <string name="username_unavailable">Имя пользователя уже занято.</string>
+    <string name="username_reserved">Это имя зарезервировано.</string>
     <string name="username_save_failed">не удалось сохранить — проверьте соединение</string>
     <string name="action_edit">изменить</string>
     <string name="action_save">сохранить</string>
@@ -719,6 +720,7 @@
     <string name="invite_error_expired">Приглашение истекло</string>
     <string name="invite_error_used">Приглашение уже использовано</string>
     <string name="invite_error_damaged">Приглашение повреждено</string>
+    <string name="invite_error_update_app">Для этого приглашения нужна новая версия приложения. Обновите его и попробуйте снова.</string>
     <string name="invite_error_unreachable">Не удалось связаться с отправителем. Попробуйте ещё раз.</string>
     <string name="invite_error_no_recovery_phrase">Сначала настройте фразу восстановления, затем добавляйте контакты</string>
     <string name="synaps_user_not_found">Пользователь не найден</string>

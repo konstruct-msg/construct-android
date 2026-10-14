@@ -256,13 +256,16 @@ class ContactsRepositoryImpl @Inject constructor(
 
     override suspend fun checkUsername(username: String): UsernameAvailability {
         val needle = username.trim().removePrefix("@")
-        if (needle.isEmpty()) return UsernameAvailability(false)
+        if (needle.isEmpty()) return UsernameAvailability(false, refusal = UsernameRefusal.INVALID)
         return try {
             val response = grpcClient.user.checkUsernameAvailability(
                 CheckUsernameAvailabilityRequest.newBuilder().setUsername(needle).build(),
             )
-            if (!response.available && response.hasReason()) Log.i(TAG, "username unavailable: ${response.reason}")
-            UsernameAvailability(response.available)
+            if (response.available) {
+                UsernameAvailability(true)
+            } else {
+                UsernameAvailability(false, refusal = UsernameRefusal.of(if (response.hasReason()) response.reason else null))
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

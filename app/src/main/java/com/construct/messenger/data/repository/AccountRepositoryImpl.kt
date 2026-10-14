@@ -106,7 +106,7 @@ class AccountRepositoryImpl @Inject constructor(
             // or before this install). The update is the one that knows — it refuses only a name
             // held by someone else, with ALREADY_EXISTS.
             if (!availability.available && availability.reason != REASON_TAKEN) {
-                return UsernameChange.Unavailable(if (availability.hasReason()) availability.reason else null)
+                return UsernameChange.Unavailable(UsernameRefusal.of(if (availability.hasReason()) availability.reason else null))
             }
             val saved = grpcClient.user.updateUserProfile(
                 UpdateUserProfileRequest.newBuilder().setUserId(userId).setUsername(username).build(),
@@ -117,7 +117,7 @@ class AccountRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: StatusException) {
-            if (e.status.code == Status.Code.ALREADY_EXISTS) return UsernameChange.Unavailable(REASON_TAKEN)
+            if (e.status.code == Status.Code.ALREADY_EXISTS) return UsernameChange.Unavailable(UsernameRefusal.TAKEN)
             Log.w(TAG, "username change failed", e)
             UsernameChange.Failed
         } catch (e: Exception) {
