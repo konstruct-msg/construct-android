@@ -1,9 +1,12 @@
 package com.construct.messenger.data.api
 
 import com.construct.messenger.data.auth.AuthInterceptor
+import com.construct.messenger.transport.DirectPathGuard
 import com.construct.messenger.transport.RouteObservingInterceptor
 import com.construct.messenger.transport.TransportEvents
 import com.construct.messenger.transport.TransportRoute
+import com.construct.messenger.veil.VeilModeStore
+import io.grpc.ClientInterceptor
 import io.grpc.ManagedChannel
 import io.grpc.okhttp.OkHttpChannelBuilder
 import shared.proto.sentinel.v1.SentinelServiceGrpcKt.SentinelServiceCoroutineStub
@@ -43,6 +46,7 @@ import javax.inject.Singleton
 class GrpcClient @Inject constructor(
     private val authInterceptor: AuthInterceptor,
     private val transportEvents: TransportEvents,
+    private val veilModes: VeilModeStore,
 ) {
 
     /** The two channels and where they point. Swapped whole by [routeThrough], never field by field. */
@@ -98,12 +102,17 @@ class GrpcClient @Inject constructor(
         val via = veilPort?.let { TransportRoute.Target.Veil(it, "") } ?: TransportRoute.Target.Direct
         // Every unary outcome is evidence for Auto mode (TransportRouter).
         val observer = RouteObservingInterceptor(via, transportEvents)
+        // The last interceptor runs first: with VEIL On a direct channel refuses before anything
+        // else is asked. Through the tunnel there is nothing to guard.
+        val guard = listOfNotNull<ClientInterceptor>(
+            DirectPathGuard { veilModes.state.value.allowsDirectPath }.takeIf { veilPort == null },
+        )
         return Channels(
-            auth = base().intercept(authInterceptor, observer).build(),
+            auth = base().intercept(listOf(authInterceptor, observer) + guard).build(),
             // No AuthInterceptor — sealed sender RPCs must not carry sender identity
             // on the transport layer. The `SendSealedMessage` method is also in the
             // interceptor's unauthenticated whitelist as defence-in-depth.
-            sealed = base().intercept(observer).build(),
+            sealed = base().intercept(listOf<ClientInterceptor>(observer) + guard).build(),
             veilPort = veilPort,
             generation = ++built,
         )

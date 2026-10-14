@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import com.construct.messenger.diagnostics.Log
+import com.construct.messenger.veil.VeilMode
+import com.construct.messenger.veil.VeilModeStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -37,9 +39,10 @@ import shared.proto.signaling.v1.Webrtc.TurnCredentials
  * [CallMedia] on webrtc-sdk: one peer connection, one audio track, one video transceiver. **Canon:**
  * iOS `WebRTCSession`.
  *
- * Configuration as iOS: unified plan, max-bundle, rtcp-mux required, every transport allowed.
- * ICE servers are only ours — the TURN credentials, or without them our own STUN; never a public
- * one, which would hand a third party the fact and the addresses of every call.
+ * Configuration as iOS: unified plan, max-bundle, rtcp-mux required, every transport allowed —
+ * except with VEIL On, when the call is relayed only ([CallIcePlan]). ICE servers are only ours —
+ * the TURN credentials, or without them our own STUN; never a public one, which would hand a third
+ * party the fact and the addresses of every call.
  *
  * Video, as iOS since 2026-10-03: the caller offers a `sendrecv` video section in every call, with
  * no track; the callee takes the offered one up (`adoptOfferedVideo`). Turning the camera on is
@@ -374,6 +377,7 @@ class WebRtcCallMedia private constructor(
     class Factory @Inject constructor(
         @ApplicationContext private val context: Context,
         private val audio: CallAudio,
+        private val veilModes: VeilModeStore,
     ) : CallMedia.Factory {
 
         override fun create(role: CallMedia.Role, turn: TurnCredentials?, listener: CallMedia.Listener): CallMedia {
@@ -382,10 +386,19 @@ class WebRtcCallMedia private constructor(
             check(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                 "RECORD_AUDIO not granted"
             }
+            val plan = CallIcePlan.make(
+                turnUrls = turn?.urlsList.orEmpty(),
+                username = turn?.username.orEmpty(),
+                credential = turn?.credential.orEmpty(),
+                veilOn = veilModes.state.value == VeilMode.ON,
+            ) ?: run {
+                Log.e(TAG, "ICE: VEIL is on and no TURN credentials — not placing a direct call")
+                throw NoRelayWhileVeilOn()
+            }
             val factory = WebRtcRuntime.factory(context)
             val media = WebRtcCallMedia(context, factory, audio, listener)
-            val config = PeerConnection.RTCConfiguration(iceServers(turn)).apply {
-                iceTransportsType = PeerConnection.IceTransportsType.ALL
+            val config = PeerConnection.RTCConfiguration(iceServers(plan)).apply {
+                iceTransportsType = if (plan.relayOnly) PeerConnection.IceTransportsType.RELAY else PeerConnection.IceTransportsType.ALL
                 sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
                 bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE
                 rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.REQUIRE
@@ -397,7 +410,7 @@ class WebRtcCallMedia private constructor(
             media.peer.addTrack(media.track, listOf("audio"))
             // The callee's comes from the offer instead (`adoptOfferedVideo`).
             if (role == CallMedia.Role.CALLER) media.addVideoTransceiver()
-            Log.i(TAG, "media created role=$role ice=${if (turn != null && turn.urlsCount > 0) "TURN ${turn.urlsCount} url(s)" else "own STUN"}")
+            Log.i(TAG, "media created role=$role ice=${plan.servers.sumOf { it.urls.size }} url(s) relayOnly=${plan.relayOnly}")
             return media
         }
 
@@ -408,15 +421,12 @@ class WebRtcCallMedia private constructor(
     companion object {
         private const val TAG = "CallMedia"
 
-        /** Ours only. TURN answers STUN binding too, so with credentials nothing else is needed. */
-        const val OWN_STUN = "stun:ams.konstruct.cc:3478"
-
-        fun iceServers(turn: TurnCredentials?): List<PeerConnection.IceServer> =
-            if (turn != null && turn.urlsCount > 0) {
-                listOf(PeerConnection.IceServer.builder(turn.urlsList).setUsername(turn.username).setPassword(turn.credential).createIceServer())
-            } else {
-                listOf(PeerConnection.IceServer.builder(OWN_STUN).createIceServer())
-            }
+        fun iceServers(plan: CallIcePlan): List<PeerConnection.IceServer> = plan.servers.map { server ->
+            PeerConnection.IceServer.builder(server.urls).apply {
+                server.username?.let { setUsername(it) }
+                server.credential?.let { setPassword(it) }
+            }.createIceServer()
+        }
 
         private fun constraints(vararg pairs: Pair<String, String>) = MediaConstraints().apply {
             pairs.forEach { (k, v) -> mandatory.add(MediaConstraints.KeyValuePair(k, v)) }

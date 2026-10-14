@@ -37,7 +37,7 @@ class WebRtcLoopbackTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         instrumentation.uiAutomation.grantRuntimePermission(context.packageName, Manifest.permission.RECORD_AUDIO)
-        val factory = WebRtcCallMedia.Factory(context, CallAudio(context))
+        val factory = WebRtcCallMedia.Factory(context, CallAudio(context), com.construct.messenger.veil.VeilModeStore(context))
 
         val callerSide = Side("caller")
         val calleeSide = Side("callee")

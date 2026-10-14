@@ -189,7 +189,12 @@ private fun NetworkContent(ui: NetworkUiState, onNavigateBack: () -> Unit, onMod
                     when (ui.mode) {
                         VeilMode.OFF -> R.string.censorship_protection_footer_off
                         VeilMode.AUTO -> R.string.censorship_protection_footer_auto
-                        VeilMode.ON -> R.string.censorship_protection_footer_on
+                        // On never goes direct: with the relay down the person is offline, and
+                        // this is the one place that says why. The rest of the app stays neutral
+                        // ("Connecting…"). Canon: iOS `veil_footer_on_no_front`.
+                        VeilMode.ON ->
+                            if (ui.route is TransportRoute.State.VeilCooldown) R.string.censorship_protection_footer_on_no_front
+                            else R.string.censorship_protection_footer_on
                     },
                 ),
                 style = CTFont.caption,

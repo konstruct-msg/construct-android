@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.util.Base64
 import com.construct.messenger.crypto.ServerTrust
 import com.construct.messenger.diagnostics.Log
+import com.construct.messenger.veil.VeilModeStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.HttpURLConnection
 import java.net.URL
@@ -35,6 +36,7 @@ import org.json.JSONObject
 @Singleton
 class ServerKeysProvider @Inject constructor(
     @ApplicationContext context: Context,
+    private val veilModes: VeilModeStore,
 ) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
@@ -54,8 +56,16 @@ class ServerKeysProvider @Inject constructor(
     /** Everything a certificate is judged by, for the core. */
     fun trust(): ServerTrust = ServerTrust(listOfNotNull(bundleVerificationKey()), serverDelegations())
 
-    /** Refresh the cache if stale ([CACHE_TTL_MS]) or empty. Failures keep the cache. */
+    /**
+     * Refresh the cache if stale ([CACHE_TTL_MS]) or empty. Failures keep the cache.
+     *
+     * Not under VEIL On: the document is fetched straight from the API domain, outside the
+     * tunnel, and On never goes direct (vault `decisions/veil-on-never-goes-direct.md`, point 2).
+     * Until the server serves it over the tunnelled gRPC, On lives on the cache and the root
+     * pinned in the build.
+     */
     suspend fun prefetch() {
+        if (!veilModes.state.value.allowsDirectPath) return
         val age = System.currentTimeMillis() - prefs.getLong(KEY_FETCHED_AT, 0L)
         if (age < CACHE_TTL_MS && tokenEncryptionKey() != null && bundleVerificationKey() != null) {
             return
