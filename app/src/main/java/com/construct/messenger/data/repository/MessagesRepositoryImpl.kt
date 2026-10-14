@@ -161,9 +161,15 @@ class MessagesRepositoryImpl @Inject constructor(
         }.await()
 
     /** On a scope of its own: leaving the chat must not cancel an upload half done. */
-    override suspend fun sendPhotos(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef?): SendOutcome =
+    override suspend fun sendPhotos(
+        contactId: String,
+        uris: List<Uri>,
+        caption: String,
+        reply: ReplyRef?,
+        quality: com.construct.messenger.media.VideoQuality,
+    ): SendOutcome =
         scope.async {
-            val outcome = sendMedia.photos(contactId, uris, caption, reply)
+            val outcome = sendMedia.photos(contactId, uris, caption, reply, quality)
             if (outcome is SendOutcome.Sent) {
                 runCatching { sendContactCard.sendIfOwed(contactId) }
             }

@@ -32,6 +32,9 @@ import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Icon
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +58,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.construct.messenger.R
+import com.construct.messenger.media.VideoQuality
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
@@ -88,6 +92,9 @@ fun MessageInputView(
     onAttach: (() -> Unit)? = null,
     attachMenu: (@Composable () -> Unit)? = null,
     onRemoveAttachment: (Uri) -> Unit = {},
+    /** Shown while a video is attached; null hides the choice (TODO 148, iOS `MediaPickerSheet`). */
+    videoQuality: VideoQuality? = null,
+    onVideoQuality: (VideoQuality) -> Unit = {},
     onMic: (() -> Unit)? = null,
     /** A long press on the mic offers the camera; null leaves the mic a plain button. */
     onVideoNote: (() -> Unit)? = null,
@@ -108,6 +115,7 @@ fun MessageInputView(
             return@Column
         }
         if (attachments.isNotEmpty() || files.isNotEmpty()) AttachmentStrip(attachments, files, onRemoveAttachment)
+        if (videoQuality != null) VideoQualityChoice(videoQuality, onVideoQuality)
         // iOS `MessageInputTextBar`: the attach "+" in a glass circle (44), then a glass capsule
         // (44 high) holding the text — message face, 15 — with the send button inside at the
         // trailing edge once there is something to send, the microphone while there is not.
@@ -214,6 +222,35 @@ fun MessageInputView(
  * Canon: iOS `MessageAttachmentPreviews` — the picked photos above the field, each with a
  * remove button; they go as one album with the text as its caption.
  */
+/** iOS `MediaPickerSheet` quality picker: one choice for every attached video, remembered. */
+@Composable
+private fun VideoQualityChoice(selected: VideoQuality, onSelect: (VideoQuality) -> Unit) {
+    SingleChoiceSegmentedButtonRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = CTLayout.edgePad)
+            .padding(top = CTSpace.s),
+    ) {
+        VideoQuality.entries.forEachIndexed { index, quality ->
+            SegmentedButton(
+                selected = quality == selected,
+                onClick = { onSelect(quality) },
+                shape = SegmentedButtonDefaults.itemShape(index, VideoQuality.entries.size),
+            ) {
+                Text(
+                    stringResource(
+                        when (quality) {
+                            VideoQuality.P720 -> R.string.video_quality_720
+                            VideoQuality.P1080 -> R.string.video_quality_1080
+                            VideoQuality.ORIGINAL -> R.string.video_quality_original
+                        },
+                    ),
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun AttachmentStrip(uris: List<Uri>, files: List<Pair<Uri, String>>, onRemove: (Uri) -> Unit) {
     val shape = RoundedCornerShape(CornerRadius.small)

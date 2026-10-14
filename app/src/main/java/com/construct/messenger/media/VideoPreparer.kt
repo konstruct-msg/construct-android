@@ -34,8 +34,8 @@ import kotlinx.coroutines.withContext
 
 /**
  * A picked video made ready to send. **Canon:** iOS `MediaManager.uploadVideo` — re-encoded to
- * MP4 at 1080p (its default preset; the picker's 720p/original choices are not here), a poster
- * from the first frame sent as the thumbnail, a BlurHash, pixel size and length.
+ * MP4 within the chosen [VideoQuality]'s box, or for [VideoQuality.ORIGINAL] re-wrapped as it is;
+ * a poster from the first frame sent as the thumbnail, a BlurHash, pixel size and length.
  *
  * HEVC at half H.264's bitrate where an HEVC encoder on the device takes the frame size, H.264
  * otherwise; HDR is tone-mapped to SDR, as iOS does for 720p and 1080p ([VideoEncoding],
@@ -62,11 +62,17 @@ class VideoPreparer @Inject constructor(
 
     fun isVideo(uri: Uri): Boolean = context.contentResolver.getType(uri)?.startsWith("video/") == true
 
-    suspend fun prepare(uri: Uri): Prepared {
+    suspend fun prepare(uri: Uri, quality: VideoQuality = VideoQuality.DEFAULT): Prepared {
         val (w, h) = displaySize(uri)
+        if (quality == VideoQuality.ORIGINAL) {
+            // iOS passthrough: the samples as they are — codec, HDR, frame rate — in a new MP4,
+            // which the muxer below writes with nothing but the orientation.
+            val item = EditedMediaItem.Builder(androidx.media3.common.MediaItem.fromUri(uri)).build()
+            return encode(listOf(item), w, h, passthrough = true)
+        }
         val landscape = w >= h
-        val (boxW, boxH) = if (landscape) LONG to SHORT else SHORT to LONG
-        // Fit within 1920×1080 the way the picture stands; smaller videos keep their size.
+        val (boxW, boxH) = if (landscape) quality.long to quality.short else quality.short to quality.long
+        // Fit within the quality's box the way the picture stands; smaller videos keep their size.
         val fit = if (w > boxW || h > boxH) listOf(Presentation.createForWidthAndHeight(boxW, boxH, Presentation.LAYOUT_SCALE_TO_FIT)) else emptyList()
         val item = EditedMediaItem.Builder(androidx.media3.common.MediaItem.fromUri(uri))
             .setEffects(Effects(emptyList(), frameCap(uri) + fit))
@@ -125,11 +131,11 @@ class VideoPreparer @Inject constructor(
         }
     }
 
-    private suspend fun encode(items: List<EditedMediaItem>, outW: Int, outH: Int): Prepared {
+    private suspend fun encode(items: List<EditedMediaItem>, outW: Int, outH: Int, passthrough: Boolean = false): Prepared {
         val dir = File(context.cacheDir, "video").apply { mkdirs() }
         val out = File(dir, "v_${UUID.randomUUID()}.mp4")
         try {
-            transcode(items, out, outW, outH)
+            transcode(items, out, outW, outH, passthrough)
             if (out.length() > PickedFiles.MAX_BYTES) throw TooLarge()
             val retriever = MediaMetadataRetriever()
             try {
@@ -171,17 +177,28 @@ class VideoPreparer @Inject constructor(
     }
 
     @OptIn(UnstableApi::class)
-    private suspend fun transcode(items: List<EditedMediaItem>, out: File, outW: Int, outH: Int) = withContext(Dispatchers.Main) {
+    private suspend fun transcode(
+        items: List<EditedMediaItem>,
+        out: File,
+        outW: Int,
+        outH: Int,
+        passthrough: Boolean,
+    ) = withContext(Dispatchers.Main) {
         val mime = VideoEncoding.mimeFor(hevcFits = VideoEncoding.hevcEncodes(outW, outH))
         val composition = Composition.Builder(EditedMediaItemSequence.Builder(items).build())
             .apply {
                 // KEEP_HDR (the default) would send 10-bit HDR where the device can encode it.
-                if (android.os.Build.VERSION.SDK_INT >= 29) setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL)
+                // The original keeps it, as iOS passthrough does.
+                if (!passthrough && android.os.Build.VERSION.SDK_INT >= 29) {
+                    setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL)
+                }
             }
             .build()
         suspendCancellableCoroutine { cont ->
             val transformer = Transformer.Builder(context)
-                .setVideoMimeType(mime)
+                // No video MIME and no effects: Media3 copies the samples (transmux) unless the
+                // muxer cannot hold the source's codec, and then it encodes one it can.
+                .apply { if (!passthrough) setVideoMimeType(mime) }
                 .setAudioMimeType(MimeTypes.AUDIO_AAC)
                 .setEncoderFactory(Bitrated(DefaultEncoderFactory.Builder(context).build()))
                 .setMuxerFactory(OrientationOnly(DefaultMuxer.Factory()))
@@ -228,8 +245,6 @@ class VideoPreparer @Inject constructor(
     }
 
     private companion object {
-        const val LONG = 1920
-        const val SHORT = 1080
         const val NOTE_W = 720
         const val NOTE_H = 960
     }

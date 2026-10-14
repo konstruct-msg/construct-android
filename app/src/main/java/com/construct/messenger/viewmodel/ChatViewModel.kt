@@ -77,7 +77,13 @@ class ChatViewModel @Inject constructor(
     private val quickReactions: ReactionQuickSetRepository,
     private val forwardDrafts: com.construct.messenger.data.repository.ForwardDrafts,
     private val transcription: com.construct.messenger.transcription.NoteTranscription,
+    private val videoQualities: com.construct.messenger.media.VideoQualityStore,
 ) : ViewModel() {
+    /** How picked videos are sent; the composer offers it while a video is attached (TODO 148). */
+    val videoQuality: StateFlow<com.construct.messenger.media.VideoQuality> get() = videoQualities.state
+
+    fun setVideoQuality(quality: com.construct.messenger.media.VideoQuality) = videoQualities.save(quality)
+
     /** The voice note being recorded or waiting to be sent; the composer shows its bar. */
     val recording: StateFlow<VoiceRecorder.State> = recorder.state
 
@@ -529,7 +535,10 @@ class ChatViewModel @Inject constructor(
             // (stand, 2026-09-30).
             attachments.value = emptyList()
             files.value = emptyList()
-            if (photos.isNotEmpty()) viewModelScope.launch { report(messagesRepository.sendPhotos(contactId, photos, text, reply)) }
+            if (photos.isNotEmpty()) {
+                val quality = videoQualities.state.value
+                viewModelScope.launch { report(messagesRepository.sendPhotos(contactId, photos, text, reply, quality)) }
+            }
             if (picked.isNotEmpty()) {
                 val first = photos.isEmpty()
                 viewModelScope.launch {

@@ -60,8 +60,14 @@ class SendMediaUseCase @Inject constructor(
             take.delete()
         }
 
-    suspend fun photos(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef?): SendOutcome =
-        photos(contactId, uris, caption, reply, note = null)
+    /** [quality] applies to every video among [uris] (iOS sets it for all selected at once). */
+    suspend fun photos(
+        contactId: String,
+        uris: List<Uri>,
+        caption: String,
+        reply: ReplyRef?,
+        quality: com.construct.messenger.media.VideoQuality = com.construct.messenger.media.VideoQuality.DEFAULT,
+    ): SendOutcome = photos(contactId, uris, caption, reply, note = null, quality = quality)
 
     private suspend fun photos(
         contactId: String,
@@ -69,6 +75,7 @@ class SendMediaUseCase @Inject constructor(
         caption: String,
         reply: ReplyRef?,
         note: com.construct.messenger.media.VideoNoteTake?,
+        quality: com.construct.messenger.media.VideoQuality = com.construct.messenger.media.VideoQuality.DEFAULT,
     ): SendOutcome {
         require(uris.isNotEmpty() || note != null)
         val messageId = UUID.randomUUID().toString().lowercase()
@@ -86,7 +93,7 @@ class SendMediaUseCase @Inject constructor(
                 uris.map { uri ->
                     val localId = MediaWire.LOCAL_PREFIX + UUID.randomUUID()
                     if (videos.isVideo(uri)) {
-                        val video = videos.prepare(uri)
+                        val video = videos.prepare(uri, quality)
                         val sealed = MediaCrypto.seal(video.mp4)
                         media.stage(localId, sealed.blob)
                         Staged(localId, sealed, video = video)

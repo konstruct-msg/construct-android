@@ -514,6 +514,11 @@ fun ChatScreen(
             viewModel.attachFiles(it)
         }
         var attachMenuOpen by remember { mutableStateOf(false) }
+        val videoQuality by viewModel.videoQuality.collectAsStateWithLifecycle()
+        // The picker hands back content URIs; their type says which are videos.
+        val videoAttached = remember(uiState.attachments) {
+            uiState.attachments.any { context.contentResolver.getType(it)?.startsWith("video/") == true }
+        }
         selectedIds?.let { chosen ->
             SelectionBar(
                 count = chosen.size,
@@ -547,6 +552,8 @@ fun ChatScreen(
                 VoiceRecorder.State.Idle -> null
             },
             attachments = uiState.attachments,
+            videoQuality = videoQuality.takeIf { videoAttached },
+            onVideoQuality = viewModel::setVideoQuality,
             onAttach = if (uiState.editingOriginal == null) {
                 { attachMenuOpen = true }
             } else {

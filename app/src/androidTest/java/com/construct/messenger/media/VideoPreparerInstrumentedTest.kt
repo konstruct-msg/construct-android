@@ -36,7 +36,7 @@ class VideoPreparerInstrumentedTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     @OptIn(UnstableApi::class)
-    private fun h264Source(): File {
+    private fun h264Source(location: Boolean = false): File {
         val png = File(context.cacheDir, "gradient.png")
         val bmp = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888)
         // A smooth gradient: a poster from it fits the in-message thumbnail budget (3258 bytes),
@@ -52,6 +52,17 @@ class VideoPreparerInstrumentedTest {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             Transformer.Builder(context)
                 .setVideoMimeType(MimeTypes.VIDEO_H264)
+                .apply {
+                    // A phone camera's recording carries where it was made; this one does too.
+                    if (location) {
+                        setMuxerFactory(object : androidx.media3.transformer.Muxer.Factory by androidx.media3.transformer.DefaultMuxer.Factory() {
+                            override fun create(path: String): androidx.media3.transformer.Muxer =
+                                androidx.media3.transformer.DefaultMuxer.Factory().create(path).also {
+                                    it.addMetadataEntry(androidx.media3.container.Mp4LocationData(55.75f, 37.62f))
+                                }
+                        })
+                    }
+                }
                 .addListener(object : Transformer.Listener {
                     override fun onCompleted(composition: Composition, exportResult: ExportResult) = done.countDown()
                     override fun onError(composition: Composition, exportResult: ExportResult, exportException: ExportException) {
@@ -92,6 +103,48 @@ class VideoPreparerInstrumentedTest {
         assertEquals(1080, prepared.height)
         assertTrue(prepared.thumbnail != null)
         source.delete()
+    }
+
+    /** 720p fits the 1280×720 box the way the picture stands (TODO 148). */
+    @Test
+    fun p720FitsItsBox(): Unit = runBlocking {
+        val source = h264Source()
+        val prepared = VideoPreparer(context, ImagePreparer(context)).prepare(Uri.fromFile(source), VideoQuality.P720)
+        Log.i("VideoPreparerTest", "720p ${prepared.width}x${prepared.height}, ${prepared.mp4.size} bytes")
+        assertEquals(1280, prepared.width)
+        assertEquals(720, prepared.height)
+        source.delete()
+    }
+
+    /**
+     * The original is the source's own samples — its codec and size, not re-encoded — in a new
+     * MP4 that says nothing of where it was shot (TODO 148, iOS passthrough).
+     */
+    @Test
+    fun theOriginalIsNotReencodedAndCarriesNoLocation(): Unit = runBlocking {
+        val source = h264Source(location = true)
+        assertTrue("the source must carry a location for this to mean anything", hasLocation(source.readBytes()))
+        val prepared = VideoPreparer(context, ImagePreparer(context)).prepare(Uri.fromFile(source), VideoQuality.ORIGINAL)
+        Log.i("VideoPreparerTest", "original ${source.length()} → ${prepared.mp4.size} bytes")
+        assertEquals(MimeTypes.VIDEO_H264, videoMime(prepared.mp4))
+        assertEquals(1920, prepared.width)
+        assertEquals(1080, prepared.height)
+        // Copied, not encoded again: the same stream within the container's overhead.
+        assertTrue("${source.length()} vs ${prepared.mp4.size}", kotlin.math.abs(source.length() - prepared.mp4.size) < source.length() / 10)
+        assertTrue("location went out", !hasLocation(prepared.mp4))
+        source.delete()
+    }
+
+    private fun hasLocation(mp4: ByteArray): Boolean {
+        val f = File(context.cacheDir, "probe.mp4").apply { writeBytes(mp4) }
+        val r = android.media.MediaMetadataRetriever()
+        try {
+            r.setDataSource(f.absolutePath)
+            return r.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_LOCATION) != null
+        } finally {
+            r.release()
+            f.delete()
+        }
     }
 
     /**

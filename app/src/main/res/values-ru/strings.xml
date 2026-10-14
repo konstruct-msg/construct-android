@@ -729,4 +729,7 @@
     <string name="synaps_status_added">Добавлено: %1$s</string>
     <string name="synaps_status_requested">Запрос отправлен: @%1$s</string>
     <string name="veil_start_failed">Не удалось запустить туннель</string>
+
+    <!-- How a picked video is sent (TODO 148) -->
+    <string name="video_quality_original">Оригинал</string>
 </resources>
