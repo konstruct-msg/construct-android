@@ -725,4 +725,9 @@
     <string name="synaps_status_added">Added %1$s</string>
     <string name="synaps_status_requested">Request sent to @%1$s</string>
     <string name="veil_start_failed">Could not start the tunnel</string>
+
+    <!-- How a picked video is sent (TODO 148) -->
+    <string name="video_quality_720" translatable="false">720p</string>
+    <string name="video_quality_1080" translatable="false">1080p</string>
+    <string name="video_quality_original">Original</string>
 </resources>

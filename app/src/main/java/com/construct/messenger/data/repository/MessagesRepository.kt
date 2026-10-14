@@ -21,9 +21,16 @@ interface MessagesRepository {
 
     /**
      * Send the photos at [uris] (picked by the user, readable now) as one album, [caption] its
-     * text. The message shows at once and is sent when every photo is uploaded.
+     * text. The message shows at once and is sent when every photo is uploaded. Videos among
+     * them go at [quality].
      */
-    suspend fun sendPhotos(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef? = null): SendOutcome
+    suspend fun sendPhotos(
+        contactId: String,
+        uris: List<Uri>,
+        caption: String,
+        reply: ReplyRef? = null,
+        quality: com.construct.messenger.media.VideoQuality = com.construct.messenger.media.VideoQuality.DEFAULT,
+    ): SendOutcome
 
     /** Send the files at [uris] as one message, [caption] its text. */
     suspend fun sendFiles(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef? = null): SendOutcome

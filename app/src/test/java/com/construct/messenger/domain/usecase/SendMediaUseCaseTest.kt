@@ -103,7 +103,7 @@ class SendMediaUseCaseTest {
         val reply = com.construct.messenger.data.model.ReplyRef.of("abc", "original")
         SendMediaUseCase(images, pickedFiles, notes, media, send).videoNote("peer", take, reply)
 
-        verify(notes, never()).prepare(org.mockito.kotlin.anyOrNull())
+        verify(notes, never()).prepare(org.mockito.kotlin.anyOrNull(), org.mockito.kotlin.anyOrNull())
         verify(notes).prepareNote(take)
         val shown = argumentCaptor<MediaWire.Stored>()
         verify(send).persistMedia(eq("peer"), any(), any(), shown.capture(), eq(reply))
@@ -193,6 +193,23 @@ class SendMediaUseCaseTest {
         assertEquals(12_345, item.durationMs)
         assertEquals(listOf<Byte>(1, 2, 3), item.thumbnail.toByteArray().toList())
         assertEquals(1920, item.dimensions.height)
+    }
+
+    /** The quality chosen in the composer is the one the video is prepared at (TODO 148). */
+    @Test
+    fun `a video is prepared at the chosen quality`() = runTest {
+        val send: SendMessageUseCase = mock()
+        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        val clip: Uri = mock()
+        whenever(videos.isVideo(clip)).thenReturn(true)
+        whenever(videos.prepare(any(), any())).thenReturn(
+            com.construct.messenger.media.VideoPreparer.Prepared(ByteArray(900) { 9 }, 720, 1280, 1_000, null, null),
+        )
+
+        SendMediaUseCase(images, pickedFiles, videos, FakeMedia(), send)
+            .photos("peer", listOf(clip), "", null, com.construct.messenger.media.VideoQuality.ORIGINAL)
+
+        verify(videos).prepare(clip, com.construct.messenger.media.VideoQuality.ORIGINAL)
     }
 
     /** Nothing the recipient could not open is sent: a failed upload fails the message. */
