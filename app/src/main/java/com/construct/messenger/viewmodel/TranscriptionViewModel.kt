@@ -2,6 +2,7 @@ package com.construct.messenger.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.construct.messenger.media.VoicePlaybackSettings
 import com.construct.messenger.transcription.Transcriber
 import com.construct.messenger.transcription.TranscriptionSettings
 import com.construct.messenger.transcription.WhisperModel
@@ -21,6 +22,8 @@ data class TranscriptionUiState(
     val bytesOnDisk: Long = 0,
     /** This build carries the engine. */
     val available: Boolean = true,
+    /** Voice notes play one after another (TODO 149); not transcription, but on this screen as on iOS. */
+    val continuousVoice: Boolean = false,
 )
 
 /** Settings → Transcription (TODO 116). **Canon:** iOS `STTSettingsSection`. */
@@ -29,11 +32,12 @@ class TranscriptionViewModel @Inject constructor(
     private val settings: TranscriptionSettings,
     private val models: WhisperModels,
     transcriber: Transcriber,
+    private val voice: VoicePlaybackSettings,
 ) : ViewModel() {
     private val available = transcriber.isAvailable
 
-    val uiState: StateFlow<TranscriptionUiState> = combine(settings.values, models.states) { values, states ->
-        TranscriptionUiState(values, states, models.bytesOnDisk(), available)
+    val uiState: StateFlow<TranscriptionUiState> = combine(settings.values, models.states, voice.continuous) { values, states, continuous ->
+        TranscriptionUiState(values, states, models.bytesOnDisk(), available, continuous)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TranscriptionUiState(available = available))
 
     /** Downloads on the screen's scope: leaving Settings stops one; the part is deleted. */
@@ -43,6 +47,7 @@ class TranscriptionViewModel @Inject constructor(
     fun setLanguage(code: String) = settings.setLanguage(code)
     fun setTranslate(on: Boolean) = settings.setTranslate(on)
     fun use(model: WhisperModel) = settings.setModel(model)
+    fun setContinuousVoice(on: Boolean) = voice.setContinuous(on)
 
     fun download(model: WhisperModel) {
         if (downloads[model]?.isActive == true) return

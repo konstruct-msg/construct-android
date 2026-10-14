@@ -125,6 +125,9 @@ fun MessageBubble(
     onToggleSelected: () -> Unit = {},
     voicePlayback: VoicePlayback = VoicePlayback(),
     onToggleVoice: () -> Unit = {},
+    /** Play the voice note from this fraction of it (a tap or drag on its waveform). */
+    onSeekVoice: (Float) -> Unit = {},
+    onCycleVoiceRate: () -> Unit = {},
     /** This note is being read on the device now (TODO 116). */
     transcribing: Boolean = false,
     /** Read a voice or video note; null where there is no engine. */
@@ -212,6 +215,8 @@ fun MessageBubble(
                     playback = voicePlayback,
                     maxWidth = maxBubble,
                     onToggle = onToggleVoice,
+                    onSeek = onSeekVoice,
+                    onCycleRate = onCycleVoiceRate,
                     onLongPress = onLongPress,
                     onDoubleTap = { onReact(ReactionRules.LIKE) },
                     transcript = message.transcript,

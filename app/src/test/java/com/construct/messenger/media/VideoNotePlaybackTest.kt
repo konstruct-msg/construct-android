@@ -48,7 +48,10 @@ class VideoNotePlaybackTest {
     }
     private val focus = SoundFocus()
     private val playback = VideoNotePlayback(engine, focus)
-    private val voice by lazy { VoicePlayer(focus) } // after the rule has set Main
+    private val voice by lazy { VoicePlayer(focus, voiceSettings) }
+    private val voiceSettings = org.mockito.kotlin.mock<VoicePlaybackSettings>().also {
+        org.mockito.kotlin.whenever(it.rate).thenReturn(kotlinx.coroutines.flow.MutableStateFlow(1f))
+    } // after the rule has set Main
 
     /**
      * The real [VoicePlayer], so the claim it makes is what is tested. Android's stub builder

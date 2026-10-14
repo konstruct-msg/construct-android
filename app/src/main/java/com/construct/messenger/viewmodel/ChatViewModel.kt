@@ -78,6 +78,7 @@ class ChatViewModel @Inject constructor(
     private val forwardDrafts: com.construct.messenger.data.repository.ForwardDrafts,
     private val transcription: com.construct.messenger.transcription.NoteTranscription,
     private val videoQualities: com.construct.messenger.media.VideoQualityStore,
+    private val voiceSettings: com.construct.messenger.media.VoicePlaybackSettings,
 ) : ViewModel() {
     /** How picked videos are sent; the composer offers it while a video is attached (TODO 148). */
     val videoQuality: StateFlow<com.construct.messenger.media.VideoQuality> get() = videoQualities.state
@@ -89,6 +90,17 @@ class ChatViewModel @Inject constructor(
 
     /** The voice note playing, anywhere in this chat. */
     val playing: StateFlow<VoicePlayer.Playing?> = player.state
+
+    /** The voice notes' speed; the bubble playing shows it (TODO 149). */
+    val voiceRate: StateFlow<Float> get() = player.rate
+
+    private val _voiceFollow = kotlinx.coroutines.flow.MutableSharedFlow<String>(extraBufferCapacity = 1)
+
+    /** A message whose voice note started by itself after the one before it: the list follows it. */
+    val voiceFollow: kotlinx.coroutines.flow.SharedFlow<String> = _voiceFollow
+
+    /** ON_START to ON_STOP: only a chat on screen plays its next note (iOS: the active chat). */
+    private var shown = false
 
     /** The emoji heading the message menu, learned from this device's reactions (TODO 117). */
     val reactionRow: StateFlow<List<String>> get() = quickReactions.slots
@@ -167,11 +179,13 @@ class ChatViewModel @Inject constructor(
 
     /** The screen is visible (ON_START): unread goes to zero, arrivals are read as they land. */
     fun onShown() {
+        shown = true
         viewModelScope.launch { messagesRepository.chatShown(contactId) }
     }
 
     /** ON_STOP — navigated away or the app went to the background. */
     fun onHidden() {
+        shown = false
         messagesRepository.chatHidden(contactId)
         // Leaving the chat folds a note playing in place (iOS `handleViewDisappear`).
         videoNotes.collapse()
@@ -320,6 +334,7 @@ class ChatViewModel @Inject constructor(
                 launch { if (messagesRepository.forward(contactId, items) > 0) _forwardFailed.tryEmit(Unit) }
             }
         }
+        viewModelScope.launch { player.finished.collect(::playNextVoice) }
     }
 
     private val _reactionFailed = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 1)
@@ -483,6 +498,31 @@ class ChatViewModel @Inject constructor(
      */
     fun toggleVoice(voice: MessageMedia.Voice) = play(voice.audio, music = false)
 
+    /** Play [voice] from [fraction] of it; the one already playing moves there (iOS `seek`). */
+    fun seekVoice(voice: MessageMedia.Voice, fraction: Float) {
+        val id = voice.audio.mediaId
+        if (player.state.value?.mediaId == id) {
+            player.seek(id, ByteArray(0), fraction)
+            return
+        }
+        load(voice.audio) { player.seek(id, it, fraction) }
+    }
+
+    fun cycleVoiceRate() = player.cycleRate()
+
+    /**
+     * Settings → Transcription → continuous: a note that ended by itself starts the next voice
+     * note in this chat, older to newer, and the list follows it; after the last, silence.
+     * **Canon:** iOS `ChatViewModel.playNextVoiceIfContinuous`.
+     */
+    private fun playNextVoice(finished: String) {
+        if (!shown || !voiceSettings.continuous.value) return
+        val next = nextVoice(uiState.value.messages, finished) ?: return
+        val voice = next.media as MessageMedia.Voice
+        _voiceFollow.tryEmit(next.id)
+        load(voice.audio) { player.toggle(voice.audio.mediaId, it) }
+    }
+
     /**
      * Play or pause a music file in place, in the voice notes' player — one sound at a time —
      * at its own speed. **Canon:** iOS `FileAttachmentBubbleView` (2026-10-13). Fetched on the
@@ -496,11 +536,17 @@ class ChatViewModel @Inject constructor(
             player.toggle(id, ByteArray(0))
             return
         }
+        load(item) { player.toggle(id, it, music) }
+    }
+
+    /** Fetch [item]'s audio, then hand it to [start]; a spinner on its button meanwhile. */
+    private fun load(item: com.construct.messenger.data.model.MediaItem, start: (ByteArray) -> Unit) {
+        val id = item.mediaId
         if (id in _voiceLoading.value) return
         _voiceLoading.value = _voiceLoading.value + id
         viewModelScope.launch {
             try {
-                player.toggle(id, messagesRepository.mediaBytes(item), music)
+                start(messagesRepository.mediaBytes(item))
             } catch (e: MediaUnavailable) {
                 _voiceUnavailable.value = _voiceUnavailable.value + id
             } catch (e: Exception) {
@@ -584,3 +630,10 @@ class ChatViewModel @Inject constructor(
  */
 internal fun chatPeerName(contact: Contact?, contactId: String): String =
     contact?.displayName ?: DisplayNameGenerator.generate(contactId)
+
+/** The first voice note after the one whose audio is [finished], older to newer; null after the last. */
+internal fun nextVoice(messages: List<Message>, finished: String): Message? {
+    val i = messages.indexOfFirst { (it.media as? MessageMedia.Voice)?.audio?.mediaId == finished }
+    if (i < 0) return null
+    return messages.drop(i + 1).firstOrNull { it.media is MessageMedia.Voice }
+}
