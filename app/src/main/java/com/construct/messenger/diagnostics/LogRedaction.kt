@@ -12,7 +12,7 @@ import javax.crypto.spec.SecretKeySpec
  * A front's address in logcat, or in a log someone sends, is one more name to block; collected
  * from several testers it is all of them. Every line [Log] writes passes through [redact]: each
  * known front name — host and SNI, registered by the VEIL code as it learns them — and every IPv4
- * literal but loopback becomes `front#` (`ip#`) and eight hex characters of HMAC-SHA256 under a key that
+ * or IPv6 literal but loopback becomes `front#` (`ip#`) and eight hex characters of HMAC-SHA256 under a key that
  * is random per device. The same front reads the same in one device's logs, so a log still tells
  * a story; across devices labels do not match. A bare hash would not do: fronts are a short list,
  * and whoever holds the candidates would hash them and compare.
@@ -60,7 +60,7 @@ object LogRedaction {
         return prefix + mac.take(LABEL_BYTES).joinToString("") { "%02x".format(it) }
     }
 
-    /** [text] with every registered name and every non-loopback IPv4 literal as its label. */
+    /** [text] with every registered name and every non-loopback IP literal as its label. */
     fun redact(text: String): String {
         if (plain || text.isEmpty()) return text
         var out = text
@@ -69,6 +69,8 @@ object LogRedaction {
             if (out.contains(name, ignoreCase = true)) out = out.replace(name, label(name), ignoreCase = true)
         }
         // An address a name resolved to, in a connect error, names the front as surely as the name.
+        // IPv6 first: an IPv4-mapped address (`::ffff:1.2.3.4`) is then left to the IPv4 pass.
+        out = IPV6.replace(out) { m -> if (m.value in IPV6_LOOPBACK) m.value else label(m.value, "ip#") }
         return IPV4.replace(out) { m -> if (m.value.startsWith("127.")) m.value else label(m.value, "ip#") }
     }
 
@@ -102,6 +104,17 @@ object LogRedaction {
     }
 
     private val IPV4 = Regex("""(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])""")
+
+    /**
+     * Eight full groups, or groups around one `::`. Never fewer colons and no `::`: a time
+     * (`12:34:56`) or a MAC (`aa:bb:cc:dd:ee:ff`) is not an address. Bracketed and zoned forms
+     * match inside their brackets / before the `%`.
+     */
+    private val IPV6 = Regex(
+        """(?<![\w:.])(?:(?:[0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}""" +
+            """|(?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4}){0,6})?::(?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4}){0,6})?)(?![\w:.])""",
+    )
+    private val IPV6_LOOPBACK = setOf("::1", "::")
     private const val HMAC = "HmacSHA256"
     private const val KEY_LEN = 32
     private const val LABEL_BYTES = 4
