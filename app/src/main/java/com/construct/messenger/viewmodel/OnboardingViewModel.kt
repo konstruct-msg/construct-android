@@ -2,9 +2,12 @@ package com.construct.messenger.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.construct.messenger.R
 import com.construct.messenger.data.repository.AuthRepository
 import com.construct.messenger.data.repository.ContactsRepository
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.domain.usecase.RegistrationStep
+import com.construct.messenger.ui.UserError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -39,9 +42,6 @@ data class OnboardingUiState(
 
     val isInitializing: Boolean
         get() = step != null && step !is RegistrationStep.Complete && step !is RegistrationStep.Error
-
-    val errorMessage: String?
-        get() = (step as? RegistrationStep.Error)?.message
 }
 
 /** What the line under the alias field says. **Canon:** iOS `OnboardingView.validateUsername`. */
@@ -112,9 +112,8 @@ class OnboardingViewModel @Inject constructor(
                 if (username != null) {
                     val availability = contactsRepository.checkUsername(username)
                     if (!availability.available) {
-                        mutableUiState.update {
-                            it.copy(step = RegistrationStep.Error(availability.reason ?: "alias taken"))
-                        }
+                        val text = if (availability.checkFailed) R.string.username_check_failed else R.string.username_unavailable
+                        mutableUiState.update { it.copy(step = RegistrationStep.Error(text)) }
                         return@launch
                     }
                 }
@@ -134,8 +133,9 @@ class OnboardingViewModel @Inject constructor(
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
+                Log.w(TAG, "initialize identity failed", error)
                 mutableUiState.update {
-                    it.copy(step = RegistrationStep.Error(error.message ?: "Unable to initialize identity"))
+                    it.copy(step = RegistrationStep.Error(UserError.from(error).text))
                 }
             }
         }
@@ -150,6 +150,7 @@ class OnboardingViewModel @Inject constructor(
 
     private companion object {
         const val AVAILABILITY_DEBOUNCE_MS = 400L
+        const val TAG = "OnboardingViewModel"
     }
 
     /** Called from the "error" screen's try-again button — mirrors iOS `onDismiss`. */

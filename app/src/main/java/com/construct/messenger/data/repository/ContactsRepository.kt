@@ -1,18 +1,21 @@
 package com.construct.messenger.data.repository
 
+import androidx.annotation.StringRes
 import com.construct.messenger.data.model.Contact
 import com.construct.messenger.invite.MintedInvite
 import kotlinx.coroutines.flow.Flow
 
 sealed interface AcceptInviteResult {
     data class Ok(val contact: Contact) : AcceptInviteResult
-    data class Failed(val reason: String) : AcceptInviteResult
+    /** [text] is a string resource (an [com.construct.messenger.invite.InviteProblem] or a
+     * [com.construct.messenger.ui.UserError]); the detail went to the log. */
+    data class Failed(@StringRes val text: Int) : AcceptInviteResult
 }
 
 sealed interface FindUserResult {
     data class Found(val userId: String) : FindUserResult
     data object NotFound : FindUserResult
-    data class Failed(val reason: String) : FindUserResult
+    data class Failed(@StringRes val text: Int) : FindUserResult
 }
 
 data class IncomingContactRequest(
@@ -67,10 +70,9 @@ interface ContactsRepository {
     val issuedInvites: Flow<List<IssuedInvite>>
 }
 
-/** [checkFailed]: no answer from the server — neither taken nor free. */
+/** [checkFailed]: no answer from the server — neither taken nor free. The server's reason is logged, not kept. */
 data class UsernameAvailability(
     val available: Boolean,
-    val reason: String? = null,
     val checkFailed: Boolean = false,
 )
 

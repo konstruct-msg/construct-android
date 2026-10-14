@@ -1,5 +1,7 @@
 package com.construct.messenger.domain.usecase
 
+import androidx.annotation.StringRes
+
 /**
  * Registration progress, reported by [RegisterUseCase] via its `onStep` callback.
  *
@@ -17,5 +19,6 @@ sealed interface RegistrationStep {
      * that follows — the welcome screen shows the id without waiting for that upload.
      */
     data class Complete(val deviceId: String? = null) : RegistrationStep
-    data class Error(val message: String) : RegistrationStep
+    /** [text] is a string resource; whatever went wrong was logged, not kept. */
+    data class Error(@StringRes val text: Int) : RegistrationStep
 }

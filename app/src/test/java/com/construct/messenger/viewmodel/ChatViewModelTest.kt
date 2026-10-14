@@ -454,7 +454,7 @@ private class FakeContactsRepository : ContactsRepository {
         MintedInvite("j", 0, 300, "p", "konstruct://add?invite=p")
     override suspend fun mintQr(sitting: String): MintedInvite = mintLink()
     override suspend fun accept(raw: String): AcceptInviteResult =
-        AcceptInviteResult.Failed("unused")
+        AcceptInviteResult.Failed(com.construct.messenger.R.string.error_something_went_wrong)
     override suspend fun revoke(jti: String) = com.construct.messenger.data.repository.InviteRevocation.UNCONFIRMED
     override val incomingRequests = MutableStateFlow<List<IncomingContactRequest>>(emptyList())
     override suspend fun findByUsername(username: String): FindUserResult = FindUserResult.NotFound

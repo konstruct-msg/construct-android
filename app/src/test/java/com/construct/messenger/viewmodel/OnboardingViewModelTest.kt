@@ -1,5 +1,6 @@
 package com.construct.messenger.viewmodel
 
+import com.construct.messenger.R
 import com.construct.messenger.data.model.AuthState
 import com.construct.messenger.data.mock.MockAuthRepository
 import com.construct.messenger.data.repository.AuthRepository
@@ -43,16 +44,46 @@ class OnboardingViewModelTest {
 
     @Test
     fun initializeIdentityFailureSetsErrorAndDoesNotEmitNavigation() = runTest {
-        val errorMessage = "identity init failed"
-        val viewModel = OnboardingViewModel(ThrowingAuthRepository(errorMessage), FakeOnboardingContacts())
+        val viewModel = OnboardingViewModel(ThrowingAuthRepository(LEAK), FakeOnboardingContacts())
         val event = async { withTimeoutOrNull(100) { viewModel.events.first() } }
 
         viewModel.initializeIdentity("alice")
         advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.isInitializing)
-        assertEquals(errorMessage, viewModel.uiState.value.errorMessage)
+        // An unclassified exception is the generic text; its own words never reach the state.
+        assertEquals(
+            RegistrationStep.Error(R.string.error_something_went_wrong),
+            viewModel.uiState.value.step,
+        )
+        assertFalse(viewModel.uiState.value.toString().contains("LEAK-1234"))
         assertNull(event.await())
+    }
+
+    @Test
+    fun aGrpcFailureShowsItsCodeNotItsDescription() = runTest {
+        val repository = ThrowingAuthRepository(LEAK, io.grpc.Status.UNAVAILABLE.withDescription(LEAK).asRuntimeException())
+        val viewModel = OnboardingViewModel(repository, FakeOnboardingContacts())
+
+        viewModel.initializeIdentity("alice")
+        advanceUntilIdle()
+
+        assertEquals(RegistrationStep.Error(R.string.error_no_connection), viewModel.uiState.value.step)
+        assertFalse(viewModel.uiState.value.toString().contains("LEAK-1234"))
+    }
+
+    @Test
+    fun aTakenAliasIsATextNotTheServersReason() = runTest {
+        val contacts = object : com.construct.messenger.data.repository.ContactsRepository by FakeOnboardingContacts() {
+            override suspend fun checkUsername(username: String) =
+                com.construct.messenger.data.repository.UsernameAvailability(false)
+        }
+        val viewModel = OnboardingViewModel(MockAuthRepository(), contacts)
+
+        viewModel.initializeIdentity("alice")
+        advanceUntilIdle()
+
+        assertEquals(RegistrationStep.Error(R.string.username_unavailable), viewModel.uiState.value.step)
     }
 
     @Test
@@ -69,20 +100,25 @@ class OnboardingViewModelTest {
     }
 
     private class ThrowingAuthRepository(
-        private val errorMessage: String
+        private val errorMessage: String,
+        private val failure: Throwable? = null,
     ) : AuthRepository {
         private val mutableAuthState = MutableStateFlow(AuthState())
 
         override val authState: StateFlow<AuthState> = mutableAuthState
 
         override suspend fun initializeIdentity(username: String?, onStep: (RegistrationStep) -> Unit) {
-            throw IllegalStateException(errorMessage)
+            throw failure ?: IllegalStateException(errorMessage)
         }
 
         override suspend fun restoreSession(): Boolean = false
         override suspend fun recoverAccount(identifier: String, phrase: String) = Unit
         override suspend fun logout(allDevices: Boolean) = Unit
         override suspend fun deleteAccount() = Unit
+    }
+
+    private companion object {
+        const val LEAK = "LEAK-1234 UNAVAILABLE: io exception"
     }
 
     private class DelayedCountingAuthRepository : AuthRepository {
@@ -112,7 +148,7 @@ private class FakeOnboardingContacts : com.construct.messenger.data.repository.C
         com.construct.messenger.invite.MintedInvite("j", 0, 300, "p", "l")
     override suspend fun mintQr(sitting: String): com.construct.messenger.invite.MintedInvite = mintLink()
     override suspend fun accept(raw: String) =
-        com.construct.messenger.data.repository.AcceptInviteResult.Failed("unused")
+        com.construct.messenger.data.repository.AcceptInviteResult.Failed(R.string.error_something_went_wrong)
     override suspend fun revoke(jti: String) = com.construct.messenger.data.repository.InviteRevocation.UNCONFIRMED
     override val incomingRequests =
         MutableStateFlow<List<com.construct.messenger.data.repository.IncomingContactRequest>>(emptyList())

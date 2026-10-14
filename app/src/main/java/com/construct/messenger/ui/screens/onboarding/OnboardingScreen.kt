@@ -1,5 +1,6 @@
 package com.construct.messenger.ui.screens.onboarding
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -321,7 +322,7 @@ private fun RegistrationStageContent(
     ) {
         Spacer(modifier = Modifier.weight(1f))
         when {
-            step is RegistrationStep.Error -> RegistrationErrorContent(step.message)
+            step is RegistrationStep.Error -> RegistrationErrorContent(step.text)
             complete && showComplete -> RegistrationCompleteContent(username, deviceId)
             else -> RegistrationPreparingContent(step = step, collapsed = complete)
         }
@@ -451,7 +452,7 @@ private fun DetailRow(label: String, value: String) {
 }
 
 @Composable
-private fun RegistrationErrorContent(message: String) {
+private fun RegistrationErrorContent(@StringRes message: Int) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -462,7 +463,7 @@ private fun RegistrationErrorContent(message: String) {
             color = CTColor.danger,
         )
         Text(
-            text = message,
+            text = stringResource(message),
             style = CTFont.body,
             color = CTColor.textDim,
             textAlign = TextAlign.Center,

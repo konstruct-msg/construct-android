@@ -252,7 +252,8 @@ private fun TransportDetail(ui: NetworkUiState) {
             text = if (error == VeilProxy.NO_FRONT) {
                 stringResource(R.string.veil_no_front)
             } else {
-                stringResource(R.string.veil_last_error) + ": " + error
+                // The raw text can name a front's address; it stays in the log and in state.
+                stringResource(R.string.veil_start_failed)
             },
             style = CTFont.caption,
             color = CTColor.danger,

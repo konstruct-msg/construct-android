@@ -192,7 +192,7 @@ class AuthRepositoryImpl @Inject constructor(
         val response = grpcClient.user.deleteAccount(
             DeleteAccountRequest.newBuilder().setConfirmation("DELETE").setReason("user_requested").build(),
         )
-        check(response.success) { response.message.ifEmpty { "the server refused" } }
+        if (!response.success) throw ServerRefusedException(response.message.ifEmpty { "the server refused" })
         messagingRuntime.stop()
         context.stopService(Intent(context, MessagingForegroundService::class.java))
     }

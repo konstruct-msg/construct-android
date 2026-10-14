@@ -43,6 +43,7 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.CTSpace
+import com.construct.messenger.viewmodel.SynapsStatus
 import com.construct.messenger.viewmodel.SynapsViewModel
 
 @Composable
@@ -108,10 +109,15 @@ fun SynapsScreen(
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text(stringResource(R.string.synaps_find_request)) }
                 }
-                uiState.status?.let { message ->
+                uiState.status?.let { status ->
                     Spacer(Modifier.height(CTSpace.s))
                     Text(
-                        text = message,
+                        text = when (status) {
+                            is SynapsStatus.Minted -> status.link
+                            is SynapsStatus.Added -> stringResource(R.string.synaps_status_added, status.name)
+                            is SynapsStatus.Requested -> stringResource(R.string.synaps_status_requested, status.username)
+                            is SynapsStatus.Failed -> stringResource(status.text)
+                        },
                         style = CTFont.secondary,
                         color = CTColor.textDim,
                     )

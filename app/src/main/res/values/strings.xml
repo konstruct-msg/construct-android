@@ -268,8 +268,6 @@
     <string name="delete_account_message">Final confirmation: Your identity will be deleted from the server, and all local encryption keys will be cleared after server confirmation. This action is irreversible.</string>
     <string name="delete_account_button">Delete Identity</string>
     <string name="delete_account_abort_hint">tap to abort · %1$ds</string>
-    <string name="delete_account_failed">Deletion failed: %1$s</string>
-    <string name="delete_account_not_available">Identity deletion is not yet available. Please try again later.</string>
     <string name="delete_account_local_only">Delete local data only</string>
     <string name="delete_account_local_title">Delete local data only?</string>
     <string name="delete_account_local_warning">Your account may still exist on the server. All local encryption keys and app data will be permanently deleted from this device. You will no longer be able to use this account from here.</string>
@@ -540,7 +538,6 @@
     <string name="veil_establishing">Establishing veil-front tunnel…</string>
     <string name="veil_front">Front</string>
     <string name="veil_latency">Latency</string>
-    <string name="veil_last_error">Last error</string>
     <string name="veil_config_paste">Paste configuration code</string>
     <string name="veil_config_import">Import</string>
     <string name="veil_config_import_ok">VEIL access configured</string>
@@ -707,4 +704,23 @@
     <string name="stt_model_failed">Download failed — try again</string>
     <string name="stt_models_on_disk">On disk: %1$s</string>
     <string name="stt_model_delete_confirm">Delete the %1$s model? Transcription needs a model; you can download it again.</string>
+
+    <!-- Errors a person sees: a closed set, picked by type and code (ui/UserError.kt) — never an exception's text -->
+    <string name="error_no_connection">No connection</string>
+    <string name="error_server_failed">The server could not complete the request</string>
+    <string name="error_sign_in_again">Sign in again</string>
+    <string name="error_too_many_attempts">Too many attempts. Try again later.</string>
+    <string name="error_no_space">Not enough space on this device</string>
+    <string name="error_something_went_wrong">Something went wrong</string>
+    <string name="invite_error_expired">This invite has expired</string>
+    <string name="invite_error_used">This invite has already been used</string>
+    <string name="invite_error_damaged">This invite is damaged</string>
+    <string name="invite_error_unreachable">Could not reach the sender. Try again.</string>
+    <string name="invite_error_no_recovery_phrase">Set up your recovery phrase first, then add contacts</string>
+    <string name="synaps_user_not_found">User not found</string>
+    <string name="synaps_request_failed">Could not send the request</string>
+    <string name="synaps_accept_failed">Could not accept the request</string>
+    <string name="synaps_status_added">Added %1$s</string>
+    <string name="synaps_status_requested">Request sent to @%1$s</string>
+    <string name="veil_start_failed">Could not start the tunnel</string>
 </resources>

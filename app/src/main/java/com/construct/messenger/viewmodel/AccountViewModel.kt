@@ -1,5 +1,6 @@
 package com.construct.messenger.viewmodel
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.repository.AccountRepository
@@ -7,8 +8,10 @@ import com.construct.messenger.data.repository.AppLockRepository
 import com.construct.messenger.data.repository.AuthRepository
 import com.construct.messenger.data.repository.OwnAccount
 import com.construct.messenger.data.repository.UsernameChange
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.domain.usecase.ShareProfileUseCase
 import com.construct.messenger.recovery.RecoveryRepository
+import com.construct.messenger.ui.UserError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -45,8 +48,8 @@ sealed interface Deletion {
     data object Idle : Deletion
     data class Counting(val secondsLeft: Int) : Deletion
     data object Requesting : Deletion
-    /** The server did not confirm; [message] says why. Local-only deletion is offered. */
-    data class Failed(val message: String?) : Deletion
+    /** The server did not confirm; [text] (a string resource) says why. Local-only deletion is offered. */
+    data class Failed(@StringRes val text: Int) : Deletion
 }
 
 sealed interface AccountEvent {
@@ -209,7 +212,8 @@ class AccountViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                state.update { it.copy(deletion = Deletion.Failed(e.message)) }
+                Log.w(TAG, "delete account failed", e)
+                state.update { it.copy(deletion = Deletion.Failed(UserError.from(e).text)) }
             }
         }
     }
@@ -224,6 +228,8 @@ class AccountViewModel @Inject constructor(
     fun deleteLocally() = appLock.eraseDevice()
 
     private companion object {
+        const val TAG = "AccountViewModel"
+
         /** iOS `DeleteAccountSheetLayout.abortWindowSeconds`. */
         const val DELETE_ABORT_SECONDS = 10
     }
