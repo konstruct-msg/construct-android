@@ -336,18 +336,18 @@ class SendMessageUseCase @Inject constructor(
      * How far this account has read its chats ([payload], `ReadMarkers`), to its own other devices
      * only (TODO 153): a content-type-30 frame inside, SENDER_SYNC outside, like any own copy. The
      * addressee is this account and nothing else, so no path here reaches a contact; the core's
-     * plan is empty when this is the only device. Best effort, as on iOS: the next marker repairs
-     * a lost one. How many devices took it.
+     * plan is empty when this is the only device. True when a device of ours took it or there is
+     * none to tell; false when it should be tried again ([com.construct.messenger.readsync.ReadSyncOutbox]).
      */
-    suspend fun sendReadMarkers(payload: ByteArray): Int {
-        val myId = keystoreManager.getUserId() ?: return 0
-        if (!cryptoManager.isMessagingReady) return 0
+    suspend fun sendReadMarkers(payload: ByteArray): Boolean {
+        val myId = keystoreManager.getUserId() ?: return false
+        if (!cryptoManager.isMessagingReady) return false
         val tally = deliverCopies(
             myId, myId, UUID.randomUUID().toString(), System.currentTimeMillis(), payload, pinned = null,
             replicaContentType = KnstFrame.TYPE_READ_SYNC,
         )
         Log.i(TAG, "read markers — ${tally.replicaAccepted} own device(s) took them")
-        return tally.replicaAccepted
+        return tally.replicaAccepted > 0 || tally.lastError == NO_DEVICE
     }
 
     /**
@@ -519,7 +519,7 @@ class SendMessageUseCase @Inject constructor(
             ourDeviceId = ourDeviceId,
             recipientIsSelf = recipientIsSelf,
         )
-        if (targets.isEmpty()) return DeliveryTally(0, 0, "no device to send to")
+        if (targets.isEmpty()) return DeliveryTally(0, 0, NO_DEVICE)
 
         val identityByDevice = HashMap<String, ByteArray>()
         recipientDevices.forEach { identityByDevice[it.deviceId] = it.identityPublic }
@@ -833,6 +833,8 @@ class SendMessageUseCase @Inject constructor(
     }
 
     private companion object {
+        /** The plan had nobody to send to: for read markers, this is the only device. */
+        const val NO_DEVICE = "no device to send to"
         const val TAG = "SendMessageUseCase"
         const val MAX_ATTEMPTS = 3
         const val BACKOFF_MS = 400L

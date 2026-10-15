@@ -32,7 +32,7 @@ class ReadSyncStateTest {
     private val sent = mutableListOf<ByteArray>()
     private val state = ReadSyncState(
         boundaries,
-        ReadSyncOutbox(boundaries, { sent += it }, kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), { Long.MAX_VALUE }),
+        ReadSyncOutbox(boundaries, { sent += it; true }, kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), { Long.MAX_VALUE }),
         chats,
         messages,
     )

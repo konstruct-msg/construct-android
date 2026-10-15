@@ -19,6 +19,10 @@ import kotlinx.coroutines.sync.withLock
  * once (owner, 2026-10-15). Not one message per read: timing in proportion to reading is what the
  * server must not get. **Canon:** iOS `ReadSyncOutbox`. Not kept across a kill, as on iOS: the
  * next read sends again.
+ *
+ * A send that fails puts its markers back for the next window, unless a later boundary for the
+ * same chat is already waiting (iOS #235: a flush on leaving whose request the system cancelled
+ * lost them).
  */
 @Singleton
 class ReadSyncOutbox internal constructor(
@@ -35,9 +39,12 @@ class ReadSyncOutbox internal constructor(
         { INTERVAL_MS + Random.nextLong(0, JITTER_MS + 1) },
     )
 
-    /** Hands a `ReadMarkers` payload to the account's other devices; none when there is one. */
+    /**
+     * Hands a `ReadMarkers` payload to the account's other devices. False when it did not get
+     * through and should be tried again; true when it did, or there is no other device to tell.
+     */
     fun interface Sender {
-        suspend fun send(payload: ByteArray)
+        suspend fun send(payload: ByteArray): Boolean
     }
 
     private val lock = Mutex()
@@ -55,24 +62,38 @@ class ReadSyncOutbox internal constructor(
         if (!boundaries.advance(partner, boundary)) return
         lock.withLock {
             pending[partner.lowercase()] = boundary
-            if (window == null) {
-                window = scope.launch {
-                    delay(windowMs())
-                    flush()
-                }
-            }
+            openWindow()
         }
     }
 
     /** Send what is pending now — the app is leaving the screen. */
     suspend fun flush() {
-        val payload = lock.withLock {
+        val sending = lock.withLock {
             window?.takeIf { it !== kotlinx.coroutines.currentCoroutineContext()[Job] }?.cancel()
             window = null
             if (pending.isEmpty()) return
-            ReadSync.encode(pending).also { pending.clear() }
+            LinkedHashMap(pending).also { pending.clear() }
         }
-        runCatching { send.send(payload) }.onFailure { Log.w(TAG, "read markers not sent", it) }
+        val sent = runCatching { send.send(ReadSync.encode(sending)) }
+            .onFailure { Log.w(TAG, "read markers not sent", it) }
+            .getOrDefault(false)
+        if (sent) return
+        lock.withLock {
+            // Back for the next window; a later boundary noted meanwhile wins.
+            sending.forEach { (partner, b) ->
+                val newer = pending[partner]
+                if (newer == null || ReadSync.isLater(b, newer)) pending[partner] = b
+            }
+            openWindow()
+        }
+    }
+
+    private fun openWindow() {
+        if (window != null) return
+        window = scope.launch {
+            delay(windowMs())
+            flush()
+        }
     }
 
     fun flushSoon() {

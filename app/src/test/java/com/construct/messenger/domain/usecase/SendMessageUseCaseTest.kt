@@ -537,7 +537,7 @@ class SendMessageUseCaseTest {
         val h = harness()
         whenever(h.crypto.planSend(any(), any(), any(), any())).thenReturn(emptyList())
 
-        assertEquals(0, h.useCase().sendReadMarkers(byteArrayOf(1, 2, 3)))
+        assertTrue("one device: nothing owed, nothing to retry", h.useCase().sendReadMarkers(byteArrayOf(1, 2, 3)))
 
         verify(h.crypto).planSend(eq(emptyList()), any(), eq(ourDevice), eq(true))
         verify(h.sessionManager).discoverOwnDeviceBundles(myId)

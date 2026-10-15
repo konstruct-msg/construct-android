@@ -27,7 +27,7 @@ class ReadSyncOutboxTest {
     @Test
     fun `reading is sent once for everything pending, at the end of the window`() = runTest {
         val sent = mutableListOf<ByteArray>()
-        val outbox = ReadSyncOutbox(ReadBoundaries(context), { sent += it }, this, { 120_000 })
+        val outbox = ReadSyncOutbox(ReadBoundaries(context), { sent += it; true }, this, { 120_000 })
         outbox.noteRead(kim, ReadSync.Boundary.of(1, "a"))
         outbox.noteRead(alex, ReadSync.Boundary.of(2, "b"))
         advanceTimeBy(119_000)
@@ -41,7 +41,7 @@ class ReadSyncOutboxTest {
     @Test
     fun `leaving sends at once, and nothing new sends nothing`() = runTest {
         val sent = mutableListOf<ByteArray>()
-        val outbox = ReadSyncOutbox(ReadBoundaries(context), { sent += it }, this, { 120_000 })
+        val outbox = ReadSyncOutbox(ReadBoundaries(context), { sent += it; true }, this, { 120_000 })
         outbox.noteRead(kim, ReadSync.Boundary.of(5, "a"))
         outbox.flush()
         assertEquals(1, sent.size)
@@ -51,4 +51,27 @@ class ReadSyncOutboxTest {
         advanceTimeBy(200_000)
         assertEquals(1, sent.size)
     }
+
+    /** A send that did not get through comes back in the next window (iOS #235). Mutation: drop it — reddens. */
+    @Test
+    fun `markers that did not go are sent again, a later boundary winning`() = runTest {
+        val sent = mutableListOf<ByteArray>()
+        var up = false
+        val outbox = ReadSyncOutbox(ReadBoundaries(context), { sent += it; up }, this, { 120_000 })
+        outbox.noteRead(kim, ReadSync.Boundary.of(5, "a"))
+        outbox.noteRead(alex, ReadSync.Boundary.of(5, "c"))
+        outbox.flush()
+        assertEquals(1, sent.size)
+        up = true
+        outbox.noteRead(kim, ReadSync.Boundary.of(6, "b"))
+        advanceTimeBy(121_000)
+        runCurrent()
+        assertEquals(2, sent.size)
+        assertEquals(
+            "alex's marker came back; kim's newer one replaced the lost one",
+            mapOf(alex to ReadSync.Boundary.of(5, "c"), kim to ReadSync.Boundary.of(6, "b")),
+            ReadSync.decode(sent.last())!!.toMap(),
+        )
+    }
+
 }
