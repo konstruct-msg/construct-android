@@ -676,6 +676,9 @@
     <string name="forward_failed">Часть вложений не переслана: их уже нет ни на устройстве, ни на сервере.</string>
     <!-- iOS audio_file: an album of music files in the chat list. -->
     <string name="audio_file">Аудио</string>
+    <string name="audio_position">Позиция</string>
+    <string name="audio_stop">Остановить</string>
+    <string name="now_playing_open_hint">Открывает чат на этом сообщении</string>
     <string name="track_play">Воспроизвести</string>
     <string name="track_pause">Пауза</string>
     <!-- "Can't connect?" on the first screen — iOS onboarding_cant_connect, veil_bootstrap_*. -->

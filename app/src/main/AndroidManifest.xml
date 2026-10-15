@@ -21,6 +21,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <!-- Calls: a ringing call opens its screen over the lock screen. -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- A music file from a chat keeps playing in the background, in the shade and on the lock
+         screen (MusicPlaybackService, only while one is loaded). Voice notes never use it. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
     <application
@@ -98,6 +101,16 @@
             android:name=".service.MessagingForegroundService"
             android:exported="false"
             android:foregroundServiceType="remoteMessaging" />
+        <!-- Not exported: only this app's own controller binds; the system's controls use the
+             notification's session token. -->
+        <service
+            android:name=".media.MusicPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
         <!-- The log archive, handed to the share sheet (Diagnostics.share). Only cache/logs-export. -->
         <provider
             android:name="androidx.core.content.FileProvider"

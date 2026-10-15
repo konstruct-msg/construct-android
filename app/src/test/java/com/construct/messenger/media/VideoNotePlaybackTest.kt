@@ -48,7 +48,7 @@ class VideoNotePlaybackTest {
     }
     private val focus = SoundFocus()
     private val playback = VideoNotePlayback(engine, focus)
-    private val voice by lazy { VoicePlayer(focus, voiceSettings) }
+    private val voice by lazy { VoicePlayer(focus, voiceSettings, FakeVoiceEngine()) }
     private val voiceSettings = org.mockito.kotlin.mock<VoicePlaybackSettings>().also {
         org.mockito.kotlin.whenever(it.rate).thenReturn(kotlinx.coroutines.flow.MutableStateFlow(1f))
     } // after the rule has set Main

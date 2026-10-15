@@ -236,8 +236,11 @@ the user taps the microphone for a voice note, records a video note, or makes or
 (install-time; a call's voice mode is refused without it), and for calls `MANAGE_OWN_CALLS`
 (a self-managed `ConnectionService` — Telecom knows a call is on; nothing goes to the call log or
 the dialer), `FOREGROUND_SERVICE_PHONE_CALL` / `_MICROPHONE` and `USE_FULL_SCREEN_INTENT` (a
-ringing call over the lock screen). Services: the non-exported `MessagingForegroundService`, the
-non-exported `CallService` (`phoneCall|microphone`, only while a call is on), and
+ringing call over the lock screen), and `FOREGROUND_SERVICE_MEDIA_PLAYBACK` (a music file from a
+chat plays on in the background, in the shade and on the lock screen under its file name only;
+voice notes never). Services: the non-exported `MessagingForegroundService`, the
+non-exported `CallService` (`phoneCall|microphone`, only while a call is on), the non-exported
+`MusicPlaybackService` (Media3 `mediaPlayback`, only while a music file is loaded), and
 `CallConnectionService` — exported because Telecom must bind it, guarded by
 `BIND_TELECOM_CONNECTION_SERVICE`, which only the system holds. No `<receiver>` (a call
 notification's buttons are service and activity intents), and no push-provider client code: a

@@ -39,6 +39,7 @@ import com.construct.messenger.ui.screens.security.LocalStoreUnreadableScreen
 import com.construct.messenger.ui.screens.security.PinLockScreen
 import com.construct.messenger.ui.theme.ChatText
 import com.construct.messenger.ui.theme.KonstructMessengerTheme
+import androidx.compose.foundation.layout.statusBarsPadding
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -116,15 +117,29 @@ class MainActivity : FragmentActivity() {
                     // A new call — placed from a chat, or ringing while the app is open — opens the
                     // call screen; minimising it leaves the strip, which opens it again.
                     LaunchedEffect(call?.callId) { if (call?.isLive == true) CallActivity.open(this@MainActivity) }
+                    val nowPlayingModel: com.construct.messenger.viewmodel.NowPlayingViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+                    val nowPlaying by nowPlayingModel.state.collectAsStateWithLifecycle()
                     androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
                         val live = call?.takeIf { it.isLive }
                         if (live != null) {
                             com.construct.messenger.ui.screens.calls.CallMiniBar(live) { CallActivity.open(this@MainActivity) }
                         }
+                        // A track that outlives its chat (TODO 151, iOS: under the call bar).
+                        nowPlaying?.let { track ->
+                            com.construct.messenger.ui.components.NowPlayingBanner(
+                                state = track,
+                                onToggle = nowPlayingModel::togglePlaying,
+                                onStop = nowPlayingModel::stop,
+                                onOpen = { source ->
+                                    navController.navigate(Screen.Chat.createRoute(nowPlayingModel.open(source))) { launchSingleTop = true }
+                                },
+                                modifier = if (live == null) Modifier.statusBarsPadding() else Modifier,
+                            )
+                        }
                         androidx.compose.foundation.layout.Box(
                             Modifier.weight(1f).then(
                                 // The strip already sits under the status bar; the screens below must not pad for it twice.
-                                if (live != null) {
+                                if (live != null || nowPlaying != null) {
                                     Modifier.consumeWindowInsets(androidx.compose.foundation.layout.WindowInsets.statusBars)
                                 } else {
                                     Modifier
