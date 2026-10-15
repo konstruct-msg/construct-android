@@ -39,6 +39,18 @@ object KnstFrame {
     /** A `WebRTCSignal` (`calls/CallSignalWire`). Inside the ciphertext — nothing outside says "call". */
     const val TYPE_CALL_SIGNAL = 12
 
+    /**
+     * How far this account has read each chat, to its own other devices only (`ReadMarkers`,
+     * construct-docs TODO 153). The envelope outside says SENDER_SYNC like any own copy.
+     */
+    const val TYPE_READ_SYNC = 30
+
+    /**
+     * Types that may go only to this account's other devices — never addressed to a contact, and
+     * dropped when they come from one. construct-protos `knst_content_types.json` `own_devices_only`.
+     */
+    fun isOwnDevicesOnly(contentType: Int): Boolean = contentType == TYPE_SENDER_SYNC || contentType == TYPE_READ_SYNC
+
     /** iOS `ChunkedDeliveryConfig.maxChunks`: 256 × 3770 B, a little under 1 MB of plaintext. */
     const val MAX_CHUNKS = 256
 

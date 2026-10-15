@@ -333,6 +333,24 @@ class SendMessageUseCase @Inject constructor(
     }
 
     /**
+     * How far this account has read its chats ([payload], `ReadMarkers`), to its own other devices
+     * only (TODO 153): a content-type-30 frame inside, SENDER_SYNC outside, like any own copy. The
+     * addressee is this account and nothing else, so no path here reaches a contact; the core's
+     * plan is empty when this is the only device. Best effort, as on iOS: the next marker repairs
+     * a lost one. How many devices took it.
+     */
+    suspend fun sendReadMarkers(payload: ByteArray): Int {
+        val myId = keystoreManager.getUserId() ?: return 0
+        if (!cryptoManager.isMessagingReady) return 0
+        val tally = deliverCopies(
+            myId, myId, UUID.randomUUID().toString(), System.currentTimeMillis(), payload, pinned = null,
+            replicaContentType = KnstFrame.TYPE_READ_SYNC,
+        )
+        Log.i(TAG, "read markers — ${tally.replicaAccepted} own device(s) took them")
+        return tally.replicaAccepted
+    }
+
+    /**
      * Edit one of our own text messages, or a photo's caption. Same fan-out as a send, different payload:
      * `MessageContent.edit` names the row, and no new row is written. The local
      * text changes only after a recipient copy is accepted — a failure leaves the
@@ -466,16 +484,25 @@ class SendMessageUseCase @Inject constructor(
         baseMessageId: String,
         timestampMs: Long,
         content: ByteArray,
-        pinned: SessionManager.SessionPeer,
+        /** The contact's pinned device; null only when [contactId] is this account. */
+        pinned: SessionManager.SessionPeer?,
         recipientsOnly: Boolean = false,
         /** What a recipient's frames say they carry; an ordinary message is type 1. */
         contentType: Int = KnstFrame.TYPE_E2EE_SIGNAL,
+        /**
+         * What our own devices' frames carry: a copy of the message (23, `SSR1 ‖ content`), or a
+         * type of their own — read markers (30) — framed as they are.
+         */
+        replicaContentType: Int = KnstFrame.TYPE_SENDER_SYNC,
     ): DeliveryTally {
         val ourDeviceId = cryptoManager.currentDeviceId()
             ?: return DeliveryTally(0, 0, "no device id")
         val recipientIsSelf = contactId == myId
+        // `own_devices_only` (knst_content_types.json): never to a contact, by construction.
+        check(!KnstFrame.isOwnDevicesOnly(contentType)) { "type $contentType is for own devices only" }
+        if (replicaContentType != KnstFrame.TYPE_SENDER_SYNC) check(recipientIsSelf) { "type $replicaContentType addressed to a contact" }
         val recipientDevices =
-            if (recipientIsSelf) emptyList() else recipientDeviceSet(contactId, pinned)
+            if (recipientIsSelf) emptyList() else recipientDeviceSet(contactId, requireNotNull(pinned))
         val ownBundles = if (recipientsOnly) {
             emptyList()
         } else {
@@ -529,7 +556,7 @@ class SendMessageUseCase @Inject constructor(
                 continue
             }
             val result = sendFrames(
-                frames = framesOf(content, baseMessageId, isOwnReplica, partner = contactId, contentType),
+                frames = framesOf(content, baseMessageId, isOwnReplica, partner = contactId, contentType, replicaContentType),
                 wireIdBase = baseMessageId + if (isOwnReplica) "-ss-$tag" else "-fd-$tag",
                 deviceId = target.deviceId,
                 myId = myId,
@@ -753,9 +780,13 @@ class SendMessageUseCase @Inject constructor(
         isOwnReplica: Boolean,
         partner: String,
         contentType: Int = KnstFrame.TYPE_E2EE_SIGNAL,
+        replicaContentType: Int = KnstFrame.TYPE_SENDER_SYNC,
     ): List<ByteArray> {
         val uuid = runCatching { UUID.fromString(messageId) }.getOrElse { UUID.randomUUID() }
-        return if (isOwnReplica) {
+        return if (isOwnReplica && replicaContentType != KnstFrame.TYPE_SENDER_SYNC) {
+            // A type of its own (read markers): the frame names it; no partner header.
+            KnstFrame.chunks(content, replicaContentType, uuid)
+        } else if (isOwnReplica) {
             KnstFrame.chunks(SenderSyncRouting.encode(partner, content), KnstFrame.TYPE_SENDER_SYNC, uuid)
         } else {
             KnstFrame.chunks(content, contentType, uuid)

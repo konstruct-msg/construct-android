@@ -76,9 +76,11 @@ class ProcessorEffectsImpl @Inject constructor(
     private val mediaArrivals: com.construct.messenger.media.MediaArrivals = com.construct.messenger.media.MediaArrivals.NONE,
     // Where the server put each envelope, from the router that saw it (the core carries only the id).
     private val orderBook: ServerOrderBook = ServerOrderBook(),
+    // How far this account has read, synced with its other devices (TODO 153).
+    private val readState: com.construct.messenger.readsync.ReadState = com.construct.messenger.readsync.ReadState.NONE,
 ) : ProcessorEffects {
 
-    override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
+    override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray, envelopeSeconds: Long) {
         val accountId = sessionManager.accountIdForDevice(contactId) ?: contactId
         if (isBlocked(accountId)) {
             // Decrypt-but-suppress, as iOS `SECURITY[block_drop]`: the ratchet has advanced, so an
@@ -129,7 +131,13 @@ class ProcessorEffectsImpl @Inject constructor(
         // the server redelivers, so the ACK stays on that.
         val rowId = storageId(decoded.e2eMessageId, messageId, sentByMe = false)
         val now = System.currentTimeMillis()
-        persistIncoming(accountId, rowId, decoded.text, now, decoded.reply, decoded.media, orderBook.keyFor(messageId, rowId, now))
+        // Where read sync places it: the envelope's time, as every device of ours sees it (iOS
+        // `fromRemoteTimestamp`: seconds, a future one taken as now), and the id from inside.
+        val sentAtMs = if (envelopeSeconds > 0) minOf(envelopeSeconds * 1000, now) else now
+        persistIncoming(
+            accountId, rowId, decoded.text, now, decoded.reply, decoded.media, orderBook.keyFor(messageId, rowId, now),
+            readAt = com.construct.messenger.readsync.ReadSync.Boundary.of(sentAtMs, rowId),
+        )
         ackStore.markProcessed(messageId, accountId)
         runCatching { sendReceiptUseCase.delivered(accountId, listOf(rowId)) }
             .onFailure { Log.w(TAG, "e2e receipt send failed", it) }
@@ -284,6 +292,13 @@ class ProcessorEffectsImpl @Inject constructor(
                     applyProfile(accountId) { row, now -> ContactProfiles.typed(row, profile, now) }
                 }
             }
+            ContentType.CONTENT_TYPE_READ_SYNC_VALUE -> {
+                // Only another device of this account may move what is read here: the session that
+                // opened it is with a device the registry holds for our own account (TODO 153).
+                val myId = keystoreManager.getUserId()
+                val fromOwnAccount = myId != null && sessionManager.accountIdForDevice(contactId) == myId
+                if (myId != null) readState.markers(body, fromOwnAccount, myId)
+            }
             // A liveness probe: decrypting it exercised the ratchet, which was the point.
             ContentType.CONTENT_TYPE_HEARTBEAT_VALUE -> Log.d(TAG, "heartbeat from ${accountId.take(8)}…")
             // Ping / ready from a build before 2026-09-27: they closed a confirm window that no
@@ -423,6 +438,8 @@ class ProcessorEffectsImpl @Inject constructor(
         reply: ReplyRef?,
         media: MediaWire.Stored? = null,
         orderKey: String = "",
+        /** Its place for read sync; null where it has none. */
+        readAt: com.construct.messenger.readsync.ReadSync.Boundary? = null,
     ) {
         val myId = keystoreManager.getUserId() ?: run {
             Log.e(TAG, "persistIncoming: no local user id — dropping ${messageId.take(8)}…")
@@ -456,8 +473,12 @@ class ProcessorEffectsImpl @Inject constructor(
             ),
         )
         if (firstSight && media != null) mediaArrivals.onArrived(media.kind, media.bytes)
-        // On screen, it is read as it lands.
-        val unseen = firstSight && !alerts.isChatVisible(contactId)
+        // On screen, it is read as it lands; read already on another device of ours, it is too
+        // (TODO 153) — no count, no alert.
+        val onScreen = alerts.isChatVisible(contactId)
+        val readElsewhere = readAt != null && readState.isRead(contactId, readAt)
+        val unseen = firstSight && !onScreen && !readElsewhere
+        if (firstSight && readAt != null) readState.arrived(contactId, readAt, onScreen)
         chats.noteMessage(chatId, contactId, media?.let(mediaPreview::of) ?: text, timestampMs, unread = unseen)
         if (unseen) {
             runCatching { alerts.onUnseenMessage(contactId) }
@@ -584,6 +605,7 @@ class ProcessorEffectsImpl @Inject constructor(
             ContentType.CONTENT_TYPE_SESSION_READY_VALUE,
             ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE,
             ContentType.CONTENT_TYPE_PROFILE_VALUE,
+            ContentType.CONTENT_TYPE_READ_SYNC_VALUE,
         )
     }
 }

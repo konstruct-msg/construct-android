@@ -526,5 +526,22 @@ class SendMessageUseCaseTest {
         ServerMessageIds(store).record("new", "m2", nowMs = ServerMessageIds.RETENTION_MS + 1)
         assertEquals(setOf("new"), store.rows.keys)
     }
+
+    /**
+     * Read markers are planned for this account alone: no recipient devices, `recipient_is_self`
+     * (TODO 153). With no other device of ours the plan is empty and nothing goes. Mutation: plan
+     * them as an ordinary send to anyone — reddens.
+     */
+    @Test
+    fun `read markers are planned for our own other devices only`() = runTest {
+        val h = harness()
+        whenever(h.crypto.planSend(any(), any(), any(), any())).thenReturn(emptyList())
+
+        assertEquals(0, h.useCase().sendReadMarkers(byteArrayOf(1, 2, 3)))
+
+        verify(h.crypto).planSend(eq(emptyList()), any(), eq(ourDevice), eq(true))
+        verify(h.sessionManager).discoverOwnDeviceBundles(myId)
+    }
+
 }
 
