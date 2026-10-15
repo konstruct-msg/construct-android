@@ -32,6 +32,8 @@ class SendMediaUseCaseTest {
         override suspend fun openable(item: MediaItem, name: String): Uri = error("not opened here")
         override suspend fun saveToGallery(item: MediaItem) = error("not here")
         override suspend fun stage(localId: String, blob: ByteArray) { staged[localId] = blob }
+        val dropped = mutableListOf<String>()
+        override suspend fun dropCopy(mediaId: String) { dropped += mediaId }
         override suspend fun upload(localId: String, sha256: ByteArray): MediaService.Uploaded {
             if (fail) throw io.grpc.StatusException(io.grpc.Status.UNAVAILABLE)
             assertTrue(sha256.contentEquals(sha256(staged.getValue(localId))))
@@ -44,6 +46,9 @@ class SendMediaUseCaseTest {
     }
 
     private val videos: com.construct.messenger.media.VideoPreparer = mock()
+
+    /** No lasting grant unless a test gives one: the app's copy stays. */
+    private val originals: com.construct.messenger.media.OwnOriginals = mock()
 
     private val images: ImagePreparer = mock<ImagePreparer>().also {
         whenever(it.prepare(any())).thenReturn(ImagePreparer.Prepared(ByteArray(100) { 1 }, 1920, 1080, "LEHV6nWB2yk8pyo0adR*.7kCMdnj"))
@@ -60,7 +65,7 @@ class SendMediaUseCaseTest {
         val send: SendMessageUseCase = mock()
         whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
 
-        SendMediaUseCase(images, pickedFiles, videos, media, send).photos("peer", listOf(mock<Uri>(), mock<Uri>()), " look ", null)
+        SendMediaUseCase(images, pickedFiles, videos, media, send, originals).photos("peer", listOf(mock<Uri>(), mock<Uri>()), " look ", null)
 
         val shown = argumentCaptor<MediaWire.Stored>()
         verify(send).persistMedia(eq("peer"), any(), any(), shown.capture(), eq(null))
@@ -101,7 +106,7 @@ class SendMediaUseCaseTest {
         val take = com.construct.messenger.media.VideoNoteTake(listOf(com.construct.messenger.media.VideoNoteTake.Segment(file, 4_000)), 500L..3_500L)
 
         val reply = com.construct.messenger.data.model.ReplyRef.of("abc", "original")
-        SendMediaUseCase(images, pickedFiles, notes, media, send).videoNote("peer", take, reply)
+        SendMediaUseCase(images, pickedFiles, notes, media, send, originals).videoNote("peer", take, reply)
 
         verify(notes, never()).prepare(org.mockito.kotlin.anyOrNull(), org.mockito.kotlin.anyOrNull())
         verify(notes).prepareNote(take)
@@ -132,7 +137,7 @@ class SendMediaUseCaseTest {
         whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
         val file = java.io.File.createTempFile("voice", ".m4a").apply { writeBytes(ByteArray(500) { 3 }) }
 
-        SendMediaUseCase(images, pickedFiles, videos, media, send).voice("peer", file, 4200, listOf(0f, 0.5f, 1f))
+        SendMediaUseCase(images, pickedFiles, videos, media, send, originals).voice("peer", file, 4200, listOf(0f, 0.5f, 1f))
 
         assertFalse(file.exists())
         val content = argumentCaptor<ByteArray>()
@@ -154,7 +159,7 @@ class SendMediaUseCaseTest {
         val send: SendMessageUseCase = mock()
         whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
 
-        SendMediaUseCase(images, pickedFiles, videos, media, send).files("peer", listOf(mock<Uri>()), "q3", null)
+        SendMediaUseCase(images, pickedFiles, videos, media, send, originals).files("peer", listOf(mock<Uri>()), "q3", null)
 
         val content = argumentCaptor<ByteArray>()
         verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
@@ -166,6 +171,28 @@ class SendMediaUseCaseTest {
         assertEquals("application/pdf", item.mimeType)
         assertEquals(700L, item.fileSize)
         assertEquals(700, MediaCrypto.open(media.staged.values.first(), item.encryptionKey.toByteArray()).size)
+    }
+
+    /**
+     * A file the picker granted for good is kept as a link, with its plaintext's size and hash, and
+     * the app's copy goes; without a grant the copy stays (TODO 154). Mutation: drop the copy
+     * whatever `remember` answers — reddens.
+     */
+    @Test
+    fun `a sent file is linked where it is, and the copy kept only without a grant`() = runTest {
+        val send: SendMessageUseCase = mock()
+        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        val picked: Uri = mock()
+
+        val kept = FakeMedia()
+        SendMediaUseCase(images, pickedFiles, videos, kept, send, originals).files("peer", listOf(picked), "", null)
+        assertTrue("no grant: the copy stays", kept.dropped.isEmpty())
+
+        val linked = FakeMedia()
+        whenever(originals.remember(any(), any(), any(), any())).thenReturn(true)
+        SendMediaUseCase(images, pickedFiles, videos, linked, send, originals).files("peer", listOf(picked), "", null)
+        assertEquals(listOf("store-0"), linked.dropped)
+        verify(originals, org.mockito.kotlin.times(2)).remember(eq("store-0"), eq(picked), eq(700L), org.mockito.kotlin.argThat { contentEquals(sha256(ByteArray(700) { 5 })) })
     }
 
     /**
@@ -183,7 +210,7 @@ class SendMediaUseCaseTest {
             com.construct.messenger.media.VideoPreparer.Prepared(ByteArray(900) { 9 }, 1080, 1920, 12_345, byteArrayOf(1, 2, 3), "LEHV6nWB2yk8pyo0adR*.7kCMdnj"),
         )
 
-        SendMediaUseCase(images, pickedFiles, videos, media, send).photos("peer", listOf(clip), "", null)
+        SendMediaUseCase(images, pickedFiles, videos, media, send, originals).photos("peer", listOf(clip), "", null)
 
         val content = argumentCaptor<ByteArray>()
         verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
@@ -206,7 +233,7 @@ class SendMediaUseCaseTest {
             com.construct.messenger.media.VideoPreparer.Prepared(ByteArray(900) { 9 }, 720, 1280, 1_000, null, null),
         )
 
-        SendMediaUseCase(images, pickedFiles, videos, FakeMedia(), send)
+        SendMediaUseCase(images, pickedFiles, videos, FakeMedia(), send, originals)
             .photos("peer", listOf(clip), "", null, com.construct.messenger.media.VideoQuality.ORIGINAL)
 
         verify(videos).prepare(clip, com.construct.messenger.media.VideoQuality.ORIGINAL)
@@ -216,7 +243,7 @@ class SendMediaUseCaseTest {
     @Test
     fun `a failed upload fails the message and sends nothing`() = runTest {
         val send: SendMessageUseCase = mock()
-        val outcome = SendMediaUseCase(images, pickedFiles, videos, FakeMedia(fail = true), send).photos("peer", listOf(mock<Uri>()), "", null)
+        val outcome = SendMediaUseCase(images, pickedFiles, videos, FakeMedia(fail = true), send, originals).photos("peer", listOf(mock<Uri>()), "", null)
 
         assertTrue(outcome is SendOutcome.Failed)
         verify(send).markFailed(any())
@@ -242,7 +269,7 @@ class SendMediaUseCaseTest {
         )
         val plain = ByteArray(300) { 2 }
 
-        SendMediaUseCase(images, pickedFiles, videos, media, send).forward("peer", listOf(original), listOf(plain), "")
+        SendMediaUseCase(images, pickedFiles, videos, media, send, originals).forward("peer", listOf(original), listOf(plain), "")
 
         verify(send).persistMedia(eq("peer"), any(), any(), any(), eq(null))
         val content = argumentCaptor<ByteArray>()
@@ -269,7 +296,7 @@ class SendMediaUseCaseTest {
         whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
         val doc = MediaItem("orig", ByteArray(32) { 1 }, ByteArray(32), 700, "application/pdf", filename = "report.pdf")
 
-        SendMediaUseCase(images, pickedFiles, videos, media, send).forward("peer", listOf(doc), listOf(ByteArray(700) { 5 }), "q")
+        SendMediaUseCase(images, pickedFiles, videos, media, send, originals).forward("peer", listOf(doc), listOf(ByteArray(700) { 5 }), "q")
 
         val content = argumentCaptor<ByteArray>()
         verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())

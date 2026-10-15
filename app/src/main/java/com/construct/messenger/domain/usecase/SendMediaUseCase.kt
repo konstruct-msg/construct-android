@@ -47,6 +47,7 @@ class SendMediaUseCase @Inject constructor(
     private val videos: VideoPreparer,
     private val media: MediaRepository,
     private val sendMessage: SendMessageUseCase,
+    private val originals: com.construct.messenger.media.OwnOriginals,
 ) {
     /**
      * A recorded video note: the video path with the mark (`MediaMessage.presentation`), the centre
@@ -195,7 +196,7 @@ class SendMediaUseCase @Inject constructor(
                     val sealed = MediaCrypto.seal(picked.bytes)
                     val localId = MediaWire.LOCAL_PREFIX + UUID.randomUUID()
                     media.stage(localId, sealed.blob)
-                    StagedFile(localId, sealed, picked.name, picked.mime, picked.bytes.size.toLong())
+                    StagedFile(localId, sealed, picked.name, picked.mime, picked.bytes.size.toLong(), uri, com.construct.messenger.media.OwnOriginals.sha256(picked.bytes))
                 }
             }
         } catch (e: CancellationException) {
@@ -209,7 +210,16 @@ class SendMediaUseCase @Inject constructor(
         val uploaded = try {
             coroutineScope {
                 val gate = Semaphore(PARALLEL_UPLOADS)
-                staged.map { f -> async { gate.withPermit { media.upload(f.localId, f.sealed.sha256).let { f.item(it.mediaId, it.downloadUrl) } } } }.awaitAll()
+                staged.map { f ->
+                    async {
+                        gate.withPermit {
+                            val done = media.upload(f.localId, f.sealed.sha256)
+                            // The file is on this device already: link to it, keep no second copy (TODO 154).
+                            if (originals.remember(done.mediaId, f.source, f.size, f.plainSha256)) media.dropCopy(done.mediaId)
+                            f.item(done.mediaId, done.downloadUrl)
+                        }
+                    }
+                }.awaitAll()
             }
         } catch (e: CancellationException) {
             throw e
@@ -285,7 +295,16 @@ class SendMediaUseCase @Inject constructor(
         }
     }
 
-    private class StagedFile(val localId: String, val sealed: MediaCrypto.Sealed, val name: String, val mime: String, val size: Long) {
+    private class StagedFile(
+        val localId: String,
+        val sealed: MediaCrypto.Sealed,
+        val name: String,
+        val mime: String,
+        val size: Long,
+        /** Where the user picked it; its plaintext hash says later whether it is still that file. */
+        val source: Uri,
+        val plainSha256: ByteArray,
+    ) {
         fun item(mediaId: String, url: String): MediaMessage = MediaMessage.newBuilder()
             .setMediaType(MediaWire.mediaTypeOf(mime))
             .setFileUrl(url)

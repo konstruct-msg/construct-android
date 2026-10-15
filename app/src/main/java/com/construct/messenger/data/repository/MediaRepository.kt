@@ -47,6 +47,12 @@ interface MediaRepository {
     suspend fun upload(localId: String, sha256: ByteArray): MediaService.Uploaded
 
     /**
+     * Drop the app's sealed copy of [mediaId], one of ours whose original is read where it is
+     * ([com.construct.messenger.media.OwnOriginals], TODO 154).
+     */
+    suspend fun dropCopy(mediaId: String) {}
+
+    /**
      * [item], a photo or video, decrypted into the shared gallery (`Pictures/Konstruct`,
      * `Movies/Konstruct`) — the iOS viewer's "Save Image". Android 10 and later only: there it
      * needs no permission; before it, writing there would ask for storage, and the viewer offers
@@ -78,6 +84,7 @@ class MediaRepositoryImpl @Inject constructor(
     @ApplicationContext context: Context,
     private val mediaService: MediaService,
     private val storage: StorageRepository,
+    private val originals: com.construct.messenger.media.OwnOriginals,
 ) : MediaRepository {
     private val dir = File(context.filesDir, StorageRepository.MEDIA_DIR)
     private val openDir = File(context.cacheDir, OPEN_DIR).also { it.deleteRecursively() }
@@ -88,6 +95,8 @@ class MediaRepositoryImpl @Inject constructor(
     private val missingUntil = ConcurrentHashMap<String, Long>()
 
     override suspend fun bytes(item: MediaItem): ByteArray = withContext(Dispatchers.IO) {
+        // A file this device sent, read from where it is, if it still is that file (TODO 154).
+        originals.read(item.mediaId)?.let { return@withContext it }
         val name = fileName(item.mediaId) ?: throw MediaUnavailable("malformed media id")
         val file = File(dir, name)
         val cached = file.takeIf { it.exists() }?.readBytes()
@@ -113,6 +122,11 @@ class MediaRepositoryImpl @Inject constructor(
         val name = fileName(localId) ?: error("malformed local id")
         dir.mkdirs()
         File(dir, name).writeBytes(blob)
+    }
+
+    override suspend fun dropCopy(mediaId: String) = withContext(Dispatchers.IO) {
+        fileName(mediaId)?.let { File(dir, it).delete() }
+        Unit
     }
 
     override suspend fun upload(localId: String, sha256: ByteArray): MediaService.Uploaded = withContext(Dispatchers.IO) {
