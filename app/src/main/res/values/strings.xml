@@ -672,6 +672,9 @@
     <string name="forward_failed">Some items were not forwarded: they are no longer on this device or the server.</string>
     <!-- iOS audio_file: an album of music files in the chat list. -->
     <string name="audio_file">Audio</string>
+    <string name="audio_position">Position</string>
+    <string name="audio_stop">Stop</string>
+    <string name="now_playing_open_hint">Opens the chat at this message</string>
     <string name="track_play">Play</string>
     <string name="track_pause">Pause</string>
     <!-- "Can't connect?" on the first screen — iOS onboarding_cant_connect, veil_bootstrap_*. -->

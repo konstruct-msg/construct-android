@@ -286,6 +286,12 @@ fun ChatScreen(
         }
     }
 
+    // Opened from the now-playing banner: its message, once the transcript has rows (iOS
+    // `ChatOnScreen.takeFocus`).
+    LaunchedEffect(uiState.messages.isNotEmpty()) {
+        if (uiState.messages.isNotEmpty()) viewModel.takeFocus()?.let { jumpToId = it }
+    }
+
     LaunchedEffect(jumpToId) {
         val id = jumpToId ?: return@LaunchedEffect
         if (searching) {
@@ -367,8 +373,8 @@ fun ChatScreen(
                         uploading = voiceId!!.startsWith(com.construct.messenger.util.MediaWire.LOCAL_PREFIX),
                         rate = voiceRate,
                     ),
-                    onToggleVoice = { voice?.let(viewModel::toggleVoice) },
-                    onSeekVoice = { fraction -> voice?.let { viewModel.seekVoice(it, fraction) } },
+                    onToggleVoice = { voice?.let { viewModel.toggleVoice(it, message.id) } },
+                    onSeekVoice = { fraction -> voice?.let { viewModel.seekVoice(it, message.id, fraction) } },
                     onCycleVoiceRate = viewModel::cycleVoiceRate,
                     transcribing = message.id in transcribing,
                     onTranscribe = if (viewModel.canTranscribe) { { viewModel.transcribe(message) } } else null,
@@ -392,7 +398,8 @@ fun ChatScreen(
                         loading = voiceLoading,
                         unavailable = voiceUnavailable,
                     ),
-                    onToggleTrack = viewModel::toggleTrack,
+                    onToggleTrack = { viewModel.toggleTrack(it, message.id) },
+                    onSeekTrack = { item, fraction -> viewModel.seekTrack(item, message.id, fraction) },
                     onOpenFile = viewModel::openFile,
                     loadMedia = viewModel::mediaBytes,
                     message = message,

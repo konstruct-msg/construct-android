@@ -159,6 +159,8 @@ dependencies {
     def media3Version = '1.6.1'
     implementation "androidx.media3:media3-exoplayer:${media3Version}"
     implementation "androidx.media3:media3-ui:${media3Version}"
+    // A music file in the shade and on the lock screen (MusicPlaybackService, TODO 151).
+    implementation "androidx.media3:media3-session:${media3Version}"
     implementation "androidx.media3:media3-transformer:${media3Version}"
     implementation "androidx.media3:media3-effect:${media3Version}"
     // Calls (C2): webrtc-sdk's WebRTC, the same line iOS links (`Packages/WebRTC`, 150.7871.01) —

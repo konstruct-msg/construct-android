@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -33,9 +34,16 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -46,6 +54,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.construct.messenger.R
+import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.data.model.MediaItem
 import com.construct.messenger.data.model.MessageMedia
 import com.construct.messenger.ui.theme.CTColor
@@ -61,7 +70,8 @@ import com.construct.messenger.util.MediaWire
  *
  * A music file (`audio/`) is a row like any file, with a play button in place of its icon: it
  * plays in place, in the voice notes' player, with progress and time under the name; the name
- * still opens it in the system's viewer (iOS, 2026-10-13).
+ * still opens it in the system's viewer (iOS, 2026-10-13). While it is loaded, a slider with the
+ * time gone and left; the seek lands when the finger lets go (TODO 151, iOS `AudioFileRow`).
  */
 @Composable
 fun FilesBubble(
@@ -76,6 +86,7 @@ fun FilesBubble(
     onLongPress: () -> Unit = {},
     tracks: TrackPlayback = TrackPlayback(),
     onToggleTrack: (MediaItem) -> Unit = {},
+    onSeekTrack: (MediaItem, Float) -> Unit = { _, _ -> },
 ) {
     val shape = RoundedCornerShape(10.dp)
     val tint = if (outgoing) CTColor.outMsgText else CTColor.accent
@@ -122,18 +133,8 @@ fun FilesBubble(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (playing != null) {
-                        LinearProgressIndicator(
-                            progress = { playing.progress },
-                            color = tint,
-                            trackColor = dim.copy(alpha = 0.3f),
-                            modifier = Modifier.fillMaxWidth().padding(vertical = CTSpace.xs),
-                        )
-                        Text(
-                            text = "${formatVoiceDuration((playing.progress * playing.durationMs).toLong())} / ${formatVoiceDuration(playing.durationMs)}",
-                            style = CTFont.caption,
-                            color = dim,
-                        )
+                    if (playing != null && track != null) {
+                        TrackPosition(playing, tint, dim) { onSeekTrack(track, it) }
                     } else {
                         Text(
                             text = if (item.mediaId in unavailable || item.mediaId in tracks.unavailable) stringResource(R.string.media_unavailable)
@@ -158,6 +159,46 @@ fun FilesBubble(
             Text(caption, style = CTFont.message(12), color = text, modifier = Modifier.padding(top = 2.dp))
         }
     }
+}
+
+/** The slider and the two times under it: gone, and left. iOS `AudioFileRow.position`. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun TrackPosition(playing: TrackPlayback.Playing, tint: androidx.compose.ui.graphics.Color, dim: androidx.compose.ui.graphics.Color, onSeek: (Float) -> Unit) {
+    // Where the thumb is while a finger holds it; the seek lands when it lets go.
+    var scrub by remember(playing.mediaId) { mutableStateOf<Float?>(null) }
+    val shown = scrub ?: playing.progress
+    val (gone, left) = trackTimes(shown, playing.durationMs)
+    val label = stringResource(R.string.audio_position)
+    val colors = SliderDefaults.colors(thumbColor = tint, activeTrackColor = tint, inactiveTrackColor = dim.copy(alpha = 0.3f))
+    val touch = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    // Compact, as iOS's system slider in a row: a thin track and a narrow thumb; the default is
+    // sized for a screen of its own.
+    Slider(
+        value = shown,
+        onValueChange = { scrub = it },
+        onValueChangeFinished = { scrub?.let(onSeek); scrub = null },
+        colors = colors,
+        interactionSource = touch,
+        thumb = {
+            SliderDefaults.Thumb(interactionSource = touch, colors = colors, thumbSize = androidx.compose.ui.unit.DpSize(CTSpace.xs, CTIcon.row))
+        },
+        track = { state ->
+            SliderDefaults.Track(sliderState = state, colors = colors, drawStopIndicator = null, modifier = Modifier.height(CTSpace.xs))
+        },
+        modifier = Modifier.fillMaxWidth().height(CTLayout.controlHeight).semantics { contentDescription = label },
+    )
+    Row(Modifier.fillMaxWidth()) {
+        Text(formatVoiceDuration(gone), style = CTFont.caption, color = dim, modifier = Modifier.weight(1f))
+        Text("−" + formatVoiceDuration(left), style = CTFont.caption, color = dim)
+    }
+}
+
+/** The time gone and the time left at [fraction] of a track [durationMs] long. iOS `AudioPosition.times`. */
+internal fun trackTimes(fraction: Float, durationMs: Long): Pair<Long, Long> {
+    val total = durationMs.coerceAtLeast(0)
+    val gone = (fraction.coerceIn(0f, 1f) * total).toLong()
+    return gone to total - gone
 }
 
 /** What the player says about the tracks in a bubble: the one playing, and those being fetched or gone. */

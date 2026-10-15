@@ -136,6 +136,7 @@ fun MessageBubble(
     fileUnavailable: Set<String> = emptySet(),
     tracks: TrackPlayback = TrackPlayback(),
     onToggleTrack: (com.construct.messenger.data.model.MediaItem) -> Unit = {},
+    onSeekTrack: (com.construct.messenger.data.model.MediaItem, Float) -> Unit = { _, _ -> },
     onOpenFile: (com.construct.messenger.data.model.MediaItem) -> Unit = {},
     loadMedia: suspend (com.construct.messenger.data.model.MediaItem) -> ByteArray = { error("no loader") },
     videoNote: VideoNoteUi = VideoNoteUi(),
@@ -206,7 +207,7 @@ fun MessageBubble(
                         onDoubleClick = { onReact(ReactionRules.LIKE) },
                     ),
                 ) {
-                    FilesBubble(files, message.body, isOutgoing, maxBubble, fileLoading, fileUnavailable, onOpenFile, onLongPress, tracks, onToggleTrack)
+                    FilesBubble(files, message.body, isOutgoing, maxBubble, fileLoading, fileUnavailable, onOpenFile, onLongPress, tracks, onToggleTrack, onSeekTrack)
                 }
             } else if (voice != null) {
                 VoiceBubble(

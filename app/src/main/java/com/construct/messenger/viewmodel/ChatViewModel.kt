@@ -79,6 +79,7 @@ class ChatViewModel @Inject constructor(
     private val transcription: com.construct.messenger.transcription.NoteTranscription,
     private val videoQualities: com.construct.messenger.media.VideoQualityStore,
     private val voiceSettings: com.construct.messenger.media.VoicePlaybackSettings,
+    private val chatOnScreen: com.construct.messenger.media.ChatOnScreen,
 ) : ViewModel() {
     /** How picked videos are sent; the composer offers it while a video is attached (TODO 148). */
     val videoQuality: StateFlow<com.construct.messenger.media.VideoQuality> get() = videoQualities.state
@@ -180,12 +181,14 @@ class ChatViewModel @Inject constructor(
     /** The screen is visible (ON_START): unread goes to zero, arrivals are read as they land. */
     fun onShown() {
         shown = true
+        chatOnScreen.appeared(contactId)
         viewModelScope.launch { messagesRepository.chatShown(contactId) }
     }
 
     /** ON_STOP — navigated away or the app went to the background. */
     fun onHidden() {
         shown = false
+        chatOnScreen.disappeared(contactId)
         messagesRepository.chatHidden(contactId)
         // Leaving the chat folds a note playing in place (iOS `handleViewDisappear`).
         videoNotes.collapse()
@@ -193,7 +196,7 @@ class ChatViewModel @Inject constructor(
 
     override fun onCleared() {
         messagesRepository.chatHidden(contactId)
-        player.stop()
+        // A track playing outlives its chat; the now-playing banner controls it (iOS `ed0b6266`).
         videoNotes.collapse()
         if (recorder.state.value !is VoiceRecorder.State.Idle) recorder.cancel()
     }
@@ -496,16 +499,23 @@ class ChatViewModel @Inject constructor(
      * Play or pause [voice]. iOS fetches a voice note only when it is played, never ahead; so
      * does this.
      */
-    fun toggleVoice(voice: MessageMedia.Voice) = play(voice.audio, music = false)
+    fun toggleVoice(voice: MessageMedia.Voice, messageId: String) =
+        play(voice.audio, music = false, com.construct.messenger.media.PlaybackSource(contactId, messageId))
 
     /** Play [voice] from [fraction] of it; the one already playing moves there (iOS `seek`). */
-    fun seekVoice(voice: MessageMedia.Voice, fraction: Float) {
-        val id = voice.audio.mediaId
+    fun seekVoice(voice: MessageMedia.Voice, messageId: String, fraction: Float) =
+        seek(voice.audio, music = false, com.construct.messenger.media.PlaybackSource(contactId, messageId), fraction)
+
+    /** The message whose track to bring into view: the chat was opened from the banner. */
+    fun takeFocus(): String? = chatOnScreen.takeFocus(contactId)
+
+    private fun seek(item: com.construct.messenger.data.model.MediaItem, music: Boolean, source: com.construct.messenger.media.PlaybackSource, fraction: Float) {
+        val id = item.mediaId
         if (player.state.value?.mediaId == id) {
-            player.seek(id, ByteArray(0), fraction)
+            player.seek(id, ByteArray(0), fraction, music, source)
             return
         }
-        load(voice.audio) { player.seek(id, it, fraction) }
+        load(item) { player.seek(id, it, fraction, music, source) }
     }
 
     fun cycleVoiceRate() = player.cycleRate()
@@ -520,7 +530,7 @@ class ChatViewModel @Inject constructor(
         val next = nextVoice(uiState.value.messages, finished) ?: return
         val voice = next.media as MessageMedia.Voice
         _voiceFollow.tryEmit(next.id)
-        load(voice.audio) { player.toggle(voice.audio.mediaId, it) }
+        load(voice.audio) { player.toggle(voice.audio.mediaId, it, source = com.construct.messenger.media.PlaybackSource(contactId, next.id)) }
     }
 
     /**
@@ -528,15 +538,23 @@ class ChatViewModel @Inject constructor(
      * at its own speed. **Canon:** iOS `FileAttachmentBubbleView` (2026-10-13). Fetched on the
      * first tap, as a voice note is.
      */
-    fun toggleTrack(item: com.construct.messenger.data.model.MediaItem) = play(item, music = true)
+    fun toggleTrack(item: com.construct.messenger.data.model.MediaItem, messageId: String) =
+        play(item, music = true, trackSource(item, messageId))
 
-    private fun play(item: com.construct.messenger.data.model.MediaItem, music: Boolean) {
+    /** Move a music file to [fraction] — its slider let go (TODO 151, iOS `AudioFileRow`). */
+    fun seekTrack(item: com.construct.messenger.data.model.MediaItem, messageId: String, fraction: Float) =
+        seek(item, music = true, trackSource(item, messageId), fraction)
+
+    private fun trackSource(item: com.construct.messenger.data.model.MediaItem, messageId: String) =
+        com.construct.messenger.media.PlaybackSource(contactId, messageId, fileName = item.filename ?: "")
+
+    private fun play(item: com.construct.messenger.data.model.MediaItem, music: Boolean, source: com.construct.messenger.media.PlaybackSource) {
         val id = item.mediaId
         if (player.state.value?.mediaId == id) {
             player.toggle(id, ByteArray(0))
             return
         }
-        load(item) { player.toggle(id, it, music) }
+        load(item) { player.toggle(id, it, music, source) }
     }
 
     /** Fetch [item]'s audio, then hand it to [start]; a spinner on its button meanwhile. */
