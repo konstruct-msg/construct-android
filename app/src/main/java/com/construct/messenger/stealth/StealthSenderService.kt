@@ -134,6 +134,12 @@ class StealthSenderService @Inject constructor(
             )
             .setContentType(contentType.proto)
             .setDeliveryTag(ByteString.copyFrom(deliveryTag))
+            // The one device this envelope is for, derived from the very key it is sealed to — not
+            // passed in or looked up, the two ways it could disagree with the ciphertext. Empty is
+            // the field's "every active device": until 2026-10-16 every copy Android sealed for a
+            // peer's second device also landed in the first one's mailbox, which could not open it
+            // (TODO 161). **Canon:** iOS `buildSealedInner` (`recipientDevice`).
+            .setRecipientDevice(cryptoManager.deriveDeviceIdFromIdentity(recipientIdentityKey))
         if (sessionEnvelope != null) {
             builder.setSessionEnvelope(ByteString.copyFrom(sessionEnvelope))
         } else if (firstFlight != null) {
