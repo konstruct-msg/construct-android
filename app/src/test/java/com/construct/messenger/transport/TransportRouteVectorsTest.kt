@@ -71,8 +71,11 @@ class TransportRouteVectorsTest {
             midSessionDeathWeight = o.optInt("mid_session_death_weight", base.midSessionDeathWeight),
             allowDirectToVeilEscalation = o.optBoolean("allow_direct_to_veil_escalation", base.allowDirectToVeilEscalation),
             veilCooldownMs = o.optLong("veil_cooldown_ms", base.veilCooldownMs),
+            veilSoftFailThreshold = o.optInt("veil_soft_fail_threshold", base.veilSoftFailThreshold),
         )
     }
+
+    private fun lane(o: JSONObject) = TransportRoute.Lane.valueOf(o.getString("lane").uppercase())
 
     private fun target(s: String) = if (s == "veil") veil else Target.Direct
 
@@ -80,14 +83,17 @@ class TransportRouteVectorsTest {
         "offline" -> State.Offline
         "direct" -> State.Direct(o.getInt("fails"))
         "veil_probing" -> State.VeilProbing
-        "veil_active" -> State.VeilActive(o.getString("relay"), o.getInt("port"), o.getLong("since_ms"))
+        "veil_active" -> State.VeilActive(
+            o.getString("relay"), o.getInt("port"), o.getLong("since_ms"),
+            o.getJSONObject("soft_fails").let { TransportRoute.SoftFails(it.getInt("auth"), it.getInt("sealed")) },
+        )
         "veil_cooldown" -> State.VeilCooldown(o.getLong("until_ms"))
         else -> error("unknown state ${o.getString("kind")}")
     }
 
     private fun event(o: JSONObject): Event = when (o.getString("kind")) {
-        "rpc_succeeded" -> Event.RpcSucceeded(target(o.getString("via")), o.getInt("latency_ms"))
-        "rpc_failed" -> Event.RpcFailed(RpcFailure.valueOf(o.getString("failure").uppercase()), target(o.getString("via")), o.getBoolean("foreground"))
+        "rpc_succeeded" -> Event.RpcSucceeded(target(o.getString("via")), o.getInt("latency_ms"), lane(o))
+        "rpc_failed" -> Event.RpcFailed(RpcFailure.valueOf(o.getString("failure").uppercase()), target(o.getString("via")), o.getBoolean("foreground"), lane(o))
         "stream_opened" -> Event.StreamOpened(StreamMethod.valueOf(o.getString("method").uppercase()), target(o.getString("via")))
         "stream_failed" -> Event.StreamFailed(
             StreamMethod.valueOf(o.getString("method").uppercase()),

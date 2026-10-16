@@ -100,19 +100,20 @@ class GrpcClient @Inject constructor(
                 OkHttpChannelBuilder.forAddress(LOOPBACK, veilPort).usePlaintext().overrideAuthority(HOST)
             }
         val via = veilPort?.let { TransportRoute.Target.Veil(it, "") } ?: TransportRoute.Target.Direct
-        // Every unary outcome is evidence for Auto mode (TransportRouter).
-        val observer = RouteObservingInterceptor(via, transportEvents)
+        // Every unary outcome is evidence for Auto mode (TransportRouter), per channel: the sealed
+        // one is its own connection and can be dead while the authenticated one carries on.
+        fun observer(lane: TransportRoute.Lane) = RouteObservingInterceptor(via, transportEvents, lane)
         // The last interceptor runs first: with VEIL On a direct channel refuses before anything
         // else is asked. Through the tunnel there is nothing to guard.
         val guard = listOfNotNull<ClientInterceptor>(
             DirectPathGuard { veilModes.state.value.allowsDirectPath }.takeIf { veilPort == null },
         )
         return Channels(
-            auth = base().intercept(listOf(authInterceptor, observer) + guard).build(),
+            auth = base().intercept(listOf(authInterceptor, observer(TransportRoute.Lane.AUTH)) + guard).build(),
             // No AuthInterceptor — sealed sender RPCs must not carry sender identity
             // on the transport layer. The `SendSealedMessage` method is also in the
             // interceptor's unauthenticated whitelist as defence-in-depth.
-            sealed = base().intercept(listOf<ClientInterceptor>(observer) + guard).build(),
+            sealed = base().intercept(listOf<ClientInterceptor>(observer(TransportRoute.Lane.SEALED)) + guard).build(),
             veilPort = veilPort,
             generation = ++built,
         )

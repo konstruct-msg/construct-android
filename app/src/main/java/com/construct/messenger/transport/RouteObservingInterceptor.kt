@@ -22,6 +22,8 @@ import java.net.ConnectException
 class RouteObservingInterceptor(
     private val via: TransportRoute.Target,
     private val events: TransportEvents,
+    /** Which channel this one watches: VEIL counts soft failures per lane. */
+    private val lane: TransportRoute.Lane,
 ) : ClientInterceptor {
 
     override fun <ReqT, RespT> interceptCall(
@@ -38,9 +40,9 @@ class RouteObservingInterceptor(
                     override fun onClose(status: Status, trailers: Metadata) {
                         events.post(
                             if (status.isOk) {
-                                TransportRoute.Event.RpcSucceeded(via, (SystemClock.elapsedRealtime() - startedAt).toInt())
+                                TransportRoute.Event.RpcSucceeded(via, (SystemClock.elapsedRealtime() - startedAt).toInt(), lane)
                             } else {
-                                TransportRoute.Event.RpcFailed(classify(status, via), via, foreground = true)
+                                TransportRoute.Event.RpcFailed(classify(status, via), via, foreground = true, lane = lane)
                             },
                         )
                         super.onClose(status, trailers)

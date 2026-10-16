@@ -45,18 +45,31 @@ object TransportRoute {
         TRANSPORT_UNKNOWN(true, false),
     }
 
+    /**
+     * Which channel a call went on: [AUTH] (authenticated, also the stream's connection) or
+     * [SEALED] (no identity, a connection of its own). One can be dead while the other carries on.
+     */
+    enum class Lane { AUTH, SEALED }
+
+    /** Soft transport failures in a row through VEIL, per [Lane]; a success on a lane clears it. */
+    data class SoftFails(val auth: Int = 0, val sealed: Int = 0) {
+        operator fun get(lane: Lane) = if (lane == Lane.AUTH) auth else sealed
+
+        fun with(lane: Lane, n: Int) = if (lane == Lane.AUTH) copy(auth = n) else copy(sealed = n)
+    }
+
     sealed interface State {
         data object Offline : State
         data class Direct(val consecutiveFails: Int) : State
         data object VeilProbing : State
-        data class VeilActive(val relay: String, val port: Int, val sinceMs: Long) : State
+        data class VeilActive(val relay: String, val port: Int, val sinceMs: Long, val softFails: SoftFails = SoftFails()) : State
         data class VeilCooldown(val untilMs: Long) : State
     }
 
     sealed interface Event {
-        data class RpcSucceeded(val via: Target, val latencyMs: Int) : Event
+        data class RpcSucceeded(val via: Target, val latencyMs: Int, val lane: Lane = Lane.AUTH) : Event
         /** [foreground]: a user-visible call; background maintenance does not move the path. */
-        data class RpcFailed(val failure: RpcFailure, val via: Target, val foreground: Boolean) : Event
+        data class RpcFailed(val failure: RpcFailure, val via: Target, val foreground: Boolean, val lane: Lane = Lane.AUTH) : Event
         data class StreamOpened(val method: StreamMethod, val via: Target) : Event
         data class StreamFailed(val method: StreamMethod, val failure: StreamFailure, val via: Target) : Event
         data class NetworkPathChanged(val reachable: Boolean, val censored: Boolean) : Event
@@ -93,6 +106,13 @@ object TransportRoute {
         val allowDirectToVeilEscalation: Boolean = true,
         /** The only backoff after a failed `veil_start`. */
         val veilCooldownMs: Long = 30_000,
+        /**
+         * Soft failures in a row on one lane through VEIL that replace the proxy. A relay can take
+         * a connection and carry nothing over it — every failure is then soft, and reconnecting
+         * goes back through it. Testers in Russia, 2026-10-16: an old stream kept receiving, nothing
+         * could be sent, until a reinstall.
+         */
+        val veilSoftFailThreshold: Int = 3,
     )
 
     data class Outcome(val state: State, val effects: List<Effect>)
@@ -152,7 +172,7 @@ object TransportRoute {
             State.Offline -> Outcome(state, emptyList())
             is State.Direct -> direct(state.consecutiveFails, event, config)
             State.VeilProbing -> probing(event, config, nowMs)
-            is State.VeilActive -> active(state, event)
+            is State.VeilActive -> active(state, event, config)
             is State.VeilCooldown ->
                 if (event == Event.CooldownElapsed) Outcome(State.Direct(0), listOf(Effect.InvalidateGrpcClient))
                 else Outcome(state, emptyList())
@@ -166,7 +186,10 @@ object TransportRoute {
             Mode.OFF -> Outcome(State.Direct(0), TEARDOWN)
             Mode.ON ->
                 if (state is State.VeilActive || state == State.VeilProbing) Outcome(state, emptyList())
-                else Outcome(State.VeilProbing, listOf(Effect.RequestProxyStart))
+                // What is open on the direct path goes before the tunnel exists: a channel or stream
+                // opened under Auto must not carry traffic once the person chose never-direct (iOS,
+                // 2026-10-14: an open QUIC stream and the cached channel kept going direct for 30 s).
+                else Outcome(State.VeilProbing, listOf(Effect.InvalidateGrpcClient, Effect.RequestProxyStart))
             // Auto stops forcing and lets outcomes decide; it never starts VEIL by itself.
             Mode.AUTO -> Outcome(state, emptyList())
         }
@@ -211,11 +234,17 @@ object TransportRoute {
         else -> Outcome(State.VeilProbing, emptyList())
     }
 
-    private fun active(state: State.VeilActive, event: Event): Outcome = when {
-        event is Event.RpcFailed && event.foreground && event.via is Target.Veil && event.failure.isTransport ->
-            // Hard: the relay is observably broken, rotate. Soft: the tunnel may live; reconnect.
-            if (event.failure.isHardRelay) Outcome(State.VeilProbing, ROTATE)
-            else Outcome(state, listOf(Effect.InvalidateGrpcClient))
+    private fun active(state: State.VeilActive, event: Event, config: Config): Outcome = when {
+        event is Event.RpcFailed && event.foreground && event.via is Target.Veil && event.failure.isTransport -> {
+            // Hard: the relay is observably broken, rotate. Soft: the tunnel may live; reconnect —
+            // until the same lane has failed softly [Config.veilSoftFailThreshold] times in a row.
+            val fails = state.softFails[event.lane] + 1
+            if (event.failure.isHardRelay || fails >= config.veilSoftFailThreshold) Outcome(State.VeilProbing, ROTATE)
+            else Outcome(state.copy(softFails = state.softFails.with(event.lane, fails)), listOf(Effect.InvalidateGrpcClient))
+        }
+        // A call through the tunnel answered: that lane works.
+        event is Event.RpcSucceeded && event.via is Target.Veil && state.softFails[event.lane] != 0 ->
+            Outcome(state.copy(softFails = state.softFails.with(event.lane, 0)), emptyList())
         // A stream death alone does not prove the relay is burned.
         event is Event.StreamFailed && event.via is Target.Veil -> Outcome(state, listOf(Effect.InvalidateGrpcClient))
         else -> Outcome(state, emptyList())
