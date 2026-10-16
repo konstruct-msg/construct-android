@@ -80,6 +80,7 @@ class MessagingRuntime @Inject constructor(
     private val authSession: AuthSessionManager,
     private val transportRouter: TransportRouter,
     private val pendingResends: PendingResends,
+    private val fanoutRetries: FanoutRetries,
     private val deviceMetadata: DeviceMetadataPublisher,
     private val contactAvatars: ContactAvatars,
     // Lazy: the profile is sent through the send path, which reaches back into the runtime.
@@ -242,6 +243,8 @@ class MessagingRuntime @Inject constructor(
                         timerBridge.onNetworkReconnected()
                         // Resends the network refused; the core will not ask for them again.
                         pendingResends.drainSoon()
+                        // Copies a recipient device refused (TODO 155); they also go by their own due time.
+                        fanoutRetries.drainSoon()
                         // Profiles: avatars that did not arrive, and a rebroadcast whose avatar did not upload.
                         contactAvatars.retryPending()
                         shareProfile.get().rebroadcastIfOwed()
