@@ -59,16 +59,7 @@ class MessagingService @Inject constructor(
         timestampMs: Long,
         contentType: ContentType = ContentType.CONTENT_TYPE_E2EE_SIGNAL,
     ): SendResult {
-        val envelope = Envelope.newBuilder().apply {
-            setMessageId(messageId)
-            recipient = UserId.newBuilder().setUserId(recipientId).build()
-            setTimestamp(timestampMs)
-            sender = UserId.newBuilder().setUserId(senderId).build()
-            // conversation_id is never written — names the pair in the clear
-            // (WIRE_FORMAT_RULES). Parameter kept so call sites compile.
-            setContentType(contentType)
-            setEncryptedPayload(ByteString.copyFrom(encryptedPayload))
-        }.build()
+        val envelope = buildEnvelope(messageId, senderId, recipientId, encryptedPayload, timestampMs, contentType)
 
         val attemptId = UUID.randomUUID().toString().lowercase()
         val request = SendMessageRequest.newBuilder()
@@ -129,6 +120,31 @@ class MessagingService @Inject constructor(
 
     companion object {
         private const val TAG = "MessagingService"
+
+        /**
+         * The identified envelope. Its `timestamp` is Unix **seconds**, as iOS writes it and the
+         * server reads it (`fromRemoteTimestamp`; messaging-service calls `env.timestamp` seconds).
+         * The caller's [timestampMs] is the message's, in milliseconds. Until 2026-10-16 it went on
+         * the wire unconverted: an iOS sibling took our own-device copies as far in the future and
+         * clamped them to their arrival.
+         */
+        internal fun buildEnvelope(
+            messageId: String,
+            senderId: String,
+            recipientId: String,
+            encryptedPayload: ByteArray,
+            timestampMs: Long,
+            contentType: ContentType,
+        ): Envelope = Envelope.newBuilder().apply {
+            setMessageId(messageId)
+            recipient = UserId.newBuilder().setUserId(recipientId).build()
+            setTimestamp(timestampMs / 1000)
+            sender = UserId.newBuilder().setUserId(senderId).build()
+            // conversation_id is never written — names the pair in the clear
+            // (WIRE_FORMAT_RULES). Parameter kept so call sites compile.
+            setContentType(contentType)
+            setEncryptedPayload(ByteString.copyFrom(encryptedPayload))
+        }.build()
 
         /**
          * The only place a [SealedSenderEnvelope] is built. `timestamp` is the send time in

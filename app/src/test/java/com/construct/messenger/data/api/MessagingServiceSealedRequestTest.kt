@@ -30,4 +30,23 @@ class MessagingServiceSealedRequestTest {
         assertEquals("", request.sealedSender.recipientServer)
         assertEquals(0, request.sealedSender.forwardingToken.size())
     }
+
+    /**
+     * The identified envelope's time is seconds too, as iOS writes it and reads it. Mutation: put
+     * the milliseconds on the wire — an iOS sibling dates our copy in the far future.
+     */
+    @Test
+    fun `the identified envelope carries the send time in seconds`() {
+        val envelope = MessagingService.buildEnvelope(
+            messageId = "m",
+            senderId = "me",
+            recipientId = "me",
+            encryptedPayload = byteArrayOf(1),
+            timestampMs = 1_700_000_000_999L,
+            contentType = shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_SENDER_SYNC,
+        )
+
+        assertEquals(1_700_000_000L, envelope.timestamp)
+        assertEquals("", envelope.conversationId)
+    }
 }
