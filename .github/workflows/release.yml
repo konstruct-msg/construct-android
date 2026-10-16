@@ -74,6 +74,17 @@ jobs:
         # Compile, tests and the static checks; the commit range is not this job's question.
         run: scripts/verify.sh --since HEAD
 
+      - name: Channel
+        id: channel
+        # A tag on main is the public build and writes no log; anything else is handed to testers
+        # and writes the diagnostic log (BuildConfig.INTERNAL_TOOLS, as iOS TestFlight builds do),
+        # so a failure in the field arrives with its log.
+        run: |
+          git fetch -q origin main || true
+          if git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then internal=false; else internal=true; fi
+          echo "internal=$internal" >> "$GITHUB_OUTPUT"
+          echo "INTERNAL_TOOLS=$internal"
+
       - name: Keystore
         env:
           STORE_B64: ${{ secrets.KONSTRUCT_STORE_FILE }}
@@ -88,6 +99,7 @@ jobs:
           ORG_GRADLE_PROJECT_KONSTRUCT_STORE_PASSWORD: ${{ secrets.KONSTRUCT_STORE_PASSWORD }}
           ORG_GRADLE_PROJECT_KONSTRUCT_KEY_ALIAS: ${{ secrets.KONSTRUCT_KEY_ALIAS }}
           ORG_GRADLE_PROJECT_KONSTRUCT_KEY_PASSWORD: ${{ secrets.KONSTRUCT_KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_INTERNAL_TOOLS: ${{ steps.channel.outputs.internal }}
         run: ./gradlew --console=plain :app:assembleRelease
 
       - name: Drop the keystore

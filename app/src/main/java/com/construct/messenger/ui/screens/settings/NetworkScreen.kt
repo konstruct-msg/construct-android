@@ -60,7 +60,7 @@ import kotlinx.coroutines.delay
  * errors. `decisions/silent-transport-ui`: the public build discloses no reachability coordinate
  * — a censor who installs the app must not be able to read the working front off this screen.
  */
-private val SHOW_TRANSPORT_DETAIL = BuildConfig.DEBUG
+private val SHOW_TRANSPORT_DETAIL = BuildConfig.DEBUG || BuildConfig.INTERNAL_TOOLS
 
 /**
  * Network.

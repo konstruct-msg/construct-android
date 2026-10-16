@@ -42,6 +42,11 @@ android {
         // Only the ABIs we ship a core for. WebRTC brings four; a device of an ABI with no core
         // would otherwise install the app and fail to start it.
         ndk { abiFilters(*coreAbis) }
+
+        // A build handed to testers writes the diagnostic log, as an iOS INTERNAL_TOOLS (TestFlight)
+        // build does; a public one never does. `release.yml` sets it for a tag not on main;
+        // locally: `-PINTERNAL_TOOLS=true`.
+        buildConfigField "boolean", "INTERNAL_TOOLS", (project.findProperty('INTERNAL_TOOLS') == 'true').toString()
     }
 
     // The release key and its passwords live in ~/.gradle/gradle.properties, never in git

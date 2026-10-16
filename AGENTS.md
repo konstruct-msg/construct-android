@@ -109,6 +109,8 @@ which does all of the above. Either way the files stay untracked.
   the lock names. **A release APK** is built by pushing a tag `v<versionName>` (or running
   `release.yml` by hand): signed with the key from the repository secrets and refused unless the
   signer is the pinned certificate; a tag leaves a draft release, which a person publishes.
+  A tag that is not on `main` is a tester build: `INTERNAL_TOOLS`, which writes the diagnostic
+  log (Settings → Diagnostics → share), as iOS TestFlight builds do. A build from `main` writes none.
 - Status lives only in `docs/IMPLEMENTATION_PLAN.md`. Do not add a status line anywhere else —
   that is how this file, the README and the plan came to disagree.
 - Closing a task from the plan means updating the plan in the same commit.
