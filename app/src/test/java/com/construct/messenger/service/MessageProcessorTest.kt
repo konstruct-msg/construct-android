@@ -49,7 +49,7 @@ class MessageProcessorTest {
         override suspend fun saveSecureStore(slot: CfeSecureStoreSlot, data: ByteArray) { calls += "saveSecureStore:$slot" }
         override suspend fun pruneAckStore(cutoffTs: Long) { calls += "prune:$cutoffTs" }
         override suspend fun archiveSession(contactId: String) { calls += "archive:$contactId" }
-        override suspend fun onSenderSync(contactId: String, messageId: String, plaintext: ByteArray, timestampMs: Long) {
+        override suspend fun onSenderSync(contactId: String, messageId: String, plaintext: ByteArray, envelopeSeconds: Long) {
             calls += "onSenderSync:$contactId:$messageId"
         }
         override suspend fun sendDecryptionError(contactId: String, messageId: String, payload: ByteArray, enveloped: Boolean) {

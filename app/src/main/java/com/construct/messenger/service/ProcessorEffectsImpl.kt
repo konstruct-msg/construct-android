@@ -207,8 +207,14 @@ class ProcessorEffectsImpl @Inject constructor(
         contactId: String,
         messageId: String,
         plaintext: ByteArray,
-        timestampMs: Long,
+        envelopeSeconds: Long,
     ) {
+        // When we sent it, from the envelope: seconds, and one in the future is taken as now (iOS
+        // `fromRemoteTimestamp`) — which is what a build before 2026-10-16 writing milliseconds
+        // there gets. Until then this read the seconds as milliseconds: an iOS sibling's copy was
+        // dated January 1970 and sat at the top of the chat.
+        val now = System.currentTimeMillis()
+        val timestampMs = if (envelopeSeconds > 0) minOf(envelopeSeconds * 1000, now) else now
         val accountId = sessionManager.accountIdForDevice(contactId)
             ?: keystoreManager.getUserId()
             ?: contactId

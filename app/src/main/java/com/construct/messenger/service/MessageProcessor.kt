@@ -325,7 +325,8 @@ interface OrchestratorGateway {
 interface ProcessorEffects {
     /** [envelopeSeconds]: the envelope's time, 0 when there is none. */
     suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray, envelopeSeconds: Long = 0)
-    suspend fun onSenderSync(contactId: String, messageId: String, plaintext: ByteArray, timestampMs: Long) = Unit
+    /** [envelopeSeconds]: the envelope's time, as for [onDecrypted]. */
+    suspend fun onSenderSync(contactId: String, messageId: String, plaintext: ByteArray, envelopeSeconds: Long) = Unit
     suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray)
     suspend fun onControlFrame(contactId: String, messageId: String, contentType: Int, body: ByteArray)
     suspend fun sendReceipt(messageId: String, toUserId: String, status: String)

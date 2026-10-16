@@ -391,16 +391,38 @@ class ProcessorEffectsImplTest {
             contactId = "source-device-opaque",
             messageId = "$baseId-ss-0123456789abcdef",
             plaintext = routed,
-            timestampMs = 42L,
+            envelopeSeconds = 1_700_000_000L,
         )
 
         val chatId = ConversationId.direct(myId, peer)
         assertEquals("mirrored", messages.rows[baseId]?.text)
         assertEquals(true, messages.rows[baseId]?.isSentByMe)
-        assertEquals(42L, messages.rows[baseId]?.timestampMs)
+        // The envelope's seconds, as milliseconds. Mutation: store them unconverted — 1970.
+        assertEquals(1_700_000_000_000L, messages.rows[baseId]?.timestampMs)
         assertEquals(chatId, messages.rows[baseId]?.chatId)
         assertEquals(0, chats.rows[chatId]?.unreadCount)
         assertTrue(acks.isProcessed("$baseId-ss-0123456789abcdef"))
+    }
+
+    /**
+     * A copy from a build that wrote milliseconds into the envelope's seconds is from the far
+     * future: it is dated now, not where it claims. Mutation: drop the clamp — this reddens.
+     */
+    @Test
+    fun `a sibling copy from the future is dated now`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        val id = UUID.randomUUID()
+        val content = MessageContent.newBuilder().setText(TextMessage.newBuilder().setText("old build")).build().toByteArray()
+        val before = System.currentTimeMillis()
+
+        inbox.effects.onSenderSync(
+            "sibling", "$id-ss-0123456789abcdef",
+            SenderSyncRouting.encode(peer, KnstFrame.pack(content, KnstFrame.TYPE_E2EE_SIGNAL, id)),
+            envelopeSeconds = 1_700_000_000_000L,
+        )
+
+        val at = inbox.messages.rows[id.toString()]!!.timestampMs
+        assertTrue(at in before..System.currentTimeMillis())
     }
 
     /**
