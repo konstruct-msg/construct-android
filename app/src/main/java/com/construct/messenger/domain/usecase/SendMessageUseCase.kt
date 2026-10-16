@@ -16,6 +16,7 @@ import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.service.MediaPreviewText
 import com.construct.messenger.service.OrchestratorGateway
+import com.construct.messenger.service.OwedCopies
 import com.construct.messenger.service.ServerMessageIds
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.OwnDeviceCopy
@@ -82,6 +83,7 @@ class SendMessageUseCase @Inject constructor(
     private val sessionStateStore: SessionStateStore,
     private val serverMessageIds: ServerMessageIds,
     private val mediaPreview: MediaPreviewText,
+    private val owedCopies: OwedCopies,
 ) {
     suspend operator fun invoke(contactId: String, text: String, reply: ReplyRef? = null): SendOutcome {
         val body = text.trim()
@@ -226,6 +228,13 @@ class SendMessageUseCase @Inject constructor(
                 messages.setDeliveryStatus(messageId, DeliveryStatus.SENT)
                 // Out of the pending place at the bottom, into the server's order.
                 tally.orderKey?.let { messages.setOrderKey(messageId, it) }
+                // The devices that refused are the retry's (TODO 155) — only them: another copy to
+                // one that took it would show the message twice.
+                if (tally.owed.isEmpty()) {
+                    owedCopies.settled(messageId, contactId)
+                } else {
+                    owedCopies.owed(messageId, contactId, myId, tally.owed)
+                }
                 SendOutcome.Sent(messageId)
             } else {
                 messages.setDeliveryStatus(messageId, DeliveryStatus.FAILED)
@@ -240,10 +249,14 @@ class SendMessageUseCase @Inject constructor(
         }
     }
 
+    /** Signed in and the core up: a send can go now. */
+    fun isReady(): Boolean = keystoreManager.getUserId() != null && cryptoManager.isMessagingReady
+
     /**
      * Send one of our own messages again, to one device of [contactId] — the answer to the core's
      * `ResendMessage`: that device could not read [messageId] (a DECRYPTION_ERROR named it). If
-     * the core retired our state with the device, the copy opens a new one on the way.
+     * the core retired our state with the device, the copy opens a new one on the way. Also how
+     * [com.construct.messenger.service.FanoutRetries] sends a copy a device refused (TODO 155).
      *
      * The same per-device path as a send, and only to [deviceId]: the account's other devices
      * read their copies. Text, and media from the wire message its row keeps — iOS resends text
@@ -444,6 +457,8 @@ class SendMessageUseCase @Inject constructor(
         val lastError: String,
         /** The server's order of the first recipient copy it took — where the message now sits. */
         val orderKey: String? = null,
+        /** Recipient devices the plan named that did not take their copy. */
+        val owed: List<String> = emptyList(),
     )
 
     /**
@@ -502,6 +517,7 @@ class SendMessageUseCase @Inject constructor(
         var replicaAccepted = 0
         var lastError = "send failed"
         var orderKey: String? = null
+        val owed = mutableListOf<String>()
         for (target in targets) {
             val isOwnReplica = target.audience == DeliveryAudience.OWN_REPLICA
             val accountId = if (isOwnReplica) myId else contactId
@@ -510,6 +526,7 @@ class SendMessageUseCase @Inject constructor(
             }.getOrElse {
                 Log.w(TAG, "session init failed ${target.deviceId.take(8)}…", it)
                 lastError = "session init failed"
+                if (!isOwnReplica) owed += target.deviceId
                 continue
             }
             val identity = identityByDevice[target.deviceId] ?: peer.identityPublic
@@ -519,6 +536,7 @@ class SendMessageUseCase @Inject constructor(
                 // the named device could never verify.
                 Log.w(TAG, "identity missing ${target.deviceId.take(8)}… — copy skipped")
                 lastError = "no identity key"
+                if (!isOwnReplica) owed += target.deviceId
                 continue
             }
             val tag = runCatching {
@@ -526,6 +544,7 @@ class SendMessageUseCase @Inject constructor(
             }.getOrElse {
                 Log.w(TAG, "copy tag failed ${target.deviceId.take(8)}…", it)
                 lastError = "tag failed"
+                if (!isOwnReplica) owed += target.deviceId
                 continue
             }
             val result = sendFrames(
@@ -545,9 +564,10 @@ class SendMessageUseCase @Inject constructor(
             } else {
                 lastError = result?.errorCode?.ifEmpty { "send failed" } ?: "send failed"
                 Log.w(TAG, "copy rejected ${target.deviceId.take(8)}… $lastError")
+                if (!isOwnReplica) owed += target.deviceId
             }
         }
-        return DeliveryTally(recipientAccepted, replicaAccepted, lastError, orderKey)
+        return DeliveryTally(recipientAccepted, replicaAccepted, lastError, orderKey, owed)
     }
 
     /**

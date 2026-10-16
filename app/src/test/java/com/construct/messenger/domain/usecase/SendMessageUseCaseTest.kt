@@ -13,6 +13,7 @@ import com.construct.messenger.data.local.ContactRecord
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.local.FakeServerMessageIdStore
 import com.construct.messenger.service.OrchestratorGateway
+import com.construct.messenger.service.OwedCopies
 import com.construct.messenger.service.ServerMessageIds
 import com.construct.messenger.util.IncomingPlaintext
 import com.construct.messenger.util.KnstFrame
@@ -76,6 +77,7 @@ class SendMessageUseCaseTest {
         val messaging: MessagingService = mock()
         val policy: StealthPolicy = mock()
         val stealthSender: StealthSenderService = mock()
+        val owed = RecordingOwedCopies()
 
         fun useCase() = SendMessageUseCase(
             keystoreManager = keystore,
@@ -92,7 +94,22 @@ class SendMessageUseCaseTest {
             sessionStateStore = sessions,
             serverMessageIds = ServerMessageIds(serverIds),
             mediaPreview = { "Photo" },
+            owedCopies = owed,
         )
+    }
+
+    /** What the send told the retry queue (TODO 155). */
+    private class RecordingOwedCopies : OwedCopies {
+        val owed = mutableListOf<Pair<String, List<String>>>()
+        val settled = mutableListOf<String>()
+
+        override suspend fun owed(messageId: String, recipient: String, sender: String, devices: List<String>) {
+            owed += recipient to devices
+        }
+
+        override suspend fun settled(messageId: String, recipient: String) {
+            settled += recipient
+        }
     }
 
     private suspend fun harness(
@@ -387,6 +404,56 @@ class SendMessageUseCaseTest {
 
         assertTrue(outcome is SendOutcome.Sent)
         assertEquals(1, sentMessageIds(h).size)
+    }
+
+    /**
+     * TODO 155: the device that refused is owed its copy — it alone; the one that took it is not.
+     *
+     * Mutation: owe every recipient target, or none — this reddens.
+     */
+    @Test
+    fun `a device that refused its copy is owed it, and only that device`() = runTest {
+        val h = harness()
+        whenever(
+            h.messaging.sendMessage(
+                messageId = any(),
+                senderId = any(),
+                recipientId = any(),
+                conversationId = any(),
+                encryptedPayload = any(),
+                timestampMs = any(),
+                contentType = any(),
+            ),
+        ).thenAnswer { invocation ->
+            val took = !(invocation.arguments[0] as String).contains(siblingDevice.take(16))
+            MessagingService.SendResult("ok", took, if (took) "" else "PERMISSION_DENIED", false, 0, "a")
+        }
+
+        val outcome = h.useCase()(peer, "hello")
+
+        assertTrue(outcome is SendOutcome.Sent)
+        assertEquals(listOf(peer to listOf(siblingDevice)), h.owed.owed)
+        assertTrue(h.owed.settled.isEmpty())
+    }
+
+    @Test
+    fun `a message every device took owes nothing`() = runTest {
+        val h = harness()
+
+        h.useCase()(peer, "hello")
+
+        assertTrue(h.owed.owed.isEmpty())
+        assertEquals(listOf(peer), h.owed.settled)
+    }
+
+    /** A send no device took is FAILED and retried whole by the user — not the queue's. */
+    @Test
+    fun `a failed send owes nothing to the queue`() = runTest {
+        val h = harness(accepted = false)
+
+        h.useCase()(peer, "hello")
+
+        assertTrue(h.owed.owed.isEmpty())
     }
 
     /**
