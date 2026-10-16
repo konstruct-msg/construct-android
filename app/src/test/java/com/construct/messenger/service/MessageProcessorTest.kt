@@ -37,7 +37,7 @@ class MessageProcessorTest {
     private class RecordingEffects : ProcessorEffects {
         val calls = mutableListOf<String>()
         var ackedInDb = false
-        override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray) {
+        override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray, envelopeSeconds: Long) {
             calls += "onDecrypted:$contactId:$messageId"
         }
         override suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray) { calls += "onCallSignal:$messageId" }

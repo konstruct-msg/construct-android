@@ -29,6 +29,9 @@ class KonstructApp : Application(), ImageLoaderFactory {
     lateinit var calls: com.construct.messenger.calls.CallManager
 
     @Inject
+    lateinit var readSync: com.construct.messenger.readsync.ReadSyncOutbox
+
+    @Inject
     lateinit var callTelecom: com.construct.messenger.calls.CallTelecom
 
     @Inject
@@ -56,7 +59,11 @@ class KonstructApp : Application(), ImageLoaderFactory {
         // than left on a frozen frame. iOS does the same on didEnterBackground.
         androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(object : androidx.lifecycle.DefaultLifecycleObserver {
             override fun onStart(owner: androidx.lifecycle.LifecycleOwner) = calls.setInBackground(false)
-            override fun onStop(owner: androidx.lifecycle.LifecycleOwner) = calls.setInBackground(true)
+            override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {
+                calls.setInBackground(true)
+                // What was read goes to our other devices now, not at the end of its window (TODO 153).
+                readSync.flushSoon()
+            }
         })
     }
 }
