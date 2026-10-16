@@ -206,6 +206,8 @@ object IncomingPlaintext {
         ContentType.CONTENT_TYPE_SESSION_READY_VALUE,
         // A `ProfileShare`, read where it is applied — never as a message's content.
         ContentType.CONTENT_TYPE_PROFILE_VALUE,
+        // Read markers, applied where they arrive (TODO 153) — never a bubble.
+        ContentType.CONTENT_TYPE_READ_SYNC_VALUE,
         -> true
         else -> false
     }

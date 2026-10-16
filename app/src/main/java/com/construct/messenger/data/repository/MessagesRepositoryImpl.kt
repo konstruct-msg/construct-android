@@ -51,6 +51,7 @@ class MessagesRepositoryImpl @Inject constructor(
     private val pickedFiles: com.construct.messenger.media.PickedFiles,
     private val reactions: ReactionStore,
     private val stickers: com.construct.messenger.stickers.StickerStore,
+    private val readSync: com.construct.messenger.readsync.ReadSyncOutbox,
 ) : MessagesRepository {
 
     override fun observeContact(contactId: String): Flow<List<Message>> {
@@ -214,6 +215,8 @@ class MessagesRepositoryImpl @Inject constructor(
             chats.setUnread(ConversationId.direct(myId, contactId), 0)
         }
         alerts.clear(contactId)
+        // Read here: the account's other devices learn it, batched (TODO 153).
+        readSync.noteRead(contactId)
     }
 
     override fun chatHidden(contactId: String) = presence.hidden(contactId)

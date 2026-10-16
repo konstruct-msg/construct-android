@@ -323,7 +323,8 @@ interface OrchestratorGateway {
 /** Outward side effects the processor delegates to the repository/session layer.
  * Semantics ported from iOS `SessionActionExecutor` + `MessageRouter` delegate. */
 interface ProcessorEffects {
-    suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray)
+    /** [envelopeSeconds]: the envelope's time, 0 when there is none. */
+    suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray, envelopeSeconds: Long = 0)
     suspend fun onSenderSync(contactId: String, messageId: String, plaintext: ByteArray, timestampMs: Long) = Unit
     suspend fun onCallSignal(contactId: String, messageId: String, protoBytes: ByteArray)
     suspend fun onControlFrame(contactId: String, messageId: String, contentType: Int, body: ByteArray)
@@ -384,6 +385,7 @@ internal suspend fun ProcessorEffects.deliverDecrypted(
     } else if (envelope?.contentType == ContentType.CONTENT_TYPE_SENDER_SYNC) {
         onSenderSync(contactId, action.messageId, action.plaintext, envelope.timestampMs)
     } else {
-        onDecrypted(contactId, action.messageId, action.plaintext)
+        // `IncomingMessage.timestampMs` is the envelope's field as sent: seconds (see MessagingRuntime).
+        onDecrypted(contactId, action.messageId, action.plaintext, envelope?.timestampMs ?: 0)
     }
 }

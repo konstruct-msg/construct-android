@@ -66,6 +66,8 @@ class ProcessorEffectsImplTest {
         val avatars = RecordingAvatars()
         val sessionManager = mock<SessionManager>()
         val sendReceipt = mock<com.construct.messenger.domain.usecase.SendReceiptUseCase>()
+        /** What read sync was told: markers (and from whom), and arrivals. */
+        val readState = RecordingReadState()
         val effects = ProcessorEffectsImpl(
             cryptoManager = mock<CryptoManager>(),
             keystoreManager = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(myId) },
@@ -91,7 +93,48 @@ class ProcessorEffectsImplTest {
             reactions = reactions,
             callSignals = callSignals,
             mediaArrivals = { kind, _ -> arrived += kind },
+            readState = readState,
         )
+    }
+
+    class RecordingReadState : com.construct.messenger.readsync.ReadState {
+        val markers = mutableListOf<Boolean>()
+        val arrivals = mutableListOf<com.construct.messenger.readsync.ReadSync.Boundary>()
+        var readAlready = false
+        override fun isRead(partner: String, message: com.construct.messenger.readsync.ReadSync.Boundary) = readAlready
+        override suspend fun arrived(partner: String, message: com.construct.messenger.readsync.ReadSync.Boundary, onScreen: Boolean) {
+            arrivals += message
+        }
+        override suspend fun markers(payload: ByteArray, fromOwnAccount: Boolean, myId: String) {
+            markers += fromOwnAccount
+        }
+    }
+
+    /**
+     * Read markers count as ours only when the device whose session opened them is one of this
+     * account's (TODO 153). Mutation: trust every sender — a contact's marker reads as ours.
+     */
+    @Test
+    fun `read markers are ours only from a device of this account`() = kotlinx.coroutines.test.runTest {
+        val inbox = Inbox(alerts, myId)
+        val sibling = "dev-own"
+        val theirs = "dev-peer"
+        wheneverBlocking { inbox.sessionManager.accountIdForDevice(sibling) }.thenReturn(myId)
+        wheneverBlocking { inbox.sessionManager.accountIdForDevice(theirs) }.thenReturn(peer)
+        inbox.effects.onControlFrame(sibling, "r1", ContentType.CONTENT_TYPE_READ_SYNC_VALUE, ByteArray(0))
+        inbox.effects.onControlFrame(theirs, "r2", ContentType.CONTENT_TYPE_READ_SYNC_VALUE, ByteArray(0))
+        inbox.effects.onControlFrame("dev-unknown", "r3", ContentType.CONTENT_TYPE_READ_SYNC_VALUE, ByteArray(0))
+        assertEquals(listOf(true, false, false), inbox.readState.markers)
+    }
+
+    /** A message read already on another device of ours arrives with no count and no alert (TODO 153). */
+    @Test
+    fun `a message read elsewhere arrives read, placed by its envelope time`() = kotlinx.coroutines.test.runTest {
+        val inbox = Inbox(alerts, myId)
+        inbox.readState.readAlready = true
+        inbox.effects.onDecrypted(peer, "m1", "hi".toByteArray(), envelopeSeconds = 1_700_000_000)
+        assertEquals(0, inbox.chats.get(com.construct.messenger.util.ConversationId.direct(myId, peer))!!.unreadCount)
+        assertEquals(1_700_000_000_000L, inbox.readState.arrivals.single().sentAtMs)
     }
 
     /**
