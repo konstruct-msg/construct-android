@@ -129,7 +129,7 @@ fun SettingsRoute(
  * **Canon:** iOS `SettingsView` (compact layout) — cards separated by space, no section headers,
  * uppercase row labels. Rows appear only for what Android actually has: a row that opens
  * nothing reads as broken. Transcription (TODO 116) is whisper.cpp on the device. Diagnostics is
- * the log half of iOS `DiagnosticsView`, in debug builds only.
+ * the log half of iOS `DiagnosticsView`, in debug and tester (`INTERNAL_TOOLS`) builds only.
  */
 @Composable
 fun SettingsScreen(

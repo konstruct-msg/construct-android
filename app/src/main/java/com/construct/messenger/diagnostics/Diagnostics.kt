@@ -20,7 +20,10 @@ object Diagnostics {
     var collector: LogCollector? = null
         private set
 
-    /** Logs are written in debug builds only; see [LogCollector]. */
+    /**
+     * Logs are written in debug builds and in builds handed to testers (`INTERNAL_TOOLS`, as on
+     * iOS), never in a public one; see [LogCollector]. A front's name is hidden in all but debug.
+     */
     val isEnabled: Boolean get() = collector?.enabled == true
 
     fun install(context: Context) {
@@ -30,7 +33,7 @@ object Diagnostics {
         val created = LogCollector(
             // Not backed up and not user-visible: a log is this device's, never a backup's.
             directory = File(context.noBackupFilesDir, "logs"),
-            enabled = BuildConfig.DEBUG,
+            enabled = BuildConfig.DEBUG || BuildConfig.INTERNAL_TOOLS,
             header = { deviceInfo() },
         )
         collector = created
