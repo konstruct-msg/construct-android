@@ -95,6 +95,7 @@ class TransportRouter @Inject constructor(
                 veil.stop()
             }
             Effect.RequestProxyStart -> beginProxyStart()
+            is Effect.DemoteRelay -> veil.demote(effect.relay)
             is Effect.ScheduleCooldownEnd -> {
                 cooldownJob?.cancel()
                 cooldownJob = scope.launch {

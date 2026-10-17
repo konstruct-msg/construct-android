@@ -33,14 +33,18 @@ object TransportRoute {
         MID_SESSION_UNKNOWN(true),
     }
 
-    enum class RpcFailure(val isTransport: Boolean, val isHardRelay: Boolean) {
+    /**
+     * [blamesFront]: when this failure rotates the proxy, the fault is the front's, and the
+     * rotation demotes it. A stale local proxy is ours — the next start may take the same front.
+     */
+    enum class RpcFailure(val isTransport: Boolean, val isHardRelay: Boolean, val blamesFront: Boolean = isTransport) {
         TRANSIENT_CANCELLATION(false, false),
         AUTH_REJECTED(false, false),
         APPLICATION_ERROR(false, false),
         TLS_FINGERPRINT_BLOCKED(true, true),
         TLS_CERT_EXPIRED(true, true),
         WEB_TUNNEL_BLOCKED(true, true),
-        STALE_LOCAL_PROXY(true, true),
+        STALE_LOCAL_PROXY(true, true, blamesFront = false),
         STREAM_TIMEOUT(true, false),
         TRANSPORT_UNKNOWN(true, false),
     }
@@ -90,6 +94,11 @@ object TransportRoute {
         /** Start the proxy and answer with [Event.ProxyStarted] or [Event.ProxyStartFailed]. */
         data object RequestProxyStart : Effect
         data object RequestProxyStop : Effect
+        /**
+         * The rotation that follows is this front's fault: count a failure against it before the
+         * next start, or the start, which orders fronts by failures, dials it again.
+         */
+        data class DemoteRelay(val relay: String) : Effect
         /** Post [Event.CooldownElapsed] at this time. */
         data class ScheduleCooldownEnd(val atMs: Long) : Effect
     }
@@ -238,9 +247,11 @@ object TransportRoute {
         event is Event.RpcFailed && event.foreground && event.via is Target.Veil && event.failure.isTransport -> {
             // Hard: the relay is observably broken, rotate. Soft: the tunnel may live; reconnect —
             // until the same lane has failed softly [Config.veilSoftFailThreshold] times in a row.
+            // Either rotation the front caused demotes it first (construct-protos #22).
             val fails = state.softFails[event.lane] + 1
-            if (event.failure.isHardRelay || fails >= config.veilSoftFailThreshold) Outcome(State.VeilProbing, ROTATE)
-            else Outcome(state.copy(softFails = state.softFails.with(event.lane, fails)), listOf(Effect.InvalidateGrpcClient))
+            if (event.failure.isHardRelay || fails >= config.veilSoftFailThreshold) {
+                Outcome(State.VeilProbing, if (event.failure.blamesFront) listOf(Effect.DemoteRelay(state.relay)) + ROTATE else ROTATE)
+            } else Outcome(state.copy(softFails = state.softFails.with(event.lane, fails)), listOf(Effect.InvalidateGrpcClient))
         }
         // A call through the tunnel answered: that lane works.
         event is Event.RpcSucceeded && event.via is Target.Veil && state.softFails[event.lane] != 0 ->

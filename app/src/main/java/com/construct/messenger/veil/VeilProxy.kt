@@ -172,6 +172,14 @@ class VeilProxy @Inject constructor(
         provisioner.topUpFloorIfNeeded(excluding = failingAddresses())
     }
 
+    /**
+     * The route is leaving this front for its own fault: count it as a failed dial, so the next
+     * [start] tries the others first. A later successful dial of it forgives it, as any failure is.
+     */
+    fun demote(address: String) {
+        failures.merge(address, 1, Int::plus)
+    }
+
     /** Network path changed: old failures say nothing about the new path — start the counts over. */
     fun onNetworkChanged() = failures.clear()
 
