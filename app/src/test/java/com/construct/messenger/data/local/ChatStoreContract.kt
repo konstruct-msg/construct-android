@@ -156,6 +156,20 @@ class CoreChatStoreTest : ChatStoreContract() {
         assertEquals(mapOf(peer to 2, other to 1), store.observeActivity().first().associate { it.contactId to it.messages })
     }
 
+    /** A message written while the activity is watched is counted. Mutation: `watch(MESSAGES) { }` — reddens. */
+    @Test
+    fun activityFollowsALaterMessage() = runTest {
+        val peer = "0b6e9f6a-3c1d-4f7e-9a2b-5d8c7e6f1a2b"
+        val messages = CoreMessageStore(feed, myUserId = { "me" })
+        contacts.ensure(peer)
+        store.ensure("chat-a", peer)
+        val seen = nextValues(store.observeActivity())
+        assertEquals(0, seen.next().single().messages)
+        messages.insert(MessageRecord("chat-a-0", "chat-a", "m", isSentByMe = true, timestampMs = 1, deliveryStatus = DeliveryStatus.SENT))
+        assertEquals(1, seen.next().single().messages)
+        seen.close()
+    }
+
     @After
     fun close() = core.close()
 }

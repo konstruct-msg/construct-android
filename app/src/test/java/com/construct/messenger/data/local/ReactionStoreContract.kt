@@ -81,6 +81,21 @@ abstract class ReactionStoreContract {
         assertEquals(listOf("a", "b"), store.observeChat(chat).first().map { it.emoji })
     }
 
+    /**
+     * An open chat sees a reaction put after it started watching — not only on reopening.
+     * Mutation: on the core, watch the tables through `watch(table) { }` again — reddens.
+     */
+    @Test
+    fun anOpenChatSeesALaterReaction() = runTest {
+        val seen = nextValues(store.observeChat(chat))
+        assertTrue(seen.next().isEmpty())
+        store.put(reaction(m1, emoji = "👍"))
+        assertEquals(listOf("👍"), seen.next().map { it.emoji })
+        store.put(reaction(m1, emoji = "🔥", at = 20))
+        assertEquals(listOf("🔥"), seen.next().map { it.emoji })
+        seen.close()
+    }
+
     /** An orphan waits for its message, and shows once the message is here. */
     @Test
     fun anOrphanShowsWhenItsMessageArrives() = runTest {

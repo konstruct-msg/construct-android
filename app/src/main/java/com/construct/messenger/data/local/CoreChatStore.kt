@@ -4,6 +4,7 @@ import com.construct.messenger.data.model.ChatActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import uniffi.construct_core.LocalChat
@@ -30,9 +31,9 @@ class CoreChatStore(private val feed: LocalStoreFeed) : ChatStore {
     override fun observeAll(): Flow<List<ChatRecord>> = feed.watch(LocalStoreTable.CHATS) { s -> s.chats().map { it.record() } }
 
     override fun observeActivity(): Flow<List<ChatActivity>> =
-        combine(feed.watch(LocalStoreTable.CHATS) { it.chats() }, feed.watch(LocalStoreTable.MESSAGES) { }) { chats, _ ->
+        combine(feed.watch(LocalStoreTable.CHATS) { it.chats() }, feed.changes(LocalStoreTable.MESSAGES)) { chats, _ ->
             chats.map { c -> ChatActivity(c.peerId, store.chatMessageCount(c.id).toInt(), c.lastMessageTime, c.unreadCount) }
-        }.flowOn(Dispatchers.IO)
+        }.distinctUntilChanged().flowOn(Dispatchers.IO)
 
     override suspend fun get(id: String): ChatRecord? = io { it.chat(id)?.record() }
 

@@ -3,6 +3,7 @@ package com.construct.messenger.data.local
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import uniffi.construct_core.LocalReaction
@@ -25,12 +26,12 @@ class CoreReactionStore(private val feed: LocalStoreFeed) : ReactionStore {
 
     // A message arriving makes its waiting reactions visible, so both tables are watched.
     override fun observeChat(chatId: String): Flow<List<ReactionRecord>> =
-        combine(feed.watch(LocalStoreTable.REACTIONS) { }, feed.watch(LocalStoreTable.MESSAGES) { }) { _, _ ->
+        combine(feed.changes(LocalStoreTable.REACTIONS), feed.changes(LocalStoreTable.MESSAGES)) { _, _ ->
             // The core lists them by message, then time; the badges line up by time alone.
             store.reactionsInChat(chatId)
                 .sortedBy { it.timestampMs }
                 .map { it.record() }
-        }.flowOn(Dispatchers.IO)
+        }.distinctUntilChanged().flowOn(Dispatchers.IO)
 
     override suspend fun get(targetMessageId: String, reactorUserId: String): ReactionRecord? = io { s ->
         s.reactions(targetMessageId).firstOrNull { it.reactorUserId == reactorUserId }?.record()

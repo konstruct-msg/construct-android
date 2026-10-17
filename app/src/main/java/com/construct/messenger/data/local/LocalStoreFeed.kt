@@ -37,6 +37,17 @@ class LocalStoreFeed(val store: LocalStore) : LocalStoreObserver {
         changes.tryEmit(change)
     }
 
+    /**
+     * Once now, and again after every change to [table] — for a watcher whose query reads more
+     * than that table. Not [watch] with an empty query: its answers are all `Unit`, all equal, and
+     * every one after the first is dropped as a repeat (reactions showed only on reopening a chat).
+     */
+    fun changes(table: LocalStoreTable): Flow<Unit> =
+        changes
+            .onSubscription { emit(LocalStoreChange(table, emptyList())) }
+            .filter { it.table == table }
+            .map { }
+
     /** [query] now, and again after every change to [table]; equal answers are not repeated. */
     fun <T> watch(table: LocalStoreTable, query: (LocalStore) -> T): Flow<T> =
         changes
