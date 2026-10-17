@@ -3,6 +3,8 @@ package com.construct.messenger.veil
 import android.content.Context
 import com.construct.messenger.data.auth.AuthSessionManager
 import com.construct.messenger.diagnostics.Log
+import com.construct.messenger.transport.TransportEvents
+import com.construct.messenger.transport.TransportRoute
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
@@ -36,6 +38,7 @@ class VeilProxy @Inject constructor(
     private val fronts: VeilFrontStore,
     private val provisioner: VeilFrontProvisioner,
     private val modes: VeilModeStore,
+    private val events: TransportEvents,
 ) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     val modeState: StateFlow<VeilMode> get() = modes.state
@@ -43,7 +46,17 @@ class VeilProxy @Inject constructor(
     val startInfo: StateFlow<VeilStartInfo> = info.asStateFlow()
 
     /** Native-TLS veil-front dialer (Conscrypt). Used only when [nativeTlsEnabled]; off by default. */
-    private val externalDialer = VeilFrontExternalDialer()
+    private val externalDialer = VeilFrontExternalDialer(onListenerLost = { port, relay ->
+        // The same verdict a refused loopback connection gets: the proxy is gone, replace it.
+        events.post(
+            TransportRoute.Event.RpcFailed(
+                TransportRoute.RpcFailure.STALE_LOCAL_PROXY, TransportRoute.Target.Veil(port, relay), foreground = true,
+            ),
+        )
+    })
+
+    /** Which tunnel is up: the Conscrypt listener or the rustls coordinator. They answer liveness differently. */
+    @Volatile private var nativeUp = false
 
     /**
      * In-session consecutive-failure count per front address, so [start] dials a blocked front last
@@ -131,12 +144,14 @@ class VeilProxy @Inject constructor(
                 externalDialer.start(relay, bearer, keyBound?.capabilityB64.orEmpty(), keyBound?.veilSkHex.orEmpty())
             }
             if (nativePort != null) {
+                nativeUp = true
                 info.value = VeilStartInfo(relay.address, VeilMethod.VEIL_FRONT, latencyMs = null, lastError = null)
                 Log.i(TAG, "VEIL up: ${relay.address} via VEIL_FRONT (native Conscrypt), local :$nativePort, key-bound ${keyBound != null}")
                 return StartResult.Up(relay.address, nativePort)
             }
             Log.w(TAG, "native Conscrypt veil-front unavailable for ${relay.address}; falling back to rustls")
         }
+        nativeUp = false
         val outcome = withContext(Dispatchers.IO) { startNative(relay, bearer, keyBound) }
         if (outcome.port <= 0) return StartResult.Failed(relay.address, outcome.error ?: "veil_start failed")
         info.value = VeilStartInfo(relay.address, outcome.method, outcome.latencyMs, lastError = null)
@@ -181,12 +196,20 @@ class VeilProxy @Inject constructor(
     }
 
     fun stop() {
+        nativeUp = false
         runCatching { externalDialer.stop() } // closes the native listener + live Conscrypt sessions
         runCatching { VeilLib.INSTANCE.veil_stop() }
         info.update { it.copy(relay = null, method = null, latencyMs = null) }
     }
 
-    fun isAlive(): Boolean = runCatching { VeilLib.INSTANCE.veil_is_alive() != 0 }.getOrDefault(false)
+    /**
+     * Whether the tunnel gRPC points at still lives. `veil_is_alive` asks the rustls coordinator,
+     * which the Conscrypt path never starts — asked alone it said "dead" for every stall over a
+     * healthy native tunnel, and each one was replaced as a hard failure.
+     */
+    fun isAlive(): Boolean = tunnelAlive(nativeUp, externalDialer.isListening) {
+        runCatching { VeilLib.INSTANCE.veil_is_alive() != 0 }.getOrDefault(false)
+    }
 
     private fun failed(relay: VeilRelay?, reason: String): StartResult {
         Log.e(TAG, "VEIL start via ${relay?.address ?: "no front"} failed: $reason")
@@ -241,3 +264,6 @@ class VeilProxy @Inject constructor(
         private const val MAX_DIAL_ATTEMPTS = 3
     }
 }
+
+internal fun tunnelAlive(nativeUp: Boolean, nativeListening: Boolean, coordinatorAlive: () -> Boolean): Boolean =
+    if (nativeUp) nativeListening else coordinatorAlive()

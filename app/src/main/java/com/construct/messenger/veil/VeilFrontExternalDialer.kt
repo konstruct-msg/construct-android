@@ -38,10 +38,21 @@ import org.conscrypt.Conscrypt
  * [start] returns null. A [start] that binds but whose relay is unreachable/mispinned is caught by
  * the one up-front validation dial, so fallback stays clean.
  */
-class VeilFrontExternalDialer {
+class VeilFrontExternalDialer(
+    /**
+     * The listener died while nobody stopped it — its port, its relay. Without this the route goes
+     * on pointing gRPC at a port nothing accepts on, and finds out only when the stream has been
+     * silent for a minute (seen on a tester's device, 2026-10-16: `accept ended: EBADF`, 82 s).
+     */
+    private val onListenerLost: (port: Int, relay: String) -> Unit = { _, _ -> },
+) {
 
     @Volatile private var listenFd: FileDescriptor? = null
     @Volatile private var running = false
+    @Volatile private var listenPort = 0
+
+    /** Whether the local listener still accepts. The rustls coordinator knows nothing of it. */
+    val isListening: Boolean get() = running
     private val sessions = Collections.synchronizedSet(mutableSetOf<Session>())
 
     // AUTH material + relay for the accept loop; set by start().
@@ -80,8 +91,9 @@ class VeilFrontExternalDialer {
         }
         val port = (Os.getsockname(fd) as InetSocketAddress).port
         listenFd = fd
+        listenPort = port
         running = true
-        thread(name = "veil-front-accept", isDaemon = true) { acceptLoop(fd) }
+        thread(name = "veil-front-accept", isDaemon = true) { acceptLoop(fd, port, relay.address) }
         Log.i(TAG, "native veil-front up (Conscrypt), local :$port")
         return port
     }
@@ -95,21 +107,26 @@ class VeilFrontExternalDialer {
         relay = null
     }
 
-    private fun acceptLoop(fd: FileDescriptor) {
-        while (running) {
-            val client = try {
-                Os.accept(fd, null)
-            } catch (e: Exception) {
-                if (running) Log.w(TAG, "accept ended: ${e.message}")
-                break
-            }
-            val r = relay
-            if (r == null) {
-                runCatching { Os.close(client) }
-                break
-            }
-            thread(name = "veil-front-conn", isDaemon = true) { handleConnection(client, r) }
-        }
+    private fun acceptLoop(fd: FileDescriptor, port: Int, relayAddress: String) {
+        runAcceptLoop(
+            isRunning = { running && listenPort == port },
+            accept = { Os.accept(fd, null) },
+            handle = { client ->
+                val r = relay
+                if (r == null) {
+                    runCatching { Os.close(client) }
+                    false
+                } else {
+                    thread(name = "veil-front-conn", isDaemon = true) { handleConnection(client, r) }
+                    true
+                }
+            },
+            onLost = { e ->
+                Log.w(TAG, "accept ended: ${e.message} — listener :$port lost")
+                running = false
+                onListenerLost(port, relayAddress)
+            },
+        )
     }
 
     /** One accepted local gRPC connection → one fresh Conscrypt relay session → one Rust ferry. */
@@ -245,5 +262,26 @@ class VeilFrontExternalDialer {
         const val EXPORTER_LEN = 32
         const val CONNECT_TIMEOUT_MS = 10_000
         const val BUF = 16384
+    }
+}
+
+/**
+ * Accept until [handle] says stop or [accept] throws. A throw while [isRunning] is the listener
+ * dying under us, not a stop — [onLost] says so, once. After `stop()` the throw is the close it did.
+ */
+internal fun runAcceptLoop(
+    isRunning: () -> Boolean,
+    accept: () -> FileDescriptor,
+    handle: (FileDescriptor) -> Boolean,
+    onLost: (Exception) -> Unit,
+) {
+    while (isRunning()) {
+        val client = try {
+            accept()
+        } catch (e: Exception) {
+            if (isRunning()) onLost(e)
+            return
+        }
+        if (!handle(client)) return
     }
 }
