@@ -118,6 +118,7 @@ class TransportRouteVectorsTest {
             "set_veil_port" -> Effect.SetVeilPort(if (o.isNull("port")) null else o.getInt("port"))
             "request_proxy_start" -> Effect.RequestProxyStart
             "request_proxy_stop" -> Effect.RequestProxyStop
+            "demote_relay" -> Effect.DemoteRelay(o.getString("relay"))
             "schedule_cooldown_end" -> Effect.ScheduleCooldownEnd(o.getLong("at_ms"))
             else -> error("unknown effect ${o.getString("kind")}")
         }
