@@ -61,6 +61,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.PopupProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -582,7 +583,15 @@ fun ChatScreen(
             },
             attachMenu = {
                 // iOS `MediaPickerSheet` has Gallery and Files tabs; here the two are a menu.
-                DropdownMenu(expanded = attachMenuOpen, onDismissRequest = { attachMenuOpen = false }) {
+                // Not focusable: a focusable popup takes focus from the field, the keyboard closes,
+                // the screen resizes under the menu and it jumps — then the keyboard comes back on
+                // dismiss (a tester's video, 0.23.x). So it does not catch Back either; this does.
+                androidx.activity.compose.BackHandler(enabled = attachMenuOpen) { attachMenuOpen = false }
+                DropdownMenu(
+                    expanded = attachMenuOpen,
+                    onDismissRequest = { attachMenuOpen = false },
+                    properties = PopupProperties(focusable = false),
+                ) {
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.attach_photo_video), style = CTFont.ui(14), color = CTColor.text) },
                         leadingIcon = { Icon(Icons.Filled.Image, null, tint = CTColor.text) },
