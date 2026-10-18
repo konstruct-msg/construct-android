@@ -9,12 +9,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.withContext
 
 /** What the last start did, for the Network screen. Which path is in use is the router's state. */
 data class VeilStartInfo(
@@ -93,7 +91,11 @@ class VeilProxy @Inject constructor(
      * Capability, then `veil_start` (which runs the probe race and blocks for it). Does not route
      * anything: the router points gRPC at the port when it adopts the result.
      */
-    suspend fun start(): StartResult {
+    suspend fun start(): StartResult = serialStarts.run { startNow() }
+
+    private val serialStarts = SerialStart(::stop)
+
+    private suspend fun startNow(): StartResult {
         // No front is bundled (`VeilFrontStore`). With none learned, ask the server over the path
         // that works now; failing that there is nothing to dial, said plainly rather than thrown.
         var candidates = VeilFrontPool.order(fronts.all(), failures)
@@ -140,9 +142,9 @@ class VeilProxy @Inject constructor(
         // Opt-in native-TLS path: Conscrypt terminates TLS to the relay (genuine Android hello),
         // Rust runs the post-TLS ferry. Falls back to rustls (below) if the dial/pin/bind fails.
         if (nativeTlsEnabled()) {
-            val nativePort = withContext(Dispatchers.IO) {
+            val nativePort = dialKeepingResult({
                 externalDialer.start(relay, bearer, keyBound?.capabilityB64.orEmpty(), keyBound?.veilSkHex.orEmpty())
-            }
+            }) { externalDialer.stop() }
             if (nativePort != null) {
                 nativeUp = true
                 info.value = VeilStartInfo(relay.address, VeilMethod.VEIL_FRONT, latencyMs = null, lastError = null)
@@ -152,7 +154,9 @@ class VeilProxy @Inject constructor(
             Log.w(TAG, "native Conscrypt veil-front unavailable for ${relay.address}; falling back to rustls")
         }
         nativeUp = false
-        val outcome = withContext(Dispatchers.IO) { startNative(relay, bearer, keyBound) }
+        val outcome = dialKeepingResult({ startNative(relay, bearer, keyBound) }) { o ->
+            if (o.port > 0) runCatching { VeilLib.INSTANCE.veil_stop() }
+        }!!
         if (outcome.port <= 0) return StartResult.Failed(relay.address, outcome.error ?: "veil_start failed")
         info.value = VeilStartInfo(relay.address, outcome.method, outcome.latencyMs, lastError = null)
         Log.i(TAG, "VEIL up: ${relay.address} via ${outcome.method} in ${outcome.latencyMs}ms, local :${outcome.port}, key-bound ${keyBound != null}")

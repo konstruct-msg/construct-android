@@ -30,7 +30,7 @@ import kotlinx.coroutines.sync.withLock
  * Owns the route: feeds [TransportRoute] what the wire shows and applies what it answers — the
  * proxy up or down, gRPC pointed at a port or the server, a fresh client, the end of a cooldown.
  * **Canon:** iOS `TransportRouter` (actor): serial `send`, the proxy start off the lock so the
- * machine keeps answering during a probe, and a generation so a superseded start is torn down.
+ * machine keeps answering during a probe, and a generation so a superseded start is not adopted.
  */
 @Singleton
 class TransportRouter @Inject constructor(
@@ -113,10 +113,10 @@ class TransportRouter @Inject constructor(
         startJob = scope.launch {
             val result = veil.start()
             val current = mutex.withLock { mine == generation }
-            if (!current) {
-                if (result is VeilProxy.StartResult.Up) veil.stop()
-                return@launch
-            }
+            // Superseded: dropped, not stopped. What superseded it took the tunnel down already
+            // (RequestProxyStop) or will as it starts (VeilProxy starts replace what is up); a
+            // stop from here reached whichever tunnel was current by then — the newer one too.
+            if (!current) return@launch
             send(
                 when (result) {
                     is VeilProxy.StartResult.Up -> Event.ProxyStarted(result.relay, result.port, restarted = true)
