@@ -4,6 +4,10 @@ import com.construct.messenger.util.ServerMessageOrder
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.data.api.MessageStreamService
 import com.construct.messenger.data.api.MessageStreamService.StreamEvent
+import com.construct.messenger.data.api.StreamCursorTracker
+import com.construct.messenger.crypto.CryptoManager
+import com.construct.messenger.data.local.KeystoreManager
+import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.construct.messenger.stealth.OwnDeviceCopy
 import com.construct.messenger.stealth.StealthSenderService
 import javax.inject.Inject
@@ -29,8 +33,8 @@ import uniffi.construct_core.SenderCertificate
  *     reconnect/cursor overlap; at-least-once + dedup is the contract).
  *  2. **Sealed-sender resolution**: envelopes with `sealed_sender` arrive with
  *     no sender and an empty outer payload; identity + real content type +
- *     E2EE payload come from [StealthSenderService.resolveSender]. Unresolvable
- *     sealed messages are dropped with a log — non-fatal by design (same as iOS).
+ *     E2EE payload come from [StealthSenderService.resolveSender]. One that does not
+ *     open gets one redelivery, then the cursor goes past it ([UnopenedSealed]).
  *  3. **Classification** by content type: control frames (session lifecycle)
  *     are separated from user-visible messages so consumers never try to
  *     decrypt control payloads.
@@ -47,6 +51,10 @@ class MessageRouter @Inject constructor(
     private val stream: MessageStreamService,
     private val stealthSender: StealthSenderService,
     private val orderBook: ServerOrderBook,
+    private val cursorTracker: StreamCursorTracker,
+    private val cryptoManager: CryptoManager,
+    private val keystoreManager: KeystoreManager,
+    private val peerDevices: PeerDeviceRegistry,
 ) {
 
     sealed interface RoutedEvent {
@@ -94,6 +102,11 @@ class MessageRouter @Inject constructor(
         override fun removeEldestEntry(eldest: Map.Entry<String, Unit>) = size > DEDUP_WINDOW
     }
 
+    /** Sealed messages already given their one redelivery. Confined like [seenMessageIds]. */
+    private val unsealDeferred = object : LinkedHashMap<String, Unit>(DEDUP_WINDOW, 0.75f, false) {
+        override fun removeEldestEntry(eldest: Map.Entry<String, Unit>) = size > DEDUP_WINDOW
+    }
+
     private var routeJob: Job? = null
 
     /** Starts routing (idempotent). Call alongside [MessageStreamService.start]. */
@@ -126,7 +139,19 @@ class MessageRouter @Inject constructor(
         }
         orderBook.remember(messageId, orderKey)
 
-        val incoming = normalize(envelope) ?: return
+        if (envelope.hasSealedSender()) {
+            val inner = envelope.sealedSender.sealedInner.toByteArray()
+            UnopenedSealed.otherDeviceAddressed(inner, cryptoManager.currentDeviceId())?.let { target ->
+                // Not a failure: a copy sealed to another device can never open here, and trying costs.
+                Log.d(TAG, "sealed message ${messageId.take(8)}… is for ${target.take(8)}… — not ours to open")
+                settle(messageId, StreamCursorTracker.Outcome.Durable)
+                return
+            }
+        }
+        val incoming = normalize(envelope) ?: run {
+            if (envelope.hasSealedSender()) unopened(messageId, envelope.sealedSender.sealedInner.toByteArray())
+            return
+        }
         val event = if (incoming.contentType.isControl()) {
             RoutedEvent.Control(incoming)
         } else {
@@ -137,6 +162,44 @@ class MessageRouter @Inject constructor(
 
     private suspend fun normalize(envelope: Envelope): IncomingMessage? =
         normalizeEnvelope(envelope) { stealthSender.resolveSender(it) }
+
+    private suspend fun unopened(messageId: String, inner: ByteArray) {
+        val unnamed = UnopenedSealed.namesNoRecipientDevice(inner)
+        val alreadyDeferred = messageId in unsealDeferred
+        when (UnopenedSealed.disposition(unnamed, ownDeviceCount(), alreadyDeferred)) {
+            UnopenedSealed.Disposition.DeferOnce -> {
+                Log.w(TAG, "sealed message ${messageId.take(8)}… does not open — held for one redelivery")
+                unsealDeferred[messageId] = Unit
+                settle(messageId, StreamCursorTracker.Outcome.Deferred)
+            }
+            UnopenedSealed.Disposition.Drop -> {
+                if (alreadyDeferred) {
+                    Log.w(TAG, "sealed message ${messageId.take(8)}… does not open again — dropped, cursor moves past")
+                } else {
+                    Log.i(TAG, "sealed message ${messageId.take(8)}… names no device and does not open here — a sibling's copy, dropped")
+                }
+                settle(messageId, StreamCursorTracker.Outcome.Durable)
+            }
+        }
+    }
+
+    /**
+     * Report a sealed message that goes no further, and forget it from the dedup window: the
+     * redelivery a deferral waits for must reach [unopened] again, and so must one of a dropped
+     * message the cursor could not yet pass — the dedup would otherwise swallow it unreported and
+     * hold the cursor there.
+     */
+    private fun settle(messageId: String, outcome: StreamCursorTracker.Outcome) {
+        seenMessageIds.remove(messageId)
+        cursorTracker.report(messageId, outcome)
+    }
+
+    /** This account's devices this one knows of, itself included. */
+    private suspend fun ownDeviceCount(): Int {
+        val myId = keystoreManager.getUserId() ?: return 1
+        val known = runCatching { peerDevices.knownDevices(myId).map { it.deviceId } }.getOrDefault(emptyList())
+        return (known + listOfNotNull(cryptoManager.currentDeviceId())).toSet().size
+    }
 
     private companion object {
         const val TAG = "MessageRouter"
@@ -178,10 +241,7 @@ internal suspend fun normalizeEnvelope(
 ): MessageRouter.IncomingMessage? {
     if (envelope.hasSealedSender()) {
         val inner = envelope.sealedSender.sealedInner.toByteArray()
-        val resolved = resolveSealed(inner) ?: run {
-            Log.w("MessageRouter", "sealed message ${envelope.messageId.take(8)}… unresolvable — dropped")
-            return null
-        }
+        val resolved = resolveSealed(inner) ?: return null
         return MessageRouter.IncomingMessage(
             messageId = envelope.messageId,
             senderId = resolved.senderId,

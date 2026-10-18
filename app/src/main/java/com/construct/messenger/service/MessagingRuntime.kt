@@ -85,6 +85,7 @@ class MessagingRuntime @Inject constructor(
     private val contactAvatars: ContactAvatars,
     // Lazy: the profile is sent through the send path, which reaches back into the runtime.
     private val shareProfile: dagger.Lazy<com.construct.messenger.domain.usecase.ShareProfileUseCase>,
+    private val blockSync: com.construct.messenger.data.repository.BlockSyncService,
     private val mailboxGap: com.construct.messenger.data.repository.MailboxGapNotice,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -341,6 +342,8 @@ class MessagingRuntime @Inject constructor(
                 .onFailure { Log.w(TAG, "SPK rotation failed", it) }
             // The own device set is known from here on; it is what invalidates the description.
             deviceMetadata.publishIfNeeded()
+            // After login or a restored session: what did not reach the server, then its list (TODO 170).
+            blockSync.sync()
         }
     }
 

@@ -9,13 +9,12 @@ import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.ChatStore
 import com.construct.messenger.data.local.MessageStore
 import com.construct.messenger.data.local.ContactStore
+import com.construct.messenger.data.repository.BlockSyncService
 import com.construct.messenger.util.ConversationId
 import javax.inject.Inject
 import javax.inject.Singleton
 import shared.proto.sentinel.v1.SentinelServiceOuterClass.ReportSpamRequest
 import shared.proto.sentinel.v1.SentinelServiceOuterClass.SpamCategory
-import shared.proto.services.v1.UserServiceOuterClass.BlockUserRequest
-import shared.proto.services.v1.UserServiceOuterClass.UnblockUserRequest
 import uniffi.construct_core.CfeSecureStoreSlot
 
 /**
@@ -32,6 +31,7 @@ class ContactActionsUseCase @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val sessionStateStore: SessionStateStore,
     private val grpcClient: GrpcClient,
+    private val blockSync: BlockSyncService,
 ) {
     /**
      * Remove the contact, its chat and its messages from this device, and forget every session
@@ -92,22 +92,12 @@ class ContactActionsUseCase @Inject constructor(
 
     /**
      * Block or unblock. The local flag stands whatever the server says: it is what this device
-     * shows, and the server row is what refuses delivery — a failed sync is logged, not undone.
+     * shows. The server row is what refuses a call, so the wish is queued and resent until the
+     * server answers it ([BlockSyncService], TODO 170).
      */
-    suspend fun setBlocked(userId: String, blocked: Boolean) {
+    suspend fun setBlocked(userId: String, blocked: Boolean, reason: String? = null) {
         contacts.setBlocked(userId, blocked)
-        val myId = keystoreManager.getUserId().orEmpty()
-        runCatching {
-            if (blocked) {
-                grpcClient.user.blockUser(
-                    BlockUserRequest.newBuilder().setBlockerUserId(myId).setUserId(userId).build(),
-                ).success
-            } else {
-                grpcClient.user.unblockUser(
-                    UnblockUserRequest.newBuilder().setBlockerUserId(myId).setUserId(userId).build(),
-                ).success
-            }
-        }.onFailure { Log.w(TAG, "block sync (${if (blocked) "block" else "unblock"}) failed", it) }
+        blockSync.request(userId, blocked, reason)
     }
 
     /**
@@ -128,7 +118,7 @@ class ContactActionsUseCase @Inject constructor(
             }.onSuccess { accepted = accepted || it }
                 .onFailure { Log.w(TAG, "report ${device.take(8)}… failed", it) }
         }
-        setBlocked(userId, blocked = true)
+        setBlocked(userId, blocked = true, reason = "spam")
         return accepted
     }
 
