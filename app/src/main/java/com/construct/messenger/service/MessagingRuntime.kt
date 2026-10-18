@@ -86,6 +86,7 @@ class MessagingRuntime @Inject constructor(
     // Lazy: the profile is sent through the send path, which reaches back into the runtime.
     private val shareProfile: dagger.Lazy<com.construct.messenger.domain.usecase.ShareProfileUseCase>,
     private val blockSync: com.construct.messenger.data.repository.BlockSyncService,
+    private val mailboxGap: com.construct.messenger.data.repository.MailboxGapNotice,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val reorder = ReorderDiagnostics(cryptoManager::reorderStats)
@@ -213,6 +214,8 @@ class MessagingRuntime @Inject constructor(
             // same cursor re-delivers these entries and advances over them properly.
             // Canon: iOS BackgroundFetchManager.
             val response = messagingService.getPendingMessages(sinceCursor = cursorTracker.committedCursor())
+            // Told to the person, not refetched: what was trimmed is gone (TODO 79).
+            mailboxGap.record(com.construct.messenger.data.repository.MailboxGap.of(response))
             response.messagesList.forEachIndexed { index, pending ->
                 // No message number on a page: its timestamp is the server's receive time (seconds),
                 // and the page is in mailbox order — the index breaks a tie (iOS `getPendingMessages`).

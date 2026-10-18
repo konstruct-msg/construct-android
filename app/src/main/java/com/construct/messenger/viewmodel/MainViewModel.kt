@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.model.ChatSummary
 import com.construct.messenger.data.repository.ChatsRepository
 import com.construct.messenger.data.repository.ConnectionRepository
+import com.construct.messenger.data.repository.MailboxGap
+import com.construct.messenger.data.repository.MailboxGapNotice
 import com.construct.messenger.domain.usecase.ContactActionsUseCase
 import com.construct.messenger.ui.components.ConnectionStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,7 +28,19 @@ class MainViewModel @Inject constructor(
     private val chatsRepository: ChatsRepository,
     connectionRepository: ConnectionRepository,
     private val contactActions: ContactActionsUseCase,
+    private val mailboxGapNotice: MailboxGapNotice,
 ) : ViewModel() {
+    /** Messages the server trimmed before this device collected them (TODO 79); null when none. */
+    val mailboxGap: StateFlow<MailboxGap.Interval?> = mailboxGapNotice.interval
+
+    init {
+        viewModelScope.launch { mailboxGapNotice.load() }
+    }
+
+    fun dismissMailboxGap() {
+        viewModelScope.launch { mailboxGapNotice.dismiss() }
+    }
+
     val uiState: StateFlow<MainUiState> = combine(chatsRepository.chats, connectionRepository.status) { chats, connection ->
             MainUiState(
                 chats = chats,

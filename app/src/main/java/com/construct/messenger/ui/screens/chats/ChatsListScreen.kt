@@ -90,6 +90,7 @@ fun ChatsListScreen(
     recoveryViewModel: com.construct.messenger.recovery.RecoveryViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val mailboxGap by viewModel.mailboxGap.collectAsStateWithLifecycle()
     val recovery by recoveryViewModel.uiState.collectAsStateWithLifecycle()
     // Each time the tab is shown: a key copied behind the reminder takes it away.
     LaunchedEffect(Unit) { recoveryViewModel.refresh() }
@@ -142,6 +143,15 @@ fun ChatsListScreen(
             onQueryChange = { query = it },
             modifier = Modifier.padding(horizontal = CTLayout.edgePad).padding(top = CTSpace.xs, bottom = CTSpace.s),
         )
+
+        // Messages the server trimmed before this device collected them (TODO 79).
+        mailboxGap?.let { gap ->
+            com.construct.messenger.ui.components.MailboxGapRow(
+                interval = gap,
+                onDismiss = viewModel::dismissMailboxGap,
+                modifier = Modifier.padding(horizontal = CTLayout.edgePad).padding(bottom = CTSpace.s),
+            )
+        }
 
         // A key lost with the screen lock has nothing left to copy; Settings states that.
         if (recovery.needsBackup && recovery.held != com.construct.messenger.recovery.HeldPhrase.LOST && !nudgeDismissed) {

@@ -666,6 +666,10 @@
     <!-- The quiet reminder above the chat list: the key made at registration is not copied yet. -->
     <string name="recovery_nudge_title">Save your recovery key</string>
     <string name="recovery_nudge_body">12 words — the only way back if you lose every device.</string>
+    <!-- The mailbox trimmed messages before this device collected them (TODO 79) — iOS mailbox_gap_*. -->
+    <string name="mailbox_gap_title">Some messages may not have arrived</string>
+    <string name="mailbox_gap_body">Messages sent to you between %1$s and %2$s were removed from the server before this device collected them. The server keeps undelivered messages for a limited time.</string>
+    <string name="mailbox_gap_body_open">Messages sent to you since %1$s were removed from the server before this device collected them. The server keeps undelivered messages for a limited time.</string>
     <!-- Forwarding (TODO 143): the content only, no author — iOS forward, forward_to, forward_failed. -->
     <string name="forward">Forward</string>
     <string name="forward_to">Forward to</string>
