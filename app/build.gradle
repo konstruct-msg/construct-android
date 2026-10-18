@@ -177,6 +177,7 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:5.12.0'
     testImplementation 'org.mockito.kotlin:mockito-kotlin:5.4.0'
     testImplementation "io.grpc:grpc-testing:${grpcVersion}"
+    testImplementation "io.grpc:grpc-inprocess:${grpcVersion}"
     testImplementation 'org.json:json:20231013'
     // Screenshot tests (PreviewScreenshotTest): Robolectric draws each @Preview, Roborazzi compares
     // it with the image in app/src/test/screenshots/. Build-time only, nothing reaches the device.

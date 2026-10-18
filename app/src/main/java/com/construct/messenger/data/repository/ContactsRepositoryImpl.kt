@@ -36,6 +36,8 @@ import shared.proto.services.v1.InviteServiceOuterClass.InviteToken
 import shared.proto.services.v1.InviteServiceOuterClass.RevokeInviteRequest
 import shared.proto.services.v1.UserServiceOuterClass.CheckUsernameAvailabilityRequest
 import shared.proto.services.v1.UserServiceOuterClass.ContactRequestAction
+import shared.proto.services.v1.UserServiceOuterClass.ContactRequestStatus
+import shared.proto.services.v1.UserServiceOuterClass.GetContactRequestsResponse
 import shared.proto.services.v1.UserServiceOuterClass.FindUserRequest
 import shared.proto.services.v1.UserServiceOuterClass.GetContactRequestsRequest
 import shared.proto.services.v1.UserServiceOuterClass.GetUserProfileRequest
@@ -54,6 +56,7 @@ class ContactsRepositoryImpl @Inject constructor(
     private val addressBook: AccountAddressBook,
     private val accountRepository: AccountRepository,
     private val ownAddress: OwnAccountAddress,
+    private val requestLedger: ContactRequestLedger,
 ) : ContactsRepository {
 
     private val incoming = MutableStateFlow<List<IncomingContactRequest>>(emptyList())
@@ -190,9 +193,12 @@ class ContactsRepositoryImpl @Inject constructor(
 
     override suspend fun sendContactRequest(userId: String): Boolean {
         return try {
-            grpcClient.user.sendContactRequest(
+            val response = grpcClient.user.sendContactRequest(
                 SendContactRequestRequest.newBuilder().setToUserId(userId).build(),
             )
+            // The server's list of sent requests names no recipient: this is how an accepted
+            // one is matched to its user later.
+            requestLedger.recordSent(response.requestId, userId)
             true
         } catch (e: StatusRuntimeException) {
             Log.w(TAG, "sendContactRequest ${e.status.code}")
@@ -204,20 +210,44 @@ class ContactsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun refreshRequests() {
-        try {
-            val response = grpcClient.user.getContactRequests(
-                GetContactRequestsRequest.getDefaultInstance(),
+        val response = poll() ?: return
+        incoming.value = response.incomingList.map {
+            IncomingContactRequest(
+                requestId = it.requestId,
+                fromUserId = it.fromUserId,
+                displayName = it.fromDisplayName.ifBlank { DisplayNameGenerator.generate(it.fromUserId) },
+                username = it.fromUsername,
             )
-            incoming.value = response.incomingList.map {
-                IncomingContactRequest(
-                    requestId = it.requestId,
-                    fromUserId = it.fromUserId,
-                    displayName = it.fromDisplayName.ifBlank { DisplayNameGenerator.generate(it.fromUserId) },
-                    username = it.fromUsername,
-                )
-            }
+        }
+        // A request of ours they accepted is a contact now (TODO 157). One whose user this
+        // device does not know — sent from another device, or before it kept the map — is left.
+        var made = 0
+        for (sent in response.sentList) {
+            if (sent.status != ContactRequestStatus.CONTACT_REQUEST_STATUS_ACCEPTED) continue
+            val userId = requestLedger.sentTo(sent.requestId) ?: continue
+            makeContact(userId)
+            requestLedger.forgetSent(sent.requestId)
+            requestLedger.ack(sent.requestId)
+            made++
+            Log.i(TAG, "contact made from an accepted request ${userId.take(8)}…")
+        }
+        // Tell the server now rather than at the next poll, which may be days away; a failure
+        // leaves the ids queued.
+        if (made > 0) poll()
+    }
+
+    /** One `GetContactRequests`, carrying the acks; they leave the queue only once it is answered. */
+    private suspend fun poll(): GetContactRequestsResponse? {
+        val acks = requestLedger.pendingAcks()
+        return try {
+            grpcClient.user.getContactRequests(
+                GetContactRequestsRequest.newBuilder().addAllAckAccepted(acks).build(),
+            ).also { requestLedger.confirmAcks(acks) }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "getContactRequests failed", e)
+            null
         }
     }
 
@@ -229,24 +259,8 @@ class ContactsRepositoryImpl @Inject constructor(
                     .setAction(ContactRequestAction.CONTACT_REQUEST_ACTION_ACCEPT)
                     .build(),
             )
-            val existing = store.get(fromUserId)
-            store.upsert(
-                (existing ?: ContactRecord(id = fromUserId)).copy(
-                    displayName = existing?.displayName?.ifBlank { null }
-                        ?: DisplayNameGenerator.generate(fromUserId),
-                    isContact = true,
-                ),
-            )
             incoming.value = incoming.value.filterNot { it.requestId == requestId }
-            getProfile(fromUserId)?.let { profile ->
-                val row = store.get(fromUserId) ?: return@let
-                store.upsert(
-                    row.copy(
-                        displayName = ContactNames.offered(row, profile.displayName) ?: row.displayName,
-                        username = profile.username.ifBlank { row.username },
-                    ),
-                )
-            }
+            makeContact(fromUserId)
             true
         } catch (e: Exception) {
             Log.w(TAG, "acceptRequest failed", e)
@@ -298,6 +312,27 @@ class ContactsRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Log.w(TAG, "getProfile failed", e)
             null
+        }
+    }
+
+    /** [userId] is a contact, named by their profile when the server has one. Either side of a request. */
+    private suspend fun makeContact(userId: String) {
+        val existing = store.get(userId)
+        store.upsert(
+            (existing ?: ContactRecord(id = userId)).copy(
+                displayName = existing?.displayName?.ifBlank { null }
+                    ?: DisplayNameGenerator.generate(userId),
+                isContact = true,
+            ),
+        )
+        getProfile(userId)?.let { profile ->
+            val row = store.get(userId) ?: return@let
+            store.upsert(
+                row.copy(
+                    displayName = ContactNames.offered(row, profile.displayName) ?: row.displayName,
+                    username = profile.username.ifBlank { row.username },
+                ),
+            )
         }
     }
 
