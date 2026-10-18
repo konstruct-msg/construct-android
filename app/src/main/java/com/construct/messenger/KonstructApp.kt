@@ -37,6 +37,9 @@ class KonstructApp : Application(), ImageLoaderFactory {
     @Inject
     lateinit var storage: com.construct.messenger.data.repository.StorageRepository
 
+    @Inject
+    lateinit var blockSync: com.construct.messenger.data.repository.BlockSyncService
+
     /** Every `AsyncImage` in the app: message media among the images it can load. */
     override fun newImageLoader(): ImageLoader = MediaImages.loader(this, media)
 
@@ -58,7 +61,11 @@ class KonstructApp : Application(), ImageLoaderFactory {
         // Android takes the camera from an app nobody sees; the peer is told it is off rather
         // than left on a frozen frame. iOS does the same on didEnterBackground.
         androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(object : androidx.lifecycle.DefaultLifecycleObserver {
-            override fun onStart(owner: androidx.lifecycle.LifecycleOwner) = calls.setInBackground(false)
+            override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
+                calls.setInBackground(false)
+                // A block or unblock the server has not answered yet goes again (TODO 170).
+                blockSync.sync()
+            }
             override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {
                 calls.setInBackground(true)
                 // What was read goes to our other devices now, not at the end of its window (TODO 153).
