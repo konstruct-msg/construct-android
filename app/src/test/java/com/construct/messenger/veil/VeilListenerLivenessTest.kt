@@ -9,7 +9,8 @@ import org.junit.Test
 
 /**
  * The Conscrypt tunnel's listener, and who answers whether it lives. A tester's log (2026-10-16)
- * showed the listener dying with `EBADF` and the route finding out 82 s later from a silent stream.
+ * showed `getsockopt failed: EBADF` from accept — libcore's check of the *accepted* socket, with
+ * the listener fine (TODO 164).
  */
 class VeilListenerLivenessTest {
 
@@ -19,11 +20,54 @@ class VeilListenerLivenessTest {
         val lost = mutableListOf<Exception>()
         runAcceptLoop(
             isRunning = { true },
-            accept = { throw IOException("getsockopt failed: EBADF") },
+            accept = { throw IOException("accept failed: EBADF") },
             handle = { true },
+            listenerAlive = { false },
             onLost = { lost += it },
+            pause = {},
         )
         assertEquals(1, lost.size)
+    }
+
+    /**
+     * The tester's case: one accepted connection goes bad, the listener does not. Mutation: the
+     * old loop — any throw while running is `onLost` — reddens.
+     */
+    @Test
+    fun `one connection lost leaves the listener accepting`() {
+        var calls = 0
+        var handed = 0
+        var lost = 0
+        val dropped = mutableListOf<Exception>()
+        runAcceptLoop(
+            isRunning = { true },
+            accept = { if (++calls == 2) throw IOException("getsockopt failed: EBADF") else FileDescriptor() },
+            handle = { ++handed < 3 },
+            listenerAlive = { true },
+            onLost = { lost++ },
+            onDropped = { dropped += it },
+            pause = {},
+        )
+        assertEquals(0, lost)
+        assertEquals(1, dropped.size)
+        assertEquals("accepting went on after the throw", 3, handed)
+    }
+
+    /** Mutation: no pause, or one that does not grow or does not reset — a recurring fault would spin. */
+    @Test
+    fun `repeated throws back off, and a good accept starts over`() {
+        val script = ArrayDeque(listOf(false, false, false, true, false, true, true))
+        val pauses = mutableListOf<Long>()
+        runAcceptLoop(
+            isRunning = { script.isNotEmpty() },
+            accept = { if (script.removeFirst()) FileDescriptor() else throw IOException("x") },
+            handle = { true },
+            listenerAlive = { true },
+            onLost = { error("listener is alive") },
+            pause = { pauses += it },
+        )
+        assertEquals(listOf(10L, 20L, 40L, 10L), pauses)
+        assertEquals(1_000L, acceptBackoffMs(30))
     }
 
     /** Mutation: report without asking `isRunning` again — stop()'s own close reddens this. */
@@ -35,6 +79,7 @@ class VeilListenerLivenessTest {
             isRunning = { running },
             accept = { running = false; throw IOException("closed") },
             handle = { true },
+            listenerAlive = { false },
             onLost = { lost++ },
         )
         assertEquals(0, lost)
@@ -48,6 +93,7 @@ class VeilListenerLivenessTest {
             isRunning = { true },
             accept = { FileDescriptor() },
             handle = { ++accepted < 3 },
+            listenerAlive = { true },
             onLost = { lost++ },
         )
         assertEquals(3, accepted)

@@ -42,7 +42,9 @@ class VeilFrontExternalDialer(
     /**
      * The listener died while nobody stopped it — its port, its relay. Without this the route goes
      * on pointing gRPC at a port nothing accepts on, and finds out only when the stream has been
-     * silent for a minute (seen on a tester's device, 2026-10-16: `accept ended: EBADF`, 82 s).
+     * silent for a minute. Asked of the listener itself, not read off a failed accept: the
+     * tester's `getsockopt failed: EBADF` (2026-10-16) was one accepted connection going bad, with
+     * the listener fine (TODO 164).
      */
     private val onListenerLost: (port: Int, relay: String) -> Unit = { _, _ -> },
 ) {
@@ -100,7 +102,13 @@ class VeilFrontExternalDialer(
 
     fun stop() {
         running = false
-        listenFd?.let { runCatching { Os.close(it) } } // unblocks accept()
+        listenFd?.let {
+            // On Linux close() does not wake a thread blocked in accept() (close(2), NOTES), and
+            // libcore's Os.close signals nobody: without the shutdown every stop left the old
+            // accept thread waiting and the old port still listening.
+            runCatching { Os.shutdown(it, OsConstants.SHUT_RDWR) }
+            runCatching { Os.close(it) }
+        }
         listenFd = null
         synchronized(sessions) { sessions.toList() }.forEach { it.close() }
         sessions.clear()
@@ -111,6 +119,10 @@ class VeilFrontExternalDialer(
         runAcceptLoop(
             isRunning = { running && listenPort == port },
             accept = { Os.accept(fd, null) },
+            // Our socket, still bound where it was: a number closed under us and reused by another
+            // socket answers with a different port.
+            listenerAlive = { runCatching { (Os.getsockname(fd) as InetSocketAddress).port == port }.getOrDefault(false) },
+            onDropped = { e -> Log.w(TAG, "accept on :$port: ${e.message} — one connection lost, listener fine") },
             handle = { client ->
                 val r = relay
                 if (r == null) {
@@ -133,27 +145,35 @@ class VeilFrontExternalDialer(
     private fun handleConnection(clientFd: FileDescriptor, r: VeilRelay) {
         var ssl: SSLSocket? = null
         var hostSide: FileDescriptor? = null // our pump end of the socketpair
+        var rustSide: FileDescriptor? = null
+        var session: Session? = null
         try {
             ssl = dial(r)
             val exporter = Conscrypt.exportKeyingMaterial(ssl, EXPORTER_LABEL, ByteArray(0), EXPORTER_LEN)
 
-            val rustSide = FileDescriptor()
+            val rust = FileDescriptor()
             val host = FileDescriptor()
-            Os.socketpair(OsConstants.AF_UNIX, OsConstants.SOCK_STREAM, 0, rustSide, host)
+            Os.socketpair(OsConstants.AF_UNIX, OsConstants.SOCK_STREAM, 0, rust, host)
+            rustSide = rust
             hostSide = host
 
-            val session = Session(ssl, host)
-            sessions.add(session)
+            session = Session(ssl, host).also { sessions.add(it) }
             startPumps(session)
 
-            // Hand Rust its own dups; it adopts and closes them. We keep `host` + `ssl`.
-            val localInt = ParcelFileDescriptor.dup(clientFd).detachFd()
-            val rustInt = ParcelFileDescriptor.dup(rustSide).detachFd()
+            // Hand Rust its own dups; it adopts and closes them. We keep `host` + `ssl`. Held as
+            // descriptors until the call, so a failed second dup leaves no bare number behind.
+            val localPfd = ParcelFileDescriptor.dup(clientFd)
+            val rustPfd = try {
+                ParcelFileDescriptor.dup(rust)
+            } catch (e: Exception) {
+                runCatching { localPfd.close() }
+                throw e
+            }
             runCatching { Os.close(clientFd) }
-            runCatching { Os.close(rustSide) }
+            runCatching { Os.close(rust) }
 
             val rc = VeilLib.INSTANCE.veil_front_ferry_fd(
-                localInt, rustInt, exporter, SizeT(EXPORTER_LEN.toLong()),
+                localPfd.detachFd(), rustPfd.detachFd(), exporter, SizeT(EXPORTER_LEN.toLong()),
                 capabilityB64.ifEmpty { null }, veilSkHex.ifEmpty { null }, ticketB64.ifEmpty { null },
             )
             if (rc != 0) {
@@ -163,9 +183,20 @@ class VeilFrontExternalDialer(
             }
         } catch (e: Exception) {
             Log.e(TAG, "native veil-front connection failed: ${e.message}")
+            // A descriptor already closed above reads -1 now, and closing it again does nothing.
             runCatching { Os.close(clientFd) }
-            runCatching { ssl?.close() }
-            hostSide?.let { runCatching { Os.close(it) } }
+            rustSide?.let { runCatching { Os.close(it) } }
+            val live = session
+            if (live != null) {
+                // The pumps run: they close `host` too, so it goes only through the session's
+                // once-only close. Closing it here as well raced them — libcore reads the number and
+                // then marks it -1, so two threads could both close it, the second hitting whatever
+                // took the number next.
+                live.close()
+            } else {
+                runCatching { ssl?.close() }
+                hostSide?.let { runCatching { Os.close(it) } }
+            }
         }
     }
 
@@ -266,22 +297,40 @@ class VeilFrontExternalDialer(
 }
 
 /**
- * Accept until [handle] says stop or [accept] throws. A throw while [isRunning] is the listener
- * dying under us, not a stop — [onLost] says so, once. After `stop()` the throw is the close it did.
+ * Accept until [handle] says stop, the loop is stopped, or the listener is gone. After `stop()` a
+ * throw is the shutdown it did. A throw while running is not by itself the listener dying: libcore
+ * checks the *accepted* socket after a successful accept (`BlockGuardOs.accept` → `getsockopt`),
+ * so one connection whose number was closed in that window throws too (TODO 164). [listenerAlive]
+ * decides: alive, that one connection is dropped ([onDropped]) and accepting goes on after a short
+ * pause that grows while throws repeat, so a fault that recurs cannot spin; gone, [onLost], once.
  */
 internal fun runAcceptLoop(
     isRunning: () -> Boolean,
     accept: () -> FileDescriptor,
     handle: (FileDescriptor) -> Boolean,
+    listenerAlive: () -> Boolean,
     onLost: (Exception) -> Unit,
+    onDropped: (Exception) -> Unit = {},
+    pause: (Long) -> Unit = Thread::sleep,
 ) {
+    var misses = 0
     while (isRunning()) {
         val client = try {
             accept()
         } catch (e: Exception) {
-            if (isRunning()) onLost(e)
-            return
+            if (!isRunning()) return
+            if (!listenerAlive()) {
+                onLost(e)
+                return
+            }
+            onDropped(e)
+            pause(acceptBackoffMs(misses++))
+            continue
         }
+        misses = 0
         if (!handle(client)) return
     }
 }
+
+/** 10 ms doubling to 1 s. */
+internal fun acceptBackoffMs(misses: Int): Long = minOf(1_000L, 10L shl misses.coerceAtMost(7))
