@@ -670,6 +670,10 @@
     <!-- The quiet reminder above the chat list: the key made at registration is not copied yet. -->
     <string name="recovery_nudge_title">Сохраните ключ восстановления</string>
     <string name="recovery_nudge_body">12 слов — единственный способ вернуть аккаунт, если потеряете все устройства.</string>
+    <!-- Очередь на сервере обрезала сообщения раньше, чем устройство их забрало (TODO 79) — iOS mailbox_gap_*. -->
+    <string name="mailbox_gap_title">Часть сообщений могла не дойти</string>
+    <string name="mailbox_gap_body">Сообщения, отправленные вам с %1$s по %2$s, удалены с сервера раньше, чем это устройство их забрало. Сервер хранит недоставленные сообщения ограниченное время.</string>
+    <string name="mailbox_gap_body_open">Сообщения, отправленные вам с %1$s, удалены с сервера раньше, чем это устройство их забрало. Сервер хранит недоставленные сообщения ограниченное время.</string>
     <!-- Forwarding (TODO 143): the content only, no author — iOS forward, forward_to, forward_failed. -->
     <string name="forward">Переслать</string>
     <string name="forward_to">Переслать в</string>

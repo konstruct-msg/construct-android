@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import shared.proto.core.v1.EnvelopeOuterClass.Envelope
+import com.construct.messenger.data.repository.MailboxGap
 import shared.proto.services.v1.MessagingServiceOuterClass.Heartbeat
 import shared.proto.services.v1.MessagingServiceOuterClass.MessageStreamRequest
 import shared.proto.services.v1.MessagingServiceOuterClass.SubscribeRequest
@@ -63,6 +64,7 @@ class MessageStreamService @Inject constructor(
     private val authSession: AuthSessionManager,
     private val veil: VeilProxy,
     private val transportEvents: TransportEvents,
+    private val mailboxGap: com.construct.messenger.data.repository.MailboxGapNotice,
 ) {
     sealed interface StreamEvent {
         /** [cursor]: the stream entry's `serverMs-seq`, the order's tie-breaker (`ServerMessageOrder`). */
@@ -286,6 +288,8 @@ class MessageStreamService @Inject constructor(
                     response.hasReceipt() -> _events.tryEmit(StreamEvent.Receipt(response.receipt))
                     response.hasTyping() -> _events.tryEmit(StreamEvent.Typing(response.typing))
                     response.hasHeartbeatAck() -> _lastHeartbeatAt.value = System.currentTimeMillis()
+                    // The mailbox trimmed messages after our cursor: told to the person, not refetched (TODO 79).
+                    response.hasMailboxGap() -> mailboxGap.record(MailboxGap.of(response))
                     // acks/errors/presence: no consumer yet — extend StreamEvent when needed.
                     else -> Log.d(TAG, "unhandled stream frame: ${response.responseCase}")
                 }

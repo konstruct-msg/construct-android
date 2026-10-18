@@ -21,6 +21,7 @@ class MainViewModelTest {
                 override val lastHeartbeatAt = kotlinx.coroutines.flow.MutableStateFlow<Long?>(null)
             },
             org.mockito.kotlin.mock(),
+            com.construct.messenger.data.repository.MailboxGapNotice(com.construct.messenger.data.local.FakeSessionBlobStore()),
         )
 
         assertTrue(viewModel.uiState.value.chats.isNotEmpty())
