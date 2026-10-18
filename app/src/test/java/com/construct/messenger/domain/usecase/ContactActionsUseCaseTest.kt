@@ -39,7 +39,7 @@ class ContactActionsUseCaseTest {
     private val crypto = mock<CryptoManager>()
     private val sessions = mock<SessionStateStore>()
 
-    private val actions = ContactActionsUseCase(keystore, users, chats, messages, registry, crypto, sessions, mock())
+    private val actions = ContactActionsUseCase(keystore, users, chats, messages, registry, crypto, sessions, mock(), mock())
 
     /**
      * Every device of theirs is forgotten in the core and its stored blob removed — the blob alone
@@ -93,7 +93,7 @@ class ContactActionsUseCaseTest {
     @Test
     fun `a local name is stored trimmed and a blank one clears it`() = runTest {
         val store = FakeContactStore().also { it.rows[peer] = ContactRecord(id = peer, isContact = true) }
-        val actions = ContactActionsUseCase(keystore, store, chats, messages, registry, crypto, sessions, mock())
+        val actions = ContactActionsUseCase(keystore, store, chats, messages, registry, crypto, sessions, mock(), mock())
         actions.setLocalName(peer, "  Kostya ")
         assertEquals("Kostya", store.rows[peer]!!.localAlias)
         actions.setLocalName(peer, "   ")
