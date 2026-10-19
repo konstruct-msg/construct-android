@@ -3,13 +3,9 @@ package com.construct.messenger.domain.usecase
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.auth.DeviceAuthRefused
-import com.construct.messenger.data.auth.DeviceRefusalReading
+import com.construct.messenger.data.auth.authenticateDevice
 import com.construct.messenger.data.local.KeystoreManager
-import com.google.protobuf.ByteString
-import io.grpc.StatusRuntimeException
-import shared.proto.services.v1.AuthServiceOuterClass.DeviceRefusal
 import shared.proto.services.v1.AuthServiceOuterClass.AuthTokensResponse
-import shared.proto.services.v1.AuthServiceOuterClass.AuthenticateDeviceRequest
 import javax.inject.Inject
 
 /**
@@ -35,29 +31,10 @@ class LoginUseCase @Inject constructor(
         cryptoManager.loadOrCreate(savedPrivateKeys)
         restoreOneTimePrekeys(cryptoManager, keystoreManager)
 
-        val timestamp = System.currentTimeMillis() / 1000
-        val signature = cryptoManager.signWithDeviceKey("$deviceId$timestamp")
-
-        val request = AuthenticateDeviceRequest.newBuilder()
-            .setDeviceId(deviceId)
-            .setTimestamp(timestamp)
-            .setSignature(ByteString.copyFrom(signature))
-            .build()
-
-        // Direct before and after: an answer that may erase this device counts only off VEIL.
-        val directBefore = grpcClient.veilPort == null
-        val tokens = try {
-            grpcClient.auth.authenticateDevice(request).tokens
-        } catch (e: Exception) {
-            // grpc-kotlin's stubs throw `StatusException`; until 2026-10-13 only
-            // `StatusRuntimeException` was caught here, so no refusal was ever read on a device.
-            if (e !is io.grpc.StatusException && e !is StatusRuntimeException) throw e
-            val refusal = DeviceRefusalReading.refusalOf(e)
-            if (refusal == DeviceRefusal.DEVICE_REFUSAL_UNSPECIFIED) throw e
-            throw DeviceAuthRefused(refusal, directBefore && grpcClient.veilPort == null, e)
-        }
+        val tokens = authenticateDevice(cryptoManager, grpcClient, deviceId)
         cryptoManager.setLocalUserId(tokens.userId, keystoreManager.getKyberPrekeys())
         keystoreManager.saveTokens(tokens, deviceId)
         return tokens
     }
 }
+
