@@ -1,14 +1,12 @@
 package com.construct.messenger.data.local
 
-import com.construct.messenger.data.local.db.AckDao
-import com.construct.messenger.data.local.db.AckedMessageEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import uniffi.construct_core.LocalStore
 
 /**
  * The envelopes already processed, kept across restarts (TODO 136) — what [PersistentAckStore]
- * mirrors in memory. Exact ids. [ProcessedStoreContract] holds Room's and the core's to one behaviour.
+ * mirrors in memory. Exact ids. [ProcessedStoreContract] holds the stores to one behaviour.
  */
 interface ProcessedStore {
     /** Records [messageId]; one already held keeps its first time. */
@@ -19,16 +17,6 @@ interface ProcessedStore {
 
     /** Forgets ids processed before [cutoffMs]; returns how many. */
     suspend fun forgetBefore(cutoffMs: Long): Int
-}
-
-/** Built by `LocalStores`; nothing provides a `AckDao`. */
-class RoomProcessedStore(private val dao: AckDao) : ProcessedStore {
-    override suspend fun record(messageId: String, senderId: String, processedAtMs: Long) =
-        dao.insert(AckedMessageEntity(messageId, senderId, processedAtMs))
-
-    override suspend fun ids(): List<String> = dao.getAllIds()
-
-    override suspend fun forgetBefore(cutoffMs: Long): Int = dao.pruneOlderThan(cutoffMs)
 }
 
 /** On the core's `LocalStore`, which keeps the same table. */

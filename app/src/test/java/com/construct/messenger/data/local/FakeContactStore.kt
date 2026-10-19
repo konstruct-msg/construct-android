@@ -4,7 +4,7 @@ import com.construct.messenger.util.DisplayNameGenerator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
-/** [ContactStore] in a map, for tests; [ContactStoreContract] holds it to Room's behaviour. */
+/** [ContactStore] in a map, for tests; [ContactStoreContract] holds it to the core store's behaviour. */
 internal class FakeContactStore : ContactStore {
     val rows = linkedMapOf<String, ContactRecord>()
 

@@ -1,6 +1,6 @@
 package com.construct.messenger.data.local
 
-/** [PeerDeviceStore] in a map, for tests; [PeerDeviceStoreContract] holds it to Room's behaviour. */
+/** [PeerDeviceStore] in a map, for tests; [PeerDeviceStoreContract] holds it to the core store's behaviour. */
 internal class FakePeerDeviceStore : PeerDeviceStore {
     val rows = linkedMapOf<String, PeerDeviceRecord>()
 

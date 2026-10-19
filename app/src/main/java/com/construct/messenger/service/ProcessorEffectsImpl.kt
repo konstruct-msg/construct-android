@@ -40,7 +40,7 @@ import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import uniffi.construct_core.CfeSecureStoreSlot
 
 /**
- * Room / Keystore / session-store implementation of [ProcessorEffects].
+ * Store / Keystore / session-store implementation of [ProcessorEffects].
  *
  * Decryption errors / receipts / receiving opens / resends go to dedicated use cases.
  */
@@ -149,7 +149,7 @@ class ProcessorEffectsImpl @Inject constructor(
 
     /**
      * [received] as one whole frame, or null when it was a chunk of a message not yet complete —
-     * held, and its envelope acknowledged, because the bytes are in Room now — or a frame that
+     * held, and its envelope acknowledged, because the bytes are in the store now — or a frame that
      * could never be put together.
      */
     private suspend fun whole(accountId: String, messageId: String, received: ByteArray): ByteArray? =

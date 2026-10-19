@@ -661,8 +661,6 @@
     <string name="storage_keep_90_days">90 дней</string>
 
     <!-- Хранилище ядра (TODO 136): перенос строк Room или хранилище не открылось. iOS local_store_unreadable_*. -->
-    <string name="local_store_importing">Переносим чаты в новое хранилище…</string>
-    <string name="local_store_importing_hint">Это происходит один раз. Не закрывайте приложение.</string>
     <string name="local_store_unreadable_title">Не удалось открыть чаты на этом устройстве</string>
     <string name="local_store_unreadable_body">Чаты, сообщения и люди, сохранённые на этом устройстве, не удалось открыть. Ничего не удалено, и ничего нового не сохраняется, пока они снова не откроются.\n\nОбычно это значит, что хранилище ключей Android ещё не отвечает — например, пока телефон не разблокирован.</string>
     <string name="local_store_unreadable_retry_hint">Попробуйте открыть их снова — например, после разблокировки.</string>

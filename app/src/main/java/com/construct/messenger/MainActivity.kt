@@ -34,7 +34,6 @@ import com.construct.messenger.data.local.PendingInviteStore
 import com.construct.messenger.service.MessageNotifier
 import com.construct.messenger.ui.navigation.KonstructNavHost
 import com.construct.messenger.ui.theme.CTColor
-import com.construct.messenger.ui.screens.security.LocalStoreImportingScreen
 import com.construct.messenger.ui.screens.security.LocalStoreUnreadableScreen
 import com.construct.messenger.ui.screens.security.PinLockScreen
 import com.construct.messenger.ui.theme.ChatText
@@ -163,12 +162,11 @@ class MainActivity : FragmentActivity() {
                     // Over the app, under the lock: the screens below wait for the store (TODO 136).
                     val store by localStores.state.collectAsStateWithLifecycle()
                     when (store) {
-                        LocalStores.State.Importing -> LocalStoreImportingScreen()
                         is LocalStores.State.Failed -> LocalStoreUnreadableScreen(
                             onRetry = localStores::retry,
                             onErase = { LocalDataWipe.run(this@MainActivity, "store_unreadable") },
                         )
-                        LocalStores.State.Opening, is LocalStores.State.Ready -> Unit
+                        LocalStores.State.Opening, LocalStores.State.Ready -> Unit
                     }
                     if (lock.requiresUnlock) PinLockScreen()
                     // Heard at a token refresh while the app runs (TODO 126): over everything, the

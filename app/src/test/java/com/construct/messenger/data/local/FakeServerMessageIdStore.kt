@@ -1,6 +1,6 @@
 package com.construct.messenger.data.local
 
-/** [ServerMessageIdStore] in a map, for tests; [ServerMessageIdStoreContract] holds it to Room's behaviour. */
+/** [ServerMessageIdStore] in a map, for tests; [ServerMessageIdStoreContract] holds it to the core store's behaviour. */
 internal class FakeServerMessageIdStore : ServerMessageIdStore {
     /** server id → (local id, recorded at). */
     val rows = linkedMapOf<String, Pair<String, Long>>()

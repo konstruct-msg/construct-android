@@ -1,9 +1,7 @@
 package com.construct.messenger.data.local
 
 import android.app.Application
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import com.construct.messenger.data.local.db.ConstructDatabase
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -16,7 +14,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import uniffi.construct_core.LocalStore
 
-/** What every [ServerMessageIdStore] does — Room's today, the core's next (TODO 136). */
+/** What every [ServerMessageIdStore] does — on the core's store and the fakes (TODO 136). */
 abstract class ServerMessageIdStoreContract {
     protected abstract val store: ServerMessageIdStore
 
@@ -45,18 +43,6 @@ abstract class ServerMessageIdStoreContract {
     }
 }
 
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = Application::class)
-class RoomServerMessageIdStoreTest : ServerMessageIdStoreContract() {
-    private val db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Application>(), ConstructDatabase::class.java)
-        .allowMainThreadQueries()
-        .build()
-    override val store: ServerMessageIdStore = RoomServerMessageIdStore(db.serverMessageIdDao())
-
-    @After
-    fun close() = db.close()
-}
-
 class FakeServerMessageIdStoreTest : ServerMessageIdStoreContract() {
     override val store: ServerMessageIdStore = FakeServerMessageIdStore()
 }
@@ -69,7 +55,7 @@ class CoreServerMessageIdStoreTest : ServerMessageIdStoreContract() {
     fun close() = core.close()
 }
 
-/** What every [PeerDeviceStore] does — Room's today, the core's next (TODO 136). */
+/** What every [PeerDeviceStore] does — on the core's store and the fakes (TODO 136). */
 abstract class PeerDeviceStoreContract {
     protected abstract val store: PeerDeviceStore
 
@@ -110,18 +96,6 @@ abstract class PeerDeviceStoreContract {
         assertEquals(listOf(device('a')), store.forAccount(ann))
         assertEquals(1, store.forAccount(bob).size)
     }
-}
-
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = Application::class)
-class RoomPeerDeviceStoreTest : PeerDeviceStoreContract() {
-    private val db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Application>(), ConstructDatabase::class.java)
-        .allowMainThreadQueries()
-        .build()
-    override val store: PeerDeviceStore = RoomPeerDeviceStore(db.peerDeviceDao())
-
-    @After
-    fun close() = db.close()
 }
 
 class FakePeerDeviceStoreTest : PeerDeviceStoreContract() {

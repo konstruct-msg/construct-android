@@ -1,10 +1,8 @@
 package com.construct.messenger.data.local
 
 import android.app.Application
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.construct.messenger.calls.CallRecordStatus
-import com.construct.messenger.data.local.db.ConstructDatabase
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -17,7 +15,7 @@ import org.robolectric.annotation.Config
 import uniffi.construct_core.LocalStore
 
 /**
- * What every [CallStore] does — Room's today, the core's `LocalStore` next (TODO 136).
+ * What every [CallStore] does — on the core's `LocalStore` and the fake (TODO 136).
  * A call names its peer by id and keeps the name it had: no contact is required.
  */
 abstract class CallStoreContract {
@@ -70,18 +68,6 @@ abstract class CallStoreContract {
         store.deleteAll()
         assertTrue(ids().isEmpty())
     }
-}
-
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = Application::class)
-class RoomCallStoreTest : CallStoreContract() {
-    private val db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Application>(), ConstructDatabase::class.java)
-        .allowMainThreadQueries()
-        .build()
-    override val store: CallStore = RoomCallStore(db.callRecordDao())
-
-    @After
-    fun close() = db.close()
 }
 
 class FakeCallStoreTest : CallStoreContract() {

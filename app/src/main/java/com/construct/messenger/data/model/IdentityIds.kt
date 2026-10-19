@@ -1,6 +1,6 @@
 package com.construct.messenger.data.model
 
-/** The server-assigned account identity used by gRPC, Room and the UI. */
+/** The server-assigned account identity used by gRPC, the local store and the UI. */
 @JvmInline
 value class ServerUserId(val rawValue: String)
 

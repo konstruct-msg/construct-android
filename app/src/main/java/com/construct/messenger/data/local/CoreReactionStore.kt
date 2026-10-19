@@ -11,9 +11,7 @@ import uniffi.construct_core.LocalStore
 import uniffi.construct_core.LocalStoreTable
 
 /**
- * [ReactionStore] on the core's encrypted `LocalStore` (TODO 136) — held to the same
- * [ReactionStoreContract] as [RoomReactionStore]. The store once [RoomImport] has
- * moved Room's rows ([LocalStores]). The row is iOS's: `received_at` is when this phone
+ * [ReactionStore] on the core's encrypted `LocalStore` (TODO 136), held to [ReactionStoreContract]. The row is iOS's: `received_at` is when this phone
  * stored the reaction, as iOS writes it.
  *
  * A chat's reactions are one read (`reactions_in_chat`), and the sweep is the core's

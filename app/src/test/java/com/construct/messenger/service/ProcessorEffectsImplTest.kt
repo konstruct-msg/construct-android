@@ -52,7 +52,7 @@ class ProcessorEffectsImplTest {
     private val peer = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
     private val alerts = FakeAlerts()
 
-    /** Just enough to receive text messages: Room fakes and a known local account. */
+    /** Just enough to receive text messages: store fakes and a known local account. */
     private class Inbox(alerts: IncomingAlerts, myId: String) {
         val messages = FakeMessageStore()
         val chats = FakeChatStore()

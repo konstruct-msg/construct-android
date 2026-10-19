@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * One message of a chat, as this device keeps it.
  *
- * Our own type — not Room's `MessageEntity`, not the core's `LocalMessage` (TODO 136, the seam).
+ * Our own type — not the core's `LocalMessage` (TODO 136, the seam).
  */
 data class MessageRecord(
     val id: String,

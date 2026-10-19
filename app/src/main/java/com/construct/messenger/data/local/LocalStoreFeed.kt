@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onSubscription
 
 /**
- * The core store's changes as a `Flow` — what Room's observable queries are to the Room stores.
+ * The core store's changes as a `Flow`, for the stores to observe.
  * The core tells its one observer after every committed write, on the writing thread
  * ([LocalStoreObserver]); this is that observer.
  *

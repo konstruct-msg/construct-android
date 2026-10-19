@@ -6,7 +6,7 @@ import android.icu.lang.UProperty
 import java.text.BreakIterator
 
 /**
- * What a reaction may be and which of two wins. Pure: no Room, no clock — the timestamp is an
+ * What a reaction may be and which of two wins. Pure: no store, no clock — the timestamp is an
  * argument, so last-write-wins is the same in a test as on a phone.
  *
  * **Canon:** iOS `ReactionReducer`. A reaction is metadata on a target message, never a chat row

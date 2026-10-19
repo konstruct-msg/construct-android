@@ -178,7 +178,7 @@ class SessionManager @Inject constructor(
         return bundles
     }
 
-    /** Own devices are fetched through the same server answer but are not contacts in Room. */
+    /** Own devices are fetched through the same server answer but are not contacts in the store. */
     /**
      * Devices of [contactId] this device already knows about, without asking the key server.
      *

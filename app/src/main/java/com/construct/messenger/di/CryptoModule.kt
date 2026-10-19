@@ -19,7 +19,7 @@ import javax.inject.Singleton
  * Binds the crypto-layer interfaces consumed by the messaging pipeline.
  * [OrchestratorGateway] (CFE `handleEvent`) is served by the singleton
  * [CryptoManager], which owns the two-phase core + the serialization lock.
- * [ProcessorEffects] is [ProcessorEffectsImpl] (Room persist + ACK + session blobs).
+ * [ProcessorEffects] is [ProcessorEffectsImpl] (store persist + ACK + session blobs).
  * [OwedCopies] is [FanoutRetries]: a recipient device that refused its copy gets it again.
  */
 @Module

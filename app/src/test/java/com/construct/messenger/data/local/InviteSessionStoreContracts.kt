@@ -1,9 +1,7 @@
 package com.construct.messenger.data.local
 
 import android.app.Application
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import com.construct.messenger.data.local.db.ConstructDatabase
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -17,7 +15,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import uniffi.construct_core.LocalStore
 
-/** What every [IssuedInviteStore] does — Room's today, the core's next (TODO 136). */
+/** What every [IssuedInviteStore] does — on the core's store and the fakes (TODO 136). */
 abstract class IssuedInviteStoreContract {
     protected abstract val store: IssuedInviteStore
 
@@ -57,18 +55,6 @@ abstract class IssuedInviteStoreContract {
     }
 }
 
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = Application::class)
-class RoomIssuedInviteStoreTest : IssuedInviteStoreContract() {
-    private val db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Application>(), ConstructDatabase::class.java)
-        .allowMainThreadQueries()
-        .build()
-    override val store: IssuedInviteStore = RoomIssuedInviteStore(db.issuedInviteDao())
-
-    @After
-    fun close() = db.close()
-}
-
 class FakeIssuedInviteStoreTest : IssuedInviteStoreContract() {
     override val store: IssuedInviteStore = FakeIssuedInviteStore()
 }
@@ -88,7 +74,7 @@ class CoreIssuedInviteStoreTest : IssuedInviteStoreContract() {
     fun close() = core.close()
 }
 
-/** What every [SessionBlobStore] does — Room's `session_state` today, the core's `kv` next (TODO 136). */
+/** What every [SessionBlobStore] does — on the core's `kv` and the fake (TODO 136). */
 abstract class SessionBlobStoreContract {
     protected abstract val store: SessionBlobStore
 
@@ -130,18 +116,6 @@ abstract class SessionBlobStoreContract {
         assertEquals(4, store.withPrefix("").size)
         assertArrayEquals(byteArrayOf(4), store.withPrefix("core:").getValue("core:orchestrator-state"))
     }
-}
-
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = Application::class)
-class RoomSessionBlobStoreTest : SessionBlobStoreContract() {
-    private val db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Application>(), ConstructDatabase::class.java)
-        .allowMainThreadQueries()
-        .build()
-    override val store: SessionBlobStore = RoomSessionBlobStore(db.sessionStateDao())
-
-    @After
-    fun close() = db.close()
 }
 
 class FakeSessionBlobStoreTest : SessionBlobStoreContract() {

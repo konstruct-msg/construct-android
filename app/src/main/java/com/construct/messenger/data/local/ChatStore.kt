@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * A conversation with one peer: its list preview, unread count and pin.
  *
- * Our own type — not Room's `ChatEntity`, not the core's `LocalChat` (TODO 136, the seam).
+ * Our own type — not the core's `LocalChat` (TODO 136, the seam).
  * [peerId] is the peer's **ServerUserId**; one chat per peer.
  */
 data class ChatRecord(

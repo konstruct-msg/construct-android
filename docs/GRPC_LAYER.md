@@ -21,11 +21,11 @@ data/auth/
 │                            # retry (single), permanent→re-auth
 data/local/
 ├── KeystoreManager.kt       # токены + private keys (CFE)      [РАБОТАЕТ]
-├── AckStore.kt              # durable dedup (Room + in-memory   [ГОТОВ+тесты]
+├── AckStore.kt              # durable dedup (store + in-memory   [ГОТОВ+тесты]
 │                            # mirror, hydrate() до стрима!)
 ├── SessionStateStore.kt     # typed CFE slots [ГОТОВ+тесты]
 ├── PeerDeviceRegistry.kt    # durable account→device mapping [ГОТОВ]
-├── db/                      # Room: chats/messages/users/       [ГОТОВ]
+├── Core*Store.kt            # хранилище ядра: chats/messages/users/ [ГОТОВ]
 │                            # acked_messages/session_state
 service/
 ├── SessionManager.kt        # DR-сессии поверх CryptoManager   [РАБОТАЕТ]
@@ -42,7 +42,7 @@ crypto/
 │                            # (wire_payload.rs; дублей на Kotlin нет)
 di/
 ├── CryptoModule.kt          # bind OrchestratorGateway→CryptoMgr [ГОТОВ]
-├── DatabaseModule.kt        # Room DB + DAOs + AckStore         [ГОТОВ]
+├── DatabaseModule.kt        # LocalStores + stores + AckStore   [ГОТОВ]
 invite/                      # v5 mint / verify / AcceptInvite  [РАБОТАЕТ]
 stealth/                     # sealed sender (см. §5)           [НА SEND]
 ├── StealthPolicy.kt  ServerKeysProvider.kt  TokenWalletService.kt
@@ -69,7 +69,7 @@ domain/usecase/SendMessageUseCase.kt                            [РАБОТАЕ�
 1. **Приём.** `AuthRepository.restoreSession()` / `initializeIdentity()` поднимает
    `MessagingRuntime`: restore orchestrator/PQ snapshots → import only `Session`
    slots → hydrate ACK → drain `GetPendingMessages` → `MessageRouter` +
-   `MessageProcessor` + стрим. `ProcessorEffectsImpl` пишет в Room and applies
+   `MessageProcessor` + стрим. `ProcessorEffectsImpl` пишет в хранилище and applies
    every typed secure-store action. Подписки `direct:<sorted ids>` из `ChatDao`.
    Решение по основе: `construct-docs/decisions/android-receive-path-cfe-not-component.md`.
 2. **Отправка.** `ChatViewModel` → `MessagesRepository.send` →

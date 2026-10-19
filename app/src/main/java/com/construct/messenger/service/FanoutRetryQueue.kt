@@ -37,7 +37,7 @@ data class FanoutRetryEntry(
  * Identifiers only, never a payload: the retry rebuilds the copy from the message's row, as a
  * resend after a DECRYPTION_ERROR does. Those ids still say who one writes to, so they live in the
  * core's encrypted store (its `kv`, through [SessionBlobStore] under [STORAGE_KEY]) — not in plain
- * SharedPreferences. While Room is still the store, in Room's file, beside the history it names.
+ * SharedPreferences.
  *
  * The original send counts as the first of [MAX_ATTEMPTS]; the waits after it are 30 s, doubling
  * to at most an hour. An entry lives a day from when it was first queued — failing again does not

@@ -1,9 +1,7 @@
 package com.construct.messenger.data.local
 
 import android.app.Application
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import com.construct.messenger.data.local.db.ConstructDatabase
 import com.construct.messenger.data.model.DeliveryStatus
 import uniffi.construct_core.LocalStore
 import kotlinx.coroutines.flow.first
@@ -19,8 +17,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * What every [ChatStore] does — Room's today and the core's `LocalStore` (TODO 136), which
- * replaces it. Each case sets up the peer's contact first, as the core requires.
+ * What every [ChatStore] does — on the core's `LocalStore` and the fake (TODO 136). Each case sets up the peer's contact first, as the core requires.
  */
 abstract class ChatStoreContract {
     protected abstract val contacts: ContactStore
@@ -115,19 +112,6 @@ abstract class ChatStoreContract {
         assertNull(store.get(chat))
         assertTrue(store.observeAll().first().isEmpty())
     }
-}
-
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = Application::class)
-class RoomChatStoreTest : ChatStoreContract() {
-    private val db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Application>(), ConstructDatabase::class.java)
-        .allowMainThreadQueries()
-        .build()
-    override val contacts: ContactStore = RoomContactStore(db.userDao())
-    override val store: ChatStore = RoomChatStore(db.chatDao())
-
-    @After
-    fun close() = db.close()
 }
 
 class FakeChatStoreTest : ChatStoreContract() {

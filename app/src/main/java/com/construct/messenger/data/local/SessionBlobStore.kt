@@ -1,15 +1,13 @@
 package com.construct.messenger.data.local
 
-import com.construct.messenger.data.local.db.SessionStateDao
-import com.construct.messenger.data.local.db.SessionStateEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import uniffi.construct_core.LocalStore
 
 /**
- * Opaque CFE blobs by key — what [SessionStateStore] writes (TODO 136). Room's `session_state`
- * today; the core's `kv` next, under the same keys (`session:<device>`, the orchestrator's).
- * [SessionBlobStoreContract] holds both to one behaviour.
+ * Opaque CFE blobs by key — what [SessionStateStore] writes (TODO 136). In the core's
+ * `kv`, under the orchestrator's keys (`session:<device>`). [SessionBlobStoreContract] holds the
+ * stores to one behaviour.
  */
 interface SessionBlobStore {
     /** Writes [bytes] over the blob under [key]. */
@@ -21,21 +19,6 @@ interface SessionBlobStore {
 
     /** Every blob whose key starts with [prefix] — compared as text, no pattern characters. */
     suspend fun withPrefix(prefix: String): Map<String, ByteArray>
-}
-
-/** Built by `LocalStores`; nothing provides a `SessionStateDao`. */
-class RoomSessionBlobStore(
-    private val dao: SessionStateDao,
-    private val nowMs: () -> Long = System::currentTimeMillis,
-) : SessionBlobStore {
-    override suspend fun put(key: String, bytes: ByteArray) = dao.upsert(SessionStateEntity(key, bytes, nowMs()))
-
-    override suspend fun get(key: String): ByteArray? = dao.get(key)?.cfeBytes
-
-    override suspend fun remove(key: String) = dao.delete(key)
-
-    override suspend fun withPrefix(prefix: String): Map<String, ByteArray> =
-        dao.getAll().filter { it.storeKey.startsWith(prefix) }.associate { it.storeKey to it.cfeBytes }
 }
 
 /** On the core's `LocalStore` `kv`. */

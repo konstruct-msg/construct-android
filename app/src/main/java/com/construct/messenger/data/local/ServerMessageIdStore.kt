@@ -1,7 +1,5 @@
 package com.construct.messenger.data.local
 
-import com.construct.messenger.data.local.db.ServerMessageIdDao
-import com.construct.messenger.data.local.db.ServerMessageIdEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import uniffi.construct_core.LocalStore
@@ -9,7 +7,7 @@ import uniffi.construct_core.LocalStore
 /**
  * Where the server's id of each sealed copy we sent is kept beside the message it carries
  * (TODO 136) — what [com.construct.messenger.service.ServerMessageIds] reads and writes. Both ids
- * lowercase. [ServerMessageIdStoreContract] holds Room's and the core's to one behaviour.
+ * lowercase. [ServerMessageIdStoreContract] holds the stores to one behaviour.
  */
 interface ServerMessageIdStore {
     /** Writes the pair over any row with [serverId]. */
@@ -19,18 +17,6 @@ interface ServerMessageIdStore {
 
     /** Forgets pairs recorded before [cutoffMs]. */
     suspend fun forgetBefore(cutoffMs: Long)
-}
-
-/** Built by `LocalStores`; nothing provides a `ServerMessageIdDao`. */
-class RoomServerMessageIdStore(private val dao: ServerMessageIdDao) : ServerMessageIdStore {
-    override suspend fun record(serverId: String, localId: String, recordedAtMs: Long) =
-        dao.upsert(ServerMessageIdEntity(serverId, localId, recordedAtMs))
-
-    override suspend fun localId(serverId: String): String? = dao.localId(serverId)
-
-    override suspend fun forgetBefore(cutoffMs: Long) {
-        dao.pruneOlderThan(cutoffMs)
-    }
 }
 
 /** On the core's `LocalStore`, which keeps the same table. */

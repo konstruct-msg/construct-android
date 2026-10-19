@@ -657,8 +657,6 @@
     <string name="storage_keep_90_days">90 days</string>
 
     <!-- The core's store (TODO 136): moving Room's rows, or the store would not open. iOS local_store_unreadable_*. -->
-    <string name="local_store_importing">Moving your chats to the new storage…</string>
-    <string name="local_store_importing_hint">This happens once. Keep the app open.</string>
     <string name="local_store_unreadable_title">The chats on this device can\'t be opened</string>
     <string name="local_store_unreadable_body">The chats, messages and people kept on this device could not be opened. Nothing has been deleted, and nothing new is saved until they open again.\n\nUsually Android\'s key store is not answering yet — for example before the phone has been unlocked.</string>
     <string name="local_store_unreadable_retry_hint">Try opening them again, for example after unlocking.</string>

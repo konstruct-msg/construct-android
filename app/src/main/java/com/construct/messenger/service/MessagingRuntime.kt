@@ -54,7 +54,7 @@ import uniffi.construct_core.CfeIncomingEvent
  * import CFE sessions → hydrate ACK store → drain GetPendingMessages
  *   → MessageRouter.start + MessageProcessor collect
  *   → MessageStreamService.start
- *   → subscribe direct:<sorted ids> from Room
+ *   → subscribe direct:<sorted ids> from the store
  * ```
  */
 @Singleton
@@ -180,8 +180,8 @@ class MessagingRuntime @Inject constructor(
         if (blobs.isEmpty()) return
 
         // The orchestrator owns more than the ratchet. Restore its coordination
-        // snapshots before any queued message reaches CFE; importing every Room
-        // row as a session would feed archive/PQ/core state into the wrong API.
+        // snapshots before any queued message reaches CFE; importing every stored
+        // blob as a session would feed archive/PQ/core state into the wrong API.
         blobs[SessionStateStore.ORCHESTRATOR_STATE_KEY]?.let { bytes ->
             runCatching { cryptoManager.importOrchestratorState(bytes) }
                 .onFailure { Log.e(TAG, "orchestrator state restore failed", it) }

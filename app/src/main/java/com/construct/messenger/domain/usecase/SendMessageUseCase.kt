@@ -52,7 +52,7 @@ sealed interface SendOutcome {
  *
  * **Canon:** iOS `OutboundMessagePipeline.sendToRecipientDevices` (`construct-messenger@4a74c013`).
  *
- * 1. Optimistic Room row (SENDING).
+ * 1. Optimistic stored row (SENDING).
  * 2. `MessageContent` proto → KNST frame (type in byte 5). A reply is a `QuotedMessage`
  *    on that text — id and a 200-character preview — and is not a field of the envelope.
  * 3. Ensure a Double-Ratchet session with the pinned device (prekey fetch is destructive — only
@@ -224,7 +224,7 @@ class SendMessageUseCase @Inject constructor(
             if (tally.recipientAccepted > 0) {
                 // `sent` has always meant "in the person's mailbox", and one accepted copy puts
                 // it there. Devices that refused are named in the log, not in the row — a per
-                // device status needs a per device carrier, which Room does not have yet.
+                // device status needs a per device carrier, which the store does not have yet.
                 messages.setDeliveryStatus(messageId, DeliveryStatus.SENT)
                 // Out of the pending place at the bottom, into the server's order.
                 tally.orderKey?.let { messages.setOrderKey(messageId, it) }
@@ -434,7 +434,7 @@ class SendMessageUseCase @Inject constructor(
      * *are* our devices, and planning both audiences would send every replica two copies. So the
      * account-addressed copy here is not a privileged one among device copies; it is the only
      * thing that puts the message in our own mailbox, and removing it would leave a single-device
-     * user's notes in Room and nowhere else. Whether that copy should exist at all is a question
+     * user's notes in the local store and nowhere else. Whether that copy should exist at all is a question
      * about history sync, not about a peer's device set.
      */
     private suspend fun sendNoteToSelf(
