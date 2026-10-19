@@ -42,7 +42,7 @@ interface MessagesRepository {
     fun describe(uri: Uri): Pair<String, Long>
 
     /** Send a recorded voice note; [recording] is taken over (and deleted once sealed). */
-    suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>): SendOutcome
+    suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>, reply: ReplyRef?): SendOutcome
 
     /** A recorded video note; its files are deleted once handed over. */
     suspend fun sendVideoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake, reply: ReplyRef? = null): SendOutcome

@@ -177,8 +177,8 @@ class MessagesRepositoryImpl @Inject constructor(
             outcome
         }.await()
 
-    override suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>): SendOutcome =
-        scope.async { sendMedia.voice(contactId, recording, durationMs, waveform) }.await()
+    override suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>, reply: ReplyRef?): SendOutcome =
+        scope.async { sendMedia.voice(contactId, recording, durationMs, waveform, reply) }.await()
 
     override suspend fun sendVideoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake, reply: ReplyRef?): SendOutcome =
         scope.async { sendMedia.videoNote(contactId, take, reply) }.await()

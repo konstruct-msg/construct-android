@@ -77,6 +77,18 @@ class IncomingPlaintextTest {
         assertEquals("MEDIA_TYPE_IMAGE", decoded.reply?.mediaType)
     }
 
+    /** A voice note that answers a message names it, as a text or an album does. Mutation: drop the voice arm of `mediaQuote` — reddens. */
+    @Test
+    fun `a voice note keeps its quote`() {
+        val voice = shared.proto.messaging.v1.Content.VoiceMessage.newBuilder()
+            .setFileUrl("u").setDurationMs(900).setCodec("audio/m4a|m-1|10")
+            .setQuoted(TextWire.quoted(ReplyRef.of("Q-1", "", "MEDIA_TYPE_AUDIO")))
+        val decoded = IncomingPlaintext.decode(
+            KnstFrame.pack(MessageContent.newBuilder().setVoice(voice).build().toByteArray(), KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID()),
+        )
+        assertEquals(ReplyRef.of("q-1", "", "MEDIA_TYPE_AUDIO"), decoded.reply)
+    }
+
     @Test
     fun `an empty quote id is not a reply`() {
         assertNull(ReplyRef.of("  ", "hi"))

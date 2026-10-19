@@ -323,13 +323,13 @@ class SendMediaUseCase @Inject constructor(
      * no field for it — the media id in `codec` as `audio/m4a|<id>|<size of the recording>`.
      * The recording is sealed, kept under a local id for the bubble, and deleted from the cache.
      */
-    suspend fun voice(contactId: String, recording: File, durationMs: Long, waveform: List<Float>): SendOutcome {
+    suspend fun voice(contactId: String, recording: File, durationMs: Long, waveform: List<Float>, reply: ReplyRef? = null): SendOutcome {
         val audio = withContext(Dispatchers.IO) { recording.readBytes().also { recording.delete() } }
-        return voice(contactId, audio, durationMs, waveform)
+        return voice(contactId, audio, durationMs, waveform, reply)
     }
 
-    /** A voice note from its bytes — a recording, or one being forwarded. */
-    suspend fun voice(contactId: String, audio: ByteArray, durationMs: Long, waveform: List<Float>): SendOutcome {
+    /** A voice note from its bytes — a recording, or one being forwarded; [reply] it answers. */
+    suspend fun voice(contactId: String, audio: ByteArray, durationMs: Long, waveform: List<Float>, reply: ReplyRef? = null): SendOutcome {
         val messageId = UUID.randomUUID().toString().lowercase()
         val timestampMs = System.currentTimeMillis()
         val localId = MediaWire.LOCAL_PREFIX + UUID.randomUUID()
@@ -343,10 +343,11 @@ class SendMediaUseCase @Inject constructor(
                     .setFileHash(ByteString.copyFrom(sealed.sha256))
                     .setDurationMs(durationMs.toInt())
                     .addAllWaveform(waveform.map { (it * 255).roundToInt().coerceIn(0, 255) })
-                    .setCodec("$VOICE_MIME|$mediaId|${audio.size}"),
+                    .setCodec("$VOICE_MIME|$mediaId|${audio.size}")
+                    .apply { TextWire.quoted(reply)?.let { setQuoted(it) } },
             ).build(),
         )!!
-        sendMessage.persistMedia(contactId, messageId, timestampMs, wire(localId, ""), null)
+        sendMessage.persistMedia(contactId, messageId, timestampMs, wire(localId, ""), reply)
         val uploaded = try {
             media.upload(localId, sealed.sha256)
         } catch (e: CancellationException) {

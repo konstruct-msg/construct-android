@@ -98,8 +98,12 @@ object MediaWire {
         }.getOrNull()
     }
 
-    /** The quote an album carries, when it is a reply. */
-    fun albumQuote(content: MessageContent) = if (content.hasMediaAlbum() && content.mediaAlbum.hasQuoted()) content.mediaAlbum.quoted else null
+    /** The quote an album or a voice note carries, when it is a reply. */
+    fun mediaQuote(content: MessageContent) = when {
+        content.hasMediaAlbum() && content.mediaAlbum.hasQuoted() -> content.mediaAlbum.quoted
+        content.hasVoice() && content.voice.hasQuoted() -> content.voice.quoted
+        else -> null
+    }
 
     private fun item(m: MediaMessage): MediaItem? {
         if (m.mediaId.isEmpty() || m.encryptionKey.size() != KEY_BYTES) return null
