@@ -210,6 +210,11 @@ fun MessageBubble(
                     FilesBubble(files, message.body, isOutgoing, maxBubble, fileLoading, fileUnavailable, onOpenFile, onLongPress, tracks, onToggleTrack, onSeekTrack)
                 }
             } else if (voice != null) {
+                if (replyLabel != null) {
+                    Box(Modifier.widthIn(max = maxBubble)) {
+                        ReplyQuoteStrip(replyLabel, quoteBar, quoteColor, onJumpToReply, onLongPress)
+                    }
+                }
                 VoiceBubble(
                     voice = voice,
                     outgoing = isOutgoing,

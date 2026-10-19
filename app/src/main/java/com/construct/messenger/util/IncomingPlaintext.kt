@@ -160,7 +160,7 @@ object IncomingPlaintext {
                         text = media.caption,
                         knstContentType = knstContentType,
                         isUserVisible = true,
-                        reply = MediaWire.albumQuote(content)?.let(::replyOf),
+                        reply = MediaWire.mediaQuote(content)?.let(::replyOf),
                         e2eMessageId = e2eMessageId,
                         media = media,
                     )

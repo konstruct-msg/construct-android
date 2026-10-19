@@ -127,6 +127,28 @@ class SendMediaUseCaseTest {
     }
 
     /**
+     * A voice note recorded while quoting answers that message: the quote rides inside the voice
+     * on the wire and on the row. Mutation: leave `setQuoted` out, or persist with `null` — reddens.
+     */
+    @Test
+    fun `a voice note carries the quote it answers`() = runTest {
+        val media = FakeMedia()
+        val send: SendMessageUseCase = mock()
+        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        val reply = com.construct.messenger.data.model.ReplyRef.of("ABC", "", "MEDIA_TYPE_VIDEO", videoNote = true)
+        val file = java.io.File.createTempFile("voice", ".m4a").apply { writeBytes(ByteArray(10)) }
+
+        SendMediaUseCase(images, pickedFiles, videos, media, send, originals).voice("peer", file, 900, emptyList(), reply)
+
+        val content = argumentCaptor<ByteArray>()
+        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        val quoted = MessageContent.parseFrom(content.firstValue).voice.quoted
+        assertEquals("abc", quoted.messageId)
+        assertEquals(MediaType.MEDIA_TYPE_VIDEO, quoted.mediaType)
+        verify(send).persistMedia(eq("peer"), any(), any(), any(), eq(reply))
+    }
+
+    /**
      * iOS has no media id field for voice and reads it out of `codec` as `mime|id|size`; the
      * waveform goes as 0–255. Mutation: put the blob's size in the codec — reddens.
      */

@@ -89,6 +89,15 @@ class LocalMessagePayloadTest {
         assertArrayEquals(sticker, s.mediaPayload)
     }
 
+    /** A voice reply read back from the store keeps its quote. Mutation: decode a voice with no reply — reddens. */
+    @Test
+    fun aVoiceReplyKeepsItsQuote() {
+        val voice = VoiceMessage.newBuilder().setFileUrl("v-1").setQuoted(QuotedMessage.newBuilder().setMessageId("q-3")).build().toByteArray()
+        val fields = LocalMessagePayload.decode(LocalMessagePayload.encode(record(mediaType = MediaWire.KIND_VOICE, payload = voice)))
+        assertEquals(ReplyRef("q-3", ""), fields.reply)
+        assertArrayEquals(voice, fields.mediaPayload)
+    }
+
     @Test
     fun whatCannotBeReadIsEmptyNotAnError() {
         assertEquals("", LocalMessagePayload.decode(LocalMessagePayload.envelope(0x09, byteArrayOf(1))).text)

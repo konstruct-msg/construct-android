@@ -487,11 +487,14 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch { messagesRepository.sendVideoNote(contactId, take, reply) }
     }
 
+    /** The recorded voice note; like a video note, it answers the message being quoted. */
     fun sendRecording() {
         val done = recorder.state.value as? VoiceRecorder.State.Recorded ?: return
         recorder.handedOff()
+        val reply = replying.value
+        replying.value = null
         viewModelScope.launch {
-            messagesRepository.sendVoice(contactId, done.file, done.durationMs, done.waveform)
+            messagesRepository.sendVoice(contactId, done.file, done.durationMs, done.waveform, reply)
         }
     }
 

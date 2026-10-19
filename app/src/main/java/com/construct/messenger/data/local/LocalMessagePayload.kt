@@ -85,6 +85,7 @@ object LocalMessagePayload {
         if (content.hasSticker()) return Fields("", mediaType = MediaWire.KIND_STICKER, mediaPayload = content.sticker.toByteArray())
         val stored = MediaWire.stored(content) ?: return Fields("")
         if (stored.kind == MediaWire.KIND_ALBUM) return album(MediaAlbumMessage.parseFrom(stored.bytes))
-        return Fields(stored.caption, mediaType = stored.kind, mediaPayload = stored.bytes)
+        val reply = MediaWire.mediaQuote(content)?.let(IncomingPlaintext::replyOf)
+        return Fields(stored.caption, reply, mediaType = stored.kind, mediaPayload = stored.bytes)
     }
 }

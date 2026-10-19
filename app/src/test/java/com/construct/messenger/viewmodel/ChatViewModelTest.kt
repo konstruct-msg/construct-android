@@ -320,6 +320,26 @@ class ChatViewModelTest {
         assertEquals(ReplyRef.of("abc", "original"), messages.notes.single())
     }
 
+    /** A voice note recorded while quoting answers that message and clears the bar, as a video note does. */
+    @Test
+    fun aVoiceNoteCarriesTheReplyAndClearsTheBar() = runTest {
+        val messages = FakeMessagesRepository()
+        val handle = SavedStateHandle()
+        handle["contactId"] = "peer-1"
+        val recorder: com.construct.messenger.media.VoiceRecorder = org.mockito.kotlin.mock()
+        val file = java.io.File("note.m4a")
+        org.mockito.kotlin.whenever(recorder.state).thenReturn(MutableStateFlow(com.construct.messenger.media.VoiceRecorder.State.Recorded(file, 900, emptyList())))
+        val viewModel = ChatViewModel(handle, messages, FakeContactsRepository(), org.mockito.kotlin.mock(), recorder, player, org.mockito.kotlin.mock(), org.mockito.kotlin.mock(), drafts, org.mockito.kotlin.mock(), qualities, voiceSettings, com.construct.messenger.media.ChatOnScreen())
+        viewModel.startReply(Message(id = "ABC", chatId = "peer-1", body = "original", isOutgoing = false))
+        advanceUntilIdle()
+
+        viewModel.sendRecording()
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.replyingTo)
+        assertEquals(ReplyRef.of("abc", "original"), messages.voices.single())
+    }
+
     /** Files alone take the reply; beside photos, the photos do — the text and the quote go with the first message. */
     @Test
     fun filesCarryTheReplyOnlyWhenTheyGoFirst() = runTest {
@@ -467,7 +487,11 @@ private class FakeMessagesRepository : MessagesRepository {
     }
     override suspend fun openable(item: com.construct.messenger.data.model.MediaItem, name: String): android.net.Uri = org.mockito.kotlin.mock()
     override fun describe(uri: android.net.Uri) = "a.pdf" to 10L
-    override suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>) = SendOutcome.Sent("v")
+    val voices = mutableListOf<ReplyRef?>()
+    override suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>, reply: ReplyRef?): SendOutcome {
+        voices += reply
+        return SendOutcome.Sent("v")
+    }
     val notes = mutableListOf<ReplyRef?>()
     override suspend fun sendVideoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake, reply: ReplyRef?): SendOutcome {
         notes += reply
