@@ -4,6 +4,9 @@ import com.construct.messenger.data.local.KeystoreManager
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
 import java.util.Base64
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -13,7 +16,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -23,12 +29,55 @@ class AuthSessionManagerTest {
     private val keystoreManager: KeystoreManager = mock()
     private val tokenRefreshCoordinator: TokenRefreshCoordinator = mock()
     private val deviceReauth: DeviceReauth = mock()
+    private val generations = kotlinx.coroutines.flow.MutableStateFlow(1L)
+    private val grpcClient: com.construct.messenger.data.api.GrpcClient = mock {
+        on { generation } doAnswer { generations.value }
+        on { generations } doReturn generations
+    }
 
     private lateinit var manager: AuthSessionManager
 
     @Before
     fun setUp() {
-        manager = AuthSessionManager(keystoreManager, tokenRefreshCoordinator, deviceReauth)
+        manager = AuthSessionManager(keystoreManager, tokenRefreshCoordinator, deviceReauth, grpcClient)
+    }
+
+    // ── keepFresh (TODO 173) ─────────────────────────────────────────────────
+
+    /**
+     * A refresh that failed for want of a path is tried again the moment the channels change —
+     * VEIL coming up at start-up — not a minute later. Mutation: wait out the minute only — reddens.
+     */
+    @Test
+    fun `a failed refresh is tried again as soon as the channels change`() = runTest {
+        whenever(keystoreManager.getAccessToken()).thenReturn("v4.public.old")
+        whenever(keystoreManager.getAccessTokenExpiresAt()).thenReturn(0L)
+        whenever(tokenRefreshCoordinator.refreshIfPossible())
+            .thenReturn(TokenRefreshResult.Failure(TokenRefreshError.NetworkError(RuntimeException("no tunnel"))))
+        backgroundScope.launch { manager.keepFresh() }
+        runCurrent()
+        verify(tokenRefreshCoordinator, times(1)).refreshIfPossible()
+
+        advanceTimeBy(1_000)
+        generations.value = 2L
+        runCurrent()
+
+        verify(tokenRefreshCoordinator, times(2)).refreshIfPossible()
+    }
+
+    /** With nothing changing, the retry still comes after [AuthSessionManager.RETRY_SECONDS]. */
+    @Test
+    fun `a failed refresh with no change of channels waits the minute`() = runTest {
+        whenever(keystoreManager.getAccessToken()).thenReturn("v4.public.old")
+        whenever(keystoreManager.getAccessTokenExpiresAt()).thenReturn(0L)
+        whenever(tokenRefreshCoordinator.refreshIfPossible())
+            .thenReturn(TokenRefreshResult.Failure(TokenRefreshError.NetworkError(RuntimeException("offline"))))
+        backgroundScope.launch { manager.keepFresh() }
+        advanceTimeBy(AuthSessionManager.RETRY_SECONDS * 1000 - 1)
+        verify(tokenRefreshCoordinator, times(1)).refreshIfPossible()
+
+        advanceTimeBy(2)
+        verify(tokenRefreshCoordinator, times(2)).refreshIfPossible()
     }
 
     // ── loadSession (format guard, §13.5) ────────────────────────────────────

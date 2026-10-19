@@ -53,6 +53,22 @@ class GrpcClientTest {
         assertNotNull(grpcClient.invite)
     }
 
+    /** A new route or a reconnect is seen by whoever waits on [GrpcClient.generations] (TODO 173). */
+    @Test
+    fun generations_followEveryReplacementOfTheChannels() {
+        val start = grpcClient.generations.value
+        assertEquals(grpcClient.generation, start)
+
+        grpcClient.routeThrough(40_000)
+        assertEquals(start + 1, grpcClient.generations.value)
+        grpcClient.routeThrough(40_000)
+        assertEquals(start + 1, grpcClient.generations.value)
+
+        grpcClient.reconnect()
+        assertEquals(start + 2, grpcClient.generations.value)
+        assertEquals(grpcClient.generation, grpcClient.generations.value)
+    }
+
     @Test
     fun sealedMessagingStub_isCreated() {
         assertNotNull(grpcClient.sealedMessaging)
