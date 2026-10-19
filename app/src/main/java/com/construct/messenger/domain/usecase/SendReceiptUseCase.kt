@@ -5,6 +5,7 @@ import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.MessagingService
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
+import com.construct.messenger.data.repository.SecuritySettingsRepository
 import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.SessionManager
 import com.construct.messenger.stealth.StealthPolicy
@@ -26,7 +27,8 @@ import uniffi.construct_core.CfeIncomingEvent
  *
  * **Canon:** iOS `OutboundSessionService.sendEncryptedDeliveryReceipt`.
  * Type rides in KNST byte 5. Outer envelope / SealedInner stay unspecified.
- * Fail-closed under stealth. Skip if there is no session.
+ * Fail-closed under stealth. Skip if there is no session, or if the person turned delivery
+ * receipts off (Settings → Security; iOS `DeliveryReceiptPreference`).
  */
 @Singleton
 class SendReceiptUseCase @Inject constructor(
@@ -38,9 +40,11 @@ class SendReceiptUseCase @Inject constructor(
     private val stealthPolicy: StealthPolicy,
     private val sealedSend: SealedSend,
     private val sessionStateStore: SessionStateStore,
+    private val securitySettings: SecuritySettingsRepository,
 ) {
     suspend fun delivered(contactId: String, messageIds: List<String>) {
         if (messageIds.isEmpty()) return
+        if (!securitySettings.sendsDeliveryReceipts.value) return
         val target = sessionManager.resolveTarget(contactId) ?: return
         val deviceId = target.deviceId
         val accountId = target.accountId

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.MarkChatRead
 import androidx.compose.material.icons.filled.PendingActions
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Timer
@@ -125,6 +126,7 @@ fun SecurityScreen(
         onIssuedInvites = onIssuedInvites,
         // On is asked about first; off is not — being harder to find needs no warning.
         onDiscoverable = { enabled -> if (enabled) confirmEnable = true else viewModel.setDiscoverable(false) },
+        onDeliveryReceipts = viewModel::setSendsDeliveryReceipts,
     )
 }
 
@@ -133,7 +135,7 @@ fun SecurityScreen(
  *
  * **Canon:** iOS `SecurityView` — one flat list, blocks divided by a separator, each with its
  * hint beneath. Order: PIN (biometrics, lock delay, off), recovery phrase, Lockdown, sender
- * anonymity, issued invites, key transparency, discovery. Not ported: the duress PIN (a
+ * anonymity, issued invites, key transparency, discovery, delivery receipts. Not ported: the duress PIN (a
  * separate step — it erases the account).
  */
 @Composable
@@ -148,6 +150,7 @@ private fun SecurityContent(
     onLockdown: (Boolean) -> Unit,
     onIssuedInvites: () -> Unit,
     onDiscoverable: (Boolean) -> Unit,
+    onDeliveryReceipts: (Boolean) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -222,6 +225,19 @@ private fun SecurityContent(
                 },
                 color = if (ui.failed) CTColor.danger else CTColor.textDim,
             )
+            HorizontalDivider()
+
+            SecurityRow(vertical = CTLayout.chromeGap) {
+                RowIcon(Icons.Default.MarkChatRead, if (ui.sendsDeliveryReceipts) CTColor.accent else CTColor.textDim)
+                Text(
+                    text = stringResource(R.string.delivery_receipts_toggle_title),
+                    style = CTFont.body,
+                    color = CTColor.text,
+                    modifier = Modifier.weight(1f),
+                )
+                CTSwitch(checked = ui.sendsDeliveryReceipts, onCheckedChange = onDeliveryReceipts)
+            }
+            Hint(stringResource(R.string.delivery_receipts_toggle_footer))
         }
     }
 }
@@ -485,6 +501,7 @@ private fun SecurityContentPreview() {
         onLockdown = {},
         onIssuedInvites = {},
         onDiscoverable = {},
+        onDeliveryReceipts = {},
     )
 }
 
