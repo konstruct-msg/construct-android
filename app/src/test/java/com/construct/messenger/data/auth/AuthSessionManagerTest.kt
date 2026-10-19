@@ -22,12 +22,13 @@ class AuthSessionManagerTest {
 
     private val keystoreManager: KeystoreManager = mock()
     private val tokenRefreshCoordinator: TokenRefreshCoordinator = mock()
+    private val deviceReauth: DeviceReauth = mock()
 
     private lateinit var manager: AuthSessionManager
 
     @Before
     fun setUp() {
-        manager = AuthSessionManager(keystoreManager, tokenRefreshCoordinator)
+        manager = AuthSessionManager(keystoreManager, tokenRefreshCoordinator, deviceReauth)
     }
 
     // ── loadSession (format guard, §13.5) ────────────────────────────────────
@@ -226,16 +227,52 @@ class AuthSessionManagerTest {
         verify(tokenRefreshCoordinator).refreshIfPossible()
     }
 
-    /** A background refresh that fails must not wipe the session: that is device re-auth's call. */
+    /** A background refresh that fails must not wipe the session, nor a sign-in that fails after it. */
     @Test
     fun `a failed refresh reports false and clears nothing`() = runTest {
         whenever(keystoreManager.getAccessToken()).thenReturn("v4.public.x")
         whenever(keystoreManager.getAccessTokenExpiresAt()).thenReturn(null)
         whenever(tokenRefreshCoordinator.refreshIfPossible())
             .thenReturn(TokenRefreshResult.Failure(TokenRefreshError.TokenRevoked))
+        whenever(deviceReauth.recover("v4.public.x")).thenReturn(false)
 
         assertFalse(manager.ensureFresh(nowSeconds = 1_000L))
         verify(keystoreManager, never()).clearTokens()
+    }
+
+    /**
+     * TODO 171, the tester's log: the refresh token revoked, the refusal only logged, ten days of
+     * refused sends. Mutation: no sign-in, or no `invalidateCache` — reddens.
+     */
+    @Test
+    fun `a revoked refresh token is followed by a sign-in with the device key`() = runTest {
+        whenever(keystoreManager.getAccessToken()).thenReturn("v4.public.x")
+        whenever(keystoreManager.getAccessTokenExpiresAt()).thenReturn(900L)
+        whenever(tokenRefreshCoordinator.refreshIfPossible())
+            .thenReturn(TokenRefreshResult.Failure(TokenRefreshError.TokenRevoked))
+        whenever(deviceReauth.recover("v4.public.x")).thenReturn(true)
+
+        assertTrue(manager.ensureFresh(nowSeconds = 1_000L))
+        verify(deviceReauth).recover("v4.public.x")
+        verify(tokenRefreshCoordinator).invalidateCache()
+        assertEquals(AuthSessionManager.AuthSessionState.AUTHENTICATED, manager.state.value)
+    }
+
+    /** Mutation: sign in on any failure — an offline device would sign in once a minute. */
+    @Test
+    fun `a network failure, or a removed device, does not sign in`() = runTest {
+        whenever(keystoreManager.getAccessToken()).thenReturn("v4.public.x")
+        whenever(keystoreManager.getAccessTokenExpiresAt()).thenReturn(900L)
+        whenever(tokenRefreshCoordinator.refreshIfPossible())
+            .thenReturn(TokenRefreshResult.Failure(TokenRefreshError.NetworkError(RuntimeException("offline"))))
+        assertFalse(manager.ensureFresh(nowSeconds = 1_000L))
+        whenever(tokenRefreshCoordinator.refreshIfPossible())
+            .thenReturn(TokenRefreshResult.Failure(TokenRefreshError.DeviceRemoved))
+        assertFalse(manager.ensureFresh(nowSeconds = 1_000L))
+        verify(deviceReauth, never()).recover(org.mockito.kotlin.any())
+
+        assertTrue(AuthSessionManager.signsInAgain(TokenRefreshError.NoRefreshToken))
+        assertFalse(AuthSessionManager.signsInAgain(TokenRefreshError.NoDeviceId))
     }
 
     @Test

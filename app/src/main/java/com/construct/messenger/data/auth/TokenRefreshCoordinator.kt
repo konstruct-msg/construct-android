@@ -60,9 +60,8 @@ sealed class TokenRefreshError(cause: Throwable? = null) : Exception(cause) {
  *
  * **Permanent failure → device re-auth:**
  * If [refreshIfPossible] returns [TokenRefreshResult.Failure] with [TokenRefreshError.isPermanent],
- * the caller should:
- * 1. Call [KeystoreManager.clearTokens] to wipe stale tokens.
- * 2. Trigger device re-authentication via [com.construct.messenger.domain.usecase.LoginUseCase].
+ * [AuthSessionManager.ensureFresh] signs in again with the device key ([DeviceReauth]),
+ * keeping the stored tokens until new ones arrive.
  *
  * **Thread-safety:** all public methods are thread-safe (synchronised via [Mutex]).
  */

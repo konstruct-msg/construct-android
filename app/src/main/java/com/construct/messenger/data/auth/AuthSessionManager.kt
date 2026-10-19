@@ -34,6 +34,7 @@ import javax.inject.Singleton
 class AuthSessionManager @Inject constructor(
     private val keystoreManager: KeystoreManager,
     private val tokenRefreshCoordinator: TokenRefreshCoordinator,
+    private val deviceReauth: DeviceReauth,
 ) {
 
     enum class AuthSessionState {
@@ -144,15 +145,16 @@ class AuthSessionManager @Inject constructor(
      * left overnight came back with every RPC refused — the pending drain, the intake publish —
      * and a stream that opened and then heard nothing (device log, 2026-09-29).
      *
-     * A permanent failure is logged, not acted on: wiping the session belongs to the device
-     * re-auth path, and this runs from background loops.
+     * A refresh the server refuses for good ([signsInAgain]) is followed by a sign-in with the
+     * device key ([DeviceReauth]); nothing is wiped. Until 2026-10-19 it was only logged, and a
+     * device whose refresh token was revoked sent nothing for ten days (TODO 171).
      *
      * [force]: refresh even with time left — once per start (TODO 126). A device with a stored
      * session never signs in again, and the access token lives 24 h, so a device removed from
      * another one heard it only near the token's end; the refresh is where the server says so.
      */
     suspend fun ensureFresh(nowSeconds: Long = System.currentTimeMillis() / 1000, force: Boolean = false): Boolean {
-        if (keystoreManager.getAccessToken() == null) return false
+        val token = keystoreManager.getAccessToken() ?: return false
         if (!force && !needsRefresh(keystoreManager.getAccessTokenExpiresAt(), nowSeconds)) return true
         return when (val result = tokenRefreshCoordinator.refreshIfPossible()) {
             is TokenRefreshResult.Success -> {
@@ -161,7 +163,11 @@ class AuthSessionManager @Inject constructor(
             }
             is TokenRefreshResult.Failure -> {
                 Log.w(TAG, "access token refresh failed: ${result.error}")
-                false
+                if (!signsInAgain(result.error) || !deviceReauth.recover(token)) return false
+                // The refusal is cached; the new refresh token must not be answered with it.
+                tokenRefreshCoordinator.invalidateCache()
+                _state.value = AuthSessionState.AUTHENTICATED
+                true
             }
         }
     }
@@ -191,6 +197,13 @@ class AuthSessionManager @Inject constructor(
         const val RETRY_SECONDS = 60L
 
         /** Unknown expiry refreshes: the answer carries the expiry, and one RPC settles it. */
+        /**
+         * The refresh token is gone or refused, and the device still has its key. Not a removed
+         * device ([TokenRefreshError.DeviceRemoved]), not one with no id, not the network.
+         */
+        fun signsInAgain(error: TokenRefreshError): Boolean =
+            error is TokenRefreshError.TokenRevoked || error is TokenRefreshError.NoRefreshToken
+
         fun needsRefresh(expiresAt: Long?, nowSeconds: Long): Boolean =
             expiresAt == null || nowSeconds >= expiresAt - REFRESH_MARGIN_SECONDS
 
