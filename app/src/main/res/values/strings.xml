@@ -399,6 +399,8 @@
     <string name="security_section_discovery">discovery</string>
     <string name="searchable_toggle_title">searchable by username</string>
     <string name="searchable_toggle_footer">When enabled, anyone who knows your exact username can find you. This cannot be used to guess or enumerate usernames — only 100% exact matches work. Off by default.</string>
+    <string name="delivery_receipts_toggle_title">Delivery receipts</string>
+    <string name="delivery_receipts_toggle_footer">Tell senders when their message reaches this device. When off, they won’t see it as delivered, and their phone isn’t woken up for it. Your own messages still show as delivered by anyone who keeps this on.</string>
     <string name="searchable_no_username_hint">set a username first to enable search</string>
     <string name="searchable_confirm_title">Enable search?</string>
     <string name="searchable_confirm_message">Your username will be findable by anyone who types it exactly. Disable at any time in Security settings.</string>

@@ -34,6 +34,8 @@ data class SecurityUiState(
     val recoveryHeld: HeldPhrase = HeldPhrase.NONE,
     val lockdown: Lockdown = Lockdown(),
     val senderAnonymity: Boolean = true,
+    /** This device tells a sender their message arrived. */
+    val sendsDeliveryReceipts: Boolean = true,
     /** Every KT verdict this device reached on contacts' bundles. */
     val kt: KtTally = KtTally(),
 )
@@ -72,6 +74,9 @@ class SecurityViewModel @Inject constructor(
         viewModelScope.launch {
             securitySettings.lockdown.collect { lockdown -> state.update { it.copy(lockdown = lockdown) } }
         }
+        viewModelScope.launch {
+            securitySettings.sendsDeliveryReceipts.collect { on -> state.update { it.copy(sendsDeliveryReceipts = on) } }
+        }
         state.update { it.copy(senderAnonymity = securitySettings.senderAnonymity) }
         viewModelScope.launch { ktLog.tally.collect { kt -> state.update { it.copy(kt = kt) } } }
     }
@@ -92,6 +97,9 @@ class SecurityViewModel @Inject constructor(
             state.update { it.copy(recovery = status ?: it.recovery) }
         }
     }
+
+    /** Local to this device; nothing is sent. Receipts from others are taken either way. */
+    fun setSendsDeliveryReceipts(enabled: Boolean) = securitySettings.setSendsDeliveryReceipts(enabled)
 
     fun setLockdown(enabled: Boolean) {
         if (!enabled) {

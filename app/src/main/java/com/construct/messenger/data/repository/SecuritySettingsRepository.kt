@@ -24,6 +24,11 @@ data class Lockdown(
  * that moment are the approved set; a message from anyone else still arrives, is decrypted and
  * saved, but posts no notification. Nothing is sent and the server cannot tell it is on.
  *
+ * **Delivery receipts** (iOS `DeliveryReceiptPreference`): whether this device tells a sender
+ * their message arrived. On by default. A receipt says when this phone was online, and each one
+ * wakes the sender's phone with a push the server cannot tell from a message (TODO 123/124).
+ * Off stops only what we send: receipts from others still mark our messages delivered.
+ *
  * **Sender anonymity** is read from [StealthPolicy] so the Security screen states it without
  * reaching into `stealth/` itself.
  */
@@ -35,6 +40,13 @@ class SecuritySettingsRepository @Inject constructor(
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val lockdownState = MutableStateFlow(loadLockdown())
     val lockdown: StateFlow<Lockdown> = lockdownState.asStateFlow()
+    private val receiptsState = MutableStateFlow(prefs.getBoolean(KEY_SEND_RECEIPTS, true))
+    val sendsDeliveryReceipts: StateFlow<Boolean> = receiptsState.asStateFlow()
+
+    fun setSendsDeliveryReceipts(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SEND_RECEIPTS, enabled).apply()
+        receiptsState.value = enabled
+    }
 
     /** Always true in release; a debug override can turn it off, and the screen says so. */
     val senderAnonymity: Boolean get() = stealthPolicy.isEnabled
@@ -71,5 +83,6 @@ class SecuritySettingsRepository @Inject constructor(
         const val PREFS = "security_prefs"
         const val KEY_ACTIVATED_AT = "lockdown.activatedAt"
         const val KEY_APPROVED = "lockdown.approvedSenders"
+        const val KEY_SEND_RECEIPTS = "sendDeliveryReceipts"
     }
 }

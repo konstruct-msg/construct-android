@@ -403,6 +403,8 @@
     <string name="security_section_discovery">обнаружение</string>
     <string name="searchable_toggle_title">видимость в поиске</string>
     <string name="searchable_toggle_footer">Когда включено, любой, кто знает ваш точный username, может вас найти. Угадать или перебрать username невозможно — срабатывает только 100% совпадение. По умолчанию выключено.</string>
+    <string name="delivery_receipts_toggle_title">Сообщать о доставке</string>
+    <string name="delivery_receipts_toggle_footer">Отправитель видит, что сообщение дошло до этого устройства. Если выключить, он этого не увидит, и его телефон не будет просыпаться ради квитанции. Ваши сообщения по-прежнему отмечаются доставленными у тех, у кого это включено.</string>
     <string name="searchable_no_username_hint">сначала задайте username</string>
     <string name="searchable_confirm_title">Включить поиск?</string>
     <string name="searchable_confirm_message">Ваш username станет доступен для поиска всем, кто введёт его точно. Отключить можно в любой момент в настройках безопасности.</string>
