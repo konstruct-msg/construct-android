@@ -1,5 +1,6 @@
 package com.construct.messenger.ui.screens.chats
 
+import com.construct.messenger.ui.theme.forScriptOf
 import android.content.Context
 import android.text.format.DateFormat
 import android.text.format.DateUtils
@@ -88,9 +89,10 @@ fun ChatRow(
                     Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                         // iOS `resolvedDisplayName`: the name as given, never upper-cased; the
                         // username only when there is no name.
+                        val name = chat.displayName.ifBlank { chat.username }
                         Text(
-                            text = chat.displayName.ifBlank { chat.username },
-                            style = CTFont.bodyEmphasis,
+                            text = name,
+                            style = CTFont.bodyEmphasis.forScriptOf(name),
                             color = CTColor.text,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -128,7 +130,7 @@ fun ChatRow(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = chat.lastMessagePreview.orEmpty(),
-                        style = CTFont.secondary,
+                        style = CTFont.secondary.forScriptOf(chat.lastMessagePreview.orEmpty()),
                         color = CTColor.textDim,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
