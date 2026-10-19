@@ -1,12 +1,14 @@
 package com.construct.messenger.data.auth
 
 import com.construct.messenger.diagnostics.Log
+import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,6 +37,7 @@ class AuthSessionManager @Inject constructor(
     private val keystoreManager: KeystoreManager,
     private val tokenRefreshCoordinator: TokenRefreshCoordinator,
     private val deviceReauth: DeviceReauth,
+    private val grpcClient: GrpcClient,
 ) {
 
     enum class AuthSessionState {
@@ -174,14 +177,22 @@ class AuthSessionManager @Inject constructor(
 
     /**
      * Keep the token fresh for as long as [scope] lives: wake [REFRESH_MARGIN_SECONDS] before
-     * expiry and refresh. A failed refresh is tried again after [RETRY_SECONDS].
+     * expiry and refresh. A failed refresh is tried again after [RETRY_SECONDS], or as soon as the
+     * channels change: with VEIL on, the first refresh at start-up goes before the tunnel is up,
+     * and until 2026-10-19 the expired token stayed a whole minute after it was (TODO 173).
      */
     suspend fun keepFresh() {
         while (true) {
+            val generation = grpcClient.generation
             val ok = ensureFresh()
-            val now = System.currentTimeMillis() / 1000
-            val waitSeconds = if (!ok) RETRY_SECONDS else secondsUntilRefresh(keystoreManager.getAccessTokenExpiresAt(), now)
-            kotlinx.coroutines.delay(waitSeconds * 1000)
+            if (ok) {
+                val now = System.currentTimeMillis() / 1000
+                kotlinx.coroutines.delay(secondsUntilRefresh(keystoreManager.getAccessTokenExpiresAt(), now) * 1000)
+            } else {
+                kotlinx.coroutines.withTimeoutOrNull(RETRY_SECONDS * 1000) {
+                    grpcClient.generations.first { it != generation }
+                }
+            }
         }
     }
 

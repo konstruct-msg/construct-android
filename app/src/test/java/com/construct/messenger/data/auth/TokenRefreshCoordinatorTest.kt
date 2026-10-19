@@ -279,6 +279,27 @@ class TokenRefreshCoordinatorTest {
         verify(authStub, times(1)).refreshToken(any(), any())
     }
 
+    /**
+     * A failure answered on the channels before VEIL came up says nothing about the new ones: the
+     * next caller asks again inside the cache window (TODO 173). Mutation: drop the generation from
+     * the cache check — reddens.
+     */
+    @Test
+    fun `a cached answer from replaced channels is not reused`() = runTest {
+        whenever(keystoreManager.getRefreshToken()).thenReturn("refresh_token")
+        whenever(keystoreManager.getDeviceId()).thenReturn("device-1")
+        whenever(authStub.refreshToken(any(), any())).thenThrow(StatusRuntimeException(Status.UNAVAILABLE))
+        whenever(grpcClient.generation).thenReturn(1L)
+
+        coordinator.refreshIfPossible()
+        coordinator.refreshIfPossible()
+        verify(authStub, times(1)).refreshToken(any(), any())
+
+        whenever(grpcClient.generation).thenReturn(2L)
+        coordinator.refreshIfPossible()
+        verify(authStub, times(2)).refreshToken(any(), any())
+    }
+
     @Test
     fun `invalidateCache forces a fresh RPC`() = runTest {
         whenever(keystoreManager.getRefreshToken()).thenReturn("refresh_token")

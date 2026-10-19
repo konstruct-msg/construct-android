@@ -9,6 +9,9 @@ import com.construct.messenger.veil.VeilModeStore
 import io.grpc.ClientInterceptor
 import io.grpc.ManagedChannel
 import io.grpc.okhttp.OkHttpChannelBuilder
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import shared.proto.sentinel.v1.SentinelServiceGrpcKt.SentinelServiceCoroutineStub
 import shared.proto.services.v1.AuthServiceGrpcKt.AuthServiceCoroutineStub
 import shared.proto.services.v1.DeviceServiceGrpcKt.DeviceServiceCoroutineStub
@@ -66,6 +69,11 @@ class GrpcClient @Inject constructor(
      */
     val generation: Long get() = channels.generation
 
+    private val _generations = MutableStateFlow(channels.generation)
+
+    /** [generation] as it moves: a caller waiting on a path that was not there wakes when one is. */
+    val generations: StateFlow<Long> = _generations.asStateFlow()
+
     /** Where calls go right now, as the route machine names it. */
     val target: TransportRoute.Target get() = channels.veilPort?.let { TransportRoute.Target.Veil(it, "") } ?: TransportRoute.Target.Direct
 
@@ -78,7 +86,7 @@ class GrpcClient @Inject constructor(
     fun routeThrough(port: Int?) {
         val old = synchronized(this) {
             if (channels.veilPort == port) return
-            channels.also { channels = build(port) }
+            channels.also { channels = build(port); _generations.value = channels.generation }
         }
         old.auth.shutdownNow()
         old.sealed.shutdownNow()
@@ -86,7 +94,7 @@ class GrpcClient @Inject constructor(
 
     /** Fresh channels on the same route: the router's "invalidate the gRPC client". */
     fun reconnect() {
-        val old = synchronized(this) { channels.also { channels = build(it.veilPort) } }
+        val old = synchronized(this) { channels.also { channels = build(it.veilPort); _generations.value = channels.generation } }
         old.auth.shutdownNow()
         old.sealed.shutdownNow()
     }

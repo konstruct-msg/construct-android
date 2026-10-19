@@ -79,6 +79,10 @@ class TokenRefreshCoordinator @Inject constructor(
     @Volatile
     private var lastRefreshTimeMs: Long = 0L
 
+    /** The channels [cachedResult] was answered on; an answer from the old ones is not reused. */
+    @Volatile
+    private var cachedGeneration: Long = 0L
+
     /**
      * Attempts a token refresh.
      *
@@ -95,7 +99,7 @@ class TokenRefreshCoordinator @Inject constructor(
             // callers see the cached value rather than starting a new RPC.
             val now = System.currentTimeMillis()
             val cached = cachedResult
-            if (cached != null && now - lastRefreshTimeMs < CACHE_TTL_MS) {
+            if (cached != null && now - lastRefreshTimeMs < CACHE_TTL_MS && cachedGeneration == grpcClient.generation) {
                 return@withLock cached
             }
 
@@ -113,8 +117,9 @@ class TokenRefreshCoordinator @Inject constructor(
                 return@withLock failure
             }
 
+            val generation = grpcClient.generation
             val result = performRefresh(refreshToken, deviceId)
-            cacheResult(result, now)
+            cacheResult(result, now, generation)
             result
         }
     }
@@ -181,9 +186,10 @@ class TokenRefreshCoordinator @Inject constructor(
         }
     }
 
-    private fun cacheResult(result: TokenRefreshResult, now: Long) {
+    private fun cacheResult(result: TokenRefreshResult, now: Long, generation: Long = grpcClient.generation) {
         cachedResult = result
         lastRefreshTimeMs = now
+        cachedGeneration = generation
     }
 
     private companion object {
