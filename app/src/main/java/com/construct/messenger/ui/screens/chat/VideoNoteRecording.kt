@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.keepScreenOn
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -71,7 +72,7 @@ import kotlinx.coroutines.launch
  * on a loop over the kept stretch, with a strip of frames and a handle at each end to trim it
  * (iOS `VideoNoteReviewView`). The send keeps that stretch; resuming drops the trim.
  *
- * Shown only once the screen holds CAMERA and RECORD_AUDIO.
+ * Shown only once the screen holds CAMERA and RECORD_AUDIO. The screen does not time out under it.
  */
 @Composable
 fun VideoNoteRecordingOverlay(onSend: (VideoNoteTake) -> Unit, onClose: () -> Unit) {
@@ -118,7 +119,10 @@ fun VideoNoteRecordingOverlay(onSend: (VideoNoteTake) -> Unit, onClose: () -> Un
                 .fillMaxSize()
                 .background(CTColor.mediaGround.copy(alpha = RECORDING_DIM))
                 // Nothing behind is touchable while recording.
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+                // The screen stays on while the overlay is up: the phone locked itself mid-note,
+                // a minute being longer than many screen timeouts (testers, 2026-10-19).
+                .keepScreenOn(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
