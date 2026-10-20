@@ -41,12 +41,6 @@ interface ChatStore {
     /** Adds [chat] unless the chat is already there. False: it was, and nothing changed. */
     suspend fun insert(chat: ChatRecord): Boolean
 
-    /**
-     * Moves the preview to a message unless the one shown is newer — messages arrive out of order,
-     * and an older one must not replace a newer preview. An equal time moves it (an edit).
-     */
-    suspend fun advancePreview(id: String, text: String, timeMs: Long)
-
     /** Sets the preview whatever it was — after a deletion; both null when no message is left. */
     suspend fun setPreview(id: String, text: String?, timeMs: Long?)
 
@@ -61,18 +55,8 @@ interface ChatStore {
 }
 
 /**
- * A message for the chat with [peerId] was stored: the chat is created with it as the preview, or
- * the preview moves forward to it; [unread] counts it. The peer's contact row must exist first.
- */
-suspend fun ChatStore.noteMessage(id: String, peerId: String, preview: String, timeMs: Long, unread: Boolean) {
-    if (insert(ChatRecord(id, peerId, preview, timeMs, unreadCount = if (unread) 1 else 0))) return
-    advancePreview(id, preview, timeMs)
-    if (unread) incrementUnread(id)
-}
-
-/**
  * The chat with [peerId], created empty when there is none — before its first message is stored,
- * which the core holds to it. [noteMessage] then sets its preview.
+ * which the core holds to it. `refreshChatPreview` then sets its preview.
  */
 suspend fun ChatStore.ensure(id: String, peerId: String) {
     insert(ChatRecord(id, peerId))

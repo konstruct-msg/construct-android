@@ -2,6 +2,7 @@ package com.construct.messenger.service
 
 import android.content.Context
 import com.construct.messenger.R
+import com.construct.messenger.data.local.MessageRecord
 import com.construct.messenger.data.model.MessageMedia
 import com.construct.messenger.util.MediaWire
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -15,6 +16,13 @@ import javax.inject.Inject
  */
 fun interface MediaPreviewText {
     fun of(media: MediaWire.Stored): String
+}
+
+/** The chat list's line for a stored message: its media's, or its text. */
+fun MediaPreviewText.of(row: MessageRecord): String {
+    val kind = row.mediaType ?: return row.text
+    val bytes = row.mediaPayload ?: return row.text
+    return of(MediaWire.Stored(kind, bytes, row.text))
 }
 
 class AndroidMediaPreviewText @Inject constructor(

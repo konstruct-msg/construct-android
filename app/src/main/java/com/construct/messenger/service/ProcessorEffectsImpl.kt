@@ -9,7 +9,6 @@ import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.ChatStore
 import com.construct.messenger.data.local.ensure
-import com.construct.messenger.data.local.noteMessage
 import com.construct.messenger.data.local.MessageStore
 import com.construct.messenger.data.local.MessageRecord
 import com.construct.messenger.data.local.applyEdit
@@ -485,7 +484,8 @@ class ProcessorEffectsImpl @Inject constructor(
         val readElsewhere = readAt != null && readState.isRead(contactId, readAt)
         val unseen = firstSight && !onScreen && !readElsewhere
         if (firstSight && readAt != null) readState.arrived(contactId, readAt, onScreen)
-        chats.noteMessage(chatId, contactId, media?.let(mediaPreview::of) ?: text, timestampMs, unread = unseen)
+        if (unseen) chats.incrementUnread(chatId)
+        messages.refreshChatPreview(chats, chatId, mediaPreview::of)
         if (unseen) {
             runCatching { alerts.onUnseenMessage(contactId) }
                 .onFailure { Log.w(TAG, "message notification failed", it) }
@@ -528,7 +528,7 @@ class ProcessorEffectsImpl @Inject constructor(
         )
         // Our own album, sent from another device: this one has not got the blob either.
         if (prior == null && media != null) mediaArrivals.onArrived(media.kind, media.bytes)
-        chats.noteMessage(chatId, partnerUserId, media?.let(mediaPreview::of) ?: text, timestampMs, unread = false)
+        messages.refreshChatPreview(chats, chatId, mediaPreview::of)
     }
 
     /**
@@ -560,14 +560,14 @@ class ProcessorEffectsImpl @Inject constructor(
         val text = edit.newText.ifEmpty { row.text }
         // iOS: `new_text` carries a photo's caption too, and the album keeps it.
         messages.applyEdit(row, text)
-        messages.refreshChatPreview(chats, row.chatId)
+        messages.refreshChatPreview(chats, row.chatId, mediaPreview::of)
     }
 
     private suspend fun applyDelete(targetMessageId: String, sentByMe: Boolean) {
         val row = messages.get(targetMessageId) ?: return
         if (row.isSentByMe != sentByMe) return
         messages.delete(row.id)
-        messages.refreshChatPreview(chats, row.chatId)
+        messages.refreshChatPreview(chats, row.chatId, mediaPreview::of)
     }
 
     /**

@@ -83,7 +83,16 @@ class CoreMessageStore(
         }
     }
 
-    override suspend fun latestVisible(chatId: String): MessageRecord? = io { s -> visible(s, chatId).lastOrNull()?.record() }
+    // From the newest page back, not the whole chat: every stored message asks this.
+    override suspend fun latestVisible(chatId: String): MessageRecord? = io { s ->
+        var page = s.messagesBefore(chatId, null, null, LATEST_PAGE)
+        while (page.isNotEmpty()) {
+            page.lastOrNull { it.contentType.toInt() == 0 }?.let { return@io it.record() }
+            if (page.size.toUInt() < LATEST_PAGE) break
+            page = s.messagesBefore(chatId, page.first().orderKey, page.first().id, LATEST_PAGE)
+        }
+        null
+    }
 
     override suspend fun delete(id: String) {
         io { s -> find(s, id)?.let { s.deleteMessage(it.id) } }
@@ -128,6 +137,8 @@ class CoreMessageStore(
     }
 
 }
+
+private const val LATEST_PAGE = 50u
 
 /** The chat's messages in the store's order, oldest first: newest page, then the pages before it. */
 internal fun LocalStore.chatMessages(chatId: String): List<LocalMessage> {

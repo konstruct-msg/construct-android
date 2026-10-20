@@ -8,13 +8,13 @@ import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.ChatStore
 import com.construct.messenger.data.local.ensure
-import com.construct.messenger.data.local.noteMessage
 import com.construct.messenger.data.local.MessageStore
 import com.construct.messenger.data.local.MessageRecord
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.service.MediaPreviewText
+import com.construct.messenger.service.of
 import com.construct.messenger.service.OrchestratorGateway
 import com.construct.messenger.service.OwedCopies
 import com.construct.messenger.service.ServerMessageIds
@@ -226,8 +226,12 @@ class SendMessageUseCase @Inject constructor(
                 // it there. Devices that refused are named in the log, not in the row — a per
                 // device status needs a per device carrier, which the store does not have yet.
                 messages.setDeliveryStatus(messageId, DeliveryStatus.SENT)
-                // Out of the pending place at the bottom, into the server's order.
-                tally.orderKey?.let { messages.setOrderKey(messageId, it) }
+                // Out of the pending place at the bottom, into the server's order — which may put
+                // a message that arrived meanwhile after it, so the list follows.
+                tally.orderKey?.let {
+                    messages.setOrderKey(messageId, it)
+                    messages.refreshChatPreview(chats, ConversationId.direct(myId, contactId), mediaPreview::of)
+                }
                 // The devices that refused are the retry's (TODO 155) — only them: another copy to
                 // one that took it would show the message twice.
                 if (tally.owed.isEmpty()) {
@@ -384,7 +388,7 @@ class SendMessageUseCase @Inject constructor(
         return when (val outcome = sendAction(myId, contactId, EditWire.encode(row.id, body), "edit")) {
             is SendOutcome.Sent -> {
                 messages.applyEdit(row, body)
-                messages.refreshChatPreview(chats, row.chatId)
+                messages.refreshChatPreview(chats, row.chatId, mediaPreview::of)
                 outcome
             }
             is SendOutcome.Failed -> SendOutcome.Failed(targetMessageId, outcome.reason)
@@ -460,7 +464,10 @@ class SendMessageUseCase @Inject constructor(
             return SendOutcome.Failed(messageId, result?.errorCode?.ifEmpty { "send failed" } ?: "send failed")
         }
         messages.setDeliveryStatus(messageId, DeliveryStatus.SENT)
-        result.orderKey?.let { messages.setOrderKey(messageId, it) }
+        result.orderKey?.let {
+            messages.setOrderKey(messageId, it)
+            messages.refreshChatPreview(chats, ConversationId.direct(myId, myId), mediaPreview::of)
+        }
         runCatching {
             deliverCopies(myId, myId, messageId, timestampMs, content, pinned)
         }.onFailure {
@@ -756,8 +763,7 @@ class SendMessageUseCase @Inject constructor(
                 mediaPayload = media?.bytes,
             ),
         )
-        val preview = media?.let(mediaPreview::of) ?: text
-        chats.noteMessage(chatId, contactId, preview, timestampMs, unread = false)
+        messages.refreshChatPreview(chats, chatId, mediaPreview::of)
     }
 
     private suspend fun sendRecipientCopy(

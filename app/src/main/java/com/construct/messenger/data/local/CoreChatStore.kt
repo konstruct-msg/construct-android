@@ -48,10 +48,6 @@ class CoreChatStore(private val feed: LocalStoreFeed) : ChatStore {
         ) == LocalInsert.INSERTED
     }
 
-    override suspend fun advancePreview(id: String, text: String, timeMs: Long) {
-        io { it.advanceChatPreview(id, text, timeMs) }
-    }
-
     override suspend fun setPreview(id: String, text: String?, timeMs: Long?) {
         io { it.setChatPreview(id, text, timeMs) }
     }
