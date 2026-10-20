@@ -65,6 +65,31 @@ class AuthSessionManagerTest {
         verify(tokenRefreshCoordinator, times(2)).refreshIfPossible()
     }
 
+    /**
+     * The start's forced refresh, refused before the VEIL tunnel was up, is made when the channels
+     * change — though the token has hours left — and only once. Mutation: `ensureFresh()` without
+     * `force` in the loop — no second refresh; `force` never cleared — a third.
+     */
+    @Test
+    fun `a forced refresh that did not get through is made once the channels change`() = runTest {
+        whenever(keystoreManager.getAccessToken()).thenReturn("v4.public.current")
+        whenever(keystoreManager.getAccessTokenExpiresAt()).thenReturn(System.currentTimeMillis() / 1000 + 20 * 3600)
+        whenever(tokenRefreshCoordinator.refreshIfPossible())
+            .thenReturn(TokenRefreshResult.Failure(TokenRefreshError.NetworkError(RuntimeException("no tunnel"))))
+        backgroundScope.launch { manager.keepFresh(forceOwed = true) }
+        runCurrent()
+        verify(tokenRefreshCoordinator, times(1)).refreshIfPossible()
+
+        whenever(tokenRefreshCoordinator.refreshIfPossible()).thenReturn(TokenRefreshResult.Success("v4.public.next", null, System.currentTimeMillis() / 1000 + 24 * 3600))
+        generations.value = 2L
+        runCurrent()
+        verify(tokenRefreshCoordinator, times(2)).refreshIfPossible()
+
+        // Past the loop's next wake: the token still has hours left, so nothing more is owed.
+        advanceTimeBy(21 * 3600 * 1000L)
+        verify(tokenRefreshCoordinator, times(2)).refreshIfPossible()
+    }
+
     /** With nothing changing, the retry still comes after [AuthSessionManager.RETRY_SECONDS]. */
     @Test
     fun `a failed refresh with no change of channels waits the minute`() = runTest {

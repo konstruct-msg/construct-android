@@ -123,8 +123,9 @@ class MessagingRuntime @Inject constructor(
         // Every RPC below carries the stored token; one that expired overnight was refused
         // across the board (device log 2026-09-29).
         // Forced, once per start: a removed device hears it now, not when its 24-hour token ends.
-        authSession.ensureFresh(force = true)
-        if (refreshJob?.isActive != true) refreshJob = scope.launch { authSession.keepFresh() }
+        // With VEIL on it fails here, before the tunnel; keepFresh then owes it (TODO 174).
+        val forced = authSession.ensureFresh(force = true)
+        if (refreshJob?.isActive != true) refreshJob = scope.launch { authSession.keepFresh(forceOwed = !forced) }
         // Before the first RPC: with VEIL on, the route machine starts the proxy now.
         transportRouter.start()
 
