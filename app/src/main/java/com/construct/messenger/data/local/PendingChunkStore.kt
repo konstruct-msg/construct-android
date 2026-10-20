@@ -1,7 +1,5 @@
 package com.construct.messenger.data.local
 
-import com.construct.messenger.data.local.db.PendingChunkDao
-import com.construct.messenger.data.local.db.PendingChunkEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import uniffi.construct_core.LocalPendingChunk
@@ -21,7 +19,7 @@ class PendingChunk(
 
 /**
  * Where [com.construct.messenger.service.ChunkReassembler] holds chunks between envelopes
- * (TODO 136). [PendingChunkStoreContract] holds Room's and the core's to one behaviour.
+ * (TODO 136). [PendingChunkStoreContract] holds the stores to one behaviour.
  */
 interface PendingChunkStore {
     /** A redelivered chunk keeps the copy already held. */
@@ -34,22 +32,6 @@ interface PendingChunkStore {
 
     /** Forgets chunks received before [cutoffMs]; returns how many. */
     suspend fun forgetBefore(cutoffMs: Long): Int
-}
-
-/** Built by `LocalStores`; nothing provides a `PendingChunkDao`. */
-class RoomPendingChunkStore(private val dao: PendingChunkDao) : PendingChunkStore {
-    override suspend fun add(chunk: PendingChunk) = with(chunk) {
-        dao.insert(PendingChunkEntity(senderId, messageId, chunkIndex, totalChunks, plaintextLength, contentType, payload, receivedAtMs))
-    }
-
-    override suspend fun chunks(senderId: String, messageId: String): List<PendingChunk> =
-        dao.chunks(senderId, messageId).map {
-            PendingChunk(it.senderId, it.messageId, it.chunkIndex, it.totalChunks, it.plaintextLength, it.contentType, it.payload, it.receivedAtMs)
-        }
-
-    override suspend fun delete(senderId: String, messageId: String) = dao.delete(senderId, messageId)
-
-    override suspend fun forgetBefore(cutoffMs: Long): Int = dao.pruneOlderThan(cutoffMs)
 }
 
 /** On the core's `LocalStore`, which keeps the same table. */

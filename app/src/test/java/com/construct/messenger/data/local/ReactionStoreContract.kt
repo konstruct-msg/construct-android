@@ -1,9 +1,7 @@
 package com.construct.messenger.data.local
 
 import android.app.Application
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import com.construct.messenger.data.local.db.ConstructDatabase
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.util.JdkEmoji
 import com.construct.messenger.util.ReactionRules
@@ -21,9 +19,8 @@ import org.robolectric.annotation.Config
 import uniffi.construct_core.LocalStore
 
 /**
- * What every [ReactionStore] does — Room's today and the core's `LocalStore` (TODO 136), which
- * replaces it. Reactions sit beside messages, never joined to them: a chat and its messages are
- * set up first, and a reaction may name a message that is not here.
+ * What every [ReactionStore] does — on the core's `LocalStore` and the fake (TODO 136).
+ * Reactions sit beside messages, never joined to them: a chat and its messages are set up first, and a reaction may name a message that is not here.
  */
 abstract class ReactionStoreContract {
     protected abstract val contacts: ContactStore
@@ -136,21 +133,6 @@ abstract class ReactionStoreContract {
         store.restoreLocal(m1, peer, ReactionRules.Row("🔥", 5), nowMs = 1000)
         assertEquals(ReactionRules.Row("🔥", 5), store.current(m1, peer))
     }
-}
-
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = Application::class)
-class RoomReactionStoreTest : ReactionStoreContract() {
-    private val db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Application>(), ConstructDatabase::class.java)
-        .allowMainThreadQueries()
-        .build()
-    override val contacts: ContactStore = RoomContactStore(db.userDao())
-    override val chats: ChatStore = RoomChatStore(db.chatDao())
-    override val messages: MessageStore = RoomMessageStore(db.messageDao())
-    override val store: ReactionStore = RoomReactionStore(db.reactionDao())
-
-    @After
-    fun close() = db.close()
 }
 
 class FakeReactionStoreTest : ReactionStoreContract() {

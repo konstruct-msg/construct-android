@@ -3,7 +3,7 @@ package com.construct.messenger.data.local
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
-/** [CallStore] in a map, for tests; [CallStoreContract] holds it to Room's behaviour. */
+/** [CallStore] in a map, for tests; [CallStoreContract] holds it to the core store's behaviour. */
 internal class FakeCallStore : CallStore {
     val rows = linkedMapOf<String, CallRecord>()
 

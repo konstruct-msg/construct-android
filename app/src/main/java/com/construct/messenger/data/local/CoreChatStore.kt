@@ -13,15 +13,13 @@ import uniffi.construct_core.LocalStore
 import uniffi.construct_core.LocalStoreTable
 
 /**
- * [ChatStore] on the core's encrypted `LocalStore` (TODO 136, step 3) — held to the same
- * [ChatStoreContract] as [RoomChatStore]. The store once [RoomImport] has moved
- * Room's rows ([LocalStores]).
+ * [ChatStore] on the core's encrypted `LocalStore` (TODO 136, step 3), the only store since
+ * Room went (2026-10-19), held to [ChatStoreContract].
  *
  * Every write is one of the core's field writes; the preview's forward-only rule is the core's.
  *
  * [observeActivity] counts a chat's messages with the core's `chat_message_count` (0.39.0). It
- * counts every row, Room's query only `contentType = 0`; the same number, since a control message
- * is consumed before it is stored and a non-zero type is only the guard behind that.
+ * counts every row: a control message is consumed before it is stored.
  */
 class CoreChatStore(private val feed: LocalStoreFeed) : ChatStore {
     private val store: LocalStore get() = feed.store

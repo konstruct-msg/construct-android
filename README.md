@@ -124,7 +124,7 @@ construct-android/
 │   │   ├── MainActivity.kt / KonstructApp.kt
 │   │   ├── ui/               — Compose (screens, components, theme)
 │   │   ├── viewmodel/        — по одному на экран (@HiltViewModel)
-│   │   ├── data/             — gRPC, Room, repositories (не моки)
+│   │   ├── data/             — gRPC, хранилище ядра, repositories (не моки)
 │   │   ├── domain/usecase/   — register, login, prekeys, send/resend, receiving open
 │   │   ├── service/          — MessagingRuntime, SessionManager, router/processor
 │   │   ├── crypto/           — CryptoManager (UniFFI; не вызывать из UI)
@@ -166,6 +166,6 @@ DECRYPTION_ERROR (END_SESSION больше нет). Нет VEIL, звонков,
 - **Все ViewModels** — `@HiltViewModel`, без ручных фабрик.
 - **Крипто** — только через `CryptoManager`. UniFFI-биндинги из UI напрямую не дёргать.
 - **UI / ViewModel** — только репозитории. Не импортировать `data/api`, `crypto`, `stealth`, proto envelopes.
-- Локальное хранилище сообщений — Room.
+- Локальное хранилище — хранилище ядра (`construct-store`, SQLCipher); Room удалён 2026-10-19.
 - gRPC — `GrpcClient` (два канала). Cold start — `MessagingRuntime`.
 - Дизайн-токены и поведение **сверяются с iOS** — приложения должны выглядеть одинаково.

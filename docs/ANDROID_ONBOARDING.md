@@ -515,7 +515,7 @@ Tab bar скрывается когда `isInChat || isInSettings == true`.
 
 ### 5.3 ChatsListView — список чатов
 
-> **Android сейчас:** `ChatsListScreen` + `ChatRow` на `ChatsRepository` (Room).
+> **Android сейчас:** `ChatsListScreen` + `ChatRow` на `ChatsRepository` (хранилище ядра).
 > Empty CTA открывает Synaps. Swipe / pin / pull-to-refresh — нет.
 
 - `CTSearchBar` вверху
@@ -612,7 +612,7 @@ Tab bar скрывается когда `isInChat || isInSettings == true`.
 - **Раскладка** — `SynapsCloudLayout`: шестиугольная спираль от центра (1, 6, 12, …), шаг 96 dp,
   ряды разведены в 1.15 раза; самый активный в центре, при равенстве — по id. Диаметр кружка
   `96·(0.50 + 0.16·частота)`.
-- **Активность** — `ContactMetrics.byContact` из `ChatsRepository.activity` (запрос Room: видимые
+- **Активность** — `ContactMetrics.byContact` из `ChatsRepository.activity` (запрос к хранилищу: видимые
   сообщения чата, последнее сообщение, непрочитанные). Обводка: непрочитанные — accent, < 24 ч —
   accent 0.90, < 7 дней — 0.45, иначе textDim 0.50; заблокированный — красная, имя приглушено.
 - **Линза** — `SynapsLens`: овал на видимую часть (−14 dp), `tanh` подтягивает к краю, масштаб
@@ -756,7 +756,7 @@ object DisplayNameGenerator {
 
 | Тип | Формат | Источник | Использование |
 |---|---|---|---|
-| `ServerUserId` | 36-char UUID `14f28d31-…` | Сервер | gRPC, Room, conversation/sealed recipient |
+| `ServerUserId` | 36-char UUID `14f28d31-…` | Сервер | gRPC, хранилище, conversation/sealed recipient |
 | `CryptoDeviceId` | 32-char hex `6f5e37ac…` | deriveDeviceId(identityPublicKey) | Multi-device linking, QR коды |
 
 ```kotlin
@@ -765,7 +765,7 @@ data class ServerUserId(val rawValue: String)    // UUID 36
 data class CryptoDeviceId(val rawValue: String)   // hex 32
 ```
 
-**Важно**: NEVER путать эти типы. `ServerUserId` адресует аккаунт и gRPC/Room;
+**Важно**: NEVER путать эти типы. `ServerUserId` адресует аккаунт и gRPC/хранилище;
 `CryptoDeviceId` адресует конкретную реплику и используется в CFE session/AD,
 invite/device границах. `PeerDeviceRegistry` переводит account→device и
 проверяет `deriveDeviceId(identityPublic)` перед записью. Сеть всё ещё получает
@@ -796,7 +796,7 @@ data class User(
 
 ### 8.3 Core Data — модель данных
 
-На Android аналог — Room. Основные entity:
+На Android аналог — хранилище ядра (`LocalStore`; Room удалён 2026-10-19), строки в формате iOS. Схема ниже — исходный набор сущностей:
 
 ```kotlin
 // Chat
@@ -912,7 +912,7 @@ app/src/main/java/com/construct/messenger/
 │   └── ContactRequestsViewModel.kt
 
 ├── data/
-│   ├── local/                      // Core Data → Room
+│   ├── local/                      // Core Data → хранилище ядра
 │   │   ├── AppDatabase.kt
 │   │   ├── dao/
 │   │   │   ├── ChatDao.kt
@@ -994,9 +994,9 @@ mapping, а `CfeTimerBridge` владеет только platform wake-up для
 | iOS canon | Android mirror |
 |---|---|
 | `CryptoManager` + `OrchestratorCore` | `CryptoManager` + `OrchestratorCore` (device-space ids) |
-| Keychain session/archive/core snapshots | Room `SessionStateStore` + Keystore tokens |
+| Keychain session/archive/core snapshots | `SessionStateStore` (`kv` хранилища ядра) + Keystore tokens |
 | `SessionActionExecutor` | `MessageProcessor` + `ProcessorEffectsImpl` + `CfeTimerBridge` |
-| typed `SaveToSecureStore(slot,data)` | `CfeSecureStoreSlot` → Room key mapping |
+| typed `SaveToSecureStore(slot,data)` | `CfeSecureStoreSlot` → ключи `kv` |
 | `exportOrchestratorState` / PQ snapshot | same UniFFI calls, restored before stream |
 
 The generated binding and the three `.so` files are one artifact and must be

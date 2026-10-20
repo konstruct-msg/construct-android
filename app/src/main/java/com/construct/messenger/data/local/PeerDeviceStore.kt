@@ -1,7 +1,5 @@
 package com.construct.messenger.data.local
 
-import com.construct.messenger.data.local.db.PeerDeviceDao
-import com.construct.messenger.data.local.db.PeerDeviceEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import uniffi.construct_core.LocalInsert
@@ -26,8 +24,7 @@ class PeerDeviceRecord(
 
 /**
  * Where [PeerDeviceRegistry] keeps the devices it accepted (TODO 136). [PeerDeviceStoreContract]
- * holds Room's and the core's to one behaviour. Room's table also has a platform and a last-seen
- * time; nothing read them, and the core keeps neither.
+ * holds the stores to one behaviour.
  */
 interface PeerDeviceStore {
     /** An account's devices, oldest first; devices first seen in the same millisecond by id. */
@@ -41,34 +38,6 @@ interface PeerDeviceStore {
     /** Forgets [accountId]'s devices not in [active]; an empty list forgets nothing. */
     suspend fun retain(accountId: String, active: List<String>)
 }
-
-/** Built by `LocalStores`; nothing provides a `PeerDeviceDao`. */
-class RoomPeerDeviceStore(private val dao: PeerDeviceDao) : PeerDeviceStore {
-    override suspend fun forAccount(accountId: String): List<PeerDeviceRecord> = dao.forAccount(accountId).map { it.record() }
-
-    override suspend fun forDevice(deviceId: String): PeerDeviceRecord? = dao.forDevice(deviceId)?.record()
-
-    // Room's key is (account, device); the core's is the device alone, so a known id is looked up first.
-    override suspend fun record(device: PeerDeviceRecord): Boolean {
-        if (dao.forDevice(device.deviceId) != null) return false
-        dao.upsert(
-            PeerDeviceEntity(
-                accountId = device.accountId,
-                deviceId = device.deviceId,
-                identityPublic = device.identityPublic.copyOf(),
-                firstSeenAtMs = device.firstSeenAtMs,
-                lastSeenAtMs = device.firstSeenAtMs,
-            ),
-        )
-        return true
-    }
-
-    override suspend fun retain(accountId: String, active: List<String>) {
-        if (active.isNotEmpty()) dao.deleteNotActive(accountId, active)
-    }
-}
-
-internal fun PeerDeviceEntity.record() = PeerDeviceRecord(deviceId, accountId, identityPublic, firstSeenAtMs)
 
 /** On the core's `LocalStore`. */
 class CorePeerDeviceStore(private val store: LocalStore) : PeerDeviceStore {

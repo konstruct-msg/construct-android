@@ -21,8 +21,8 @@ data class ReactionRecord(
 )
 
 /**
- * Where reactions are kept (TODO 136): Room's table today ([RoomReactionStore]), the core's
- * `LocalStore` next ([CoreReactionStore]); [ReactionStoreContract] holds both to one behaviour.
+ * Where reactions are kept: the core's `LocalStore` ([CoreReactionStore]), held to
+ * [ReactionStoreContract].
  * The rules — who wins, what is dropped — are [applyIncoming], above any store.
  */
 interface ReactionStore {

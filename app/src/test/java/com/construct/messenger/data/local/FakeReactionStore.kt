@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
-/** [ReactionStore] in a map, for tests; [ReactionStoreContract] holds it to Room's behaviour. */
+/** [ReactionStore] in a map, for tests; [ReactionStoreContract] holds it to the core store's behaviour. */
 internal class FakeReactionStore(private val messages: MessageStore = FakeMessageStore()) : ReactionStore {
     val rows = linkedMapOf<Pair<String, String>, ReactionRecord>()
 

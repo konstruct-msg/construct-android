@@ -8,7 +8,7 @@ import java.io.File
 
 /**
  * The app's one core store (TODO 136): `construct.db`, SQLCipher under [LocalStoreKey]. **Canon:**
- * iOS `LocalStoreSession`. Opened by [LocalStores], which decides whether it or Room answers.
+ * iOS `LocalStoreSession`. Opened by [LocalStores].
  *
  * **No failure creates a store.** Each one means the data is probably still on this device and
  * something would not hand it over; a fresh empty store over it is how an account loses its
@@ -43,8 +43,8 @@ class LocalStoreSession private constructor(val feed: LocalStoreFeed) {
         private const val TAG = "LocalStoreSession"
 
         /**
-         * Beside the app's other files, not under `databases/`: Room's file there is already
-         * called `construct.db`. Out of backups and device transfer, as everything is
+         * Beside the app's other files, not under `databases/`: Room's file there was
+         * called `construct.db` (until 2026-10-19). Out of backups and device transfer, as everything is
          * (`data_extraction_rules.xml`) — the key it opens under does not travel.
          */
         fun defaultFile(context: Context): File = File(context.noBackupFilesDir, "construct.db")

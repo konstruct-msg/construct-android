@@ -4,7 +4,7 @@ import com.construct.messenger.data.model.DeliveryStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
-/** [MessageStore] in a map, for tests; [MessageStoreContract] holds it to Room's behaviour. */
+/** [MessageStore] in a map, for tests; [MessageStoreContract] holds it to the core store's behaviour. */
 internal class FakeMessageStore : MessageStore {
     val rows = linkedMapOf<String, MessageRecord>()
 

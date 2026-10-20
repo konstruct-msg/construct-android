@@ -25,7 +25,7 @@ Decisions behind this file (vault `~/Code/construct-docs/decisions/`):
 
 ## 1. A session is a ratchet between two devices
 
-A peer is an **account** above the seam (gRPC, Room, contacts) and a **set of devices** below it.
+A peer is an **account** above the seam (gRPC, the local store, contacts) and a **set of devices** below it.
 `PeerDeviceRegistry` maps one to the other; `CryptoManager` hands the core only device ids.
 Mixing the spaces does not throw — the Double Ratchet AD no longer matches and the message simply
 never opens.
@@ -94,10 +94,10 @@ reader                                          writer
   one.
 - `ResendMessage(messageId)` names the id **the peer received**. For a sealed copy that is the
   id the server assigned, so `ServerMessageIds` maps it back to ours before
-  `SendMessageUseCase.resend`. The map is a Room table kept 30 days, as long as the server keeps
+  `SendMessageUseCase.resend`. The map is a table in the core's store, kept 30 days, as long as the server keeps
   a queue: the error usually arrives when the reader next comes online, after the sender has
   restarted (in memory until 2026-09-30, and such an error resent nothing). Only text is resent.
-  The core asks once per message, so the request is kept: `PendingResends` writes it to Room and
+  The core asks once per message, so the request is kept: `PendingResends` writes it to the store and
   sends it off the incoming pipeline, and every reconnect of the stream tries what the network
   refused (20 tries, 30 days). Until 2026-09-30 it ran inline — a dead stream held the pipeline
   60 s and the message was lost.
@@ -115,7 +115,7 @@ is sent to the peer: a message that names no state is exactly what was removed.
 |---|---|
 | everything returned for an incoming message | `MessageProcessor` → `ProcessorEffectsImpl` |
 | everything returned for a timer, launch, reconnect or a decryption error received | `CfeTimerBridge` |
-| `SaveToSecureStore(slot, data)` | `SessionStateStore` (Room), typed slots |
+| `SaveToSecureStore(slot, data)` | `SessionStateStore` (the core's `kv`), typed slots |
 
 Both `when`s are exhaustive over `CfeAction`. A new core action does not compile until it is
 handled — that is intended; never add an `else ->`.

@@ -1,9 +1,7 @@
 package com.construct.messenger.data.local
 
 import android.app.Application
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import com.construct.messenger.data.local.db.ConstructDatabase
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -15,12 +13,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import uniffi.construct_core.LocalStore
 
-private fun roomDb() =
-    Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Application>(), ConstructDatabase::class.java)
-        .allowMainThreadQueries()
-        .build()
-
-/** What every [ProcessedStore] does — Room's today, the core's next (TODO 136). */
+/** What every [ProcessedStore] does — on the core's store and the fakes (TODO 136). */
 abstract class ProcessedStoreContract {
     protected abstract val store: ProcessedStore
 
@@ -50,16 +43,6 @@ abstract class ProcessedStoreContract {
     }
 }
 
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = Application::class)
-class RoomProcessedStoreTest : ProcessedStoreContract() {
-    private val db = roomDb()
-    override val store: ProcessedStore = RoomProcessedStore(db.ackDao())
-
-    @After
-    fun close() = db.close()
-}
-
 class FakeProcessedStoreTest : ProcessedStoreContract() {
     override val store: ProcessedStore = FakeProcessedStore()
 }
@@ -72,7 +55,7 @@ class CoreProcessedStoreTest : ProcessedStoreContract() {
     fun close() = core.close()
 }
 
-/** What every [PendingChunkStore] does — Room's today, the core's next (TODO 136). */
+/** What every [PendingChunkStore] does — on the core's store and the fakes (TODO 136). */
 abstract class PendingChunkStoreContract {
     protected abstract val store: PendingChunkStore
 
@@ -137,16 +120,6 @@ abstract class PendingChunkStoreContract {
     }
 }
 
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = Application::class)
-class RoomPendingChunkStoreTest : PendingChunkStoreContract() {
-    private val db = roomDb()
-    override val store: PendingChunkStore = RoomPendingChunkStore(db.pendingChunkDao())
-
-    @After
-    fun close() = db.close()
-}
-
 class FakePendingChunkStoreTest : PendingChunkStoreContract() {
     override val store: PendingChunkStore = FakePendingChunkStore()
 }
@@ -159,7 +132,7 @@ class CorePendingChunkStoreTest : PendingChunkStoreContract() {
     fun close() = core.close()
 }
 
-/** What every [PendingResendStore] does — Room's today, the core's next (TODO 136). */
+/** What every [PendingResendStore] does — on the core's store and the fakes (TODO 136). */
 abstract class PendingResendStoreContract {
     protected abstract val store: PendingResendStore
 
@@ -213,16 +186,6 @@ abstract class PendingResendStoreContract {
         assertEquals(1, store.forgetBefore(100))
         assertEquals(listOf("edge"), store.all().map { it.messageId })
     }
-}
-
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = Application::class)
-class RoomPendingResendStoreTest : PendingResendStoreContract() {
-    private val db = roomDb()
-    override val store: PendingResendStore = RoomPendingResendStore(db.pendingResendDao())
-
-    @After
-    fun close() = db.close()
 }
 
 class FakePendingResendStoreTest : PendingResendStoreContract() {

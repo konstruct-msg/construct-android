@@ -1,10 +1,8 @@
 package com.construct.messenger.data.local
 
 import android.app.Application
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import uniffi.construct_core.LocalStore
-import com.construct.messenger.data.local.db.ConstructDatabase
 import com.construct.messenger.util.DisplayNameGenerator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -27,7 +25,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * What every [ContactStore] does — Room's today and the core's `LocalStore` (TODO 136), which replaces it. A case
+ * What every [ContactStore] does — on the core's `LocalStore` and the fake (TODO 136). A case
  * here is a promise callers lean on; an implementation that breaks one breaks them.
  */
 abstract class ContactStoreContract {
@@ -163,18 +161,6 @@ abstract class ContactStoreContract {
         assertNull(store.get(id))
         assertNull(store.observe(id).first())
     }
-}
-
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = Application::class)
-class RoomContactStoreTest : ContactStoreContract() {
-    private val db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Application>(), ConstructDatabase::class.java)
-        .allowMainThreadQueries()
-        .build()
-    override val store: ContactStore = RoomContactStore(db.userDao())
-
-    @After
-    fun close() = db.close()
 }
 
 class FakeContactStoreTest : ContactStoreContract() {

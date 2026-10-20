@@ -1,7 +1,5 @@
 package com.construct.messenger.data.local
 
-import com.construct.messenger.data.local.db.PendingResendDao
-import com.construct.messenger.data.local.db.PendingResendEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import uniffi.construct_core.LocalPendingResend
@@ -21,7 +19,7 @@ data class PendingResend(
 
 /**
  * Where [com.construct.messenger.service.PendingResends] keeps requests until they are sent
- * (TODO 136). [PendingResendStoreContract] holds Room's and the core's to one behaviour.
+ * (TODO 136). [PendingResendStoreContract] holds the stores to one behaviour.
  */
 interface PendingResendStore {
     /** A second request for the same copy keeps the first row, its age and its attempts. */
@@ -36,22 +34,6 @@ interface PendingResendStore {
 
     /** Forgets requests made before [cutoffMs]; returns how many. */
     suspend fun forgetBefore(cutoffMs: Long): Int
-}
-
-/** Built by `LocalStores`; nothing provides a `PendingResendDao`. */
-class RoomPendingResendStore(private val dao: PendingResendDao) : PendingResendStore {
-    override suspend fun queue(resend: PendingResend) = with(resend) {
-        dao.insert(PendingResendEntity(messageId, deviceId, accountId, createdAtMs, attempts))
-    }
-
-    override suspend fun all(): List<PendingResend> =
-        dao.all().map { PendingResend(it.messageId, it.deviceId, it.accountId, it.createdAtMs, it.attempts) }
-
-    override suspend fun delete(messageId: String, deviceId: String) = dao.delete(messageId, deviceId)
-
-    override suspend fun countAttempt(messageId: String, deviceId: String) = dao.countAttempt(messageId, deviceId)
-
-    override suspend fun forgetBefore(cutoffMs: Long): Int = dao.pruneOlderThan(cutoffMs)
 }
 
 /** On the core's `LocalStore`, which keeps the same table. */

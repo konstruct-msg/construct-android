@@ -1,7 +1,6 @@
 package com.construct.messenger.di
 
 import android.content.Context
-import androidx.room.Room
 import com.construct.messenger.data.local.AckStore
 import com.construct.messenger.data.local.CallStore
 import com.construct.messenger.data.local.ChatStore
@@ -31,7 +30,6 @@ import com.construct.messenger.data.local.ProcessedStore
 import com.construct.messenger.data.local.ReactionStore
 import com.construct.messenger.data.local.ServerMessageIdStore
 import com.construct.messenger.data.local.SessionBlobStore
-import com.construct.messenger.data.local.db.ConstructDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -43,54 +41,17 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
-    @Provides
-    @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): ConstructDatabase =
-        Room.databaseBuilder(context, ConstructDatabase::class.java, ConstructDatabase.NAME)
-            // A phone already holds chats (first device run, 2026-09-24). A version we
-            // know upgrades in place. Versions 1–3 predate that phone; anything newer
-            // with no migration fails the open instead of deleting the history.
-            .addMigrations(
-                ConstructDatabase.MIGRATION_4_5,
-                ConstructDatabase.MIGRATION_5_6,
-                ConstructDatabase.MIGRATION_6_7,
-                ConstructDatabase.MIGRATION_7_8,
-                ConstructDatabase.MIGRATION_8_9,
-                ConstructDatabase.MIGRATION_9_10,
-                ConstructDatabase.MIGRATION_10_11,
-                ConstructDatabase.MIGRATION_11_12,
-                ConstructDatabase.MIGRATION_12_13,
-                ConstructDatabase.MIGRATION_13_14,
-                ConstructDatabase.MIGRATION_14_15,
-                ConstructDatabase.MIGRATION_15_16,
-                ConstructDatabase.MIGRATION_16_17,
-                ConstructDatabase.MIGRATION_17_18,
-                ConstructDatabase.MIGRATION_18_19,
-                ConstructDatabase.MIGRATION_19_20,
-                ConstructDatabase.MIGRATION_20_21,
-            )
-            .fallbackToDestructiveMigrationFrom(1, 2, 3)
-            .build()
-
-    /**
-     * Which store answers — the core's, or Room until its rows have moved (TODO 136). Every store
-     * below waits for it; Room is opened only if it is still the store or has rows to move.
-     */
+    /** The core's store (TODO 136); every store below waits for it. */
     @Provides
     @Singleton
     fun provideLocalStores(
         @ApplicationContext context: Context,
-        db: dagger.Lazy<ConstructDatabase>,
         keystore: KeystoreManager,
     ): LocalStores = LocalStores(
         file = LocalStoreSession.defaultFile(context),
         key = LocalStoreSession.defaultKey(context),
-        room = { db.get() },
-        roomExists = { context.getDatabasePath(ConstructDatabase.NAME).exists() },
-        deleteRoom = {
-            db.get().close()
-            context.deleteDatabase(ConstructDatabase.NAME)
-        },
+        // Room's file before 2026-10-19; `deleteDatabase` takes its journal with it.
+        deleteRoomLeftovers = { context.deleteDatabase(ROOM_FILE) },
         myUserId = keystore::getUserId,
     )
 
@@ -145,4 +106,6 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideAckStore(processed: ProcessedStore): AckStore = PersistentAckStore(processed)
+
+    private const val ROOM_FILE = "construct.db"
 }

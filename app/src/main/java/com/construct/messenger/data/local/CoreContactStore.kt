@@ -11,9 +11,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
- * [ContactStore] on the core's encrypted `LocalStore` (TODO 136, step 3) — held to the same
- * [ContactStoreContract] as [RoomContactStore]. The store once [RoomImport] has moved
- * Room's rows ([LocalStores]).
+ * [ContactStore] on the core's encrypted `LocalStore` (TODO 136, step 3), the only store since
+ * Room went (2026-10-19), held to [ContactStoreContract].
  *
  * Every write runs under one lock. Most are single statements in the core already; the lock is
  * for the two that read first — [ensure] and [upsert] (it keeps `added_at` and

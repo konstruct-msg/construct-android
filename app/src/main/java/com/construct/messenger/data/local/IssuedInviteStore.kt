@@ -1,7 +1,5 @@
 package com.construct.messenger.data.local
 
-import com.construct.messenger.data.local.db.IssuedInviteDao
-import com.construct.messenger.data.local.db.IssuedInviteEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -20,7 +18,7 @@ data class IssuedInviteRecord(
 
 /**
  * The invites this device minted, until revoked (TODO 136). [IssuedInviteStoreContract] holds
- * Room's and the core's to one behaviour.
+ * the stores to one behaviour.
  */
 interface IssuedInviteStore {
     /** Newest first; equal times by [IssuedInviteRecord.jti]. */
@@ -30,19 +28,6 @@ interface IssuedInviteStore {
     suspend fun record(invite: IssuedInviteRecord)
 
     suspend fun delete(jti: String)
-}
-
-/** Built by `LocalStores`; nothing provides a `IssuedInviteDao`. */
-class RoomIssuedInviteStore(private val dao: IssuedInviteDao) : IssuedInviteStore {
-    override fun observeAll(): Flow<List<IssuedInviteRecord>> = dao.observeAll().map { rows ->
-        rows.map { IssuedInviteRecord(it.jti, it.kind, it.issuedAtEpochSec, it.ttlSeconds, it.sitting) }
-    }
-
-    override suspend fun record(invite: IssuedInviteRecord) = with(invite) {
-        dao.upsert(IssuedInviteEntity(jti, kind, issuedAtEpochSec, ttlSeconds, sitting))
-    }
-
-    override suspend fun delete(jti: String) = dao.delete(jti)
 }
 
 /**

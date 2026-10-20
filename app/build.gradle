@@ -14,7 +14,6 @@ plugins {
 ext.protobufVersion = '3.25.5'
 ext.grpcVersion = '1.65.1'
 ext.grpcKotlinVersion = '1.4.1'
-ext.roomVersion = '2.8.5'
 // iOS pins the same build in `Packages/WebRTC/Package.swift` (webrtc-sdk/Specs 150.7871.01).
 ext.webrtcVersion = '150.7871.01'
 // The ABIs the app ships, and so the core libraries `checkCoreLibrary` requires. arm64-v8a only
@@ -138,10 +137,6 @@ dependencies {
     // Video notes: VideoCapture + Recorder (pause, a camera switch mid-file, a duration limit).
     implementation "androidx.camera:camera-video:${cameraxVersion}"
     implementation 'com.google.zxing:core:3.5.4'
-    // Room — local message/session persistence (data/local/db).
-    implementation "androidx.room:room-runtime:${roomVersion}"
-    implementation "androidx.room:room-ktx:${roomVersion}"
-    ksp "androidx.room:room-compiler:${roomVersion}"
     implementation 'com.google.dagger:hilt-android:2.60.1'
     ksp 'com.google.dagger:hilt-compiler:2.60.1'
     implementation 'androidx.hilt:hilt-navigation-compose:1.2.0'

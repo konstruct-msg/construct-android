@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * A person's row: a contact, a blocked one, or someone a message or session brought in.
  *
- * Our own type — not Room's `UserEntity`, not the core's `LocalContact` — so the store under
+ * Our own type — not the core's `LocalContact` — so the store under
  * [ContactStore] can change without its callers (TODO 136, the seam). [id] is the **ServerUserId**,
  * never a CryptoDeviceId.
  */
@@ -106,8 +106,7 @@ fun ContactRecord?.resolvedName(userId: String): String =
  * different fields never carry an older value of the other's back. A write to a row that does not
  * exist changes nothing.
  *
- * Today on Room ([RoomContactStore]); the implementation on the core's `LocalStore` replaces it
- * without its callers changing. [ContactStoreContract] in the tests holds both to the same cases.
+ * On the core's `LocalStore` ([CoreContactStore]); [ContactStoreContract] holds it to its cases.
  */
 interface ContactStore {
     /** Contacts not blocked, by name. */

@@ -4,7 +4,7 @@ import com.construct.messenger.data.model.ChatActivity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
-/** [ChatStore] in a map, for tests; [ChatStoreContract] holds it to Room's behaviour. */
+/** [ChatStore] in a map, for tests; [ChatStoreContract] holds it to the core store's behaviour. */
 internal class FakeChatStore : ChatStore {
     val rows = linkedMapOf<String, ChatRecord>()
 

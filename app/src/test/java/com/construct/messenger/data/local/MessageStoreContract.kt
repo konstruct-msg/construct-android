@@ -1,9 +1,7 @@
 package com.construct.messenger.data.local
 
 import android.app.Application
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import com.construct.messenger.data.local.db.ConstructDatabase
 import uniffi.construct_core.LocalStore
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.util.MediaWire
@@ -27,8 +25,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * What every [MessageStore] does — Room's today and the core's `LocalStore` (TODO 136), which
- * replaces it. The chat and its contact are set up first, as the core requires.
+ * What every [MessageStore] does — on the core's `LocalStore` and the fake (TODO 136).
+ * The chat and its contact are set up first, as the core requires.
  */
 abstract class MessageStoreContract {
     protected abstract val contacts: ContactStore
@@ -195,20 +193,6 @@ abstract class MessageStoreContract {
     }
 }
 
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = Application::class)
-class RoomMessageStoreTest : MessageStoreContract() {
-    private val db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Application>(), ConstructDatabase::class.java)
-        .allowMainThreadQueries()
-        .build()
-    override val contacts: ContactStore = RoomContactStore(db.userDao())
-    override val chats: ChatStore = RoomChatStore(db.chatDao())
-    override val store: MessageStore = RoomMessageStore(db.messageDao())
-
-    @After
-    fun close() = db.close()
-}
-
 class FakeMessageStoreTest : MessageStoreContract() {
     override val contacts: ContactStore = FakeContactStore()
     override val chats: ChatStore = FakeChatStore()
@@ -228,7 +212,7 @@ class CoreMessageStoreTest : MessageStoreContract() {
 
     /**
      * What a note says, read on this phone (TODO 116), is kept beside it — and survives the edits
-     * and the media swap that rewrite the body. Room keeps none (no column; a fallback launch only).
+     * and the media swap that rewrite the body.
      */
     @org.junit.Test
     fun aTranscriptIsKeptAndSurvivesTheBodyChanging() = runTest {

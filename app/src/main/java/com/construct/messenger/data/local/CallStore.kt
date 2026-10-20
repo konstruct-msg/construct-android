@@ -20,8 +20,8 @@ data class CallRecord(
 )
 
 /**
- * This device's call history (TODO 136): Room's table today ([RoomCallStore]); the core's
- * `LocalStore` next ([CoreCallStore]). [CallStoreContract] holds every store to one behaviour.
+ * This device's call history, on the core's `LocalStore` ([CoreCallStore]).
+ * [CallStoreContract] holds every store to one behaviour.
  */
 interface CallStore {
     /** iOS `CallHistoryView.loadRecords`: the newest 200, newest first. */

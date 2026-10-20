@@ -26,7 +26,7 @@ app/src/main/
 │   ├── stealth/        — sealed-sender policy / wallet / cert (fail-closed on send)
 │   ├── viewmodel/      — Hilt-injected ViewModels (@HiltViewModel)
 │   ├── ui/             — Compose screens and components
-│   ├── data/           — repositories, Room, gRPC (UI must not import data/api)
+│   ├── data/           — repositories, the core's local store, gRPC (UI must not import data/api)
 │   ├── domain/         — Register / Login / UploadPreKeys / SendMessage
 │   ├── service/        — MessagingRuntime, SessionManager, router / processor
 │   └── di/             — Hilt modules
@@ -99,7 +99,7 @@ which does all of the above. Either way the files stay untracked.
 - All crypto operations go through `CryptoManager` — do not call UniFFI bindings directly from UI
 - UI / ViewModels talk to **repositories only** — no `data/api`, `crypto`, `stealth`, or proto envelopes
 - Compose UI only — no XML layouts
-- Room DB for local message persistence
+- Local data lives in the core's encrypted store (`LocalStores`, `Core*Store`); Room was removed on 2026-10-19
 - gRPC lives in the `GrpcClient` singleton (two channels: auth + sealed); `MessagingRuntime` owns cold start
 - **Before pushing: `scripts/verify.sh`** (add `--device` when the change touches sessions,
   delivery or start-up). It exists because this repo's breakages were mostly not test failures —
