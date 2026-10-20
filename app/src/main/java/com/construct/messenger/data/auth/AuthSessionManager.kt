@@ -180,12 +180,18 @@ class AuthSessionManager @Inject constructor(
      * expiry and refresh. A failed refresh is tried again after [RETRY_SECONDS], or as soon as the
      * channels change: with VEIL on, the first refresh at start-up goes before the tunnel is up,
      * and until 2026-10-19 the expired token stayed a whole minute after it was (TODO 173).
+     *
+     * [forceOwed]: the start's forced refresh did not get through, so it is owed — tried with
+     * `force` until one does. With VEIL on it never got through: it goes before the tunnel is up,
+     * and the token, hours from its end, gave the loop nothing to do (TODO 174).
      */
-    suspend fun keepFresh() {
+    suspend fun keepFresh(forceOwed: Boolean = false) {
+        var force = forceOwed
         while (true) {
             val generation = grpcClient.generation
-            val ok = ensureFresh()
+            val ok = ensureFresh(force = force)
             if (ok) {
+                force = false
                 val now = System.currentTimeMillis() / 1000
                 kotlinx.coroutines.delay(secondsUntilRefresh(keystoreManager.getAccessTokenExpiresAt(), now) * 1000)
             } else {
