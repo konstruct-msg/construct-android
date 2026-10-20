@@ -157,18 +157,11 @@ fun ChatScreen(
         if (held) recordingNote = true else askNote.launch(needed)
     }
     val listState = rememberLazyListState()
-    // iOS `ChatViewport.mode`: following the newest message, or reading history (TranscriptFollow).
-    var following by remember { mutableStateOf(true) }
+    // iOS `ChatViewport.mode`: following the newest message, or reading history — kept across a
+    // rotation (rememberTranscriptFollow).
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val nearBottomSlack = with(androidx.compose.ui.platform.LocalDensity.current) { NEAR_BOTTOM.roundToPx() }
-    LaunchedEffect(listState) {
-        androidx.compose.runtime.snapshotFlow {
-            val info = listState.layoutInfo
-            val last = info.visibleItemsInfo.lastOrNull()
-            TranscriptFollow.nearBottom(last?.index, last?.let { it.offset + it.size } ?: 0, info.totalItemsCount, info.viewportEndOffset, nearBottomSlack) to
-                listState.isScrollInProgress
-        }.collect { (near, scrolling) -> following = TranscriptFollow.next(following, near, scrolling) }
-    }
+    var following by rememberTranscriptFollow(listState, nearBottomSlack)
     // Sending is an explicit return to the newest message, as on iOS: whoever sent something
     // means to see it land, even from deep in history.
     fun followNext() {
