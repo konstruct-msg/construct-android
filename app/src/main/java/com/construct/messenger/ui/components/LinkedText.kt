@@ -1,5 +1,6 @@
 package com.construct.messenger.ui.components
 
+import com.construct.messenger.ui.theme.forScriptOf
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -76,6 +77,7 @@ fun LinkedText(
     modifier: Modifier = Modifier,
 ) {
     val links = remember(text) { MessageLinks.find(text) }
+    val style = remember(text, style) { style.forScriptOf(text) }
     if (links.isEmpty()) {
         Text(text = text, style = style, color = color, modifier = modifier)
         return

@@ -1,5 +1,6 @@
 package com.construct.messenger.ui.screens.chat
 
+import com.construct.messenger.ui.theme.forScriptOf
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -720,7 +721,7 @@ private fun ChatNavBar(
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = title.uppercase(),
-                style = CTFont.headline,
+                style = CTFont.headline.forScriptOf(title),
                 color = CTColor.text,
                 letterSpacing = 4.sp,
                 maxLines = 1,

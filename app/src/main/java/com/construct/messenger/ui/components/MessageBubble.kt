@@ -2,6 +2,7 @@
 
 package com.construct.messenger.ui.components
 
+import com.construct.messenger.ui.theme.forScriptOf
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -542,7 +543,7 @@ private fun ReplyQuoteStrip(
         )
         Text(
             text = label,
-            style = CTFont.secondary,
+            style = CTFont.secondary.forScriptOf(label),
             color = textColor,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

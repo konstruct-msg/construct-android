@@ -1,5 +1,6 @@
 package com.construct.messenger.ui.screens.synaps
 
+import com.construct.messenger.ui.theme.forScriptOf
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -170,7 +171,7 @@ private fun ContactRow(contact: Contact, onClick: () -> Unit) {
         Spacer(Modifier.width(CTSpace.m))
         Text(
             text = title,
-            style = CTFont.ui(14),
+            style = CTFont.ui(14).forScriptOf(title),
             color = CTColor.text,
             modifier = Modifier.weight(1f),
         )

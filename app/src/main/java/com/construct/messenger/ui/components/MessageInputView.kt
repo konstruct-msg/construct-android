@@ -1,5 +1,6 @@
 package com.construct.messenger.ui.components
 
+import com.construct.messenger.ui.theme.forScriptOf
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -384,7 +385,7 @@ private fun ComposerAuxBar(
             )
             Text(
                 text = preview,
-                style = CTFont.secondary,
+                style = CTFont.secondary.forScriptOf(preview),
                 color = CTColor.text,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
