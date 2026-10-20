@@ -297,23 +297,24 @@ fun handleEvent(event: CfeIncomingEvent): List<CfeAction>
 
 **Действия** (`CfeAction`) — что Kotlin обязан выполнить в ответ (ядро `0.20.0`):
 
-- сетевые: `SendEncryptedMessage`, `SendReceipt`, `SendDecryptionError` (готовый
+- сетевые: `SendEncryptedMessage`, `SendDecryptionError` (готовый
   запечатанный payload типа 28 — отправить как есть);
 - хранилище: `SaveToSecureStore`, `PersistAck`, `PruneAckStore`, `CheckAckInDb`.
   `PersistMessage` ядро убрало: расшифрованный текст пишет `onDecrypted`;
 - маршрутизация: `DuplicateDropped` — сообщение уже обработано, пометить и сдвинуть
-  курсор, квитанцию `delivered` не слать;
+  курсор, квитанцию `delivered` не слать; `MalformedDropped` — то же для нечитаемого;
 - UI/уведомления: `NotifyNewMessage`, `NotifySessionCreated`, `NotifyError`,
-  `MarkMessageDelivered`, `MessageDecrypted`, `CallSignalDecrypted`;
-- крипто/жизненный цикл: `DecryptMessage`, `EncryptMessage`, `InitSession`,
-  `ArchiveSession`, `OpenReceiving`, `MessageQueuedPendingInit`, `SessionRetired`
-  (текущее состояние выведено — следующая отправка откроет новое), `ResendMessage`
-  (переотправить названное сообщение один раз), `ScheduleTimer`, `CancelTimer`;
+  `MarkMessageDelivered`, `MessageDecrypted`, `CallSignalDecrypted`, `ControlFrameDecrypted`;
+- крипто/жизненный цикл: `OpenReceiving`, `MessageQueuedPendingInit`,
+  `SessionRetired` (текущее состояние выведено — следующая отправка откроет новое),
+  `ResendMessage` (переотправить названное сообщение один раз), `ScheduleTimer`;
 - `OpenSession` — просьба ядра открыть сессию (апгрейд до PQXDH v2). Android пока
   только логирует её — главный открытый пробел, см. `SESSIONS.md` §8.
 
 Heal, END_SESSION, SESSION_RESET_INIT, ping/ready и их действия удалены из ядра
-27–28.09.2026 (`decisions/sessions-renew-by-sending.md`).
+27–28.09.2026 (`decisions/sessions-renew-by-sending.md`). `DecryptMessage`,
+`EncryptMessage`, `ArchiveSession`, `SendReceipt` и `CancelTimer` ядро не выдавало никогда;
+они удалены в 0.54.0. Квитанцию о доставке Android шлёт сам, из `MessageProcessor`.
 
 `ApplyPqContribution` удалён вместе с ML-KEM-768 (PQXDH v2): ML-KEM-1024 входит в начальный
 ключ сессии, ядро декапсулирует само.

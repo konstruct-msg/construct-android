@@ -376,11 +376,6 @@ class ProcessorEffectsImpl @Inject constructor(
         ackStore.prune(cutoffTs)
     }
 
-    override suspend fun archiveSession(contactId: String) {
-        sessionManager.removeSession(contactId)
-        sessionStateStore.saveSecureStore(CfeSecureStoreSlot.Session(contactId), ByteArray(0))
-    }
-
     override suspend fun sendDecryptionError(contactId: String, messageId: String, payload: ByteArray, enveloped: Boolean) {
         Log.i(TAG, "could not read ${messageId.take(8)}… from ${contactId.take(8)}… — telling its writer")
         sessionControl.sendDecryptionError(contactId, payload, enveloped)
