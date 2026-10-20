@@ -851,7 +851,6 @@ val actions: List<CfeAction> = core.handleEvent(
 )
 for (action in actions) when (action) {
     is CfeAction.MessageDecrypted   -> showInUi(action)
-    is CfeAction.SendReceipt        -> messaging.sendAck(action)
     is CfeAction.DuplicateDropped   -> markProcessed(action)
     is CfeAction.NotifyNewMessage   -> notify(action)
     // … остальные варианты

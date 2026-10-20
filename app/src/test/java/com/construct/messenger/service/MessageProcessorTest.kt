@@ -48,7 +48,6 @@ class MessageProcessorTest {
         override suspend fun markProcessed(messageId: String, senderId: String) { calls += "markProcessed:$messageId" }
         override suspend fun saveSecureStore(slot: CfeSecureStoreSlot, data: ByteArray) { calls += "saveSecureStore:$slot" }
         override suspend fun pruneAckStore(cutoffTs: Long) { calls += "prune:$cutoffTs" }
-        override suspend fun archiveSession(contactId: String) { calls += "archive:$contactId" }
         override suspend fun onSenderSync(contactId: String, messageId: String, plaintext: ByteArray, envelopeSeconds: Long) {
             calls += "onSenderSync:$contactId:$messageId"
         }
@@ -92,7 +91,6 @@ class MessageProcessorTest {
         val processor = MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held, mock())
         val actions = listOf(
             CfeAction.MessageDecrypted("alice", "m1", byteArrayOf(7)),
-            CfeAction.SendReceipt("m1", "delivered"),
             CfeAction.NotifyNewMessage("chat1", "hi"),
         )
 
@@ -100,7 +98,6 @@ class MessageProcessorTest {
 
         assertEquals(ProcessingOutcome.Processed, outcome)
         assertTrue(effects.calls.contains("onDecrypted:alice:m1"))
-        assertTrue(effects.calls.contains("receipt:m1:delivered"))
         assertTrue(effects.calls.contains("notify:chat1"))
     }
 

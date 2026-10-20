@@ -248,14 +248,12 @@ class MessageProcessor @Inject constructor(
                     if (action.messageId != incoming.messageId) held.take(action.messageId)
                     effects.onControlFrame(action.contactId, action.messageId, action.contentType.toInt(), action.body)
                 }
-                is CfeAction.SendReceipt -> effects.sendReceipt(action.messageId, incoming.senderId, action.status)
                 is CfeAction.NotifyNewMessage -> effects.notifyNewMessage(action.chatId, action.preview)
                 is CfeAction.MarkMessageDelivered -> effects.markDelivered(action.messageId)
                 is CfeAction.PersistAck -> effects.markProcessed(action.messageId, incoming.senderId)
                 is CfeAction.PruneAckStore -> effects.pruneAckStore(action.cutoffTs.toLong())
                 is CfeAction.SaveToSecureStore ->
                     effects.saveSecureStore(action.slot, action.data)
-                is CfeAction.ArchiveSession -> effects.archiveSession(action.contactId)
                 is CfeAction.SendDecryptionError ->
                     effects.sendDecryptionError(action.contactId, action.messageId, action.payload, action.enveloped)
                 is CfeAction.SessionRetired ->
@@ -272,12 +270,8 @@ class MessageProcessor @Inject constructor(
                     Log.e(TAG, "CFE ${action.code}: ${action.message}")
                 is CfeAction.ScheduleTimer ->
                     timerBridge.schedule(action.timerId, action.delayMs)
-                is CfeAction.CancelTimer ->
-                    timerBridge.cancel(action.timerId)
                 is CfeAction.MessageQueuedPendingInit,
                 is CfeAction.CheckAckInDb,
-                is CfeAction.DecryptMessage,
-                is CfeAction.EncryptMessage,
                 is CfeAction.SendEncryptedMessage,
                 is CfeAction.OpenReceiving,
                 -> Log.d(TAG, "CFE action consumed by routing layer: ${action::class.simpleName}")
@@ -335,7 +329,6 @@ interface ProcessorEffects {
     suspend fun markProcessed(messageId: String, senderId: String)
     suspend fun saveSecureStore(slot: uniffi.construct_core.CfeSecureStoreSlot, data: ByteArray)
     suspend fun pruneAckStore(cutoffTs: Long)
-    suspend fun archiveSession(contactId: String)
 
     /** We could not read [messageId] from [contactId]: send the core's sealed [payload] to that
      * device as a DECRYPTION_ERROR — a session envelope back along the pair when [enveloped]. */
