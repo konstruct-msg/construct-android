@@ -8,6 +8,7 @@ import com.construct.messenger.data.local.MessageStore
 import com.construct.messenger.data.local.MessageRecord
 import com.construct.messenger.util.MediaWire
 import com.construct.messenger.data.local.refreshChatPreview
+import com.construct.messenger.service.of
 import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.data.model.ForwardItem
 import com.construct.messenger.diagnostics.Log
@@ -52,6 +53,7 @@ class MessagesRepositoryImpl @Inject constructor(
     private val reactions: ReactionStore,
     private val stickers: com.construct.messenger.stickers.StickerStore,
     private val readSync: com.construct.messenger.readsync.ReadSyncOutbox,
+    private val mediaPreview: com.construct.messenger.service.MediaPreviewText,
 ) : MessagesRepository {
 
     override fun observeContact(contactId: String): Flow<List<Message>> {
@@ -205,7 +207,7 @@ class MessagesRepositoryImpl @Inject constructor(
         val row = messages.get(messageId) ?: return
         if (row.chatId != chatId) return
         messages.delete(row.id)
-        messages.refreshChatPreview(chats, chatId)
+        messages.refreshChatPreview(chats, chatId, mediaPreview::of)
     }
 
     override suspend fun chatShown(contactId: String) {

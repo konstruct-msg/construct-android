@@ -125,8 +125,13 @@ internal fun MessageRecord.orderKeyOrLocal(): String = orderKey.ifEmpty { Server
 suspend fun MessageStore.applyEdit(row: MessageRecord, text: String) =
     edit(row.id, text, MediaWire.withCaption(row.mediaType, row.mediaPayload, text))
 
-/** Point the chat at whatever message is now last. An empty transcript clears the preview. */
-suspend fun MessageStore.refreshChatPreview(chats: ChatStore, chatId: String) {
+/**
+ * Point the chat at the message its transcript ends with, shown by [previewOf]. An empty transcript
+ * clears the preview. The transcript is in the server's order; a sender's clock is not, so the list
+ * follows the transcript rather than the newest timestamp — a peer whose clock runs ahead, or a
+ * message that reached the server late, otherwise left the list naming one the chat shows higher up.
+ */
+suspend fun MessageStore.refreshChatPreview(chats: ChatStore, chatId: String, previewOf: (MessageRecord) -> String) {
     val latest = latestVisible(chatId)
-    chats.setPreview(chatId, latest?.text, latest?.timestampMs)
+    chats.setPreview(chatId, latest?.let(previewOf), latest?.timestampMs)
 }

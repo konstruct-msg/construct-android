@@ -171,6 +171,29 @@ abstract class MessageStoreContract {
         assertNull(store.latestVisible(chat))
     }
 
+    /**
+     * The tester's report (2026-10-20): the list named a message the chat showed two or three
+     * up. A message written earlier but placed later by the server — sent after a reconnect —
+     * has the older time; the list ends where the transcript does and keeps that message's time.
+     */
+    @Test
+    fun thePreviewIsTheMessageTheTranscriptEndsWith() = runTest {
+        store.insert(message("theirs", 9_000, text = "theirs").copy(isSentByMe = false, orderKey = ServerMessageOrder.key(9_000, 0)!!))
+        store.insert(message("mine", 2_000, text = "written first").copy(orderKey = ServerMessageOrder.key(12_000, 0)!!))
+        store.refreshChatPreview(chats, chat) { it.text }
+        assertEquals("written first", chats.get(chat)!!.lastMessageText)
+        assertEquals(2_000L, chats.get(chat)!!.lastMessageTimeMs)
+        assertEquals("written first", store.observeChat(chat).first().last().text)
+    }
+
+    /** Control messages after the last visible one do not hide it, however many there are. */
+    @Test
+    fun theLatestVisibleMessageIsFoundBehindControlMessages() = runTest {
+        store.insert(message("seen", 1, text = "hello"))
+        repeat(120) { store.insert(message("ctl-$it", 10L + it, contentType = 25)) }
+        assertEquals("seen", store.latestVisible(chat)!!.id)
+    }
+
     @Test
     fun aWriteToNoMessageCreatesNone() = runTest {
         assertFalse(store.setDeliveryStatus("x", DeliveryStatus.SENT))
@@ -183,12 +206,13 @@ abstract class MessageStoreContract {
     fun refreshChatPreviewPointsAtWhatIsLeft() = runTest {
         store.insert(message("a", 10, text = "older"))
         store.insert(message("b", 20, text = "newer"))
-        chats.noteMessage(chat, peer, "newer", 20, unread = false)
+        store.refreshChatPreview(chats, chat) { it.text }
+        assertEquals("newer", chats.get(chat)!!.lastMessageText)
         store.delete("b")
-        store.refreshChatPreview(chats, chat)
+        store.refreshChatPreview(chats, chat) { it.text }
         assertEquals("older", chats.get(chat)!!.lastMessageText)
         store.delete("a")
-        store.refreshChatPreview(chats, chat)
+        store.refreshChatPreview(chats, chat) { it.text }
         assertNull(chats.get(chat)!!.lastMessageText)
     }
 }

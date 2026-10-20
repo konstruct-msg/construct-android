@@ -28,7 +28,7 @@ abstract class ChatStoreContract {
 
     private suspend fun open(preview: String = "hi", at: Long = 10, unread: Boolean = false) {
         contacts.ensure(peer)
-        store.noteMessage(chat, peer, preview, at, unread)
+        store.insert(ChatRecord(chat, peer, preview, at, unreadCount = if (unread) 1 else 0))
     }
 
     @Test
@@ -48,20 +48,6 @@ abstract class ChatStoreContract {
         assertFalse(store.insert(ChatRecord(chat, peer, "other", 99, unreadCount = 5)))
         assertEquals("hi", store.get(chat)!!.lastMessageText)
         assertEquals(0, store.get(chat)!!.unreadCount)
-    }
-
-    /** Messages arrive out of order: an older one must not replace a newer preview. */
-    @Test
-    fun thePreviewMovesOnlyForward() = runTest {
-        open(preview = "new", at = 20)
-        store.noteMessage(chat, peer, "old", 10, unread = true)
-        assertEquals("new", store.get(chat)!!.lastMessageText)
-        assertEquals(1, store.get(chat)!!.unreadCount)
-
-        store.advancePreview(chat, "edited", 20)
-        assertEquals("edited", store.get(chat)!!.lastMessageText)
-        store.advancePreview(chat, "newer", 30)
-        assertEquals(30L, store.get(chat)!!.lastMessageTimeMs)
     }
 
     /** After a deletion the preview goes back to what is left — or to nothing. */
@@ -89,7 +75,7 @@ abstract class ChatStoreContract {
         val other = "1c7f0a7b-4d2e-4a8f-8b3c-6e9d8f7a2b3c"
         open(at = 10)
         contacts.ensure(other)
-        store.noteMessage("chat-other", other, "later", 20, unread = false)
+        store.insert(ChatRecord("chat-other", other, "later", 20))
         assertEquals(listOf("chat-other", chat), store.observeAll().first().map { it.id })
         store.setPinned(chat, true)
         assertEquals(listOf(chat, "chat-other"), store.observeAll().first().map { it.id })
@@ -97,7 +83,6 @@ abstract class ChatStoreContract {
 
     @Test
     fun aWriteToNoChatCreatesNone() = runTest {
-        store.advancePreview(chat, "x", 1)
         store.setPreview(chat, "x", 1)
         store.incrementUnread(chat)
         store.setUnread(chat, 3)

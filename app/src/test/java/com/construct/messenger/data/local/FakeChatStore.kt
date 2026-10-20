@@ -25,11 +25,6 @@ internal class FakeChatStore : ChatStore {
         return true
     }
 
-    override suspend fun advancePreview(id: String, text: String, timeMs: Long) = change(id) {
-        val shown = it.lastMessageTimeMs
-        if (shown != null && shown > timeMs) it else it.copy(lastMessageText = text, lastMessageTimeMs = timeMs)
-    }
-
     override suspend fun setPreview(id: String, text: String?, timeMs: Long?) =
         change(id) { it.copy(lastMessageText = text, lastMessageTimeMs = timeMs) }
 

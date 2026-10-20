@@ -300,6 +300,42 @@ class SendMessageUseCaseTest {
     }
 
     /**
+     * The tester's report (2026-10-20): the chat list named a message the chat showed two or three
+     * up. Ours, written before theirs arrived, reached the server after it — the transcript puts
+     * ours last, and the list must too, though our clock says earlier. Mutation: no preview
+     * refresh after `setOrderKey` — the list keeps naming theirs.
+     */
+    @Test
+    fun `a message the server places last becomes the chat preview, whatever its clock`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        val chatId = com.construct.messenger.util.ConversationId.direct(myId, peer)
+        val mine = "55555555-5555-4555-8555-555555555555"
+        h.messages.rows[mine] = MessageRecord(mine, chatId, "mine", true, 5L, DeliveryStatus.FAILED)
+        h.messages.rows["theirs"] = MessageRecord("theirs", chatId, "theirs", false, 50L, DeliveryStatus.DELIVERED)
+            .copy(orderKey = com.construct.messenger.util.ServerMessageOrder.key(1_000, 0)!!)
+        h.chats.rows[chatId] = ChatRecord(chatId, peer, "theirs", 50L)
+        whenever(
+            h.messaging.sendMessage(
+                messageId = any(),
+                senderId = any(),
+                recipientId = any(),
+                conversationId = any(),
+                encryptedPayload = any(),
+                timestampMs = any(),
+                contentType = any(),
+            ),
+        ).thenReturn(
+            MessagingService.SendResult("ok", true, "", false, 0, "a", com.construct.messenger.util.ServerMessageOrder.key(2_000, 0)),
+        )
+
+        val useCase = h.useCase()
+        assertEquals(SendOutcome.Sent(mine), useCase.retry(peer, useCase.failedRow(peer, mine)!!))
+
+        assertEquals("mine", h.chats.rows[chatId]?.lastMessageText)
+        assertEquals(5L, h.chats.rows[chatId]?.lastMessageTimeMs)
+    }
+
+    /**
      * iOS edits a photo's caption with `new_text`; the row keeps the album with the new caption, so
      * a resend carries what the bubble shows. Mutation: `markEdited` for every row — the album
      * keeps the old caption.

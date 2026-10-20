@@ -23,7 +23,6 @@ class GatedChatStore(private val gate: LocalStoreGate) : ChatStore {
     override fun observeActivity(): Flow<List<ChatActivity>> = gate.watch { it.chats.observeActivity() }
     override suspend fun get(id: String) = s().get(id)
     override suspend fun insert(chat: ChatRecord) = s().insert(chat)
-    override suspend fun advancePreview(id: String, text: String, timeMs: Long) = s().advancePreview(id, text, timeMs)
     override suspend fun setPreview(id: String, text: String?, timeMs: Long?) = s().setPreview(id, text, timeMs)
     override suspend fun incrementUnread(id: String) = s().incrementUnread(id)
     override suspend fun setUnread(id: String, count: Int) = s().setUnread(id, count)
