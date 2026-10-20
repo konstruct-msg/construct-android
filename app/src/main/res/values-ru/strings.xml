@@ -12,7 +12,7 @@
     <string name="onboarding_existing_title">Существующая идентичность</string>
     <string name="onboarding_existing_intro">Выберите, как перенести её на это устройство.</string>
     <string name="onboarding_restore_title">Восстановить по фразе</string>
-    <string name="onboarding_restore_subtitle">Нет другого устройства с Конструктом. Используйте вашу фразу из 12 слов.</string>
+    <string name="onboarding_restore_subtitle">Нет другого устройства с Konstruct. Используйте вашу фразу из 12 слов.</string>
     <string name="username_too_short">Имя пользователя должно быть не короче 3 символов.</string>
     <string name="username_invalid_chars">Имя пользователя может содержать только буквы, цифры и подчёркивание.</string>
     <string name="username_checking">Проверяем доступность...</string>
@@ -42,9 +42,9 @@
     <string name="orientation_section_label">&gt; orientation</string>
     <string name="orientation_skip">Пропустить</string>
     <string name="orientation_next">Продолжить</string>
-    <string name="orientation_enter">Войти в Конструкт</string>
+    <string name="orientation_enter">Войти в Konstruct</string>
     <string name="orientation_or">или</string>
-    <string name="orientation_settings_replay">Как устроен Конструкт</string>
+    <string name="orientation_settings_replay">Как устроен Konstruct</string>
     <string name="orientation_page1_title">Идентичность</string>
     <string name="orientation_page1_body">Без телефона, почты и настоящего имени. Идентичность создаётся с нуля на этом телефоне и не отсылает ни к чему вне себя. Кто вы здесь — решаете вы.</string>
     <string name="orientation_page1_caption">Публичный @псевдоним необязателен. Ключи не покидают телефон.</string>
@@ -309,8 +309,8 @@
     <string name="security_lockdown_since">Активен с %1$s</string>
     <string name="security_lockdown_hint">Только контакты, добавленные до активации, получают уведомления. Новые отправители сохраняются без уведомлений — вы можете просмотреть их в любой момент.</string>
     <string name="security_stealth_title">анонимность отправителя</string>
-    <string name="security_stealth_on_hint">Конструкт никогда не узнаёт, кто отправил сообщение. Работает всегда — выключателя нет, и пополнять ничего не нужно.</string>
-    <string name="security_stealth_off_hint">Выключено — ваши отправки раскрывают Конструкту, кто вы. Только для отладки.</string>
+    <string name="security_stealth_on_hint">Konstruct никогда не узнаёт, кто отправил сообщение. Работает всегда — выключателя нет, и пополнять ничего не нужно.</string>
+    <string name="security_stealth_off_hint">Выключено — ваши отправки раскрывают Konstruct, кто вы. Только для отладки.</string>
     <string name="issued_invites_title">Выданные приглашения</string>
     <string name="issued_invites_hint">Выдано с этого устройства за последние %1$d ч. На другом устройстве список свой.</string>
     <string name="issued_invites_revoke_scope">Ссылку или показ QR-кода можно отозвать, пока не истёк срок: перестанут работать все коды этого показа.</string>
@@ -412,7 +412,7 @@
     <string name="searchable_failed">не удалось изменить — проверьте соединение</string>
 
     <!-- Message notifications — canon: iOS LocalNotificationManager (generic text only) -->
-    <string name="notification_app_name">Конструкт</string>
+    <string name="notification_app_name">Konstruct</string>
     <string name="notification_new_message">Новое сообщение</string>
     <string name="notification_channel_messages">Сообщения</string>
     <string name="notification_channel_messages_description">Новые сообщения. Показывается только «Новое сообщение» — без отправителя и текста.</string>
@@ -539,7 +539,7 @@
     <string name="network_unknown">Неизвестно</string>
     <!-- VEIL (iOS NetworkSettingsView) -->
     <string name="censorship_protection">Защита от блокировок</string>
-    <string name="censorship_protection_footer_off">Выкл. Подключение напрямую к Конструкту.</string>
+    <string name="censorship_protection_footer_off">Выкл. Подключение напрямую к Konstruct.</string>
     <string name="censorship_protection_footer_on">Всегда обходит сетевые блокировки. Настройка идёт в фоне.</string>
     <string name="censorship_protection_footer_on_no_front">Фронт не отвечает. Пока он не ответит, сообщения не отправляются и не приходят: в режиме «Вкл» приложение никогда не подключается напрямую. Выберите «Авто», чтобы подключаться напрямую, пока фронт недоступен.</string>
     <string name="veil_establishing">Устанавливаем veil-front туннель…</string>
@@ -612,7 +612,7 @@
     <!-- Ключ восстановления создаётся молча, копия позже (decisions/recovery-key-backup-is-deferred-not-skipped.md) -->
     <string name="recovery_backup_auth_reason">Показать ключ восстановления</string>
     <string name="recovery_backup_intro_title">Сохраните ключ восстановления</string>
-    <string name="recovery_backup_intro_body">У Конструкта нет вашего телефона и почты. Этот ключ — единственный способ вернуть аккаунт, если вы потеряете все устройства. Запишите 12 слов и храните их в надёжном месте.</string>
+    <string name="recovery_backup_intro_body">У Konstruct нет вашего телефона и почты. Этот ключ — единственный способ вернуть аккаунт, если вы потеряете все устройства. Запишите 12 слов и храните их в надёжном месте.</string>
     <string name="recovery_backup_show">Показать ключ</string>
     <string name="recovery_backup_pending_title">Ключ восстановления не сохранён</string>
     <string name="recovery_backup_pending_subtitle">Запишите ключ восстановления — это единственный способ вернуть аккаунт, если пропадут все устройства.</string>
@@ -688,7 +688,7 @@
     <!-- "Can't connect?" on the first screen — iOS onboarding_cant_connect, veil_bootstrap_*. -->
     <string name="onboarding_cant_connect">Не подключается?</string>
     <string name="veil_bootstrap_title">Не подключается</string>
-    <string name="veil_bootstrap_intro">Если Конструкт не может подключиться к сети, человек с работающим подключением может дать вам одноразовый код доступа. Попросите код, затем отсканируйте его или вставьте ниже.</string>
+    <string name="veil_bootstrap_intro">Если Konstruct не может подключиться к сети, человек с работающим подключением может дать вам одноразовый код доступа. Попросите код, затем отсканируйте его или вставьте ниже.</string>
     <string name="veil_bootstrap_scan_subtitle">Наведите камеру на его код</string>
     <string name="veil_bootstrap_paste_subtitle">Если код прислали текстом</string>
     <string name="veil_bootstrap_ok">Подключение настроено</string>
