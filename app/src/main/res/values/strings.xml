@@ -432,7 +432,7 @@
     <string name="recovery_confirm_placeholder">12 words, separated by spaces</string>
     <string name="recovery_confirm_action">Confirm</string>
     <string name="recovery_confirm_invalid_phrase">That isn\'t a valid 12-word phrase. Check the spelling of each word.</string>
-    <string name="recovery_confirm_other_account">This phrase belongs to a different account.</string>
+    <string name="recovery_confirm_other_account">This isn\'t this account\'s recovery phrase. Check the words.</string>
     <string name="recovery_confirm_failed">Couldn\'t check the phrase with the server. Try again.</string>
     <!-- Security events and safety numbers (iOS KeyChangeUX, SafetyNumberView) -->
     <string name="safety_numbers">safety numbers</string>

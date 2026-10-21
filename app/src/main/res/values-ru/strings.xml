@@ -436,7 +436,7 @@
     <string name="recovery_confirm_placeholder">12 слов через пробел</string>
     <string name="recovery_confirm_action">Подтвердить</string>
     <string name="recovery_confirm_invalid_phrase">Это не фраза из 12 слов. Проверьте написание каждого слова.</string>
-    <string name="recovery_confirm_other_account">Эта фраза от другого аккаунта.</string>
+    <string name="recovery_confirm_other_account">Это не фраза восстановления этого аккаунта. Проверьте слова.</string>
     <string name="recovery_confirm_failed">Не удалось проверить фразу на сервере. Попробуйте ещё раз.</string>
     <!-- События безопасности и защитные числа (iOS KeyChangeUX, SafetyNumberView) -->
     <string name="safety_numbers">защитные числа</string>
