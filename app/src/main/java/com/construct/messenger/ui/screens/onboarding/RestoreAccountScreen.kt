@@ -178,7 +178,7 @@ private fun WordGrid(words: List<String>, onWord: (Int, String) -> Unit) {
                             cursorBrush = SolidColor(CTColor.accent),
                             keyboardOptions = KeyboardOptions(
                                 capitalization = KeyboardCapitalization.None,
-                                autoCorrect = false,
+                                autoCorrectEnabled = false,
                                 keyboardType = KeyboardType.Password,
                                 imeAction = if (last) ImeAction.Done else ImeAction.Next,
                             ),
