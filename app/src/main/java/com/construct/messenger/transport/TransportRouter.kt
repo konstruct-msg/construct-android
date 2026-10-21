@@ -49,6 +49,9 @@ class TransportRouter @Inject constructor(
     private var startJob: Job? = null
     private var cooldownJob: Job? = null
 
+    /** The app's default network is a VPN: Auto does not escalate to VEIL ([routeConfig]). */
+    @Volatile private var underVpn = false
+
     /** Once, when messaging starts: listen, and fire the start the initial state asks for. */
     fun start() {
         synchronized(this) {
@@ -57,7 +60,7 @@ class TransportRouter @Inject constructor(
         }
         scope.launch { events.events.collect { send(it) } }
         watchNetwork()
-        Log.i(TAG, "route starts ${state.value} (mode ${veil.modeState.value})")
+        Log.i(TAG, "route starts ${state.value} (mode ${veil.modeState.value}, vpn $underVpn)")
         if (state.value == State.VeilProbing) {
             scope.launch { mutex.withLock { beginProxyStart() } }
         } else {
@@ -72,7 +75,7 @@ class TransportRouter @Inject constructor(
 
     suspend fun send(event: Event) = mutex.withLock {
         val from = state.value
-        val outcome = TransportRoute.reduce(from, event, veil.modeState.value.toRouteMode(), nowMs = System.currentTimeMillis())
+        val outcome = TransportRoute.reduce(from, event, veil.modeState.value.toRouteMode(), routeConfig(underVpn), System.currentTimeMillis())
         state.value = outcome.state
         if (from != outcome.state || outcome.effects.isNotEmpty()) {
             Log.i(TAG, "$from → ${outcome.state} | $event | ${outcome.effects}")
@@ -133,6 +136,7 @@ class TransportRouter @Inject constructor(
     private fun watchNetwork() {
         val cm = context.getSystemService(ConnectivityManager::class.java) ?: return
         var last: Network? = cm.activeNetwork
+        underVpn = last?.let { cm.getNetworkCapabilities(it) }?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
         cm.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 if (network == last) return
@@ -148,7 +152,14 @@ class TransportRouter @Inject constructor(
                 events.post(Event.NetworkPathChanged(reachable = false, censored = false))
             }
 
-            override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) = Unit
+            // Follows every onAvailable (API 26+), and the default callback hears only the
+            // default network: this is where a VPN coming up is seen.
+            override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
+                val vpn = caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+                if (vpn == underVpn) return
+                underVpn = vpn
+                Log.i(TAG, if (vpn) "default network is a VPN: Auto stays direct" else "default network is not a VPN")
+            }
         })
     }
 
@@ -162,3 +173,12 @@ class TransportRouter @Inject constructor(
         const val TAG = "Transport"
     }
 }
+
+/**
+ * Under a VPN, Auto stays on the direct path (vault `decisions/auto-under-vpn-stays-direct.md`).
+ * VEIL's traffic runs inside the same VPN, so it routes around nothing the VPN does not, and a VPN
+ * that drops connections killed streams through the front as often as direct ones: a tester's
+ * OnePlus, 2026-10-18..20, 27 escalations and a reconnect every few minutes for hours. On is
+ * untouched — it never reaches the direct state this switch governs.
+ */
+internal fun routeConfig(underVpn: Boolean) = TransportRoute.Config(allowDirectToVeilEscalation = !underVpn)
