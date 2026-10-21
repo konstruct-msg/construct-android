@@ -1,6 +1,7 @@
 package com.construct.messenger.data.api
 
 import io.grpc.Status
+import com.construct.messenger.diagnostics.ConnectionSummary
 import com.construct.messenger.transport.TransportRoute
 import com.construct.messenger.transport.TransportEvents
 import com.construct.messenger.transport.RouteObservingInterceptor
@@ -65,6 +66,7 @@ class MessageStreamService @Inject constructor(
     private val veil: VeilProxy,
     private val transportEvents: TransportEvents,
     private val mailboxGap: com.construct.messenger.data.repository.MailboxGapNotice,
+    private val summary: com.construct.messenger.diagnostics.ConnectionSummary,
 ) {
     sealed interface StreamEvent {
         /** [cursor]: the stream entry's `serverMs-seq`, the order's tie-breaker (`ServerMessageOrder`). */
@@ -138,6 +140,8 @@ class MessageStreamService @Inject constructor(
                 Log.w(TAG, "stream error (attempt ${attempt + 1})", e)
             }
             reportToRouter(failure, generation, via)
+            val viaVeil = via is TransportRoute.Target.Veil
+            if (framesThisConnection > 0) summary.ended(endOf(failure, generation), viaVeil) else summary.failedToOpen(viaVeil)
             // A connection that carried frames was a working one: the next retry is not the
             // (attempt + 1)-th in a row.
             if (framesThisConnection > 0) attempt = 0
@@ -145,6 +149,16 @@ class MessageStreamService @Inject constructor(
             val backoffMs = min(INITIAL_BACKOFF_MS shl min(attempt, 6), MAX_BACKOFF_MS)
             delay(backoffMs)
         }
+    }
+
+    /** How a connection that had opened ended, for the hourly `CONN` line. */
+    private fun endOf(failure: Throwable?, generation: Long): ConnectionSummary.End = when {
+        grpcClient.generation != generation -> ConnectionSummary.End.ROUTE_SWITCH
+        failure == null -> ConnectionSummary.End.CLOSED
+        failure is StaleStreamException ->
+            if (failure.silentMs > STALE_AFTER_MS + ASLEEP_SLACK_MS) ConnectionSummary.End.SILENT_ASLEEP else ConnectionSummary.End.SILENT
+        Status.fromThrowable(failure).code in NETWORK_CODES -> ConnectionSummary.End.NETWORK
+        else -> ConnectionSummary.End.OTHER
     }
 
     /** Frames received on the current connection; 0 means it never reached the data plane. */
@@ -270,6 +284,7 @@ class MessageStreamService @Inject constructor(
                     _isConnected.value = true
                     _events.tryEmit(StreamEvent.Connected(attempt))
                     Log.i(TAG, "stream connected (attempt $attempt)")
+                    summary.opened(via is TransportRoute.Target.Veil)
                     val method = if (via is TransportRoute.Target.Veil) TransportRoute.StreamMethod.VEIL else TransportRoute.StreamMethod.H2
                     transportEvents.post(TransportRoute.Event.StreamOpened(method, via))
                 }
@@ -283,11 +298,15 @@ class MessageStreamService @Inject constructor(
                         cursorTracker.trackResolved(cursor)
                     }
                 }
+                if (!response.hasHeartbeatAck()) summary.frame()
                 when {
                     response.hasMessage() -> _events.tryEmit(StreamEvent.Message(response.message, cursor))
                     response.hasReceipt() -> _events.tryEmit(StreamEvent.Receipt(response.receipt))
                     response.hasTyping() -> _events.tryEmit(StreamEvent.Typing(response.typing))
-                    response.hasHeartbeatAck() -> _lastHeartbeatAt.value = System.currentTimeMillis()
+                    response.hasHeartbeatAck() -> {
+                        _lastHeartbeatAt.value = System.currentTimeMillis()
+                        summary.heartbeat()
+                    }
                     // The mailbox trimmed messages after our cursor: told to the person, not refetched (TODO 79).
                     response.hasMailboxGap() -> mailboxGap.record(MailboxGap.of(response))
                     // acks/errors/presence: no consumer yet — extend StreamEvent when needed.
@@ -296,7 +315,7 @@ class MessageStreamService @Inject constructor(
             }
     }
 
-    private class StaleStreamException(silentMs: Long) :
+    private class StaleStreamException(val silentMs: Long) :
         java.io.IOException("no inbound frame for ${silentMs / 1000}s — treating stream as dead")
 
     private fun subscribeFrame(): MessageStreamRequest {
@@ -310,6 +329,13 @@ class MessageStreamService @Inject constructor(
     private companion object {
         const val TAG = "MessageStream"
         const val STALE_AFTER_MS = 60_000L
+
+        /** A watchdog this late fired after the phone woke, not on time: the phone was asleep. */
+        private const val ASLEEP_SLACK_MS = 15_000L
+
+        private val NETWORK_CODES = setOf(
+            Status.Code.UNAVAILABLE, Status.Code.CANCELLED, Status.Code.DEADLINE_EXCEEDED, Status.Code.INTERNAL,
+        )
         const val PROBE_TIMEOUT_MS = 8_000L
         const val INITIAL_BACKOFF_MS = 1_000L
         const val MAX_BACKOFF_MS = 30_000L

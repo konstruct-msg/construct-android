@@ -87,6 +87,7 @@ class MessagingRuntime @Inject constructor(
     private val shareProfile: dagger.Lazy<com.construct.messenger.domain.usecase.ShareProfileUseCase>,
     private val blockSync: com.construct.messenger.data.repository.BlockSyncService,
     private val mailboxGap: com.construct.messenger.data.repository.MailboxGapNotice,
+    private val connectionSummary: com.construct.messenger.diagnostics.ConnectionSummary,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val reorder = ReorderDiagnostics(cryptoManager::reorderStats)
@@ -153,6 +154,8 @@ class MessagingRuntime @Inject constructor(
             reorderJob = scope.launch {
                 while (true) {
                     runCatching { reorder.sample() }
+                    // Riding this loop: the hourly line wakes nothing of its own.
+                    connectionSummary.flushIfDue()
                     delay(REORDER_SAMPLE_MS)
                 }
             }
