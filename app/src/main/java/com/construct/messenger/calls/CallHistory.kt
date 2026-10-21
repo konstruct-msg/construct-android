@@ -44,6 +44,14 @@ object CallHistoryRules {
             if (answered) CallRecordStatus.COMPLETED else CallRecordStatus.FAILED
     }
 
+    /**
+     * Whether the call leaves a record here. Not one taken on another of our devices: that device
+     * records it, and here it was neither missed nor declined. iOS `CallManager.endActiveCall`
+     * skips the record the same way; the statuses stay 0–3 on both.
+     */
+    fun records(reason: CallEndReason): Boolean =
+        !(reason is CallEndReason.Hangup && reason.reason == HangupReason.HANGUP_REASON_ACCEPTED_ELSEWHERE)
+
     /** Whole seconds since it was answered; 0 for a call nobody answered. */
     fun durationSeconds(answeredAtMs: Long?, endedAtMs: Long): Int =
         answeredAtMs?.let { ((endedAtMs - it) / 1000).coerceAtLeast(0).toInt() } ?: 0

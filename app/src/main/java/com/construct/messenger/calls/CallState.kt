@@ -103,11 +103,15 @@ interface CallMedia {
 
 /** What the machine needs from [CallSignalTransport] — an interface so a test can stand in for the core. */
 interface CallSignalPort {
-    suspend fun send(peerAccountId: String, signal: WebRTCSignal): Boolean
-    suspend fun sealCandidate(peerAccountId: String, sdpMid: String, sdpMLineIndex: Int, candidate: String): IceCandidate
+    /** [signal] to one device of [peerAccountId], on that device's ratchet. True when the server took it. */
+    suspend fun send(peerAccountId: String, deviceId: String, signal: WebRTCSignal): Boolean
+    /** One candidate line sealed to [deviceId]'s session: a sealed candidate opens on that device only. */
+    suspend fun sealCandidate(deviceId: String, sdpMid: String, sdpMLineIndex: Int, candidate: String): IceCandidate
     suspend fun openCandidate(deviceId: String, ice: IceCandidate): String?
-    /** The device of [peerAccountId] call signals go to — what a candidate from them opens on. */
+    /** [peerAccountId]'s pinned device: the fallback when a call knows no device of theirs. */
     suspend fun peerDevice(peerAccountId: String): String?
+    /** The devices of [peerAccountId] an offer goes to ([CallDeviceRouting.offerDevices]). */
+    suspend fun offerDevices(peerAccountId: String): List<String>
 
     /**
      * The path signals arrive on may have died without a word — a middlebox swallowing an

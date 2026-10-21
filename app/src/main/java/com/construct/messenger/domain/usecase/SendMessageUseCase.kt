@@ -110,15 +110,17 @@ class SendMessageUseCase @Inject constructor(
      *
      * True when the server took it. No row is written: a signal is not a message.
      */
-    suspend fun sendCallSignal(peerAccountId: String, messageId: String, frame: ByteArray): Boolean {
+    suspend fun sendCallSignal(peerAccountId: String, deviceId: String, messageId: String, frame: ByteArray): Boolean {
         val myId = keystoreManager.getUserId() ?: return false
         if (!cryptoManager.isMessagingReady) return false
         return try {
-            val pinned = sessionManager.ensureSession(peerAccountId)
-            val actions = orchestrator.handleEvent(CfeIncomingEvent.OutgoingCallSignal(pinned.deviceId, messageId, frame))
+            // That device's ratchet and that device's key: the seal names the device it is for
+            // (`SealedInner.recipient_device`), and a copy sealed to one never opens on another.
+            val device = sessionManager.ensureSessionForDevice(peerAccountId, deviceId)
+            val actions = orchestrator.handleEvent(CfeIncomingEvent.OutgoingCallSignal(device.deviceId, messageId, frame))
             persistSessionActions(actions)
             actions.filterIsInstance<CfeAction.NotifyError>().forEach { Log.w(TAG, "call signal: core [${it.code}] ${it.message}") }
-            val payload = actions.filterIsInstance<CfeAction.SendEncryptedMessage>().firstOrNull { it.to == pinned.deviceId }?.payload
+            val payload = actions.filterIsInstance<CfeAction.SendEncryptedMessage>().firstOrNull { it.to == device.deviceId }?.payload
                 ?: return false
             val result = sendOneCopy(
                 myId = myId,
@@ -126,7 +128,7 @@ class SendMessageUseCase @Inject constructor(
                 wireMessageId = messageId,
                 timestampMs = System.currentTimeMillis(),
                 encrypted = payload,
-                identityPublic = pinned.identityPublic,
+                identityPublic = device.identityPublic,
                 isOwnReplica = false,
             )
             result?.success == true
@@ -136,6 +138,21 @@ class SendMessageUseCase @Inject constructor(
             Log.w(TAG, "call signal ${messageId.take(8)}… to ${peerAccountId.take(8)}… failed", e)
             false
         }
+    }
+
+    /**
+     * The devices of [peerAccountId] a call offer goes to, as the core plans them: the recipient
+     * set of an ordinary send with no own-device copies — our siblings do not ring on a call we
+     * make (vault `decisions/a-call-rings-every-device.md`).
+     */
+    suspend fun callRecipientDevices(peerAccountId: String): List<String> {
+        val pinned = sessionManager.ensureSession(peerAccountId)
+        return cryptoManager.planSend(
+            recipientDeviceIds = recipientDeviceSet(peerAccountId, pinned).map { it.deviceId },
+            ownDeviceIds = emptyList(),
+            ourDeviceId = "",
+            recipientIsSelf = false,
+        ).filter { it.audience == DeliveryAudience.RECIPIENT }.map { it.deviceId }
     }
 
     /**

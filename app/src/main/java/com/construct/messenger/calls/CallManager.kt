@@ -42,6 +42,11 @@ import shared.proto.signaling.v1.Webrtc.WebRTCSignal
  * Signals out go through one queue per call, so the server gets them in the order they were
  * made — offer, candidates, hangup.
  *
+ * A call reaches every device of the person called and talks to the one that answers
+ * ([CallDeviceRouting], vault `decisions/a-call-rings-every-device.md`): every signal out is
+ * addressed to devices, never to an account, and every signal in is weighed by the device the
+ * core opened it under.
+ *
  * Where Android differs, it is because a carrier iOS has does not exist here — there is no VoIP
  * push, so the offer is how a call arrives and busy is decided on it ([CallRules.newCallDisposition]),
  * and an unanswered call ends after [CallTiming.RING_TIMEOUT_MS] because no CallKit screen does it.
@@ -243,6 +248,10 @@ class CallManager internal constructor(
             val init = signaling.initiateCall(session.id, peerUserId, callerName = "", video = video)
             if (active !== call) return
             Log.i(TAG, "InitiateCall: calleeOnline=${init.calleeOnline} call=${session.id.take(8)}…")
+            call.offered = signals.offerDevices(peerUserId)
+            if (active !== call) return
+            check(call.offered.isNotEmpty()) { "no device of the callee to ring" }
+            Log.i(TAG, "ringing ${call.offered.size} device(s) ${describe(call)}")
             call.turn = fetchTurn(session.id)
             if (active !== call) return
             openStream(call)
@@ -311,11 +320,17 @@ class CallManager internal constructor(
 
     private suspend fun onSignal(incoming: CallSignalInbox.Incoming) {
         val signal = incoming.signal
+        val from = incoming.deviceId
         val call = active?.takeIf { it.session.id == signal.callId }
+        // After an answer only the chosen device speaks; a hangup and an answer weigh it themselves.
+        if (call != null && signal.signalCase !in WEIGHED_BY_DEVICE && !CallDeviceRouting.admits(from, call.peerDevice)) {
+            Log.i(TAG, "signal ${signal.signalCase} from ${from.take(8)}…, not this call's device — dropped ${describe(call)}")
+            return
+        }
         when (signal.signalCase) {
             WebRTCSignal.SignalCase.OFFER -> {
                 if (call != null) {
-                    call.peerDevice = incoming.deviceId
+                    if (call.peerDevice == null) call.peerDevice = from
                     when (CallRules.remoteOfferDisposition(call.session.isIncoming, call.answeredAtMs != null)) {
                         CallRules.RemoteOfferDisposition.HOLD_UNTIL_ANSWERED -> {
                             takeUpVideoCall(call, signal.offer.callType)
@@ -327,18 +342,11 @@ class CallManager internal constructor(
                     incomingOffer(signal.callId, incoming.accountId, incoming.deviceId, signal.offer.sdp, signal.offer.callType)
                 }
             }
-            WebRTCSignal.SignalCase.ANSWER -> if (call != null) remoteAnswer(call, signal.answer.sdp)
-            WebRTCSignal.SignalCase.ICE_CANDIDATE -> if (call != null) remoteCandidates(call, incoming.deviceId, listOf(signal.iceCandidate))
-            WebRTCSignal.SignalCase.ICE_CANDIDATES -> if (call != null) remoteCandidates(call, incoming.deviceId, signal.iceCandidates.candidatesList)
-            WebRTCSignal.SignalCase.HANGUP -> if (call != null) {
-                // The peer knows; the server does not until our stream says so (AC92380B).
-                sendHangup(call, signal.hangup.reason, CallRules.HangupOrigin.REMOTE)
-                endActive(CallEndReason.Hangup(signal.hangup.reason))
-            }
-            WebRTCSignal.SignalCase.BUSY -> if (call != null) {
-                sendHangup(call, HangupReason.HANGUP_REASON_BUSY, CallRules.HangupOrigin.REMOTE)
-                endActive(CallEndReason.Hangup(HangupReason.HANGUP_REASON_BUSY))
-            }
+            WebRTCSignal.SignalCase.ANSWER -> if (call != null) answerFrom(call, from, signal.answer.sdp)
+            WebRTCSignal.SignalCase.ICE_CANDIDATE -> if (call != null) remoteCandidates(call, from, listOf(signal.iceCandidate))
+            WebRTCSignal.SignalCase.ICE_CANDIDATES -> if (call != null) remoteCandidates(call, from, signal.iceCandidates.candidatesList)
+            WebRTCSignal.SignalCase.HANGUP -> if (call != null) remoteHangup(call, from, signal.hangup.reason)
+            WebRTCSignal.SignalCase.BUSY -> if (call != null) remoteHangup(call, from, HangupReason.HANGUP_REASON_BUSY)
             WebRTCSignal.SignalCase.RINGING -> if (call != null && _state.value is CallState.Dialing) _state.value = CallState.Ringing(call.session)
             WebRTCSignal.SignalCase.MEDIA_UPDATE -> if (call != null) {
                 val on = CallVideoSignal.remoteCameraOn(signal.mediaUpdate) ?: return
@@ -378,7 +386,7 @@ class CallManager internal constructor(
             CallRules.NewCallDisposition.BUSY -> {
                 Log.i(TAG, "busy — refusing call ${callId.take(8)}… from ${callerId.take(8)}…")
                 ended.remember(callId)
-                scope.launch { signals.send(callerId, CallSignalWire.hangup(callId, myDevice(), HangupReason.HANGUP_REASON_BUSY, nowMs())) }
+                scope.launch { signals.send(callerId, callerDevice, CallSignalWire.hangup(callId, myDevice(), HangupReason.HANGUP_REASON_BUSY, nowMs())) }
                 return
             }
             CallRules.NewCallDisposition.REPLACE_OUTGOING -> Log.i(TAG, "glare: yielding our call to ${callerId.take(8)}… — taking theirs")
@@ -474,6 +482,59 @@ class CallManager internal constructor(
             Log.w(TAG, "offer handling failed: ${e.message}")
             if (active === call) endActive(CallEndReason.Local("Offer handling failed"))
         }
+    }
+
+    /**
+     * An answer from [from]. The first one picks the device the call talks to, and the other
+     * devices that rang are told it was taken elsewhere; a later one from another device is told
+     * the same and goes no further.
+     */
+    private suspend fun answerFrom(call: ActiveCall, from: String, sdp: String) {
+        if (call.session.isIncoming) {
+            if (CallDeviceRouting.admits(from, call.peerDevice)) remoteAnswer(call, sdp)
+            return
+        }
+        when (val decision = CallDeviceRouting.onAnswer(from, call.peerDevice, call.offered)) {
+            is CallDeviceRouting.AnswerDisposition.ReleaseLate -> {
+                Log.i(TAG, "late answer from ${from.take(8)}… — taken elsewhere ${describe(call)}")
+                release(call, listOf(decision.device))
+            }
+            is CallDeviceRouting.AnswerDisposition.Accept -> {
+                if (call.peerDevice == null) {
+                    call.peerDevice = decision.device
+                    Log.i(TAG, "answered on ${from.take(8)}…, releasing ${decision.release.size} other device(s) ${describe(call)}")
+                    release(call, decision.release)
+                }
+                remoteAnswer(call, sdp)
+            }
+        }
+    }
+
+    /** A hangup or a busy from [from]: a decline anywhere ends the call, busy only takes one device out. */
+    private fun remoteHangup(call: ActiveCall, from: String, reason: HangupReason) {
+        when (val decision = CallDeviceRouting.onHangup(from, reason, call.peerDevice, call.offered)) {
+            CallDeviceRouting.HangupDisposition.Ignore ->
+                Log.i(TAG, "hangup from ${from.take(8)}…, not this call's device — ignored ${describe(call)}")
+            is CallDeviceRouting.HangupDisposition.DropDevice -> {
+                call.offered = decision.remaining
+                Log.i(TAG, "${from.take(8)}… is busy — ringing ${decision.remaining.size} other device(s) ${describe(call)}")
+            }
+            is CallDeviceRouting.HangupDisposition.End -> {
+                release(call, decision.release)
+                // The peer knows; the server does not until our stream says so (AC92380B). Taken
+                // elsewhere, nothing reaches the stream: a ringing device has none open, and a
+                // callee hangup there would end the sibling's call (`remove_call`).
+                sendHangup(call, reason, CallRules.HangupOrigin.REMOTE)
+                endActive(CallEndReason.Hangup(reason))
+            }
+        }
+    }
+
+    /** Tell [devices] the call was taken elsewhere — E2EE, on the call's queue, never on the stream. */
+    private fun release(call: ActiveCall, devices: List<String>) {
+        if (devices.isEmpty()) return
+        val hangup = CallSignalWire.hangup(call.session.id, myDevice(), HangupReason.HANGUP_REASON_ACCEPTED_ELSEWHERE, nowMs())
+        enqueue(call) { devices.map { it to hangup } }
     }
 
     private suspend fun remoteAnswer(call: ActiveCall, sdp: String) {
@@ -608,9 +669,12 @@ class CallManager internal constructor(
             call.pendingLocalCandidates.clear()
             call.iceFlush = null
             if (batch.isEmpty()) return@launch
+            // Sealed once per device: a candidate sealed to one device's session opens on no other.
             enqueue(call) {
-                val sealed = batch.map { signals.sealCandidate(call.session.peerUserId, it.sdpMid, it.sdpMLineIndex, it.sdp) }
-                CallSignalWire.batches(sealed).map { CallSignalWire.iceSignal(call.session.id, myDevice(), it, nowMs()) }
+                targetsOf(call).flatMap { device ->
+                    val sealed = batch.map { signals.sealCandidate(device, it.sdpMid, it.sdpMLineIndex, it.sdp) }
+                    CallSignalWire.batches(sealed).map { device to CallSignalWire.iceSignal(call.session.id, myDevice(), it, nowMs()) }
+                }
             }
             Log.i(TAG, "flushing ${batch.size} candidate(s) ${describe(call)}")
         }
@@ -699,7 +763,9 @@ class CallManager internal constructor(
                         endActive(CallEndReason.Hangup(signal.hangup.reason))
                     }
                     WebRTCSignal.SignalCase.ICE_CANDIDATE, WebRTCSignal.SignalCase.ICE_CANDIDATES -> scope.launch {
-                        val device = call.peerDevice ?: signals.peerDevice(call.session.peerUserId)?.also { call.peerDevice = it } ?: return@launch
+                        // Opened on the pinned device when none is chosen yet, but never chosen by it:
+                        // choosing is the first answer's.
+                        val device = call.peerDevice ?: signals.peerDevice(call.session.peerUserId) ?: return@launch
                         val list = if (signal.hasIceCandidate()) listOf(signal.iceCandidate) else signal.iceCandidates.candidatesList
                         remoteCandidates(call, device, list)
                     }
@@ -745,13 +811,21 @@ class CallManager internal constructor(
         .setSenderDeviceId(myDevice())
         .setTimestamp(nowMs())
 
-    private fun sendE2ee(call: ActiveCall, signal: WebRTCSignal): CompletableDeferred<Boolean> = enqueue(call) { listOf(signal) }
+    /** To every device the call is talking to now ([targetsOf]), decided in the queue, in order. */
+    private fun sendE2ee(call: ActiveCall, signal: WebRTCSignal): CompletableDeferred<Boolean> =
+        enqueue(call) { targetsOf(call).map { it to signal } }
+
+    /** The chosen device, else every device that rang, else the pinned one ([CallDeviceRouting.targets]). */
+    private suspend fun targetsOf(call: ActiveCall): List<String> {
+        val pinned = if (call.peerDevice == null && call.offered.isEmpty()) signals.peerDevice(call.session.peerUserId) else null
+        return CallDeviceRouting.targets(call.peerDevice, call.offered, pinned)
+    }
 
     /**
      * Into the call's queue. [build] runs in the queue — candidates are sealed there, in order with
      * everything else that moves the ratchet. Completes true when every signal it made was taken.
      */
-    private fun enqueue(call: ActiveCall, build: suspend () -> List<WebRTCSignal>): CompletableDeferred<Boolean> {
+    private fun enqueue(call: ActiveCall, build: suspend () -> List<Pair<String, WebRTCSignal>>): CompletableDeferred<Boolean> {
         val done = CompletableDeferred<Boolean>()
         if (call.outbox.trySend(Outgoing(build, done)).isFailure) done.complete(false)
         return done
@@ -787,7 +861,8 @@ class CallManager internal constructor(
         scope.launch {
             for (o in call.outbox) {
                 val ok = try {
-                    o.build().map { signals.send(session.peerUserId, it) }.all { it }
+                    val addressed = o.build()
+                    addressed.isNotEmpty() && addressed.map { (device, signal) -> signals.send(session.peerUserId, device, signal) }.all { it }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -811,7 +886,7 @@ class CallManager internal constructor(
         val endedState = CallState.Ended(call.session, reason)
         _state.value = endedState
         val endedAt = nowMs()
-        history.record(
+        if (CallHistoryRules.records(reason)) history.record(
             call.session,
             CallHistoryRules.status(call.session.isIncoming, reason, call.answeredAtMs != null),
             call.startedAtMs,
@@ -830,12 +905,19 @@ class CallManager internal constructor(
         "call=${call.session.id.take(8)}… ${call.session.direction} state=${_state.value::class.simpleName} " +
             "answered=${call.answeredAtMs != null} media=${call.mediaConnected}"
 
-    private class Outgoing(val build: suspend () -> List<WebRTCSignal>, val done: CompletableDeferred<Boolean>)
+    /** Signals and the device each one is for. */
+    private class Outgoing(val build: suspend () -> List<Pair<String, WebRTCSignal>>, val done: CompletableDeferred<Boolean>)
 
     private inner class ActiveCall(val session: CallSession) {
         val startedAtMs = nowMs()
         val outbox = Channel<Outgoing>(Channel.UNLIMITED)
+        /**
+         * The device this call talks to: the one that sent the offer (incoming), or the one whose
+         * answer came first (outgoing). Null on an outgoing call until someone answers.
+         */
         var peerDevice: String? = null
+        /** The devices our offer went to; empty on an incoming call. */
+        var offered: List<String> = emptyList()
         var turn: TurnCredentials? = null
         var media: CallMedia? = null
         var outbound: Channel<SignalRequest>? = null
@@ -872,5 +954,8 @@ class CallManager internal constructor(
 
     private companion object {
         const val TAG = "Calls"
+
+        /** Signals whose sender is weighed by [CallDeviceRouting] itself, not by the plain admit. */
+        val WEIGHED_BY_DEVICE = setOf(WebRTCSignal.SignalCase.ANSWER, WebRTCSignal.SignalCase.HANGUP, WebRTCSignal.SignalCase.BUSY)
     }
 }

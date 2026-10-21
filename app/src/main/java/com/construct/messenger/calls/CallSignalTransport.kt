@@ -38,22 +38,21 @@ class CallSignalTransport @Inject constructor(
     /** Signals arrive on the message stream; ask it to prove it is alive. */
     override fun checkInbound() = stream.get().probe()
 
-    /** [signal] to [peerAccountId]'s pinned device. True when the server took it. */
-    override suspend fun send(peerAccountId: String, signal: WebRTCSignal): Boolean = chain.withLock {
+    /** A message id of its own for every envelope: one per device, so no two copies share one. */
+    override suspend fun send(peerAccountId: String, deviceId: String, signal: WebRTCSignal): Boolean = chain.withLock {
         val messageId = UUID.randomUUID()
-        val sent = sendMessage.sendCallSignal(peerAccountId, messageId.toString(), CallSignalWire.frame(signal, messageId))
-        Log.i(TAG, "signal ${signal.signalCase} call=${signal.callId.take(8)}… to ${peerAccountId.take(8)}… — ${if (sent) "sent" else "NOT sent"}")
+        val sent = sendMessage.sendCallSignal(peerAccountId, deviceId, messageId.toString(), CallSignalWire.frame(signal, messageId))
+        Log.i(TAG, "signal ${signal.signalCase} call=${signal.callId.take(8)}… to ${peerAccountId.take(8)}…/${deviceId.take(8)}… — ${if (sent) "sent" else "NOT sent"}")
         sent
     }
 
     /**
      * One candidate line ("candidate:1 1 UDP … typ host" — an address and a port) sealed to the
-     * session with the peer's pinned device, the same ratchet the offer named, so the signalling
-     * server forwards what it cannot read. The core pads it to a fixed block: every candidate is
-     * the same size.
+     * session with [device], the ratchet the signal carrying it goes on, so the signalling server
+     * forwards what it cannot read. The core pads it to a fixed block: every candidate is the
+     * same size.
      */
-    override suspend fun sealCandidate(peerAccountId: String, sdpMid: String, sdpMLineIndex: Int, candidate: String): IceCandidate {
-        val device = sessionManager.ensureSession(peerAccountId).deviceId
+    override suspend fun sealCandidate(device: String, sdpMid: String, sdpMLineIndex: Int, candidate: String): IceCandidate {
         val wire = cryptoManager.encryptToWire(device, candidate.toByteArray(Charsets.UTF_8))
         persist(device)
         return IceCandidate.newBuilder()
@@ -71,6 +70,14 @@ class CallSignalTransport @Inject constructor(
             .getOrNull()
             ?.also { persist(deviceId) }
             ?.toString(Charsets.UTF_8)
+    }
+
+    override suspend fun offerDevices(peerAccountId: String): List<String> {
+        val pinned = peerDevice(peerAccountId)
+        val planned = runCatching { sendMessage.callRecipientDevices(peerAccountId) }
+            .onFailure { Log.w(TAG, "no device plan for ${peerAccountId.take(8)}…: ${it.message}") }
+            .getOrDefault(emptyList())
+        return CallDeviceRouting.offerDevices(planned, cryptoManager::hasSession, pinned)
     }
 
     override suspend fun peerDevice(peerAccountId: String): String? = try {

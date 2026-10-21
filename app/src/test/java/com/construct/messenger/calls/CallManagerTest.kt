@@ -41,15 +41,23 @@ class CallManagerTest {
 
     private class FakeSignals : CallSignalPort {
         val sent = mutableListOf<Pair<String, WebRTCSignal>>()
-        override suspend fun send(peerAccountId: String, signal: WebRTCSignal): Boolean {
+        /** Every envelope with the device it went to. */
+        val sentTo = mutableListOf<Pair<String, WebRTCSignal>>()
+        /** (device, candidate line) for every seal. */
+        val sealedFor = mutableListOf<Pair<String, String>>()
+        /** The devices an offer to an account goes to; one, `dev-<account>`, unless set. */
+        val devices = mutableMapOf<String, List<String>>()
+        override suspend fun send(peerAccountId: String, deviceId: String, signal: WebRTCSignal): Boolean {
             sent += peerAccountId to signal
+            sentTo += deviceId to signal
             return true
         }
-        override suspend fun sealCandidate(peerAccountId: String, sdpMid: String, sdpMLineIndex: Int, candidate: String): IceCandidate =
-            IceCandidate.newBuilder().setCandidate(ByteString.copyFromUtf8("sealed:$candidate")).setSdpMid(sdpMid).setSdpMLineIndex(sdpMLineIndex).build()
+        override suspend fun sealCandidate(deviceId: String, sdpMid: String, sdpMLineIndex: Int, candidate: String): IceCandidate =
+            also { sealedFor += deviceId to candidate }.let { IceCandidate.newBuilder() }.setCandidate(ByteString.copyFromUtf8("sealed:$candidate")).setSdpMid(sdpMid).setSdpMLineIndex(sdpMLineIndex).build()
         override suspend fun openCandidate(deviceId: String, ice: IceCandidate): String? =
             ice.candidate.toStringUtf8().takeIf { it.startsWith("sealed:") }?.removePrefix("sealed:")
         override suspend fun peerDevice(peerAccountId: String): String = "dev-$peerAccountId"
+        override suspend fun offerDevices(peerAccountId: String): List<String> = devices[peerAccountId] ?: listOf("dev-$peerAccountId")
         var inboundChecks = 0
         override fun checkInbound() {
             inboundChecks += 1
@@ -133,10 +141,13 @@ class CallManagerTest {
             test.runCurrent()
         }
 
-        fun deliver(signal: WebRTCSignal, from: String = peer) {
-            inbox.deliver(CallSignalInbox.Incoming(from, "dev-$from", signal))
+        fun deliver(signal: WebRTCSignal, from: String = peer, device: String = "dev-$from") {
+            inbox.deliver(CallSignalInbox.Incoming(from, device, signal))
             test.runCurrent()
         }
+
+        /** What went to [device], in order. */
+        fun casesTo(device: String) = signals.sentTo.filter { it.first == device }.map { it.second.signalCase }
 
         fun sentCases(to: String = peer) = signals.sent.filter { it.first == to }.map { it.second.signalCase }
         val state get() = calls.state.value
@@ -595,5 +606,108 @@ class CallManagerTest {
         rig.deliver(mediaUpdate("c1", true))
         rig.deliver(hangup("c1"))
         assertEquals(CallVideoState(), rig.calls.video.value)
+    }
+
+    // ── A call rings every device (vault decisions/a-call-rings-every-device.md) ──
+
+    private fun hangup(callId: String, reason: HangupReason) =
+        WebRTCSignal.newBuilder().setCallId(callId).setHangup(CallHangup.newBuilder().setReason(reason)).build()
+
+    private fun Rig.callTwoDevices(): String {
+        signals.devices[peer] = listOf("phone", "mac")
+        calls.startOutgoingCall(peer)
+        test.runCurrent()
+        return outgoingCallId()
+    }
+
+    @Test
+    fun `the offer rings every device, and the first answer takes the call from the rest`() = runTest {
+        val rig = Rig(this)
+        val id = rig.callTwoDevices()
+        assertEquals(listOf(WebRTCSignal.SignalCase.OFFER), rig.casesTo("phone"))
+        assertEquals(listOf(WebRTCSignal.SignalCase.OFFER), rig.casesTo("mac"))
+
+        rig.deliver(answerSignal(id), device = "mac")
+
+        assertTrue(rig.state is CallState.Active)
+        val released = rig.signals.sentTo.last { it.first == "phone" }.second
+        assertEquals(HangupReason.HANGUP_REASON_ACCEPTED_ELSEWHERE, released.hangup.reason)
+        assertTrue("the release is E2EE, not on the stream", WebRTCSignal.SignalCase.HANGUP !in rig.signaling.streamSignals())
+        // From here only the device that answered hears the call.
+        rig.media.single().listener.onLocalCandidate(CallIce("a", "0", 0))
+        advanceTimeBy(CallTiming.ICE_FLUSH_MS + 1)
+        assertEquals(listOf("mac" to "a"), rig.signals.sealedFor)
+        assertEquals(WebRTCSignal.SignalCase.ICE_CANDIDATE, rig.casesTo("mac").last())
+        assertEquals(listOf(WebRTCSignal.SignalCase.OFFER, WebRTCSignal.SignalCase.HANGUP), rig.casesTo("phone"))
+    }
+
+    @Test
+    fun `before an answer each candidate is sealed for every device that rang`() = runTest {
+        val rig = Rig(this)
+        rig.callTwoDevices()
+        rig.media.single().listener.onLocalCandidate(CallIce("a", "0", 0))
+        advanceTimeBy(CallTiming.ICE_FLUSH_MS + 1)
+        assertEquals(listOf("phone" to "a", "mac" to "a"), rig.signals.sealedFor)
+    }
+
+    @Test
+    fun `a late answer from another device is released and changes nothing`() = runTest {
+        val rig = Rig(this)
+        val id = rig.callTwoDevices()
+        rig.deliver(answerSignal(id), device = "mac")
+        rig.deliver(answerSignal(id), device = "phone")
+
+        assertEquals(1, rig.media.single().log.count { it.startsWith("setRemoteAnswer") })
+        assertEquals(HangupReason.HANGUP_REASON_ACCEPTED_ELSEWHERE, rig.signals.sentTo.last().second.hangup.reason)
+        assertEquals("phone", rig.signals.sentTo.last().first)
+        // Its hangup after that is not the call's.
+        rig.deliver(hangup(id), device = "phone")
+        assertTrue(rig.state is CallState.Active)
+    }
+
+    @Test
+    fun `a decline on one device ends the call and releases the other`() = runTest {
+        val rig = Rig(this)
+        val id = rig.callTwoDevices()
+        rig.deliver(hangup(id, HangupReason.HANGUP_REASON_DECLINED), device = "phone")
+
+        assertTrue(rig.state is CallState.Ended)
+        assertEquals(HangupReason.HANGUP_REASON_ACCEPTED_ELSEWHERE, rig.signals.sentTo.last { it.first == "mac" }.second.hangup.reason)
+    }
+
+    @Test
+    fun `busy on one device keeps the others ringing until all are busy`() = runTest {
+        val rig = Rig(this)
+        val id = rig.callTwoDevices()
+        rig.deliver(hangup(id, HangupReason.HANGUP_REASON_BUSY), device = "phone")
+        assertTrue(rig.state is CallState.Dialing)
+
+        // Hanging up now reaches only the device still ringing.
+        rig.calls.end()
+        runCurrent()
+        assertEquals(listOf(WebRTCSignal.SignalCase.OFFER), rig.casesTo("phone"))
+        assertEquals(WebRTCSignal.SignalCase.HANGUP, rig.casesTo("mac").last())
+    }
+
+    @Test
+    fun `the callee answers the device that sent the offer, not the pinned one`() = runTest {
+        val rig = Rig(this)
+        rig.deliver(offer("c1"), device = "their-mac")
+        rig.calls.answer()
+        runCurrent()
+        assertEquals(listOf(WebRTCSignal.SignalCase.ANSWER), rig.casesTo("their-mac"))
+        assertTrue(rig.casesTo("dev-$peer").isEmpty())
+    }
+
+    @Test
+    fun `taken on another of our devices - ringing stops, no record, nothing said back`() = runTest {
+        val rig = Rig(this)
+        rig.deliver(offer("c1"))
+        rig.deliver(hangup("c1", HangupReason.HANGUP_REASON_ACCEPTED_ELSEWHERE))
+
+        assertTrue(rig.state is CallState.Ended)
+        assertTrue("the device that answered records it", rig.history.isEmpty())
+        assertTrue(rig.signals.sent.isEmpty())
+        assertTrue("a callee hangup on the stream would end the sibling's call", rig.signaling.requests.isEmpty())
     }
 }
