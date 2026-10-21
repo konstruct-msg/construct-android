@@ -352,6 +352,7 @@ fun ChatScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             state = listState,
+            verticalArrangement = TranscriptArrangement,
         ) {
             itemsIndexed(visible, key = { _, message -> message.id }) { index, message ->
                 val voice = message.media as? com.construct.messenger.data.model.MessageMedia.Voice

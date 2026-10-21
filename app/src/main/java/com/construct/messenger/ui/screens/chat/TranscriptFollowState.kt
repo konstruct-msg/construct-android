@@ -1,5 +1,6 @@
 package com.construct.messenger.ui.screens.chat
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,3 +28,11 @@ internal fun rememberTranscriptFollow(listState: LazyListState, slackPx: Int): M
     }
     return following
 }
+
+/**
+ * A chat shorter than the screen sits on the composer and grows upward, as in every messenger.
+ * A tester, 2026-10-21: the first messages of a conversation stuck to the top of an empty screen
+ * until it filled. The list stays in reading order (not `reverseLayout`), so the follow mode,
+ * the arrival scroll and the search jump keep their indices.
+ */
+internal val TranscriptArrangement = Arrangement.Bottom
