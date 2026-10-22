@@ -254,9 +254,10 @@ class MessageStreamService @Inject constructor(
                     // Sleeps until the stream would turn stale, not on a short tick: a wake-up
                     // every few seconds for nothing is what the battery pays for.
                     while (isActive) {
+                        val limitMs = silenceLimitMs(framesThisConnection)
                         val silentMs = SystemClock.elapsedRealtime() - lastInboundAt
-                        if (silentMs > STALE_AFTER_MS) throw StaleStreamException(silentMs)
-                        delay(STALE_AFTER_MS - silentMs + 1)
+                        if (silentMs > limitMs) throw StaleStreamException(silentMs)
+                        delay(limitMs - silentMs + 1)
                     }
                 }
                 collectStream(outbound, attempt) { lastInboundAt = SystemClock.elapsedRealtime() }
@@ -326,9 +327,19 @@ class MessageStreamService @Inject constructor(
         return MessageStreamRequest.newBuilder().setSubscribe(builder).build()
     }
 
-    private companion object {
-        const val TAG = "MessageStream"
+    internal companion object {
+        private const val TAG = "MessageStream"
         const val STALE_AFTER_MS = 60_000L
+
+        /**
+         * How long a new connection may stay silent before it counts as not opened. The server
+         * answers Subscribe at once (an initial HeartbeatAck, messaging-service `grpc.rs`), so a
+         * minute — the heartbeat wait, which is for a stream that was working — only left a
+         * connection a tunnel had swallowed on screen as "connecting". Under a whitelist-bypass
+         * VPN (Portal WG, 2026-10-22) every drop cost two or three such minutes before a
+         * connection took. iOS waits 20 s for a stream over VEIL (`streamOpenAcceptTimeoutVEIL`).
+         */
+        const val OPEN_DEADLINE_MS = 20_000L
 
         /** A watchdog this late fired after the phone woke, not on time: the phone was asleep. */
         private const val ASLEEP_SLACK_MS = 15_000L
@@ -349,6 +360,10 @@ class MessageStreamService @Inject constructor(
  * after a suspension (TODO 102). Trusted alone, a dead proxy would be reconnected to forever rather
  * than replaced. Unary RPCs already rotate on a refused connection (`RouteObservingInterceptor`).
  */
+/** How long the stream may go without an inbound frame: shorter until its first one arrives. */
+internal fun silenceLimitMs(framesThisConnection: Int): Long =
+    if (framesThisConnection == 0) MessageStreamService.OPEN_DEADLINE_MS else MessageStreamService.STALE_AFTER_MS
+
 internal fun localProxyGone(failure: Throwable?, via: TransportRoute.Target, proxyAlive: () -> Boolean): Boolean {
     if (via !is TransportRoute.Target.Veil) return false
     if (failure != null &&
