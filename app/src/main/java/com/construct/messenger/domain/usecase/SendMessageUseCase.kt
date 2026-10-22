@@ -772,7 +772,7 @@ class SendMessageUseCase @Inject constructor(
                 timestampMs = timestampMs,
                 deliveryStatus = status,
                 // At the bottom until the server answers with its place (`setOrderKey`).
-                orderKey = ServerMessageOrder.pending(messageId),
+                orderKey = ServerMessageOrder.pending(messageId, timestampMs),
                 replyToId = reply?.messageId,
                 replyPreview = reply?.preview?.ifEmpty { null },
                 replyMediaType = reply?.mediaType,

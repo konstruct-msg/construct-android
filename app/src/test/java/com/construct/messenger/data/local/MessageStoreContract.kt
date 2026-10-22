@@ -148,7 +148,7 @@ abstract class MessageStoreContract {
     fun theTranscriptFollowsTheServersOrder() = runTest {
         store.insert(message("late-clock", 99).copy(orderKey = ServerMessageOrder.key(1_000, 1)!!))
         store.insert(message("early-clock", 5).copy(orderKey = ServerMessageOrder.key(2_000, 0)!!))
-        store.insert(message("mine", 50).copy(orderKey = ServerMessageOrder.pending("mine")))
+        store.insert(message("mine", 50).copy(orderKey = ServerMessageOrder.pending("mine", 50)))
         assertEquals(listOf("late-clock", "early-clock", "mine"), store.observeChat(chat).first().map { it.id })
         assertEquals("mine", store.latestVisible(chat)!!.id)
 
