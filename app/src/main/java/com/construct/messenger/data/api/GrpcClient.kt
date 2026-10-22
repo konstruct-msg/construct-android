@@ -3,6 +3,7 @@ package com.construct.messenger.data.api
 import com.construct.messenger.data.auth.AuthInterceptor
 import com.construct.messenger.transport.DirectPathGuard
 import com.construct.messenger.transport.RouteObservingInterceptor
+import com.construct.messenger.transport.UnaryDeadline
 import com.construct.messenger.transport.TransportEvents
 import com.construct.messenger.transport.TransportRoute
 import com.construct.messenger.veil.VeilModeStore
@@ -117,11 +118,11 @@ class GrpcClient @Inject constructor(
             DirectPathGuard { veilModes.state.value.allowsDirectPath }.takeIf { veilPort == null },
         )
         return Channels(
-            auth = base().intercept(listOf(authInterceptor, observer(TransportRoute.Lane.AUTH)) + guard).build(),
+            auth = base().intercept(listOf(UnaryDeadline(), authInterceptor, observer(TransportRoute.Lane.AUTH)) + guard).build(),
             // No AuthInterceptor — sealed sender RPCs must not carry sender identity
             // on the transport layer. The `SendSealedMessage` method is also in the
             // interceptor's unauthenticated whitelist as defence-in-depth.
-            sealed = base().intercept(listOf<ClientInterceptor>(observer(TransportRoute.Lane.SEALED)) + guard).build(),
+            sealed = base().intercept(listOf(UnaryDeadline(), observer(TransportRoute.Lane.SEALED)) + guard).build(),
             veilPort = veilPort,
             generation = ++built,
         )
