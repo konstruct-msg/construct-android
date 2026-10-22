@@ -39,9 +39,13 @@ object ServerMessageOrder {
 
     /**
      * A row of ours not yet acknowledged: after every real key, so the bubble sits at the bottom
-     * until the acknowledgement moves it to its place.
+     * until the acknowledgement moves it to its place. Among such rows, in the order they were
+     * written ([composedAtMs]): the id alone is a random UUID, and two messages waiting on a slow
+     * path (a whitelist-bypass VPN, 2026-10-22) stood in its order instead. The prefix is iOS's
+     * `pendingPrefix`, unchanged, so "still pending" reads the same from either app's rows.
      */
-    fun pending(localMessageId: String): String = "$PENDING$SEPARATOR$PENDING$SEPARATOR${localMessageId.lowercase()}"
+    fun pending(localMessageId: String, composedAtMs: Long): String =
+        "$PENDING$SEPARATOR$PENDING$SEPARATOR${padded(maxOf(composedAtMs, 0).toULong())}$SEPARATOR${localMessageId.lowercase()}"
 
     /**
      * A row with no server position and none to come — imported, written locally, or from before

@@ -31,11 +31,23 @@ class ServerMessageOrderTest {
 
     @Test
     fun pendingSitsAfterEveryRealKeyAndLocalAtItsTime() {
-        val pending = ServerMessageOrder.pending("AbC")
-        assertEquals("99999999999999999999-99999999999999999999-abc", pending)
+        val pending = ServerMessageOrder.pending("AbC", 1_200)
+        assertEquals("99999999999999999999-99999999999999999999-00000000000000001200-abc", pending)
         assertTrue(pending > ServerMessageOrder.key(Long.MAX_VALUE / 2, Long.MAX_VALUE / 2)!!)
         assertEquals("00000000000000001200-00000000000000000000-xyz", ServerMessageOrder.local(1_200, "XYZ"))
         assertEquals("clamped to 1 ms", "00000000000000000001-00000000000000000000-a", ServerMessageOrder.local(0, "a"))
+    }
+
+    /**
+     * Two of ours waiting together stand in the order they were written, whatever their random ids.
+     * Mutation: drop the composition time from the key — reddens.
+     */
+    @Test
+    fun pendingRowsStandInTheOrderTheyWereWritten() {
+        val first = ServerMessageOrder.pending("ffffffff-0000-4000-8000-000000000000", 1_792_686_800_000)
+        val second = ServerMessageOrder.pending("00000000-0000-4000-8000-000000000000", 1_792_686_812_000)
+        assertEquals(listOf(first, second), listOf(second, first).sorted())
+        assertTrue("still iOS's pending prefix", first.startsWith("99999999999999999999-99999999999999999999-"))
     }
 
     /** The string sort is the numeric one — what the store's index sorts by. */
