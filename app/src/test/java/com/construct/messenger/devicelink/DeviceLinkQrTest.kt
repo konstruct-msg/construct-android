@@ -3,12 +3,13 @@ package com.construct.messenger.devicelink
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
  * The link QRs byte for byte as iOS `DeviceLinkViewModel` writes them — a difference here is a
  * phone and a Mac that cannot link. The expected strings are what iOS builds from the same input
- * (`URLComponents` queries; `pubkey` escaped to alphanumerics + `-._~`, `name` to `urlQueryAllowed`).
+ * (both `pubkey` and `name` escaped to RFC 3986 unreserved ASCII, construct-ios #354; decoded once).
  */
 class DeviceLinkQrTest {
     private val fp = ByteArray(32) { it.toByte() }
@@ -63,7 +64,7 @@ class DeviceLinkQrTest {
         assertNull(DeviceLinkQr.parseOffer("konstruct://add?invite=x"))
     }
 
-    /** A name with `&`, `=` or `+` is escaped (iOS leaves them, and splits its own query). */
+    /** A name with `&`, `=`, `+` or `%` survives the trip. */
     @Test
     fun roundTrip() {
         val qr = DeviceLinkQr.joinRequest("ef".repeat(16), ByteArray(32) { 7 }, fp, "Pixel & Co", "android")
@@ -72,6 +73,8 @@ class DeviceLinkQrTest {
         assertArrayEquals(fp, back.fingerprint)
         assertEquals("Pixel & Co", back.name)
         assertEquals("android", back.platform)
-        assertEquals("a+b=c", DeviceLinkQr.parseJoinRequest(DeviceLinkQr.joinRequest("ef".repeat(16), ByteArray(1), fp, "a+b=c", "android"))!!.name)
+        assertEquals("a+b=c 100%", DeviceLinkQr.parseJoinRequest(DeviceLinkQr.joinRequest("ef".repeat(16), ByteArray(1), fp, "a+b=c 100%", "android"))!!.name)
+        // Reserved but harmless characters are escaped too, as iOS now does.
+        assertTrue(DeviceLinkQr.joinRequest("ef".repeat(16), ByteArray(1), fp, "Max's (work)*", "android").endsWith("&name=Max%27s%20%28work%29%2A&platform=android"))
     }
 }
