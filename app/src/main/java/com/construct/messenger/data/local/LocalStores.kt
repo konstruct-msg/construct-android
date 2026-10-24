@@ -110,10 +110,11 @@ class LocalStores(
         when (val opening = LocalStoreSession.open(file, key.current())) {
             is LocalStoreSession.Opening.Opened -> {
                 installed.value = Backing.core(opening.session, myUserId)
-                _state.value = State.Ready
+                // Before Ready, so Ready means the cleartext file is gone, not about to be.
                 runCatching(deleteRoomLeftovers)
                     .onSuccess { if (it) Log.w(TAG, "Room's file was still here, its rows never moved — deleted") }
                     .onFailure { Log.e(TAG, "Room's file stayed", it) }
+                _state.value = State.Ready
             }
             is LocalStoreSession.Opening.NotOpened -> {
                 Log.e(TAG, "the store would not open — ${opening.failure}")
