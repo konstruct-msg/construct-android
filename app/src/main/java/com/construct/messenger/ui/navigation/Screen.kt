@@ -8,7 +8,7 @@ sealed class Screen(val route: String) {
     /** Sign in to an existing account with its recovery phrase. */
     data object ExistingIdentity : Screen("existing_identity")
     data object Restore : Screen("restore")
-    /** Join an existing account as a new device — registered only in debug builds. */
+    /** Join an existing account as a new device — registered only in debug and tester builds. */
     data object JoinAccount : Screen("join_account")
     /** "Can't connect?" before any account: a VEIL access code, scanned or pasted. */
     data object VeilBootstrap : Screen("veil_bootstrap")
@@ -39,7 +39,7 @@ sealed class Screen(val route: String) {
     data object Account : Screen("settings/account")
     /** The account's devices: list, revoke, sign out (iOS `DevicesView`). */
     data object Devices : Screen("settings/devices")
-    /** Link a new device to this account — registered only in debug builds (iOS `DeviceLinkOfferPolicy`). */
+    /** Link a new device to this account — registered only in debug and tester builds (iOS `DeviceLinkOfferPolicy`). */
     data object DeviceLink : Screen("settings/devices/link")
     /** The app's switch, the system permission, channels, delivery (iOS `NotificationsSettingsView`). */
     data object Notifications : Screen("settings/notifications")

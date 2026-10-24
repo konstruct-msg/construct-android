@@ -51,8 +51,8 @@ import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.JoinAccountViewModel
 
 /**
- * Join an existing account as a new device — debug builds only (the route exists only when
- * `BuildConfig.DEBUG`). Scan the QR the account's device shows (flow A), or show one for it to
+ * Join an existing account as a new device — debug and tester builds only (the route exists
+ * only when `DeviceLinkOfferPolicy.isLinkingOffered`). Scan the QR the account's device shows (flow A), or show one for it to
  * scan (flow B). **Canon:** iOS `DeviceLinkMethodView` / `DeviceLinkScanView` / `DeviceLinkShowQRView`.
  */
 @Composable

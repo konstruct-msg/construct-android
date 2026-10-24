@@ -211,7 +211,7 @@ private fun inviteOrVeilLink(text: String, byteSegments: List<ByteArray>?): Stri
 
 /**
  * The camera and the frame; [recognise] turns a decoded code into what [onInvite] gets, or null
- * for a code this scanner does not take. Also the device-link scanner's (debug builds).
+ * for a code this scanner does not take. Also the device-link scanner's (debug and tester builds).
  */
 @Composable
 internal fun ScannerViewport(

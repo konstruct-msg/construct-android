@@ -26,7 +26,7 @@ import shared.proto.services.v1.AuthServiceOuterClass.RevokeDeviceRequest
 import shared.proto.services.v1.AuthServiceOuterClass.SealedDeviceMetadata
 
 /**
- * The account's devices: list and revoke; and, in debug builds only (as iOS), the account side of
+ * The account's devices: list and revoke; and, in debug and tester builds only (as iOS), the account side of
  * linking a new one (`devicelink/`).
  */
 interface DevicesRepository {

@@ -136,7 +136,7 @@ class GrpcClient @Inject constructor(
     val auth: AuthServiceCoroutineStub get() = AuthServiceCoroutineStub(channels.auth)
     val key: KeyServiceCoroutineStub get() = KeyServiceCoroutineStub(channels.auth)
     val device: DeviceServiceCoroutineStub get() = DeviceServiceCoroutineStub(channels.auth)
-    /** The new device's side of a link (debug builds); its calls carry no token — see `AuthInterceptor`. */
+    /** The new device's side of a link (debug and tester builds); its calls carry no token — see `AuthInterceptor`. */
     val deviceLink: DeviceLinkServiceCoroutineStub get() = DeviceLinkServiceCoroutineStub(channels.auth)
     val messaging: MessagingServiceCoroutineStub get() = MessagingServiceCoroutineStub(channels.auth)
     val user: UserServiceCoroutineStub get() = UserServiceCoroutineStub(channels.auth)

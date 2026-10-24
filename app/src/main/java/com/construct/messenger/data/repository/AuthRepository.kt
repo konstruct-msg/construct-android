@@ -31,14 +31,14 @@ interface AuthRepository {
     suspend fun recoverAccount(identifier: String, phrase: String)
 
     /**
-     * Debug builds only: join the account whose device showed [offer] (flow A). This device gets a
+     * Debug and tester builds only: join the account whose device showed [offer] (flow A). This device gets a
      * fresh identity, vouched for by that device once its keys are published. Throws on refusal.
      * Only the real repository links; the stand-ins never do.
      */
     suspend fun linkDevice(offer: com.construct.messenger.devicelink.DeviceLinkQr.Offer): Unit =
         throw UnsupportedOperationException("device linking")
 
-    /** Debug builds only, flow B: register a join request; returns its QR and this device's id. */
+    /** Debug and tester builds only, flow B: register a join request; returns its QR and this device's id. */
     suspend fun submitJoinRequest(): Pair<String, String> = throw UnsupportedOperationException("device linking")
 
     /** Flow B: true once approved and signed in; false while pending. Throws `JoinRequestEnded`. */

@@ -1,7 +1,7 @@
 package com.construct.messenger.data.repository
 
-import com.construct.messenger.BuildConfig
 
+import com.construct.messenger.devicelink.DeviceLinkOfferPolicy
 import com.construct.messenger.recovery.RecoveryPhraseVault
 import android.content.Context
 import android.content.Intent
@@ -111,18 +111,18 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun linkDevice(offer: com.construct.messenger.devicelink.DeviceLinkQr.Offer) =
         withContext(NonCancellable + Dispatchers.Default) {
-            check(BuildConfig.DEBUG) { "device linking is a debug build's" }
+            check(DeviceLinkOfferPolicy.isLinkingOffered) { "this build does not offer device linking" }
             signedIn(linkDeviceUseCase.confirm(offer))
         }
 
     override suspend fun submitJoinRequest(): Pair<String, String> = withContext(Dispatchers.Default) {
-        check(BuildConfig.DEBUG) { "device linking is a debug build's" }
+        check(DeviceLinkOfferPolicy.isLinkingOffered) { "this build does not offer device linking" }
         linkDeviceUseCase.submitJoinRequest()
     }
 
     override suspend fun pollJoinRequest(deviceId: String): Boolean =
         withContext(NonCancellable + Dispatchers.Default) {
-            check(BuildConfig.DEBUG) { "device linking is a debug build's" }
+            check(DeviceLinkOfferPolicy.isLinkingOffered) { "this build does not offer device linking" }
             linkDeviceUseCase.pollJoinRequest(deviceId).also { if (it) signedIn(deviceId) }
         }
 
