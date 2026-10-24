@@ -239,7 +239,9 @@ message VoiceMessage {
   // Audio codec (Opus recommended)
   string codec = 6;
 
-  // The message this voice note answers, as on a text or an album (2026-10-19)
+  // Quoted message (when the voice note is sent as a reply). Same meaning as
+  // `TextMessage.quoted` and `MediaAlbumMessage.quoted`. A client that predates
+  // the field skips it and shows the voice note without the quote.
   optional QuotedMessage quoted = 7;
 
   // Reserved for future features

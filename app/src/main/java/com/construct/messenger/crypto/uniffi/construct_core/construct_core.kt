@@ -796,6 +796,8 @@ external fun uniffi_construct_core_checksum_func_mlkem1024_encapsulate(
 ): Short
 external fun uniffi_construct_core_checksum_func_mnemonic_to_seed(
 ): Short
+external fun uniffi_construct_core_checksum_func_new_device_link_secret(
+): Short
 external fun uniffi_construct_core_checksum_func_open_media(
 ): Short
 external fun uniffi_construct_core_checksum_func_plan_initiation(
@@ -1154,6 +1156,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_device_copy_
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_device_copy_tag_matches(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_device_link_key_proof(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_encrypt_to_wire(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_ensure_hybrid_signature_key(
@@ -1213,6 +1217,10 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_init_receivi
 external fun uniffi_construct_core_checksum_method_orchestratorcore_init_session(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_init_session_allowing_stale(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_issue_device_certificate(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_judge_peer_devices(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_kyber_one_time_prekey_count(
 ): Short
@@ -1655,6 +1663,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_device_copy_tag(`p
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_device_copy_tag_matches(`ptr`: Long,`tag`: RustBuffer.ByValue,`baseMessageId`: RustBuffer.ByValue,`peerIdentityPublic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_method_orchestratorcore_device_link_key_proof(`ptr`: Long,`secret`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_encrypt_to_wire(`ptr`: Long,`contactId`: RustBuffer.ByValue,`plaintext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_ensure_hybrid_signature_key(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1714,6 +1724,10 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_init_receiving_ses
 external fun uniffi_construct_core_fn_method_orchestratorcore_init_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_init_session_allowing_stale(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_issue_device_certificate(`ptr`: Long,`subject`: RustBuffer.ByValue,`evidence`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_judge_peer_devices(`ptr`: Long,`trustedDeviceIds`: RustBuffer.ByValue,`offered`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_kyber_one_time_prekey_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
@@ -1882,6 +1896,8 @@ external fun uniffi_construct_core_fn_func_mldsa65_verify(`publicKey`: RustBuffe
 external fun uniffi_construct_core_fn_func_mlkem1024_encapsulate(`publicKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_mnemonic_to_seed(`mnemonic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_new_device_link_secret(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_open_media(`key`: RustBuffer.ByValue,`blob`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -2187,6 +2203,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_mnemonic_to_seed() != 49697.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_new_device_link_secret() != 40860.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_open_media() != 63953.toShort()) {
@@ -2726,6 +2745,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_device_copy_tag_matches() != 16613.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_device_link_key_proof() != 42897.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_encrypt_to_wire() != 5089.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2814,6 +2836,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_init_session_allowing_stale() != 35577.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_issue_device_certificate() != 9657.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_judge_peer_devices() != 26370.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_kyber_one_time_prekey_count() != 51317.toShort()) {
@@ -7797,6 +7825,11 @@ public interface OrchestratorCoreInterface {
     fun `deviceCopyTagMatches`(`tag`: kotlin.String, `baseMessageId`: kotlin.String, `peerIdentityPublic`: kotlin.ByteArray): kotlin.Boolean
     
     /**
+     * Flow A, on the new device: the answer to the secret in the old device's QR.
+     */
+    fun `deviceLinkKeyProof`(`secret`: kotlin.ByteArray): kotlin.ByteArray
+    
+    /**
      * Encrypt for a device and return the whole wire payload. Sent as it is: a payload rebuilt
      * from components dropped fields (decisions/responder-authenticates-initiator-by-kem.md).
      */
@@ -7911,6 +7944,19 @@ public interface OrchestratorCoreInterface {
     fun `initSession`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String
     
     fun `initSessionAllowingStale`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String
+    
+    /**
+     * Vouch for a device being linked to this account. Refused (`EvidenceMismatch`) unless the
+     * evidence from the link QR names exactly these keys: keys the server alone vouches for are
+     * never signed.
+     */
+    fun `issueDeviceCertificate`(`subject`: DeviceCertKeys, `evidence`: DeviceLinkEvidence): kotlin.ByteArray
+    
+    /**
+     * One verdict per offered device, in order. `trusted_device_ids`: the devices of the same
+     * account this client already trusts; `offered`: what the server lists for it now.
+     */
+    fun `judgePeerDevices`(`trustedDeviceIds`: List<kotlin.String>, `offered`: List<OfferedPeerDevice>): List<PeerDeviceVerdict>
     
     fun `kyberOneTimePrekeyCount`(): kotlin.UInt
     
@@ -8310,6 +8356,23 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_device_copy_tag_matches(
         it,
         FfiConverterString.lower(`tag`),FfiConverterString.lower(`baseMessageId`),FfiConverterByteArray.lower(`peerIdentityPublic`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Flow A, on the new device: the answer to the secret in the old device's QR.
+     */
+    @Throws(DeviceCertException::class)override fun `deviceLinkKeyProof`(`secret`: kotlin.ByteArray): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(DeviceCertException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_device_link_key_proof(
+        it,
+        FfiConverterByteArray.lower(`secret`),_status)
 }
     }
     )
@@ -8774,6 +8837,42 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_init_session_allowing_stale(
         it,
         FfiConverterString.lower(`contactId`),FfiConverterTypeBinaryKeyBundle.lower(`recipientBundle`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Vouch for a device being linked to this account. Refused (`EvidenceMismatch`) unless the
+     * evidence from the link QR names exactly these keys: keys the server alone vouches for are
+     * never signed.
+     */
+    @Throws(DeviceCertException::class)override fun `issueDeviceCertificate`(`subject`: DeviceCertKeys, `evidence`: DeviceLinkEvidence): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(DeviceCertException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_issue_device_certificate(
+        it,
+        FfiConverterTypeDeviceCertKeys.lower(`subject`),FfiConverterTypeDeviceLinkEvidence.lower(`evidence`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * One verdict per offered device, in order. `trusted_device_ids`: the devices of the same
+     * account this client already trusts; `offered`: what the server lists for it now.
+     */override fun `judgePeerDevices`(`trustedDeviceIds`: List<kotlin.String>, `offered`: List<OfferedPeerDevice>): List<PeerDeviceVerdict> {
+            return FfiConverterSequenceTypePeerDeviceVerdict.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_judge_peer_devices(
+        it,
+        FfiConverterSequenceString.lower(`trustedDeviceIds`),FfiConverterSequenceTypeOfferedPeerDevice.lower(`offered`),_status)
 }
     }
     )
@@ -9818,6 +9917,56 @@ public object FfiConverterTypeDeliveryTarget: FfiConverterRustBuffer<DeliveryTar
     override fun write(value: DeliveryTarget, buf: ByteBuffer) {
             FfiConverterString.write(value.`deviceId`, buf)
             FfiConverterTypeDeliveryAudience.write(value.`audience`, buf)
+    }
+}
+
+
+
+/**
+ * A device's public keys as its bundle presents them; `hybrid_binding` is the Ed25519 signature
+ * binding `hybrid_public` to `verifying_key`.
+ */
+data class DeviceCertKeys (
+    var `identityPublic`: kotlin.ByteArray
+    , 
+    var `verifyingKey`: kotlin.ByteArray
+    , 
+    var `hybridPublic`: kotlin.ByteArray
+    , 
+    var `hybridBinding`: kotlin.ByteArray
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeDeviceCertKeys: FfiConverterRustBuffer<DeviceCertKeys> {
+    override fun read(buf: ByteBuffer): DeviceCertKeys {
+        return DeviceCertKeys(
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: DeviceCertKeys) = (
+            FfiConverterByteArray.allocationSize(value.`identityPublic`) +
+            FfiConverterByteArray.allocationSize(value.`verifyingKey`) +
+            FfiConverterByteArray.allocationSize(value.`hybridPublic`) +
+            FfiConverterByteArray.allocationSize(value.`hybridBinding`)
+    )
+
+    override fun write(value: DeviceCertKeys, buf: ByteBuffer) {
+            FfiConverterByteArray.write(value.`identityPublic`, buf)
+            FfiConverterByteArray.write(value.`verifyingKey`, buf)
+            FfiConverterByteArray.write(value.`hybridPublic`, buf)
+            FfiConverterByteArray.write(value.`hybridBinding`, buf)
     }
 }
 
@@ -11605,6 +11754,47 @@ public object FfiConverterTypeMemberAddition: FfiConverterRustBuffer<MemberAddit
             FfiConverterByteArray.write(value.`commit`, buf)
             FfiConverterByteArray.write(value.`welcome`, buf)
             FfiConverterUInt.write(value.`memberCount`, buf)
+    }
+}
+
+
+
+data class OfferedPeerDevice (
+    var `deviceId`: kotlin.String
+    , 
+    var `keys`: DeviceCertKeys
+    , 
+    var `certificate`: kotlin.ByteArray?
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeOfferedPeerDevice: FfiConverterRustBuffer<OfferedPeerDevice> {
+    override fun read(buf: ByteBuffer): OfferedPeerDevice {
+        return OfferedPeerDevice(
+            FfiConverterString.read(buf),
+            FfiConverterTypeDeviceCertKeys.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: OfferedPeerDevice) = (
+            FfiConverterString.allocationSize(value.`deviceId`) +
+            FfiConverterTypeDeviceCertKeys.allocationSize(value.`keys`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`certificate`)
+    )
+
+    override fun write(value: OfferedPeerDevice, buf: ByteBuffer) {
+            FfiConverterString.write(value.`deviceId`, buf)
+            FfiConverterTypeDeviceCertKeys.write(value.`keys`, buf)
+            FfiConverterOptionalByteArray.write(value.`certificate`, buf)
     }
 }
 
@@ -13790,6 +13980,167 @@ public object FfiConverterTypeDeliveryAudience: FfiConverterRustBuffer<DeliveryA
 
 
 
+sealed class DeviceCertException(message: String): kotlin.Exception(message) {
+        
+        class KeysMalformed(message: String) : DeviceCertException(message)
+        
+        class BindingInvalid(message: String) : DeviceCertException(message)
+        
+        class EvidenceMismatch(message: String) : DeviceCertException(message)
+        
+        class SignerIsSubject(message: String) : DeviceCertException(message)
+        
+        class SigningFailed(message: String) : DeviceCertException(message)
+        
+
+    companion object ErrorHandler : UniffiRustCallStatusErrorHandler<DeviceCertException> {
+        override fun lift(error_buf: RustBuffer.ByValue): DeviceCertException = FfiConverterTypeDeviceCertError.lift(error_buf)
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeDeviceCertError : FfiConverterRustBuffer<DeviceCertException> {
+    override fun read(buf: ByteBuffer): DeviceCertException {
+        
+            return when(buf.getInt()) {
+            1 -> DeviceCertException.KeysMalformed(FfiConverterString.read(buf))
+            2 -> DeviceCertException.BindingInvalid(FfiConverterString.read(buf))
+            3 -> DeviceCertException.EvidenceMismatch(FfiConverterString.read(buf))
+            4 -> DeviceCertException.SignerIsSubject(FfiConverterString.read(buf))
+            5 -> DeviceCertException.SigningFailed(FfiConverterString.read(buf))
+            else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
+        }
+        
+    }
+
+    override fun allocationSize(value: DeviceCertException): ULong {
+        return 4UL
+    }
+
+    override fun write(value: DeviceCertException, buf: ByteBuffer) {
+        when(value) {
+            is DeviceCertException.KeysMalformed -> {
+                buf.putInt(1)
+                Unit
+            }
+            is DeviceCertException.BindingInvalid -> {
+                buf.putInt(2)
+                Unit
+            }
+            is DeviceCertException.EvidenceMismatch -> {
+                buf.putInt(3)
+                Unit
+            }
+            is DeviceCertException.SignerIsSubject -> {
+                buf.putInt(4)
+                Unit
+            }
+            is DeviceCertException.SigningFailed -> {
+                buf.putInt(5)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+
+}
+
+
+
+/**
+ * What the link QR showed about the new device.
+ */
+sealed class DeviceLinkEvidence {
+    
+    /**
+     * Flow B: the new device's QR carried `history_qr_fingerprint(identity, hybrid)`.
+     */
+    data class QrFingerprint(
+        val `fingerprint`: kotlin.ByteArray) : DeviceLinkEvidence()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Flow A: our QR carried `secret`; the new device answered with `proof`.
+     */
+    data class QrSecret(
+        val `secret`: kotlin.ByteArray, 
+        val `proof`: kotlin.ByteArray) : DeviceLinkEvidence()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeDeviceLinkEvidence : FfiConverterRustBuffer<DeviceLinkEvidence>{
+    override fun read(buf: ByteBuffer): DeviceLinkEvidence {
+        return when(buf.getInt()) {
+            1 -> DeviceLinkEvidence.QrFingerprint(
+                FfiConverterByteArray.read(buf),
+                )
+            2 -> DeviceLinkEvidence.QrSecret(
+                FfiConverterByteArray.read(buf),
+                FfiConverterByteArray.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: DeviceLinkEvidence) = when(value) {
+        is DeviceLinkEvidence.QrFingerprint -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterByteArray.allocationSize(value.`fingerprint`)
+            )
+        }
+        is DeviceLinkEvidence.QrSecret -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterByteArray.allocationSize(value.`secret`)
+                + FfiConverterByteArray.allocationSize(value.`proof`)
+            )
+        }
+    }
+
+    override fun write(value: DeviceLinkEvidence, buf: ByteBuffer) {
+        when(value) {
+            is DeviceLinkEvidence.QrFingerprint -> {
+                buf.putInt(1)
+                FfiConverterByteArray.write(value.`fingerprint`, buf)
+                Unit
+            }
+            is DeviceLinkEvidence.QrSecret -> {
+                buf.putInt(2)
+                FfiConverterByteArray.write(value.`secret`, buf)
+                FfiConverterByteArray.write(value.`proof`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+
+
 /**
  * Why a transfer was refused. Each case's message is the spec's name for it (`record_order`,
  * `qr_pin_mismatch`, …) — log that, map the case to what a person reads.
@@ -14884,6 +15235,148 @@ public object FfiConverterTypePeekVerdict: FfiConverterRustBuffer<PeekVerdict> {
 
     override fun write(value: PeekVerdict, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+sealed class PeerDeviceVerdict {
+    
+    /**
+     * Already trusted, same hybrid key.
+     */
+    object Pinned : PeerDeviceVerdict()
+    
+    
+    /**
+     * Nothing of this account was trusted yet: trusted on first use.
+     */
+    object FirstOfAccount : PeerDeviceVerdict()
+    
+    
+    /**
+     * Signed by a trusted device of the account, directly or through a chain.
+     */
+    data class Vouched(
+        val `by`: kotlin.String) : PeerDeviceVerdict()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Signed by no trusted device: the alarm.
+     */
+    object Unvouched : PeerDeviceVerdict()
+    
+    
+    /**
+     * Trusted before, now another hybrid key under the same id.
+     */
+    object KeyChanged : PeerDeviceVerdict()
+    
+    
+    /**
+     * The bundle does not hold together.
+     */
+    object Invalid : PeerDeviceVerdict()
+    
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePeerDeviceVerdict : FfiConverterRustBuffer<PeerDeviceVerdict>{
+    override fun read(buf: ByteBuffer): PeerDeviceVerdict {
+        return when(buf.getInt()) {
+            1 -> PeerDeviceVerdict.Pinned
+            2 -> PeerDeviceVerdict.FirstOfAccount
+            3 -> PeerDeviceVerdict.Vouched(
+                FfiConverterString.read(buf),
+                )
+            4 -> PeerDeviceVerdict.Unvouched
+            5 -> PeerDeviceVerdict.KeyChanged
+            6 -> PeerDeviceVerdict.Invalid
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: PeerDeviceVerdict) = when(value) {
+        is PeerDeviceVerdict.Pinned -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is PeerDeviceVerdict.FirstOfAccount -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is PeerDeviceVerdict.Vouched -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`by`)
+            )
+        }
+        is PeerDeviceVerdict.Unvouched -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is PeerDeviceVerdict.KeyChanged -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is PeerDeviceVerdict.Invalid -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: PeerDeviceVerdict, buf: ByteBuffer) {
+        when(value) {
+            is PeerDeviceVerdict.Pinned -> {
+                buf.putInt(1)
+                Unit
+            }
+            is PeerDeviceVerdict.FirstOfAccount -> {
+                buf.putInt(2)
+                Unit
+            }
+            is PeerDeviceVerdict.Vouched -> {
+                buf.putInt(3)
+                FfiConverterString.write(value.`by`, buf)
+                Unit
+            }
+            is PeerDeviceVerdict.Unvouched -> {
+                buf.putInt(4)
+                Unit
+            }
+            is PeerDeviceVerdict.KeyChanged -> {
+                buf.putInt(5)
+                Unit
+            }
+            is PeerDeviceVerdict.Invalid -> {
+                buf.putInt(6)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
     }
 }
 
@@ -16491,6 +16984,34 @@ public object FfiConverterSequenceTypeLocalSearchHit: FfiConverterRustBuffer<Lis
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeOfferedPeerDevice: FfiConverterRustBuffer<List<OfferedPeerDevice>> {
+    override fun read(buf: ByteBuffer): List<OfferedPeerDevice> {
+        val len = buf.getInt()
+        return List<OfferedPeerDevice>(len) {
+            FfiConverterTypeOfferedPeerDevice.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<OfferedPeerDevice>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeOfferedPeerDevice.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<OfferedPeerDevice>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeOfferedPeerDevice.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeOtpkPair: FfiConverterRustBuffer<List<OtpkPair>> {
     override fun read(buf: ByteBuffer): List<OtpkPair> {
         val len = buf.getInt()
@@ -16565,6 +17086,34 @@ public object FfiConverterSequenceTypeHistoryEvent: FfiConverterRustBuffer<List<
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeHistoryEvent.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<List<PeerDeviceVerdict>> {
+    override fun read(buf: ByteBuffer): List<PeerDeviceVerdict> {
+        val len = buf.getInt()
+        return List<PeerDeviceVerdict>(len) {
+            FfiConverterTypePeerDeviceVerdict.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<PeerDeviceVerdict>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypePeerDeviceVerdict.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<PeerDeviceVerdict>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypePeerDeviceVerdict.write(it, buf)
         }
     }
 }
@@ -17108,6 +17657,19 @@ public object FfiConverterSequenceTypeHistoryEvent: FfiConverterRustBuffer<List<
     UniffiLib.uniffi_construct_core_fn_func_mnemonic_to_seed(
     
         FfiConverterString.lower(`mnemonic`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Flow A: the 32-byte secret for the old device's link QR. Never sent to the server.
+         */ fun `newDeviceLinkSecret`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_new_device_link_secret(
+    
+        _status)
 }
     )
     }
