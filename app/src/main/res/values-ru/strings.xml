@@ -757,6 +757,8 @@
     <string name="device_link_approved_fmt">Устройство «%1$s» привязано. Оно будет подтверждено, когда опубликует свои ключи.</string>
     <string name="device_link_failed">Не удалось привязать устройство. Попробуйте ещё раз.</string>
     <string name="device_link_invalid_qr">Это не код привязки устройства.</string>
+    <string name="device_link_copy">Скопировать ссылку</string>
+    <string name="device_link_paste">Вставить ссылку</string>
     <string name="device_join_title">Привязать это устройство</string>
     <string name="device_join_subtitle">Только в debug-сборке. Войти в аккаунт с устройства, на котором он уже открыт.</string>
     <string name="device_join_intro">Отсканируйте QR для привязки на другом устройстве (Настройки → Связанные устройства → Привязать устройство) или покажите QR здесь, чтобы отсканировать его там.</string>

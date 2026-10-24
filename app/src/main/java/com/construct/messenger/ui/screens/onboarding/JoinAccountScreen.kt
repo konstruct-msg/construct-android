@@ -41,6 +41,8 @@ import com.construct.messenger.ui.components.InviteQrImage
 import com.construct.messenger.ui.components.inviteQrSize
 import com.construct.messenger.ui.screens.invite.ScannerViewport
 import com.construct.messenger.ui.screens.invite.hasCameraPermission
+import com.construct.messenger.ui.screens.settings.CopyLinkButton
+import com.construct.messenger.ui.screens.settings.PasteLinkButton
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
@@ -117,6 +119,7 @@ fun JoinAccountRoute(
                     InviteQrImage(payload = qr, size = inviteQrSize(maxWidth), contentDescription = stringResource(R.string.device_join_show_qr))
                 }
                 Text(stringResource(R.string.device_join_waiting), style = CTFont.body, color = CTColor.textDim, textAlign = TextAlign.Center)
+                CopyLinkButton(qr)
             }
             if (ui.busy || ui.joinQr != null) {
                 CircularProgressIndicator(color = CTColor.accent, modifier = Modifier.size(CTIcon.control))
@@ -126,6 +129,7 @@ fun JoinAccountRoute(
                 enabled = !ui.busy,
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.device_join_scan_qr)) }
+            PasteLinkButton(enabled = !ui.busy && ui.joinQr == null, onPasted = viewModel::onScanned)
             OutlinedButton(onClick = viewModel::showJoinRequest, enabled = !ui.busy && ui.joinQr == null, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.device_join_show_qr))
             }

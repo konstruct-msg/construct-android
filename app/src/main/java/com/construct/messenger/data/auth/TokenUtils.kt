@@ -53,22 +53,34 @@ object TokenUtils {
      * - The JSON object has no `sub` field or it is empty
      */
     fun extractUserId(token: String): String? {
-        if (!token.startsWith(PASETO_V4_PUBLIC_PREFIX)) return null
-
-        val stripped = token.removePrefix(PASETO_V4_PUBLIC_PREFIX)
-        // Payload ends at the first '.' (footer is optional)
-        val payloadB64 = stripped.substringBefore('.')
-        val payload = base64UrlDecode(payloadB64) ?: return null
-
-        // Structure: nonce(32) || message(variable) || signature(64)
-        if (payload.size <= 32 + 64) return null
-        val message = payload.copyOfRange(32, payload.size - 64)
+        val message = message(token) ?: return null
 
         val claims = runCatching {
             JSONObject(String(message, Charsets.UTF_8))
         }.getOrNull() ?: return null
 
         return claims.optString("sub").takeIf { it.isNotEmpty() }
+    }
+
+    /**
+     * The `iat` claim (seconds since the epoch) of a PASETO v4.public token, unverified — for a
+     * local checkpoint only, never a trust decision. Read without `org.json` so a JVM test can
+     * call it. **Canon:** iOS `TokenUtils.extractIssuedAt`.
+     */
+    fun extractIssuedAt(token: String): Long? {
+        val message = message(token) ?: return null
+        return IAT.find(String(message, Charsets.UTF_8))?.groupValues?.get(1)?.toLongOrNull()
+    }
+
+    private val IAT = Regex("\"iat\"\\s*:\\s*(\\d+)")
+
+    /** The claims JSON: the payload is nonce(32) || message || signature(64), footer optional. */
+    private fun message(token: String): ByteArray? {
+        if (!token.startsWith(PASETO_V4_PUBLIC_PREFIX)) return null
+        // Payload ends at the first '.' (footer is optional)
+        val payload = base64UrlDecode(token.removePrefix(PASETO_V4_PUBLIC_PREFIX).substringBefore('.')) ?: return null
+        if (payload.size <= 32 + 64) return null
+        return payload.copyOfRange(32, payload.size - 64)
     }
 
     /**
