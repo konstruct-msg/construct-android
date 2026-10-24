@@ -1,5 +1,7 @@
 package com.construct.messenger.ui.navigation
 
+import com.construct.messenger.BuildConfig
+
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -280,9 +282,15 @@ fun KonstructNavHost(
                 },
             )
         }
+        if (BuildConfig.DEBUG) {
+            composable(Screen.DeviceLink.route) {
+                com.construct.messenger.ui.screens.settings.DeviceLinkRoute(onNavigateBack = { navController.popBackStack() })
+            }
+        }
         composable(Screen.Devices.route) {
             DevicesRoute(
                 onNavigateBack = { navController.popBackStack() },
+                onLinkDevice = if (BuildConfig.DEBUG) ({ navController.navigate(Screen.DeviceLink.route) }) else null,
                 onSignedOut = {
                     navController.navigate(Screen.Onboarding.route) {
                         popUpTo(Screen.Main.route) { inclusive = true }

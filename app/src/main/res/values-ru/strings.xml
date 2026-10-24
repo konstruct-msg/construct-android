@@ -745,4 +745,16 @@
 
     <!-- How a picked video is sent (TODO 148) -->
     <string name="video_quality_original">Оригинал</string>
+    <!-- Device linking (debug builds only) -->
+    <string name="device_link_title">Привязать устройство</string>
+    <string name="device_link_debug_note">Только в debug-сборке. Новое устройство войдёт в этот аккаунт, а это устройство подпишет его ключи, чтобы ваши контакты не увидели неподтверждённое устройство.</string>
+    <string name="device_link_show_qr">Показать QR для привязки</string>
+    <string name="device_link_show_qr_hint">Отсканируйте этот код новым устройством. Он действует несколько минут.</string>
+    <string name="device_link_scan_qr">Сканировать QR нового устройства</string>
+    <string name="device_link_approve_title">Привязать это устройство?</string>
+    <string name="device_link_approve_message">Устройство «%1$s» войдёт в ваш аккаунт и с этого момента будет получать ваши сообщения.</string>
+    <string name="device_link_approve">Привязать</string>
+    <string name="device_link_approved_fmt">Устройство «%1$s» привязано. Оно будет подтверждено, когда опубликует свои ключи.</string>
+    <string name="device_link_failed">Не удалось привязать устройство. Попробуйте ещё раз.</string>
+    <string name="device_link_invalid_qr">Это не код привязки устройства.</string>
 </resources>

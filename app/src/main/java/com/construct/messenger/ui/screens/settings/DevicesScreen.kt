@@ -82,6 +82,8 @@ private sealed interface DevicesConfirm {
 fun DevicesRoute(
     onNavigateBack: () -> Unit,
     onSignedOut: () -> Unit,
+    /** Debug builds only: open the link screen. Null hides the row. */
+    onLinkDevice: (() -> Unit)? = null,
     viewModel: DevicesViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
@@ -144,6 +146,7 @@ fun DevicesRoute(
         ui = ui,
         onNavigateBack = onNavigateBack,
         onConfirm = { confirm = it },
+        onLinkDevice = onLinkDevice,
     )
 }
 
@@ -151,14 +154,15 @@ fun DevicesRoute(
  * The account's devices and the ways to end their sessions.
  *
  * **Canon:** iOS `DevicesView` — this device first, the others with a remove control, then
- * session management. Not ported: linking a new device and history re-transfer, which iOS offers
- * in debug and internal builds only.
+ * session management. Linking a new device is offered in debug builds only, as on iOS; history
+ * re-transfer is not ported.
  */
 @Composable
 private fun DevicesScreen(
     ui: DevicesUiState,
     onNavigateBack: () -> Unit,
     onConfirm: (DevicesConfirm) -> Unit,
+    onLinkDevice: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier
@@ -206,6 +210,15 @@ private fun DevicesScreen(
                     }
                 }
                 if (others.size > 1) Hint(stringResource(R.string.other_devices_hint))
+            }
+
+            if (onLinkDevice != null) {
+                CTSettingsSectionHeader(title = stringResource(R.string.device_link_title))
+                Column(modifier = Modifier.padding(horizontal = CTLayout.edgePad)) {
+                    OutlinedButton(onClick = onLinkDevice, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.device_link_title))
+                    }
+                }
             }
 
             CTSettingsSectionHeader(title = stringResource(R.string.session_management))

@@ -8,6 +8,8 @@ import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.computeSafetyNumber
 import uniffi.construct_core.ClassicCryptoCore
 import uniffi.construct_core.DeliveryTarget
+import uniffi.construct_core.DeviceCertKeys
+import uniffi.construct_core.DeviceLinkEvidence
 import uniffi.construct_core.KyberPrekeyUpload
 import uniffi.construct_core.KtInclusionProof
 import uniffi.construct_core.KtSignedTreeHead
@@ -30,6 +32,7 @@ import uniffi.construct_core.createOrchestratorCoreFromKeys
 import uniffi.construct_core.deriveDeviceId
 import uniffi.construct_core.deriveRecoveryKeypair
 import uniffi.construct_core.generateMnemonic
+import uniffi.construct_core.historyQrFingerprint
 import uniffi.construct_core.mnemonicToSeed
 import uniffi.construct_core.planSend as planSendTargets
 import uniffi.construct_core.sealToDeviceKey as sealToDeviceKeyCore
@@ -226,6 +229,25 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
      */
     fun judgePeerDevices(trustedDeviceIds: List<String>, offered: List<OfferedPeerDevice>): List<PeerDeviceVerdict>? =
         synchronized(coreLock) { orchestrator?.judgePeerDevices(trustedDeviceIds, offered) }
+
+    /**
+     * On the account's device: vouch for [subject], a device being linked to this account. The
+     * core refuses ([uniffi.construct_core.DeviceCertException.EvidenceMismatch]) unless
+     * [evidence] — what the link QR showed — names exactly these keys. **Canon:** iOS
+     * `CryptoManager.issueDeviceCertificate`.
+     */
+    fun issueDeviceCertificate(subject: DeviceCertKeys, evidence: DeviceLinkEvidence): ByteArray = synchronized(coreLock) {
+        val orch = requireOrchestrator()
+        // The core signs only with a hybrid key it holds; every registered device published one.
+        orch.ensureHybridSignatureKey()
+        orch.issueDeviceCertificate(subject, evidence)
+    }
+
+    /** `history_qr_fingerprint` of this device's identity and hybrid keys — the `fp` of a link QR. */
+    fun linkFingerprint(): ByteArray = synchronized(coreLock) {
+        val orch = requireOrchestrator()
+        historyQrFingerprint(orch.getRegistrationBundleFields().identityPublic, orch.ensureHybridSignatureKey())
+    }
 
     /**
      * Open a receiving session from what the core holds queued for [device]: each queued message

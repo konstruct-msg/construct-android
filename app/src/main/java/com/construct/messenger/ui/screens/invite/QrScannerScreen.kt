@@ -205,8 +205,20 @@ fun QrScannerScreen(
     }
 }
 
+/** What the invite scanner accepts: a VEIL config link, or an invite in any of its encodings. */
+private fun inviteOrVeilLink(text: String, byteSegments: List<ByteArray>?): String? =
+    text.trim().takeIf(VeilConfigLink::isLink) ?: InviteQr.linkFromScan(text, byteSegments)
+
+/**
+ * The camera and the frame; [recognise] turns a decoded code into what [onInvite] gets, or null
+ * for a code this scanner does not take. Also the device-link scanner's (debug builds).
+ */
 @Composable
-private fun ScannerViewport(onNotAnInvite: () -> Unit, onInvite: (String) -> Unit) {
+internal fun ScannerViewport(
+    onNotAnInvite: () -> Unit,
+    onInvite: (String) -> Unit,
+    recognise: (String, List<ByteArray>?) -> String? = ::inviteOrVeilLink,
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val haptics = LocalHapticFeedback.current
@@ -228,8 +240,7 @@ private fun ScannerViewport(onNotAnInvite: () -> Unit, onInvite: (String) -> Uni
             analysis.setAnalyzer(analysisExecutor) { image ->
                 val scan = image.use { decodeQr(it) }
                 if (scan == null || done.get()) return@setAnalyzer
-                val link = scan.first.trim().takeIf(VeilConfigLink::isLink)
-                    ?: InviteQr.linkFromScan(scan.first, scan.second)
+                val link = recognise(scan.first, scan.second)
                 mainExecutor.execute {
                     if (link == null) {
                         onNotAnInvite()
@@ -343,7 +354,7 @@ private fun decodeQr(image: ImageProxy): Pair<String, List<ByteArray>?>? {
 // ISO-8859-1 so a byte-mode CIv1 code decodes byte-for-byte; base64url text is ASCII either way.
 private val DECODE_HINTS = mapOf(DecodeHintType.CHARACTER_SET to "ISO-8859-1")
 
-private fun Context.hasCameraPermission() =
+internal fun Context.hasCameraPermission() =
     ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
 
 private fun Context.shouldShowCameraRationale(): Boolean =

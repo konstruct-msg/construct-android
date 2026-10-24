@@ -37,6 +37,8 @@ sealed class Screen(val route: String) {
     data object Account : Screen("settings/account")
     /** The account's devices: list, revoke, sign out (iOS `DevicesView`). */
     data object Devices : Screen("settings/devices")
+    /** Link a new device to this account — registered only in debug builds (iOS `DeviceLinkOfferPolicy`). */
+    data object DeviceLink : Screen("settings/devices/link")
     /** The app's switch, the system permission, channels, delivery (iOS `NotificationsSettingsView`). */
     data object Notifications : Screen("settings/notifications")
 
