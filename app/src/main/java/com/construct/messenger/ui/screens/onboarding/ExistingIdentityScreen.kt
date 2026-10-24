@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -47,15 +48,16 @@ import com.construct.messenger.ui.theme.HairlineBorder
  * "Already have an identity?" — how to bring it to this device.
  *
  * **Canon:** iOS `ExistingIdentityChooserView` — an intro line, then one card per way in, equal
- * weight and none preselected. iOS offers "Link this device" only in debug builds
- * (`DeviceLinkOfferPolicy`) and Android has no linking, so the release list is the same one
- * card: restore from the recovery phrase. iOS's "Can't connect?" is left out, as on the first
+ * weight and none preselected. "Link this device" is offered only in debug builds, as on iOS
+ * (`DeviceLinkOfferPolicy`), so the release list is one card: restore from the recovery phrase. iOS's "Can't connect?" is left out, as on the first
  * screen — Android cannot import a VEIL access code yet.
  */
 @Composable
 fun ExistingIdentityScreen(
     onBack: () -> Unit,
     onRestore: () -> Unit,
+    /** Debug builds only; null hides the card. */
+    onLinkThisDevice: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier
@@ -93,12 +95,21 @@ fun ExistingIdentityScreen(
                 subtitle = stringResource(R.string.onboarding_restore_subtitle),
                 onClick = onRestore,
             )
+            if (onLinkThisDevice != null) {
+                ChoiceCard(
+                    icon = Icons.Default.Devices,
+                    title = stringResource(R.string.device_join_title),
+                    subtitle = stringResource(R.string.device_join_subtitle),
+                    onClick = onLinkThisDevice,
+                    iconRotation = 0f,
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun ChoiceCard(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
+private fun ChoiceCard(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit, iconRotation: Float = 90f) {
     val shape = RoundedCornerShape(CornerRadius.small)
     Row(
         modifier = Modifier
@@ -117,7 +128,7 @@ private fun ChoiceCard(icon: ImageVector, title: String, subtitle: String, onCli
             contentDescription = null,
             tint = CTColor.accent,
             // SF `key.fill` stands upright; Material's key lies on its side.
-            modifier = Modifier.width(32.dp).size(CTIcon.control).rotate(90f),
+            modifier = Modifier.width(32.dp).size(CTIcon.control).rotate(iconRotation),
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(text = title.uppercase(), style = CTFont.bodyEmphasis, color = CTColor.text, letterSpacing = 1.sp)

@@ -1,5 +1,7 @@
 package com.construct.messenger.ui.navigation
 
+import com.construct.messenger.BuildConfig
+
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -109,7 +111,22 @@ fun KonstructNavHost(
             ExistingIdentityScreen(
                 onBack = { navController.popBackStack() },
                 onRestore = { navController.navigate(Screen.Restore.route) { launchSingleTop = true } },
+                onLinkThisDevice = if (BuildConfig.DEBUG) ({ navController.navigate(Screen.JoinAccount.route) { launchSingleTop = true } }) else null,
             )
+        }
+        if (BuildConfig.DEBUG) {
+            composable(Screen.JoinAccount.route) {
+                com.construct.messenger.ui.screens.onboarding.JoinAccountRoute(
+                    onBack = { navController.popBackStack() },
+                    onLinked = {
+                        // An existing account, as after a restore: straight to its chats.
+                        navController.navigate(Screen.Main.createRoute()) {
+                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
         }
         composable(Screen.Restore.route) {
             RestoreAccountScreen(
@@ -280,9 +297,15 @@ fun KonstructNavHost(
                 },
             )
         }
+        if (BuildConfig.DEBUG) {
+            composable(Screen.DeviceLink.route) {
+                com.construct.messenger.ui.screens.settings.DeviceLinkRoute(onNavigateBack = { navController.popBackStack() })
+            }
+        }
         composable(Screen.Devices.route) {
             DevicesRoute(
                 onNavigateBack = { navController.popBackStack() },
+                onLinkDevice = if (BuildConfig.DEBUG) ({ navController.navigate(Screen.DeviceLink.route) }) else null,
                 onSignedOut = {
                     navController.navigate(Screen.Onboarding.route) {
                         popUpTo(Screen.Main.route) { inclusive = true }

@@ -8,6 +8,8 @@ import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.computeSafetyNumber
 import uniffi.construct_core.ClassicCryptoCore
 import uniffi.construct_core.DeliveryTarget
+import uniffi.construct_core.DeviceCertKeys
+import uniffi.construct_core.DeviceLinkEvidence
 import uniffi.construct_core.KyberPrekeyUpload
 import uniffi.construct_core.KtInclusionProof
 import uniffi.construct_core.KtSignedTreeHead
@@ -30,6 +32,7 @@ import uniffi.construct_core.createOrchestratorCoreFromKeys
 import uniffi.construct_core.deriveDeviceId
 import uniffi.construct_core.deriveRecoveryKeypair
 import uniffi.construct_core.generateMnemonic
+import uniffi.construct_core.historyQrFingerprint
 import uniffi.construct_core.mnemonicToSeed
 import uniffi.construct_core.planSend as planSendTargets
 import uniffi.construct_core.sealToDeviceKey as sealToDeviceKeyCore
@@ -226,6 +229,68 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
      */
     fun judgePeerDevices(trustedDeviceIds: List<String>, offered: List<OfferedPeerDevice>): List<PeerDeviceVerdict>? =
         synchronized(coreLock) { orchestrator?.judgePeerDevices(trustedDeviceIds, offered) }
+
+    /**
+     * On the account's device: vouch for [subject], a device being linked to this account. The
+     * core refuses ([uniffi.construct_core.DeviceCertException.EvidenceMismatch]) unless
+     * [evidence] — what the link QR showed — names exactly these keys. **Canon:** iOS
+     * `CryptoManager.issueDeviceCertificate`.
+     */
+    fun issueDeviceCertificate(subject: DeviceCertKeys, evidence: DeviceLinkEvidence): ByteArray = synchronized(coreLock) {
+        val orch = requireOrchestrator()
+        // The core signs only with a hybrid key it holds; every registered device published one.
+        orch.ensureHybridSignatureKey()
+        orch.issueDeviceCertificate(subject, evidence)
+    }
+
+    /** What a device about to be linked shows of its keys. [privateKeys] must be saved before any of it is shown. */
+    class LinkIdentity(
+        val deviceId: String,
+        val identityPublic: ByteArray,
+        val hybridPublic: ByteArray,
+        /** Flow A: the answer to the secret in the account device's QR; null without one. */
+        val keyProof: ByteArray?,
+        val privateKeys: ByteArray,
+    ) {
+        /** `history_qr_fingerprint(identity, hybrid)` — the `fp` of this device's flow B QR. */
+        val fingerprint: ByteArray get() = historyQrFingerprint(identityPublic, hybridPublic)
+    }
+
+    /**
+     * On the new device, after [loadOrCreate] and before any QR is shown or scanned: make the
+     * hybrid identity key, and answer the account device's QR secret. **Canon:** iOS
+     * `CryptoManager.prepareLinkIdentity`.
+     *
+     * The account device vouches for exactly the keys the QR names, the hybrid one included, so it
+     * must exist before the link — until device certificates it was made after, on the orchestrator.
+     * Nothing it needs depends on the account, so a throwaway orchestrator is built from the
+     * bootstrap keys, and the bootstrap core is reloaded from its export: [setLocalUserId] then
+     * builds the real orchestrator with this key, and `KyberPrekeyService` publishes it, not a new
+     * one. The caller saves [LinkIdentity.privateKeys] first — a key only in memory would come back
+     * different after a restart, and the certificate would name a key this device cannot prove.
+     */
+    fun prepareLinkIdentity(linkSecret: ByteArray?): LinkIdentity = synchronized(coreLock) {
+        check(orchestrator == null) { "a linked device prepares its keys before it has an account" }
+        val boot = requireBootstrap()
+        val deviceId = localDeviceId ?: error("no device id — loadOrCreate() first")
+        val throwaway = createOrchestratorCoreFromKeys(boot.exportPrivateKeys(), deviceId)
+        try {
+            val hybrid = throwaway.ensureHybridSignatureKey()
+            val keys = throwaway.exportPrivateKeys()
+            val proof = linkSecret?.let { throwaway.deviceLinkKeyProof(it) }
+            bootstrapCore = createCryptoCoreFromKeys(keys)
+            boot.close()
+            LinkIdentity(deviceId, throwaway.getRegistrationBundleFields().identityPublic, hybrid, proof, keys)
+        } finally {
+            throwaway.close()
+        }
+    }
+
+    /** `history_qr_fingerprint` of this device's identity and hybrid keys — the `fp` of a link QR. */
+    fun linkFingerprint(): ByteArray = synchronized(coreLock) {
+        val orch = requireOrchestrator()
+        historyQrFingerprint(orch.getRegistrationBundleFields().identityPublic, orch.ensureHybridSignatureKey())
+    }
 
     /**
      * Open a receiving session from what the core holds queued for [device]: each queued message

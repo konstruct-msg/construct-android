@@ -5,7 +5,6 @@ import com.construct.messenger.data.local.ChatPresence
 import com.construct.messenger.data.local.ContactRecord
 import com.construct.messenger.data.local.FakeContactStore
 import com.construct.messenger.data.model.SecurityNotice
-import com.construct.messenger.service.SessionManager.PeerBundle
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -18,15 +17,8 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import uniffi.construct_core.BinaryKeyBundle
-import uniffi.construct_core.DeviceLinkEvidence
 import uniffi.construct_core.OfferedPeerDevice
-import uniffi.construct_core.OrchestratorCore
 import uniffi.construct_core.PeerDeviceVerdict
-import uniffi.construct_core.createCryptoCore
-import uniffi.construct_core.createOrchestratorCoreFromKeys
-import uniffi.construct_core.deriveDeviceId
-import uniffi.construct_core.historyQrFingerprint
 
 /**
  * The receiving side of device certificates (`decisions/devices-of-an-account-sign-each-other.md`),
@@ -38,45 +30,9 @@ import uniffi.construct_core.historyQrFingerprint
 @OptIn(ExperimentalCoroutinesApi::class)
 class PeerDeviceVettingTest {
 
-    /** A device with real keys, and its bundle as the directory would serve it. */
-    private class Device(val core: OrchestratorCore, val id: String, val bundle: BinaryKeyBundle) {
-        fun served(certificate: ByteArray? = null) =
-            PeerBundle(accountId = PEER, deviceId = id, identityPublic = bundle.identityPublic, bundle = bundle, deviceCertificate = certificate)
-    }
+    private fun device() = CoreTestDevice.create()
 
-    private fun device(): Device {
-        val keys = createCryptoCore()
-        val fields = keys.getRegistrationBundleFields()
-        val id = deriveDeviceId(fields.identityPublic)
-        val core = createOrchestratorCoreFromKeys(keys.exportPrivateKeys(), id)
-        val hybrid = core.ensureHybridSignatureKey()
-        val binding = core.signWithDeviceKey(core.buildHybridIdentityBindMessage(hybrid))
-        val bundle = BinaryKeyBundle(
-            identityPublic = fields.identityPublic,
-            signedPrekeyPublic = fields.signedPrekeyPublic,
-            signature = fields.signature,
-            verifyingKey = fields.verifyingKey,
-            suiteId = fields.suiteId,
-            oneTimePrekeyPublic = null,
-            oneTimePrekeyId = null,
-            spkUploadedAt = 0uL,
-            spkRotationEpoch = 0u,
-            kyberSpkUploadedAt = 0uL,
-            kyberSpkRotationEpoch = 0u,
-            kyberPreKeyPublic = null,
-            kyberOneTimePrekeyPublic = null,
-            kyberOneTimePrekeyId = null,
-            hybridIdentityKey = hybrid,
-            hybridIdentitySignature = binding,
-        )
-        return Device(core, id, bundle)
-    }
-
-    /** [signer] links [subject] in flow B: the fingerprint from the QR names the directory's keys. */
-    private fun vouch(signer: Device, subject: Device): ByteArray = signer.core.issueDeviceCertificate(
-        PeerDeviceVetting.subjectKeys(subject.served())!!,
-        DeviceLinkEvidence.QrFingerprint(historyQrFingerprint(subject.bundle.identityPublic, subject.bundle.hybridIdentityKey!!)),
-    )
+    private fun vouch(signer: CoreTestDevice, subject: CoreTestDevice) = signer.vouch(subject)
 
     private val me = device()
     private val contacts = FakeContactStore().also { it.rows[PEER] = ContactRecord(id = PEER, isContact = true) }
@@ -165,6 +121,6 @@ class PeerDeviceVettingTest {
     }
 
     private companion object {
-        const val PEER = "e7a4e3d2-0000-4000-8000-000000000001"
+        const val PEER = CoreTestDevice.ACCOUNT
     }
 }

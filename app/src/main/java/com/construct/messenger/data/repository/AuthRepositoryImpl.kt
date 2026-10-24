@@ -1,5 +1,7 @@
 package com.construct.messenger.data.repository
 
+import com.construct.messenger.BuildConfig
+
 import com.construct.messenger.recovery.RecoveryPhraseVault
 import android.content.Context
 import android.content.Intent
@@ -42,6 +44,7 @@ class AuthRepositoryImpl @Inject constructor(
     private val registerUseCase: RegisterUseCase,
     private val loginUseCase: LoginUseCase,
     private val recoverAccountUseCase: RecoverAccountUseCase,
+    private val linkDeviceUseCase: com.construct.messenger.domain.usecase.LinkDeviceUseCase,
     private val keystoreManager: KeystoreManager,
     private val cryptoManager: CryptoManager,
     private val authSession: AuthSessionManager,
@@ -105,6 +108,30 @@ class AuthRepositoryImpl @Inject constructor(
             mutableAuthState.value = AuthState(isInitialized = true, deviceId = deviceId, username = null)
             startMessagingService()
         }
+
+    override suspend fun linkDevice(offer: com.construct.messenger.devicelink.DeviceLinkQr.Offer) =
+        withContext(NonCancellable + Dispatchers.Default) {
+            check(BuildConfig.DEBUG) { "device linking is a debug build's" }
+            signedIn(linkDeviceUseCase.confirm(offer))
+        }
+
+    override suspend fun submitJoinRequest(): Pair<String, String> = withContext(Dispatchers.Default) {
+        check(BuildConfig.DEBUG) { "device linking is a debug build's" }
+        linkDeviceUseCase.submitJoinRequest()
+    }
+
+    override suspend fun pollJoinRequest(deviceId: String): Boolean =
+        withContext(NonCancellable + Dispatchers.Default) {
+            check(BuildConfig.DEBUG) { "device linking is a debug build's" }
+            linkDeviceUseCase.pollJoinRequest(deviceId).also { if (it) signedIn(deviceId) }
+        }
+
+    /** A linked device is signed in as after recovery: session, state, the messaging service. */
+    private suspend fun signedIn(deviceId: String) {
+        keystoreManager.getUserId()?.let { authSession.onAuthenticated(it, deviceId) }
+        mutableAuthState.value = AuthState(isInitialized = true, deviceId = deviceId, username = null)
+        startMessagingService()
+    }
 
     override suspend fun restoreSession(): Boolean {
         val keys = keystoreManager.getPrivateKeys()
