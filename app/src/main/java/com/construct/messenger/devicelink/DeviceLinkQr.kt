@@ -1,7 +1,6 @@
 package com.construct.messenger.devicelink
 
 import java.net.URLDecoder
-import java.net.URLEncoder
 import java.util.Base64
 
 /**
@@ -45,7 +44,7 @@ object DeviceLinkQr {
     fun joinRequest(deviceId: String, identityPublic: ByteArray, fingerprint: ByteArray, name: String, platform: String): String {
         val pubkey = encode(Base64.getEncoder().encodeToString(identityPublic), UNRESERVED)
         return "konstruct://link-to-me?id=$deviceId&pubkey=$pubkey&fp=${hex(fingerprint)}" +
-            "&name=${encode(name, QUERY_ALLOWED)}&platform=$platform"
+            "&name=${encode(name, UNRESERVED)}&platform=$platform"
     }
 
     fun isLink(text: String): Boolean = text.startsWith(LINK_PREFIX) || text.startsWith(JOIN_PREFIX)
@@ -88,18 +87,16 @@ object DeviceLinkQr {
     }
 
     private fun encode(value: String, allowed: (Char) -> Boolean): String = buildString {
-        value.codePoints().forEach { cp ->
-            if (cp < 0x80 && allowed(cp.toChar())) append(cp.toChar())
-            else append(URLEncoder.encode(String(Character.toChars(cp)), "UTF-8").replace("+", "%20"))
+        for (b in value.toByteArray(Charsets.UTF_8)) {
+            val c = (b.toInt() and 0xff).toChar()
+            if (c.code < 0x80 && allowed(c)) append(c) else append('%').append("%02X".format(b.toInt() and 0xff))
         }
     }
 
-    /** iOS `CharacterSet.alphanumerics` + `-._~` — ASCII part, the only part a base64 string has. */
-    private val UNRESERVED: (Char) -> Boolean = { it.isLetterOrDigit() || it in "-._~" }
-
     /**
-     * iOS `CharacterSet.urlQueryAllowed`, ASCII, less `&`, `=` and `+`: iOS leaves those as they
-     * are, so a name holding one splits its own query. Escaped, both platforms read it back.
+     * RFC 3986 unreserved, ASCII only — what iOS escapes `pubkey` and `name` to since construct-ios
+     * #354; everything else, Cyrillic included, is percent-encoded as UTF-8. Until then iOS left
+     * `&`, `=` and `+` in a name, which split its own query.
      */
-    private val QUERY_ALLOWED: (Char) -> Boolean = { it.isLetterOrDigit() || it in "-._~!$'()*,;:@/?" }
+    private val UNRESERVED: (Char) -> Boolean = { it in 'A'..'Z' || it in 'a'..'z' || it in '0'..'9' || it in "-._~" }
 }
