@@ -69,6 +69,9 @@ fun trustAlertText(alert: ContactTrustAlert, contactName: String): Pair<String, 
     ContactTrustAlert.ADDRESS_CHANGED ->
         stringResource(R.string.address_change_banner_title) to
             stringResource(R.string.address_change_banner_subtitle_fmt, contactName)
+    ContactTrustAlert.UNVOUCHED_DEVICE ->
+        stringResource(R.string.unvouched_device_banner_title) to
+            stringResource(R.string.unvouched_device_banner_subtitle_fmt, contactName)
     ContactTrustAlert.VERIFICATION_FAILED ->
         stringResource(R.string.key_change_banner_title_failed) to
             stringResource(R.string.key_change_banner_subtitle_failed)

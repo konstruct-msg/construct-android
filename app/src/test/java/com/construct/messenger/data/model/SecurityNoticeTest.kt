@@ -16,4 +16,11 @@ class SecurityNoticeTest {
     fun `the address change still reads as itself`() {
         assertEquals(SecurityNotice.ADDRESS_CHANGED, SecurityNotice.of(1))
     }
+
+    /** iOS stores the same 3 (`SecurityNotice.unvouchedDevice`); a contact row means the same on both. */
+    @Test
+    fun `the unvouched device is 3, as on iOS`() {
+        assertEquals(SecurityNotice.UNVOUCHED_DEVICE, SecurityNotice.of(3))
+        assertEquals(ContactTrustAlert.UNVOUCHED_DEVICE, ContactTrustAlert.of(SecurityNotice.UNVOUCHED_DEVICE, KtStatus.FAILED))
+    }
 }

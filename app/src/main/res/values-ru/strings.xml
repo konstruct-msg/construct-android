@@ -451,6 +451,9 @@
     <string name="address_change_banner_title">Адрес изменился</string>
     <string name="address_change_banner_subtitle_fmt">%1$s называет другой адрес, чем раньше. Сверьте защитные числа, прежде чем доверять чату.</string>
     <string name="address_change_toast_fmt">%1$s называет другой адрес, чем раньше. Откройте чат, чтобы проверить.</string>
+    <string name="unvouched_device_banner_title">Неподтверждённое устройство</string>
+    <string name="unvouched_device_banner_subtitle_fmt">У %1$s появилось устройство, которое не подтвердило ни одно другое устройство этого человека. Если устройство не добавляли только что, сверьте защитные числа, прежде чем доверять чату.</string>
+    <string name="unvouched_device_toast_fmt">У %1$s появилось устройство, которое не подтвердило ни одно другое устройство этого человека. Откройте чат, чтобы проверить.</string>
     <string name="key_change_toast_open">Открыть</string>
     <string name="key_change_verify">Проверить</string>
     <string name="security_notice_acknowledge">Проверено</string>

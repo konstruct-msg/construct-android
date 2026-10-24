@@ -5,6 +5,7 @@ import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.PeerDeviceRegistry
+import com.construct.messenger.security.PeerDeviceVetting
 import com.construct.messenger.data.model.IdentityIds
 import shared.proto.core.v1.Crypto.CryptoSuite
 import shared.proto.services.v1.KeyServiceOuterClass.GetIdentityKeyRequest
@@ -31,6 +32,7 @@ class SessionManager @Inject constructor(
     private val contacts: ContactStore,
     private val peerDeviceRegistry: PeerDeviceRegistry,
     private val contactKt: com.construct.messenger.security.ContactKt,
+    private val vetting: PeerDeviceVetting,
 ) {
 
     suspend fun hasSession(contactId: String): Boolean {
@@ -165,8 +167,12 @@ class SessionManager @Inject constructor(
                 identityPublic = identity,
                 platform = entry.platformValue,
                 bundle = entry.bundle.toBinaryKeyBundle(entry.verifyingKey.toByteArray()),
+                deviceCertificate = if (entry.hasDeviceCertificate()) entry.deviceCertificate.toByteArray() else null,
             )
         }
+        // Read before the answer is recorded: once it is, every device it names is known and none
+        // could be judged as new (`PeerDeviceVetting`).
+        val trustedBefore = peerDeviceRegistry.knownDevices(accountId).map { it.deviceId }
         peerDeviceRegistry.recordAll(
             accountId,
             bundles.map { PeerDeviceRegistry.PeerDevice(it.deviceId, it.identityPublic) },
@@ -174,6 +180,9 @@ class SessionManager @Inject constructor(
         )
         if (rememberAsContact) {
             bundles.forEach { rememberIdentity(accountId, it.identityPublic) }
+            // Only ever an alarm, so a fault in it must not cost the send that asked for the bundles.
+            runCatching { vetting.vet(accountId, bundles, trustedBefore) }
+                .onFailure { Log.w(TAG, "device vetting failed for ${accountId.take(8)}…: ${it.message}") }
         }
         return bundles
     }
@@ -340,6 +349,8 @@ class SessionManager @Inject constructor(
         val identityPublic: ByteArray,
         val platform: Int = 0,
         val bundle: BinaryKeyBundle,
+        /** Another device of the account vouching for this one (`DevicePreKeyBundle.device_certificate`). */
+        val deviceCertificate: ByteArray? = null,
     )
 
     private companion object {

@@ -28,6 +28,9 @@ enum class ContactTrustAlert {
     /** They named an account address other than the one pinned for them. */
     ADDRESS_CHANGED,
 
+    /** Their account has a device none of its devices we trust vouched for. */
+    UNVOUCHED_DEVICE,
+
     /** The key server's proof for their bundle did not verify. */
     VERIFICATION_FAILED,
     ;
@@ -36,6 +39,7 @@ enum class ContactTrustAlert {
         /** A pending event outranks a failed proof: it is the one the user has to acknowledge. */
         fun of(notice: SecurityNotice, kt: KtStatus): ContactTrustAlert? = when {
             notice == SecurityNotice.ADDRESS_CHANGED -> ADDRESS_CHANGED
+            notice == SecurityNotice.UNVOUCHED_DEVICE -> UNVOUCHED_DEVICE
             kt == KtStatus.FAILED -> VERIFICATION_FAILED
             else -> null
         }

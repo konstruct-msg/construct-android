@@ -3,7 +3,9 @@ package com.construct.messenger.service
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.ContactStore
+import com.construct.messenger.data.local.PeerDeviceRecord
 import com.construct.messenger.data.local.PeerDeviceRegistry
+import com.construct.messenger.security.PeerDeviceVetting
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
@@ -17,7 +19,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import shared.proto.services.v1.KeyServiceGrpcKt.KeyServiceCoroutineStub
+import shared.proto.services.v1.KeyServiceOuterClass.DevicePreKeyBundle
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundleResponse
+import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundlesResponse
 import shared.proto.services.v1.KeyServiceOuterClass.PreKeyBundle
 import uniffi.construct_core.BinaryKeyBundle
 
@@ -41,7 +45,7 @@ class SessionManagerTest {
         // Only the token-free stub: a bundle fetched with a token names who is about to write to
         // whom (BF-1). Mutation that reddens every init test: fetch through `grpcClient.key`.
         whenever(grpcClient.sealedKey).thenReturn(keyStub)
-        sessionManager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock())
+        sessionManager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), mock())
     }
 
     @Test
@@ -160,5 +164,44 @@ class SessionManagerTest {
         // Proto CRYPTO_SUITE_HYBRID_KYBER768_X25519 (=2) → core SuiteID 2 (PQ_HYBRID).
         // NEVER 3: PQ_RATCHET is the core's choice for every session, not declared by a bundle.
         assertEquals(2, mapped.suiteId.toInt())
+    }
+
+    /**
+     * The devices trusted before the answer go to the vetting, not those after it: once it is
+     * recorded every device it names is known and none could ever be new. The certificate is
+     * carried from the served bundle. Mutation: read `knownDevices` after `recordAll` — the
+     * newcomer is in the trusted list and the alarm can never fire.
+     */
+    @Test
+    fun discoverPeerBundles_vetsAgainstTheDevicesKnownBeforeTheAnswer() = runTest {
+        val vetting: PeerDeviceVetting = mock()
+        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting)
+        val (old, new) = "a".repeat(32) to "b".repeat(32)
+        val known = mutableListOf(PeerDeviceRecord(old, "acct", byteArrayOf(1), 0))
+        whenever(peerDeviceRegistry.knownDevices("acct")).thenAnswer { known.toList() }
+        whenever(peerDeviceRegistry.recordAll(org.mockito.kotlin.any(), org.mockito.kotlin.any(), org.mockito.kotlin.any())).thenAnswer {
+            known += PeerDeviceRecord(new, "acct", byteArrayOf(2), 0)
+            Unit
+        }
+        whenever(cryptoManager.deriveDeviceIdFromIdentity(org.mockito.kotlin.any())).thenAnswer {
+            if (it.getArgument<ByteArray>(0).contentEquals(byteArrayOf(1))) old else new
+        }
+        fun served(identity: Byte, certificate: ByteArray?) = DevicePreKeyBundle.newBuilder()
+            .setBundle(PreKeyBundle.newBuilder().setIdentityKey(ByteString.copyFrom(byteArrayOf(identity))))
+            .also { b -> certificate?.let { b.setDeviceCertificate(ByteString.copyFrom(it)) } }
+            .build()
+        whenever(keyStub.getPreKeyBundles(org.mockito.kotlin.any(), org.mockito.kotlin.any())).thenReturn(
+            GetPreKeyBundlesResponse.newBuilder()
+                .addBundles(served(1, null))
+                .addBundles(served(2, byteArrayOf(7, 7)))
+                .build(),
+        )
+
+        manager.discoverPeerBundles("acct")
+
+        val bundles = argumentCaptor<List<SessionManager.PeerBundle>>()
+        verify(vetting).vet(eq("acct"), bundles.capture(), eq(listOf(old)))
+        assertNull(bundles.firstValue[0].deviceCertificate)
+        assertArrayEquals(byteArrayOf(7, 7), bundles.firstValue[1].deviceCertificate)
     }
 }
