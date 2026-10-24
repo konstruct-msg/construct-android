@@ -243,6 +243,49 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
         orch.issueDeviceCertificate(subject, evidence)
     }
 
+    /** What a device about to be linked shows of its keys. [privateKeys] must be saved before any of it is shown. */
+    class LinkIdentity(
+        val deviceId: String,
+        val identityPublic: ByteArray,
+        val hybridPublic: ByteArray,
+        /** Flow A: the answer to the secret in the account device's QR; null without one. */
+        val keyProof: ByteArray?,
+        val privateKeys: ByteArray,
+    ) {
+        /** `history_qr_fingerprint(identity, hybrid)` — the `fp` of this device's flow B QR. */
+        val fingerprint: ByteArray get() = historyQrFingerprint(identityPublic, hybridPublic)
+    }
+
+    /**
+     * On the new device, after [loadOrCreate] and before any QR is shown or scanned: make the
+     * hybrid identity key, and answer the account device's QR secret. **Canon:** iOS
+     * `CryptoManager.prepareLinkIdentity`.
+     *
+     * The account device vouches for exactly the keys the QR names, the hybrid one included, so it
+     * must exist before the link — until device certificates it was made after, on the orchestrator.
+     * Nothing it needs depends on the account, so a throwaway orchestrator is built from the
+     * bootstrap keys, and the bootstrap core is reloaded from its export: [setLocalUserId] then
+     * builds the real orchestrator with this key, and `KyberPrekeyService` publishes it, not a new
+     * one. The caller saves [LinkIdentity.privateKeys] first — a key only in memory would come back
+     * different after a restart, and the certificate would name a key this device cannot prove.
+     */
+    fun prepareLinkIdentity(linkSecret: ByteArray?): LinkIdentity = synchronized(coreLock) {
+        check(orchestrator == null) { "a linked device prepares its keys before it has an account" }
+        val boot = requireBootstrap()
+        val deviceId = localDeviceId ?: error("no device id — loadOrCreate() first")
+        val throwaway = createOrchestratorCoreFromKeys(boot.exportPrivateKeys(), deviceId)
+        try {
+            val hybrid = throwaway.ensureHybridSignatureKey()
+            val keys = throwaway.exportPrivateKeys()
+            val proof = linkSecret?.let { throwaway.deviceLinkKeyProof(it) }
+            bootstrapCore = createCryptoCoreFromKeys(keys)
+            boot.close()
+            LinkIdentity(deviceId, throwaway.getRegistrationBundleFields().identityPublic, hybrid, proof, keys)
+        } finally {
+            throwaway.close()
+        }
+    }
+
     /** `history_qr_fingerprint` of this device's identity and hybrid keys — the `fp` of a link QR. */
     fun linkFingerprint(): ByteArray = synchronized(coreLock) {
         val orch = requireOrchestrator()

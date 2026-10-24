@@ -8,6 +8,8 @@ sealed class Screen(val route: String) {
     /** Sign in to an existing account with its recovery phrase. */
     data object ExistingIdentity : Screen("existing_identity")
     data object Restore : Screen("restore")
+    /** Join an existing account as a new device — registered only in debug builds. */
+    data object JoinAccount : Screen("join_account")
     /** "Can't connect?" before any account: a VEIL access code, scanned or pasted. */
     data object VeilBootstrap : Screen("veil_bootstrap")
     data object VeilBootstrapScan : Screen("veil_bootstrap/scan")

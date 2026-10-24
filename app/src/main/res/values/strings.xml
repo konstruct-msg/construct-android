@@ -755,4 +755,12 @@
     <string name="device_link_approved_fmt">%1$s is linked. It will be confirmed once it has published its keys.</string>
     <string name="device_link_failed">Could not link the device. Try again.</string>
     <string name="device_link_invalid_qr">This is not a device link code.</string>
+    <string name="device_join_title">Link this device</string>
+    <string name="device_join_subtitle">Debug builds only. Join an account from a device already signed in to it.</string>
+    <string name="device_join_intro">Scan the link QR on your other device (Settings → Linked devices → Link a device), or show a QR here for it to scan.</string>
+    <string name="device_join_scan_qr">Scan the QR on my other device</string>
+    <string name="device_join_show_qr">Show a QR for my other device</string>
+    <string name="device_join_waiting">Waiting for your other device to approve…</string>
+    <string name="device_link_rejected">The other device declined the link.</string>
+    <string name="device_link_expired">The link code expired. Start again.</string>
 </resources>

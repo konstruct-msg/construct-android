@@ -96,6 +96,10 @@ class AuthInterceptor @Inject constructor(
             "RefreshToken",
             "CheckUsernameAvailability",
             "SendSealedMessage",
+            // A device being linked has no account yet; the link token / pending id is its credential.
+            "ConfirmDeviceLink",
+            "SubmitJoinRequest",
+            "CheckJoinRequestStatus",
         )
 
         val KEY_AUTHORIZATION: Metadata.Key<String> =

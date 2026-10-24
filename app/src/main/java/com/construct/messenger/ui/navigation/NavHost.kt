@@ -111,7 +111,22 @@ fun KonstructNavHost(
             ExistingIdentityScreen(
                 onBack = { navController.popBackStack() },
                 onRestore = { navController.navigate(Screen.Restore.route) { launchSingleTop = true } },
+                onLinkThisDevice = if (BuildConfig.DEBUG) ({ navController.navigate(Screen.JoinAccount.route) { launchSingleTop = true } }) else null,
             )
+        }
+        if (BuildConfig.DEBUG) {
+            composable(Screen.JoinAccount.route) {
+                com.construct.messenger.ui.screens.onboarding.JoinAccountRoute(
+                    onBack = { navController.popBackStack() },
+                    onLinked = {
+                        // An existing account, as after a restore: straight to its chats.
+                        navController.navigate(Screen.Main.createRoute()) {
+                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
         }
         composable(Screen.Restore.route) {
             RestoreAccountScreen(
