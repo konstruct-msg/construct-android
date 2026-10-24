@@ -105,7 +105,7 @@ class LinkIdentityTest {
         val cursor: StreamCursorStore = mock()
         whenever(stub.confirmDeviceLink(any(), any())).thenReturn(
             ConfirmDeviceLinkResponse.newBuilder()
-                .setTokens(AuthTokensResponse.newBuilder().setUserId(CoreTestDevice.ACCOUNT).setAccessToken(jwt(iat = 1_800_000_000)))
+                .setTokens(AuthTokensResponse.newBuilder().setUserId(CoreTestDevice.ACCOUNT).setAccessToken(paseto(iat = 1_800_000_000)))
                 .build(),
         )
         val secret = newDeviceLinkSecret()
@@ -124,13 +124,26 @@ class LinkIdentityTest {
         org.mockito.kotlin.verify(cursor).save("1800000000000-0")
     }
 
+    /**
+     * The server issues PASETO v4.public; the first emulator link, reading a JWT, logged "no
+     * stream checkpoint". A JWT is not read at all. Mutation: read the JWT layout — reddens.
+     */
     @Test
     fun theStreamStartsAtTheTokensIssueTime() {
-        assertEquals("1800000000000-0", LinkDeviceUseCase.checkpointCursor(jwt(iat = 1_800_000_000)))
-        assertNull(LinkDeviceUseCase.checkpointCursor("not-a-jwt"))
-        assertNull(LinkDeviceUseCase.checkpointCursor(jwt(iat = 0)))
+        assertEquals("1800000000000-0", LinkDeviceUseCase.checkpointCursor(paseto(iat = 1_800_000_000)))
+        assertNull(LinkDeviceUseCase.checkpointCursor(paseto(iat = 0)))
+        assertNull(LinkDeviceUseCase.checkpointCursor("v4.public.AAAA"))
+        assertNull(LinkDeviceUseCase.checkpointCursor(jwt(iat = 1_800_000_000)))
     }
 
+    /** The server's layout (`construct-auth`): "v4.public." + base64url(nonce(32) || claims || signature(64)). */
+    private fun paseto(iat: Long): String {
+        val claims = """{"sub":"x","jti":"j","exp":${iat + 900},"iat":$iat,"iss":"construct"}""".toByteArray()
+        val payload = ByteArray(32) { 7 } + claims + ByteArray(64) { 9 }
+        return "v4.public." + Base64.getUrlEncoder().withoutPadding().encodeToString(payload)
+    }
+
+    /** A legacy RS256-shaped token: refused, as everywhere on Android. */
     private fun jwt(iat: Long): String {
         val enc = Base64.getUrlEncoder().withoutPadding()
         return enc.encodeToString("""{"alg":"none"}""".toByteArray()) + "." +

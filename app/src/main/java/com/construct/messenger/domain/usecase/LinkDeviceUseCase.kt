@@ -4,11 +4,11 @@ import android.os.Build
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.api.StreamCursorStore
+import com.construct.messenger.data.auth.TokenUtils
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.devicelink.DeviceLinkQr
 import com.construct.messenger.diagnostics.Log
 import com.google.protobuf.ByteString
-import java.util.Base64
 import javax.inject.Inject
 import shared.proto.services.v1.AuthServiceOuterClass.AuthTokensResponse
 import shared.proto.services.v1.AuthServiceOuterClass.CheckJoinRequestStatusRequest
@@ -125,13 +125,13 @@ class LinkDeviceUseCase @Inject constructor(
         const val PLATFORM = "android"
         const val CLASSIC_CRYPTO_SUITE_LABEL = "Curve25519+Ed25519"
         const val INITIAL_OTPK_COUNT = 100
-        private val IAT = Regex("\"iat\"\\s*:\\s*(\\d+)")
 
-        /** `"<iat ms>-0"` from the access token's `iat`, or null. **Canon:** iOS `DeviceLinkStreamCursorPolicy.checkpointCursor`. */
+        /**
+         * `"<iat ms>-0"` from the access token's `iat`, or null. PASETO v4.public only — Android
+         * reads no JWT (`docs/ANDROID_ONBOARDING.md` §13). **Canon:** iOS `DeviceLinkStreamCursorPolicy.checkpointCursor`.
+         */
         fun checkpointCursor(accessToken: String): String? {
-            val payload = accessToken.split('.').getOrNull(1) ?: return null
-            val json = runCatching { String(Base64.getUrlDecoder().decode(payload.trimEnd('='))) }.getOrNull() ?: return null
-            val iat = IAT.find(json)?.groupValues?.get(1)?.toLongOrNull() ?: return null
+            val iat = TokenUtils.extractIssuedAt(accessToken) ?: return null
             if (iat <= 0 || iat > Long.MAX_VALUE / 1000) return null
             return "${iat * 1000}-0"
         }
