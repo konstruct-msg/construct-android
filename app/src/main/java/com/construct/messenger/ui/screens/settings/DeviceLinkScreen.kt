@@ -20,6 +20,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,8 +28,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -121,6 +124,7 @@ fun DeviceLinkRoute(onNavigateBack: () -> Unit, viewModel: DeviceLinkViewModel =
                     InviteQrImage(payload = qr, size = inviteQrSize(maxWidth), contentDescription = stringResource(R.string.device_link_show_qr))
                 }
                 Text(stringResource(R.string.device_link_show_qr_hint), style = CTFont.body, color = CTColor.textDim, textAlign = TextAlign.Center)
+                CopyLinkButton(qr)
             }
             ui.approved?.let { name ->
                 Text(stringResource(R.string.device_link_approved_fmt, name), style = CTFont.body, color = CTColor.text, textAlign = TextAlign.Center)
@@ -138,6 +142,26 @@ fun DeviceLinkRoute(onNavigateBack: () -> Unit, viewModel: DeviceLinkViewModel =
             ) {
                 Text(stringResource(R.string.device_link_scan_qr))
             }
+            PasteLinkButton(enabled = !ui.busy, onPasted = viewModel::onScanned)
         }
+    }
+}
+
+/**
+ * The QR's text to the clipboard. For a device with no camera to point — an emulator, whose
+ * clipboard is the host's, or the iOS simulator — where the code goes over by copy and paste.
+ */
+@Composable
+internal fun CopyLinkButton(link: String) {
+    val clipboard = LocalClipboardManager.current
+    TextButton(onClick = { clipboard.setText(AnnotatedString(link)) }) { Text(stringResource(R.string.device_link_copy)) }
+}
+
+/** The clipboard's text, taken as if scanned — the same parse, the same refusal of anything else. */
+@Composable
+internal fun PasteLinkButton(enabled: Boolean, onPasted: (String) -> Unit) {
+    val clipboard = LocalClipboardManager.current
+    TextButton(onClick = { onPasted(clipboard.getText()?.text.orEmpty()) }, enabled = enabled) {
+        Text(stringResource(R.string.device_link_paste))
     }
 }
