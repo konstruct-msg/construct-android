@@ -12,9 +12,9 @@ import javax.inject.Singleton
  * The registry is a server answer cache, not a trust root. A device is accepted only when its
  * advertised id equals deriveDeviceId(identityPublic); the core still receives device ids only.
  *
- * A device the account did not have is recorded and nothing more: no alert, since it cannot tell a
- * device the contact linked from one the server added
- * (`decisions/new-device-alarm-waits-for-cross-signing.md`).
+ * A device the account did not have is recorded and nothing more. Whether it warrants an alarm is
+ * decided from its certificate by `PeerDeviceVetting`, which reads [knownDevices] before the answer
+ * is recorded here (`decisions/devices-of-an-account-sign-each-other.md`).
  */
 @Singleton
 class PeerDeviceRegistry @Inject constructor(

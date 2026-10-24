@@ -447,6 +447,9 @@
     <string name="address_change_banner_title">Address changed</string>
     <string name="address_change_banner_subtitle_fmt">%1$s named a different address than before. Compare safety numbers before you trust this chat.</string>
     <string name="address_change_toast_fmt">%1$s is now claiming a different address. Open the chat to verify.</string>
+    <string name="unvouched_device_banner_title">Unconfirmed device</string>
+    <string name="unvouched_device_banner_subtitle_fmt">%1$s has a device that none of their other devices confirmed. If they did not just add one, compare safety numbers before you trust this chat.</string>
+    <string name="unvouched_device_toast_fmt">%1$s has a device none of their other devices confirmed. Open the chat to verify.</string>
     <string name="key_change_toast_open">Open</string>
     <string name="key_change_verify">Verify</string>
     <string name="security_notice_acknowledge">I\'ve checked</string>

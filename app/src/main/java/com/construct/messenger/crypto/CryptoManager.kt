@@ -12,8 +12,10 @@ import uniffi.construct_core.KyberPrekeyUpload
 import uniffi.construct_core.KtInclusionProof
 import uniffi.construct_core.KtSignedTreeHead
 import uniffi.construct_core.KtVerdicts
+import uniffi.construct_core.OfferedPeerDevice
 import uniffi.construct_core.OrchestratorCore
 import uniffi.construct_core.OtpkPair
+import uniffi.construct_core.PeerDeviceVerdict
 import uniffi.construct_core.PowSolution
 import uniffi.construct_core.RecoveryKeypair
 import uniffi.construct_core.ReceivingOpenResult
@@ -215,6 +217,15 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
         orchestrator?.initSession(contactId, recipientBundle)
             ?: requireBootstrap().initSession(contactId, recipientBundle)
     }
+
+    /**
+     * One verdict per [offered] device of a peer's account, in order — the core's, the same on
+     * every client (`decisions/devices-of-an-account-sign-each-other.md`). [trustedDeviceIds]:
+     * the devices of that account this client trusted before the answer. Null before login: only
+     * the orchestrator holds the hybrid keys those devices were pinned with.
+     */
+    fun judgePeerDevices(trustedDeviceIds: List<String>, offered: List<OfferedPeerDevice>): List<PeerDeviceVerdict>? =
+        synchronized(coreLock) { orchestrator?.judgePeerDevices(trustedDeviceIds, offered) }
 
     /**
      * Open a receiving session from what the core holds queued for [device]: each queued message
