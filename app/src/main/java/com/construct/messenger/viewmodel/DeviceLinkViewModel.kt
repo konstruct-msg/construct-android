@@ -3,11 +3,11 @@ package com.construct.messenger.viewmodel
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.construct.messenger.BuildConfig
 import com.construct.messenger.R
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.repository.DevicesRepository
 import com.construct.messenger.devicelink.DeviceCertificateIssuer
+import com.construct.messenger.devicelink.DeviceLinkOfferPolicy
 import com.construct.messenger.devicelink.DeviceLinkQr
 import com.construct.messenger.diagnostics.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,8 +34,8 @@ data class DeviceLinkUiState(
 )
 
 /**
- * Settings → Linked devices → Link a device, on the account's device. Debug builds only, as on
- * iOS (`DeviceLinkOfferPolicy`); release builds have no way here. **Canon:** iOS
+ * Settings → Linked devices → Link a device, on the account's device. Debug and tester builds only
+ * ([DeviceLinkOfferPolicy], as on iOS); a build from `main` has no way here. **Canon:** iOS
  * `DeviceLinkViewModel.generateLinkCode` / `approveJoinRequest`.
  *
  * Either flow ends by vouching for the new device (`DeviceCertificateIssuer`) once its keys are
@@ -52,7 +52,7 @@ class DeviceLinkViewModel @Inject constructor(
 
     /** Flow A: a token from the server, and a QR with our fingerprint and the link secret. */
     fun showOffer() {
-        if (!BuildConfig.DEBUG || state.value.busy) return
+        if (!DeviceLinkOfferPolicy.isLinkingOffered || state.value.busy) return
         state.update { it.copy(busy = true, error = null, scanning = false, approved = null) }
         viewModelScope.launch {
             try {
@@ -74,7 +74,7 @@ class DeviceLinkViewModel @Inject constructor(
     }
 
     fun startScan() {
-        if (!BuildConfig.DEBUG) return
+        if (!DeviceLinkOfferPolicy.isLinkingOffered) return
         state.update { it.copy(scanning = true, offerQr = null, error = null, approved = null) }
     }
 
@@ -93,7 +93,7 @@ class DeviceLinkViewModel @Inject constructor(
 
     fun approve() {
         val request = state.value.pending ?: return
-        if (!BuildConfig.DEBUG) return
+        if (!DeviceLinkOfferPolicy.isLinkingOffered) return
         state.update { it.copy(pending = null, busy = true, error = null) }
         viewModelScope.launch {
             try {
