@@ -51,8 +51,8 @@ import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.DeviceLinkViewModel
 
 /**
- * Link a new device to this account — debug builds only (the route exists only when
- * `BuildConfig.DEBUG`). Two ways, as iOS: show a QR the new device scans (flow A), or scan the
+ * Link a new device to this account — debug and tester builds only (the route exists only
+ * when `DeviceLinkOfferPolicy.isLinkingOffered`). Two ways, as iOS: show a QR the new device scans (flow A), or scan the
  * QR the new device shows (flow B). **Canon:** iOS `DeviceLinkQRSheet` / `DeviceLinkActions`.
  */
 @Composable

@@ -48,8 +48,8 @@ import com.construct.messenger.ui.theme.HairlineBorder
  * "Already have an identity?" — how to bring it to this device.
  *
  * **Canon:** iOS `ExistingIdentityChooserView` — an intro line, then one card per way in, equal
- * weight and none preselected. "Link this device" is offered only in debug builds, as on iOS
- * (`DeviceLinkOfferPolicy`), so the release list is one card: restore from the recovery phrase. iOS's "Can't connect?" is left out, as on the first
+ * weight and none preselected. "Link this device" is offered only in debug and tester builds, as on
+ * iOS (`DeviceLinkOfferPolicy`), so a build from `main` lists one card: restore from the recovery phrase. iOS's "Can't connect?" is left out, as on the first
  * screen — Android cannot import a VEIL access code yet.
  */
 @Composable

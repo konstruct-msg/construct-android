@@ -82,7 +82,7 @@ private sealed interface DevicesConfirm {
 fun DevicesRoute(
     onNavigateBack: () -> Unit,
     onSignedOut: () -> Unit,
-    /** Debug builds only: open the link screen. Null hides the row. */
+    /** Debug and tester builds only: open the link screen. Null hides the row. */
     onLinkDevice: (() -> Unit)? = null,
     viewModel: DevicesViewModel = hiltViewModel(),
 ) {
@@ -154,7 +154,7 @@ fun DevicesRoute(
  * The account's devices and the ways to end their sessions.
  *
  * **Canon:** iOS `DevicesView` — this device first, the others with a remove control, then
- * session management. Linking a new device is offered in debug builds only, as on iOS; history
+ * session management. Linking a new device is offered in debug and tester builds only, as on iOS; history
  * re-transfer is not ported.
  */
 @Composable

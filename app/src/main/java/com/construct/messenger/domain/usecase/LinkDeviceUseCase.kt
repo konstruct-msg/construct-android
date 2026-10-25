@@ -22,7 +22,7 @@ import uniffi.construct_core.RegistrationBundleFields
 class JoinRequestEnded(val rejected: Boolean) : Exception(if (rejected) "rejected" else "expired")
 
 /**
- * Join an existing account as a new device — debug builds only, as iOS (`DeviceLinkOfferPolicy`).
+ * Join an existing account as a new device — debug and tester builds only, as iOS (`DeviceLinkOfferPolicy`).
  * **Canon:** iOS `DeviceLinkViewModel.confirmLink` / `generateJoinRequestQR` / `finishLink`.
  *
  * Fresh device keys as at registration, and the hybrid identity key with them before any QR

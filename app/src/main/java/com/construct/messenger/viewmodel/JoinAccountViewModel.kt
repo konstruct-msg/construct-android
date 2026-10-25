@@ -3,9 +3,9 @@ package com.construct.messenger.viewmodel
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.construct.messenger.BuildConfig
 import com.construct.messenger.R
 import com.construct.messenger.data.repository.AuthRepository
+import com.construct.messenger.devicelink.DeviceLinkOfferPolicy
 import com.construct.messenger.devicelink.DeviceLinkQr
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.domain.usecase.JoinRequestEnded
@@ -33,8 +33,8 @@ data class JoinAccountUiState(
 )
 
 /**
- * Onboarding → "I already have an account" → Link this device. Debug builds only (the card and
- * route exist only when `BuildConfig.DEBUG`). **Canon:** iOS `DeviceLinkViewModel` on the new
+ * Onboarding → "I already have an account" → Link this device. Debug and tester builds only (the
+ * card and route exist only when [DeviceLinkOfferPolicy.isLinkingOffered]). **Canon:** iOS `DeviceLinkViewModel` on the new
  * device: `scanAndLink` / `confirmLink` (flow A), `generateJoinRequestQR` + polling (flow B).
  */
 @HiltViewModel
@@ -46,7 +46,7 @@ class JoinAccountViewModel @Inject constructor(
     private var polling: Job? = null
 
     fun startScan() {
-        if (!BuildConfig.DEBUG) return
+        if (!DeviceLinkOfferPolicy.isLinkingOffered) return
         polling?.cancel()
         state.update { it.copy(scanning = true, joinQr = null, error = null) }
     }
@@ -77,7 +77,7 @@ class JoinAccountViewModel @Inject constructor(
 
     /** Flow B: show our QR and wait — every 3 s, at most 10 min, as iOS. */
     fun showJoinRequest() {
-        if (!BuildConfig.DEBUG || state.value.busy) return
+        if (!DeviceLinkOfferPolicy.isLinkingOffered || state.value.busy) return
         polling?.cancel()
         state.update { it.copy(busy = true, scanning = false, joinQr = null, error = null) }
         polling = viewModelScope.launch {

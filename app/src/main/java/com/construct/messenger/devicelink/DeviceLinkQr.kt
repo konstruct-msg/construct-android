@@ -6,7 +6,7 @@ import java.util.Base64
 /**
  * The two link QRs, byte for byte as iOS writes and reads them, so either platform links with
  * the other. **Canon:** iOS `DeviceLinkViewModel` (`generateLinkCode`, `generateJoinRequestQR`,
- * `extractHex32`). Debug builds only, as on iOS (`DeviceLinkOfferPolicy`).
+ * `extractHex32`). Debug and tester builds only, as on iOS (`DeviceLinkOfferPolicy`).
  *
  * - Flow A, shown by the account's device: `konstruct://link?token=<token>&fp=<hex>&s=<hex>` —
  *   `fp` is `history_qr_fingerprint` of the showing device, `s` the link secret the new device
