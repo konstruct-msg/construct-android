@@ -14,8 +14,11 @@ import javax.inject.Singleton
 import shared.proto.services.v1.AuthServiceOuterClass.GetRecoveryStatusRequest
 import shared.proto.services.v1.AuthServiceOuterClass.SetRecoveryKeyRequest
 
-/** What the server says about this account's recovery key. */
-data class RecoveryStatus(val isSetup: Boolean, val fingerprint: String?)
+/**
+ * What the server says about this account's recovery key. [isHybrid]: the key is Ed25519 +
+ * ML-DSA-65 (todo 222); an Ed25519-only one is upgraded by the next client holding the phrase.
+ */
+data class RecoveryStatus(val isSetup: Boolean, val fingerprint: String?, val isHybrid: Boolean = false)
 
 /** Why a phrase was not accepted on this device. */
 enum class ConfirmFailure { INVALID_PHRASE, NOT_SET_UP, OTHER_ACCOUNT }
@@ -65,7 +68,8 @@ class RecoveryRepository @Inject constructor(
     /** A silently made phrase still waits here for its copy — or was lost before it was made. */
     fun copyOwed(): Boolean = keystoreManager.getUserId()?.let { vault.held(it) != HeldPhrase.NONE } == true
 
-    fun publicKeyOf(phrase: String): ByteArray = cryptoManager.deriveRecoveryKeypair(phrase).publicKey
+    /** The account's address [phrase] determines: the hybrid recovery key's Ed25519 half. */
+    fun publicKeyOf(phrase: String): ByteArray = addressOf(cryptoManager.recoveryPublicKey(phrase))
 
     fun newPhrase(): List<String> = cryptoManager.generateMnemonic(PHRASE_WORDS).split(" ")
 
@@ -76,6 +80,7 @@ class RecoveryRepository @Inject constructor(
         return RecoveryStatus(
             isSetup = response.isSetup,
             fingerprint = if (response.hasFingerprint()) response.fingerprint else null,
+            isHybrid = response.isHybrid,
         )
     }
 
@@ -91,23 +96,22 @@ class RecoveryRepository @Inject constructor(
     }
 
     /**
-     * Signs and sends `SetRecoveryKey` for [phrase]; the outcome and the public key. Keeps nothing:
-     * the silent path ([RecoveryKeyProvisioner]) stores the address itself, after the vault.
+     * Signs and sends `SetRecoveryKey` for [phrase] with the hybrid key; the outcome and the
+     * address. Sent to an account whose Ed25519 key is the address, it is the upgrade (todo 222).
+     * Keeps nothing: the silent path ([RecoveryKeyProvisioner]) stores the address itself, after
+     * the vault.
      */
     suspend fun send(phrase: String, userId: String): Pair<SetUpOutcome, ByteArray> {
-        val keypair = cryptoManager.deriveRecoveryKeypair(phrase)
         val timestamp = System.currentTimeMillis() / 1000
-        // The message iOS signs, byte for byte; identity-service checks it.
-        val signature = cryptoManager.signWithRecoveryKey(
-            keypair,
-            "CONSTRUCT_RECOVERY_SETUP:$userId:$timestamp",
-        )
-        val publicKey = keypair.publicKey
+        // The core builds the signed bytes (`construct_server_trust::recovery::setup_signable`),
+        // the same ones the server checks.
+        val signed = cryptoManager.signRecoverySetup(phrase, userId, timestamp)
+        val publicKey = addressOf(signed.publicKey)
         val failure = try {
             grpcClient.auth.withDeadlineAfter(STATUS_TIMEOUT_SECONDS, TimeUnit.SECONDS).setRecoveryKey(
                 SetRecoveryKeyRequest.newBuilder()
-                    .setRecoveryPublicKey(ByteString.copyFrom(publicKey))
-                    .setSetupSignature(ByteString.copyFrom(signature))
+                    .setRecoveryPublicKey(ByteString.copyFrom(signed.publicKey))
+                    .setSetupSignature(ByteString.copyFrom(signed.signature))
                     .setTimestamp(timestamp)
                     .build(),
             )
@@ -130,6 +134,23 @@ class RecoveryRepository @Inject constructor(
 
     fun saveOwnAddress(publicKey: ByteArray) = keystoreManager.saveOwnAccountAddress(publicKey)
 
+    /**
+     * With [phrase] in hand: an account still on its Ed25519 key gets the hybrid one (todo 222).
+     * Only for the account's own phrase — the fingerprint is checked first — and quietly: a
+     * failure leaves the account as it was, and the next time the phrase is at hand tries again.
+     * After 2026-11-01 the server takes no Ed25519 claim, but a hybrid recovery upgrades the
+     * account by itself, so a missed upgrade locks nobody out.
+     */
+    suspend fun upgradeIfEd25519Only(phrase: String, known: RecoveryStatus? = null) {
+        val userId = keystoreManager.getUserId() ?: return
+        val status = known ?: runCatching { status() }.getOrNull() ?: return
+        val fingerprint = status.fingerprint
+        if (!status.isSetup || status.isHybrid || fingerprint == null) return
+        if (!AccountAddress.matchesServerFingerprint(publicKeyOf(phrase), fingerprint)) return
+        val (outcome, _) = send(phrase, userId)
+        Log.i(TAG, "recovery key upgrade to hybrid: $outcome")
+    }
+
     fun userId(): String? = keystoreManager.getUserId()
 
     /**
@@ -143,17 +164,24 @@ class RecoveryRepository @Inject constructor(
         val status = status()
         val fingerprint = status.fingerprint
         if (!status.isSetup || fingerprint == null) return ConfirmFailure.NOT_SET_UP
-        val publicKey = cryptoManager.deriveRecoveryKeypair(normalized)
-            .publicKey
+        val publicKey = publicKeyOf(normalized)
         if (!AccountAddress.matchesServerFingerprint(publicKey, fingerprint)) {
             return ConfirmFailure.OTHER_ACCOUNT
         }
         keystoreManager.saveOwnAccountAddress(publicKey)
+        runCatching { upgradeIfEd25519Only(normalized, status) }
+            .onFailure { if (it is CancellationException) throw it }
         return null
     }
 
     companion object {
         const val PHRASE_WORDS = 12
+
+        /** The Ed25519 half's length, which leads the hybrid key. */
+        private const val ED25519_PUBLIC_KEY_BYTES = 32
+
+        /** The address is the hybrid recovery key's Ed25519 half, the key accounts had before. */
+        fun addressOf(hybridPublicKey: ByteArray): ByteArray = hybridPublicKey.copyOfRange(0, ED25519_PUBLIC_KEY_BYTES)
         private const val TAG = "Recovery"
     }
 }

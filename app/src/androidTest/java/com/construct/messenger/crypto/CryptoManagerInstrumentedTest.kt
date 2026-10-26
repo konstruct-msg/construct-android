@@ -58,19 +58,15 @@ class CryptoManagerInstrumentedTest {
     }
 
     @Test
-    fun generateMnemonic_deriveRecoveryKeypair_isDeterministic() {
+    fun generateMnemonic_recoveryPublicKey_isDeterministic() {
         val crypto = CryptoManager()
         val mnemonic = crypto.generateMnemonic(12)
         assertEquals(12, mnemonic.trim().split(" ").size)
 
-        val first = crypto.deriveRecoveryKeypair(mnemonic)
-        val second = crypto.deriveRecoveryKeypair(mnemonic)
-        assertArrayEquals(first.privateKey, second.privateKey)
-        assertArrayEquals(first.publicKey, second.publicKey)
-
-        val otherMnemonic = crypto.generateMnemonic(12)
-        val third = crypto.deriveRecoveryKeypair(otherMnemonic)
-        assertFalse(first.privateKey.contentEquals(third.privateKey))
+        val first = crypto.recoveryPublicKey(mnemonic)
+        assertEquals(1984, first.size)
+        assertArrayEquals(first, crypto.recoveryPublicKey(mnemonic))
+        assertFalse(first.contentEquals(crypto.recoveryPublicKey(crypto.generateMnemonic(12))))
         crypto.close()
     }
 

@@ -4,6 +4,7 @@ import android.os.Build
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager
+import com.construct.messenger.recovery.RecoveryRepository
 import com.google.protobuf.ByteString
 import javax.inject.Inject
 import shared.proto.core.v1.Identity.DevicePlatform
@@ -18,12 +19,16 @@ enum class RecoverRefusal { INVALID_PHRASE, NO_IDENTIFIER }
  * Sign in to an existing account on this device with its recovery phrase — the account comes back
  * even if every other device is lost. **Canon:** iOS `AccountRecoveryViewModel.submitRecover`.
  *
- * 1. The phrase gives the recovery keypair; it never leaves the device. A timestamp challenge is
- *    signed with it — the server checks it against the account's recovery key.
- * 2. This device gets a fresh identity, as at registration, and `RecoverAccount` registers it.
- *    The server signs the account's other devices out (`devices_revoked`).
- * 3. Tokens, keys and — since the server just accepted a signature by it — the account's address
- *    are stored; one-time prekeys go up in the background, as after registration.
+ * 1. This device gets a fresh identity, as at registration.
+ * 2. The phrase's hybrid recovery key (Ed25519 + ML-DSA-65, todo 222) signs a claim handing the
+ *    account to exactly that identity: the time, the device id, its verifying and identity keys.
+ *    A claim seen once cannot be replayed with other keys, as the old one over a bare timestamp
+ *    could. The phrase never leaves the device; an account still on its Ed25519 key is upgraded
+ *    by the claim.
+ * 3. `RecoverAccount` registers the device. The server signs the account's other devices out
+ *    (`devices_revoked`).
+ * 4. Tokens, keys and — since the server just accepted a signature by it — the account's address
+ *    (the key's Ed25519 half) are stored; one-time prekeys go up in the background.
  */
 class RecoverAccountUseCase @Inject constructor(
     private val cryptoManager: CryptoManager,
@@ -40,10 +45,6 @@ class RecoverAccountUseCase @Inject constructor(
         val normalizedIdentifier = identifier.trim().lowercase()
         if (normalizedIdentifier.isEmpty()) throw RecoverRefused(RecoverRefusal.NO_IDENTIFIER)
 
-        val recovery = cryptoManager.deriveRecoveryKeypair(normalizedPhrase)
-        val challenge = (System.currentTimeMillis() / 1000).toString()
-        val signature = cryptoManager.signWithRecoveryKey(recovery, challenge)
-
         keystoreManager.deleteKyberPrekeys()
         val bundle = cryptoManager.loadOrCreate()
         val deviceId = cryptoManager.deriveDeviceId(bundle)
@@ -54,12 +55,17 @@ class RecoverAccountUseCase @Inject constructor(
             .setSignedPrekeySignature(bundle.signature.toByteString())
             .setCryptoSuite(CLASSIC_CRYPTO_SUITE_LABEL)
             .build()
+        val timestamp = System.currentTimeMillis() / 1000
+        val claim = cryptoManager.signRecoveryClaim(
+            normalizedPhrase, timestamp, deviceId, bundle.verifyingKey, bundle.identityPublic,
+        )
 
         val response = grpcClient.auth.recoverAccount(
             RecoverAccountRequest.newBuilder()
                 .setIdentifier(normalizedIdentifier)
-                .setChallenge(challenge)
-                .setRecoverySignature(ByteString.copyFrom(signature))
+                .setRecoveryPublicKey(claim.publicKey.toByteString())
+                .setTimestamp(timestamp)
+                .setRecoverySignature(claim.signature.toByteString())
                 .setNewDevice(
                     NewDeviceForRecovery.newBuilder()
                         .setDeviceId(deviceId)
@@ -73,7 +79,7 @@ class RecoverAccountUseCase @Inject constructor(
         cryptoManager.setLocalUserId(response.tokens.userId)
         keystoreManager.saveTokens(response.tokens, deviceId)
         keystoreManager.savePrivateKeys(cryptoManager.exportPrivateKeys())
-        keystoreManager.saveOwnAccountAddress(recovery.publicKey)
+        keystoreManager.saveOwnAccountAddress(RecoveryRepository.addressOf(claim.publicKey))
         uploadPreKeysUseCase(deviceId, count = INITIAL_OTPK_COUNT, replaceExisting = true)
         return deviceId
     }

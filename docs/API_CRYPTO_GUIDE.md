@@ -410,8 +410,8 @@ UI / ViewModel / Repository
 5. Сохранить `auth_token` в Keystore.
 6. `CryptoManager.setLocalUserId(serverUserId)` → выводится локальный
    `CryptoDeviceId`, затем создаётся `OrchestratorCore` в device-space.
-7. (Опционально) recovery-фраза: `generateMnemonic` / `deriveRecoveryKeypair` (BIP39) →
-   `SetRecoveryKey`.
+7. (Опционально) recovery-фраза: `generateMnemonic` / `signRecoverySetup` (BIP39, гибридный
+   ключ Ed25519 + ML-DSA-65, ядро 0.59.0) → `SetRecoveryKey`.
 
 > На рестарте `OrchestratorCore` поднимается из сохранённого CFE-состояния. Если
 > состояния нет (свежая инициализация), `next_otpk_id` сбрасывается — и следующая

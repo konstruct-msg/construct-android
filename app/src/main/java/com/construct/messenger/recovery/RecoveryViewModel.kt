@@ -142,6 +142,10 @@ class RecoveryViewModel @Inject constructor(
             return
         }
         state.update { it.copy(stage = RecoveryStage.ShowWords(phrase.split(" "), backup = true), errorRes = null) }
+        // The phrase is in hand only now, behind authentication: an Ed25519-only key becomes hybrid.
+        viewModelScope.launch {
+            runCatching { repository.upgradeIfEd25519Only(phrase) }.onFailure { if (it is CancellationException) throw it }
+        }
     }
 
     /** The prompt or the credential did not open the key; the person may try again. */
