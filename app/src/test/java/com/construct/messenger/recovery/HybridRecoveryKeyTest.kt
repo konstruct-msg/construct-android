@@ -8,6 +8,7 @@ import com.construct.messenger.domain.usecase.UploadPreKeysUseCase
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mockito.kotlin.any
@@ -120,6 +121,21 @@ class HybridRecoveryKeyTest {
             GetRecoveryStatusResponse.newBuilder().setIsSetup(true).setIsHybrid(true).build(),
         )
         assertTrue(repository.status().isHybrid)
+    }
+
+    /**
+     * The once-only prompt shows for an Ed25519-only key, unless a held phrase still owes its copy
+     * (that copy upgrades). Mutation: ignore [HeldPhrase.HELD] or `is_hybrid` — reddens.
+     */
+    @Test
+    fun theUpgradePromptIsForAnEd25519KeyWithNoCopyOwed() {
+        val ed25519 = RecoveryStatus(isSetup = true, fingerprint = "ab", isHybrid = false)
+        assertTrue(upgradeNeeded(ed25519, HeldPhrase.NONE))
+        assertTrue(upgradeNeeded(ed25519, HeldPhrase.LOST))
+        assertFalse(upgradeNeeded(ed25519, HeldPhrase.HELD))
+        assertFalse(upgradeNeeded(ed25519.copy(isHybrid = true), HeldPhrase.NONE))
+        assertFalse(upgradeNeeded(RecoveryStatus(isSetup = false, fingerprint = null), HeldPhrase.NONE))
+        assertFalse(upgradeNeeded(null, HeldPhrase.NONE))
     }
 
     private fun fingerprint(key: ByteArray) =

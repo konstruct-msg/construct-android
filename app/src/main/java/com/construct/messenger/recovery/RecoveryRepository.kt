@@ -20,6 +20,13 @@ import shared.proto.services.v1.AuthServiceOuterClass.SetRecoveryKeyRequest
  */
 data class RecoveryStatus(val isSetup: Boolean, val fingerprint: String?, val isHybrid: Boolean = false)
 
+/**
+ * The account's key is still Ed25519 only and no phrase waits here for its copy (the copy
+ * upgrades it): the person is asked to enter the phrase once. **Canon:** iOS `upgradeNeeded`.
+ */
+fun upgradeNeeded(status: RecoveryStatus?, held: HeldPhrase): Boolean =
+    status != null && status.isSetup && !status.isHybrid && held != HeldPhrase.HELD
+
 /** Why a phrase was not accepted on this device. */
 enum class ConfirmFailure { INVALID_PHRASE, NOT_SET_UP, OTHER_ACCOUNT }
 

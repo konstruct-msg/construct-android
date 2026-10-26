@@ -417,6 +417,9 @@
     <string name="recovery_gate_nav_title">Recovery phrase</string>
     <string name="recovery_gate_title">Contacts start with your recovery phrase</string>
     <string name="recovery_gate_why">Your contacts reach you at an address that belongs to you, not to our server. That address comes from your recovery phrase, and every invite carries it. The same 12 words bring your account back if you lose every device. Nobody can restore them for you, including us.</string>
+    <string name="recovery_upgrade_title">Check your recovery phrase</string>
+    <string name="recovery_upgrade_why">Your recovery key is getting stronger protection, including against future quantum computers. Enter your 12 words once. They stay on this device and are never sent, and you will know your copy is right.</string>
+    <string name="recovery_upgrade_needed">Enter it once to strengthen it</string>
     <string name="recovery_gate_setup_note">Takes about a minute: you write down 12 words and confirm three of them.</string>
     <string name="recovery_gate_setup_action">Set up recovery phrase</string>
     <string name="recovery_gate_confirm_note">Your account already has a recovery phrase, but this device hasn\'t seen it. Enter it once. The phrase stays on this device and is never sent.</string>
