@@ -1,321 +1,233 @@
 # AGENTS.md — construct-android
 
-Context for AI agents working in this repository — and the invariants a person needs too.
+The rules this project paid for in its first year, and the invariants of this repository. Each
+line is here because breaking it already cost something; the incident behind it lives in the
+vault. If a rule here and your plan disagree, the rule wins until a `decisions/` note says
+otherwise.
 
-**Start here, in this order:** this file → `docs/IMPLEMENTATION_PLAN.md` (the one plan: what is
-done, what is next, priorities and "done when") → `README.md` (build; the `.so` is not in git) →
-the document for your area, listed in the plan's §1. First tasks for a new person:
-`GOOD_FIRST_ISSUES.md`.
+| Area | Read first |
+|---|---|
+| Why these rules exist, and the checklist before any new protocol feature | `~/Code/construct-docs/decisions/rules-from-the-first-year.md` |
+| What is done, what is next, "done when" | `docs/IMPLEMENTATION_PLAN.md` (the one plan; its §1 lists the doc per area) |
+| Build, first clone, the `.so` | `README.md` |
+| Sessions | `docs/SESSIONS.md` · `~/Code/construct-docs/decisions/sessions-renew-by-sending.md` |
+| The send path, stealth, multi-device | `docs/WIRE_FORMAT_RULES.md` |
+| Crypto API, binary format, gRPC | `docs/API_CRYPTO_GUIDE.md` · `docs/FFI_BINARY_FORMAT.md` · `docs/GRPC_LAYER.md` |
+| UI | `docs/UI_RULES.md` · `docs/ANDROID_ONBOARDING.md` · `docs/MATERIAL3_MIGRATION.md` |
+| Testing against iOS | `docs/STAND.md` |
+| No Play Services | `~/Code/construct-docs/decisions/android-without-play-services.md` |
+| First tasks for a new person | `GOOD_FIRST_ISSUES.md` |
+| Everything else | `~/Code/construct-docs` (vault; its own `AGENTS.md` is authoritative) |
 
----
-
-## What is construct-android?
-
-Android client for Construct Messenger. Built with Kotlin + Jetpack Compose + Hilt.
-Uses `construct-core` via UniFFI/JNI bindings (same direct path as iOS — NOT via `construct-engine`).
-
----
-
-## Architecture
-
-```
-app/src/main/
-├── java/.../
-│   ├── crypto/         — CryptoManager (UniFFI wrapper around construct-core)
-│   ├── invite/         — device-minted v5 invites (CIv1 + konstruct://add)
-│   ├── stealth/        — sealed-sender policy / wallet / cert (fail-closed on send)
-│   ├── viewmodel/      — Hilt-injected ViewModels (@HiltViewModel)
-│   ├── ui/             — Compose screens and components
-│   ├── data/           — repositories, the core's local store, gRPC (UI must not import data/api)
-│   ├── domain/         — Register / Login / UploadPreKeys / SendMessage
-│   ├── service/        — MessagingRuntime, SessionManager, router / processor
-│   └── di/             — Hilt modules
-└── jniLibs/            — .so from construct-core; NOT in git, see below
-    ├── arm64-v8a/
-    ├── armeabi-v7a/
-    └── x86_64/
-```
-
-**The `.so` files are not in git** — `app/src/main/jniLibs/` is ignored, and a fresh clone has to
-build them before Gradle can assemble anything. Same rule as the iOS `*.xcframework` binaries, and
-for the same reason: they are build output of another repository, reproducible from it by one
-command, and committing them put 149.5 MB of binaries into a repository whose every other tracked
-file adds up to 2.6 MB. They were purged from history on 2026-09-22.
-
-They must be rebuilt whenever construct-core changes. UniFFI checks its interface checksums when
-the library loads, so a `.so` older than the bindings beside it does not fail at the call — the
-app does not start, and the reason is not on the screen.
-
-**`construct-core.lock` records which core, and `checkCoreLibrary` enforces it.** Taking the
-binaries out of git took the record with them, so the lock file puts it back as one line of text:
-the `CONSTRUCT_CORE_VERSION` stamp the library carries in its own `.rodata`. A Gradle task reads
-that stamp out of each ABI's `.so` before `preBuild` and fails with both values when they differ,
-so the mismatch is caught on the machine that can fix it rather than at start-up on a device.
-`./build_crypto_lib.sh` rewrites the lock from what it just built, which makes moving to a new
-core a diff someone approves instead of something that happens quietly.
-
-Take the `.so` and `construct_core.kt` from the **same** build — the published archive contains
-both, and the lock only pins the library. `scripts/fetch_core.sh` installs the build the lock names.
-
-**The unit tests call the real core.** Since 2026-10-02 (core 0.31, the KNST frame codec) the JVM
-tests load the same build for the machine they run on, from `app/src/test/host/<os>-<cpu>/` —
-JNA's resource prefix, the layout construct-core's archive ships under `host/`. Not in git either;
-`checkHostCoreLibrary` holds its stamp to the lock before any test runs, so tests never check one
-core while the app ships another. Do not replace a core call with a Kotlin stand-in to make a test
-easier: that is how the two drift.
-
-### Rust core integration
-
-```bash
-# Build construct-core for Android targets (run from construct-core/)
-cargo build --release --target aarch64-linux-android
-cargo build --release --target armv7-linux-androideabi
-cargo build --release --target x86_64-linux-android
-
-# Generate UniFFI Kotlin bindings
-uniffi-bindgen generate   --library target/aarch64-linux-android/release/libconstruct_core.so   --language kotlin   --out-dir bindings/kotlin
-```
-
-Copy resulting `.so` files to `app/src/main/jniLibs/<abi>/` — or just run `./build_crypto_lib.sh`,
-which does all of the above. Either way the files stay untracked.
+Android client of Konstruct: Kotlin, Jetpack Compose, Hilt. It uses `construct-core` through
+UniFFI/JNI directly, the same path as iOS (not `construct-engine`). Layout under
+`app/src/main/java/.../`: `crypto/` (`CryptoManager`), `invite/`, `stealth/`, `viewmodel/`, `ui/`,
+`data/` (repositories, the core's store, gRPC), `domain/` (use cases), `service/`
+(`MessagingRuntime`, `SessionManager`, router / processor), `di/`.
 
 ---
 
-## Build
+## The Zen of Konstruct
 
-```bash
-./gradlew build                    # build
-./gradlew test                     # unit tests
-./gradlew connectedAndroidTest     # instrumented tests (device/emulator)
-./gradlew assembleDebug            # debug APK
-./gradlew assembleRelease          # release APK
 ```
+Someone has solved it before. Read them first.
+The core decides; the app executes.
+A message names the state it means. Time is not an address.
+Reproduce, then fix.
+One meaning, one carrier.
+Bytes stay bytes.
+Measure, then build.
+The effect is the proof, not the exit code.
+A test that cannot fail is worse than no test.
+Boring before new.
+Temporary is permanent, unless something checks it.
+What nothing reads is not sent.
+Silence is the worst failure: a message that never appears raises no error.
+```
+
+The canonical source is the vault note in the table above. Change it there first.
+
+## The twelve rules
+
+**Protocol**: almost all of the year's cost went here.
+
+1. **Prior art first.** Before any protocol mechanism, write down how Signal / MLS (RFC 9420) /
+   Matrix solve it and why we deviate. Group key management is MLS, not ours.
+2. **The core decides, Android executes.** If two clients must compute it identically for a
+   message to be readable, it is a `construct-core` API, written first. Kotlin makes no session or
+   protocol decision. Open `construct-core/src/construct_core.udl` first: the core usually does it already.
+3. **A control message names the state it refers to**: an epoch, a ratchet key or a number. A fix
+   that adds a timer, cooldown, window, tie-break or retry budget means the message has no address.
+   Stop and give it one.
+4. **Reproduce before fixing.** A flaky-session symptom is fixed only on a stand that reproduces
+   it (`docs/STAND.md`; `scripts/verify.sh --device`). The fix counts when the stand that failed
+   now passes.
+5. **One meaning, one carrier; different meanings, different types.** Read
+   `~/Code/construct-docs/decisions/one-meaning-two-carriers.md` before adding a field, counter or
+   timeout. A comment saying two things "must match" means one should call the other.
+
+**Data and evidence**
+
+6. **Binary stays binary**, source to destination. The FFI boundary takes `ByteArray` and CFE
+   (a 16-byte header plus MessagePack), never JSON or base64. Base64 only at true text boundaries
+   (QR, deep links).
+7. **Measure, then build.** For network, censorship, performance and battery, measure on the real
+   path first.
+8. **Verify the effect, not the exit code.** Check a delete by querying after it, a release by the
+   APK the draft holds, and a fix by the device log.
+
+**Tests and process**
+
+9. **A test must be able to fail.** Put the decision in a pure function and test that function.
+   Mutation-check every new test, one mutation at a time.
+10. **Depth before breadth.** A new surface starts when the last one is boring on the stand and
+    with testers. Testers who stop testing is a P0.
+11. **A temporary exception has an end date and a check** that notices the debt growing
+    (`check_ui_tokens.sh` baselines are one).
+12. **A branch and a PR, always.** See *Commits and branches*.
+
+**A change on the delivery or crypto path answers three questions** in its commit message. Any
+commit touching `service`, `crypto`, `stealth`, `invite`, `data/api`, `domain/usecase` or `proto`
+needs them, even when it changes only comments; `verify.sh` checks them.
+1. What does the server, or any relay, learn that it did not learn before?
+2. What can a party (server, sender, sibling device) withhold or substitute that it could not before?
+3. Which trust boundary moves, and in which direction?
+
+An honest "something" to 1 or 2 is a `decisions/` note, not a merge.
+
+**A producer with no consumer is a defect.** A send, an action or a field lands with its reader in
+the same change, or it is removed.
 
 ---
 
-## Key conventions
+## Invariants of this repo
 
-- Use `@HiltViewModel` for all ViewModels — no manual ViewModel factories
-- All crypto operations go through `CryptoManager` — do not call UniFFI bindings directly from UI
-- UI / ViewModels talk to **repositories only** — no `data/api`, `crypto`, `stealth`, or proto envelopes
-- Compose UI only — no XML layouts
-- Local data lives in the core's encrypted store (`LocalStores`, `Core*Store`); Room was removed on 2026-10-19
-- gRPC lives in the `GrpcClient` singleton (two channels: auth + sealed); `MessagingRuntime` owns cold start
-- **Before pushing: `scripts/verify.sh`** (add `--device` when the change touches sessions,
-  delivery or start-up). It exists because this repo's breakages were mostly not test failures —
-  commits that never compiled behind `checkCoreLibrary`, a `.so` from another core build, a core
-  action with no executor. Its first run caught a commit whose tests no longer compiled.
-- **CI** (`.github/workflows/ci.yml`) runs `scripts/verify.sh` on every push and PR with the core
-  the lock names. **A release APK** is built by pushing a tag `v<versionName>` (or running
-  `release.yml` by hand): signed with the key from the repository secrets and refused unless the
-  signer is the pinned certificate; a tag leaves a draft release, which a person publishes.
-  A tag that is not on `main` is a tester build: `INTERNAL_TOOLS`, which writes the diagnostic
-  log (Settings → Diagnostics → share), as iOS TestFlight builds do. A build from `main` writes none.
-- Status lives only in `docs/IMPLEMENTATION_PLAN.md`. Do not add a status line anywhere else —
-  that is how this file, the README and the plan came to disagree.
-- Closing a task from the plan means updating the plan in the same commit.
-- **Version:** `versionName` in `app/build.gradle` is bumped by hand — minor for a build handed
-  to testers, patch for a fix build; `versionCode` is the commit count and needs nothing.
+### Core and build
+
+- **The `.so` files are not in git** (`app/src/main/jniLibs/` is ignored; purged from history on
+  2026-09-22). Get them with `scripts/fetch_core.sh`, or build them with `./build_crypto_lib.sh`
+  (`--arm64`, `--x86`), which also regenerates the bindings.
+- **`construct-core.lock` pins the core.** `checkCoreLibrary` runs before `preBuild` and fails when
+  a `.so`'s `CONSTRUCT_CORE_VERSION` stamp differs from the lock. A mismatched `.so` does not fail
+  at the call: the app does not start. `build_crypto_lib.sh` rewrites the lock, so moving cores is
+  a reviewed diff.
+- **Take the `.so` and `construct_core.kt` from the same build.** The lock pins only the library.
+  Never hand-edit the generated binding.
+- **Unit tests call the real core** from `app/src/test/host/<os>-<cpu>/` (not in git;
+  `checkHostCoreLibrary` holds it to the lock). Never replace a core call with a Kotlin stand-in.
+- **NDK newer than `construct-core/.cargo/config.toml`:** set `CARGO_TARGET_<TRIPLE>_LINKER` /
+  `_AR` rather than editing the core's config.
+- **Apple Silicon needs Rosetta** (`softwareupdate --install-rosetta`): the grpc-java plugin
+  labelled `osx-aarch_64` is x86_64. Never run Gradle with `--rerun-tasks`.
+- **Protos are vendored** in `app/src/main/proto/` from `construct-protos`; sync with
+  `scripts/sync-protos.sh`. The Gradle protobuf plugin generates the stubs.
+- Commands: `./gradlew build | test | connectedAndroidTest | assembleDebug | assembleRelease`.
+
+### Verify, CI, release
+
+- **Before pushing: `scripts/verify.sh`**, after committing (its checks read commits). Add
+  `--device` when the change touches sessions, delivery or start-up. CI runs the same script on
+  every push and PR.
+- **Release:** a tag `v<versionName>` (or `release.yml` by hand) builds a draft release, signed
+  with the repository-secret key and refused unless the signer is the pinned certificate. A
+  person publishes it. A tag not on `main` is a tester build (`INTERNAL_TOOLS`: diagnostic log in
+  Settings → Diagnostics); a build from `main` writes no log.
+- **Version:** `versionName` in `app/build.gradle` is bumped by hand: the minor version for a
+  build handed to testers, the patch version for a fix build. `versionCode` is the commit count.
+- **Status lives only in `docs/IMPLEMENTATION_PLAN.md`.** Closing a task updates the plan in the
+  same commit.
+
+### Code
+
+- `@HiltViewModel` for every ViewModel; no manual factories. Compose only, no XML layouts.
+- **All crypto goes through `CryptoManager`.** UI and ViewModels talk to repositories only: no
+  `data/api`, `crypto`, `stealth` or proto envelopes.
+- Local data lives in the core's encrypted store (`LocalStores`, `Core*Store`). Room was removed
+  on 2026-10-19.
+- gRPC lives in the `GrpcClient` singleton (two channels: auth and sealed). `MessagingRuntime`
+  owns cold start.
+
+### Sessions — the core decides, Android executes
+
+Read `docs/SESSIONS.md` before touching `SessionManager`, `MessageProcessor`,
+`ProcessorEffectsImpl`, `CfeTimerBridge` or anything that sends a control message.
+- **A session renews by sending.** A message with the handshake header opens a new state beside
+  the current one; the core promotes the one that decrypts.
+- **There is no END_SESSION.** An unreadable message is answered by the core with
+  DECRYPTION_ERROR (content type 28) naming its state. The writer retires that state only if it is
+  current and resends once. Reset, chat and contact deletion, and logout are local: nothing is sent.
+- **Never rebuild** a teardown message, SESSION_RESET_INIT, ping/ready, confirm windows,
+  tie-breaks, heal, cooldowns, retry budgets, stale-by-timestamp checks or "announce the reset".
+  Older docs, old iOS code and memory describe them; do not port them.
+- **Everything passed to the core is a `CryptoDeviceId`**, never an account id. Mixing them does
+  not throw; the message simply never opens.
+- Both `when`s over `CfeAction` are exhaustive. Never add `else ->`: a new core action must fail
+  to compile until it is handled.
+
+### Wire format
+
+Read `docs/WIRE_FORMAT_RULES.md` before `SendMessageUseCase`, stealth or anything multi-device.
+**An unsealed envelope carries nothing beyond the sender/recipient pair already on it.** Before
+adding a field, write who reads it and what it tells the server about who talks to whom. iOS found
+five such defects only from device logs.
+
+### No Google Play Services
+
+Decided 2026-08-23. **Nothing may require GMS on the device**: no FCM, no Play Integrity, no Play
+Location, no ML Kit. FCM would give a third party the timing of every message and a stable device
+id. Build-time Google dependencies (Hilt, KSP, protobuf) are fine. A GMS-free client is also the
+GrapheneOS client.
+- **Delivery is our own connection**: a persistent `MessageStream` in a foreground service.
+  UnifiedPush is an option, never the base. A call arrives as its E2EE offer on that stream, not
+  by VoIP push.
+- `scripts/check_no_play_services.sh` (run by `verify.sh`) holds the manifest to this.
+- **One APK**: no GMS/FOSS flavours. The battery cost and the persistent notification are stated
+  to the user.
+- **The permission list is fixed, and adding one is the owner's decision.** Declared: network,
+  foreground-service and notification permissions; `POST_NOTIFICATIONS` (13+); the
+  `remoteMessaging` FGS type (14+; 11–13 use two-argument `startForeground`); others below.
+  - `CAMERA`, asked for only when the invite scanner opens, a video note is first recorded, or a
+    video call turns its camera on. Scanning uses CameraX + ZXing; frames go nowhere but the call.
+  - `RECORD_AUDIO`, asked for only on the first voice note, video note or call.
+  - `MODIFY_AUDIO_SETTINGS`, granted at install.
+  - For calls: `MANAGE_OWN_CALLS` (self-managed; nothing goes to the call log),
+    `FOREGROUND_SERVICE_PHONE_CALL` / `_MICROPHONE` and `USE_FULL_SCREEN_INTENT`.
+  - `FOREGROUND_SERVICE_MEDIA_PLAYBACK`: music from a chat, shown under its file name only, and
+    never for voice notes.
+- **Services:** `MessagingForegroundService`, `CallService` (only during a call) and
+  `MusicPlaybackService` (only while music is loaded) are not exported. `CallConnectionService` is
+  exported for Telecom and guarded by `BIND_TELECOM_CONNECTION_SERVICE`. There is no `<receiver>`
+  and no push-provider code.
+
+### Design System
+
+**Material 3, themed from the designer's Figma file. Controls are Material's; JetBrains Mono
+chrome and dark by default are ours; message text is the reader's.** Read `docs/UI_RULES.md`
+before touching UI.
 
 ---
 
 ## Commits and branches
 
-[Conventional Commits](https://www.conventionalcommits.org/): `feat(scope): …`, `fix(scope): …`,
-`refactor(scope): …`, `chore(scope): …`, `docs(scope): …`.
+- Conventional Commits: `feat|fix|refactor|chore|docs|test(scope): …`.
+- **Never commit on `develop` (testers) or `main` (public).** Cut a topic branch from an up-to-date
+  `develop` and merge it through a PR. `develop → main` is the owner's step. Agents push and open
+  PRs only when asked, after `verify.sh` passes.
+- A commit made on `develop` by mistake and not pushed moves with
+  `git branch <topic> && git reset --keep origin/develop && git switch <topic>`. Never rewrite
+  pushed history.
+- Check the branch and `git status` before every commit, because other sessions share the tree.
+  Never `checkout -- .`, `restore .`, `reset --hard` or `stash`: name the files.
 
-**Never commit on `develop` or `main`.** `develop` is what testers get — the release APK is built
-from a `v<versionName>` tag on it; `main` is what goes public. Every change goes on a topic branch
-cut from an up-to-date `develop` (`feat|fix|docs|chore|refactor|test/<topic>`) and lands in
-`develop` through a GitHub pull request. `develop → main` is the release step, and the owner takes
-it. Agents push and open the PR only when asked, and `scripts/verify.sh` passes first.
+## Docs
 
-From 2026-09-11 to 2026-10-01 changes went straight to the default branch across the
-construct-* repos — two people on the project made a branch per change look like ceremony. That
-was reversed on purpose: the habit has to be in place before there is a public release for it to
-break. A commit that landed on `develop` by mistake and is not pushed moves off it with
-`git branch <topic> && git reset --keep origin/develop && git switch <topic>`. Pushed history is
-never rewritten.
-
----
-
-## Design System (read before touching any UI)
-
-**Android is Material 3** (decided 2026-10-08, `~/Code/construct-docs/decisions/android-is-material-3.md`).
-Until then the iOS app was the design canon and Android mirrored it; **that is over for the
-look.** iOS goes its own way in SwiftUI, Android in Material, and the two apps are allowed to
-differ. Features, texts, behaviour and the wire are still one meaning across both.
-
-- **Source of truth: the designer's Figma file** — a local copy of the Material 3 kit (theme
-  "Echo"), not iOS `ConstructTheme.swift`. New code carries no `**Canon:** iOS …` reference.
-  The file is not wired in yet; until it is, the CT tokens below stay as they are.
-- **Tokens are Material's roles**: colour = `ColorScheme` (Primary, On Primary, Primary
-  Container, Surface, Surface Container …; one scheme per theme mode of the file — set **every**
-  role, an unset one falls back to Compose's baseline purple), type = `Typography` from the font
-  roles Brand / Plain. Values come from the Figma variables by a repeatable step, never retyped.
-- **Controls are Material 3 components** themed by `MaterialTheme` — `Button`, `Switch`,
-  `NavigationBar`, `TopAppBar`, dialogs, sheets, menus. Do not hand-draw a control, and do not
-  build a new `CT*` look-alike of one.
-- **What stays ours:** JetBrains Mono for the chrome and dark as the default. The rest of the
-  identity (density, hairlines, identicon avatars, the `>` system-message prefix, terminal
-  diagnostics) is not removed without asking the owner.
-- **Terminal glyphs are decorative only** (since 2026-06-22): never `[ok] [err] [✓] [→]` for state
-  or controls — Material icons + semantic colour, `Switch`, `Icons.Default.Check`. ASCII stays only
-  as chrome: the `>` prefix. A separator is `HorizontalDivider`.
-
-### Migration (background work, one screen per commit)
-
-Full plan and order: **`docs/MATERIAL3_MIGRATION.md`** — code moves first with no visible change
-(proved by screenshot tests), the new look arrives later as one change of theme values.
-
-1. **Theme**: the file's roles into `ColorScheme` / `Typography` in `ui/theme/`.
-2. **Aliases**: `CTColor.*` / `CTFont.*` point at the roles, so the ~70 files reading them change
-   colour without changing code.
-3. **Components**: `CTNavBar`, the tab bar, `CTButton`, `CTTextField`, `CTSearchBar`,
-   `CTModeSelector` … give way to their Material counterparts screen by screen; an alias goes
-   with its last caller. A screen built from now on is built in Material from the start.
-
-### Tokens
-
-`docs/ANDROID_ONBOARDING.md` §3 maps them: colour is `MaterialTheme.colorScheme` (the unsuffixed
-`CTColor.*` aliases read the roles; bubbles, status and media keep their own tokens), type is
-`Typography` inside Material components and a `CTFont` role outside them (`CTFont.message` for
-message text), shapes are the theme's. Spacing and sizes: `CTSpace.*`, `CTIcon.*`, `CTLayout.*`,
-`CornerRadius.*`. No inline magic numbers: `scripts/check_ui_tokens.sh` (run by `verify.sh`) fails
-when a count of hand-set sizes, faces or colours rises, or a deleted CT control comes back; a
-change that lowers a count lowers its baseline in the same commit.
-
----
-
-## Sessions — the core decides, Android executes
-
-**Read `docs/SESSIONS.md` before touching `SessionManager`, `MessageProcessor`,
-`ProcessorEffectsImpl`, `CfeTimerBridge` or anything that sends a control message.**
-
-- **A session renews by sending** (since 2026-09-27). Any message carrying the handshake header
-  opens a new state beside the one held; the core keeps previous states and promotes the one that
-  decrypts. There is no SESSION_RESET_INIT, ping/ready, confirm window, tie-break or heal.
-- **There is no END_SESSION** (since 2026-09-28). A message nothing reads is answered by the core
-  with a DECRYPTION_ERROR (content type 28) naming the state it was written on; the writer's core
-  retires that state only if it is current and resends the named message once. Manual reset, chat
-  and contact deletion and logout are **local** — nothing is sent.
-- Do not add a teardown message, a cooldown, a retry budget, a stale-by-timestamp check or an
-  "announce the reset" path. A message that names no state is the thing this replaced.
-- **Everything passed to the core is a `CryptoDeviceId`**, never an account id. Mixing them does
-  not throw; the message simply never opens.
-- Before writing a session or crypto decision in Kotlin, open `construct-core/src/construct_core.udl`:
-  the core probably already does it. Both `when`s over `CfeAction` are exhaustive — never add
-  `else ->`; a new core action must fail to compile until it is handled.
-- Older docs, iOS code at older revisions and your own memory all describe the removed mechanisms.
-  Do not port them.
-
-## Changes on the delivery or crypto path
-
-A commit that touches sending, receiving, sessions, sealed sender or the envelope answers three
-questions in its message — not "this is safe", but the answers:
-
-1. What does the server (or any relay) learn that it did not learn before?
-2. What can a party — server, sender, a sibling device — withhold or substitute that it could not
-   before?
-3. Which trust boundary moves, and in which direction?
-
-An honest "something" to 1 or 2 is a design decision and goes through `construct-docs/decisions/`
-before it is merged.
-
-## No Google Play Services — decided 2026-08-23, before any delivery code existed
-
-**Nothing in this app may require GMS on the device.** No FCM, no Play Integrity, no Play
-Location. Google *build-time* dependencies are fine and already present (Hilt, KSP, protobuf) —
-they ask nothing of the device.
-
-This is checkable right now and must stay that way: the manifest declares network permissions
-plus the Android foreground-service/notification permissions, `CAMERA` (asked for only when the
-invite scanner opens, a video note is first recorded, or a video call is started, answered or has its
-camera turned on; the QR is read by CameraX + ZXing, not ML Kit; a note is recorded by CameraX into the
-app's cache; a call's camera is WebRTC's Camera2 capturer, frames go nowhere but the call, and it stops
-whenever nobody sees the app), `RECORD_AUDIO` (asked for only when
-the user taps the microphone for a voice note, records a video note, or makes or answers a call), `MODIFY_AUDIO_SETTINGS`
-(install-time; a call's voice mode is refused without it), and for calls `MANAGE_OWN_CALLS`
-(a self-managed `ConnectionService` — Telecom knows a call is on; nothing goes to the call log or
-the dialer), `FOREGROUND_SERVICE_PHONE_CALL` / `_MICROPHONE` and `USE_FULL_SCREEN_INTENT` (a
-ringing call over the lock screen), and `FOREGROUND_SERVICE_MEDIA_PLAYBACK` (a music file from a
-chat plays on in the background, in the shade and on the lock screen under its file name only;
-voice notes never). Services: the non-exported `MessagingForegroundService`, the
-non-exported `CallService` (`phoneCall|microphone`, only while a call is on), the non-exported
-`MusicPlaybackService` (Media3 `mediaPlayback`, only while a music file is loaded), and
-`CallConnectionService` — exported because Telecom must bind it, guarded by
-`BIND_TELECOM_CONNECTION_SERVICE`, which only the system holds. No `<receiver>` (a call
-notification's buttons are service and activity intents), and no push-provider client code: a
-call arrives as its E2EE offer on our own `MessageStream`, not by a VoIP push. On Android 13+
-the app requests `POST_NOTIFICATIONS`; on Android 14+ it starts with the `remoteMessaging`
-foreground-service type. Older supported devices, including Android 11, use the ordinary
-two-argument `startForeground` path.
-
-- **Delivery is our own connection**: a persistent `MessageStream` in a foreground service. Not a
-  second notification channel.
-- **UnifiedPush is an option, never the base.** The default path must work with no distributor.
-- **One APK.** No GMS/FOSS flavours — two flavours are two delivery behaviours and a permanent
-  question about which one is real.
-- The battery cost and the persistent foreground notification are stated to the user, not hidden.
-
-Why it is an invariant and not a preference: FCM would hand a third party the fact and timing of
-every message you receive plus a stable device id — exactly the metadata sealed sender exists to
-keep from our *own* server. And a client that needs no GMS **is** the GrapheneOS client, so this
-is also why there will not be a separate one.
-
-Full reasoning and rejected alternatives: `~/Code/construct-docs/decisions/android-without-play-services.md`.
-Where Android sits among the platforms: `~/Code/construct-docs/decisions/client-platform-sequencing.md`.
-
-## Wire format — read before touching the send path
-
-**`docs/WIRE_FORMAT_RULES.md`** — what Android may and may not put on the envelope, and why.
-Not optional reading before `SendMessageUseCase`, stealth, or anything multi-device.
-
-iOS reached those rules through five defects that each lived for months and were found by reading
-device logs rather than code: SENDER_SYNC routed on a field the server blanks by design (so no copy
-ever arrived, since the feature shipped), the same unsealed envelope carrying `direct:me:partner`
-in the clear, two device-id fields nobody reads, a heartbeat announcing itself on the outer
-envelope, and a magic string with no reader that spent four months rendering as a visible bubble.
-Every one of them was a field written by the client, read by no one, and paid for in metadata.
-
-The one-line version: **an unsealed envelope must not carry anything beyond the sender/recipient
-pair already on it**, and before adding any field, answer in writing who reads it and what it tells
-the server about who talks to whom.
-
-## Documentation
-
-All project documentation: `~/Code/construct-docs` (Obsidian vault).
-**Authoritative map + writing rules: `~/Code/construct-docs/AGENTS.md`** — read it before
-contributing docs. The vault is a flat domain-folder structure (`architecture/`, `backend/`,
-`client/`, `cryptocore/`, `security/`, `deployment/`, `sessions/`, `decisions/`, `_archive/`, …).
-The Android design doc is this repo's `docs/ANDROID_ONBOARDING.md`; the vault keeps a pointer to
-it, not a copy (two copies "kept in sync" had already diverged).
-
-## Shared Construct Docs Workflow
-
-The vault's own `~/Code/construct-docs/AGENTS.md` is **authoritative**. Summary below is the
-operational subset for coding agents.
-
-### Where durable reasoning goes
-
-Any reasoning that informed a code change must survive beyond the chat session. After any session
-involving architectural changes, design decisions, API/data-format changes, bug root-cause
-analysis, or non-obvious implementation choices:
-
-1. **Always** write a session note at `~/Code/construct-docs/sessions/YYYY-MM-DD-<topic>.md`.
-2. **Always** fill in `## Why` — reasoning, alternatives considered, why rejected. Most important section.
-3. If the decision will constrain future work, also create/update `~/Code/construct-docs/decisions/<slug>.md`.
-4. Patch the affected spec in its domain folder in the **same** session — keep specs current.
-5. Before creating a new note, search for an existing one and extend it rather than duplicating.
-
-### Session note format
-
-Plain markdown, no YAML frontmatter. `[[wikilinks]]` to other sessions/decisions/specs are welcome
-(Obsidian graph). Sections: `## Context`, `## What Changed`, `## Why`, `## Decisions`,
-`## Open Questions`. Decision records (`decisions/<slug>.md`) use `## Context`, `## Decision`,
-`## Rationale`, `## Consequences`, plus **Status** (accepted | superseded | deferred) and **Date**.
-
-### Operational logging
-
-Append a one-line entry to `~/Code/construct-docs/log.md` after creating/updating a note.
-Format: `[YYYY-MM-DD HH:MM] note | <topic>`
+The vault (`~/Code/construct-docs`) holds everything that is not a file in this repo; its
+`AGENTS.md` is authoritative. Search it before an architectural decision.
+- After the work, progress goes into the task note (`todo/NNN-*.md`).
+- A decision that constrains future work goes into `decisions/`, with Context, Decision,
+  Rationale, Consequences, Status and Date.
+- A root cause found the hard way, or a choice with rejected alternatives, gets a session note
+  `sessions/YYYY-MM-DD-<topic>.md` whose `## Why` is filled in.
+- Patch the affected spec in the same session, and add one line to `log.md`:
+  `[YYYY-MM-DD HH:MM] note | <topic>`.
+- The Android design doc is `docs/ANDROID_ONBOARDING.md`; the vault keeps a pointer, not a copy.
