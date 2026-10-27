@@ -153,7 +153,7 @@ fun MessageInputView(
                 .padding(start = CTSpace.l, end = CTSpace.s),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val textStyle = CTFont.message(15).copy(color = CTColor.text)
+            val textStyle = CTFont.message(CTFont.MESSAGE_SIZE).copy(color = CTColor.text)
             // The field keeps its own selection. Text set from outside — a message taken up for
             // editing, a cleared draft — puts the cursor after it, where typing goes on; the String
             // overload left it wherever it was, at the start of the message being edited.

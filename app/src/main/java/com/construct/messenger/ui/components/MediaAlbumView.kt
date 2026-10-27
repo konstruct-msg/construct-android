@@ -4,6 +4,9 @@ package com.construct.messenger.ui.components
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -40,6 +43,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
@@ -47,16 +51,20 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -76,6 +84,7 @@ import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import com.construct.messenger.util.BlurHash
 import com.construct.messenger.util.MediaWire
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
@@ -424,21 +433,46 @@ private fun VideoPage(item: MediaItem, active: Boolean, load: suspend (MediaItem
 @Composable
 private fun ZoomableImage(item: MediaItem) {
     var scale by remember { mutableFloatStateOf(1f) }
+    // [offset] is where the picture is drawn; [finger] where the finger would have put it, before
+    // the rubber band past [ZoomPanBounds.limit] resists.
     var offset by remember { mutableStateOf(Offset.Zero) }
+    var finger by remember { mutableStateOf(Offset.Zero) }
+    var container by remember { mutableStateOf(Size.Zero) }
+    var image by remember { mutableStateOf(Size.Zero) }
+    fun limit() = ZoomPanBounds.limit(ZoomPanBounds.fittedSize(image, container), scale, container)
     val state = rememberTransformableState { zoom, pan, _ ->
         scale = (scale * zoom).coerceIn(1f, 5f)
-        offset = if (scale == 1f) Offset.Zero else offset + pan
+        val limit = limit()
+        // Zooming out pulls the picture in with the smaller limit.
+        finger = when {
+            scale == 1f -> Offset.Zero
+            zoom < 1f -> ZoomPanBounds.clamped(finger + pan, limit)
+            else -> finger + pan
+        }
+        offset = ZoomPanBounds.rubberBanded(finger, limit, container)
+    }
+    LaunchedEffect(state) {
+        snapshotFlow { state.isTransformInProgress }.collectLatest { moving ->
+            if (moving) return@collectLatest
+            animate(Offset.VectorConverter, offset, ZoomPanBounds.clamped(offset, limit()), animationSpec = spring()) { value, _ ->
+                offset = value
+                finger = value
+            }
+        }
     }
     SubcomposeAsyncImage(
         model = item,
         contentDescription = null,
         contentScale = ContentScale.Fit,
+        onSuccess = { image = it.painter.intrinsicSize.takeIf { size -> size.isSpecified } ?: Size.Zero },
         modifier = Modifier
             .fillMaxSize()
+            .onSizeChanged { container = Size(it.width.toFloat(), it.height.toFloat()) }
             .pointerInput(item.mediaId) {
                 detectTapGestures(onDoubleTap = {
                     scale = if (scale > 1f) 1f else 2.5f
                     offset = Offset.Zero
+                    finger = Offset.Zero
                 })
             }
             .transformable(state, canPan = { scale > 1f })

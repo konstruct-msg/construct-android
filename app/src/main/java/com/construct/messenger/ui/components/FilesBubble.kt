@@ -156,7 +156,7 @@ fun FilesBubble(
             }
         }
         if (caption.isNotBlank()) {
-            Text(caption, style = CTFont.message(12), color = text, modifier = Modifier.padding(top = 2.dp))
+            Text(caption, style = CTFont.message(CTFont.MESSAGE_SIZE), color = text, modifier = Modifier.padding(top = 2.dp))
         }
     }
 }
