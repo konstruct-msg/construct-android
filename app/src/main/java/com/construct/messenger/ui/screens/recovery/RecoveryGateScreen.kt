@@ -191,6 +191,7 @@ private fun RecoveryGateScreen(
             )
             val (title, body) = when {
                 stage == RecoveryStage.BackupLost -> R.string.recovery_backup_lost_title to R.string.recovery_backup_lost_body
+                stage is RecoveryStage.AlreadySet -> R.string.recovery_set_title to R.string.recovery_set_body
                 backup -> R.string.recovery_backup_intro_title to R.string.recovery_backup_intro_body
                 ui.upgrade -> R.string.recovery_upgrade_title to R.string.recovery_upgrade_why
                 else -> R.string.recovery_gate_title to R.string.recovery_gate_why
@@ -250,6 +251,27 @@ private fun RecoveryGateScreen(
                     ) { Text(stringResource(R.string.recovery_backup_show)) }
                 }
                 RecoveryStage.BackupLost -> Unit
+                is RecoveryStage.AlreadySet -> {
+                    stage.fingerprint?.takeIf { it.isNotBlank() }?.let { fingerprint ->
+                        Column(verticalArrangement = Arrangement.spacedBy(CTSpace.xs)) {
+                            Text(stringResource(R.string.recovery_fingerprint), style = CTFont.caption, color = CTColor.textDim)
+                            Text(fingerprint, style = CTFont.caption, color = CTColor.text)
+                        }
+                    }
+                    Button(
+                        shape = OutlinedTextFieldDefaults.shape,
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.done)) }
+                }
+                RecoveryStage.Unavailable -> {
+                    Text(stringResource(R.string.restore_error_network), style = CTFont.secondary, color = CTColor.danger)
+                    Button(
+                        shape = OutlinedTextFieldDefaults.shape,
+                        onClick = viewModel::retryStatus,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.retry)) }
+                }
                 RecoveryStage.Confirm -> {
                     Text(stringResource(R.string.recovery_gate_confirm_note), style = CTFont.secondary, color = CTColor.textDim)
                     OutlinedTextField(

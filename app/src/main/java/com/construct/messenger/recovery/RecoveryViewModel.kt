@@ -39,6 +39,14 @@ sealed interface RecoveryStage {
     data object BackupLost : RecoveryStage
     /** The account has a key this device has not seen: enter the phrase. */
     data object Confirm : RecoveryStage
+    /**
+     * The account has its key and this device has no phrase to show. The key cannot be replaced,
+     * so a new phrase would only be refused after it was copied: the screen says so, with the
+     * key's [fingerprint] when the server gave one. **Canon:** iOS `SetupMode.alreadySet`.
+     */
+    data class AlreadySet(val fingerprint: String?) : RecoveryStage
+    /** The server could not be asked whether the account has a key: nothing is offered until it answers. */
+    data object Unavailable : RecoveryStage
     data object Working : RecoveryStage
     /** This device knows the account's address. */
     data object Ready : RecoveryStage
@@ -117,43 +125,31 @@ class RecoveryViewModel @Inject constructor(
      */
     fun prepareSetup() {
         val held = held()
-        if (repository.hasOwnAddress() && held == HeldPhrase.NONE) {
-            prepareUpgrade()
+        val hasAddress = repository.hasOwnAddress()
+        if (hasAddress && held != HeldPhrase.NONE) {
+            // The phrase on this device decides, and it is known without asking.
+            state.update { it.copy(held = held, stage = setupStage(held, hasAddress, status = null), errorRes = null) }
             return
         }
-        state.update {
-            it.copy(
-                held = held,
-                stage = when {
-                    !repository.hasOwnAddress() -> it.stage
-                    held == HeldPhrase.HELD -> RecoveryStage.BackupIntro
-                    held == HeldPhrase.LOST -> RecoveryStage.BackupLost
-                    else -> RecoveryStage.Ready
-                },
-                errorRes = null,
-            )
+        if (!hasAddress) {
+            // The gate's own flow: init already asked the server.
+            state.update { it.copy(held = held, errorRes = null) }
+            return
+        }
+        loading?.cancel()
+        state.update { it.copy(stage = RecoveryStage.Loading, held = held, errorRes = null) }
+        loading = viewModelScope.launch {
+            val stage = setupStage(held, hasAddress = true, status = statusOrNull())
+            state.update { it.copy(stage = stage, upgrade = stage == RecoveryStage.Confirm) }
         }
     }
 
-    /**
-     * The address is known and nothing waits for a copy: the gate opens only to move an
-     * Ed25519-only key to the hybrid one — the same confirm, its own words. Otherwise, as before,
-     * there is nothing to do. **Canon:** iOS `RecoveryGateView` reason `.upgrade`.
-     */
-    private fun prepareUpgrade() {
-        loading?.cancel()
-        state.update { it.copy(stage = RecoveryStage.Loading, held = HeldPhrase.NONE, errorRes = null) }
-        loading = viewModelScope.launch {
-            val status = try {
-                repository.status()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                null
-            }
-            val upgrade = upgradeNeeded(status, HeldPhrase.NONE)
-            state.update { it.copy(stage = if (upgrade) RecoveryStage.Confirm else RecoveryStage.Ready, upgrade = upgrade) }
-        }
+    private suspend fun statusOrNull(): RecoveryStatus? = try {
+        repository.status()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null
     }
 
     /** How the held phrase opens now: a cipher for the prompt, the credential first, or lost. */
@@ -197,20 +193,24 @@ class RecoveryViewModel @Inject constructor(
     }
 
     fun loadStatus() {
+        loading?.cancel()
+        state.update { it.copy(stage = RecoveryStage.Loading, errorRes = null) }
         loading = viewModelScope.launch {
-            val stage = try {
-                if (repository.status().isSetup) RecoveryStage.Confirm else RecoveryStage.Explain
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                // Offline: offer setup; the server refuses a second key, and the error says so.
-                RecoveryStage.Explain
-            }
+            // Offline is not "no key": a new phrase for an account that has one would be refused
+            // only after it was copied (iOS #381).
+            val stage = setupStage(HeldPhrase.NONE, hasAddress = false, status = statusOrNull())
             state.update { it.copy(stage = stage) }
         }
     }
 
+    /** After [RecoveryStage.Unavailable]: ask again, by the same entry. */
+    fun retryStatus() {
+        if (repository.hasOwnAddress()) prepareSetup() else loadStatus()
+    }
+
     fun startSetup() {
+        // A phrase is made only for an account the server says has no key.
+        if (state.value.stage != RecoveryStage.Explain) return
         state.update { it.copy(stage = RecoveryStage.ShowWords(repository.newPhrase()), errorRes = null) }
     }
 
@@ -300,6 +300,26 @@ class RecoveryViewModel @Inject constructor(
 
     companion object {
         private const val QUIZ_SIZE = 3
+
+        /**
+         * The whole rule for where the recovery screen opens. **Canon:** iOS `setupMode(held:isSetup:)`.
+         * A phrase on this device wins — held, it is the account's key waiting for its copy; lost,
+         * the screen says so. Without one, the server's answer decides, and a new phrase is offered
+         * only to an account the server says has no key. [status] null: the server was not asked
+         * or did not answer.
+         */
+        fun setupStage(held: HeldPhrase, hasAddress: Boolean, status: RecoveryStatus?): RecoveryStage = when {
+            held == HeldPhrase.HELD -> RecoveryStage.BackupIntro
+            held == HeldPhrase.LOST -> RecoveryStage.BackupLost
+            // An address here means the key was set, whatever the server can be asked now.
+            hasAddress -> when {
+                upgradeNeeded(status, held) -> RecoveryStage.Confirm
+                else -> RecoveryStage.AlreadySet(status?.fingerprint)
+            }
+            status == null -> RecoveryStage.Unavailable
+            status.isSetup -> RecoveryStage.Confirm
+            else -> RecoveryStage.Explain
+        }
         private const val QUIZ_OPTIONS = 4
 
         /**
