@@ -60,6 +60,7 @@ import com.construct.messenger.data.repository.LockDelay
 import com.construct.messenger.data.repository.Lockdown
 import com.construct.messenger.recovery.HeldPhrase
 import com.construct.messenger.recovery.RecoveryStatus
+import com.construct.messenger.recovery.upgradeNeeded
 import com.construct.messenger.security.KtTally
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
@@ -349,6 +350,12 @@ private fun RecoveryRow(recovery: RecoveryStatus?, held: HeldPhrase, onClick: ()
                     style = CTFont.caption,
                     color = CTColor.danger,
                 )
+                // iOS: a key still Ed25519 only asks for the phrase once, instead of its fingerprint.
+                upgradeNeeded(recovery, held) -> Text(
+                    text = stringResource(R.string.recovery_upgrade_needed),
+                    style = CTFont.caption,
+                    color = CTColor.warning,
+                )
                 recovery?.isSetup == true && recovery.fingerprint != null -> Text(
                     text = recovery.fingerprint,
                     style = CTFont.caption,
@@ -493,7 +500,7 @@ private fun SecurityContentPreview() {
         onLockDelay = {},
         ui = SecurityUiState(
             hasUsername = true,
-            recovery = RecoveryStatus(isSetup = true, fingerprint = "a1b2 c3d4 e5f6 0718 9a0b"),
+            recovery = RecoveryStatus(isSetup = true, fingerprint = "a1b2 c3d4 e5f6 0718 9a0b", isHybrid = true),
             lockdown = Lockdown(activatedAt = 1_759_100_000_000),
         ),
         onNavigateBack = {},

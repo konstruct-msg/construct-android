@@ -192,6 +192,7 @@ private fun RecoveryGateScreen(
             val (title, body) = when {
                 stage == RecoveryStage.BackupLost -> R.string.recovery_backup_lost_title to R.string.recovery_backup_lost_body
                 backup -> R.string.recovery_backup_intro_title to R.string.recovery_backup_intro_body
+                ui.upgrade -> R.string.recovery_upgrade_title to R.string.recovery_upgrade_why
                 else -> R.string.recovery_gate_title to R.string.recovery_gate_why
             }
             Text(stringResource(title), style = CTFont.title, color = CTColor.text)

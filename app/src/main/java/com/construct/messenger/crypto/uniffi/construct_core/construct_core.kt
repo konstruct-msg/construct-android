@@ -818,6 +818,8 @@ external fun uniffi_construct_core_checksum_func_receiving_init_kind(
 ): Short
 external fun uniffi_construct_core_checksum_func_recommended_send_delay_ms(
 ): Short
+external fun uniffi_construct_core_checksum_func_recovery_public_key(
+): Short
 external fun uniffi_construct_core_checksum_func_registration_bundle_fields_from_keys(
 ): Short
 external fun uniffi_construct_core_checksum_func_seal_media(
@@ -831,6 +833,10 @@ external fun uniffi_construct_core_checksum_func_sealed_verify_sender_cert(
 external fun uniffi_construct_core_checksum_func_sign_bundle_data_with_keys(
 ): Short
 external fun uniffi_construct_core_checksum_func_sign_recovery_challenge(
+): Short
+external fun uniffi_construct_core_checksum_func_sign_recovery_claim(
+): Short
+external fun uniffi_construct_core_checksum_func_sign_recovery_setup(
 ): Short
 external fun uniffi_construct_core_checksum_func_sr_create_recovery_shares(
 ): Short
@@ -1919,6 +1925,8 @@ external fun uniffi_construct_core_fn_func_receiving_init_kind(`carrier`: RustBu
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_recommended_send_delay_ms(`isHighPriority`: Byte,`batteryLevel`: Float,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_construct_core_fn_func_recovery_public_key(`mnemonic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_registration_bundle_fields_from_keys(`keys`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_seal_media(`plaintext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1932,6 +1940,10 @@ external fun uniffi_construct_core_fn_func_sealed_verify_sender_cert(`userId`: R
 external fun uniffi_construct_core_fn_func_sign_bundle_data_with_keys(`keys`: RustBuffer.ByValue,`bundleDataJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sign_recovery_challenge(`privateKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_sign_recovery_claim(`mnemonic`: RustBuffer.ByValue,`timestamp`: Long,`deviceId`: RustBuffer.ByValue,`verifyingKey`: RustBuffer.ByValue,`identityPublic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_sign_recovery_setup(`mnemonic`: RustBuffer.ByValue,`accountId`: RustBuffer.ByValue,`timestamp`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sr_create_recovery_shares(`vaultKey`: RustBuffer.ByValue,`threshold`: Byte,`shareCount`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -2238,6 +2250,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_recommended_send_delay_ms() != 24315.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_recovery_public_key() != 59962.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_registration_bundle_fields_from_keys() != 32194.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2257,6 +2272,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_sign_recovery_challenge() != 4321.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_sign_recovery_claim() != 54757.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_sign_recovery_setup() != 54513.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_sr_create_recovery_shares() != 18198.toShort()) {
@@ -12065,6 +12086,46 @@ public object FfiConverterTypeRecoveryKeypair: FfiConverterRustBuffer<RecoveryKe
 
 
 
+/**
+ * A hybrid recovery key's public half (Ed25519 ‖ ML-DSA-65, 1984 bytes) and its signature over
+ * one recovery message (3373 bytes). The bytes signed are `construct_server_trust::recovery`'s.
+ */
+data class RecoverySigned (
+    var `publicKey`: kotlin.ByteArray
+    , 
+    var `signature`: kotlin.ByteArray
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeRecoverySigned: FfiConverterRustBuffer<RecoverySigned> {
+    override fun read(buf: ByteBuffer): RecoverySigned {
+        return RecoverySigned(
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: RecoverySigned) = (
+            FfiConverterByteArray.allocationSize(value.`publicKey`) +
+            FfiConverterByteArray.allocationSize(value.`signature`)
+    )
+
+    override fun write(value: RecoverySigned, buf: ByteBuffer) {
+            FfiConverterByteArray.write(value.`publicKey`, buf)
+            FfiConverterByteArray.write(value.`signature`, buf)
+    }
+}
+
+
+
 data class RegistrationBundleFields (
     var `identityPublic`: kotlin.ByteArray
     , 
@@ -17835,6 +17896,20 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     
 
         /**
+         * The hybrid recovery public key the mnemonic determines.
+         */
+    @Throws(CryptoException::class) fun `recoveryPublicKey`(`mnemonic`: kotlin.String): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_recovery_public_key(
+    
+        FfiConverterString.lower(`mnemonic`),_status)
+}
+    )
+    }
+    
+
+        /**
          * The public registration bundle of a key record.
          */
     @Throws(CryptoException::class) fun `registrationBundleFieldsFromKeys`(`keys`: kotlin.ByteArray): RegistrationBundleFields {
@@ -17940,6 +18015,35 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     UniffiLib.uniffi_construct_core_fn_func_sign_recovery_challenge(
     
         FfiConverterByteArray.lower(`privateKey`),FfiConverterString.lower(`message`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The recovery key handing its account to the device these keys name.
+         */
+    @Throws(CryptoException::class) fun `signRecoveryClaim`(`mnemonic`: kotlin.String, `timestamp`: kotlin.Long, `deviceId`: kotlin.String, `verifyingKey`: kotlin.ByteArray, `identityPublic`: kotlin.ByteArray): RecoverySigned {
+            return FfiConverterTypeRecoverySigned.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_sign_recovery_claim(
+    
+        FfiConverterString.lower(`mnemonic`),FfiConverterLong.lower(`timestamp`),FfiConverterString.lower(`deviceId`),FfiConverterByteArray.lower(`verifyingKey`),FfiConverterByteArray.lower(`identityPublic`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The recovery key signing its setup on `account_id` — or the upgrade of the Ed25519 key
+         * already set there, which is the same message.
+         */
+    @Throws(CryptoException::class) fun `signRecoverySetup`(`mnemonic`: kotlin.String, `accountId`: kotlin.String, `timestamp`: kotlin.Long): RecoverySigned {
+            return FfiConverterTypeRecoverySigned.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_sign_recovery_setup(
+    
+        FfiConverterString.lower(`mnemonic`),FfiConverterString.lower(`accountId`),FfiConverterLong.lower(`timestamp`),_status)
 }
     )
     }

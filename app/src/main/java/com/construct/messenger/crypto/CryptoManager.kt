@@ -19,7 +19,7 @@ import uniffi.construct_core.OrchestratorCore
 import uniffi.construct_core.OtpkPair
 import uniffi.construct_core.PeerDeviceVerdict
 import uniffi.construct_core.PowSolution
-import uniffi.construct_core.RecoveryKeypair
+import uniffi.construct_core.RecoverySigned
 import uniffi.construct_core.ReceivingOpenResult
 import uniffi.construct_core.RegistrationBundleFields
 import uniffi.construct_core.SenderCertificate
@@ -30,13 +30,10 @@ import uniffi.construct_core.createCryptoCore
 import uniffi.construct_core.createCryptoCoreFromKeys
 import uniffi.construct_core.createOrchestratorCoreFromKeys
 import uniffi.construct_core.deriveDeviceId
-import uniffi.construct_core.deriveRecoveryKeypair
 import uniffi.construct_core.generateMnemonic
 import uniffi.construct_core.historyQrFingerprint
-import uniffi.construct_core.mnemonicToSeed
 import uniffi.construct_core.planSend as planSendTargets
 import uniffi.construct_core.sealToDeviceKey as sealToDeviceKeyCore
-import uniffi.construct_core.signRecoveryChallenge
 import uniffi.construct_core.validateMnemonic
 import uniffi.construct_core.verifyInviteSignature
 import com.construct.messenger.data.model.IdentityIds
@@ -593,14 +590,27 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
 
     fun generateMnemonic(wordCount: Int): String = generateMnemonic(wordCount.toUByte())
 
-    fun deriveRecoveryKeypair(mnemonic: String): RecoveryKeypair =
-        deriveRecoveryKeypair(mnemonicToSeed(mnemonic))
+    /**
+     * The hybrid recovery key (Ed25519 32 ‖ ML-DSA-65 1952) [mnemonic] determines. Its Ed25519
+     * half is the account's address, unchanged from the Ed25519-only key (todo 222). No private
+     * key leaves the core.
+     */
+    fun recoveryPublicKey(mnemonic: String): ByteArray = uniffi.construct_core.recoveryPublicKey(mnemonic)
+
+    /** The recovery key signing its setup on [accountId] — also the upgrade of an Ed25519 key. */
+    fun signRecoverySetup(mnemonic: String, accountId: String, timestamp: Long): RecoverySigned =
+        uniffi.construct_core.signRecoverySetup(mnemonic, accountId, timestamp)
+
+    /** The recovery key handing its account to the device [deviceId] with these keys. */
+    fun signRecoveryClaim(
+        mnemonic: String,
+        timestamp: Long,
+        deviceId: String,
+        verifyingKey: ByteArray,
+        identityPublic: ByteArray,
+    ): RecoverySigned = uniffi.construct_core.signRecoveryClaim(mnemonic, timestamp, deviceId, verifyingKey, identityPublic)
 
     fun isValidMnemonic(mnemonic: String): Boolean = validateMnemonic(mnemonic)
-
-    /** Signs [message] with a recovery private key — the `SetRecoveryKey` proof of possession. */
-    fun signWithRecoveryKey(keypair: RecoveryKeypair, message: String): ByteArray =
-        signRecoveryChallenge(keypair.privateKey, message)
 
     fun computePow(challenge: String, difficulty: Int): PowSolution =
         computePow(challenge, difficulty.toUInt())

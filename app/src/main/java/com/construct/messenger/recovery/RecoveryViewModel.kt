@@ -52,6 +52,8 @@ data class RecoveryUiState(
     val errorRes: Int? = null,
     /** Whether a silently made phrase waits on this device for its copy. */
     val held: HeldPhrase = HeldPhrase.NONE,
+    /** The gate is open to move an Ed25519-only key to the hybrid one ([upgradeNeeded]). */
+    val upgrade: Boolean = false,
 ) {
     /** Settings ask for a copy while there is no key here, or the silent one is not copied yet. */
     val needsBackup: Boolean
@@ -115,6 +117,10 @@ class RecoveryViewModel @Inject constructor(
      */
     fun prepareSetup() {
         val held = held()
+        if (repository.hasOwnAddress() && held == HeldPhrase.NONE) {
+            prepareUpgrade()
+            return
+        }
         state.update {
             it.copy(
                 held = held,
@@ -126,6 +132,27 @@ class RecoveryViewModel @Inject constructor(
                 },
                 errorRes = null,
             )
+        }
+    }
+
+    /**
+     * The address is known and nothing waits for a copy: the gate opens only to move an
+     * Ed25519-only key to the hybrid one — the same confirm, its own words. Otherwise, as before,
+     * there is nothing to do. **Canon:** iOS `RecoveryGateView` reason `.upgrade`.
+     */
+    private fun prepareUpgrade() {
+        loading?.cancel()
+        state.update { it.copy(stage = RecoveryStage.Loading, held = HeldPhrase.NONE, errorRes = null) }
+        loading = viewModelScope.launch {
+            val status = try {
+                repository.status()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                null
+            }
+            val upgrade = upgradeNeeded(status, HeldPhrase.NONE)
+            state.update { it.copy(stage = if (upgrade) RecoveryStage.Confirm else RecoveryStage.Ready, upgrade = upgrade) }
         }
     }
 
@@ -142,6 +169,10 @@ class RecoveryViewModel @Inject constructor(
             return
         }
         state.update { it.copy(stage = RecoveryStage.ShowWords(phrase.split(" "), backup = true), errorRes = null) }
+        // The phrase is in hand only now, behind authentication: an Ed25519-only key becomes hybrid.
+        viewModelScope.launch {
+            runCatching { repository.upgradeIfEd25519Only(phrase) }.onFailure { if (it is CancellationException) throw it }
+        }
     }
 
     /** The prompt or the credential did not open the key; the person may try again. */
