@@ -308,9 +308,6 @@
     <string name="security_lockdown_title">Режим защиты</string>
     <string name="security_lockdown_since">Активен с %1$s</string>
     <string name="security_lockdown_hint">Только контакты, добавленные до активации, получают уведомления. Новые отправители сохраняются без уведомлений — вы можете просмотреть их в любой момент.</string>
-    <string name="security_stealth_title">анонимность отправителя</string>
-    <string name="security_stealth_on_hint">Konstruct никогда не узнаёт, кто отправил сообщение. Работает всегда — выключателя нет, и пополнять ничего не нужно.</string>
-    <string name="security_stealth_off_hint">Выключено — ваши отправки раскрывают Konstruct, кто вы. Только для отладки.</string>
     <string name="issued_invites_title">Выданные приглашения</string>
     <string name="issued_invites_hint">Выдано с этого устройства за последние %1$d ч. На другом устройстве список свой.</string>
     <string name="issued_invites_revoke_scope">Ссылку или показ QR-кода можно отозвать, пока не истёк срок: перестанут работать все коды этого показа.</string>
@@ -611,7 +608,6 @@
     <string name="kt_warning">внимание</string>
     <string name="key_change_banner_title_failed">Проверка личности не удалась</string>
     <string name="key_change_banner_subtitle_failed">Не удалось подтвердить ключ этого человека в журнале прозрачности. По возможности проверьте лично.</string>
-    <string name="kt_section">прозрачность ключей</string>
     <string name="kt_status">merkle-лог</string>
     <string name="kt_no_data">нет данных</string>
     <string name="kt_last_failure_at">последний сбой: %1$s</string>

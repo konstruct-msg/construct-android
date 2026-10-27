@@ -57,7 +57,6 @@ class SecurityViewModelTest {
 
     private fun securitySettings() = mock<SecuritySettingsRepository> {
         on { lockdown } doReturn MutableStateFlow(Lockdown())
-        on { senderAnonymity } doReturn true
         on { sendsDeliveryReceipts } doReturn MutableStateFlow(true)
     }
 

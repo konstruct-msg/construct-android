@@ -1,7 +1,6 @@
 package com.construct.messenger.data.repository
 
 import android.content.Context
-import com.construct.messenger.stealth.StealthPolicy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -28,14 +27,10 @@ data class Lockdown(
  * their message arrived. On by default. A receipt says when this phone was online, and each one
  * wakes the sender's phone with a push the server cannot tell from a message (TODO 123/124).
  * Off stops only what we send: receipts from others still mark our messages delivered.
- *
- * **Sender anonymity** is read from [StealthPolicy] so the Security screen states it without
- * reaching into `stealth/` itself.
  */
 @Singleton
 class SecuritySettingsRepository @Inject constructor(
     @param:ApplicationContext context: Context,
-    private val stealthPolicy: StealthPolicy,
 ) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val lockdownState = MutableStateFlow(loadLockdown())
@@ -47,9 +42,6 @@ class SecuritySettingsRepository @Inject constructor(
         prefs.edit().putBoolean(KEY_SEND_RECEIPTS, enabled).apply()
         receiptsState.value = enabled
     }
-
-    /** Always true in release; a debug override can turn it off, and the screen says so. */
-    val senderAnonymity: Boolean get() = stealthPolicy.isEnabled
 
     fun enableLockdown(approvedIds: Set<String>) {
         val next = Lockdown(activatedAt = System.currentTimeMillis(), approved = approvedIds)

@@ -65,7 +65,6 @@ import com.construct.messenger.security.KtTally
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.CTSettingsRow
-import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.components.CTStatus
 import com.construct.messenger.ui.components.CTStatusBadge
 import com.construct.messenger.ui.components.DialogButton
@@ -135,8 +134,9 @@ fun SecurityScreen(
  * Security.
  *
  * **Canon:** iOS `SecurityView` — one flat list, blocks divided by a separator, each with its
- * hint beneath. Order: PIN (biometrics, lock delay, off), recovery phrase, Lockdown, sender
- * anonymity, issued invites, key transparency, discovery, delivery receipts. Not ported: the duress PIN (a
+ * hint beneath. Order (owner, 2026-10-27): recovery phrase, PIN (biometrics, lock delay, off),
+ * Lockdown, issued invites, key transparency (no section title), discovery, delivery receipts.
+ * Sender anonymity is not shown: it is always on and has no switch. Not ported: the duress PIN (a
  * separate step — it erases the account).
  */
 @Composable
@@ -171,39 +171,15 @@ private fun SecurityContent(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState()),
         ) {
-            PinBlock(lock = lock, onPin = onPin, onBiometric = onBiometric, onLockDelay = onLockDelay)
-            HorizontalDivider()
-
             RecoveryRow(recovery = ui.recovery, held = ui.recoveryHeld, onClick = onRecovery)
             Hint(stringResource(R.string.security_recovery_hint))
             HorizontalDivider()
 
-            LockdownRow(lockdown = ui.lockdown, onChange = onLockdown)
-            Hint(stringResource(R.string.security_lockdown_hint))
+            PinBlock(lock = lock, onPin = onPin, onBiometric = onBiometric, onLockDelay = onLockDelay)
             HorizontalDivider()
 
-            // A statement, not a setting: sealed sender is always on (iOS stealth Phase 4). Read
-            // rather than assumed, so a debug override shows honestly.
-            SecurityRow(vertical = CTLayout.chromeGap) {
-                RowIcon(
-                    Icons.Default.VisibilityOff,
-                    if (ui.senderAnonymity) CTColor.accent else CTColor.danger,
-                )
-                Text(
-                    text = stringResource(R.string.security_stealth_title),
-                    style = CTFont.body,
-                    color = CTColor.text,
-                    modifier = Modifier.weight(1f),
-                )
-                CTStatusBadge(status = if (ui.senderAnonymity) CTStatus.ON else CTStatus.ERROR, size = 11.dp)
-            }
-            Hint(
-                text = stringResource(
-                    if (ui.senderAnonymity) R.string.security_stealth_on_hint else R.string.security_stealth_off_hint,
-                ),
-                color = if (ui.senderAnonymity) CTColor.textDim else CTColor.danger,
-                top = 2.dp,
-            )
+            LockdownRow(lockdown = ui.lockdown, onChange = onLockdown)
+            Hint(stringResource(R.string.security_lockdown_hint))
             HorizontalDivider()
 
             CTSettingsRow(
@@ -339,16 +315,17 @@ private fun RecoveryRow(recovery: RecoveryStatus?, held: HeldPhrase, onClick: ()
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(text = stringResource(R.string.security_recovery_title), style = CTFont.body, color = CTColor.text)
             when {
-                // iOS: a silent key not yet copied says so instead of its fingerprint.
-                held == HeldPhrase.HELD -> Text(
-                    text = stringResource(R.string.recovery_backup_pending),
-                    style = CTFont.caption,
-                    color = CTColor.warning,
-                )
+                // iOS, in this order: the phrase lost, a silent key not yet copied, then the
+                // upgrade — each instead of the fingerprint.
                 held == HeldPhrase.LOST -> Text(
                     text = stringResource(R.string.recovery_backup_lost),
                     style = CTFont.caption,
                     color = CTColor.danger,
+                )
+                held == HeldPhrase.HELD -> Text(
+                    text = stringResource(R.string.recovery_backup_pending),
+                    style = CTFont.caption,
+                    color = CTColor.warning,
                 )
                 // iOS: a key still Ed25519 only asks for the phrase once, instead of its fingerprint.
                 upgradeNeeded(recovery, held) -> Text(
@@ -523,7 +500,6 @@ private fun KtSection(kt: KtTally) {
         kt.verified > 0 -> Triple(CTStatus.OK, stringResource(R.string.kt_verified), CTColor.accent)
         else -> Triple(CTStatus.UNKNOWN, stringResource(R.string.kt_no_data), CTColor.textDim)
     }
-    CTSettingsSectionHeader(stringResource(R.string.kt_section))
     SecurityRow(vertical = CTLayout.chromeGap) {
         RowIcon(Icons.Default.Tag, tint)
         Text(
