@@ -67,6 +67,13 @@ object CTFont {
     val badge = ui(11, FontWeight.Bold)
 
     /**
+     * The size message text is set at before the reader's multiplier: a bubble, the composer, and
+     * a caption under a photo, a video or a file — the sender wrote that too, so it is message
+     * text, not chrome.
+     */
+    const val MESSAGE_SIZE = 15
+
+    /**
      * Message text — bubbles and the composer that fills them — in the reader's face and size.
      * The only font in the app the reader chooses; everything else is chrome.
      */

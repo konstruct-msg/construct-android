@@ -276,7 +276,7 @@ fun MessageBubble(
                 if (message.body.isNotBlank()) {
                     LinkedText(
                         text = message.body,
-                        style = CTFont.message(12),
+                        style = CTFont.message(CTFont.MESSAGE_SIZE),
                         color = CTColor.text,
                         linkColor = CTColor.accent,
                         onLongPress = onLongPress,
@@ -328,7 +328,7 @@ fun MessageBubble(
                 if (message.body.isNotBlank() || message.media == null) {
                     LinkedText(
                         text = message.body,
-                        style = CTFont.message(15),
+                        style = CTFont.message(CTFont.MESSAGE_SIZE),
                         color = contentColor,
                         // iOS: links in the accent on an incoming bubble, in the text colour on ours.
                         linkColor = if (isOutgoing) contentColor else CTColor.accent,
