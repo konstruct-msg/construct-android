@@ -33,7 +33,6 @@ data class SecurityUiState(
     /** A silently made phrase waiting here for its copy (or lost before it was made). */
     val recoveryHeld: HeldPhrase = HeldPhrase.NONE,
     val lockdown: Lockdown = Lockdown(),
-    val senderAnonymity: Boolean = true,
     /** This device tells a sender their message arrived. */
     val sendsDeliveryReceipts: Boolean = true,
     /** Every KT verdict this device reached on contacts' bundles. */
@@ -77,7 +76,6 @@ class SecurityViewModel @Inject constructor(
         viewModelScope.launch {
             securitySettings.sendsDeliveryReceipts.collect { on -> state.update { it.copy(sendsDeliveryReceipts = on) } }
         }
-        state.update { it.copy(senderAnonymity = securitySettings.senderAnonymity) }
         viewModelScope.launch { ktLog.tally.collect { kt -> state.update { it.copy(kt = kt) } } }
     }
 

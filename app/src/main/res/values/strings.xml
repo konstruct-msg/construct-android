@@ -304,9 +304,6 @@
     <string name="security_lockdown_title">Lockdown Mode</string>
     <string name="security_lockdown_since">Active since %1$s</string>
     <string name="security_lockdown_hint">Only contacts added before activation receive notifications. New senders are silently saved — you can review them anytime.</string>
-    <string name="security_stealth_title">sender anonymity</string>
-    <string name="security_stealth_on_hint">Konstruct never learns who sent a message. Always on — there is no switch, and nothing to keep topped up.</string>
-    <string name="security_stealth_off_hint">Off — your sends disclose who you are to Konstruct. Debug override only.</string>
     <string name="issued_invites_title">Issued invites</string>
     <string name="issued_invites_hint">Issued from this device in the last %1$dh. Another device keeps its own list.</string>
     <string name="issued_invites_revoke_scope">A link or a showing of your QR can be revoked until it expires — every code that showing put on screen stops at once.</string>
@@ -607,7 +604,6 @@
     <string name="kt_warning">warning</string>
     <string name="key_change_banner_title_failed">Identity check failed</string>
     <string name="key_change_banner_subtitle_failed">We could not confirm this person\'s security key with the transparency log. Verify in person if you can.</string>
-    <string name="kt_section">key transparency</string>
     <string name="kt_status">merkle log</string>
     <string name="kt_no_data">no data</string>
     <string name="kt_last_failure_at">last failure: %1$s</string>
