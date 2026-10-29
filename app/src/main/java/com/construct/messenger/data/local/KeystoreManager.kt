@@ -175,6 +175,7 @@ class KeystoreManager @Inject constructor(
             .remove(KEY_CONTACT_CARD_SENT_TO)
             .remove(KEY_CONTACT_CARD_SENT_TO_V1)
             .remove(KEY_OWN_INTAKE)
+            .remove(KEY_INTAKE_PUBLISHED)
             .remove(KEY_DEVICE_SETS_LISTED)
             .remove(KEY_DEVICE_METADATA_PUBLISHED_FOR)
             .remove(KEY_VEIL_ACCESS_SEED)
@@ -256,7 +257,6 @@ class KeystoreManager @Inject constructor(
             .apply()
     }
 
-    /** This device's intake key for our account, or null before one is minted. */
     /**
      * The device set this device's description was last sealed for (iOS `publishedForKey`).
      * Leaves with the account: a stale set after a re-registration would match the new account's
@@ -269,11 +269,29 @@ class KeystoreManager @Inject constructor(
         prefs.edit().putStringSet(KEY_DEVICE_METADATA_PUBLISHED_FOR, deviceIds.toSet()).apply()
     }
 
+    /** This device's intake key for our account, or null before one is minted. */
     fun ownIntakeKey(): ByteArray? =
         prefs.getString(KEY_OWN_INTAKE, null)?.let { Base64.decode(it, Base64.NO_WRAP) }
 
-    fun saveOwnIntakeKey(key: ByteArray) {
-        prefs.edit().putString(KEY_OWN_INTAKE, Base64.encodeToString(key, Base64.NO_WRAP)).commit()
+    /**
+     * A new key is one no contact holds and the server has no tag of: in the same write, every
+     * device we handed a card to is owed one again, and the publish marker goes. Until 2026-10-29
+     * a key re-minted after a re-login waited a day for its tags, and contacts holding the old key
+     * kept presenting it.
+     */
+    fun replaceOwnIntakeKey(key: ByteArray) {
+        prefs.edit()
+            .putString(KEY_OWN_INTAKE, Base64.encodeToString(key, Base64.NO_WRAP))
+            .remove(KEY_CONTACT_CARD_SENT_TO)
+            .remove(KEY_INTAKE_PUBLISHED)
+            .commit()
+    }
+
+    /** What this device last published intake tags for, encoded by `IntakeCredentials.Published`. */
+    fun intakePublished(): String? = prefs.getString(KEY_INTAKE_PUBLISHED, null)
+
+    fun saveIntakePublished(marker: String) {
+        prefs.edit().putString(KEY_INTAKE_PUBLISHED, marker).apply()
     }
 
     /** `null` until this device has seen the recovery phrase. */
@@ -362,6 +380,7 @@ class KeystoreManager @Inject constructor(
         const val KEY_CONTACT_CARD_SENT_TO = "contact_card_sent_to.v2"
         const val KEY_CONTACT_CARD_SENT_TO_V1 = "contact_card_sent_to"
         const val KEY_OWN_INTAKE = "own_intake_key"
+        const val KEY_INTAKE_PUBLISHED = "intake_published"
         /** Nothing writes it since the new-device alarm went (2026-09-30); still cleared for installs that did. */
         const val KEY_DEVICE_SETS_LISTED = "device_sets_listed"
         const val KEY_DEVICE_METADATA_PUBLISHED_FOR = "device_metadata_published_for"

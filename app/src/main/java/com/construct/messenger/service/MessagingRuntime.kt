@@ -92,6 +92,7 @@ class MessagingRuntime @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val reorder = ReorderDiagnostics(cryptoManager::reorderStats)
     private var reorderJob: Job? = null
+    private var intakeJob: Job? = null
     private var refreshJob: Job? = null
     private val startMutex = Mutex()
 
@@ -161,6 +162,19 @@ class MessagingRuntime @Inject constructor(
             }
         }
 
+        if (intakeJob?.isActive != true) {
+            intakeJob = scope.launch {
+                // A process the foreground service keeps alive outlives its 7-epoch window; a
+                // contact holding our key would then present tags the server no longer has. The
+                // once-per-epoch guard keeps this to one RPC a day.
+                while (true) {
+                    delay(INTAKE_CHECK_MS)
+                    runCatching { intake.publishIfNeeded() }
+                        .onFailure { Log.w(TAG, "intake publish check failed", it) }
+                }
+            }
+        }
+
         isStarted = true
         Log.i(TAG, "messaging runtime started")
         launchBackgroundBootstrap()
@@ -176,6 +190,8 @@ class MessagingRuntime @Inject constructor(
         subscriptionJob = null
         reorderJob?.cancel()
         reorderJob = null
+        intakeJob?.cancel()
+        intakeJob = null
         isStarted = false
     }
 
@@ -256,6 +272,8 @@ class MessagingRuntime @Inject constructor(
                         // Profiles: avatars that did not arrive, and a rebroadcast whose avatar did not upload.
                         contactAvatars.retryPending()
                         shareProfile.get().rebroadcastIfOwed()
+                        // Our tags: the epoch may have rolled while the stream was down.
+                        scope.launch { runCatching { intake.publishIfNeeded() } }
                     }
                     Log.i(TAG, "stream connected=${event.connected}")
                 }
@@ -355,6 +373,7 @@ class MessagingRuntime @Inject constructor(
         const val TAG = "MessagingRuntime"
         /** iOS `RuntimeDiagnostics.Config.sampleInterval`. */
         const val REORDER_SAMPLE_MS = 30_000L
+        const val INTAKE_CHECK_MS = 60 * 60 * 1000L
     }
 }
 

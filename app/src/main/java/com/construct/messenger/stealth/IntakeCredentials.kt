@@ -6,8 +6,11 @@ import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager
 import com.google.protobuf.ByteString
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import shared.proto.services.v1.MessagingServiceOuterClass.IntakeTagEntry
 import shared.proto.services.v1.MessagingServiceOuterClass.PublishIntakeTagsRequest
 import uniffi.construct_core.generateIntakeKey
@@ -38,41 +41,68 @@ class IntakeCredentials @Inject constructor(
     private val grpcClient: GrpcClient,
 ) {
     private val prefs = context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
+    private val mintLock = Any()
+    private val publishLock = Mutex()
 
-    /** This device's key for our account, minted on first use — an install from before this
-     * shipped and a fresh one are the same case, with no migration to find either. */
-    fun ownKey(): ByteArray {
+    /**
+     * This device's key for our account, minted on first use — an install from before this
+     * shipped and a fresh one are the same case, with no migration to find either. Minted once
+     * under a lock: on a first start the card and the publish ask together, and two mints would
+     * hand contacts a key whose tags were never published.
+     */
+    fun ownKey(): ByteArray = synchronized(mintLock) {
         keystoreManager.ownIntakeKey()?.takeIf { it.size == KEY_LENGTH }?.let { return it }
         val fresh = generateIntakeKey()
-        keystoreManager.saveOwnIntakeKey(fresh)
-        Log.i(TAG, "minted this device's intake key")
-        return fresh
+        keystoreManager.replaceOwnIntakeKey(fresh)
+        Log.i(TAG, "minted this device's intake key — cards owed again, tags due now")
+        fresh
     }
 
     /**
      * Publish a window of our tags so envelopes from contacts holding our key owe no token. Once
-     * per epoch per account; recorded only when the server took it, so a failed publish is retried
-     * next start rather than costing a day. Silent on failure: contacts pay as before.
+     * per epoch for this account and this key; recorded only when the server took it, so a failed
+     * publish is retried at the next call rather than costing a day. Called at start, on every
+     * stream connect and hourly while the process lives — the foreground service keeps it alive
+     * past the window's end. Silent on failure: contacts pay as before.
      */
-    suspend fun publishIfNeeded(nowSeconds: Long = System.currentTimeMillis() / 1000) {
-        val accountId = keystoreManager.getUserId()?.takeIf { it.isNotEmpty() } ?: return
+    suspend fun publishIfNeeded(nowSeconds: Long = System.currentTimeMillis() / 1000) = publishLock.withLock {
+        val accountId = keystoreManager.getUserId()?.takeIf { it.isNotEmpty() } ?: return@withLock
         val epoch = intakeEpoch(nowSeconds.toULong())
-        val lastKey = KEY_LAST_PUBLISHED_PREFIX + accountId.lowercase()
-        val last = prefs.getLong(lastKey, -1L).takeIf { it >= 0 }?.toULong()
-        if (!Publishing.shouldPublish(last, epoch)) return
         val key = ownKey()
+        val due = Published(accountId, epoch, Published.keyId(key))
+        if (!Publishing.shouldPublish(Published.decode(keystoreManager.intakePublished()), due)) return@withLock
         val entries = Publishing.window(epoch).mapNotNull { e ->
             runCatching { intakeTag(key, accountId, e) }.getOrNull()?.let { tag ->
                 IntakeTagEntry.newBuilder().setEpoch(e.toLong()).setTag(ByteString.copyFrom(tag)).build()
             }
         }
-        if (entries.isEmpty()) return
+        if (entries.isEmpty()) return@withLock
         runCatching {
             grpcClient.messaging.publishIntakeTags(PublishIntakeTagsRequest.newBuilder().addAllTags(entries).build())
         }.onSuccess {
-            prefs.edit().putLong(lastKey, epoch.toLong()).apply()
+            keystoreManager.saveIntakePublished(due.encoded())
             Log.i(TAG, "published ${it.accepted}/${entries.size} intake tag(s) from epoch $epoch")
         }.onFailure { Log.i(TAG, "intake tag publish failed — contacts keep paying until it lands", it) }
+    }
+
+    /**
+     * What a publish covered: the account, the epoch and the key. A marker naming only the epoch
+     * outlived a re-minted key, and the new key's tags waited for the next epoch.
+     */
+    internal data class Published(val accountId: String, val epoch: ULong, val keyId: String) {
+        fun encoded(): String = "${accountId.lowercase()}|$epoch|$keyId"
+
+        companion object {
+            fun decode(stored: String?): Published? {
+                val parts = stored?.split('|')?.takeIf { it.size == 3 } ?: return null
+                val epoch = parts[1].toULongOrNull() ?: return null
+                return Published(parts[0], epoch, parts[2])
+            }
+
+            /** Names the key without storing it twice. */
+            fun keyId(key: ByteArray): String =
+                MessageDigest.getInstance("SHA-256").digest(key).take(8).joinToString("") { "%02x".format(it) }
+        }
     }
 
     /** Pure decisions about publishing, apart so a test can argue with them. Canon: iOS `IntakePublishing`. */
@@ -82,8 +112,13 @@ class IntakeCredentials @Inject constructor(
 
         fun window(current: ULong): List<ULong> = (0 until WINDOW_EPOCHS).map { current + it.toULong() }
 
-        /** Once per epoch; a clock that went backwards is not a reason to skip. */
-        fun shouldPublish(last: ULong?, current: ULong): Boolean = last == null || last != current
+        /**
+         * Once per epoch per account and key: a new key, or another account, publishes at once. A
+         * clock that went backwards is not a reason to skip.
+         */
+        fun shouldPublish(last: Published?, due: Published): Boolean =
+            last == null || last.epoch != due.epoch || last.keyId != due.keyId ||
+                !last.accountId.equals(due.accountId, ignoreCase = true)
     }
 
     /** A contact's card named the key their account accepts. */
@@ -133,7 +168,6 @@ class IntakeCredentials @Inject constructor(
         const val TAG = "Intake"
         const val PREFS_FILE_NAME = "intake_prefs"
         const val KEY_REJECTED_PREFIX = "rejected:"
-        const val KEY_LAST_PUBLISHED_PREFIX = "last_published:"
         /** `construct-core::intake::INTAKE_KEY_LEN`; the core does not export it. */
         const val KEY_LENGTH = 32
     }
