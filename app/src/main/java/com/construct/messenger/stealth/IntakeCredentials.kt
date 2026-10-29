@@ -12,6 +12,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import shared.proto.services.v1.MessagingServiceOuterClass.IntakeTagEntry
+import shared.proto.services.v1.MessagingServiceOuterClass.IntakeVerdict
 import shared.proto.services.v1.MessagingServiceOuterClass.PublishIntakeTagsRequest
 import uniffi.construct_core.generateIntakeKey
 import uniffi.construct_core.intakeEpoch
@@ -149,6 +150,28 @@ class IntakeCredentials @Inject constructor(
         return runCatching { ppSealTokenBytes(tag, serverKey) }
             .onFailure { Log.w(TAG, "intake tag seal failed", it) }
             .getOrNull()
+    }
+
+    /**
+     * What the server said of the tag on an envelope to [accountId]. Only "not accepted" acts,
+     * and it suspends rather than drops: the commonest cause is a device of theirs whose window
+     * lapsed while it was off, and that key works again once it publishes — a dropped key would
+     * never come back, since they have no reason to send the card again. Under warn this is the
+     * only way a stale key is noticed; until 2026-10-29 it was presented forever.
+     */
+    fun onVerdict(accountId: String, verdict: IntakeVerdict) {
+        if (!Verdict.suspendsKey(verdict)) return
+        noteRejected(accountId)
+        Log.i(TAG, "intake tag for ${accountId.take(8)}… not accepted — paying until the epoch rolls")
+    }
+
+    /** Pure decision about the server's verdict, apart so a test can argue with it. */
+    internal object Verdict {
+        /**
+         * "Unchecked" is the server's fault (its store, its key, or a tag sealed to a key it no
+         * longer has), not the key's; "none", "accepted" and an old server say nothing against it.
+         */
+        fun suspendsKey(verdict: IntakeVerdict): Boolean = verdict == IntakeVerdict.INTAKE_VERDICT_NOT_ACCEPTED
     }
 
     /**
