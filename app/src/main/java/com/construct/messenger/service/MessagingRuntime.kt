@@ -274,6 +274,8 @@ class MessagingRuntime @Inject constructor(
                         shareProfile.get().rebroadcastIfOwed()
                         // Our tags: the epoch may have rolled while the stream was down.
                         scope.launch { runCatching { intake.publishIfNeeded() } }
+                        // The wallet: a reconnect is the moment the issuer is reachable again.
+                        scope.launch { runCatching { blindTokens.bootstrapInitialBatch() } }
                     }
                     Log.i(TAG, "stream connected=${event.connected}")
                 }

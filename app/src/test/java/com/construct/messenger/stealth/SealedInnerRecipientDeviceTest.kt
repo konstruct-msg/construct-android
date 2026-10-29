@@ -33,6 +33,7 @@ class SealedInnerRecipientDeviceTest {
         serverKeys = mock(),
         policy = mock(),
         wallet = mock(),
+        blindTokens = mock(),
         addressBook = mock(),
         intake = mock(),
         peerDevices = mock(),

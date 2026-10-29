@@ -59,7 +59,7 @@ class SealedSend @Inject constructor(
         } catch (e: Exception) {
             val label = rejectionLabel(e) ?: throw e
             Log.i(TAG, "sealed send refused by enforce ($label) — paying and retrying once")
-            blindTokens.replenish(respectCooldown = false)
+            blindTokens.forceReplenish()
             messagingService.sendSealedMessage(build(afterRejection = true))
         }
     }
