@@ -776,6 +776,10 @@ external fun uniffi_construct_core_checksum_func_hybrid_verify(
 ): Short
 external fun uniffi_construct_core_checksum_func_intake_epoch(
 ): Short
+external fun uniffi_construct_core_checksum_func_intake_mint(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_offer(
+): Short
 external fun uniffi_construct_core_checksum_func_intake_tag(
 ): Short
 external fun uniffi_construct_core_checksum_func_knst_encode_chunks(
@@ -1883,6 +1887,10 @@ external fun uniffi_construct_core_fn_func_hybrid_verify(`publicKey`: RustBuffer
 ): Byte
 external fun uniffi_construct_core_fn_func_intake_epoch(`unixSeconds`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_construct_core_fn_func_intake_mint(`aboveGeneration`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_intake_offer(`held`: RustBuffer.ByValue,`offered`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_intake_tag(`intakeKey`: RustBuffer.ByValue,`recipientAccountId`: RustBuffer.ByValue,`epoch`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_knst_encode_chunks(`payload`: RustBuffer.ByValue,`contentType`: Byte,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -2185,6 +2193,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_intake_epoch() != 2449.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_mint() != 50104.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_offer() != 15257.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_intake_tag() != 36931.toShort()) {
@@ -10470,6 +10484,49 @@ public object FfiConverterTypeInitiationContext: FfiConverterRustBuffer<Initiati
 
 
 
+/**
+ * A parsed KNST frame. `message_id` is the dashed lowercase UUID; `payload` is everything after
+ * the header — for a control frame (`total_chunks == 1`) the body is its first
+ * `plaintext_length` bytes.
+ * See `seal_media`.
+ * The account's intake key at a generation. `key` is 32 bytes.
+ */
+data class IntakeKeyState (
+    var `generation`: kotlin.UInt
+    , 
+    var `key`: kotlin.ByteArray
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeIntakeKeyState: FfiConverterRustBuffer<IntakeKeyState> {
+    override fun read(buf: ByteBuffer): IntakeKeyState {
+        return IntakeKeyState(
+            FfiConverterUInt.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: IntakeKeyState) = (
+            FfiConverterUInt.allocationSize(value.`generation`) +
+            FfiConverterByteArray.allocationSize(value.`key`)
+    )
+
+    override fun write(value: IntakeKeyState, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`generation`, buf)
+            FfiConverterByteArray.write(value.`key`, buf)
+    }
+}
+
+
+
 data class KnstFrame (
     var `contentType`: kotlin.UByte
     , 
@@ -12281,12 +12338,6 @@ public object FfiConverterTypeRotatedSpkBundle: FfiConverterRustBuffer<RotatedSp
 
 
 
-/**
- * A parsed KNST frame. `message_id` is the dashed lowercase UUID; `payload` is everything after
- * the header — for a control frame (`total_chunks == 1`) the body is its first
- * `plaintext_length` bytes.
- * See `seal_media`.
- */
 data class SealedMedia (
     var `key`: kotlin.ByteArray
     , 
@@ -14958,6 +15009,36 @@ public object FfiConverterTypeInitiationDecision: FfiConverterRustBuffer<Initiat
 
 
 
+enum class IntakeOffer {
+    
+    ADOPT,
+    KEEP;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeIntakeOffer: FfiConverterRustBuffer<IntakeOffer> {
+    override fun read(buf: ByteBuffer) = try {
+        IntakeOffer.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: IntakeOffer) = 4UL
+
+    override fun write(value: IntakeOffer, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
 enum class KtVerdict {
     
     VERIFIED,
@@ -15963,6 +16044,38 @@ public object FfiConverterOptionalTypeEnvelopeOpened: FfiConverterRustBuffer<Env
         } else {
             buf.put(1)
             FfiConverterTypeEnvelopeOpened.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeIntakeKeyState: FfiConverterRustBuffer<IntakeKeyState?> {
+    override fun read(buf: ByteBuffer): IntakeKeyState? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeIntakeKeyState.read(buf)
+    }
+
+    override fun allocationSize(value: IntakeKeyState?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeIntakeKeyState.allocationSize(value)
+        }
+    }
+
+    override fun write(value: IntakeKeyState?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeIntakeKeyState.write(value, buf)
         }
     }
 }
@@ -17585,6 +17698,28 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     UniffiLib.uniffi_construct_core_fn_func_intake_epoch(
     
         FfiConverterULong.lower(`unixSeconds`),_status)
+}
+    )
+    }
+    
+
+    @Throws(CryptoException::class) fun `intakeMint`(`aboveGeneration`: kotlin.UInt): IntakeKeyState {
+            return FfiConverterTypeIntakeKeyState.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_mint(
+    
+        FfiConverterUInt.lower(`aboveGeneration`),_status)
+}
+    )
+    }
+    
+
+    @Throws(CryptoException::class) fun `intakeOffer`(`held`: IntakeKeyState?, `offered`: IntakeKeyState): IntakeOffer {
+            return FfiConverterTypeIntakeOffer.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_offer(
+    
+        FfiConverterOptionalTypeIntakeKeyState.lower(`held`),FfiConverterTypeIntakeKeyState.lower(`offered`),_status)
 }
     )
     }

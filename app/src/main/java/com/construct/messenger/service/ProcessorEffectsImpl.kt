@@ -1,5 +1,6 @@
 package com.construct.messenger.service
 
+import uniffi.construct_core.IntakeKeyState
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.local.ReactionStore
@@ -278,14 +279,21 @@ class ProcessorEffectsImpl @Inject constructor(
             ContentType.CONTENT_TYPE_DELIVERY_RECEIPT_VALUE ->
                 IncomingReceipt.messageIds(body).forEach { markDelivered(it) }
             ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE -> {
-                // Their card: the key our envelopes to them present instead of a token, and the
-                // address they are named by.
+                // A contact's card: the key our envelopes to them present instead of a token, and
+                // the address they are named by. One from our own device: the account's key.
                 val card = ContactCardPayload.read(body)
-                if (card == null) {
-                    Log.w(TAG, "contact card ${messageId.take(8)}… does not parse — dropped")
-                } else {
-                    card.intakeKey?.let { intake.recordPeerKey(accountId, it) }
-                    card.accountAddress?.let { addressBook.pin(accountId, it, AccountAddressSource.CARD) }
+                val myId = keystoreManager.getUserId()
+                val route = CardRoute.of(myId, sessionManager.accountIdForDevice(contactId), accountId)
+                when {
+                    card == null -> Log.w(TAG, "contact card ${messageId.take(8)}… does not parse — dropped")
+                    route == CardRoute.OWN_DEVICE ->
+                        card.intakeKey?.let { intake.receiveOwnKeyFromSibling(IntakeKeyState(card.intakeGeneration, it)) }
+                    route == CardRoute.IGNORED ->
+                        Log.w(TAG, "contact card ${messageId.take(8)}… under our own id, not from our device — dropped")
+                    else -> {
+                        card.intakeKey?.let { intake.recordPeerKey(accountId, IntakeKeyState(card.intakeGeneration, it)) }
+                        card.accountAddress?.let { addressBook.pin(accountId, it, AccountAddressSource.CARD) }
+                    }
                 }
             }
             ContentType.CONTENT_TYPE_PROFILE_VALUE -> {
@@ -610,3 +618,23 @@ class ProcessorEffectsImpl @Inject constructor(
         )
     }
 }
+
+/**
+ * Whose key a contact card is. Our own account's only off a session with one of our devices — the
+ * READ_SYNC check (TODO 153); one under our own id otherwise is filed nowhere: as a contact's key
+ * it would be a key for writing to ourselves, and as our own it would skip that check.
+ * **Canon:** iOS `MessageRouter+SenderSync` / `+ControlFrames`.
+ */
+internal enum class CardRoute {
+    OWN_DEVICE, CONTACT, IGNORED;
+
+    companion object {
+        fun of(myId: String?, deviceAccount: String?, accountId: String): CardRoute = when {
+            myId == null -> CONTACT
+            deviceAccount.equals(myId, ignoreCase = true) -> OWN_DEVICE
+            accountId.equals(myId, ignoreCase = true) -> IGNORED
+            else -> CONTACT
+        }
+    }
+}
+

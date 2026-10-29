@@ -56,4 +56,64 @@ class IntakePublishingTest {
         assertNull(Published.decode("$account|100"))
         assertNull(Published.decode("$account|x|$key"))
     }
+
+    private val k = ByteArray(32) { 3 }
+    private fun state(g: UInt) = uniffi.construct_core.IntakeKeyState(g, k)
+    private fun next(held: uniffi.construct_core.IntakeKeyState?, gen: UInt, live: Boolean) =
+        IntakeCredentials.OwnKey.next(held, gen, live)
+
+    /**
+     * The table of iOS `IntakeOwnKey.next`. Mutations, one at a time: promote whatever the server
+     * says; mint instead of wait on a live account; treat "generation without tags" as live; ask
+     * the server with a key of a generation — each reddens a row.
+     */
+    @Test
+    fun `our own key is used, promoted, minted or waited for — by state`() {
+        val use = next(state(4u), 9u, true)
+        assertTrue(use is IntakeCredentials.OwnKey.Next.Use && use.state.generation == 4u)
+        // Generation 1 is a generation: the promoted key never asks the server again.
+        assertTrue(next(state(1u), 0u, false) is IntakeCredentials.OwnKey.Next.Use)
+        // Migration: a per-device key while the account has no generation becomes generation 1, same key.
+        val promoted = next(state(0u), 0u, false) as IntakeCredentials.OwnKey.Next.Promote
+        assertEquals(1u, promoted.state.generation)
+        assertTrue(promoted.state.key.contentEquals(k))
+        assertEquals(IntakeCredentials.OwnKey.Next.Wait, next(state(0u), 3u, true))
+        assertEquals(IntakeCredentials.OwnKey.Next.Mint(3u), next(state(0u), 3u, false))
+        assertEquals(IntakeCredentials.OwnKey.Next.Wait, next(null, 3u, true))
+        assertEquals(IntakeCredentials.OwnKey.Next.Mint(3u), next(null, 3u, false))
+        assertEquals(IntakeCredentials.OwnKey.Next.Mint(0u), next(null, 0u, false))
+    }
+
+    /** Mutation: little-endian, or reject the 32-byte form — a stored key loses its generation or its key. */
+    @Test
+    fun `a stored key keeps its generation, and one from before reads as generation 0`() {
+        val stored = IntakeCredentials.KeyRecord.encode(state(300u))
+        assertEquals(36, stored.size)
+        assertEquals(listOf<Byte>(0, 0, 1, 44), stored.take(4))
+        val back = IntakeCredentials.KeyRecord.decode(stored)!!
+        assertEquals(300u, back.generation)
+        assertTrue(back.key.contentEquals(k))
+        assertEquals(0u, IntakeCredentials.KeyRecord.decode(k)!!.generation)
+        assertNull(IntakeCredentials.KeyRecord.decode(ByteArray(33)))
+    }
+
+    /** Mutation: >= — every publish at our own generation would be taken as refused. */
+    @Test
+    fun `a publish is stale only when the account is above us`() {
+        assertTrue(IntakeCredentials.Publishing.refusedAsStale(5u, 4u))
+        assertFalse(IntakeCredentials.Publishing.refusedAsStale(4u, 4u))
+        assertFalse(IntakeCredentials.Publishing.refusedAsStale(0u, 4u))
+    }
+
+    /** Mutation: treat UNIMPLEMENTED as "ask again" — every device on an old key stops publishing until the server deploys. */
+    @Test
+    fun `an old server reads as an account at generation 0, any other error as unknown`() {
+        assertEquals(
+            IntakeCredentials.AccountIntake(0u, false),
+            IntakeCredentials.AccountIntake.onError(io.grpc.StatusException(io.grpc.Status.UNIMPLEMENTED)),
+        )
+        assertNull(IntakeCredentials.AccountIntake.onError(io.grpc.StatusException(io.grpc.Status.UNAVAILABLE)))
+        assertNull(IntakeCredentials.AccountIntake.onError(java.io.IOException("reset")))
+    }
 }
+

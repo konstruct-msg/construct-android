@@ -11,26 +11,32 @@ import shared.proto.core.v1.EnvelopeOuterClass.ContactCard
  * failing the card. **Canon:** iOS `ContactCardPayload`; vectors `knst_contact_card.json`;
  * decision `contact-card-carries-the-address-back.md`.
  *
- * What Android sends carries this device's intake key always and the address once the device has
- * seen the recovery phrase.
+ * What Android sends carries the account's intake key and its generation once this device holds
+ * one of a generation, and the address once the device has seen the recovery phrase.
  */
 data class ContactCardPayload(
     val intakeKey: ByteArray? = null,
     val accountAddress: ByteArray? = null,
+    /** The generation of [intakeKey] (construct-core `IntakeKeyState`); 0 for a card from before
+     * 2026-10-29 or a bare key. `decisions/intake-key-is-the-accounts-not-the-devices.md`. */
+    val intakeGeneration: UInt = 0u,
 ) {
     fun encoded(): ByteArray {
         val b = ContactCard.newBuilder()
         intakeKey?.let { b.intakeKey = ByteString.copyFrom(it) }
         accountAddress?.let { b.accountAddress = ByteString.copyFrom(it) }
+        b.intakeGeneration = intakeGeneration.toInt()
         return b.build().toByteArray()
     }
 
     override fun equals(other: Any?): Boolean =
         other is ContactCardPayload &&
             intakeKey.contentEquals(other.intakeKey) &&
-            accountAddress.contentEquals(other.accountAddress)
+            accountAddress.contentEquals(other.accountAddress) &&
+            intakeGeneration == other.intakeGeneration
 
-    override fun hashCode(): Int = intakeKey.contentHashCode() * 31 + accountAddress.contentHashCode()
+    override fun hashCode(): Int =
+        (intakeKey.contentHashCode() * 31 + accountAddress.contentHashCode()) * 31 + intakeGeneration.hashCode()
 
     companion object {
         const val LEGACY_INTAKE_KEY_LENGTH = 32
@@ -41,6 +47,7 @@ data class ContactCardPayload(
             return ContactCardPayload(
                 intakeKey = card.intakeKey.toByteArray().takeIf { it.size == LEGACY_INTAKE_KEY_LENGTH },
                 accountAddress = card.accountAddress.toByteArray().takeIf { it.size == AccountAddress.LENGTH },
+                intakeGeneration = card.intakeGeneration.toUInt(),
             )
         }
     }

@@ -646,5 +646,23 @@ class SendMessageUseCaseTest {
         verify(h.sessionManager).discoverOwnDeviceBundles(myId)
     }
 
+    /** Mutation: drop the skip — every publish would hand the key again to devices that have it. */
+    @Test
+    fun `the account's key goes only to our own devices that do not have it`() = runTest {
+        val h = harness()
+        val ownDevice = "33333333333333333333333333333333"
+        val second = "c".repeat(32)
+        whenever(h.sessionManager.discoverOwnDeviceBundles(myId)).thenReturn(
+            listOf(
+                SessionManager.PeerBundle(myId, ownDevice, byteArrayOf(8), bundle = mock<BinaryKeyBundle>()),
+                SessionManager.PeerBundle(myId, second, byteArrayOf(9), bundle = mock<BinaryKeyBundle>()),
+            ),
+        )
+        whenever(h.crypto.planSend(any(), any(), any(), any())).thenReturn(emptyList())
+
+        assertTrue(h.useCase().sendOwnContactCard(byteArrayOf(1), skipping = setOf(ownDevice.lowercase())).isEmpty())
+
+        verify(h.crypto).planSend(eq(emptyList()), eq(listOf(second)), eq(ourDevice), eq(true))
+    }
 }
 

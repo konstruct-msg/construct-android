@@ -54,12 +54,15 @@ class SendContactCardUseCase @Inject constructor(
         val ik = target.identityPublic
         if (ik.isEmpty()) return
 
+        // No key of a generation yet (unreadable, or due from our own devices): no card now, the
+        // device stays owed and the next exchange retries.
+        val ownKey = intake.currentOwnKey() ?: return
         // The key always, the address only when the server confirms it is this account's: a
         // contact pins the first one it gets (TODO 109).
         val address = ownAddress.forCard()
         val cardId = UUID.randomUUID()
         val plaintext = KnstFrame.pack(
-            ContactCardPayload(intakeKey = intake.ownKey(), accountAddress = address).encoded(),
+            ContactCardPayload(intakeKey = ownKey.key, accountAddress = address, intakeGeneration = ownKey.generation).encoded(),
             ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE,
             cardId,
         )
