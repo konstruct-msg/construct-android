@@ -55,7 +55,7 @@ class SealedSendTest {
 
         assertTrue(result.success)
         inOrder(tokens, stealth) {
-            verify(tokens).replenish(any(), eq(false))
+            verify(tokens).forceReplenish()
             verify(stealth).buildSealedInner(any(), any(), any(), any(), eq(true), anyOrNull(), anyOrNull())
         }
         verify(messaging, never()).sendMessage(any(), any(), any(), any(), any(), any(), anyOrNull())
@@ -69,7 +69,7 @@ class SealedSendTest {
         val thrown = runCatching { send.send("peer", ByteArray(32), byteArrayOf(9), SealedEnvelopeType.GENERIC) }.exceptionOrNull()
 
         assertTrue(thrown is StatusException)
-        verify(tokens, never()).replenish(any(), any())
+        verify(tokens, never()).forceReplenish()
     }
 
     /** On an established session the core's envelope goes, sealed once: the rebuild after a refusal

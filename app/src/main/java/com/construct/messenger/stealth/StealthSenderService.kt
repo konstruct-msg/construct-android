@@ -47,6 +47,7 @@ class StealthSenderService @Inject constructor(
     private val serverKeys: ServerKeysProvider,
     private val policy: StealthPolicy,
     private val wallet: TokenWalletService,
+    private val blindTokens: BlindTokenService,
     private val addressBook: AccountAddressBook,
     private val intake: IntakeCredentials,
     private val peerDevices: PeerDeviceRegistry,
@@ -156,16 +157,20 @@ class StealthSenderService @Inject constructor(
         val payment = EnvelopePayment.choose(
             credential = intakeTag != null,
             afterCredentialRejection = afterCredentialRejection,
-            policyWantsToken = policy.shouldConsumeToken(recipientUserId),
+            policyWantsToken = policy.shouldConsumeToken(),
         )
         if (payment == EnvelopePayment.CREDENTIAL && intakeTag != null) {
             builder.setIntakeTagSealed(ByteString.copyFrom(intakeTag))
         } else if (payment == EnvelopePayment.TOKEN) {
-            wallet.consumeToken()?.let { token ->
-                policy.recordTokenConsumed(recipientUserId)
+            val token = if (blindTokens.ensureTokenAvailable()) wallet.consumeToken() else null
+            if (token != null) {
                 builder.setTokenNonce(ByteString.copyFrom(token.nonce))
                 builder.setTokenBytes(ByteString.copyFrom(sealTokenBytes(token.token)))
+            } else {
+                // Delivered under warn; refused under enforce, and then paid and retried once.
+                Log.w(TAG, "sealed envelope without a token — wallet empty [${blindTokens.lastOutcome}]")
             }
+            blindTokens.topUpSoon()
         }
 
         return builder.build().toByteArray()

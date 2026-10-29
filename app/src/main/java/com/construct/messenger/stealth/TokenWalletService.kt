@@ -94,6 +94,7 @@ class TokenWalletService @Inject constructor(
     private companion object {
         const val PREFS_FILE_NAME = "stealth_token_wallet_prefs"
         const val KEY_TOKENS = "blind_tokens"
-        const val MAX_WALLET_SIZE = 40
+        /** The hard ceiling, above [BlindTokenService.BANK_TARGET] (iOS `maxBalance`). */
+        const val MAX_WALLET_SIZE = 500
     }
 }
