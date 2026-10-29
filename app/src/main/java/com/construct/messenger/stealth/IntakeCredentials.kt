@@ -4,18 +4,26 @@ import android.content.Context
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager
+import com.construct.messenger.domain.usecase.SendMessageUseCase
+import com.construct.messenger.invite.ContactCardPayload
 import com.google.protobuf.ByteString
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.grpc.Status
 import java.security.MessageDigest
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import shared.proto.services.v1.MessagingServiceOuterClass.GetIntakeStateRequest
 import shared.proto.services.v1.MessagingServiceOuterClass.IntakeTagEntry
 import shared.proto.services.v1.MessagingServiceOuterClass.IntakeVerdict
 import shared.proto.services.v1.MessagingServiceOuterClass.PublishIntakeTagsRequest
-import uniffi.construct_core.generateIntakeKey
+import uniffi.construct_core.IntakeKeyState
+import uniffi.construct_core.IntakeOffer
 import uniffi.construct_core.intakeEpoch
+import uniffi.construct_core.intakeMint
+import uniffi.construct_core.intakeOffer
 import uniffi.construct_core.intakeTag
 import uniffi.construct_core.ppSealTokenBytes
 
@@ -26,9 +34,12 @@ import uniffi.construct_core.ppSealTokenBytes
  * `decisions/contact-traffic-is-vouched-not-purchased.md`. **Canon:** iOS
  * `IntakeCredentialService`.
  *
- * Our key is this device's: every device of the account mints and publishes its own, and the
- * server keeps them all as a set per epoch (construct-server `7fd850b`). One shared key would
- * need syncing between our devices; one per device needs nothing but the set.
+ * The key is the account's, with a generation (`decisions/intake-key-is-the-accounts-not-the-
+ * devices.md`; construct-core `IntakeKeyState`): every device of the account holds the same one, a
+ * device mints only when the account has no live key, and otherwise waits for it from one of our
+ * own devices, as a card inside SENDER_SYNC. Until 2026-10-29 each device minted its own, and a
+ * contact held whichever device's key reached it last — a gone or week-dark device's key stayed
+ * unrecognised for good.
  *
  * The derivation is the core's (`intakeTag`), including the account-id normalisation: two
  * clients disagreeing about case would produce different tags, and the envelope would be charged
@@ -40,23 +51,154 @@ class IntakeCredentials @Inject constructor(
     private val keystoreManager: KeystoreManager,
     private val serverKeys: ServerKeysProvider,
     private val grpcClient: GrpcClient,
+    /** Lazily: the send path reaches this class through [SealedSend]. */
+    private val sendMessage: Provider<SendMessageUseCase>,
 ) {
     private val prefs = context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
     private val mintLock = Any()
     private val publishLock = Mutex()
 
     /**
-     * This device's key for our account, minted on first use — an install from before this
-     * shipped and a fresh one are the same case, with no migration to find either. Minted once
-     * under a lock: on a first start the card and the publish ask together, and two mints would
-     * hand contacts a key whose tags were never published.
+     * The account's key as this device holds it, if it holds one of a generation (≥ 1): what a
+     * contact card carries. No network, no minting; null while it is due from our own devices.
      */
-    fun ownKey(): ByteArray = synchronized(mintLock) {
-        keystoreManager.ownIntakeKey()?.takeIf { it.size == KEY_LENGTH }?.let { return it }
-        val fresh = generateIntakeKey()
-        keystoreManager.replaceOwnIntakeKey(fresh)
-        Log.i(TAG, "minted this device's intake key — cards owed again, tags due now")
-        fresh
+    fun currentOwnKey(): IntakeKeyState? =
+        (readOwn() as? OwnRead.Found)?.state?.takeIf { it.generation > 0u }
+
+    /** What the keystore says about our key. An unreadable store is not an absent key. */
+    private sealed interface OwnRead {
+        data class Found(val state: IntakeKeyState) : OwnRead
+        data object Absent : OwnRead
+        data object Unreadable : OwnRead
+    }
+
+    private fun readOwn(): OwnRead = runCatching { keystoreManager.ownIntakeKey() }.fold(
+        onSuccess = { stored -> stored?.let(KeyRecord::decode)?.let { OwnRead.Found(it) } ?: OwnRead.Absent },
+        onFailure = {
+            Log.w(TAG, "own intake key unreadable — not minting", it)
+            OwnRead.Unreadable
+        },
+    )
+
+    /**
+     * The account's key, settled with the server when this device holds none of a generation:
+     * promoted, minted, or null to wait for it from our own devices. Asked from publishing only,
+     * so the server is asked at most as often as we publish. **Canon:** iOS `resolveOwnKey`.
+     */
+    private suspend fun resolveOwnKey(): IntakeKeyState? {
+        val held = when (val read = readOwn()) {
+            OwnRead.Unreadable -> return null
+            OwnRead.Absent -> null
+            is OwnRead.Found -> if (read.state.generation > 0u) return read.state else read.state
+        }
+        val server = try {
+            grpcClient.messaging.getIntakeState(GetIntakeStateRequest.getDefaultInstance())
+                .let { AccountIntake(it.generation.toUInt(), it.hasTagsForCurrentEpoch) }
+        } catch (e: Exception) {
+            AccountIntake.onError(e) ?: run {
+                Log.i(TAG, "account intake state unavailable — asked again on the next publish", e)
+                return null
+            }
+        }
+        return when (val next = OwnKey.next(held, server.generation, server.hasLiveTags)) {
+            is OwnKey.Next.Use -> next.state
+            is OwnKey.Next.Promote -> adoptAsOwn(next.state, "promoted this device's key to generation 1")
+            is OwnKey.Next.Mint -> runCatching { intakeMint(next.above) }
+                .onFailure { Log.w(TAG, "intake key not minted", it) }
+                .getOrNull()
+                ?.let { adoptAsOwn(it, "minted generation ${it.generation} (account at ${server.generation})") }
+            OwnKey.Next.Wait -> {
+                Log.i(TAG, "the account's key (generation ${server.generation}) is due from our own devices — not publishing")
+                null
+            }
+        }
+    }
+
+    internal data class AccountIntake(val generation: UInt, val hasLiveTags: Boolean) {
+        companion object {
+            /**
+             * A server from before generations keeps none and ignores the one we publish: the
+             * account is at 0 as far as it can tell. Waiting instead would stop every device on an
+             * old key from publishing until the server caught up. Any other error: ask again.
+             */
+            fun onError(error: Throwable): AccountIntake? =
+                if (Status.fromThrowable(error).code == Status.Code.UNIMPLEMENTED) AccountIntake(0u, false) else null
+        }
+    }
+
+    /**
+     * Makes [state] this device's key. Every copy of the previous one is stale, so the "sent to"
+     * list and the publish marker go with it ([KeystoreManager.replaceOwnIntakeKey]).
+     */
+    private fun adoptAsOwn(state: IntakeKeyState, why: String): IntakeKeyState? = synchronized(mintLock) {
+        runCatching { keystoreManager.replaceOwnIntakeKey(KeyRecord.encode(state)) }
+            .onFailure {
+                // Handing out a key nothing keeps would decide again on the next call.
+                Log.w(TAG, "own intake key not saved — not used", it)
+                return null
+            }
+        Log.i(TAG, why)
+        state
+    }
+
+    /** One of our own devices handed us the account's key (a card off a session with it). */
+    suspend fun receiveOwnKeyFromSibling(offered: IntakeKeyState) {
+        val held = when (val read = readOwn()) {
+            // Adopting would overwrite a key we cannot see; the sibling sends again on its next publish.
+            OwnRead.Unreadable -> return
+            OwnRead.Absent -> null
+            is OwnRead.Found -> read.state
+        }
+        val offer = runCatching { intakeOffer(held, offered) }
+            .onFailure { Log.w(TAG, "own device sent a malformed intake key — ignored", it) }
+            .getOrNull() ?: return
+        if (offer != IntakeOffer.ADOPT) return
+        adoptAsOwn(offered, "took generation ${offered.generation} from our own device") ?: return
+        publishIfNeeded()
+    }
+
+    /** Pure decisions about our own key, apart so a test can argue with them. **Canon:** iOS `IntakeOwnKey.next`. */
+    internal object OwnKey {
+        sealed interface Next {
+            data class Use(val state: IntakeKeyState) : Next
+            /** Our per-device key from before generations becomes the account's generation 1: the
+             * contacts that hold it stay valid. Only while the account has no generation yet. */
+            data class Promote(val state: IntakeKeyState) : Next
+            /** No live key anywhere on the account: a new one above what the server last saw. */
+            data class Mint(val above: UInt) : Next
+            /** The account has a live key this device does not hold: it is due from our own
+             * devices. Nothing is published meanwhile; our contacts pass on theirs. */
+            data object Wait : Next
+        }
+
+        /** Each case is named by state — never by a key being late. */
+        fun next(held: IntakeKeyState?, serverGeneration: UInt, serverHasLiveTags: Boolean): Next {
+            if (held != null && held.generation > 0u) return Next.Use(held)
+            val accountIsLive = serverGeneration > 0u && serverHasLiveTags
+            if (held != null && serverGeneration == 0u) return Next.Promote(IntakeKeyState(1u, held.key))
+            return if (accountIsLive) Next.Wait else Next.Mint(serverGeneration)
+        }
+    }
+
+    /**
+     * A key as the keystore keeps it: 36 bytes, the generation big-endian then the key. 32 bytes is
+     * one written before 2026-10-29, with no generation: it reads as generation 0, so nothing
+     * migrates. Anything else is damaged. **Canon:** iOS `IntakeKeyRecord`.
+     */
+    internal object KeyRecord {
+        fun encode(state: IntakeKeyState): ByteArray {
+            val g = state.generation.toInt()
+            return byteArrayOf((g ushr 24).toByte(), (g ushr 16).toByte(), (g ushr 8).toByte(), g.toByte()) + state.key
+        }
+
+        fun decode(stored: ByteArray): IntakeKeyState? = when (stored.size) {
+            KEY_LENGTH -> IntakeKeyState(0u, stored)
+            KEY_LENGTH + 4 -> IntakeKeyState(
+                stored.take(4).fold(0u) { acc, b -> (acc shl 8) or (b.toUInt() and 0xFFu) },
+                stored.copyOfRange(4, stored.size),
+            )
+            else -> null
+        }
     }
 
     /**
@@ -69,21 +211,50 @@ class IntakeCredentials @Inject constructor(
     suspend fun publishIfNeeded(nowSeconds: Long = System.currentTimeMillis() / 1000) = publishLock.withLock {
         val accountId = keystoreManager.getUserId()?.takeIf { it.isNotEmpty() } ?: return@withLock
         val epoch = intakeEpoch(nowSeconds.toULong())
-        val key = ownKey()
-        val due = Published(accountId, epoch, Published.keyId(key))
+        // A key of a generation is checked against the marker before anything else; one without
+        // asks the server, every publish, until it resolves.
+        currentOwnKey()?.let { held ->
+            val due = Published(accountId, epoch, Published.keyId(held.key))
+            if (!Publishing.shouldPublish(Published.decode(keystoreManager.intakePublished()), due)) return@withLock
+        }
+        val own = resolveOwnKey() ?: return@withLock
+        val due = Published(accountId, epoch, Published.keyId(own.key))
         if (!Publishing.shouldPublish(Published.decode(keystoreManager.intakePublished()), due)) return@withLock
         val entries = Publishing.window(epoch).mapNotNull { e ->
-            runCatching { intakeTag(key, accountId, e) }.getOrNull()?.let { tag ->
+            runCatching { intakeTag(own.key, accountId, e) }.getOrNull()?.let { tag ->
                 IntakeTagEntry.newBuilder().setEpoch(e.toLong()).setTag(ByteString.copyFrom(tag)).build()
             }
         }
         if (entries.isEmpty()) return@withLock
-        runCatching {
-            grpcClient.messaging.publishIntakeTags(PublishIntakeTagsRequest.newBuilder().addAllTags(entries).build())
-        }.onSuccess {
-            keystoreManager.saveIntakePublished(due.encoded())
-            Log.i(TAG, "published ${it.accepted}/${entries.size} intake tag(s) from epoch $epoch")
+        val response = runCatching {
+            grpcClient.messaging.publishIntakeTags(
+                PublishIntakeTagsRequest.newBuilder().addAllTags(entries).setGeneration(own.generation.toInt()).build(),
+            )
         }.onFailure { Log.i(TAG, "intake tag publish failed — contacts keep paying until it lands", it) }
+            .getOrNull() ?: return@withLock
+        if (Publishing.refusedAsStale(response.currentGeneration.toUInt(), own.generation)) {
+            // The account moved on; the newer key is due from one of our own devices. Not marked,
+            // so the next publish asks again.
+            Log.i(TAG, "publish of generation ${own.generation} refused — the account is at ${response.currentGeneration}")
+            return@withLock
+        }
+        keystoreManager.saveIntakePublished(due.encoded())
+        Log.i(TAG, "published ${response.accepted}/${entries.size} intake tag(s), generation ${own.generation}, from epoch $epoch")
+        offerOwnKeyToOwnDevices(own)
+    }
+
+    /**
+     * The account's key to our own devices that do not have it: one linked since, or all of them
+     * after a change (which cleared the list). After a publish, so a device is never handed a key
+     * whose tags the server does not hold.
+     */
+    private suspend fun offerOwnKeyToOwnDevices(own: IntakeKeyState) {
+        val card = ContactCardPayload(intakeKey = own.key, intakeGeneration = own.generation).encoded()
+        val reached = runCatching { sendMessage.get().sendOwnContactCard(card, keystoreManager.contactCardSentTo()) }
+            .onFailure { Log.i(TAG, "own devices not handed the key — the next publish tries again", it) }
+            .getOrNull().orEmpty()
+        reached.forEach(keystoreManager::markContactCardSent)
+        if (reached.isNotEmpty()) Log.i(TAG, "generation ${own.generation} handed to ${reached.size} own device(s)")
     }
 
     /**
@@ -120,16 +291,27 @@ class IntakeCredentials @Inject constructor(
         fun shouldPublish(last: Published?, due: Published): Boolean =
             last == null || last.epoch != due.epoch || last.keyId != due.keyId ||
                 !last.accountId.equals(due.accountId, ignoreCase = true)
+
+        /** The account's generation above ours: nothing was stored. An old server answers 0. */
+        fun refusedAsStale(currentGeneration: UInt, ours: UInt): Boolean = currentGeneration > ours
     }
 
-    /** A contact's card named the key their account accepts. */
-    fun recordPeerKey(accountId: String, key: ByteArray) {
-        if (key.size != KEY_LENGTH) {
-            Log.w(TAG, "peer ${accountId.take(8)}… sent a ${key.size}-byte intake key — ignored")
+    /**
+     * A contact's card named the key their account accepts. Kept only when its generation is above
+     * the one held (`intakeOffer`): a late card, or an old build's per-device key, does not replace
+     * the account's current one.
+     */
+    fun recordPeerKey(accountId: String, offered: IntakeKeyState) {
+        val held = keystoreManager.peerIntakeKey(accountId)?.let(KeyRecord::decode)
+        val offer = runCatching { intakeOffer(held, offered) }
+            .onFailure { Log.w(TAG, "peer ${accountId.take(8)}… sent a ${offered.key.size}-byte intake key — ignored") }
+            .getOrNull() ?: return
+        if (offer != IntakeOffer.ADOPT) {
+            Log.d(TAG, "kept generation ${held?.generation ?: 0u} from ${accountId.take(8)}… over ${offered.generation}")
             return
         }
-        keystoreManager.savePeerIntakeKey(accountId, key)
-        Log.i(TAG, "stored intake key from ${accountId.take(8)}…")
+        keystoreManager.savePeerIntakeKey(accountId, KeyRecord.encode(offered))
+        Log.i(TAG, "stored intake key generation ${offered.generation} from ${accountId.take(8)}…")
     }
 
     /**
@@ -139,7 +321,7 @@ class IntakeCredentials @Inject constructor(
     fun sealedTag(accountId: String, nowSeconds: Long = System.currentTimeMillis() / 1000): ByteArray? {
         val epoch = intakeEpoch(nowSeconds.toULong())
         if (isRejected(accountId, epoch.toLong())) return null
-        val key = keystoreManager.peerIntakeKey(accountId)?.takeIf { it.size == KEY_LENGTH } ?: return null
+        val key = keystoreManager.peerIntakeKey(accountId)?.let(KeyRecord::decode)?.key ?: return null
         val tag = runCatching { intakeTag(key, accountId, epoch) }
             .onFailure { Log.w(TAG, "intake tag for ${accountId.take(8)}… not derived", it) }
             .getOrNull() ?: return null

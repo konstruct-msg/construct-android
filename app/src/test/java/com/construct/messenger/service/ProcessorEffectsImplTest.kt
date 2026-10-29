@@ -220,7 +220,7 @@ class ProcessorEffectsImplTest {
         val address = ByteArray(32) { 0x5A }
         val card = com.construct.messenger.invite.ContactCardPayload(intakeKey = ByteArray(32) { 7 }, accountAddress = address).encoded()
         effects.onControlFrame(peer, "card-1", shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE, card)
-        org.mockito.kotlin.verify(intake).recordPeerKey(org.mockito.kotlin.eq(peer), org.mockito.kotlin.argThat { size == 32 && all { it == 7.toByte() } })
+        org.mockito.kotlin.verify(intake).recordPeerKey(org.mockito.kotlin.eq(peer), org.mockito.kotlin.argThat { key.size == 32 && key.all { it == 7.toByte() } && generation == 0u })
     }
 
     @Test

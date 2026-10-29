@@ -12,29 +12,37 @@ import org.junit.Test
  */
 class ContactCardTest {
 
-    /** payload hex → expected intake key hex, expected address hex. */
+    private data class Vector(val payload: String, val key: String?, val address: String?, val generation: UInt)
+
+    private val key = "101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f"
+    private val address = "a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebf"
     private val vectors = listOf(
-        Triple("0a20101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f1220a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebf", "101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f", "a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebf"),
-        Triple("1220a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebf", null, "a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebf"),
-        Triple("0a20101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f", "101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f", null),
-        Triple("101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f", "101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f", null),
+        Vector("0a20${key}1220$address", key, address, 0u),
+        Vector("0a20${key}1220${address}18ac02", key, address, 300u),
+        Vector("1220$address", null, address, 0u),
+        Vector("0a20$key", key, null, 0u),
+        Vector(key, key, null, 0u),
     )
 
-    /** Mutation: drop the 32-byte legacy branch in `read` — the legacy case reddens. */
+    /** Mutation: drop the 32-byte legacy branch in `read`, or the generation — a case reddens. */
     @Test
     fun `every payload reads as the vector says`() {
-        for ((payload, key, address) in vectors) {
-            val card = ContactCardPayload.read(hexDecode(payload))
-            assertNotNull(payload, card)
-            assertArrayEquals(payload, key?.let(::hexDecode), card!!.intakeKey)
-            assertArrayEquals(payload, address?.let(::hexDecode), card.accountAddress)
+        for (v in vectors) {
+            val card = ContactCardPayload.read(hexDecode(v.payload))
+            assertNotNull(v.payload, card)
+            assertArrayEquals(v.payload, v.key?.let(::hexDecode), card!!.intakeKey)
+            assertArrayEquals(v.payload, v.address?.let(::hexDecode), card.accountAddress)
+            assertEquals(v.payload, v.generation, card.intakeGeneration)
         }
     }
 
+    /** Mutation: leave the generation off the wire — the 300 case (two varint bytes) reddens. */
     @Test
-    fun `an address-only card encodes as the vector`() {
-        val (payload, _, address) = vectors.first { it.second == null && it.third != null }
-        assertEquals(payload, hexEncode(ContactCardPayload(accountAddress = hexDecode(address!!)).encoded()))
+    fun `cards encode as the vectors`() {
+        for (v in vectors.filter { it.payload != key }) {
+            val card = ContactCardPayload(v.key?.let(::hexDecode), v.address?.let(::hexDecode), v.generation)
+            assertEquals(v.payload, hexEncode(card.encoded()))
+        }
     }
 
     private val a = ByteArray(32) { 0xA1.toByte() }

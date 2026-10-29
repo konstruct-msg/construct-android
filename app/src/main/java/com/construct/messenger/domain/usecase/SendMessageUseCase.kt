@@ -385,6 +385,24 @@ class SendMessageUseCase @Inject constructor(
     }
 
     /**
+     * The account's intake key, as a contact card (27), to our own other devices not in
+     * [skipping] — a device linked since, or every one of them after the key changed. Framed as
+     * read markers are: a type-27 frame inside, SENDER_SYNC outside, so the receiver takes it as
+     * our own key only off a session with one of our devices. Returns the devices that took it.
+     * **Canon:** iOS `MultiDeviceSendCoordinator.sendOwnContactCard`.
+     */
+    suspend fun sendOwnContactCard(card: ByteArray, skipping: Set<String>): List<String> {
+        val myId = keystoreManager.getUserId() ?: return emptyList()
+        if (!cryptoManager.isMessagingReady) return emptyList()
+        val tally = deliverCopies(
+            myId, myId, UUID.randomUUID().toString(), System.currentTimeMillis(), card, pinned = null,
+            replicaContentType = ContentType.CONTENT_TYPE_CONTACT_CARD_VALUE,
+            skipOwn = skipping,
+        )
+        return tally.reachedOwn
+    }
+
+    /**
      * Edit one of our own text messages, or a photo's caption. Same fan-out as a send, different payload:
      * `MessageContent.edit` names the row, and no new row is written. The local
      * text changes only after a recipient copy is accepted — a failure leaves the
@@ -501,6 +519,8 @@ class SendMessageUseCase @Inject constructor(
         val orderKey: String? = null,
         /** Recipient devices the plan named that did not take their copy. */
         val owed: List<String> = emptyList(),
+        /** Our own devices that took their copy. */
+        val reachedOwn: List<String> = emptyList(),
     )
 
     /**
@@ -533,6 +553,8 @@ class SendMessageUseCase @Inject constructor(
          * type of their own — read markers (30) — framed as they are.
          */
         replicaContentType: Int = KnstFrame.TYPE_SENDER_SYNC,
+        /** Own devices that already have this (lowercase ids); not sent again. */
+        skipOwn: Set<String> = emptySet(),
     ): DeliveryTally {
         val ourDeviceId = cryptoManager.currentDeviceId()
             ?: return DeliveryTally(0, 0, "no device id")
@@ -550,6 +572,7 @@ class SendMessageUseCase @Inject constructor(
                     Log.w(TAG, "own device discovery failed", it)
                     emptyList()
                 }
+                .filter { it.deviceId.lowercase() !in skipOwn }
         }
 
         val targets = cryptoManager.planSend(
@@ -569,6 +592,7 @@ class SendMessageUseCase @Inject constructor(
         var lastError = "send failed"
         var orderKey: String? = null
         val owed = mutableListOf<String>()
+        val reachedOwn = mutableListOf<String>()
         for (target in targets) {
             val isOwnReplica = target.audience == DeliveryAudience.OWN_REPLICA
             val accountId = if (isOwnReplica) myId else contactId
@@ -610,7 +634,12 @@ class SendMessageUseCase @Inject constructor(
                 isOwnReplica = isOwnReplica,
             )
             if (result?.success == true) {
-                if (isOwnReplica) replicaAccepted++ else recipientAccepted++
+                if (isOwnReplica) {
+                    replicaAccepted++
+                    reachedOwn += target.deviceId
+                } else {
+                    recipientAccepted++
+                }
                 if (!isOwnReplica && orderKey == null) orderKey = result.orderKey
             } else {
                 lastError = result?.errorCode?.ifEmpty { "send failed" } ?: "send failed"
@@ -618,7 +647,7 @@ class SendMessageUseCase @Inject constructor(
                 if (!isOwnReplica) owed += target.deviceId
             }
         }
-        return DeliveryTally(recipientAccepted, replicaAccepted, lastError, orderKey, owed)
+        return DeliveryTally(recipientAccepted, replicaAccepted, lastError, orderKey, owed, reachedOwn)
     }
 
     /**
