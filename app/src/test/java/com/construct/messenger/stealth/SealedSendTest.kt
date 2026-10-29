@@ -17,6 +17,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import shared.proto.services.v1.MessagingServiceOuterClass.IntakeVerdict
 
 class SealedSendTest {
 
@@ -39,7 +40,8 @@ class SealedSendTest {
     private val stealth = mock<StealthSenderService>()
     private val messaging = mock<MessagingService>()
     private val tokens = mock<BlindTokenService>()
-    private val send = SealedSend(stealth, messaging, tokens)
+    private val intake = mock<IntakeCredentials>()
+    private val send = SealedSend(stealth, messaging, tokens, intake)
     private val ok = MessagingService.SendResult("id", true, "", false, 0, "a")
 
     /** Mutation: retry without afterCredentialRejection — the same credential is refused again. */
@@ -144,4 +146,27 @@ class SealedSendTest {
     }
 
     private fun refusal(description: String) = StatusException(Status.FAILED_PRECONDITION.withDescription(description))
+
+    /** Mutation: suspend on anything but NOT_ACCEPTED — a server outage or rotation costs a working key a day. */
+    @Test
+    fun `only a tag the recipient does not accept suspends the key`() {
+        IntakeVerdict.values().filter { it != IntakeVerdict.UNRECOGNIZED }.forEach { verdict ->
+            assertEquals(
+                verdict.name,
+                verdict == IntakeVerdict.INTAKE_VERDICT_NOT_ACCEPTED,
+                IntakeCredentials.Verdict.suspendsKey(verdict),
+            )
+        }
+    }
+
+    /** Mutation: ignore the verdict — under warn a stale key is presented forever, the defect. */
+    @Test
+    fun `the server's verdict reaches the key of the recipient it was for`() = runTest {
+        whenever(stealth.buildSealedInner(any(), any(), any(), any(), any(), anyOrNull(), anyOrNull())).thenReturn(byteArrayOf(1))
+        whenever(messaging.sendSealedMessage(any())).thenReturn(ok.copy(intakeVerdict = IntakeVerdict.INTAKE_VERDICT_NOT_ACCEPTED))
+
+        send.send("peer", ByteArray(32), byteArrayOf(9), SealedEnvelopeType.GENERIC)
+
+        verify(intake).onVerdict("peer", IntakeVerdict.INTAKE_VERDICT_NOT_ACCEPTED)
+    }
 }

@@ -29,6 +29,7 @@ class SealedSend @Inject constructor(
     private val stealthSender: StealthSenderService,
     private val messagingService: MessagingService,
     private val blindTokens: BlindTokenService,
+    private val intake: IntakeCredentials,
 ) {
     suspend fun send(
         recipientUserId: String,
@@ -56,6 +57,8 @@ class SealedSend @Inject constructor(
         )
         return try {
             messagingService.sendSealedMessage(build(afterRejection = false))
+                // Under warn too: the one way this device learns its copy of their key is stale.
+                .also { intake.onVerdict(recipientUserId, it.intakeVerdict) }
         } catch (e: Exception) {
             val label = rejectionLabel(e) ?: throw e
             Log.i(TAG, "sealed send refused by enforce ($label) — paying and retrying once")
