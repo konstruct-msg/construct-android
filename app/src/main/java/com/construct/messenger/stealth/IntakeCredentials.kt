@@ -76,7 +76,8 @@ class IntakeCredentials @Inject constructor(
         val own = currentOwnKey() ?: return null
         val accountId = keystoreManager.getUserId()?.takeIf { it.isNotEmpty() } ?: return null
         val last = runCatching { Published.decode(keystoreManager.intakePublished()) }.getOrNull()
-        return own.takeIf { Publishing.serverHolds(last, accountId, Published.keyId(it.key)) }
+        val epoch = intakeEpoch((System.currentTimeMillis() / 1000).toULong())
+        return own.takeIf { Publishing.serverHolds(last, accountId, Published.keyId(it.key), epoch) }
     }
 
     /** What the keystore says about our key. An unreadable store is not an absent key. */
@@ -396,11 +397,14 @@ class IntakeCredentials @Inject constructor(
                 !last.accountId.equals(due.accountId, ignoreCase = true)
 
         /**
-         * The last publish the server took was this key's, for this account. Any epoch: a window
-         * runs seven ahead, and a key whose publish is due today still has yesterday's tags.
+         * The last publish the server took was this key's, for this account, and its window still
+         * covers [currentEpoch]: a publish runs [WINDOW_EPOCHS] ahead, so one from an earlier epoch
+         * still holds today's tag — and one a week old does not. A marker from the future (a clock
+         * set back) is not trusted. **Canon:** iOS `IntakePublishing.serverHolds`.
          */
-        fun serverHolds(last: Published?, accountId: String, keyId: String): Boolean =
-            last != null && last.keyId == keyId && last.accountId.equals(accountId, ignoreCase = true)
+        fun serverHolds(last: Published?, accountId: String, keyId: String, currentEpoch: ULong): Boolean =
+            last != null && last.keyId == keyId && last.accountId.equals(accountId, ignoreCase = true) &&
+                currentEpoch >= last.epoch && (currentEpoch - last.epoch).toLong() < WINDOW_EPOCHS
 
         /** The account's generation above ours: nothing was stored. An old server answers 0. */
         fun refusedAsStale(currentGeneration: UInt, ours: UInt): Boolean = currentGeneration > ours

@@ -160,12 +160,22 @@ class IntakePublishingTest {
         assertTrue("spread over the hour, not its first minutes", offsets.max() > IntakeCredentials.Rotation.SPREAD_MS / 2)
     }
 
-    /** Mutation: ignore the key — a card names a rotated key before its publish lands; the account — another login's marker counts. */
+    /**
+     * Mutation: ignore the key — a card names a rotated key before its publish lands; the account —
+     * another login's marker counts; the epoch — a device that has not published for a week hands
+     * out a key whose window lapsed; `<=` for the window end, or trusting a marker from the future.
+     */
     @Test
-    fun `the server holds our key only when the last publish was this key, for this account`() {
-        assertTrue(IntakeCredentials.Publishing.serverHolds(published(90uL), account.uppercase(), key))
-        assertFalse(IntakeCredentials.Publishing.serverHolds(published(100uL, keyId = "other"), account, key))
-        assertFalse(IntakeCredentials.Publishing.serverHolds(published(100uL, accountId = "someone-else"), account, key))
-        assertFalse(IntakeCredentials.Publishing.serverHolds(null, account, key))
+    fun `the server holds our key only when the last publish was this key, for this account, within its window`() {
+        val holds = { last: Published?, accountId: String, keyId: String, now: ULong ->
+            IntakeCredentials.Publishing.serverHolds(last, accountId, keyId, now)
+        }
+        assertTrue(holds(published(90uL), account.uppercase(), key, 90uL))
+        assertTrue("six epochs later: the window's last day", holds(published(90uL), account, key, 96uL))
+        assertFalse("seven epochs later: lapsed", holds(published(90uL), account, key, 97uL))
+        assertFalse("a marker from the future", holds(published(91uL), account, key, 90uL))
+        assertFalse(holds(published(90uL, keyId = "other"), account, key, 90uL))
+        assertFalse(holds(published(90uL, accountId = "someone-else"), account, key, 90uL))
+        assertFalse(holds(null, account, key, 90uL))
     }
 }
