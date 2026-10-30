@@ -32,6 +32,7 @@ class ContactActionsUseCase @Inject constructor(
     private val sessionStateStore: SessionStateStore,
     private val grpcClient: GrpcClient,
     private val blockSync: BlockSyncService,
+    private val intakeRotation: IntakeRotationUseCase,
 ) {
     /**
      * Remove the contact, its chat and its messages from this device, and forget every session
@@ -54,6 +55,8 @@ class ContactActionsUseCase @Inject constructor(
         contacts.delete(userId)
         forgetSessions(devices)
         Log.i(TAG, "contact ${userId.take(8)}… removed — forgot ${devices.size} device session(s)")
+        // Removing a contact is a rotation (`decisions/contact-traffic-is-vouched-not-purchased.md`).
+        intakeRotation.onContactDropped(userId, "removed")
     }
 
     /**
@@ -98,6 +101,11 @@ class ContactActionsUseCase @Inject constructor(
     suspend fun setBlocked(userId: String, blocked: Boolean, reason: String? = null) {
         contacts.setBlocked(userId, blocked)
         blockSync.request(userId, blocked, reason)
+        // The block drops their messages here, but the server cannot see a sealed sender: our key
+        // in their hands would still deliver free. An unblock hands nothing back — they get the
+        // current key with our next message. A block adopted from another of our devices comes
+        // through [BlockSyncService], not here: that device rotated.
+        if (blocked) intakeRotation.onContactDropped(userId, "blocked")
     }
 
     /**

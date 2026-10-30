@@ -115,5 +115,57 @@ class IntakePublishingTest {
         assertNull(IntakeCredentials.AccountIntake.onError(io.grpc.StatusException(io.grpc.Status.UNAVAILABLE)))
         assertNull(IntakeCredentials.AccountIntake.onError(java.io.IOException("reset")))
     }
-}
 
+    // --- a rotation (block or remove on this device) ---
+
+    /** Mutation: `held ?: server` — a sibling's newer generation is minted under; ours alone — the server's is. */
+    @Test
+    fun `a rotation mints above both our generation and the server's`() {
+        assertEquals(7u, IntakeCredentials.Rotation.above(7u, 3u))
+        assertEquals(9u, IntakeCredentials.Rotation.above(2u, 9u))
+        assertEquals(4u, IntakeCredentials.Rotation.above(null, 4u))
+        assertEquals(0u, IntakeCredentials.Rotation.above(null, 0u))
+    }
+
+    /** Mutation: re-mint on every stale answer — a retry budget; never — a sibling's key the blocked contact may hold stays live. */
+    @Test
+    fun `a stale publish re-mints once above the generation it names, nothing else does`() {
+        val stale = IntakeCredentials.PublishOutcome.Stale(12u)
+        assertEquals(12u, IntakeCredentials.Rotation.reMintAbove(stale, alreadyReMinted = false))
+        assertNull(IntakeCredentials.Rotation.reMintAbove(stale, alreadyReMinted = true))
+        assertNull(IntakeCredentials.Rotation.reMintAbove(IntakeCredentials.PublishOutcome.Failed, alreadyReMinted = false))
+        assertNull(IntakeCredentials.Rotation.reMintAbove(IntakeCredentials.PublishOutcome.Stored, alreadyReMinted = false))
+    }
+
+    /** Mutation: keep the dropped contact, or our own account — the key goes to the one it was taken from, or to note-to-self. */
+    @Test
+    fun `the cards go to every remaining contact once, not to the dropped one or to us`() {
+        val schedule = IntakeCredentials.Rotation.cardSchedule(
+            listOf("a", "B", "b", "dropped", account, "c"),
+            dropped = "DROPPED",
+            ownAccount = account.uppercase(),
+            random = kotlin.random.Random(1),
+        )
+        assertEquals(listOf("a", "B", "c"), schedule.map { it.first })
+    }
+
+    /** Mutation: offset 0 — a batch, which shows the server when and how many; beyond the hour — the lane stays costly longer. */
+    @Test
+    fun `the cards are spread within the hour, each at its own moment`() {
+        val offsets = IntakeCredentials.Rotation.cardSchedule(
+            (1..50).map { "c$it" }, dropped = "x", ownAccount = null, random = kotlin.random.Random(7),
+        ).map { it.second }
+        assertTrue(offsets.all { it in 0 until IntakeCredentials.Rotation.SPREAD_MS })
+        assertTrue("not one moment", offsets.toSet().size > 40)
+        assertTrue("spread over the hour, not its first minutes", offsets.max() > IntakeCredentials.Rotation.SPREAD_MS / 2)
+    }
+
+    /** Mutation: ignore the key — a card names a rotated key before its publish lands; the account — another login's marker counts. */
+    @Test
+    fun `the server holds our key only when the last publish was this key, for this account`() {
+        assertTrue(IntakeCredentials.Publishing.serverHolds(published(90uL), account.uppercase(), key))
+        assertFalse(IntakeCredentials.Publishing.serverHolds(published(100uL, keyId = "other"), account, key))
+        assertFalse(IntakeCredentials.Publishing.serverHolds(published(100uL, accountId = "someone-else"), account, key))
+        assertFalse(IntakeCredentials.Publishing.serverHolds(null, account, key))
+    }
+}
