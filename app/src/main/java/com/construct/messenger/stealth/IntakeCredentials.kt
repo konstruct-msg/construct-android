@@ -76,7 +76,8 @@ class IntakeCredentials @Inject constructor(
         val own = currentOwnKey() ?: return null
         val accountId = keystoreManager.getUserId()?.takeIf { it.isNotEmpty() } ?: return null
         val last = runCatching { Published.decode(keystoreManager.intakePublished()) }.getOrNull()
-        return own.takeIf { Publishing.serverHolds(last, accountId, Published.keyId(it.key)) }
+        val epoch = intakeEpoch((System.currentTimeMillis() / 1000).toULong())
+        return own.takeIf { Publishing.serverHolds(last, accountId, Published.keyId(it.key), epoch) }
     }
 
     /** What the keystore says about our key. An unreadable store is not an absent key. */
@@ -396,11 +397,14 @@ class IntakeCredentials @Inject constructor(
                 !last.accountId.equals(due.accountId, ignoreCase = true)
 
         /**
-         * The last publish the server took was this key's, for this account. Any epoch: a window
-         * runs seven ahead, and a key whose publish is due today still has yesterday's tags.
+         * The last publish the server took was this key's, for this account, and its window still
+         * covers [currentEpoch]: a publish runs [WINDOW_EPOCHS] ahead, so one from an earlier epoch
+         * still holds today's tag — and one a week old does not. A marker from the future (a clock
+         * set back) is not trusted. **Canon:** iOS `IntakePublishing.serverHolds`.
          */
-        fun serverHolds(last: Published?, accountId: String, keyId: String): Boolean =
-            last != null && last.keyId == keyId && last.accountId.equals(accountId, ignoreCase = true)
+        fun serverHolds(last: Published?, accountId: String, keyId: String, currentEpoch: ULong): Boolean =
+            last != null && last.keyId == keyId && last.accountId.equals(accountId, ignoreCase = true) &&
+                currentEpoch >= last.epoch && (currentEpoch - last.epoch).toLong() < WINDOW_EPOCHS
 
         /** The account's generation above ours: nothing was stored. An old server answers 0. */
         fun refusedAsStale(currentGeneration: UInt, ours: UInt): Boolean = currentGeneration > ours
@@ -422,6 +426,14 @@ class IntakeCredentials @Inject constructor(
         }
         keystoreManager.savePeerIntakeKey(accountId, KeyRecord.encode(offered))
         Log.i(TAG, "stored intake key generation ${offered.generation} from ${accountId.take(8)}…")
+        // A suspension names the key the server refused; a newer generation is not that key. Kept
+        // otherwise, a contact who rotated cost us tokens until the epoch rolled, card or no card.
+        // Only an adopted (newer) key lifts it: a replayed old card must not, and a refusal of
+        // the new key suspends it again ([onVerdict]).
+        if (prefs.contains(rejectedKey(accountId))) {
+            prefs.edit().remove(rejectedKey(accountId)).apply()
+            Log.i(TAG, "suspension of ${accountId.take(8)}… lifted — a newer key than the one refused")
+        }
     }
 
     /**
@@ -473,11 +485,13 @@ class IntakeCredentials @Inject constructor(
      */
     fun noteRejected(accountId: String, nowSeconds: Long = System.currentTimeMillis() / 1000) {
         val epoch = intakeEpoch(nowSeconds.toULong()).toLong()
-        prefs.edit().putLong(KEY_REJECTED_PREFIX + accountId.lowercase(), epoch).apply()
+        prefs.edit().putLong(rejectedKey(accountId), epoch).apply()
     }
 
     private fun isRejected(accountId: String, epoch: Long): Boolean =
-        prefs.getLong(KEY_REJECTED_PREFIX + accountId.lowercase(), -1L) == epoch
+        prefs.getLong(rejectedKey(accountId), -1L) == epoch
+
+    private fun rejectedKey(accountId: String) = KEY_REJECTED_PREFIX + accountId.lowercase()
 
     private companion object {
         const val TAG = "Intake"
