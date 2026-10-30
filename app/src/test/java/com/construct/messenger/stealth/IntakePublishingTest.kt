@@ -159,4 +159,13 @@ class IntakePublishingTest {
         assertTrue("not one moment", offsets.toSet().size > 40)
         assertTrue("spread over the hour, not its first minutes", offsets.max() > IntakeCredentials.Rotation.SPREAD_MS / 2)
     }
+
+    /** Mutation: ignore the key — a card names a rotated key before its publish lands; the account — another login's marker counts. */
+    @Test
+    fun `the server holds our key only when the last publish was this key, for this account`() {
+        assertTrue(IntakeCredentials.Publishing.serverHolds(published(90uL), account.uppercase(), key))
+        assertFalse(IntakeCredentials.Publishing.serverHolds(published(100uL, keyId = "other"), account, key))
+        assertFalse(IntakeCredentials.Publishing.serverHolds(published(100uL, accountId = "someone-else"), account, key))
+        assertFalse(IntakeCredentials.Publishing.serverHolds(null, account, key))
+    }
 }

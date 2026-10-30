@@ -66,6 +66,19 @@ class IntakeCredentials @Inject constructor(
     fun currentOwnKey(): IntakeKeyState? =
         (readOwn() as? OwnRead.Found)?.state?.takeIf { it.generation > 0u }
 
+    /**
+     * [currentOwnKey] once the server holds its tags: what a contact card may name. A card naming a
+     * key the server does not hold has the contact's envelopes refused and the key suspended for
+     * the epoch — after a rotation whose publish failed, the lazy card would do exactly that. The
+     * eager cards after a rotation follow the same rule ([rotate] returns the key only once stored).
+     */
+    fun publishedOwnKey(): IntakeKeyState? {
+        val own = currentOwnKey() ?: return null
+        val accountId = keystoreManager.getUserId()?.takeIf { it.isNotEmpty() } ?: return null
+        val last = runCatching { Published.decode(keystoreManager.intakePublished()) }.getOrNull()
+        return own.takeIf { Publishing.serverHolds(last, accountId, Published.keyId(it.key)) }
+    }
+
     /** What the keystore says about our key. An unreadable store is not an absent key. */
     private sealed interface OwnRead {
         data class Found(val state: IntakeKeyState) : OwnRead
@@ -381,6 +394,13 @@ class IntakeCredentials @Inject constructor(
         fun shouldPublish(last: Published?, due: Published): Boolean =
             last == null || last.epoch != due.epoch || last.keyId != due.keyId ||
                 !last.accountId.equals(due.accountId, ignoreCase = true)
+
+        /**
+         * The last publish the server took was this key's, for this account. Any epoch: a window
+         * runs seven ahead, and a key whose publish is due today still has yesterday's tags.
+         */
+        fun serverHolds(last: Published?, accountId: String, keyId: String): Boolean =
+            last != null && last.keyId == keyId && last.accountId.equals(accountId, ignoreCase = true)
 
         /** The account's generation above ours: nothing was stored. An old server answers 0. */
         fun refusedAsStale(currentGeneration: UInt, ours: UInt): Boolean = currentGeneration > ours

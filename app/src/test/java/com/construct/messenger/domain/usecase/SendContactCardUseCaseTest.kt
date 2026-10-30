@@ -26,7 +26,7 @@ class SendContactCardUseCaseTest {
     private val orchestrator = mock<OrchestratorGateway>()
     private val crypto = mock<CryptoManager> { on { isMessagingReady } doReturn true }
     private val policy = mock<StealthPolicy> { on { shouldUseSealedSender() } doReturn true }
-    private val intake = mock<IntakeCredentials> { on { currentOwnKey() } doReturn IntakeKeyState(2u, ByteArray(32)) }
+    private val intake = mock<IntakeCredentials> { on { publishedOwnKey() } doReturn IntakeKeyState(2u, ByteArray(32)) }
     private val contacts = FakeContactStore()
 
     private val useCase = SendContactCardUseCase(
@@ -42,6 +42,23 @@ class SendContactCardUseCaseTest {
         whenever(sessions.resolveTarget(peer)).thenReturn(SessionManager.SessionPeer(peer, device, ByteArray(32) { 1 }))
         whenever(sessions.hasSession(device)).thenReturn(true)
         contacts.rows[peer] = ContactRecord(id = peer, isContact = true, isBlocked = true)
+
+        useCase.sendIfOwed(peer)
+
+        verify(orchestrator, never()).handleEvent(any())
+    }
+
+    /**
+     * A key the server does not hold yet — a rotation whose publish failed — is not named in a
+     * card: the contact would have it refused. Mutation: read `currentOwnKey` — this reddens.
+     */
+    @Test
+    fun `no card names a key whose publish has not landed`() = runTest {
+        whenever(sessions.resolveTarget(peer)).thenReturn(SessionManager.SessionPeer(peer, device, ByteArray(32) { 1 }))
+        whenever(sessions.hasSession(device)).thenReturn(true)
+        contacts.rows[peer] = ContactRecord(id = peer, isContact = true)
+        whenever(intake.currentOwnKey()).thenReturn(IntakeKeyState(3u, ByteArray(32)))
+        whenever(intake.publishedOwnKey()).thenReturn(null)
 
         useCase.sendIfOwed(peer)
 

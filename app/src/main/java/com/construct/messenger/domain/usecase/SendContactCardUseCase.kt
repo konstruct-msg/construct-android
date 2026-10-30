@@ -58,9 +58,9 @@ class SendContactCardUseCase @Inject constructor(
         val ik = target.identityPublic
         if (ik.isEmpty()) return
 
-        // No key of a generation yet (unreadable, or due from our own devices): no card now, the
-        // device stays owed and the next exchange retries.
-        val ownKey = intake.currentOwnKey() ?: return
+        // No key of a generation the server holds yet (unreadable, due from our own devices, or
+        // its publish not landed): no card now, the device stays owed and the next exchange retries.
+        val ownKey = intake.publishedOwnKey() ?: return
         // The key always, the address only when the server confirms it is this account's: a
         // contact pins the first one it gets (TODO 109).
         val address = ownAddress.forCard()
