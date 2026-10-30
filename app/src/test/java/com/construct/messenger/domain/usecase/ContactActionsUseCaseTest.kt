@@ -38,8 +38,9 @@ class ContactActionsUseCaseTest {
     private val registry = mock<PeerDeviceRegistry>()
     private val crypto = mock<CryptoManager>()
     private val sessions = mock<SessionStateStore>()
+    private val rotation = mock<IntakeRotationUseCase>()
 
-    private val actions = ContactActionsUseCase(keystore, users, chats, messages, registry, crypto, sessions, mock(), mock())
+    private val actions = ContactActionsUseCase(keystore, users, chats, messages, registry, crypto, sessions, mock(), mock(), rotation)
 
     /**
      * Every device of theirs is forgotten in the core and its stored blob removed — the blob alone
@@ -93,10 +94,28 @@ class ContactActionsUseCaseTest {
     @Test
     fun `a local name is stored trimmed and a blank one clears it`() = runTest {
         val store = FakeContactStore().also { it.rows[peer] = ContactRecord(id = peer, isContact = true) }
-        val actions = ContactActionsUseCase(keystore, store, chats, messages, registry, crypto, sessions, mock(), mock())
+        val actions = ContactActionsUseCase(keystore, store, chats, messages, registry, crypto, sessions, mock(), mock(), mock())
         actions.setLocalName(peer, "  Kostya ")
         assertEquals("Kostya", store.rows[peer]!!.localAlias)
         actions.setLocalName(peer, "   ")
         assertNull(store.rows[peer]!!.localAlias)
+    }
+
+    /**
+     * The trigger: a block or a removal made here rotates the account's key; an unblock does not.
+     * (A block learnt from another of our devices goes through BlockSyncService, which holds no
+     * rotation: that device rotated.) Mutation: rotate on unblock, or not on remove — this reddens.
+     */
+    @Test
+    fun `blocking or removing here rotates the intake key, unblocking does not`() = runTest {
+        actions.setBlocked(peer, blocked = false)
+        verify(rotation, never()).onContactDropped(any(), any())
+
+        actions.setBlocked(peer, blocked = true)
+        verify(rotation).onContactDropped(eq(peer), eq("blocked"))
+
+        whenever(registry.knownDevices(peer)).thenReturn(emptyList())
+        actions.delete(peer)
+        verify(rotation).onContactDropped(eq(peer), eq("removed"))
     }
 }

@@ -13,6 +13,7 @@ import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
+import kotlin.random.Random
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import shared.proto.services.v1.MessagingServiceOuterClass.GetIntakeStateRequest
@@ -220,27 +221,116 @@ class IntakeCredentials @Inject constructor(
         val own = resolveOwnKey() ?: return@withLock
         val due = Published(accountId, epoch, Published.keyId(own.key))
         if (!Publishing.shouldPublish(Published.decode(keystoreManager.intakePublished()), due)) return@withLock
+        publish(own, due)
+    }
+
+    /**
+     * Stop vouching for a contact the user blocked or removed on this device: a new generation of
+     * the account's key, published at once — a higher generation replaces the account's tags on
+     * the server, so the old key in their hands stops delivering now rather than when its window
+     * runs out — then handed to our own devices. Returns the key once the server holds it, so the
+     * caller can hand it to the contacts that remain; null when it does not (they get it at their
+     * next exchange: the "sent to" list went with the old key).
+     *
+     * A block learnt from another of our devices does not come here: that device rotated. An
+     * unblock does not either. **Canon:** iOS, per construct-messenger's point-4 rules
+     * (`decisions/intake-key-is-the-accounts-not-the-devices.md`).
+     */
+    suspend fun rotate(reason: String, nowSeconds: Long = System.currentTimeMillis() / 1000): IntakeKeyState? = publishLock.withLock {
+        val accountId = keystoreManager.getUserId()?.takeIf { it.isNotEmpty() } ?: return@withLock null
+        val held = when (val read = readOwn()) {
+            // Replacing a key we cannot see could overwrite a newer one; the next exchange decides.
+            OwnRead.Unreadable -> return@withLock null
+            OwnRead.Absent -> null
+            is OwnRead.Found -> read.state
+        }
+        // Unreachable: above our own, and the publish names the account's if a sibling is higher.
+        val server = runCatching { grpcClient.messaging.getIntakeState(GetIntakeStateRequest.getDefaultInstance()).generation.toUInt() }
+            .getOrElse { AccountIntake.onError(it)?.generation ?: 0u }
+        val epoch = intakeEpoch(nowSeconds.toULong())
+        var above = Rotation.above(held?.generation, server)
+        // Two passes at most: [Rotation.reMintAbove] gives the second one its generation.
+        repeat(2) { pass ->
+            val fresh = runCatching { intakeMint(above) }
+                .onFailure { Log.w(TAG, "intake key not minted for a rotation", it) }
+                .getOrNull()
+                ?.let { adoptAsOwn(it, "rotated to generation ${it.generation} — $reason") }
+                ?: return@withLock null
+            val outcome = publish(fresh, Published(accountId, epoch, Published.keyId(fresh.key)))
+            if (outcome is PublishOutcome.Stored) return@withLock fresh
+            above = Rotation.reMintAbove(outcome, alreadyReMinted = pass > 0) ?: return@withLock null
+        }
+        null
+    }
+
+    /** Pure decisions about a rotation, apart so a test can argue with them. */
+    internal object Rotation {
+        /** Above every generation this account is known to have used: ours, and the server's. */
+        fun above(held: UInt?, server: UInt): UInt = maxOf(held ?: 0u, server)
+
+        /**
+         * A sibling rotated meanwhile and the server holds its key: once more, above the
+         * generation it named. Once — that generation is the address, not a retry budget. Any
+         * other outcome ends it: a failed publish is retried by the next ordinary one.
+         */
+        fun reMintAbove(outcome: PublishOutcome, alreadyReMinted: Boolean): UInt? =
+            (outcome as? PublishOutcome.Stale)?.current?.takeIf { !alreadyReMinted }
+
+        /** An hour, in which the cards to the remaining contacts are spread. */
+        const val SPREAD_MS = 3_600_000L
+
+        /**
+         * When each remaining contact is handed the new key: one envelope each, at an independent
+         * random moment within [SPREAD_MS] — a batch would show the server the moment and the size
+         * of our contact list. [dropped] (the one blocked or removed), blocked contacts and our
+         * own account get none.
+         */
+        fun cardSchedule(
+            contacts: Collection<String>,
+            dropped: String,
+            ownAccount: String?,
+            random: Random,
+        ): List<Pair<String, Long>> =
+            contacts.filterNot { it.equals(dropped, ignoreCase = true) || it.equals(ownAccount, ignoreCase = true) }
+                .distinctBy { it.lowercase() }
+                .map { it to random.nextLong(SPREAD_MS) }
+    }
+
+    /** What the server did with a publish. */
+    internal sealed interface PublishOutcome {
+        data object Stored : PublishOutcome
+        /** The account is at [current], above ours: nothing was stored. */
+        data class Stale(val current: UInt) : PublishOutcome
+        data object Failed : PublishOutcome
+    }
+
+    /** Publishes [own]'s window; on success marks [due] and hands the key to our own devices. Under [publishLock]. */
+    private suspend fun publish(own: IntakeKeyState, due: Published): PublishOutcome {
+        val epoch = due.epoch
+        val accountId = due.accountId
         val entries = Publishing.window(epoch).mapNotNull { e ->
             runCatching { intakeTag(own.key, accountId, e) }.getOrNull()?.let { tag ->
                 IntakeTagEntry.newBuilder().setEpoch(e.toLong()).setTag(ByteString.copyFrom(tag)).build()
             }
         }
-        if (entries.isEmpty()) return@withLock
+        if (entries.isEmpty()) return PublishOutcome.Failed
         val response = runCatching {
             grpcClient.messaging.publishIntakeTags(
                 PublishIntakeTagsRequest.newBuilder().addAllTags(entries).setGeneration(own.generation.toInt()).build(),
             )
         }.onFailure { Log.i(TAG, "intake tag publish failed — contacts keep paying until it lands", it) }
-            .getOrNull() ?: return@withLock
-        if (Publishing.refusedAsStale(response.currentGeneration.toUInt(), own.generation)) {
+            .getOrNull() ?: return PublishOutcome.Failed
+        val current = response.currentGeneration.toUInt()
+        if (Publishing.refusedAsStale(current, own.generation)) {
             // The account moved on; the newer key is due from one of our own devices. Not marked,
             // so the next publish asks again.
-            Log.i(TAG, "publish of generation ${own.generation} refused — the account is at ${response.currentGeneration}")
-            return@withLock
+            Log.i(TAG, "publish of generation ${own.generation} refused — the account is at $current")
+            return PublishOutcome.Stale(current)
         }
         keystoreManager.saveIntakePublished(due.encoded())
         Log.i(TAG, "published ${response.accepted}/${entries.size} intake tag(s), generation ${own.generation}, from epoch $epoch")
         offerOwnKeyToOwnDevices(own)
+        return PublishOutcome.Stored
     }
 
     /**

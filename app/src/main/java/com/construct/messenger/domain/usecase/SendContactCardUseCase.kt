@@ -3,6 +3,7 @@ package com.construct.messenger.domain.usecase
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.MessagingService
+import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.invite.ContactCardPayload
@@ -44,11 +45,14 @@ class SendContactCardUseCase @Inject constructor(
     private val intake: IntakeCredentials,
     private val sessionStateStore: SessionStateStore,
     private val ownAddress: OwnAccountAddress,
+    private val contacts: ContactStore,
 ) {
     suspend fun sendIfOwed(contactId: String) {
         val target = sessionManager.resolveTarget(contactId) ?: return
         val deviceId = target.deviceId
         if (deviceId.lowercase() in keystoreManager.contactCardSentTo()) return
+        // A blocked contact is the one a rotation took our key from (IntakeRotationUseCase).
+        if (contacts.get(target.accountId)?.isBlocked == true) return
         if (!cryptoManager.isMessagingReady || !sessionManager.hasSession(deviceId)) return
         if (!stealthPolicy.shouldUseSealedSender()) return
         val ik = target.identityPublic
