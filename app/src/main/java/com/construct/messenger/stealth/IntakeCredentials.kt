@@ -426,6 +426,14 @@ class IntakeCredentials @Inject constructor(
         }
         keystoreManager.savePeerIntakeKey(accountId, KeyRecord.encode(offered))
         Log.i(TAG, "stored intake key generation ${offered.generation} from ${accountId.take(8)}…")
+        // A suspension names the key the server refused; a newer generation is not that key. Kept
+        // otherwise, a contact who rotated cost us tokens until the epoch rolled, card or no card.
+        // Only an adopted (newer) key lifts it: a replayed old card must not, and a refusal of
+        // the new key suspends it again ([onVerdict]).
+        if (prefs.contains(rejectedKey(accountId))) {
+            prefs.edit().remove(rejectedKey(accountId)).apply()
+            Log.i(TAG, "suspension of ${accountId.take(8)}… lifted — a newer key than the one refused")
+        }
     }
 
     /**
@@ -477,11 +485,13 @@ class IntakeCredentials @Inject constructor(
      */
     fun noteRejected(accountId: String, nowSeconds: Long = System.currentTimeMillis() / 1000) {
         val epoch = intakeEpoch(nowSeconds.toULong()).toLong()
-        prefs.edit().putLong(KEY_REJECTED_PREFIX + accountId.lowercase(), epoch).apply()
+        prefs.edit().putLong(rejectedKey(accountId), epoch).apply()
     }
 
     private fun isRejected(accountId: String, epoch: Long): Boolean =
-        prefs.getLong(KEY_REJECTED_PREFIX + accountId.lowercase(), -1L) == epoch
+        prefs.getLong(rejectedKey(accountId), -1L) == epoch
+
+    private fun rejectedKey(accountId: String) = KEY_REJECTED_PREFIX + accountId.lowercase()
 
     private companion object {
         const val TAG = "Intake"
