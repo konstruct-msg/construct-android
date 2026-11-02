@@ -355,11 +355,16 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
         orchestrator?.sealEnvelope(deviceId, wirePayload)
     }
 
-    /** Who wrote a session envelope, found by its tag, and its opened body; `null` when no pair
-     * this device holds matches. */
-    fun openEnvelope(envelope: ByteArray): uniffi.construct_core.EnvelopeOpened? = synchronized(coreLock) {
-        orchestrator?.openEnvelope(envelope)
-    }
+    /** Open a sealed delivery (`SealedInner`) and return who wrote it and what it carries. The
+     * route and the certificate verdict are the core's; the verdict needs the server keys, so
+     * [trust] is handed over first, as every verdict does. **Canon:** iOS
+     * `CryptoManager.openSealed`. */
+    fun openSealed(sealedInner: ByteArray, trust: ServerTrust): uniffi.construct_core.OpenedSealed =
+        synchronized(coreLock) {
+            val core = requireOrchestrator()
+            handOver(core, trust)
+            core.openSealed(sealedInner)
+        }
 
     /**
      * Seal a first flight — a wire payload written on a session [deviceId] has not answered yet —
@@ -375,12 +380,6 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
         certificate: ByteArray,
     ): ByteArray? = synchronized(coreLock) {
         requireOrchestrator().sealFirstFlight(deviceId, recipientIdentity, wirePayload, certificate)
-    }
-
-    /** Open a `SealedInner.first_flight` sealed to this device: the certificate and the wire
-     * payload, as a first message always carried them. Throws when it does not open. */
-    fun openFirstFlight(sealed: ByteArray): uniffi.construct_core.FirstFlightOpened = synchronized(coreLock) {
-        requireOrchestrator().openFirstFlight(sealed)
     }
 
     /** How late messages have arrived since start (PQR-4); `null` before the core is up. */

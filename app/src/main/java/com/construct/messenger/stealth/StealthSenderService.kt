@@ -17,8 +17,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import shared.proto.core.v1.EnvelopeOuterClass.SealedInner
-import shared.proto.core.v1.EnvelopeOuterClass.SenderCertificate
 import shared.proto.services.v1.AuthServiceOuterClass.GetSenderCertificateRequest
+import uniffi.construct_core.OpenedSealed
 import uniffi.construct_core.ppSealTokenBytes
 import uniffi.construct_core.sealedSealSenderCert
 
@@ -222,80 +222,63 @@ class StealthSenderService @Inject constructor(
      * Unseals SealedInner bytes and returns the sender, the real content type and the
      * certificate, or null when the box does not open (caller drops the message with a log).
      *
-     * Nothing here refuses a certificate. Until 2026-09-27 this dropped every message whose
-     * certificate had expired — issued for 24 h, while the mailbox keeps a message for 7 days, so
-     * anything that waited more than a day was lost — and every message it could not verify. iOS
-     * never gated delivery on either. The one decision a certificate carries, whether it may open
-     * a session, is the core's (`SenderCertificate::identity_for_opening`), with one rule on both
-     * platforms: `decisions/first-message-opens-without-the-server.md`.
+     * The route is the core's (`open_sealed`, construct-docs TODO 140): Kotlin no longer reads
+     * `SealedInner` fields or branches on them. Nothing here refuses a certificate — the one
+     * decision a certificate carries, whether it may open a session, is the core's
+     * (`SenderCertificate::identity_for_opening`), with one rule on both platforms:
+     * `decisions/first-message-opens-without-the-server.md`.
      */
     suspend fun resolveSender(sealedInnerBytes: ByteArray): ResolvedSender? {
         return try {
-            val inner = SealedInner.parseFrom(sealedInnerBytes)
-            if (!inner.sessionEnvelope.isEmpty) return resolveEnvelopeSender(inner.sessionEnvelope.toByteArray())
-            val certBytes: ByteArray
-            val payload: ByteArray
-            if (!inner.firstFlight.isEmpty) {
-                // A first flight sealed whole: certificate and wire payload come out together.
-                val opened = cryptoManager.openFirstFlight(inner.firstFlight.toByteArray())
-                certBytes = opened.certificate
-                payload = opened.wirePayload
-                Log.d(TAG, "first flight opened (${payload.size}B)")
-            } else {
-                if (inner.senderCertCiphertext.isEmpty) return null
-                certBytes = cryptoManager.openSealedToDevice(inner.senderCertCiphertext.toByteArray())
-                payload = inner.encryptedPayload.toByteArray()
+            when (val opened = cryptoManager.openSealed(sealedInnerBytes, serverTrust())) {
+                is OpenedSealed.SessionEnvelope -> {
+                    val account = peerDevices.accountIdForDevice(opened.writerDevice) ?: run {
+                        Log.e(TAG, "envelope writer ${opened.writerDevice.take(8)}… is in no known account")
+                        return null
+                    }
+                    if (opened.retired) {
+                        Log.i(TAG, "envelope from ${opened.writerDevice.take(8)}… on a session no longer held — the core answers it")
+                    } else {
+                        Log.d(TAG, "envelope from ${opened.writerDevice.take(8)}… kind=${opened.kind}")
+                    }
+                    ResolvedSender(
+                        senderId = account,
+                        contentType = if (opened.kind == ENVELOPE_KIND_DECRYPTION_ERROR) {
+                            ContentType.CONTENT_TYPE_DECRYPTION_ERROR
+                        } else {
+                            ContentType.CONTENT_TYPE_UNSPECIFIED
+                        },
+                        encryptedPayload = opened.body,
+                        envelopeSession = opened.sessionId,
+                        envelopeDevice = opened.writerDevice,
+                    )
+                }
+                is OpenedSealed.FirstFlight -> {
+                    Log.d(TAG, "first flight opened (${opened.firstFlightPayload.size}B)")
+                    ResolvedSender(
+                        senderId = opened.writerAccount,
+                        contentType = contentType(opened.contentType),
+                        encryptedPayload = opened.firstFlightPayload,
+                        senderCertificate = opened.certificate,
+                    )
+                }
+                is OpenedSealed.CertSealed -> ResolvedSender(
+                    senderId = opened.writerAccount,
+                    contentType = contentType(opened.contentType),
+                    encryptedPayload = opened.encryptedPayload,
+                    senderCertificate = opened.certificate,
+                )
             }
-            val cert = SenderCertificate.parseFrom(certBytes)
-
-            ResolvedSender(
-                senderId = cert.senderUserId,
-                contentType = inner.contentType,
-                encryptedPayload = payload,
-                senderCertificate = cert.toCore(),
-            )
         } catch (e: Exception) {
             Log.e(TAG, "unseal failed", e)
             null
         }
     }
 
-    /**
-     * A session envelope names its writer by the session pair its tag matches, which the core
-     * finds. The kind byte inside says whether the body is a wire payload or a DECRYPTION_ERROR;
-     * the outer content type is generic for both, so the server cannot tell them apart.
-     * **Canon:** iOS `StealthSenderService.resolveEnvelopeSender`.
-     */
-    private suspend fun resolveEnvelopeSender(envelope: ByteArray): ResolvedSender? {
-        val opened = cryptoManager.openEnvelope(envelope) ?: run {
-            // Not ours, or from a session this device never held — the same drop as a box that
-            // does not open.
-            Log.e(TAG, "no session envelope pair matched")
-            return null
-        }
-        // A peer's device, or one of our own (SENDER_SYNC): both are in the device registry,
-        // recorded when the session with it was opened.
-        val account = peerDevices.accountIdForDevice(opened.contactId) ?: run {
-            Log.e(TAG, "envelope writer ${opened.contactId.take(8)}… is in no known account")
-            return null
-        }
-        if (opened.retired) {
-            Log.i(TAG, "envelope from ${opened.contactId.take(8)}… on a session no longer held — the core answers it")
-        } else {
-            Log.d(TAG, "envelope from ${opened.contactId.take(8)}… kind=${opened.kind}")
-        }
-        return ResolvedSender(
-            senderId = account,
-            contentType = if (opened.kind == ENVELOPE_KIND_DECRYPTION_ERROR) {
-                ContentType.CONTENT_TYPE_DECRYPTION_ERROR
-            } else {
-                ContentType.CONTENT_TYPE_UNSPECIFIED
-            },
-            encryptedPayload = opened.body,
-            envelopeSession = opened.sessionId,
-            envelopeDevice = opened.contactId,
-        )
-    }
+    /** The core returns `SealedInner.content_type` as a byte; a value this build does not know
+     * reads as UNSPECIFIED, not a guess. */
+    private fun contentType(value: UByte): ContentType =
+        ContentType.forNumber(value.toInt()) ?: ContentType.CONTENT_TYPE_UNSPECIFIED
 
     /** What a sender certificate is judged by — handed to the core before each open, since the
      * fetched key and the delegations can arrive or rotate while the app runs. */

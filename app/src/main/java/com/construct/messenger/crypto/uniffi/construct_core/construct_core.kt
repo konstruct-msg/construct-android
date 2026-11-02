@@ -1246,6 +1246,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_open_first_f
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_open_receiving(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_open_sealed(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_open_sealed_to_device(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_peer_handshake_held(
@@ -1752,6 +1754,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_open_envelope(`ptr
 external fun uniffi_construct_core_fn_method_orchestratorcore_open_first_flight(`ptr`: Long,`sealed`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_open_receiving(`ptr`: Long,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_open_sealed(`ptr`: Long,`sealedInner`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_open_sealed_to_device(`ptr`: Long,`sealedBox`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -2898,6 +2902,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_open_receiving() != 32397.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_open_sealed() != 64134.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_open_sealed_to_device() != 63797.toShort()) {
@@ -8022,6 +8029,13 @@ public interface OrchestratorCoreInterface {
     fun `openReceiving`(`device`: kotlin.String): ReceivingOpenResult
     
     /**
+     * Open a sealed delivery (`SealedInner`) and return who wrote it and what it carries. The
+     * route is decided here, not by the platform. Changes nothing — the platform then opens the
+     * session or hands the body over as before.
+     */
+    fun `openSealed`(`sealedInner`: kotlin.ByteArray): OpenedSealed
+    
+    /**
      * Open a box sealed to this device's X25519 identity key (`sealed_seal_sender_cert`,
      * `seal_to_device_key`): a sender certificate, a sibling's device metadata. A box sealed to
      * another key fails with DecryptionFailed, which is how a caller finds its own copy.
@@ -9016,6 +9030,25 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_open_receiving(
         it,
         FfiConverterString.lower(`device`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Open a sealed delivery (`SealedInner`) and return who wrote it and what it carries. The
+     * route is decided here, not by the platform. Changes nothing — the platform then opens the
+     * session or hands the body over as before.
+     */
+    @Throws(CryptoException::class)override fun `openSealed`(`sealedInner`: kotlin.ByteArray): OpenedSealed {
+            return FfiConverterTypeOpenedSealed.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_open_sealed(
+        it,
+        FfiConverterByteArray.lower(`sealedInner`),_status)
 }
     }
     )
@@ -15334,6 +15367,173 @@ public object FfiConverterTypeMlsError : FfiConverterRustBuffer<MlsException> {
     }
 
 }
+
+
+
+sealed class OpenedSealed {
+    
+    /**
+     * A session envelope named the writer; `kind` 1 = ratchet wire payload, 2 = DECRYPTION_ERROR.
+     */
+    data class SessionEnvelope(
+        val `writerDevice`: kotlin.String, 
+        val `sessionId`: kotlin.String, 
+        val `body`: kotlin.ByteArray, 
+        val `kind`: kotlin.UByte, 
+        val `retired`: kotlin.Boolean) : OpenedSealed()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * A first flight sealed whole; `content_type` is `SealedInner.content_type`.
+     */
+    data class FirstFlight(
+        val `writerAccount`: kotlin.String, 
+        val `writerDevice`: kotlin.String, 
+        val `certificate`: SenderCertificate, 
+        val `trust`: CertificateVerdict, 
+        val `firstFlightPayload`: kotlin.ByteArray, 
+        val `contentType`: kotlin.UByte) : OpenedSealed()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * A sender certificate sealed to this device; the wire payload sits in `SealedInner.encrypted_payload`.
+     */
+    data class CertSealed(
+        val `writerAccount`: kotlin.String, 
+        val `writerDevice`: kotlin.String, 
+        val `certificate`: SenderCertificate, 
+        val `trust`: CertificateVerdict, 
+        val `contentType`: kotlin.UByte, 
+        val `encryptedPayload`: kotlin.ByteArray) : OpenedSealed()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeOpenedSealed : FfiConverterRustBuffer<OpenedSealed>{
+    override fun read(buf: ByteBuffer): OpenedSealed {
+        return when(buf.getInt()) {
+            1 -> OpenedSealed.SessionEnvelope(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterByteArray.read(buf),
+                FfiConverterUByte.read(buf),
+                FfiConverterBoolean.read(buf),
+                )
+            2 -> OpenedSealed.FirstFlight(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterTypeSenderCertificate.read(buf),
+                FfiConverterTypeCertificateVerdict.read(buf),
+                FfiConverterByteArray.read(buf),
+                FfiConverterUByte.read(buf),
+                )
+            3 -> OpenedSealed.CertSealed(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterTypeSenderCertificate.read(buf),
+                FfiConverterTypeCertificateVerdict.read(buf),
+                FfiConverterUByte.read(buf),
+                FfiConverterByteArray.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: OpenedSealed) = when(value) {
+        is OpenedSealed.SessionEnvelope -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`writerDevice`)
+                + FfiConverterString.allocationSize(value.`sessionId`)
+                + FfiConverterByteArray.allocationSize(value.`body`)
+                + FfiConverterUByte.allocationSize(value.`kind`)
+                + FfiConverterBoolean.allocationSize(value.`retired`)
+            )
+        }
+        is OpenedSealed.FirstFlight -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`writerAccount`)
+                + FfiConverterString.allocationSize(value.`writerDevice`)
+                + FfiConverterTypeSenderCertificate.allocationSize(value.`certificate`)
+                + FfiConverterTypeCertificateVerdict.allocationSize(value.`trust`)
+                + FfiConverterByteArray.allocationSize(value.`firstFlightPayload`)
+                + FfiConverterUByte.allocationSize(value.`contentType`)
+            )
+        }
+        is OpenedSealed.CertSealed -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`writerAccount`)
+                + FfiConverterString.allocationSize(value.`writerDevice`)
+                + FfiConverterTypeSenderCertificate.allocationSize(value.`certificate`)
+                + FfiConverterTypeCertificateVerdict.allocationSize(value.`trust`)
+                + FfiConverterUByte.allocationSize(value.`contentType`)
+                + FfiConverterByteArray.allocationSize(value.`encryptedPayload`)
+            )
+        }
+    }
+
+    override fun write(value: OpenedSealed, buf: ByteBuffer) {
+        when(value) {
+            is OpenedSealed.SessionEnvelope -> {
+                buf.putInt(1)
+                FfiConverterString.write(value.`writerDevice`, buf)
+                FfiConverterString.write(value.`sessionId`, buf)
+                FfiConverterByteArray.write(value.`body`, buf)
+                FfiConverterUByte.write(value.`kind`, buf)
+                FfiConverterBoolean.write(value.`retired`, buf)
+                Unit
+            }
+            is OpenedSealed.FirstFlight -> {
+                buf.putInt(2)
+                FfiConverterString.write(value.`writerAccount`, buf)
+                FfiConverterString.write(value.`writerDevice`, buf)
+                FfiConverterTypeSenderCertificate.write(value.`certificate`, buf)
+                FfiConverterTypeCertificateVerdict.write(value.`trust`, buf)
+                FfiConverterByteArray.write(value.`firstFlightPayload`, buf)
+                FfiConverterUByte.write(value.`contentType`, buf)
+                Unit
+            }
+            is OpenedSealed.CertSealed -> {
+                buf.putInt(3)
+                FfiConverterString.write(value.`writerAccount`, buf)
+                FfiConverterString.write(value.`writerDevice`, buf)
+                FfiConverterTypeSenderCertificate.write(value.`certificate`, buf)
+                FfiConverterTypeCertificateVerdict.write(value.`trust`, buf)
+                FfiConverterUByte.write(value.`contentType`, buf)
+                FfiConverterByteArray.write(value.`encryptedPayload`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
 
 
 
