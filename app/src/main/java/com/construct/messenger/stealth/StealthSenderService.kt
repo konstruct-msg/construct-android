@@ -257,14 +257,14 @@ class StealthSenderService @Inject constructor(
                     Log.d(TAG, "first flight opened (${opened.firstFlightPayload.size}B)")
                     ResolvedSender(
                         senderId = opened.writerAccount,
-                        contentType = contentType(opened.contentType),
+                        contentType = sealedContentType(opened.contentType),
                         encryptedPayload = opened.firstFlightPayload,
                         senderCertificate = opened.certificate,
                     )
                 }
                 is OpenedSealed.CertSealed -> ResolvedSender(
                     senderId = opened.writerAccount,
-                    contentType = contentType(opened.contentType),
+                    contentType = sealedContentType(opened.contentType),
                     encryptedPayload = opened.encryptedPayload,
                     senderCertificate = opened.certificate,
                 )
@@ -274,11 +274,6 @@ class StealthSenderService @Inject constructor(
             null
         }
     }
-
-    /** The core returns `SealedInner.content_type` as a byte; a value this build does not know
-     * reads as UNSPECIFIED, not a guess. */
-    private fun contentType(value: UByte): ContentType =
-        ContentType.forNumber(value.toInt()) ?: ContentType.CONTENT_TYPE_UNSPECIFIED
 
     /** What a sender certificate is judged by — handed to the core before each open, since the
      * fetched key and the delegations can arrive or rotate while the app runs. */
@@ -294,3 +289,9 @@ class StealthSenderService @Inject constructor(
         val ENVELOPE_KIND_DECRYPTION_ERROR: UByte = 2u
     }
 }
+
+/** The core returns `SealedInner.content_type` as a byte; a value this build does not know reads
+ * as UNSPECIFIED, not a guess. **Canon:** iOS keeps the byte and routes via
+ * `ContentTypeRouting.kind(for:)`, which answers UNKNOWN for anything it does not know. */
+internal fun sealedContentType(value: UByte): ContentType =
+    ContentType.forNumber(value.toInt()) ?: ContentType.CONTENT_TYPE_UNSPECIFIED
