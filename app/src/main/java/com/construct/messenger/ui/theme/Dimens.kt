@@ -26,6 +26,7 @@ object CTLayout {
     val callIconSize = CTIcon.control // glyph inside a call control
     val callControlSize = 56.dp // mute / speaker discs
     val callEndSize = 64.dp    // the end-call disc
+    val stickerCover = 56.dp   // a sticker pack's cover in a list row: one grid cell's image
 }
 
 /**

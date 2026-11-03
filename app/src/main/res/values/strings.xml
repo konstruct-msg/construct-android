@@ -150,6 +150,11 @@
     <string name="sticker_install_failed">Could not install — try again</string>
     <string name="sticker_catalog_failed">Could not load packs.</string>
     <string name="sticker_pack_remove">Remove pack</string>
+    <string name="sticker_packs_add">Add stickers</string>
+    <string name="sticker_packs_title">Sticker packs</string>
+    <string name="sticker_packs_mine">My packs</string>
+    <string name="sticker_packs_all_added">Every pack is already added.</string>
+    <string name="sticker_packs_remove_short">Remove</string>
     <string name="react">React</string>
     <string name="reaction_failed">Couldn’t send the reaction</string>
     <string name="reaction_pick_more">More reactions</string>
