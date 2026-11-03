@@ -5,6 +5,7 @@ import com.construct.messenger.data.auth.AuthSessionManager
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.transport.TransportEvents
 import com.construct.messenger.transport.TransportRoute
+import com.sun.jna.Memory
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
@@ -37,6 +38,7 @@ class VeilProxy @Inject constructor(
     private val provisioner: VeilFrontProvisioner,
     private val modes: VeilModeStore,
     private val events: TransportEvents,
+    private val scoringKey: VeilScoringKey,
 ) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     val modeState: StateFlow<VeilMode> get() = modes.state
@@ -233,6 +235,8 @@ class VeilProxy @Inject constructor(
 
     private fun startNative(relay: VeilRelay, bearerB64: String, keyBound: VeilCapabilities.KeyBound?): Outcome {
         val lib = VeilLib.INSTANCE
+        val scoreKey = scoringKey.get()
+        val scoreKeyMem = Memory(scoreKey.size.toLong()).also { it.write(0, scoreKey, 0, scoreKey.size) }
         val request = VeilStartRequest.ByValue().apply {
             relay_addr = relay.address
             bundle = "" // obfs4 bridge line: obfs4 is disabled below, as on iOS.
@@ -247,6 +251,8 @@ class VeilProxy @Inject constructor(
             // Empty = AUTH v3 not configured: the relay is authenticated with the bearer ticket.
             veil_capability_v2_b64 = keyBound?.capabilityB64.orEmpty()
             veil_sk_hex = keyBound?.veilSkHex.orEmpty()
+            scoring_key = scoreKeyMem
+            scoring_key_len = SizeT(scoreKey.size.toLong())
         }
         val out = VeilStartResult()
         val rc = runCatching { lib.veil_start(request, out) }.getOrElse {

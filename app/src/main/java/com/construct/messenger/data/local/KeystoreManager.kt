@@ -102,6 +102,15 @@ class KeystoreManager @Inject constructor(
         prefs.edit().putString(KEY_VEIL_ACCESS_SEED, Base64.encodeToString(seed, Base64.NO_WRAP)).commit()
     }
 
+    /** The 32-byte device key that HMACs the scores network fingerprint (TODO 214). Device-level:
+     *  it survives logout so the per-network score counts carry over; the DB stays opaque without it. */
+    fun veilScoresKey(): ByteArray? =
+        prefs.getString(KEY_VEIL_SCORES_KEY, null)?.let { Base64.decode(it, Base64.NO_WRAP) }
+
+    fun saveVeilScoresKey(key: ByteArray) {
+        prefs.edit().putString(KEY_VEIL_SCORES_KEY, Base64.encodeToString(key, Base64.NO_WRAP)).commit()
+    }
+
     /**
      * When the access token stops being accepted, in Unix seconds, as the server stated it with
      * the token — never parsed out of it (`docs/TOKEN_AUTH.md` §3.4). Null for a token saved
@@ -365,6 +374,7 @@ class KeystoreManager @Inject constructor(
         const val KEY_VEIL_CAPABILITY_V2_PREFIX = "veil_capability_v2:"
         const val KEY_VEIL_CAPABILITY_V2_EXP_PREFIX = "veil_capability_v2_exp:"
         const val KEY_VEIL_ACCESS_SEED = "veil_access_seed"
+        const val KEY_VEIL_SCORES_KEY = "veil_scores_key"
         const val KEY_VEIL_LEARNED_FRONTS = "veil_learned_fronts"
         const val KEY_PIN_HASH = "app_pin_hash"
         const val KEY_PIN_SALT = "app_pin_salt"

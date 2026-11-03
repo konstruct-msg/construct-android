@@ -60,6 +60,7 @@ class SizeT(value: Long = 0) : IntegerType(Native.SIZE_T_SIZE, value, true) {
     "relay_addr", "bundle", "tls_sni", "spki_hex", "host_header", "wt_base_path",
     "network_fingerprint", "network_fingerprint_len", "allowed_methods", "scores_path",
     "veil_front_ticket_b64", "veil_capability_v2_b64", "veil_sk_hex",
+    "scoring_key", "scoring_key_len",
 )
 open class VeilStartRequest : Structure() {
     @JvmField var relay_addr: String? = null
@@ -75,6 +76,8 @@ open class VeilStartRequest : Structure() {
     @JvmField var veil_front_ticket_b64: String? = null
     @JvmField var veil_capability_v2_b64: String? = null
     @JvmField var veil_sk_hex: String? = null
+    @JvmField var scoring_key: Pointer? = null
+    @JvmField var scoring_key_len: SizeT = SizeT(0)
 
     class ByValue : VeilStartRequest(), Structure.ByValue
 }
