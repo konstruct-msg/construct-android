@@ -5,7 +5,6 @@ package com.construct.messenger.ui.components
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,13 +23,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.EmojiEmotions
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -46,7 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -57,7 +55,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.stickers.StickerPack
 import com.construct.messenger.stickers.StickerReference
-import com.construct.messenger.stickers.StickerStore
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTIcon
@@ -73,7 +70,7 @@ private val STICKER_SIZE = 160.dp
 
 /** A sticker's picture, decoded off the main thread at the size it is drawn. */
 @Composable
-private fun rememberSticker(file: File?, targetPx: Int): ImageBitmap? =
+internal fun rememberSticker(file: File?, targetPx: Int): ImageBitmap? =
     produceState<ImageBitmap?>(null, file?.path) {
         value = file?.let {
             withContext(Dispatchers.IO) {
@@ -123,9 +120,10 @@ fun StickerBubble(
 }
 
 /**
- * The sticker picker. **Canon:** iOS `StickerPickerView` — one scroll: Recent, each installed pack
- * (long press on its title removes it from here, never from disk), then More packs from the
- * catalog. A tap sends at once and closes the sheet: no caption, no composer strip.
+ * The sticker picker: Add stickers, then Recent, then each installed pack (long press on its
+ * title removes it from here, never from disk). Add stickers opens [StickerPacksSheet], where
+ * packs are added from the catalog and removed. A tap sends at once and closes the sheet: no
+ * caption, no composer strip.
  */
 @Composable
 fun StickerPickerSheet(
@@ -134,12 +132,7 @@ fun StickerPickerSheet(
     onDismiss: () -> Unit,
 ) {
     val picker by stickers.picker.collectAsStateWithLifecycle()
-    val catalog by stickers.catalog.collectAsStateWithLifecycle()
-    val installing by stickers.installing.collectAsStateWithLifecycle()
-    val failed by stickers.installFailed.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) { stickers.loadCatalog() }
-    val installed = picker.packs.map { it.hex }.toSet()
-    val more = (catalog as? StickersViewModel.Catalog.Loaded)?.packs.orEmpty().filter { it.hex !in installed }
+    var showPacks by remember { mutableStateOf(false) }
     fun send(ref: StickerReference) {
         onSend(ref)
         onDismiss()
@@ -149,6 +142,13 @@ fun StickerPickerSheet(
             columns = GridCells.Fixed(4),
             modifier = Modifier.fillMaxWidth().padding(horizontal = CTLayout.edgePad),
         ) {
+            header("add") {
+                FilledTonalButton(onClick = { showPacks = true }, modifier = Modifier.padding(top = CTSpace.s)) {
+                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(CTIcon.row))
+                    Spacer(Modifier.width(CTSpace.s))
+                    Text(stringResource(R.string.sticker_packs_add))
+                }
+            }
             if (picker.recents.isNotEmpty()) {
                 header("recent") { SectionTitle(stringResource(R.string.sticker_picker_recent)) }
                 items(picker.recents, key = { "r-${it.packHex}-${it.index}" }) { ref ->
@@ -170,37 +170,17 @@ fun StickerPickerSheet(
                     }
                 }
             }
-            when (catalog) {
-                StickersViewModel.Catalog.Unavailable -> header("catalog-failed") {
-                    Row(Modifier.padding(vertical = CTSpace.m), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.sticker_catalog_failed), style = CTFont.secondary, color = CTColor.textDim, modifier = Modifier.weight(1f))
-                        Text(
-                            stringResource(R.string.retry),
-                            style = CTFont.ui(12, FontWeight.Medium),
-                            color = CTColor.accent,
-                            modifier = Modifier.clickable { stickers.loadCatalog() }.padding(CTSpace.s),
-                        )
-                    }
-                }
-                else -> if (more.isNotEmpty()) {
-                    header("more") { SectionTitle(stringResource(R.string.sticker_picker_more_packs)) }
-                    more.forEach { entry ->
-                        header("c-${entry.hex}") {
-                            CatalogRow(entry, stickers, entry.hex in installing, entry.hex in failed) { stickers.install(entry) }
-                        }
-                    }
-                }
-            }
             header("bottom") { Spacer(Modifier.height(CTSpace.xl)) }
         }
     }
+    if (showPacks) StickerPacksSheet(stickers, onDismiss = { showPacks = false })
 }
 
 private fun androidx.compose.foundation.lazy.grid.LazyGridScope.header(key: String, content: @Composable () -> Unit) =
     item(key = key, span = { GridItemSpan(maxLineSpan) }) { content() }
 
 @Composable
-private fun SectionTitle(text: String) {
+internal fun SectionTitle(text: String) {
     Text(
         text = "> " + text.uppercase(),
         style = CTFont.ui(11, FontWeight.Medium),
@@ -248,50 +228,5 @@ private fun StickerCell(file: File?, emoji: String, onTap: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         if (image != null) Image(image, null, contentScale = ContentScale.Fit) else Text(emoji, fontSize = 40.sp)
-    }
-}
-
-@Composable
-private fun CatalogRow(
-    entry: StickerStore.CatalogEntry,
-    stickers: StickersViewModel,
-    installing: Boolean,
-    failed: Boolean,
-    onGet: () -> Unit,
-) {
-    val cover by produceState<ImageBitmap?>(null, entry.hex) {
-        value = stickers.cover(entry.coverSha256)?.let { bytes ->
-            withContext(Dispatchers.Default) { BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap() }
-        }
-    }
-    Column(Modifier.padding(vertical = 6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(56.dp), contentAlignment = Alignment.Center) {
-                cover?.let { Image(it, null, contentScale = ContentScale.Fit, modifier = Modifier.size(56.dp)) }
-            }
-            Spacer(Modifier.width(CTLayout.inlinePad))
-            Column(Modifier.weight(1f)) {
-                Text(entry.title, style = CTFont.ui(14, FontWeight.Medium), color = CTColor.text)
-                Text(
-                    "${entry.publisher} · ${pluralStringResource(R.plurals.sticker_pack_count, entry.count, entry.count)} · ${entry.totalBytes / 1024} KB",
-                    style = CTFont.caption,
-                    color = CTColor.textDim,
-                )
-            }
-            if (installing) {
-                CircularProgressIndicator(color = CTColor.accent, strokeWidth = 2.dp, modifier = Modifier.size(CTIcon.nav))
-            } else {
-                Text(
-                    stringResource(R.string.sticker_get),
-                    style = CTFont.ui(13, FontWeight.Medium),
-                    color = CTColor.bg,
-                    modifier = Modifier
-                        .background(CTColor.accent, RoundedCornerShape(50))
-                        .clickable(onClick = onGet)
-                        .padding(horizontal = 14.dp, vertical = 6.dp),
-                )
-            }
-        }
-        if (failed) Text(stringResource(R.string.sticker_install_failed), style = CTFont.caption, color = CTColor.danger)
     }
 }

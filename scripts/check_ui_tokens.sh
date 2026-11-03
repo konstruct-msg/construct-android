@@ -24,11 +24,11 @@ count() {
 
 # name | pattern | baseline
 CHECKS=(
-  "size set by hand — an icon takes CTIcon, a box a CTLayout size|\.size\([0-9]+(\.[0-9]+)?\.dp\)|19"
+  "size set by hand — an icon takes CTIcon, a box a CTLayout size|\.size\([0-9]+(\.[0-9]+)?\.dp\)|17"
   "text size past CTFont — use a role or CTFont.ui(size)|fontSize *= *[0-9]|5"
   "fixed-size text helper — use a CTFont role|\bct(Regular|Medium|SemiBold|Bold|Message)\(|0"
   "system face — chrome is JetBrains Mono; message text is CTFont.message|FontFamily\.(Default|Monospace|SansSerif|Serif)|1"
-  "spacing set by hand — a step of CTSpace; off-scale values wait for a decision with iOS|padding\([^)]*[0-9]+(\.[0-9]+)?\.dp|spacedBy\([0-9.]+\.dp|Spacer\(Modifier\.(height|width)\([0-9.]+\.dp|143"
+  "spacing set by hand — a step of CTSpace; off-scale values wait for a decision with iOS|padding\([^)]*[0-9]+(\.[0-9]+)?\.dp|spacedBy\([0-9.]+\.dp|Spacer\(Modifier\.(height|width)\([0-9.]+\.dp|141"
   "colour literal — use CTColor|Color\.(White|Black|Gray|Red|Green|Blue|Yellow|LightGray|DarkGray)\b|Color\(0x|1"
   # Material 3 move (docs/MATERIAL3_MIGRATION.md): the CT look-alikes of Material controls were
   # deleted in step 2 and must not come back. CTConfirmDialog, CTSettingsRow, CTSectionGroup and

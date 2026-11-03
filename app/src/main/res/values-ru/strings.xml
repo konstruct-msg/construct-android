@@ -153,6 +153,11 @@
     <string name="sticker_install_failed">Не удалось установить — попробуйте ещё раз</string>
     <string name="sticker_catalog_failed">Не удалось загрузить наборы.</string>
     <string name="sticker_pack_remove">Убрать набор</string>
+    <string name="sticker_packs_add">Добавить стикеры</string>
+    <string name="sticker_packs_title">Наборы стикеров</string>
+    <string name="sticker_packs_mine">Мои наборы</string>
+    <string name="sticker_packs_all_added">Все наборы уже добавлены.</string>
+    <string name="sticker_packs_remove_short">Убрать</string>
     <string name="react">Реакция</string>
     <string name="reaction_failed">Не удалось отправить реакцию</string>
     <string name="reaction_pick_more">Все реакции</string>
