@@ -18,6 +18,7 @@ import javax.inject.Singleton
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import shared.proto.core.v1.EnvelopeOuterClass.SealedInner
 import shared.proto.services.v1.AuthServiceOuterClass.GetSenderCertificateRequest
+import uniffi.construct_core.EnvelopeKind
 import uniffi.construct_core.OpenedSealed
 import uniffi.construct_core.ppSealTokenBytes
 import uniffi.construct_core.sealedSealSenderCert
@@ -243,11 +244,7 @@ class StealthSenderService @Inject constructor(
                     }
                     ResolvedSender(
                         senderId = account,
-                        contentType = if (opened.kind == ENVELOPE_KIND_DECRYPTION_ERROR) {
-                            ContentType.CONTENT_TYPE_DECRYPTION_ERROR
-                        } else {
-                            ContentType.CONTENT_TYPE_UNSPECIFIED
-                        },
+                        contentType = contentTypeOfEnvelope(opened.kind),
                         encryptedPayload = opened.body,
                         envelopeSession = opened.sessionId,
                         envelopeDevice = opened.writerDevice,
@@ -285,9 +282,16 @@ class StealthSenderService @Inject constructor(
         const val KEY_CERT = "sender_cert"
         const val KEY_CERT_EXPIRY = "sender_cert_expiry"
         const val CERT_EXPIRY_LEEWAY_S = 300L
-        /** `EnvelopeOpened.kind`: 1 = ratchet wire payload, 2 = DECRYPTION_ERROR. */
-        val ENVELOPE_KIND_DECRYPTION_ERROR: UByte = 2u
     }
+}
+
+/**
+ * A DECRYPTION_ERROR is labelled from the envelope; what a ratchet body is, is known only once it
+ * has decrypted.
+ */
+internal fun contentTypeOfEnvelope(kind: EnvelopeKind): ContentType = when (kind) {
+    EnvelopeKind.DECRYPTION_ERROR -> ContentType.CONTENT_TYPE_DECRYPTION_ERROR
+    EnvelopeKind.RATCHET -> ContentType.CONTENT_TYPE_UNSPECIFIED
 }
 
 /** The core returns `SealedInner.content_type` as a byte; a value this build does not know reads
