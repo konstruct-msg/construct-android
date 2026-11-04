@@ -2,7 +2,7 @@ package com.construct.messenger.data.local
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import java.io.File
 import java.security.KeyStore
 import java.security.SecureRandom

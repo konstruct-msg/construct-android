@@ -18,7 +18,7 @@ import java.io.File
 object Diagnostics {
     @Volatile
     var collector: LogCollector? = null
-        private set
+        internal set
 
     /**
      * Logs are written in debug builds and in builds handed to testers (`INTERNAL_TOOLS`, as on

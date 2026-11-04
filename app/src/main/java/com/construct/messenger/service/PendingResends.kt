@@ -1,6 +1,6 @@
 package com.construct.messenger.service
 
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.data.local.PendingResend
 import com.construct.messenger.data.local.PendingResendStore
 import com.construct.messenger.domain.usecase.ResendOutcome

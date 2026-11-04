@@ -2,7 +2,7 @@ package com.construct.messenger.viewmodel
 
 import com.construct.messenger.security.KtLog
 import com.construct.messenger.security.KtTally
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.construct.messenger.data.repository.AccountRepository

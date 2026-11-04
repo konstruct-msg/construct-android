@@ -1,7 +1,7 @@
 package com.construct.messenger.data.local
 
 import android.content.Context
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import uniffi.construct_core.LocalStore
 import uniffi.construct_core.LocalStoreException
 import java.io.File
