@@ -10049,7 +10049,7 @@ data class EnvelopeOpened (
     , 
     var `sessionId`: kotlin.String
     , 
-    var `kind`: kotlin.UByte
+    var `kind`: EnvelopeKind
     , 
     var `body`: kotlin.ByteArray
     , 
@@ -10070,7 +10070,7 @@ public object FfiConverterTypeEnvelopeOpened: FfiConverterRustBuffer<EnvelopeOpe
         return EnvelopeOpened(
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
-            FfiConverterUByte.read(buf),
+            FfiConverterTypeEnvelopeKind.read(buf),
             FfiConverterByteArray.read(buf),
             FfiConverterBoolean.read(buf),
         )
@@ -10079,7 +10079,7 @@ public object FfiConverterTypeEnvelopeOpened: FfiConverterRustBuffer<EnvelopeOpe
     override fun allocationSize(value: EnvelopeOpened) = (
             FfiConverterString.allocationSize(value.`contactId`) +
             FfiConverterString.allocationSize(value.`sessionId`) +
-            FfiConverterUByte.allocationSize(value.`kind`) +
+            FfiConverterTypeEnvelopeKind.allocationSize(value.`kind`) +
             FfiConverterByteArray.allocationSize(value.`body`) +
             FfiConverterBoolean.allocationSize(value.`retired`)
     )
@@ -10087,7 +10087,7 @@ public object FfiConverterTypeEnvelopeOpened: FfiConverterRustBuffer<EnvelopeOpe
     override fun write(value: EnvelopeOpened, buf: ByteBuffer) {
             FfiConverterString.write(value.`contactId`, buf)
             FfiConverterString.write(value.`sessionId`, buf)
-            FfiConverterUByte.write(value.`kind`, buf)
+            FfiConverterTypeEnvelopeKind.write(value.`kind`, buf)
             FfiConverterByteArray.write(value.`body`, buf)
             FfiConverterBoolean.write(value.`retired`, buf)
     }
@@ -13971,36 +13971,112 @@ public object FfiConverterTypeCfeSecureStoreSlot : FfiConverterRustBuffer<CfeSec
 
 
 
-sealed class CryptoException(message: String): kotlin.Exception(message) {
+sealed class CryptoException: kotlin.Exception() {
+    
+    class InitializationFailed(
+        ) : CryptoException() {
+        override val message
+            get() = ""
+    }
+    
+    class SessionNotFound(
+        ) : CryptoException() {
+        override val message
+            get() = ""
+    }
+    
+    class SessionInitializationFailed(
         
-        class InitializationFailed(message: String) : CryptoException(message)
+        val `detail`: kotlin.String
+        ) : CryptoException() {
+        override val message
+            get() = "detail=${ `detail` }"
+    }
+    
+    class EncryptionFailed(
         
-        class SessionNotFound(message: String) : CryptoException(message)
+        val `detail`: kotlin.String
+        ) : CryptoException() {
+        override val message
+            get() = "detail=${ `detail` }"
+    }
+    
+    class DecryptionFailed(
         
-        class SessionInitializationFailed(message: String) : CryptoException(message)
+        val `detail`: kotlin.String
+        ) : CryptoException() {
+        override val message
+            get() = "detail=${ `detail` }"
+    }
+    
+    class InvalidKeyData(
+        ) : CryptoException() {
+        override val message
+            get() = ""
+    }
+    
+    class InvalidCiphertext(
+        ) : CryptoException() {
+        override val message
+            get() = ""
+    }
+    
+    class SerializationFailed(
         
-        class EncryptionFailed(message: String) : CryptoException(message)
+        val `detail`: kotlin.String
+        ) : CryptoException() {
+        override val message
+            get() = "detail=${ `detail` }"
+    }
+    
+    class MessagePackDeserializationFailed(
+        ) : CryptoException() {
+        override val message
+            get() = ""
+    }
+    
+    class PeerSpkStale(
         
-        class DecryptionFailed(message: String) : CryptoException(message)
+        val `ageSecs`: kotlin.ULong
+        ) : CryptoException() {
+        override val message
+            get() = "ageSecs=${ `ageSecs` }"
+    }
+    
+    class PowDifficultyTooHigh(
         
-        class InvalidKeyData(message: String) : CryptoException(message)
+        val `difficulty`: kotlin.UInt, 
         
-        class InvalidCiphertext(message: String) : CryptoException(message)
+        val `max`: kotlin.UInt
+        ) : CryptoException() {
+        override val message
+            get() = "difficulty=${ `difficulty` }, max=${ `max` }"
+    }
+    
+    class PeerSpkEpochRegressed(
         
-        class SerializationFailed(message: String) : CryptoException(message)
+        val `received`: kotlin.UInt, 
         
-        class MessagePackDeserializationFailed(message: String) : CryptoException(message)
+        val `known`: kotlin.UInt
+        ) : CryptoException() {
+        override val message
+            get() = "received=${ `received` }, known=${ `known` }"
+    }
+    
+    class PqRequired(
         
-        class PeerSpkStale(message: String) : CryptoException(message)
-        
-        class PowDifficultyTooHigh(message: String) : CryptoException(message)
-        
-        class PeerSpkEpochRegressed(message: String) : CryptoException(message)
-        
+        val `reason`: PqxdhRefusal
+        ) : CryptoException() {
+        override val message
+            get() = "reason=${ `reason` }"
+    }
+    
 
     companion object ErrorHandler : UniffiRustCallStatusErrorHandler<CryptoException> {
         override fun lift(error_buf: RustBuffer.ByValue): CryptoException = FfiConverterTypeCryptoError.lift(error_buf)
     }
+
+    
 }
 
 /**
@@ -14009,26 +14085,108 @@ sealed class CryptoException(message: String): kotlin.Exception(message) {
 public object FfiConverterTypeCryptoError : FfiConverterRustBuffer<CryptoException> {
     override fun read(buf: ByteBuffer): CryptoException {
         
-            return when(buf.getInt()) {
-            1 -> CryptoException.InitializationFailed(FfiConverterString.read(buf))
-            2 -> CryptoException.SessionNotFound(FfiConverterString.read(buf))
-            3 -> CryptoException.SessionInitializationFailed(FfiConverterString.read(buf))
-            4 -> CryptoException.EncryptionFailed(FfiConverterString.read(buf))
-            5 -> CryptoException.DecryptionFailed(FfiConverterString.read(buf))
-            6 -> CryptoException.InvalidKeyData(FfiConverterString.read(buf))
-            7 -> CryptoException.InvalidCiphertext(FfiConverterString.read(buf))
-            8 -> CryptoException.SerializationFailed(FfiConverterString.read(buf))
-            9 -> CryptoException.MessagePackDeserializationFailed(FfiConverterString.read(buf))
-            10 -> CryptoException.PeerSpkStale(FfiConverterString.read(buf))
-            11 -> CryptoException.PowDifficultyTooHigh(FfiConverterString.read(buf))
-            12 -> CryptoException.PeerSpkEpochRegressed(FfiConverterString.read(buf))
+
+        return when(buf.getInt()) {
+            1 -> CryptoException.InitializationFailed()
+            2 -> CryptoException.SessionNotFound()
+            3 -> CryptoException.SessionInitializationFailed(
+                FfiConverterString.read(buf),
+                )
+            4 -> CryptoException.EncryptionFailed(
+                FfiConverterString.read(buf),
+                )
+            5 -> CryptoException.DecryptionFailed(
+                FfiConverterString.read(buf),
+                )
+            6 -> CryptoException.InvalidKeyData()
+            7 -> CryptoException.InvalidCiphertext()
+            8 -> CryptoException.SerializationFailed(
+                FfiConverterString.read(buf),
+                )
+            9 -> CryptoException.MessagePackDeserializationFailed()
+            10 -> CryptoException.PeerSpkStale(
+                FfiConverterULong.read(buf),
+                )
+            11 -> CryptoException.PowDifficultyTooHigh(
+                FfiConverterUInt.read(buf),
+                FfiConverterUInt.read(buf),
+                )
+            12 -> CryptoException.PeerSpkEpochRegressed(
+                FfiConverterUInt.read(buf),
+                FfiConverterUInt.read(buf),
+                )
+            13 -> CryptoException.PqRequired(
+                FfiConverterTypePqxdhRefusal.read(buf),
+                )
             else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
         }
-        
     }
 
     override fun allocationSize(value: CryptoException): ULong {
-        return 4UL
+        return when(value) {
+            is CryptoException.InitializationFailed -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+            )
+            is CryptoException.SessionNotFound -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+            )
+            is CryptoException.SessionInitializationFailed -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterString.allocationSize(value.`detail`)
+            )
+            is CryptoException.EncryptionFailed -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterString.allocationSize(value.`detail`)
+            )
+            is CryptoException.DecryptionFailed -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterString.allocationSize(value.`detail`)
+            )
+            is CryptoException.InvalidKeyData -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+            )
+            is CryptoException.InvalidCiphertext -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+            )
+            is CryptoException.SerializationFailed -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterString.allocationSize(value.`detail`)
+            )
+            is CryptoException.MessagePackDeserializationFailed -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+            )
+            is CryptoException.PeerSpkStale -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterULong.allocationSize(value.`ageSecs`)
+            )
+            is CryptoException.PowDifficultyTooHigh -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterUInt.allocationSize(value.`difficulty`)
+                + FfiConverterUInt.allocationSize(value.`max`)
+            )
+            is CryptoException.PeerSpkEpochRegressed -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterUInt.allocationSize(value.`received`)
+                + FfiConverterUInt.allocationSize(value.`known`)
+            )
+            is CryptoException.PqRequired -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterTypePqxdhRefusal.allocationSize(value.`reason`)
+            )
+        }
     }
 
     override fun write(value: CryptoException, buf: ByteBuffer) {
@@ -14043,14 +14201,17 @@ public object FfiConverterTypeCryptoError : FfiConverterRustBuffer<CryptoExcepti
             }
             is CryptoException.SessionInitializationFailed -> {
                 buf.putInt(3)
+                FfiConverterString.write(value.`detail`, buf)
                 Unit
             }
             is CryptoException.EncryptionFailed -> {
                 buf.putInt(4)
+                FfiConverterString.write(value.`detail`, buf)
                 Unit
             }
             is CryptoException.DecryptionFailed -> {
                 buf.putInt(5)
+                FfiConverterString.write(value.`detail`, buf)
                 Unit
             }
             is CryptoException.InvalidKeyData -> {
@@ -14063,6 +14224,7 @@ public object FfiConverterTypeCryptoError : FfiConverterRustBuffer<CryptoExcepti
             }
             is CryptoException.SerializationFailed -> {
                 buf.putInt(8)
+                FfiConverterString.write(value.`detail`, buf)
                 Unit
             }
             is CryptoException.MessagePackDeserializationFailed -> {
@@ -14071,14 +14233,24 @@ public object FfiConverterTypeCryptoError : FfiConverterRustBuffer<CryptoExcepti
             }
             is CryptoException.PeerSpkStale -> {
                 buf.putInt(10)
+                FfiConverterULong.write(value.`ageSecs`, buf)
                 Unit
             }
             is CryptoException.PowDifficultyTooHigh -> {
                 buf.putInt(11)
+                FfiConverterUInt.write(value.`difficulty`, buf)
+                FfiConverterUInt.write(value.`max`, buf)
                 Unit
             }
             is CryptoException.PeerSpkEpochRegressed -> {
                 buf.putInt(12)
+                FfiConverterUInt.write(value.`received`, buf)
+                FfiConverterUInt.write(value.`known`, buf)
+                Unit
+            }
+            is CryptoException.PqRequired -> {
+                buf.putInt(13)
+                FfiConverterTypePqxdhRefusal.write(value.`reason`, buf)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
@@ -14277,6 +14449,45 @@ public object FfiConverterTypeDeviceLinkEvidence : FfiConverterRustBuffer<Device
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * What a session envelope's body is (first byte inside its ciphertext; the server never sees it).
+ */
+
+enum class EnvelopeKind {
+    
+    /**
+     * A ratchet wire payload.
+     */
+    RATCHET,
+    /**
+     * A DECRYPTION_ERROR (content type 28), plain inside the envelope.
+     */
+    DECRYPTION_ERROR;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeEnvelopeKind: FfiConverterRustBuffer<EnvelopeKind> {
+    override fun read(buf: ByteBuffer) = try {
+        EnvelopeKind.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: EnvelopeKind) = 4UL
+
+    override fun write(value: EnvelopeKind, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 
@@ -15373,13 +15584,13 @@ public object FfiConverterTypeMlsError : FfiConverterRustBuffer<MlsException> {
 sealed class OpenedSealed {
     
     /**
-     * A session envelope named the writer; `kind` 1 = ratchet wire payload, 2 = DECRYPTION_ERROR.
+     * A session envelope named the writer; a DECRYPTION_ERROR is labelled from `kind`.
      */
     data class SessionEnvelope(
         val `writerDevice`: kotlin.String, 
         val `sessionId`: kotlin.String, 
         val `body`: kotlin.ByteArray, 
-        val `kind`: kotlin.UByte, 
+        val `kind`: EnvelopeKind, 
         val `retired`: kotlin.Boolean) : OpenedSealed()
         
     {
@@ -15437,7 +15648,7 @@ public object FfiConverterTypeOpenedSealed : FfiConverterRustBuffer<OpenedSealed
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterByteArray.read(buf),
-                FfiConverterUByte.read(buf),
+                FfiConverterTypeEnvelopeKind.read(buf),
                 FfiConverterBoolean.read(buf),
                 )
             2 -> OpenedSealed.FirstFlight(
@@ -15468,7 +15679,7 @@ public object FfiConverterTypeOpenedSealed : FfiConverterRustBuffer<OpenedSealed
                 + FfiConverterString.allocationSize(value.`writerDevice`)
                 + FfiConverterString.allocationSize(value.`sessionId`)
                 + FfiConverterByteArray.allocationSize(value.`body`)
-                + FfiConverterUByte.allocationSize(value.`kind`)
+                + FfiConverterTypeEnvelopeKind.allocationSize(value.`kind`)
                 + FfiConverterBoolean.allocationSize(value.`retired`)
             )
         }
@@ -15505,7 +15716,7 @@ public object FfiConverterTypeOpenedSealed : FfiConverterRustBuffer<OpenedSealed
                 FfiConverterString.write(value.`writerDevice`, buf)
                 FfiConverterString.write(value.`sessionId`, buf)
                 FfiConverterByteArray.write(value.`body`, buf)
-                FfiConverterUByte.write(value.`kind`, buf)
+                FfiConverterTypeEnvelopeKind.write(value.`kind`, buf)
                 FfiConverterBoolean.write(value.`retired`, buf)
                 Unit
             }
@@ -15791,6 +16002,53 @@ public object FfiConverterTypePqHandshake: FfiConverterRustBuffer<PqHandshake> {
     override fun allocationSize(value: PqHandshake) = 4UL
 
     override fun write(value: PqHandshake, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * Why a bundle yields no session under PQXDH v2 (`CryptoError.PqRequired`).
+ */
+
+enum class PqxdhRefusal {
+    
+    NO_KYBER_PREKEY,
+    KYBER_PREKEY_MALFORMED,
+    KYBER_SIGNATURE_MISSING,
+    /**
+     * An Ed25519 signature that does not verify: tampering, not a transition.
+     */
+    KYBER_SIGNATURE_INVALID,
+    KYBER_PREKEY_STALE,
+    HYBRID_IDENTITY_MISSING,
+    HYBRID_IDENTITY_BINDING_INVALID,
+    /**
+     * A hybrid identity key other than the one pinned for this device.
+     */
+    HYBRID_IDENTITY_CHANGED,
+    HYBRID_SIGNATURE_MISSING,
+    HYBRID_SIGNATURE_INVALID;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePqxdhRefusal: FfiConverterRustBuffer<PqxdhRefusal> {
+    override fun read(buf: ByteBuffer) = try {
+        PqxdhRefusal.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: PqxdhRefusal) = 4UL
+
+    override fun write(value: PqxdhRefusal, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }

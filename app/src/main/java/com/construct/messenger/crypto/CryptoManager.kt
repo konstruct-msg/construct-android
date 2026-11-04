@@ -210,8 +210,8 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
     /**
      * Open a PQXDH v2 session to [contactId]. The core refuses a bundle without a Kyber key it can
      * verify, a hybrid identity and its binding: PQ is mandatory, there is no classical fallback.
-     * That refusal is a [uniffi.construct_core.CryptoException.SessionInitializationFailed] whose
-     * message contains `PQ_REQUIRED` — see [isPeerNotPostQuantum].
+     * That refusal is a [uniffi.construct_core.CryptoException.PqRequired] naming what the bundle
+     * lacked — see [isPeerNotPostQuantum].
      */
     fun initSession(contactId: String, recipientBundle: BinaryKeyBundle): String = synchronized(coreLock) {
         orchestrator?.initSession(contactId, recipientBundle)
@@ -575,14 +575,9 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
     companion object {
         private const val CLASSIC_SUITE: UByte = 0x01u
 
-        /**
-         * True for the initiator's refusal to open a session without PQXDH v2 keys. The core's
-         * error is flat: the whole Display text is the message — `Session initialization failed:
-         * PQ_REQUIRED: …` — so the code is matched anywhere in it, not as a prefix.
-         */
+        /** True for the initiator's refusal to open a session without PQXDH v2 keys. */
         fun isPeerNotPostQuantum(error: Throwable): Boolean =
-            error is uniffi.construct_core.CryptoException.SessionInitializationFailed &&
-                error.message.orEmpty().contains("PQ_REQUIRED")
+            error is uniffi.construct_core.CryptoException.PqRequired
     }
 
     // ── Stateless helpers (free functions / no core state) ──────────────────
