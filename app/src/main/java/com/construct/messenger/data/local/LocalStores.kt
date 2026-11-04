@@ -1,6 +1,6 @@
 package com.construct.messenger.data.local
 
-import android.util.Log
+import com.construct.messenger.diagnostics.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

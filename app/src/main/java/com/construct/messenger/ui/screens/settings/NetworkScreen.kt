@@ -59,8 +59,9 @@ import kotlinx.coroutines.delay
  * Internal builds only, as iOS's `DEBUG || INTERNAL_TOOLS`: the server, path, front, latency and
  * errors. `decisions/silent-transport-ui`: the public build discloses no reachability coordinate
  * — a censor who installs the app must not be able to read the working front off this screen.
+ * A tester's build shows what the public one shows; its path and front are in the log.
  */
-private val SHOW_TRANSPORT_DETAIL = BuildConfig.DEBUG || BuildConfig.INTERNAL_TOOLS
+private val SHOW_TRANSPORT_DETAIL = BuildConfig.DEBUG
 
 /**
  * Network.

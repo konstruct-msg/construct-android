@@ -1,10 +1,18 @@
 package com.construct.messenger.diagnostics
 
+import com.construct.messenger.BuildConfig
+
 /**
  * `android.util.Log`, and the log file beside it. Same calls, so a file switches to it by its
  * import alone. **Canon:** iOS `Log` (`Logger.swift`), which feeds `LogCollector` the same way.
  */
 object Log {
+    /**
+     * Logcat is for a debug build. A release build, tester or public, writes nothing there: `adb`,
+     * a bug report or an OEM log collector can read it, and a tester's lines go to the file.
+     */
+    internal var toLogcat: Boolean = BuildConfig.DEBUG
+
     fun d(tag: String, msg: String, tr: Throwable? = null): Int = write("DEBUG", tag, msg, tr) { m, t -> android.util.Log.d(tag, m, t) }
     fun i(tag: String, msg: String, tr: Throwable? = null): Int = write("INFO", tag, msg, tr) { m, t -> android.util.Log.i(tag, m, t) }
     fun w(tag: String, msg: String, tr: Throwable? = null): Int = write("WARN", tag, msg, tr) { m, t -> android.util.Log.w(tag, m, t) }
@@ -16,6 +24,6 @@ object Log {
         val line = LogRedaction.redact(msg)
         val error = tr?.let(LogRedaction::redact)
         Diagnostics.collector?.append(level, tag, if (tr == null) line else "$line — ${tr::class.java.simpleName}: ${LogRedaction.redact(tr.message.orEmpty())}")
-        return logcat(line, error)
+        return if (toLogcat) logcat(line, error) else 0
     }
 }

@@ -81,6 +81,8 @@ import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.SettingsViewModel
 
+private val isNotPublic = BuildConfig.DEBUG || BuildConfig.INTERNAL_TOOLS
+
 /** Callbacks for the rows that open another app screen. */
 data class SettingsNavigation(
     val onAccount: () -> Unit = {},
@@ -268,8 +270,8 @@ fun SettingsScreen(
                 CTSettingsRow(
                     label = stringResource(R.string.settings_row_version).uppercase(),
                     value = buildVersion +
-                        if (BuildConfig.DEBUG) " " + stringResource(R.string.build_channel_beta).uppercase() else "",
-                    valueColor = if (BuildConfig.DEBUG) CTColor.warning else CTColor.textDim,
+                        if (isNotPublic) " " + stringResource(R.string.build_channel_beta).uppercase() else "",
+                    valueColor = if (isNotPublic) CTColor.warning else CTColor.textDim,
                     icon = Icons.Outlined.Info,
                     // iOS's escape hatch, in every build: ten taps open a paste for a configuration
                     // code, for whoever cannot tap a link or scan its QR. Nothing on the screen
