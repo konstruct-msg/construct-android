@@ -75,7 +75,7 @@ class TransportRouter @Inject constructor(
 
     suspend fun send(event: Event) = mutex.withLock {
         val from = state.value
-        val outcome = TransportRoute.reduce(from, event, veil.modeState.value.toRouteMode(), routeConfig(underVpn), System.currentTimeMillis())
+        val outcome = routeOutcome(from, event, veil.modeState.value.toRouteMode(), underVpn, System.currentTimeMillis())
         state.value = outcome.state
         if (from != outcome.state || outcome.effects.isNotEmpty()) {
             Log.i(TAG, "$from → ${outcome.state} | $event | ${outcome.effects}")
@@ -182,3 +182,23 @@ class TransportRouter @Inject constructor(
  * untouched — it never reaches the direct state this switch governs.
  */
 internal fun routeConfig(underVpn: Boolean) = TransportRoute.Config(allowDirectToVeilEscalation = !underVpn)
+
+/**
+ * Android's channel recovery around the shared route decision. Cancelling a silent gRPC call
+ * leaves OkHttp's HTTP/2 connection in place, so the next stream can reuse the same blackholed
+ * socket. If the route stays direct (Auto under VPN, Off, or below Auto's escalation threshold),
+ * replace the channels before retrying. The route decision and its failure count stay intact.
+ */
+internal fun routeOutcome(
+    state: State,
+    event: Event,
+    mode: TransportRoute.Mode,
+    underVpn: Boolean,
+    nowMs: Long,
+): TransportRoute.Outcome {
+    val outcome = TransportRoute.reduce(state, event, mode, routeConfig(underVpn), nowMs)
+    val silentDirectStream = event is Event.StreamFailed && event.via == TransportRoute.Target.Direct &&
+        (event.failure == TransportRoute.StreamFailure.OPEN_TIMEOUT || event.failure == TransportRoute.StreamFailure.MID_SESSION_TIMEOUT)
+    if (outcome.state !is State.Direct || !silentDirectStream) return outcome
+    return outcome.copy(effects = (outcome.effects + Effect.InvalidateGrpcClient).distinct())
+}
