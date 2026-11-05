@@ -4,7 +4,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.construct.messenger.devicelink.DeviceLinkOfferPolicy
 import com.construct.messenger.viewmodel.PendingChatViewModel
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
@@ -110,22 +109,20 @@ fun KonstructNavHost(
             ExistingIdentityScreen(
                 onBack = { navController.popBackStack() },
                 onRestore = { navController.navigate(Screen.Restore.route) { launchSingleTop = true } },
-                onLinkThisDevice = if (DeviceLinkOfferPolicy.isLinkingOffered) ({ navController.navigate(Screen.JoinAccount.route) { launchSingleTop = true } }) else null,
+                onLinkThisDevice = { navController.navigate(Screen.JoinAccount.route) { launchSingleTop = true } },
             )
         }
-        if (DeviceLinkOfferPolicy.isLinkingOffered) {
-            composable(Screen.JoinAccount.route) {
-                com.construct.messenger.ui.screens.onboarding.JoinAccountRoute(
-                    onBack = { navController.popBackStack() },
-                    onLinked = {
-                        // An existing account, as after a restore: straight to its chats.
-                        navController.navigate(Screen.Main.createRoute()) {
-                            popUpTo(Screen.Onboarding.route) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
-                )
-            }
+        composable(Screen.JoinAccount.route) {
+            com.construct.messenger.ui.screens.onboarding.JoinAccountRoute(
+                onBack = { navController.popBackStack() },
+                onLinked = {
+                    // An existing account, as after a restore: straight to its chats.
+                    navController.navigate(Screen.Main.createRoute()) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+            )
         }
         composable(Screen.Restore.route) {
             RestoreAccountScreen(
@@ -296,15 +293,13 @@ fun KonstructNavHost(
                 },
             )
         }
-        if (DeviceLinkOfferPolicy.isLinkingOffered) {
-            composable(Screen.DeviceLink.route) {
-                com.construct.messenger.ui.screens.settings.DeviceLinkRoute(onNavigateBack = { navController.popBackStack() })
-            }
+        composable(Screen.DeviceLink.route) {
+            com.construct.messenger.ui.screens.settings.DeviceLinkRoute(onNavigateBack = { navController.popBackStack() })
         }
         composable(Screen.Devices.route) {
             DevicesRoute(
                 onNavigateBack = { navController.popBackStack() },
-                onLinkDevice = if (DeviceLinkOfferPolicy.isLinkingOffered) ({ navController.navigate(Screen.DeviceLink.route) }) else null,
+                onLinkDevice = { navController.navigate(Screen.DeviceLink.route) },
                 onSignedOut = {
                     navController.navigate(Screen.Onboarding.route) {
                         popUpTo(Screen.Main.route) { inclusive = true }

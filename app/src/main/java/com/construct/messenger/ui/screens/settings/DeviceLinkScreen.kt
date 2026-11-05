@@ -1,5 +1,6 @@
 package com.construct.messenger.ui.screens.settings
 
+import com.construct.messenger.BuildConfig
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -51,8 +52,7 @@ import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.DeviceLinkViewModel
 
 /**
- * Link a new device to this account — debug and tester builds only (the route exists only
- * when `DeviceLinkOfferPolicy.isLinkingOffered`). Two ways, as iOS: show a QR the new device scans (flow A), or scan the
+ * Link a new device to this account. Two ways, as iOS: show a QR the new device scans (flow A), or scan the
  * QR the new device shows (flow B). **Canon:** iOS `DeviceLinkQRSheet` / `DeviceLinkActions`.
  */
 @Composable
@@ -118,7 +118,7 @@ fun DeviceLinkRoute(onNavigateBack: () -> Unit, viewModel: DeviceLinkViewModel =
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(CTSpace.l),
         ) {
-            Text(stringResource(R.string.device_link_debug_note), style = CTFont.caption, color = CTColor.textDim, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.device_link_note), style = CTFont.caption, color = CTColor.textDim, textAlign = TextAlign.Center)
             ui.offerQr?.let { qr ->
                 BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     InviteQrImage(payload = qr, size = inviteQrSize(maxWidth), contentDescription = stringResource(R.string.device_link_show_qr))
@@ -148,11 +148,18 @@ fun DeviceLinkRoute(onNavigateBack: () -> Unit, viewModel: DeviceLinkViewModel =
 }
 
 /**
+ * Debug only, as iOS has no such button: the link code carries the link secret, and on a phone the
+ * clipboard is open to other apps and to the keyboard.
+ */
+private val LINK_OVER_CLIPBOARD = BuildConfig.DEBUG
+
+/**
  * The QR's text to the clipboard. For a device with no camera to point — an emulator, whose
  * clipboard is the host's, or the iOS simulator — where the code goes over by copy and paste.
  */
 @Composable
 internal fun CopyLinkButton(link: String) {
+    if (!LINK_OVER_CLIPBOARD) return
     val clipboard = LocalClipboardManager.current
     TextButton(onClick = { clipboard.setText(AnnotatedString(link)) }) { Text(stringResource(R.string.device_link_copy)) }
 }
@@ -160,6 +167,7 @@ internal fun CopyLinkButton(link: String) {
 /** The clipboard's text, taken as if scanned — the same parse, the same refusal of anything else. */
 @Composable
 internal fun PasteLinkButton(enabled: Boolean, onPasted: (String) -> Unit) {
+    if (!LINK_OVER_CLIPBOARD) return
     val clipboard = LocalClipboardManager.current
     TextButton(onClick = { onPasted(clipboard.getText()?.text.orEmpty()) }, enabled = enabled) {
         Text(stringResource(R.string.device_link_paste))

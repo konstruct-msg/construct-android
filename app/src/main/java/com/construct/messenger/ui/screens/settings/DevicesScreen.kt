@@ -82,8 +82,7 @@ private sealed interface DevicesConfirm {
 fun DevicesRoute(
     onNavigateBack: () -> Unit,
     onSignedOut: () -> Unit,
-    /** Debug and tester builds only: open the link screen. Null hides the row. */
-    onLinkDevice: (() -> Unit)? = null,
+    onLinkDevice: () -> Unit,
     viewModel: DevicesViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
@@ -154,7 +153,7 @@ fun DevicesRoute(
  * The account's devices and the ways to end their sessions.
  *
  * **Canon:** iOS `DevicesView` — this device first, the others with a remove control, then
- * session management. Linking a new device is offered in debug and tester builds only, as on iOS; history
+ * session management. Linking a new device is offered in every build, as on iOS; history
  * re-transfer is not ported.
  */
 @Composable
@@ -162,7 +161,7 @@ private fun DevicesScreen(
     ui: DevicesUiState,
     onNavigateBack: () -> Unit,
     onConfirm: (DevicesConfirm) -> Unit,
-    onLinkDevice: (() -> Unit)? = null,
+    onLinkDevice: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -212,12 +211,10 @@ private fun DevicesScreen(
                 if (others.size > 1) Hint(stringResource(R.string.other_devices_hint))
             }
 
-            if (onLinkDevice != null) {
-                CTSettingsSectionHeader(title = stringResource(R.string.device_link_title))
-                Column(modifier = Modifier.padding(horizontal = CTLayout.edgePad)) {
-                    OutlinedButton(onClick = onLinkDevice, modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(R.string.device_link_title))
-                    }
+            CTSettingsSectionHeader(title = stringResource(R.string.device_link_title))
+            Column(modifier = Modifier.padding(horizontal = CTLayout.edgePad)) {
+                OutlinedButton(onClick = onLinkDevice, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.device_link_title))
                 }
             }
 

@@ -750,9 +750,9 @@
     <string name="video_quality_720" translatable="false">720p</string>
     <string name="video_quality_1080" translatable="false">1080p</string>
     <string name="video_quality_original">Original</string>
-    <!-- Device linking (debug builds only) -->
+    <!-- Device linking -->
     <string name="device_link_title">Link a device</string>
-    <string name="device_link_debug_note">Debug builds only. The new device joins this account; this device then vouches for its keys so your contacts do not see an unconfirmed device.</string>
+    <string name="device_link_note">The new device joins this account; this device then vouches for its keys so your contacts do not see an unconfirmed device.</string>
     <string name="device_link_show_qr">Show link QR</string>
     <string name="device_link_show_qr_hint">Scan this code on the new device. It is valid for a few minutes.</string>
     <string name="device_link_scan_qr">Scan the new device\'s QR</string>
@@ -765,7 +765,7 @@
     <string name="device_link_copy">Copy link</string>
     <string name="device_link_paste">Paste link</string>
     <string name="device_join_title">Link this device</string>
-    <string name="device_join_subtitle">Debug builds only. Join an account from a device already signed in to it.</string>
+    <string name="device_join_subtitle">Join an account from a device already signed in to it.</string>
     <string name="device_join_intro">Scan the link QR on your other device (Settings → Linked devices → Link a device), or show a QR here for it to scan.</string>
     <string name="device_join_scan_qr">Scan the QR on my other device</string>
     <string name="device_join_show_qr">Show a QR for my other device</string>
