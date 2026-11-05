@@ -148,8 +148,8 @@ fun DeviceLinkRoute(onNavigateBack: () -> Unit, viewModel: DeviceLinkViewModel =
 }
 
 /**
- * Debug only, as iOS has no such button: the link code carries the link secret, and on a phone the
- * clipboard is open to other apps and to the keyboard.
+ * Debug only: the link code carries the link secret, and on a phone the clipboard is open to other
+ * apps and to the keyboard. iOS has no copy either; its scanner does take a pasted link.
  */
 private val LINK_OVER_CLIPBOARD = BuildConfig.DEBUG
 
