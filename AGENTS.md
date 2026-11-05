@@ -131,7 +131,7 @@ the same change, or it is removed.
 - **Release:** a tag `v<versionName>` (or `release.yml` by hand) builds a draft release, signed
   with the repository-secret key and refused unless the signer is the pinned certificate. A
   person publishes it. A tag not on `main` is a tester build (`INTERNAL_TOOLS`: diagnostic log in
-  Settings → Diagnostics, the BETA label, linking); a build from `main` writes no log. Anything else
+  Settings → Diagnostics, the BETA label); a build from `main` writes no log. Anything else
   for testers is `BuildConfig.DEBUG`; a new `INTERNAL_TOOLS` site is the owner's call
   (`ReleaseBuildSurfaceTest`). Logcat is debug-only: use `diagnostics.Log`, never `android.util.Log`.
 - **Version:** `versionName` in `app/build.gradle` is bumped by hand: the minor version for a

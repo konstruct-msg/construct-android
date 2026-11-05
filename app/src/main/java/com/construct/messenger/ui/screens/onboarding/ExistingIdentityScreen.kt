@@ -48,16 +48,14 @@ import com.construct.messenger.ui.theme.HairlineBorder
  * "Already have an identity?" — how to bring it to this device.
  *
  * **Canon:** iOS `ExistingIdentityChooserView` — an intro line, then one card per way in, equal
- * weight and none preselected. "Link this device" is offered only in debug and tester builds, as on
- * iOS (`DeviceLinkOfferPolicy`), so a build from `main` lists one card: restore from the recovery phrase. iOS's "Can't connect?" is left out, as on the first
+ * weight and none preselected. iOS's "Can't connect?" is left out, as on the first
  * screen — Android cannot import a VEIL access code yet.
  */
 @Composable
 fun ExistingIdentityScreen(
     onBack: () -> Unit,
     onRestore: () -> Unit,
-    /** Debug builds only; null hides the card. */
-    onLinkThisDevice: (() -> Unit)? = null,
+    onLinkThisDevice: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -95,15 +93,13 @@ fun ExistingIdentityScreen(
                 subtitle = stringResource(R.string.onboarding_restore_subtitle),
                 onClick = onRestore,
             )
-            if (onLinkThisDevice != null) {
-                ChoiceCard(
-                    icon = Icons.Default.Devices,
-                    title = stringResource(R.string.device_join_title),
-                    subtitle = stringResource(R.string.device_join_subtitle),
-                    onClick = onLinkThisDevice,
-                    iconRotation = 0f,
-                )
-            }
+            ChoiceCard(
+                icon = Icons.Default.Devices,
+                title = stringResource(R.string.device_join_title),
+                subtitle = stringResource(R.string.device_join_subtitle),
+                onClick = onLinkThisDevice,
+                iconRotation = 0f,
+            )
         }
     }
 }
@@ -146,5 +142,5 @@ private fun ChoiceCard(icon: ImageVector, title: String, subtitle: String, onCli
 @Preview(backgroundColor = 0xFF090909, showBackground = true, widthDp = 390, heightDp = 600)
 @Composable
 private fun ExistingIdentityScreenPreview() {
-    ExistingIdentityScreen(onBack = {}, onRestore = {})
+    ExistingIdentityScreen(onBack = {}, onRestore = {}, onLinkThisDevice = {})
 }

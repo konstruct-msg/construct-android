@@ -72,9 +72,34 @@ class ReleaseBuildSurfaceTest {
             setOf(
                 "Diagnostics.kt", // the log file and the screen that exports it
                 "SettingsScreen.kt", // the BETA label
-                "DeviceLinkOfferPolicy.kt", // linking, until the owner moves it to release
             ),
             filesContaining("BuildConfig.INTERNAL_TOOLS"),
         )
+    }
+
+    /** Canon: iOS, `decisions/device-link-ships-in-release`. */
+    @Test
+    fun `linking has no build switch`() {
+        val onThePath = setOf(
+            "NavHost.kt",
+            "DevicesScreen.kt",
+            "ExistingIdentityScreen.kt",
+            "JoinAccountScreen.kt",
+            "DeviceLinkViewModel.kt",
+            "JoinAccountViewModel.kt",
+            "AuthRepositoryImpl.kt",
+            "LinkDeviceUseCase.kt",
+            "DeviceCertificateIssuer.kt",
+        )
+        assertEquals(onThePath, sources.map { it.name }.toSet().intersect(onThePath))
+        assertEquals(emptySet<String>(), filesContaining("BuildConfig").intersect(onThePath))
+    }
+
+    /** The link code carries the link secret. Each button returns before it draws, past debug. */
+    @Test
+    fun `a link goes over the clipboard only in a debug build`() {
+        val screen = sources.single { it.name == "DeviceLinkScreen.kt" }.readText()
+        assertTrue(screen.contains("private val LINK_OVER_CLIPBOARD = BuildConfig.DEBUG\n"))
+        assertEquals(2, screen.split("if (!LINK_OVER_CLIPBOARD) return\n").size - 1)
     }
 }
