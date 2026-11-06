@@ -53,6 +53,12 @@ The canonical source is the vault note in the table above. Change it there first
 
 1. **Prior art first.** Before any protocol mechanism, write down how Signal / MLS (RFC 9420) /
    Matrix solve it and why we deviate. Group key management is MLS, not ours.
+   Read them, do not recall them: the note links the code or spec it read (Session too when the
+   question is metadata). For a delivery, crypto or privacy mechanism it answers what theirs does,
+   who may call it and what a refused caller sees, and what happens to a party without the
+   credential; it lists what in ours is our own, why, and what would let us remove it; and it gives
+   the share of real traffic each new condition or exception affects.
+   `~/Code/construct-docs/scripts/check_prior_art.py` refuses a decision note without the link.
 2. **The core decides, Android executes.** If two clients must compute it identically for a
    message to be readable, it is a `construct-core` API, written first. Kotlin makes no session or
    protocol decision. Open `construct-core/src/construct_core.udl` first: the core usually does it already.
