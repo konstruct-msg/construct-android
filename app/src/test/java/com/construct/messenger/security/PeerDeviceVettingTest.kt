@@ -42,7 +42,7 @@ class PeerDeviceVettingTest {
         }
     }
     private val notices = SecurityNotices(contacts, ChatPresence())
-    private val vetting = PeerDeviceVetting(crypto, contacts, notices)
+    private val vetting = PeerDeviceVetting(crypto, contacts, notices, mock())
 
     private fun notice() = SecurityNotice.of(contacts.rows.getValue(PEER).securityNotice)
 

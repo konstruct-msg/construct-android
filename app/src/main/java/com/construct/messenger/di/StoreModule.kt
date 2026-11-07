@@ -1,6 +1,8 @@
 package com.construct.messenger.di
 
+import com.construct.messenger.data.local.DataStoreJudgedDeviceStore
 import com.construct.messenger.data.local.DataStoreOrientationStore
+import com.construct.messenger.data.local.JudgedDeviceStore
 import com.construct.messenger.data.local.OrientationStore
 import com.construct.messenger.service.AndroidMediaPreviewText
 import com.construct.messenger.service.MediaPreviewText
@@ -16,6 +18,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class StoreModule {
+    @Binds
+    @Singleton
+    abstract fun bindJudgedDeviceStore(
+        store: DataStoreJudgedDeviceStore
+    ): JudgedDeviceStore
+
     @Binds
     @Singleton
     abstract fun bindOrientationStore(

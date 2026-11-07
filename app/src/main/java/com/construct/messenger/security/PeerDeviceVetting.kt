@@ -2,6 +2,7 @@ package com.construct.messenger.security
 
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.local.ContactStore
+import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.construct.messenger.data.model.SecurityNotice
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.service.SessionManager.PeerBundle
@@ -25,6 +26,7 @@ class PeerDeviceVetting @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val contacts: ContactStore,
     private val notices: SecurityNotices,
+    private val registry: PeerDeviceRegistry,
 ) {
     /**
      * Judge a full answer for [accountId] against the devices trusted **before** it was recorded —
@@ -32,6 +34,9 @@ class PeerDeviceVetting @Inject constructor(
      *
      * Only a full answer, and only a contact's: one narrowed to some device ids may leave out the
      * device that signed the others, and our own account is never the subject of a warning.
+     *
+     * A device is marked only after its verdict, and after its alarm: a failure before that leaves
+     * it to be judged on a later answer.
      */
     suspend fun vet(accountId: String, bundles: List<PeerBundle>, trustedBefore: List<String>) {
         val offered = offered(bundles)
@@ -47,9 +52,11 @@ class PeerDeviceVetting @Inject constructor(
             }
         }
         val alarm = unvouched(trustedBefore, offered, verdicts)
-        if (alarm.isEmpty()) return
-        Log.e(TAG, "UNVOUCHED ${alarm.joinToString(",") { it.take(8) + "…" }} of ${accountId.take(8)}…")
-        notices.raise(accountId, SecurityNotice.UNVOUCHED_DEVICE)
+        if (alarm.isNotEmpty()) {
+            Log.e(TAG, "UNVOUCHED ${alarm.joinToString(",") { it.take(8) + "…" }} of ${accountId.take(8)}…")
+            notices.raise(accountId, SecurityNotice.UNVOUCHED_DEVICE)
+        }
+        registry.markJudged(settled(offered, verdicts))
     }
 
     companion object {
@@ -58,7 +65,8 @@ class PeerDeviceVetting @Inject constructor(
         /**
          * The devices of an answer the core should judge: those whose bundle carries the hybrid
          * key and its binding. A device without them cannot open a session with anyone (the core
-         * requires PQ), so it can receive nothing and is not worth an alarm.
+         * requires PQ), so it can receive nothing yet. It stays unjudged, and the answer that
+         * brings its keys judges it.
          */
         fun offered(bundles: List<PeerBundle>): List<OfferedPeerDevice> = bundles.mapNotNull { entry ->
             subjectKeys(entry)?.let { OfferedPeerDevice(entry.deviceId, it, entry.deviceCertificate) }
@@ -73,8 +81,7 @@ class PeerDeviceVetting @Inject constructor(
 
         /**
          * The devices to alarm about: unvouched, and not already trusted here — a device the user
-         * was warned about once and kept is in the registry by then, and the next answer reads it
-         * as pinned.
+         * was warned about once and kept is marked by then, and the next answer reads it as pinned.
          */
         fun unvouched(trusted: List<String>, offered: List<OfferedPeerDevice>, verdicts: List<PeerDeviceVerdict>): List<String> {
             val known = trusted.toSet()
@@ -82,5 +89,11 @@ class PeerDeviceVetting @Inject constructor(
                 .filter { (device, verdict) -> verdict == PeerDeviceVerdict.Unvouched && device.deviceId !in known }
                 .map { (device, _) -> device.deviceId }
         }
+
+        /** The devices this round of verdicts settles. `KeyChanged` and `Invalid` settle nothing. */
+        fun settled(offered: List<OfferedPeerDevice>, verdicts: List<PeerDeviceVerdict>): List<String> =
+            offered.zip(verdicts)
+                .filter { (_, verdict) -> verdict !is PeerDeviceVerdict.KeyChanged && verdict !is PeerDeviceVerdict.Invalid }
+                .map { (device, _) -> device.deviceId }
     }
 }

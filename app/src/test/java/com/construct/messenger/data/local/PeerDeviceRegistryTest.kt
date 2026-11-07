@@ -21,7 +21,7 @@ class PeerDeviceRegistryTest {
         on { deriveDeviceIdFromIdentity(any()) } doAnswer { (it.arguments[0] as ByteArray)[0].toInt().toChar().toString().repeat(32) }
     }
     private val store = FakePeerDeviceStore()
-    private val registry = PeerDeviceRegistry(store, FakeContactStore(), crypto)
+    private val registry = PeerDeviceRegistry(store, FakeContactStore(), crypto, FakeJudgedDeviceStore())
 
     /**
      * A server answer naming Ann's device under Bob changes nothing. Two locks hold it: the

@@ -4,6 +4,7 @@ import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.IssuedInviteRecord
 import com.construct.messenger.data.local.IssuedInviteStore
+import com.construct.messenger.data.local.PeerDeviceRegistry
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.ContactRecord
 import com.construct.messenger.data.local.resolvedName
@@ -57,6 +58,7 @@ class ContactsRepositoryImpl @Inject constructor(
     private val accountRepository: AccountRepository,
     private val ownAddress: OwnAccountAddress,
     private val requestLedger: ContactRequestLedger,
+    private val peerDevices: PeerDeviceRegistry,
 ) : ContactsRepository {
 
     private val incoming = MutableStateFlow<List<IncomingContactRequest>>(emptyList())
@@ -349,6 +351,7 @@ class ContactsRepositoryImpl @Inject constructor(
                 identityPublic = identityPublic,
             ),
         )
+        peerDevices.pinInvited(userId, identityPublic)
         // From the signed invite, already checked by the server against the account's recovery
         // key: it outranks a card, and a different pinned one is a security event.
         addressBook.pin(userId, invite.addr, AccountAddressSource.INVITE)
