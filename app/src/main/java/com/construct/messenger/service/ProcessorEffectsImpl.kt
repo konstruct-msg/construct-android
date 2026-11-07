@@ -203,6 +203,8 @@ class ProcessorEffectsImpl @Inject constructor(
         Log.i(TAG, "profile from ${accountId.take(8)}… applied")
     }
 
+    override fun ownAccountId(): String? = keystoreManager.getUserId()
+
     override suspend fun onSenderSync(
         contactId: String,
         messageId: String,

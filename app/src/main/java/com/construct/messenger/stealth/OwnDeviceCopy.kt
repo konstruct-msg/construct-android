@@ -19,21 +19,19 @@ import uniffi.construct_core.SenderCertificate
 object OwnDeviceCopy {
 
     /**
-     * Every SENDER_SYNC goes out through this, with a certificate or without. [certificate] is the
-     * serialized proto the server issued; absent or unreadable, the copy still goes — on an
-     * existing session it opens without one, and a first message then fails in the core with
-     * `SENDER_CERTIFICATE_MISSING` rather than never being sent.
+     * Every SENDER_SYNC goes out through this. [certificate] names the device that wrote the copy,
+     * so a copy does not go without it.
      */
-    fun wrap(certificate: ByteArray?, wirePayload: ByteArray): ByteArray {
-        val builder = EnvelopeOuterClass.OwnDeviceCopy.newBuilder()
+    fun wrap(certificate: EnvelopeOuterClass.SenderCertificate, wirePayload: ByteArray): ByteArray =
+        EnvelopeOuterClass.OwnDeviceCopy.newBuilder()
             .setWirePayload(ByteString.copyFrom(wirePayload))
-        certificate?.let { bytes ->
-            runCatching { EnvelopeOuterClass.SenderCertificate.parseFrom(bytes) }
-                .getOrNull()
-                ?.let(builder::setSenderCertificate)
-        }
-        return builder.build().toByteArray()
-    }
+            .setSenderCertificate(certificate)
+            .build()
+            .toByteArray()
+
+    /** The server's bytes as [wrap] takes them. Throws when they do not parse. */
+    fun certificateFrom(bytes: ByteArray): EnvelopeOuterClass.SenderCertificate =
+        EnvelopeOuterClass.SenderCertificate.parseFrom(bytes)
 
     /** What a copy carries. The certificate is not verified here: the core checks the signature
      * when — and only when — it is used to open a session. */

@@ -53,6 +53,20 @@ class MessageProcessor @Inject constructor(
             effects.markProcessed(incoming.messageId, incoming.senderId)
             return ProcessingOutcome.Acked
         }
+        if (incoming.contentType == ContentType.CONTENT_TYPE_SENDER_SYNC) {
+            val origin = SenderSyncOrigin.of(
+                certifiedAccount = incoming.senderCertificate?.userId,
+                device = incoming.senderCertificate?.deviceId,
+                myUserId = effects.ownAccountId(),
+                myDeviceId = cryptoManager.currentDeviceId(),
+                accountOfDevice = { sessionManager.accountIdForDevice(it) },
+            )
+            if (origin !is SenderSyncOrigin.Device) {
+                Log.w(TAG, "sender-sync ${incoming.messageId.take(8)}… $origin — dropped")
+                effects.markProcessed(incoming.messageId, incoming.senderId)
+                return ProcessingOutcome.Acked
+            }
+        }
         // The device comes from the message: its certificate names it. The pinned device of the
         // account is the answer only for an unsealed message on a session we already hold. There
         // is no third answer — until 2026-09-27 this asked the directory and took its *first*
@@ -317,6 +331,9 @@ interface OrchestratorGateway {
 /** Outward side effects the processor delegates to the repository/session layer.
  * Semantics ported from iOS `SessionActionExecutor` + `MessageRouter` delegate. */
 interface ProcessorEffects {
+    /** The account signed in on this device; null before there is one. */
+    fun ownAccountId(): String?
+
     /** [envelopeSeconds]: the envelope's time, 0 when there is none. */
     suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray, envelopeSeconds: Long = 0)
     /** [envelopeSeconds]: the envelope's time, as for [onDecrypted]. */

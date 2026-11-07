@@ -148,7 +148,7 @@ class MessageRouterTest {
     @Test
     fun `a sender sync is unwrapped with its certificate`() = runBlocking<Unit> {
         val wire = byteArrayOf(4, 4, 4)
-        val msg = normalizeEnvelope(syncEnvelope(OwnDeviceCopy.wrap(certificate.toByteArray(), wire))) {
+        val msg = normalizeEnvelope(syncEnvelope(OwnDeviceCopy.wrap(certificate, wire))) {
             error("no sealed resolution expected")
         }
 
@@ -158,12 +158,16 @@ class MessageRouterTest {
         assertTrue(ByteArray(32) { 5 }.contentEquals(msg.senderCertificate?.identityKey))
     }
 
-    /** A sender without a certificate still sends; the copy parses and opens on a session the
-     * sibling already holds. */
+    /** This client sends no copy without a certificate; one from a client that does must still
+     * parse, so the processor can drop it instead of losing it in the router. */
     @Test
     fun `a sender sync without a certificate still parses`() = runBlocking<Unit> {
         val wire = byteArrayOf(4, 4, 4)
-        val msg = normalizeEnvelope(syncEnvelope(OwnDeviceCopy.wrap(null, wire))) { null }
+        val bare = shared.proto.core.v1.EnvelopeOuterClass.OwnDeviceCopy.newBuilder()
+            .setWirePayload(ByteString.copyFrom(wire))
+            .build()
+            .toByteArray()
+        val msg = normalizeEnvelope(syncEnvelope(bare)) { null }
 
         requireNotNull(msg)
         assertTrue(wire.contentEquals(msg.encryptedPayload))

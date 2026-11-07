@@ -37,6 +37,7 @@ import kotlin.random.Random
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import shared.proto.core.v1.EnvelopeOuterClass
 import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
@@ -129,7 +130,6 @@ class SendMessageUseCase @Inject constructor(
                 timestampMs = System.currentTimeMillis(),
                 encrypted = payload,
                 identityPublic = device.identityPublic,
-                isOwnReplica = false,
             )
             result?.success == true
         } catch (e: CancellationException) {
@@ -310,7 +310,6 @@ class SendMessageUseCase @Inject constructor(
                 localId = row.id,
                 timestampMs = row.timestampMs,
                 identityPublic = peer.identityPublic,
-                isOwnReplica = false,
             )
             val sent = result?.success == true
             Log.i(TAG, "resend ${messageId.take(8)}… to ${deviceId.take(8)}… — ${if (sent) "sent" else "failed"}")
@@ -492,7 +491,6 @@ class SendMessageUseCase @Inject constructor(
             localId = null,
             timestampMs = timestampMs,
             identityPublic = pinned.identityPublic,
-            isOwnReplica = false,
         )
         if (result?.success != true) {
             messages.setDeliveryStatus(messageId, DeliveryStatus.FAILED)
@@ -595,6 +593,20 @@ class SendMessageUseCase @Inject constructor(
         val reachedOwn = mutableListOf<String>()
         for (target in targets) {
             val isOwnReplica = target.audience == DeliveryAudience.OWN_REPLICA
+            // The certificate names the device that wrote a copy, and every copy carries it: nothing
+            // else says which session it is read on, and whether the sibling still holds this
+            // session is its knowledge, not ours. Without one no copy is written, before a session
+            // is opened or the ratchet moves.
+            val ownCopyCertificate = if (isOwnReplica) {
+                runCatching { OwnDeviceCopy.certificateFrom(stealthSender.getSenderCertificate()) }
+                    .getOrElse {
+                        Log.w(TAG, "no sender certificate — no copy for ${target.deviceId.take(8)}…", it)
+                        lastError = "no sender certificate"
+                        continue
+                    }
+            } else {
+                null
+            }
             val accountId = if (isOwnReplica) myId else contactId
             val peer = runCatching {
                 sessionManager.ensureSessionForDevice(accountId, target.deviceId)
@@ -631,7 +643,7 @@ class SendMessageUseCase @Inject constructor(
                 localId = if (isOwnReplica) null else baseMessageId,
                 timestampMs = timestampMs,
                 identityPublic = identity,
-                isOwnReplica = isOwnReplica,
+                ownCopyCertificate = ownCopyCertificate,
             )
             if (result?.success == true) {
                 if (isOwnReplica) {
@@ -719,19 +731,11 @@ class SendMessageUseCase @Inject constructor(
         timestampMs: Long,
         encrypted: ByteArray,
         identityPublic: ByteArray,
-        isOwnReplica: Boolean,
+        ownCopyCertificate: EnvelopeOuterClass.SenderCertificate? = null,
     ): MessagingService.SendResult? {
         // A copy to a sibling carries our certificate beside the wire payload: it goes unsealed,
-        // and a sibling's first copy opens its session from nothing else. Every copy, not only
-        // the first — whether the sibling still holds this session is its knowledge, not ours.
-        val ownCopy = if (isOwnReplica) {
-            val certificate = runCatching { stealthSender.getSenderCertificate() }
-                .onFailure { Log.w(TAG, "no sender certificate for ${wireMessageId.takeLast(16)} — a first copy will not open", it) }
-                .getOrNull()
-            OwnDeviceCopy.wrap(certificate, encrypted)
-        } else {
-            null
-        }
+        // and a sibling's first copy opens its session from nothing else.
+        val ownCopy = ownCopyCertificate?.let { OwnDeviceCopy.wrap(it, encrypted) }
         var last: MessagingService.SendResult? = null
         repeat(MAX_ATTEMPTS) { attempt ->
             val result = try {
@@ -881,7 +885,7 @@ class SendMessageUseCase @Inject constructor(
         localId: String?,
         timestampMs: Long,
         identityPublic: ByteArray,
-        isOwnReplica: Boolean,
+        ownCopyCertificate: EnvelopeOuterClass.SenderCertificate? = null,
     ): MessagingService.SendResult? {
         var last: MessagingService.SendResult? = null
         frames.forEachIndexed { index, frame ->
@@ -895,7 +899,7 @@ class SendMessageUseCase @Inject constructor(
                 timestampMs = timestampMs,
                 encrypted = encrypted,
                 identityPublic = identityPublic,
-                isOwnReplica = isOwnReplica,
+                ownCopyCertificate = ownCopyCertificate,
             )
             if (result?.success != true) return result
             if (localId != null) serverMessageIds.record(result.messageId, localId)
