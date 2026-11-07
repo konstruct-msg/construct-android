@@ -40,6 +40,10 @@ class KonstructApp : Application(), ImageLoaderFactory {
     @Inject
     lateinit var blockSync: com.construct.messenger.data.repository.BlockSyncService
 
+    /** Built here so a note still in the preferences moves into the store now, not when Drafts opens. */
+    @Inject
+    lateinit var drafts: com.construct.messenger.data.repository.DraftsRepository
+
     /** Every `AsyncImage` in the app: message media among the images it can load. */
     override fun newImageLoader(): ImageLoader = MediaImages.loader(this, media)
 
