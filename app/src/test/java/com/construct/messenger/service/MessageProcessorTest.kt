@@ -37,6 +37,7 @@ class MessageProcessorTest {
     private class RecordingEffects : ProcessorEffects {
         val calls = mutableListOf<String>()
         var ackedInDb = false
+        override fun ownAccountId(): String? = "me"
         override suspend fun onDecrypted(contactId: String, messageId: String, plaintext: ByteArray, envelopeSeconds: Long) {
             calls += "onDecrypted:$contactId:$messageId"
         }
@@ -372,6 +373,88 @@ class MessageProcessorTest {
         serverKid = ByteArray(0),
         serverSignatureHybrid = ByteArray(0),
     )
+
+    // ── A SENDER_SYNC opens the session its certificate names, on a device of ours (todo/273) ──
+
+    private fun copy(
+        certifiedAccount: String? = "me",
+        device: String? = senderDevice,
+    ) = incoming(sender = "me").copy(
+        contentType = ContentType.CONTENT_TYPE_SENDER_SYNC,
+        senderCertificate = if (certifiedAccount == null) null else certificate(device!!).copy(userId = certifiedAccount),
+    )
+
+    private suspend fun assertNotOpened(message: MessageRouter.IncomingMessage) {
+        val gateway = FakeGateway()
+        val effects = RecordingEffects()
+
+        val outcome = MessageProcessor(gateway, effects, sessionManager, timerBridge, cryptoManager, held, mock())
+            .process(message)
+
+        assertEquals(ProcessingOutcome.Acked, outcome)
+        assertTrue(effects.calls.contains("markProcessed:m1"))
+        assertTrue("the core must not be asked to read it", gateway.events.isEmpty())
+    }
+
+    /** The control: without it every refusal below would pass on a processor that opens nothing. */
+    @Test
+    fun `a copy from a device of ours goes to the core under that device`() = runBlocking {
+        whenever(cryptoManager.currentDeviceId()).thenReturn(device)
+        val gateway = FakeGateway()
+
+        MessageProcessor(gateway, RecordingEffects(), sessionManager, timerBridge, cryptoManager, held, mock())
+            .process(copy())
+
+        assertEquals(senderDevice, gateway.events.filterIsInstance<CfeIncomingEvent.MessageReceived>().single().from)
+    }
+
+    /** A server signs certificates and nothing checks one on an existing session, so it can hand a
+     * contact's message back as a copy naming the contact's device. Read that way, the contact's
+     * frames are applied as our own. */
+    @Test
+    fun `a copy naming a contact's device is not read`() = runBlocking {
+        whenever(cryptoManager.currentDeviceId()).thenReturn(device)
+        whenever(sessionManager.accountIdForDevice(senderDevice)).thenReturn("alice")
+        assertNotOpened(copy())
+    }
+
+    @Test
+    fun `a copy certified for another account is not read`() = runBlocking {
+        whenever(cryptoManager.currentDeviceId()).thenReturn(device)
+        assertNotOpened(copy(certifiedAccount = "alice"))
+    }
+
+    @Test
+    fun `a copy naming this device is not read`() = runBlocking {
+        whenever(cryptoManager.currentDeviceId()).thenReturn(senderDevice)
+        assertNotOpened(copy())
+    }
+
+    @Test
+    fun `the origin of a copy is decided from the certificate and the record`() {
+        fun origin(account: String?, device: String?, recorded: String? = null) = SenderSyncOrigin.of(
+            certifiedAccount = account,
+            device = device,
+            myUserId = "me",
+            myDeviceId = "this",
+            accountOfDevice = { recorded },
+        )
+        assertEquals(SenderSyncOrigin.Device("sib"), origin("me", "sib"))
+        assertEquals(SenderSyncOrigin.Device("sib"), origin("me", "sib", recorded = "me"))
+        assertEquals(SenderSyncOrigin.Device("sib"), origin("ME", "sib", recorded = "Me"))
+        assertEquals(SenderSyncOrigin.Unnamed, origin(null, null))
+        assertEquals(SenderSyncOrigin.Unnamed, origin("me", ""))
+        assertEquals(SenderSyncOrigin.NotOurs, origin("alice", "sib"))
+        assertEquals(SenderSyncOrigin.NotOurs, origin("me", "this"))
+        assertEquals(SenderSyncOrigin.NotOurs, origin("me", "contact", recorded = "alice"))
+    }
+
+    /** Nothing names its session, and the first device on record would be a guess. */
+    @Test
+    fun `a copy without a certificate is not read under a guess`() = runBlocking {
+        whenever(sessionManager.resolveDeviceId("me")).thenReturn(device)
+        assertNotOpened(copy(certifiedAccount = null))
+    }
 
     /** The certificate names the ratchet, and it travels to the core with the message — the only
      * thing a first message opens from. Mutation that reddens it: take the pinned device first,

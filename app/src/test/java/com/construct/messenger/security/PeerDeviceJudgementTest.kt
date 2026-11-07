@@ -112,7 +112,8 @@ class PeerDeviceJudgementTest {
         registry.record(PEER, mac.id, mac.bundle.identityPublic)
         answer(phone.served(), mac.served(phone.vouch(mac)))
         assertNoAlarm()
-        assertEquals(listOf(phone.id, mac.id), registry.trusted(PEER))
+        // A set: the rows tie on first-seen and the ids are random, so the order is not stable.
+        assertEquals(setOf(phone.id, mac.id), registry.trusted(PEER)!!.toSet())
     }
 
     /** The alarm is once. Mutation: `markJudged` writes nothing — it fires again after being read. */

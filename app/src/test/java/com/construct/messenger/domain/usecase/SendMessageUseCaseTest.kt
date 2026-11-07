@@ -54,6 +54,12 @@ import uniffi.construct_core.DeliveryTarget
 class SendMessageUseCaseTest {
 
     private val myId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+
+    private val ownCertificate = shared.proto.core.v1.EnvelopeOuterClass.SenderCertificate.newBuilder()
+        .setSenderUserId("me")
+        .setSenderDeviceId("22222222222222222222222222222222")
+        .build()
+        .toByteArray()
     private val peer = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
     private val pinnedDevice = "11111111111111111111111111111111"
     private val siblingDevice = "22222222222222222222222222222222"
@@ -118,6 +124,7 @@ class SendMessageUseCaseTest {
     ): Harness {
         val h = Harness()
         whenever(h.keystore.getUserId()).thenReturn(myId)
+        whenever(h.stealthSender.getSenderCertificate()).thenReturn(ownCertificate)
         whenever(h.crypto.isMessagingReady).thenReturn(true)
         whenever(h.crypto.currentDeviceId()).thenReturn(ourDevice)
         whenever(h.sessions.saveCfeActions(any())).thenReturn(true)
@@ -247,6 +254,65 @@ class SendMessageUseCaseTest {
         assertEquals(KnstFrame.TYPE_E2EE_SIGNAL, framesSentTo(h, pinnedDevice).single().contentType)
     }
 
+
+    /**
+     * The certificate names the device that wrote the copy, and nothing else says which session it
+     * is read on. Without one no copy is written and the ratchet does not move; the recipient's
+     * copy still goes.
+     */
+    @Test
+    fun `no copy goes to our own device without a certificate`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        val ownDevice = "33333333333333333333333333333333"
+        whenever(h.stealthSender.getSenderCertificate()).thenThrow(RuntimeException("offline"))
+        whenever(h.sessionManager.discoverOwnDeviceBundles(myId)).thenReturn(
+            listOf(SessionManager.PeerBundle(myId, ownDevice, byteArrayOf(8), bundle = mock<BinaryKeyBundle>())),
+        )
+        whenever(h.sessionManager.ensureSessionForDevice(myId, ownDevice))
+            .thenReturn(SessionManager.SessionPeer(myId, ownDevice, byteArrayOf(8)))
+        whenever(h.crypto.deviceCopyTag(any(), eq(ownDevice), any())).thenReturn("ownownownownown0")
+        whenever(h.crypto.planSend(any(), any(), any(), any())).thenReturn(
+            listOf(
+                DeliveryTarget(pinnedDevice, DeliveryAudience.RECIPIENT),
+                DeliveryTarget(ownDevice, DeliveryAudience.OWN_REPLICA),
+            ),
+        )
+
+        h.useCase()(peer, "hello")
+
+        assertTrue(framesSentTo(h, ownDevice).isEmpty())
+        assertEquals(1, framesSentTo(h, pinnedDevice).size)
+        verify(h.sessionManager, org.mockito.kotlin.never()).ensureSessionForDevice(myId, ownDevice)
+    }
+
+    /** A copy that goes without its certificate opens nothing on the sibling, in silence. */
+    @Test
+    fun `a copy to our own device carries our certificate`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        val ownDevice = "33333333333333333333333333333333"
+        whenever(h.sessionManager.discoverOwnDeviceBundles(myId)).thenReturn(
+            listOf(SessionManager.PeerBundle(myId, ownDevice, byteArrayOf(8), bundle = mock<BinaryKeyBundle>())),
+        )
+        whenever(h.sessionManager.ensureSessionForDevice(myId, ownDevice))
+            .thenReturn(SessionManager.SessionPeer(myId, ownDevice, byteArrayOf(8)))
+        whenever(h.crypto.deviceCopyTag(any(), eq(ownDevice), any())).thenReturn("ownownownownown0")
+        whenever(h.crypto.planSend(any(), any(), any(), any())).thenReturn(
+            listOf(
+                DeliveryTarget(pinnedDevice, DeliveryAudience.RECIPIENT),
+                DeliveryTarget(ownDevice, DeliveryAudience.OWN_REPLICA),
+            ),
+        )
+
+        h.useCase()(peer, "hello")
+
+        val payloads = argumentCaptor<ByteArray>()
+        verify(h.messaging, org.mockito.kotlin.atLeastOnce()).sendMessage(
+            any(), any(), eq(myId), any(), payloads.capture(), any(),
+            eq(shared.proto.core.v1.EnvelopeOuterClass.ContentType.CONTENT_TYPE_SENDER_SYNC),
+        )
+        val copy = com.construct.messenger.stealth.OwnDeviceCopy.unwrap(payloads.lastValue)
+        assertEquals("22222222222222222222222222222222", copy?.certificate?.deviceId)
+    }
 
     /**
      * A photo message can be sent again after a decryption error: its row keeps the wire album.
