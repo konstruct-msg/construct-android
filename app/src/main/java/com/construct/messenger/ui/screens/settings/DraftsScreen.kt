@@ -78,7 +78,7 @@ fun DraftsRoute(
 private fun DraftsScreen(
     drafts: List<Draft>,
     onNavigateBack: () -> Unit,
-    onSave: (String) -> Unit,
+    onSave: (String, onSaved: () -> Unit) -> Unit,
     onDelete: (String) -> Unit,
 ) {
     var text by rememberSaveable { mutableStateOf("") }
@@ -126,8 +126,7 @@ private fun DraftsScreen(
                         .background(CTColor.bgMsg)
                         .border(1.dp, CTColor.accent, shape)
                         .clickable(enabled = canSave) {
-                            onSave(text)
-                            text = ""
+                            onSave(text) { text = "" }
                         }
                         .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center,
@@ -220,7 +219,7 @@ private fun DraftsScreenPreview() {
             Draft("2", "Invite link for the team — send tomorrow", 1_759_000_000_000),
         ),
         onNavigateBack = {},
-        onSave = {},
+        onSave = { _, _ -> },
         onDelete = {},
     )
 }
