@@ -32,6 +32,9 @@ interface PeerDeviceStore {
 
     suspend fun forDevice(deviceId: String): PeerDeviceRecord?
 
+    /** Every device of every account. */
+    suspend fun all(): List<PeerDeviceRecord>
+
     /** Records [device] unless its id is known — under any account; true when it was new. */
     suspend fun record(device: PeerDeviceRecord): Boolean
 
@@ -46,6 +49,8 @@ class CorePeerDeviceStore(private val store: LocalStore) : PeerDeviceStore {
     override suspend fun forAccount(accountId: String): List<PeerDeviceRecord> = io { s -> s.peerDevices(accountId).map { it.record() } }
 
     override suspend fun forDevice(deviceId: String): PeerDeviceRecord? = io { it.peerDevice(deviceId)?.record() }
+
+    override suspend fun all(): List<PeerDeviceRecord> = io { s -> s.allPeerDevices().map { it.record() } }
 
     override suspend fun record(device: PeerDeviceRecord): Boolean = io { s ->
         s.recordPeerDevice(LocalPeerDevice(device.deviceId, device.accountId, device.identityPublic, device.firstSeenAtMs)) ==

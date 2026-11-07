@@ -171,8 +171,8 @@ class SessionManager @Inject constructor(
             )
         }
         // Read before the answer is recorded: once it is, every device it names is known and none
-        // could be judged as new (`PeerDeviceVetting`).
-        val trustedBefore = peerDeviceRegistry.knownDevices(accountId).map { it.deviceId }
+        // could be judged as new (`PeerDeviceVetting`). Our own account is never judged.
+        val trustedBefore = if (rememberAsContact) peerDeviceRegistry.trusted(accountId) else null
         peerDeviceRegistry.recordAll(
             accountId,
             bundles.map { PeerDeviceRegistry.PeerDevice(it.deviceId, it.identityPublic) },
@@ -181,8 +181,10 @@ class SessionManager @Inject constructor(
         if (rememberAsContact) {
             bundles.forEach { rememberIdentity(accountId, it.identityPublic) }
             // Only ever an alarm, so a fault in it must not cost the send that asked for the bundles.
-            runCatching { vetting.vet(accountId, bundles, trustedBefore) }
-                .onFailure { Log.w(TAG, "device vetting failed for ${accountId.take(8)}…: ${it.message}") }
+            if (trustedBefore != null) {
+                runCatching { vetting.vet(accountId, bundles, trustedBefore) }
+                    .onFailure { Log.w(TAG, "device vetting failed for ${accountId.take(8)}…: ${it.message}") }
+            }
         }
         return bundles
     }

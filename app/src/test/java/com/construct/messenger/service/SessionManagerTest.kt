@@ -169,8 +169,8 @@ class SessionManagerTest {
     /**
      * The devices trusted before the answer go to the vetting, not those after it: once it is
      * recorded every device it names is known and none could ever be new. The certificate is
-     * carried from the served bundle. Mutation: read `knownDevices` after `recordAll` — the
-     * newcomer is in the trusted list and the alarm can never fire.
+     * carried from the served bundle. Mutation: read `trusted` after `recordAll` — the newcomer
+     * is in the trusted list and the alarm can never fire.
      */
     @Test
     fun discoverPeerBundles_vetsAgainstTheDevicesKnownBeforeTheAnswer() = runTest {
@@ -178,7 +178,7 @@ class SessionManagerTest {
         val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting)
         val (old, new) = "a".repeat(32) to "b".repeat(32)
         val known = mutableListOf(PeerDeviceRecord(old, "acct", byteArrayOf(1), 0))
-        whenever(peerDeviceRegistry.knownDevices("acct")).thenAnswer { known.toList() }
+        whenever(peerDeviceRegistry.trusted("acct")).thenAnswer { known.map { it.deviceId } }
         whenever(peerDeviceRegistry.recordAll(org.mockito.kotlin.any(), org.mockito.kotlin.any(), org.mockito.kotlin.any())).thenAnswer {
             known += PeerDeviceRecord(new, "acct", byteArrayOf(2), 0)
             Unit
@@ -203,5 +203,33 @@ class SessionManagerTest {
         verify(vetting).vet(eq("acct"), bundles.capture(), eq(listOf(old)))
         assertNull(bundles.firstValue[0].deviceCertificate)
         assertArrayEquals(byteArrayOf(7, 7), bundles.firstValue[1].deviceCertificate)
+    }
+
+    /** A read that failed judges nothing. Mutation: treat null as an empty list — a first meeting, no alarm. */
+    @Test
+    fun discoverPeerBundles_judgesNothingWhenTheTrustedDevicesCannotBeRead() = runTest {
+        val vetting: PeerDeviceVetting = mock()
+        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting)
+        whenever(peerDeviceRegistry.trusted("acct")).thenReturn(null)
+        whenever(keyStub.getPreKeyBundles(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
+            .thenReturn(GetPreKeyBundlesResponse.getDefaultInstance())
+
+        manager.discoverPeerBundles("acct")
+
+        verify(vetting, org.mockito.kotlin.never()).vet(org.mockito.kotlin.any(), org.mockito.kotlin.any(), org.mockito.kotlin.any())
+    }
+
+    /** Our own account is never the subject of a warning, and its first answer marks nothing. */
+    @Test
+    fun discoverOwnDeviceBundles_judgesNothing() = runTest {
+        val vetting: PeerDeviceVetting = mock()
+        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting)
+        whenever(keyStub.getPreKeyBundles(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
+            .thenReturn(GetPreKeyBundlesResponse.getDefaultInstance())
+
+        manager.discoverOwnDeviceBundles("acct")
+
+        verify(peerDeviceRegistry, org.mockito.kotlin.never()).trusted(org.mockito.kotlin.any())
+        verify(vetting, org.mockito.kotlin.never()).vet(org.mockito.kotlin.any(), org.mockito.kotlin.any(), org.mockito.kotlin.any())
     }
 }

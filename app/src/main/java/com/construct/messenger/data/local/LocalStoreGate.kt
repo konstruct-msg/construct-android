@@ -103,6 +103,7 @@ class GatedPeerDeviceStore(private val gate: LocalStoreGate) : PeerDeviceStore {
     private suspend fun s() = gate.backing().peerDevices
     override suspend fun forAccount(accountId: String) = s().forAccount(accountId)
     override suspend fun forDevice(deviceId: String) = s().forDevice(deviceId)
+    override suspend fun all() = s().all()
     override suspend fun record(device: PeerDeviceRecord) = s().record(device)
     override suspend fun retain(accountId: String, active: List<String>) = s().retain(accountId, active)
 }

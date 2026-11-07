@@ -75,6 +75,13 @@ abstract class PeerDeviceStoreContract {
         assertEquals(device('d', account = bob), store.forDevice("d".repeat(32)))
     }
 
+    @Test
+    fun allIsEveryAccountsDevices() = runTest {
+        store.record(device('a'))
+        store.record(device('b', account = bob))
+        assertEquals(setOf("a".repeat(32), "b".repeat(32)), store.all().map { it.deviceId }.toSet())
+    }
+
     /** A known device keeps its first row — under its first account, whoever names it again. */
     @Test
     fun aKnownDeviceKeepsItsFirstRow() = runTest {

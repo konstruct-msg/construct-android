@@ -9,6 +9,8 @@ internal class FakePeerDeviceStore : PeerDeviceStore {
 
     override suspend fun forDevice(deviceId: String): PeerDeviceRecord? = rows[deviceId]
 
+    override suspend fun all(): List<PeerDeviceRecord> = rows.values.toList()
+
     override suspend fun record(device: PeerDeviceRecord): Boolean {
         if (device.deviceId in rows) return false
         rows[device.deviceId] = device
