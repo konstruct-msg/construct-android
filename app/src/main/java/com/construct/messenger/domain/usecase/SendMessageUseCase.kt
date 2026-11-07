@@ -62,8 +62,9 @@ sealed interface SendOutcome {
  *    `plan_send` with nothing marked as already covered.
  * 5. Per device: CFE `OutgoingMessage` → `SendEncryptedMessage`. The session blob is persisted
  *    **before** the unary send (sender-state-durability-before-send).
- * 6. Per device: sealed to *that* device's identity key, named `<base>-fd-<tag>`, retried on a
- *    retryable refusal. Fail closed — never identified-downgrade when stealth is on.
+ * 6. Per device: sealed to *that* device's identity key, named `<base>-fd-<tag>`, retried shortly on
+ *    a retryable refusal that names no time. Fail closed — never identified-downgrade when stealth
+ *    is on.
  * 7. The row's status is a fold: SENT once any copy is accepted, FAILED when none is.
  */
 /** What [SendMessageUseCase.resend] did: [FAILED] is worth another try, [NOT_OURS] is not. */
@@ -771,8 +772,10 @@ class SendMessageUseCase @Inject constructor(
             }
             last = result
             if (result.success) return result
-            if (!result.retryable || attempt == MAX_ATTEMPTS - 1) return result
-            delay(result.retryAfterMs.coerceAtLeast(BACKOFF_MS) * (attempt + 1))
+            // A time named by the server is not waited out here: a limit names the end of its window,
+            // up to an hour on, and the row, the next device and the caller would all wait with it.
+            if (!result.retryable || result.retryAfterMs > 0 || attempt == MAX_ATTEMPTS - 1) return result
+            delay(BACKOFF_MS * (attempt + 1))
         }
         return last
     }

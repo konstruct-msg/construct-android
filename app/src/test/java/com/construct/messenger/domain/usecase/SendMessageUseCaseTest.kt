@@ -25,6 +25,7 @@ import com.construct.messenger.stealth.StealthPolicy
 import com.construct.messenger.stealth.StealthSenderService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -627,6 +628,130 @@ class SendMessageUseCaseTest {
 
         assertTrue(outcome is SendOutcome.Sent)
         assertEquals(2, sentMessageIds(h).size)
+    }
+
+    /**
+     * The server's answer to a limit names when the window ends, up to an hour on. That wait does
+     * not belong inside the send (todo/280). The contact's copy goes first, so here the message
+     * was in their mailbox while its row said sending for three hours: an hour, then two.
+     *
+     * Mutation: wait out `retryAfterMs` again — this reddens.
+     */
+    @Test
+    fun `a limit on our own copy does not hold the message up`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        val ownDevice = withOwnDevice(h)
+        whenever(
+            h.messaging.sendMessage(
+                messageId = any(),
+                senderId = any(),
+                recipientId = eq(myId),
+                conversationId = any(),
+                encryptedPayload = any(),
+                timestampMs = any(),
+                contentType = any(),
+            ),
+        ).thenReturn(rateLimited)
+
+        val outcome = h.useCase()(peer, "hello")
+
+        assertTrue(outcome is SendOutcome.Sent)
+        assertEquals(0L, currentTime)
+        assertEquals(1, framesSentTo(h, ownDevice).size)
+    }
+
+    /** The next device does not wait for the one that was refused, and the refused one is owed. */
+    @Test
+    fun `a limit on one device does not hold up the next`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice, siblingDevice))
+        whenever(
+            h.messaging.sendMessage(
+                messageId = any(),
+                senderId = any(),
+                recipientId = any(),
+                conversationId = any(),
+                encryptedPayload = any(),
+                timestampMs = any(),
+                contentType = any(),
+            ),
+        ).thenReturn(rateLimited, MessagingService.SendResult("ok", true, "", true, 0, "b"))
+
+        val outcome = h.useCase()(peer, "hello")
+
+        assertTrue(outcome is SendOutcome.Sent)
+        assertEquals(0L, currentTime)
+        assertEquals(listOf(peer to listOf(pinnedDevice)), h.owed.owed)
+    }
+
+    /** Nobody took it: the row says failed now, and Retry is the person's. */
+    @Test
+    fun `a limit on the only copy fails the message at once`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        whenever(
+            h.messaging.sendMessage(
+                messageId = any(),
+                senderId = any(),
+                recipientId = any(),
+                conversationId = any(),
+                encryptedPayload = any(),
+                timestampMs = any(),
+                contentType = any(),
+            ),
+        ).thenReturn(rateLimited)
+
+        val outcome = h.useCase()(peer, "hello")
+
+        assertTrue(outcome is SendOutcome.Failed)
+        assertEquals(0L, currentTime)
+        assertEquals(1, sentMessageIds(h).size)
+    }
+
+    /**
+     * The control: a refusal with no time named is still tried again, after the short pause.
+     * Mutation: never retry a refusal — this reddens.
+     */
+    @Test
+    fun `a refusal naming no time is tried again shortly`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        whenever(
+            h.messaging.sendMessage(
+                messageId = any(),
+                senderId = any(),
+                recipientId = any(),
+                conversationId = any(),
+                encryptedPayload = any(),
+                timestampMs = any(),
+                contentType = any(),
+            ),
+        ).thenReturn(
+            MessagingService.SendResult("ok", false, "UNAVAILABLE", true, 0, "a"),
+            MessagingService.SendResult("ok", true, "", true, 0, "b"),
+        )
+
+        val outcome = h.useCase()(peer, "hello")
+
+        assertTrue(outcome is SendOutcome.Sent)
+        assertEquals(2, sentMessageIds(h).size)
+        assertEquals(400L, currentTime)
+    }
+
+    private val rateLimited = MessagingService.SendResult("ok", false, "RATE_LIMIT", true, 3_600_000, "a")
+
+    private suspend fun withOwnDevice(h: Harness): String {
+        val ownDevice = "33333333333333333333333333333333"
+        whenever(h.sessionManager.discoverOwnDeviceBundles(myId)).thenReturn(
+            listOf(SessionManager.PeerBundle(myId, ownDevice, byteArrayOf(8), bundle = mock<BinaryKeyBundle>())),
+        )
+        whenever(h.sessionManager.ensureSessionForDevice(myId, ownDevice))
+            .thenReturn(SessionManager.SessionPeer(myId, ownDevice, byteArrayOf(8)))
+        whenever(h.crypto.deviceCopyTag(any(), eq(ownDevice), any())).thenReturn("ownownownownown0")
+        whenever(h.crypto.planSend(any(), any(), any(), any())).thenReturn(
+            listOf(
+                DeliveryTarget(pinnedDevice, DeliveryAudience.RECIPIENT),
+                DeliveryTarget(ownDevice, DeliveryAudience.OWN_REPLICA),
+            ),
+        )
+        return ownDevice
     }
 
     /**
