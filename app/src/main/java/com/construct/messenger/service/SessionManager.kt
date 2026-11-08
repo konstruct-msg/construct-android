@@ -33,6 +33,7 @@ class SessionManager @Inject constructor(
     private val peerDeviceRegistry: PeerDeviceRegistry,
     private val contactKt: com.construct.messenger.security.ContactKt,
     private val vetting: PeerDeviceVetting,
+    private val atRisk: com.construct.messenger.data.local.AtRiskSessionStore,
 ) {
 
     suspend fun hasSession(contactId: String): Boolean {
@@ -286,18 +287,55 @@ class SessionManager @Inject constructor(
     }
 
     /**
-     * `initSession`, with the one refusal that is not a fault said as such: a peer whose bundle
-     * has no PQXDH v2 keys (a build before ML-KEM-1024, or keys not published yet) is refused with
-     * `PQ_REQUIRED`. PQ is mandatory — there is no classical session to fall back to — so the error
-     * still propagates; the log line is what tells it apart from a broken bundle.
+     * `initSession`, with the two refusals that are not faults said as such.
+     *
+     * A peer whose bundle has no PQXDH v2 keys (a build before ML-KEM-1024, or keys not published
+     * yet) is refused with `PQ_REQUIRED`. PQ is mandatory, so there is no classical session to fall
+     * back to and the error still propagates; the log line is what tells it apart from a broken
+     * bundle.
+     *
+     * A bundle whose signed prekey is past the core's age limit is refused with `PeerSpkStale`. When
+     * the core says waiting will not help ([CryptoManager.opensDegraded]), the session is opened
+     * anyway and marked at risk; otherwise the refusal propagates and the next open fetches again.
+     * Without this, a peer away more than 30 days could not be written to from Android at all,
+     * while iOS could (`decisions/stale-peer-reachability.md`, todo/282).
      */
-    private fun openSession(fetched: PeerBundle): String = try {
-        cryptoManager.initSession(fetched.deviceId, fetched.bundle)
-    } catch (e: Exception) {
-        if (CryptoManager.isPeerNotPostQuantum(e)) {
-            Log.w(TAG, "peer device ${fetched.deviceId.take(8)}… has no PQXDH v2 keys — session refused (${e.message})")
+    private suspend fun openSession(fetched: PeerBundle): String {
+        val sessionId = try {
+            cryptoManager.initSession(fetched.deviceId, fetched.bundle)
+        } catch (e: Exception) {
+            if (CryptoManager.isPeerNotPostQuantum(e)) {
+                Log.w(TAG, "peer device ${fetched.deviceId.take(8)}… has no PQXDH v2 keys — session refused (${e.message})")
+            }
+            if (!CryptoManager.opensDegraded(e)) {
+                if (e is uniffi.construct_core.CryptoException.PeerSpkStale) {
+                    Log.w(TAG, "peer device ${fetched.deviceId.take(8)}… SPK stale (${e.ageSecs / 3_600UL} h), may have rotated — not opened now")
+                }
+                throw e
+            }
+            Log.w(TAG, "SESSION_STATE[stale_spk_degraded_init]: ${fetched.deviceId.take(8)}… SPK " +
+                "${(e as uniffi.construct_core.CryptoException.PeerSpkStale).ageSecs / 86_400UL} d old — opening at risk")
+            val degraded = cryptoManager.initSessionAllowingStale(fetched.deviceId, fetched.bundle)
+            atRisk.mark(fetched.deviceId, fetched.accountId)
+            return degraded
         }
-        throw e
+        openedCleanly(fetched.deviceId)
+        return sessionId
+    }
+
+    /** A session with [deviceId] was opened from a fresh bundle, ours or theirs: it is not at risk. */
+    suspend fun openedCleanly(deviceId: String) {
+        atRisk.clear(deviceId)
+    }
+
+    /**
+     * [deviceId] wrote to us and the core read it. A session opened at risk stops being so: the
+     * reply carries the peer's new ratchet key, and our next message ratchets on it, past the stale
+     * prekey. The event iOS does not use — it re-keys on a 1 h cooldown when the peer's prekey
+     * looks fresh (todo/282).
+     */
+    suspend fun heardFrom(deviceId: String) {
+        atRisk.clear(deviceId)
     }
 
     private suspend fun rememberIdentity(contactId: String, identity: ByteArray) {

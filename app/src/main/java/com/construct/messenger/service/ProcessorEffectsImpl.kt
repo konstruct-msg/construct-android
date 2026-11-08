@@ -398,6 +398,10 @@ class ProcessorEffectsImpl @Inject constructor(
         // itself (0.64); `SessionManager` asks it before the fetch.
     }
 
+    override suspend fun heardFrom(deviceId: String) {
+        sessionManager.heardFrom(deviceId)
+    }
+
     override suspend fun resendMessage(contactId: String, messageId: String) {
         val account = sessionManager.accountIdForDevice(contactId) ?: run {
             Log.i(TAG, "resend ${messageId.take(8)}… — device ${contactId.take(8)}… of no known contact")

@@ -356,6 +356,9 @@ interface ProcessorEffects {
      * applies it at that open itself (0.64). */
     suspend fun sessionRetired(contactId: String, withoutOneTimePrekey: Boolean)
 
+    /** The core decrypted a message from [deviceId]: [SessionManager.heardFrom]. */
+    suspend fun heardFrom(deviceId: String)
+
     /** The peer could not read [messageId]: send it again to [contactId]. */
     suspend fun resendMessage(contactId: String, messageId: String)
 
@@ -392,6 +395,8 @@ internal suspend fun ProcessorEffects.deliverDecrypted(
     envelope: MessageRouter.IncomingMessage?,
 ) {
     val contactId = action.contactId.ifEmpty { envelope?.senderId.orEmpty() }
+    // Read on a session with that device: a session opened at risk with it no longer is.
+    if (action.contactId.isNotEmpty()) heardFrom(action.contactId)
     if (envelope?.contentType == ContentType.CONTENT_TYPE_SESSION_RESET_INIT) {
         markProcessed(action.messageId, envelope.senderId)
     } else if (envelope?.contentType == ContentType.CONTENT_TYPE_SENDER_SYNC) {

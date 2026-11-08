@@ -46,6 +46,8 @@ data class ChatUiState(
     /** Their unacknowledged security event; the banner shows while it is not NONE. */
     /** What to warn about: their security event, or a failed KT proof. */
     val trustAlert: ContactTrustAlert? = null,
+    /** The session was opened from their stale prekey; they have not written since. */
+    val sessionAtRisk: Boolean = false,
     /** The key server's proof for their key verified; the nav bar marks it. */
     val ktVerified: Boolean = false,
     /** Name for the banner — alias or generated, never the raw id. */
@@ -162,6 +164,7 @@ class ChatViewModel @Inject constructor(
             replyingTo = reply,
             editingOriginal = edit?.original,
             trustAlert = contact?.trustAlert,
+            sessionAtRisk = contact?.sessionAtRisk == true,
             ktVerified = contact?.ktStatus == KtStatus.VERIFIED,
             contactName = name,
             attachments = photos,

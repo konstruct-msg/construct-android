@@ -343,6 +343,7 @@ fun ChatScreen(
             onVerify = onOpenSafetyNumbers,
             onAcknowledge = viewModel::acknowledgeSecurityNotice,
         )
+        AtRiskSessionBanner(visible = uiState.sessionAtRisk)
 
         Box(
             modifier = Modifier

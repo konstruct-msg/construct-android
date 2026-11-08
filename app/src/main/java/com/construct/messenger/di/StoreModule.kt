@@ -26,6 +26,12 @@ abstract class StoreModule {
 
     @Binds
     @Singleton
+    abstract fun bindAtRiskSessionStore(
+        store: com.construct.messenger.data.local.DataStoreAtRiskSessionStore
+    ): com.construct.messenger.data.local.AtRiskSessionStore
+
+    @Binds
+    @Singleton
     abstract fun bindOrientationStore(
         store: DataStoreOrientationStore
     ): OrientationStore

@@ -40,6 +40,16 @@ never opens.
   converge by themselves: nothing is announced, confirmed, tie-broken or waited for.
 - The core's `Opening` phase is only a lock: two inits in flight would spend two one-time
   prekeys for one state.
+- **A bundle past the SPK age limit** (`PeerSpkStale { age_secs }`, 30 days) is not a dead end
+  (vault `decisions/stale-peer-reachability.md`). The core answers `plan_stale_spk(age_secs)`:
+  `OpenDegraded` (past the limit by more than a rotation takes to reach the key server) →
+  `initSessionAllowingStale`, and the device is marked in `AtRiskSessionStore`; `WaitForRotation`
+  → the refusal propagates and the next open fetches again. Android waits on no timer here; iOS
+  refetches twice, 60 s apart. The mark shows a banner in the chat (`AtRiskSessionBanner`) and ends
+  on an event: the first message from that device the core decrypts (`SessionManager.heardFrom`:
+  its reply ratchets past the stale prekey), or a clean open with it. iOS also re-keys on a 1 h
+  cooldown once the peer's prekey looks fresh; Android does not (vault todo 282). The core's own
+  reopen (`OpenSession`) stays strict: there a session is held, so a stale bundle leaves it.
 
 ## 3. Receiving opens without the server
 

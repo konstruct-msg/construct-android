@@ -219,6 +219,16 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
     }
 
     /**
+     * [initSession] for a bundle whose signed prekey is past the core's age limit: every other
+     * check stays (the signature, PQXDH v2, the epoch). Call it only when [opensDegraded] says so;
+     * the session it opens is at risk until the peer writes ([com.construct.messenger.data.local.AtRiskSessionStore]).
+     * **Canon:** iOS `initSessionAllowingStale`, `decisions/stale-peer-reachability.md`.
+     */
+    fun initSessionAllowingStale(contactId: String, recipientBundle: BinaryKeyBundle): String = synchronized(coreLock) {
+        requireOrchestrator().initSessionAllowingStale(contactId, recipientBundle)
+    }
+
+    /**
      * One verdict per [offered] device of a peer's account, in order — the core's, the same on
      * every client (`decisions/devices-of-an-account-sign-each-other.md`). [trustedDeviceIds]:
      * the devices of that account this client trusted before the answer. Null before login: only
@@ -588,6 +598,17 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
         /** True for the initiator's refusal to open a session without PQXDH v2 keys. */
         fun isPeerNotPostQuantum(error: Throwable): Boolean =
             error is uniffi.construct_core.CryptoException.PqRequired
+
+        /**
+         * Whether [error] refused a bundle as stale and the core says to open degraded now
+         * (`plan_stale_spk` → `OpenDegraded`, core 0.65): the peer has been away longer than a
+         * rotation takes to reach the key server. `WaitForRotation` is false: the open is refused
+         * as before and the next one fetches again. Android waits on no timer for it (rule 3);
+         * iOS refetches twice, 60 s apart.
+         */
+        fun opensDegraded(error: Throwable): Boolean =
+            error is uniffi.construct_core.CryptoException.PeerSpkStale &&
+                uniffi.construct_core.planStaleSpk(error.ageSecs) == uniffi.construct_core.StaleSpkPlan.OPEN_DEGRADED
     }
 
     // ── Stateless helpers (free functions / no core state) ──────────────────
