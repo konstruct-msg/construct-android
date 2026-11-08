@@ -89,9 +89,11 @@ reader                                          writer
   any of them.
 - The payload is built and sealed by the core (to the writer's identity key). Android sends the
   bytes as they are: `SessionControlUseCase.sendDecryptionError`.
-- `SessionRetired.withoutOneTimePrekey` → `SessionManager.openNextWithoutOneTimePrekey`: the reader
-  said the prekey the handshake named is gone; the next open fetches the bundle without consuming
-  one.
+- `SessionRetired.withoutOneTimePrekey`: the reader said the prekey the handshake named is gone.
+  The core keeps that per device and its next open uses neither one-time key (core 0.64); the flag
+  is for the log. Before a fetch, `SessionManager` asks `opensWithoutOneTimePrekey` and does not
+  consume one of the peer's on the server for an open that would drop it. Android kept the mark
+  itself until 2026-11-08 (vault todo 282).
 - `ResendMessage(messageId)` names the id **the peer received**. For a sealed copy that is the
   id the server assigned, so `ServerMessageIds` maps it back to ours before
   `SendMessageUseCase.resend`. The map is a table in the core's store, kept 30 days, as long as the server keeps

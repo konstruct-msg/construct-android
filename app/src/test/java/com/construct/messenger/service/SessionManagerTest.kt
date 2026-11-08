@@ -219,6 +219,51 @@ class SessionManagerTest {
         verify(vetting, org.mockito.kotlin.never()).vet(org.mockito.kotlin.any(), org.mockito.kotlin.any(), org.mockito.kotlin.any())
     }
 
+    /**
+     * The bundle that answers `OpenSession` asks the server for a one-time prekey unless the core
+     * says the next open with that device goes without one (core 0.64, todo/282). Mutations, one
+     * at a time: always consume (the first test reddens); never consume, or ask about another
+     * device (the second reddens).
+     */
+    @Test
+    fun bundleForOpenSession_spendsNoOneTimePrekeyTheCoreWillNotUse() = runTest {
+        val device = "33333333333333333333333333333333"
+        stubBundleFor(device)
+        whenever(cryptoManager.opensWithoutOneTimePrekey(device)).thenReturn(true)
+
+        sessionManager.bundleForOpenSession(device)
+
+        assertEquals(false, fetchedRequest().consumeOneTimePrekey)
+    }
+
+    @Test
+    fun bundleForOpenSession_spendsOneOtherwise() = runTest {
+        val device = "33333333333333333333333333333333"
+        stubBundleFor(device)
+        whenever(cryptoManager.opensWithoutOneTimePrekey(device)).thenReturn(false)
+        whenever(cryptoManager.opensWithoutOneTimePrekey(org.mockito.kotlin.argThat { this != device })).thenReturn(true)
+
+        sessionManager.bundleForOpenSession(device)
+
+        assertEquals(true, fetchedRequest().consumeOneTimePrekey)
+    }
+
+    private suspend fun stubBundleFor(device: String) {
+        whenever(peerDeviceRegistry.accountIdForDevice(device)).thenReturn("acct")
+        whenever(cryptoManager.deriveDeviceIdFromIdentity(org.mockito.kotlin.any())).thenReturn(device)
+        whenever(keyStub.getPreKeyBundle(org.mockito.kotlin.any(), org.mockito.kotlin.any())).thenReturn(
+            GetPreKeyBundleResponse.newBuilder()
+                .setBundle(PreKeyBundle.newBuilder().setIdentityKey(ByteString.copyFrom(byteArrayOf(1))))
+                .build(),
+        )
+    }
+
+    private suspend fun fetchedRequest(): shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundleRequest {
+        val request = argumentCaptor<shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundleRequest>()
+        verify(keyStub).getPreKeyBundle(request.capture(), org.mockito.kotlin.any())
+        return request.firstValue
+    }
+
     /** Our own account is never the subject of a warning, and its first answer marks nothing. */
     @Test
     fun discoverOwnDeviceBundles_judgesNothing() = runTest {

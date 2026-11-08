@@ -426,6 +426,16 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
         orchestrator?.hasSession(contactId) ?: false
     }
 
+    /**
+     * Whether the next open with [deviceId] goes without a one-time prekey: the peer said it does
+     * not hold the one our last handshake named (`SessionRetired`). The core remembers it and drops
+     * both one-time keys at the open either way (core 0.64); this is asked before the fetch so as
+     * not to spend one of the peer's on the server for nothing.
+     */
+    fun opensWithoutOneTimePrekey(deviceId: String): Boolean = synchronized(coreLock) {
+        orchestrator?.opensWithoutOneTimePrekey(deviceId) ?: false
+    }
+
     /** The negotiated suite of the session with [deviceId] (1 classic, 3 PQ ratchet), 0 for none. */
     fun sessionSuiteId(deviceId: String): Int = synchronized(coreLock) {
         orchestrator?.getSessionSuiteId(deviceId)?.toInt() ?: 0

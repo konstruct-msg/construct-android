@@ -352,7 +352,8 @@ interface ProcessorEffects {
     suspend fun sendDecryptionError(contactId: String, messageId: String, payload: ByteArray, enveloped: Boolean)
 
     /** The peer could not read our current state with [contactId] and the core retired it; the
-     * next send opens a new one — without a one-time prekey when [withoutOneTimePrekey]. */
+     * next send opens a new one. [withoutOneTimePrekey] is for the log: the core keeps it and
+     * applies it at that open itself (0.64). */
     suspend fun sessionRetired(contactId: String, withoutOneTimePrekey: Boolean)
 
     /** The peer could not read [messageId]: send it again to [contactId]. */
