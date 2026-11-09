@@ -808,6 +808,8 @@ external fun uniffi_construct_core_checksum_func_plan_initiation(
 ): Short
 external fun uniffi_construct_core_checksum_func_plan_send(
 ): Short
+external fun uniffi_construct_core_checksum_func_plan_stale_spk(
+): Short
 external fun uniffi_construct_core_checksum_func_pp_blind_token(
 ): Short
 external fun uniffi_construct_core_checksum_func_pp_finalize_token(
@@ -1250,6 +1252,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_open_sealed(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_open_sealed_to_device(
 ): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_opens_without_one_time_prekey(
+): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_peer_handshake_held(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_pending_message_count(
@@ -1263,6 +1267,8 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_prune_one_ti
 external fun uniffi_construct_core_checksum_method_orchestratorcore_remove_session(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_reopen_session(
+): Short
+external fun uniffi_construct_core_checksum_method_orchestratorcore_reopen_session_allowing_stale(
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_reorder_stats(
 ): Short
@@ -1759,6 +1765,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_open_sealed(`ptr`:
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_open_sealed_to_device(`ptr`: Long,`sealedBox`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_opens_without_one_time_prekey(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_orchestratorcore_peer_handshake_held(`ptr`: Long,`devices`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_orchestratorcore_pending_message_count(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1772,6 +1780,8 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_prune_one_time_pre
 external fun uniffi_construct_core_fn_method_orchestratorcore_remove_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_orchestratorcore_reopen_session(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_orchestratorcore_reopen_session_allowing_stale(`ptr`: Long,`contactId`: RustBuffer.ByValue,`recipientBundle`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_reorder_stats(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1922,6 +1932,8 @@ external fun uniffi_construct_core_fn_func_open_media(`key`: RustBuffer.ByValue,
 external fun uniffi_construct_core_fn_func_plan_initiation(`context`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_plan_send(`recipientDeviceIds`: RustBuffer.ByValue,`ownDeviceIds`: RustBuffer.ByValue,`ourDeviceId`: RustBuffer.ByValue,`recipientIsSelf`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_plan_stale_spk(`ageSecs`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_pp_blind_token(`nonce`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -2245,6 +2257,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_plan_send() != 48521.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_plan_stale_spk() != 36049.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_pp_blind_token() != 33863.toShort()) {
@@ -2910,6 +2925,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_open_sealed_to_device() != 63797.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_opens_without_one_time_prekey() != 14083.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_peer_handshake_held() != 14228.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2929,6 +2947,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_reopen_session() != 45402.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_orchestratorcore_reopen_session_allowing_stale() != 54970.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_reorder_stats() != 53206.toShort()) {
@@ -8042,6 +8063,8 @@ public interface OrchestratorCoreInterface {
      */
     fun `openSealedToDevice`(`sealedBox`: kotlin.ByteArray): kotlin.ByteArray
     
+    fun `opensWithoutOneTimePrekey`(`contactId`: kotlin.String): kotlin.Boolean
+    
     fun `peerHandshakeHeld`(`devices`: List<kotlin.String>): kotlin.Boolean
     
     fun `pendingMessageCount`(`contactId`: kotlin.String): kotlin.UInt
@@ -8058,6 +8081,8 @@ public interface OrchestratorCoreInterface {
     fun `removeSession`(`contactId`: kotlin.String): kotlin.Boolean
     
     fun `reopenSession`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String
+    
+    fun `reopenSessionAllowingStale`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String
     
     /**
      * How late messages have arrived since the process started (PQR-4).
@@ -9074,6 +9099,19 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     }
     
 
+    override fun `opensWithoutOneTimePrekey`(`contactId`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_opens_without_one_time_prekey(
+        it,
+        FfiConverterString.lower(`contactId`),_status)
+}
+    }
+    )
+    }
+    
+
     override fun `peerHandshakeHeld`(`devices`: List<kotlin.String>): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     callWithHandle {
@@ -9161,6 +9199,20 @@ open class OrchestratorCore: Disposable, AutoCloseable, OrchestratorCoreInterfac
     callWithHandle {
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_reopen_session(
+        it,
+        FfiConverterString.lower(`contactId`),FfiConverterTypeBinaryKeyBundle.lower(`recipientBundle`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(CryptoException::class)override fun `reopenSessionAllowingStale`(`contactId`: kotlin.String, `recipientBundle`: BinaryKeyBundle): kotlin.String {
+            return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_orchestratorcore_reopen_session_allowing_stale(
         it,
         FfiConverterString.lower(`contactId`),FfiConverterTypeBinaryKeyBundle.lower(`recipientBundle`),_status)
 }
@@ -12960,7 +13012,9 @@ sealed class CfeAction {
     
     /**
      * The peer could not read our current state with `contact_id`; it is retired and the next
-     * send opens a new one — without a one-time prekey when `without_one_time_prekey`.
+     * send opens a new one — without a one-time prekey when `without_one_time_prekey`. Since 0.64
+     * the core applies that itself on the next open and the platform strips nothing; the flag is
+     * for the log, and `opens_without_one_time_prekey` is the question to ask before a fetch.
      */
     data class SessionRetired(
         val `contactId`: kotlin.String, 
@@ -16096,6 +16150,46 @@ public object FfiConverterTypeReceivingInitKind: FfiConverterRustBuffer<Receivin
 
 
 
+/**
+ * What to do with a bundle refused as stale. See orchestration::stale_spk_plan.
+ */
+
+enum class StaleSpkPlan {
+    
+    /**
+     * The peer may have rotated already: refetch after a short wait, open degraded only if it is
+     * still stale.
+     */
+    WAIT_FOR_ROTATION,
+    /**
+     * The peer has been away longer than a rotation takes to reach the key server: open degraded now.
+     */
+    OPEN_DEGRADED;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeStaleSpkPlan: FfiConverterRustBuffer<StaleSpkPlan> {
+    override fun read(buf: ByteBuffer) = try {
+        StaleSpkPlan.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: StaleSpkPlan) = 4UL
+
+    override fun write(value: StaleSpkPlan, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 
 
 /**
@@ -18374,6 +18468,16 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     UniffiLib.uniffi_construct_core_fn_func_plan_send(
     
         FfiConverterSequenceString.lower(`recipientDeviceIds`),FfiConverterSequenceString.lower(`ownDeviceIds`),FfiConverterString.lower(`ourDeviceId`),FfiConverterBoolean.lower(`recipientIsSelf`),_status)
+}
+    )
+    }
+    
+ fun `planStaleSpk`(`ageSecs`: kotlin.ULong): StaleSpkPlan {
+            return FfiConverterTypeStaleSpkPlan.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_plan_stale_spk(
+    
+        FfiConverterULong.lower(`ageSecs`),_status)
 }
     )
     }

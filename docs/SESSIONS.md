@@ -40,6 +40,16 @@ never opens.
   converge by themselves: nothing is announced, confirmed, tie-broken or waited for.
 - The core's `Opening` phase is only a lock: two inits in flight would spend two one-time
   prekeys for one state.
+- **A bundle past the SPK age limit** (`PeerSpkStale { age_secs }`, 30 days) is not a dead end
+  (vault `decisions/stale-peer-reachability.md`). The core answers `plan_stale_spk(age_secs)`:
+  `OpenDegraded` (past the limit by more than a rotation takes to reach the key server) →
+  `initSessionAllowingStale`, and the device is marked in `AtRiskSessionStore`; `WaitForRotation`
+  → the refusal propagates and the next open fetches again. Android waits on no timer here; iOS
+  refetches twice, 60 s apart. The mark shows a banner in the chat (`AtRiskSessionBanner`) and ends
+  on an event: the first message from that device the core decrypts (`SessionManager.heardFrom`:
+  its reply ratchets past the stale prekey), or a clean open with it. iOS also re-keys on a 1 h
+  cooldown once the peer's prekey looks fresh; Android does not (vault todo 282). The core's own
+  reopen (`OpenSession`) stays strict: there a session is held, so a stale bundle leaves it.
 
 ## 3. Receiving opens without the server
 
@@ -89,9 +99,11 @@ reader                                          writer
   any of them.
 - The payload is built and sealed by the core (to the writer's identity key). Android sends the
   bytes as they are: `SessionControlUseCase.sendDecryptionError`.
-- `SessionRetired.withoutOneTimePrekey` → `SessionManager.openNextWithoutOneTimePrekey`: the reader
-  said the prekey the handshake named is gone; the next open fetches the bundle without consuming
-  one.
+- `SessionRetired.withoutOneTimePrekey`: the reader said the prekey the handshake named is gone.
+  The core keeps that per device and its next open uses neither one-time key (core 0.64); the flag
+  is for the log. Before a fetch, `SessionManager` asks `opensWithoutOneTimePrekey` and does not
+  consume one of the peer's on the server for an open that would drop it. Android kept the mark
+  itself until 2026-11-08 (vault todo 282).
 - `ResendMessage(messageId)` names the id **the peer received**. For a sealed copy that is the
   id the server assigned, so `ServerMessageIds` maps it back to ours before
   `SendMessageUseCase.resend`. The map is a table in the core's store, kept 30 days, as long as the server keeps

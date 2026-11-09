@@ -111,7 +111,11 @@ class CfeTimerBridge @Inject constructor(
         if (event is CfeIncomingEvent.SessionBundleFetched) {
             // Counted by scripts/verify.sh --device.
             if (refused) Log.w(TAG, "session reopen for $short… refused — the held session stays")
-            else Log.i(TAG, "session reopen for $short… done — PQXDH v2, the held state kept as previous")
+            else {
+                Log.i(TAG, "session reopen for $short… done — PQXDH v2, the held state kept as previous")
+                // The core opens this one strictly: a stale bundle is refused above, never degraded.
+                sessionManager.openedCleanly(deviceId)
+            }
         }
         execute(answer)
     }

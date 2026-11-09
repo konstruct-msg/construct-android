@@ -31,6 +31,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import shared.proto.services.v1.InviteServiceOuterClass.AcceptInviteRequest
 import shared.proto.services.v1.InviteServiceOuterClass.InviteToken
@@ -59,12 +60,14 @@ class ContactsRepositoryImpl @Inject constructor(
     private val ownAddress: OwnAccountAddress,
     private val requestLedger: ContactRequestLedger,
     private val peerDevices: PeerDeviceRegistry,
+    private val atRisk: com.construct.messenger.data.local.AtRiskSessionStore,
 ) : ContactsRepository {
 
     private val incoming = MutableStateFlow<List<IncomingContactRequest>>(emptyList())
     override val incomingRequests: Flow<List<IncomingContactRequest>> = incoming.asStateFlow()
 
-    override val contacts: Flow<List<Contact>> = store.observeContacts().map { rows ->
+    override val contacts: Flow<List<Contact>> = combine(store.observeContacts(), atRisk.observe()) { rows, marked ->
+        val atRiskAccounts = marked.values.toSet()
         rows.map {
             Contact(
                 userId = it.id,
@@ -74,6 +77,7 @@ class ContactsRepositoryImpl @Inject constructor(
                 ktStatus = com.construct.messenger.data.model.KtStatus.of(it.ktStatus),
                 localName = it.localName,
                 avatar = it.avatarData,
+                sessionAtRisk = it.id in atRiskAccounts,
             )
         }
     }

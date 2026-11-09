@@ -394,7 +394,12 @@ class ProcessorEffectsImpl @Inject constructor(
     override suspend fun sessionRetired(contactId: String, withoutOneTimePrekey: Boolean) {
         Log.i(TAG, "state with ${contactId.take(8)}… retired — the next send opens a new one" +
             if (withoutOneTimePrekey) ", without a one-time prekey" else "")
-        if (withoutOneTimePrekey) sessionManager.openNextWithoutOneTimePrekey(contactId)
+        // Nothing to keep: the core remembers it and drops the one-time keys at the next open
+        // itself (0.64); `SessionManager` asks it before the fetch.
+    }
+
+    override suspend fun heardFrom(deviceId: String) {
+        sessionManager.heardFrom(deviceId)
     }
 
     override suspend fun resendMessage(contactId: String, messageId: String) {

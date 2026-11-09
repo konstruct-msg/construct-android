@@ -58,7 +58,7 @@ class AcceptedRequestBecomesContactTest {
         }).build().start()
         channel = InProcessChannelBuilder.forName(name).directExecutor().build()
         whenever(grpc.user).thenReturn(UserServiceCoroutineStub(channel))
-        repo = ContactsRepositoryImpl(contacts, mock(), mock(), mock(), grpc, mock(), mock(), mock(), mock(), ledger, mock())
+        repo = ContactsRepositoryImpl(contacts, mock(), mock(), mock(), grpc, mock(), mock(), mock(), mock(), ledger, mock(), com.construct.messenger.data.local.InMemoryAtRiskSessionStore())
     }
 
     @After

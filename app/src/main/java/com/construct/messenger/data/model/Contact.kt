@@ -12,6 +12,9 @@ data class Contact(
     val localName: String? = null,
     /** Their avatar as they shared it, a JPEG; `null` = the identicon. */
     val avatar: ByteArray? = null,
+    /** A session with one of their devices was opened from a stale prekey and they have not
+     * written since ([com.construct.messenger.data.local.AtRiskSessionStore]). */
+    val sessionAtRisk: Boolean = false,
 ) {
     /** What to warn about, if anything — the event first, then a failed proof. */
     val trustAlert: ContactTrustAlert? get() = ContactTrustAlert.of(securityNotice, ktStatus)

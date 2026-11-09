@@ -465,6 +465,8 @@
     <string name="key_change_toast_open">Открыть</string>
     <string name="key_change_verify">Проверить</string>
     <string name="security_notice_acknowledge">Проверено</string>
+    <string name="session_at_risk_title">Ключи контакта не обновлены</string>
+    <string name="session_at_risk_subtitle">Контакт давно не в сети. Сообщения по-прежнему шифруются; ключи обновятся, когда он вернётся.</string>
     <!-- Профиль контакта (iOS UserProfileView) -->
     <string name="profile_title">Профиль</string>
     <string name="profile_identity">идентичность</string>

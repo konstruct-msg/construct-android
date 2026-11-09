@@ -42,7 +42,7 @@ class AcceptedInvitePinsItsDeviceTest {
         whenever(grpc.invite).thenReturn(stub)
         val devices = mock<PeerDeviceRegistry>()
         val repo = ContactsRepositoryImpl(
-            FakeContactStore(), keystore, mock(), verifier, grpc, mock(), mock(), mock(), mock(), mock(), devices,
+            FakeContactStore(), keystore, mock(), verifier, grpc, mock(), mock(), mock(), mock(), mock(), devices, com.construct.messenger.data.local.InMemoryAtRiskSessionStore(),
         )
 
         assertTrue(repo.accept("raw") is AcceptInviteResult.Ok)

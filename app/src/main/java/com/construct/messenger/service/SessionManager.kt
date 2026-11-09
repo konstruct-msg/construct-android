@@ -33,6 +33,7 @@ class SessionManager @Inject constructor(
     private val peerDeviceRegistry: PeerDeviceRegistry,
     private val contactKt: com.construct.messenger.security.ContactKt,
     private val vetting: PeerDeviceVetting,
+    private val atRisk: com.construct.messenger.data.local.AtRiskSessionStore,
 ) {
 
     suspend fun hasSession(contactId: String): Boolean {
@@ -66,21 +67,23 @@ class SessionManager @Inject constructor(
                 identityPublic = identity,
             )
         }
-        val fetched = fetchPeerBundleData(contactId, consumeOtpk = true, deviceId = deviceId)
+        val fetched = fetchPeerBundleData(contactId, consumeOtpk = consumesOneTimePrekey(deviceId), deviceId = deviceId)
         openSession(fetched)
         return SessionPeer(fetched.accountId, fetched.deviceId, fetched.identityPublic)
     }
 
+    /**
+     * Whether the bundle for an open with [deviceId] should carry one of the peer's one-time
+     * prekeys. The core decides (`opens_without_one_time_prekey`, 0.64): after the peer said it does
+     * not hold the one our last handshake named, the next open goes without, and the core drops it
+     * at the open whatever the bundle carries. Asking first only saves the peer's key on the
+     * server. Until 2026-11-08 Android kept that mark itself, per device (todo/282). An unknown
+     * device has no mark.
+     */
+    private fun consumesOneTimePrekey(deviceId: String?): Boolean =
+        deviceId == null || !cryptoManager.opensWithoutOneTimePrekey(deviceId)
+
     /** Ensure a session with one explicitly selected device from a multi-device account. */
-    /** Devices whose next open must go without a one-time prekey (`SessionRetired`). */
-    private val openWithoutOneTimePrekey = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
-
-    /** The core retired our state with [deviceId] and the peer does not hold the one-time
-     * prekey it would be given: the next open with it goes without one. */
-    fun openNextWithoutOneTimePrekey(deviceId: String) {
-        openWithoutOneTimePrekey.add(deviceId)
-    }
-
     suspend fun ensureSessionForDevice(accountOrDeviceId: String, deviceId: String): SessionPeer {
         require(IdentityIds.isCryptoDeviceId(deviceId)) { "invalid peer CryptoDeviceId" }
         val accountId = accountFor(accountOrDeviceId)
@@ -88,11 +91,7 @@ class SessionManager @Inject constructor(
         if (cryptoManager.hasSession(deviceId) && identity != null) {
             return SessionPeer(accountId, deviceId, identity)
         }
-        // Consumed once: the peer said it did not hold the one-time prekey our last handshake
-        // named, so this open asks for a bundle without one (3-DH), which it can always
-        // reproduce. A later open uses one again. Canon: iOS `SessionReinitHintStore`.
-        val withoutOtpk = openWithoutOneTimePrekey.remove(deviceId)
-        val fetched = fetchPeerBundleData(accountId, consumeOtpk = !withoutOtpk, deviceId = deviceId)
+        val fetched = fetchPeerBundleData(accountId, consumeOtpk = consumesOneTimePrekey(deviceId), deviceId = deviceId)
         openSession(fetched)
         return SessionPeer(fetched.accountId, fetched.deviceId, fetched.identityPublic)
     }
@@ -276,31 +275,67 @@ class SessionManager @Inject constructor(
      * that device's. Nothing is opened here: [CfeTimerBridge.answerOpenSession] hands the bundle to
      * the core as an event, and the core's answer carries the save and the drained queue.
      *
-     * Honours [openNextWithoutOneTimePrekey] like every other open.
+     * Asks [consumesOneTimePrekey] like every other open.
      */
     suspend fun bundleForOpenSession(deviceId: String): BinaryKeyBundle {
         require(IdentityIds.isCryptoDeviceId(deviceId)) { "invalid peer CryptoDeviceId" }
         val accountId = peerDeviceRegistry.accountIdForDevice(deviceId)
             ?: error("no account mapping for peer device ${deviceId.take(8)}…")
-        val withoutOtpk = openWithoutOneTimePrekey.remove(deviceId)
-        val fetched = fetchPeerBundleData(accountId, consumeOtpk = !withoutOtpk, deviceId = deviceId)
+        val fetched = fetchPeerBundleData(accountId, consumeOtpk = consumesOneTimePrekey(deviceId), deviceId = deviceId)
         check(fetched.deviceId == deviceId) { "pre-key bundle resolved to a different peer device" }
         return fetched.bundle
     }
 
     /**
-     * `initSession`, with the one refusal that is not a fault said as such: a peer whose bundle
-     * has no PQXDH v2 keys (a build before ML-KEM-1024, or keys not published yet) is refused with
-     * `PQ_REQUIRED`. PQ is mandatory — there is no classical session to fall back to — so the error
-     * still propagates; the log line is what tells it apart from a broken bundle.
+     * `initSession`, with the two refusals that are not faults said as such.
+     *
+     * A peer whose bundle has no PQXDH v2 keys (a build before ML-KEM-1024, or keys not published
+     * yet) is refused with `PQ_REQUIRED`. PQ is mandatory, so there is no classical session to fall
+     * back to and the error still propagates; the log line is what tells it apart from a broken
+     * bundle.
+     *
+     * A bundle whose signed prekey is past the core's age limit is refused with `PeerSpkStale`. When
+     * the core says waiting will not help ([CryptoManager.opensDegraded]), the session is opened
+     * anyway and marked at risk; otherwise the refusal propagates and the next open fetches again.
+     * Without this, a peer away more than 30 days could not be written to from Android at all,
+     * while iOS could (`decisions/stale-peer-reachability.md`, todo/282).
      */
-    private fun openSession(fetched: PeerBundle): String = try {
-        cryptoManager.initSession(fetched.deviceId, fetched.bundle)
-    } catch (e: Exception) {
-        if (CryptoManager.isPeerNotPostQuantum(e)) {
-            Log.w(TAG, "peer device ${fetched.deviceId.take(8)}… has no PQXDH v2 keys — session refused (${e.message})")
+    private suspend fun openSession(fetched: PeerBundle): String {
+        val sessionId = try {
+            cryptoManager.initSession(fetched.deviceId, fetched.bundle)
+        } catch (e: Exception) {
+            if (CryptoManager.isPeerNotPostQuantum(e)) {
+                Log.w(TAG, "peer device ${fetched.deviceId.take(8)}… has no PQXDH v2 keys — session refused (${e.message})")
+            }
+            if (!CryptoManager.opensDegraded(e)) {
+                if (e is uniffi.construct_core.CryptoException.PeerSpkStale) {
+                    Log.w(TAG, "peer device ${fetched.deviceId.take(8)}… SPK stale (${e.ageSecs / 3_600UL} h), may have rotated — not opened now")
+                }
+                throw e
+            }
+            Log.w(TAG, "SESSION_STATE[stale_spk_degraded_init]: ${fetched.deviceId.take(8)}… SPK " +
+                "${(e as uniffi.construct_core.CryptoException.PeerSpkStale).ageSecs / 86_400UL} d old — opening at risk")
+            val degraded = cryptoManager.initSessionAllowingStale(fetched.deviceId, fetched.bundle)
+            atRisk.mark(fetched.deviceId, fetched.accountId)
+            return degraded
         }
-        throw e
+        openedCleanly(fetched.deviceId)
+        return sessionId
+    }
+
+    /** A session with [deviceId] was opened from a fresh bundle, ours or theirs: it is not at risk. */
+    suspend fun openedCleanly(deviceId: String) {
+        atRisk.clear(deviceId)
+    }
+
+    /**
+     * [deviceId] wrote to us and the core read it. A session opened at risk stops being so: the
+     * reply carries the peer's new ratchet key, and our next message ratchets on it, past the stale
+     * prekey. The event iOS does not use — it re-keys on a 1 h cooldown when the peer's prekey
+     * looks fresh (todo/282).
+     */
+    suspend fun heardFrom(deviceId: String) {
+        atRisk.clear(deviceId)
     }
 
     private suspend fun rememberIdentity(contactId: String, identity: ByteArray) {

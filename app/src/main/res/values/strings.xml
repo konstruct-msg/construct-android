@@ -461,6 +461,8 @@
     <string name="key_change_toast_open">Open</string>
     <string name="key_change_verify">Verify</string>
     <string name="security_notice_acknowledge">I\'ve checked</string>
+    <string name="session_at_risk_title">Contact\'s keys aren\'t fresh</string>
+    <string name="session_at_risk_subtitle">They\'ve been offline a while. Messages still send securely; keys refresh when they\'re back.</string>
     <!-- Contact profile (iOS UserProfileView) -->
     <string name="profile_title">Profile</string>
     <string name="profile_identity">identity</string>

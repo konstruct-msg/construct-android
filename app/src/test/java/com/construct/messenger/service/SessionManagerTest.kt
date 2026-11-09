@@ -37,6 +37,7 @@ class SessionManagerTest {
     private val userDao: ContactStore = mock()
     private val peerDeviceRegistry: PeerDeviceRegistry = mock()
     private val keyStub: KeyServiceCoroutineStub = mock()
+    private val atRisk = com.construct.messenger.data.local.InMemoryAtRiskSessionStore()
 
     private lateinit var sessionManager: SessionManager
 
@@ -45,7 +46,7 @@ class SessionManagerTest {
         // Only the token-free stub: a bundle fetched with a token names who is about to write to
         // whom (BF-1). Mutation that reddens every init test: fetch through `grpcClient.key`.
         whenever(grpcClient.sealedKey).thenReturn(keyStub)
-        sessionManager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), mock())
+        sessionManager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), mock(), atRisk)
     }
 
     @Test
@@ -175,7 +176,7 @@ class SessionManagerTest {
     @Test
     fun discoverPeerBundles_vetsAgainstTheDevicesKnownBeforeTheAnswer() = runTest {
         val vetting: PeerDeviceVetting = mock()
-        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting)
+        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting, atRisk)
         val (old, new) = "a".repeat(32) to "b".repeat(32)
         val known = mutableListOf(PeerDeviceRecord(old, "acct", byteArrayOf(1), 0))
         whenever(peerDeviceRegistry.trusted("acct")).thenAnswer { known.map { it.deviceId } }
@@ -209,7 +210,7 @@ class SessionManagerTest {
     @Test
     fun discoverPeerBundles_judgesNothingWhenTheTrustedDevicesCannotBeRead() = runTest {
         val vetting: PeerDeviceVetting = mock()
-        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting)
+        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting, atRisk)
         whenever(peerDeviceRegistry.trusted("acct")).thenReturn(null)
         whenever(keyStub.getPreKeyBundles(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
             .thenReturn(GetPreKeyBundlesResponse.getDefaultInstance())
@@ -219,11 +220,104 @@ class SessionManagerTest {
         verify(vetting, org.mockito.kotlin.never()).vet(org.mockito.kotlin.any(), org.mockito.kotlin.any(), org.mockito.kotlin.any())
     }
 
+    /**
+     * The bundle that answers `OpenSession` asks the server for a one-time prekey unless the core
+     * says the next open with that device goes without one (core 0.64, todo/282). Mutations, one
+     * at a time: always consume (the first test reddens); never consume, or ask about another
+     * device (the second reddens).
+     */
+    @Test
+    fun bundleForOpenSession_spendsNoOneTimePrekeyTheCoreWillNotUse() = runTest {
+        val device = "33333333333333333333333333333333"
+        stubBundleFor(device)
+        whenever(cryptoManager.opensWithoutOneTimePrekey(device)).thenReturn(true)
+
+        sessionManager.bundleForOpenSession(device)
+
+        assertEquals(false, fetchedRequest().consumeOneTimePrekey)
+    }
+
+    @Test
+    fun bundleForOpenSession_spendsOneOtherwise() = runTest {
+        val device = "33333333333333333333333333333333"
+        stubBundleFor(device)
+        whenever(cryptoManager.opensWithoutOneTimePrekey(device)).thenReturn(false)
+        whenever(cryptoManager.opensWithoutOneTimePrekey(org.mockito.kotlin.argThat { this != device })).thenReturn(true)
+
+        sessionManager.bundleForOpenSession(device)
+
+        assertEquals(true, fetchedRequest().consumeOneTimePrekey)
+    }
+
+    /**
+     * A bundle refused as stale past what a rotation takes to reach the key server opens degraded,
+     * and the session is marked at risk under its device and account (todo/282). The plan is the
+     * real core's (`plan_stale_spk`). Mutations, one at a time: never degrade (reddens here);
+     * degrade on every stale refusal (the next test reddens); skip the mark (reddens here).
+     */
+    @Test
+    fun initSession_opensDegradedWhenTheCoreSaysWaitingWillNotHelp() = runTest {
+        val device = "33333333333333333333333333333333"
+        stubBundleFor(device)
+        whenever(cryptoManager.initSession(eq(device), org.mockito.kotlin.any()))
+            .thenAnswer { throw uniffi.construct_core.CryptoException.PeerSpkStale(SPK_MAX_AGE + GRACE + 1UL) }
+        whenever(cryptoManager.initSessionAllowingStale(eq(device), org.mockito.kotlin.any())).thenReturn("degraded")
+
+        assertEquals("degraded", sessionManager.initSession("acct"))
+
+        assertEquals(mapOf(device to "acct"), atRisk.marked.value)
+    }
+
+    /** Within the rotation grace the core says wait: the refusal propagates, nothing degraded or marked. */
+    @Test
+    fun initSession_refusesAStaleBundleThePeerMayHaveRotated() = runTest {
+        val device = "33333333333333333333333333333333"
+        stubBundleFor(device)
+        val stale = uniffi.construct_core.CryptoException.PeerSpkStale(SPK_MAX_AGE + 1UL)
+        whenever(cryptoManager.initSession(eq(device), org.mockito.kotlin.any())).thenAnswer { throw stale }
+
+        val thrown = runCatching { sessionManager.initSession("acct") }.exceptionOrNull()
+
+        assertEquals(stale, thrown)
+        verify(cryptoManager, org.mockito.kotlin.never()).initSessionAllowingStale(org.mockito.kotlin.any(), org.mockito.kotlin.any())
+        assertEquals(emptyMap<String, String>(), atRisk.marked.value)
+    }
+
+    /** A clean open ends the mark, and only that device's. Mutation: keep the mark on a clean open. */
+    @Test
+    fun initSession_aCleanOpenEndsTheMark() = runTest {
+        val device = "33333333333333333333333333333333"
+        atRisk.mark(device, "acct")
+        atRisk.mark("44444444444444444444444444444444", "other")
+        stubBundleFor(device)
+        whenever(cryptoManager.initSession(eq(device), org.mockito.kotlin.any())).thenReturn("fresh")
+
+        sessionManager.initSession("acct")
+
+        assertEquals(mapOf("44444444444444444444444444444444" to "other"), atRisk.marked.value)
+    }
+
+    private suspend fun stubBundleFor(device: String) {
+        whenever(peerDeviceRegistry.accountIdForDevice(device)).thenReturn("acct")
+        whenever(cryptoManager.deriveDeviceIdFromIdentity(org.mockito.kotlin.any())).thenReturn(device)
+        whenever(keyStub.getPreKeyBundle(org.mockito.kotlin.any(), org.mockito.kotlin.any())).thenReturn(
+            GetPreKeyBundleResponse.newBuilder()
+                .setBundle(PreKeyBundle.newBuilder().setIdentityKey(ByteString.copyFrom(byteArrayOf(1))))
+                .build(),
+        )
+    }
+
+    private suspend fun fetchedRequest(): shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundleRequest {
+        val request = argumentCaptor<shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundleRequest>()
+        verify(keyStub).getPreKeyBundle(request.capture(), org.mockito.kotlin.any())
+        return request.firstValue
+    }
+
     /** Our own account is never the subject of a warning, and its first answer marks nothing. */
     @Test
     fun discoverOwnDeviceBundles_judgesNothing() = runTest {
         val vetting: PeerDeviceVetting = mock()
-        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting)
+        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting, atRisk)
         whenever(keyStub.getPreKeyBundles(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
             .thenReturn(GetPreKeyBundlesResponse.getDefaultInstance())
 
@@ -231,5 +325,11 @@ class SessionManagerTest {
 
         verify(peerDeviceRegistry, org.mockito.kotlin.never()).trusted(org.mockito.kotlin.any())
         verify(vetting, org.mockito.kotlin.never()).vet(org.mockito.kotlin.any(), org.mockito.kotlin.any(), org.mockito.kotlin.any())
+    }
+
+    private companion object {
+        /** The core's `SPK_MAX_AGE_SECS` and `SPK_ROTATION_GRACE_SECS`. */
+        const val SPK_MAX_AGE = 2_592_000UL
+        const val GRACE = 21_600UL
     }
 }

@@ -58,6 +58,10 @@ class MessageProcessorTest {
         override suspend fun sessionRetired(contactId: String, withoutOneTimePrekey: Boolean) {
             calls += "retired:$contactId:$withoutOneTimePrekey"
         }
+
+        override suspend fun heardFrom(deviceId: String) {
+            calls += "heard:$deviceId"
+        }
         override suspend fun resendMessage(contactId: String, messageId: String) {
             calls += "resend:$contactId:$messageId"
         }
@@ -529,6 +533,20 @@ class MessageProcessorTest {
 
         assertTrue(effects.calls.contains("onSenderSync:$senderDevice:sync-1"))
         assertTrue(effects.calls.none { it.startsWith("onDecrypted:") })
+    }
+
+    /** A message read from a device, on either executor, ends a session's at-risk mark with that
+     * device (todo/282). Mutation that reddens both: drop the `heardFrom` in `deliverDecrypted`. */
+    @Test
+    fun `a message read from a device is heard from it, on both executors`() = runBlocking {
+        val effects = RecordingEffects()
+        MessageProcessor(FakeGateway(), effects, sessionManager, timerBridge, cryptoManager, held, mock())
+            .route(listOf(CfeAction.MessageDecrypted("alice-device", "m1", byteArrayOf(7))), incoming())
+        CfeTimerBridge(FakeGateway(), effects, held, sessionManager)
+            .execute(listOf(CfeAction.MessageDecrypted(senderDevice, "m2", byteArrayOf(1))))
+
+        assertTrue(effects.calls.contains("heard:alice-device"))
+        assertTrue(effects.calls.contains("heard:$senderDevice"))
     }
 
     /** An init opened by the core comes back as an ordinary decrypt; its plaintext is a nonce,
