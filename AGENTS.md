@@ -62,6 +62,11 @@ The canonical source is the vault note in the table above. Change it there first
 2. **The core decides, Android executes.** If two clients must compute it identically for a
    message to be readable, it is a `construct-core` API, written first. Kotlin makes no session or
    protocol decision. Open `construct-core/src/construct_core.udl` first: the core usually does it already.
+   **Client rules too:** a pure decision over protocol data or this app's own state that two
+   clients or more make and that must behave the same (the mailbox-gap notice, the stream cursor,
+   a retry queue, delivery-status transitions) lives once in the core's `construct-rules` and is
+   called here (`MailboxGapState` is the first). A port of an iOS rule to Kotlin ("Canon: iOS") is
+   not written any more; it moves to the core (`decisions/client-rules-shared-in-rust.md`).
 3. **A control message names the state it refers to**: an epoch, a ratchet key or a number. A fix
    that adds a timer, cooldown, window, tie-break or retry budget means the message has no address.
    Stop and give it one.
@@ -76,7 +81,9 @@ The canonical source is the vault note in the table above. Change it there first
 
 6. **Binary stays binary**, source to destination. The FFI boundary takes `ByteArray` and CFE
    (a 16-byte header plus MessagePack), never JSON or base64. Base64 only at true text boundaries
-   (QR, deep links).
+   (QR, deep links). **Persisted state is CFE**: a core-written envelope with a message type of
+   its own (the core's registry). JSON or any other format only with a written reason next to the
+   code — an external format, or a file a person edits by hand. "Simpler" is not a reason.
 7. **Measure, then build.** For network, censorship, performance and battery, measure on the real
    path first.
 8. **Verify the effect, not the exit code.** Check a delete by querying after it, a release by the

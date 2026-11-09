@@ -3,14 +3,19 @@ package com.construct.messenger.data.repository
 import com.construct.messenger.data.local.FakeSessionBlobStore
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 import shared.proto.services.v1.MessagingServiceOuterClass.GetPendingMessagesResponse
 import shared.proto.services.v1.MessagingServiceOuterClass.HeartbeatAck
-import shared.proto.services.v1.MessagingServiceOuterClass.MailboxGap as WireGap
 import shared.proto.services.v1.MessagingServiceOuterClass.MessageStreamResponse
+import shared.proto.services.v1.MessagingServiceOuterClass.MailboxGap as WireGap
 
-/** TODO 79: the server's report of trimmed messages, kept until the person closes it. **Canon:** iOS `MailboxGapNotice`. */
+/**
+ * TODO 79 / 290: the server's report of trimmed messages, kept until the person closes it. The rule
+ * is the core's (construct-rules `mailbox_gap`, tested and mutation-checked there); these check
+ * what this app does with it, on the real core the JVM tests load.
+ */
 class MailboxGapNoticeTest {
     private fun gap(after: String, resumes: String = ""): WireGap =
         WireGap.newBuilder().setAfterCursor(after).setResumesAt(resumes).build()
@@ -34,49 +39,28 @@ class MailboxGapNoticeTest {
         assertNull(MailboxGap.of(heartbeat))
     }
 
-    @Test
-    fun `a cursor names its millisecond, and nothing else does`() {
-        assertEquals(1_791_000_000_123L, MailboxGap.msOfCursor("1791000000123-7"))
-        assertEquals(5L, MailboxGap.msOfCursor("5"))
-        assertNull(MailboxGap.msOfCursor(""))
-        assertNull(MailboxGap.msOfCursor("abc-1"))
-        assertEquals(MailboxGap.Interval(100, null), MailboxGap.interval("100-0", ""))
-        assertNull("no cursor of ours: nothing to say", MailboxGap.interval("", "200-0"))
-    }
-
-    // --- merging (iOS `merge`) ---
-
-    /** Mutation: the newer report replaces the notice — the first interval is forgotten. */
-    @Test
-    fun `two reports widen one notice`() {
-        assertEquals(MailboxGap.Interval(100, 400), MailboxGap.merge(MailboxGap.Interval(200, 300), MailboxGap.Interval(100, 400)))
-        assertEquals(MailboxGap.Interval(100, 400), MailboxGap.merge(MailboxGap.Interval(100, 400), MailboxGap.Interval(200, 300)))
-        assertEquals(MailboxGap.Interval(5, 6), MailboxGap.merge(null, MailboxGap.Interval(5, 6)))
-    }
-
-    /** Mutation: `maxOf` over a null end — an open-ended loss would be shown as closed. */
-    @Test
-    fun `an open end stays open`() {
-        assertEquals(MailboxGap.Interval(100, null), MailboxGap.merge(MailboxGap.Interval(100, 300), MailboxGap.Interval(200, null)))
-        assertEquals(MailboxGap.Interval(100, null), MailboxGap.merge(MailboxGap.Interval(100, null), MailboxGap.Interval(200, 300)))
-    }
-
-    // --- across a restart ---
+    // --- the core's rule, kept here ---
 
     private val blobs = FakeSessionBlobStore()
 
-    /** Mutation: skip the write in `record` — the notice is gone after a restart. */
+    /** Two reports widen one notice, as the core says. Mutation: show the first report only. */
+    @Test
+    fun `reports widen one notice`() = runTest {
+        val notice = MailboxGapNotice(blobs)
+        notice.record(gap("200-0", "300-0"))
+        notice.record(gap("100-0", "400-0"))
+        assertEquals(MailboxGap.Interval(100, 400), notice.interval.value)
+    }
+
+    /** Mutation: skip the write in `changed` — the notice is gone after a restart. */
     @Test
     fun `the notice outlives a restart until it is closed`() = runTest {
-        val before = MailboxGapNotice(blobs)
-        before.record(gap("100-0", "300-0"))
-        before.record(gap("200-0", "400-0"))
-        assertEquals(MailboxGap.Interval(100, 400), before.interval.value)
+        MailboxGapNotice(blobs).record(gap("100-0", "300-0"))
 
         val after = MailboxGapNotice(blobs)
         assertNull("nothing until loaded", after.interval.value)
         after.load()
-        assertEquals(MailboxGap.Interval(100, 400), after.interval.value)
+        assertEquals(MailboxGap.Interval(100, 300), after.interval.value)
 
         after.dismiss()
         assertNull(after.interval.value)
@@ -85,21 +69,37 @@ class MailboxGapNoticeTest {
         assertNull(again.interval.value)
     }
 
-    /** Mutation: `record` merges with the shown value instead of the stored one — a report before `load` loses the stored notice. */
+    /**
+     * The owner's phone, 2026-11-09 (iOS, the same rule here): nothing held after the cursor, so the
+     * server reported the same loss on every connection and a closed notice came back each time.
+     * Mutation: `dismiss` forgets instead of closing (the old `store.remove`) — this reddens.
+     */
     @Test
-    fun `a report before the notice is loaded widens the stored one`() = runTest {
-        MailboxGapNotice(blobs).record(gap("100-0", "200-0"))
-        val next = MailboxGapNotice(blobs)
-        next.record(gap("300-0", "400-0"))
-        assertEquals(MailboxGap.Interval(100, 400), next.interval.value)
+    fun `a closed report does not come back, after a restart either`() = runTest {
+        val notice = MailboxGapNotice(blobs)
+        notice.record(gap("100-0"))
+        notice.dismiss()
+        notice.record(gap("100-0"))
+        assertNull("the same report on the next connection", notice.interval.value)
+
+        val restarted = MailboxGapNotice(blobs)
+        restarted.load()
+        restarted.record(gap("100-0"))
+        assertNull("and after a restart", restarted.interval.value)
+
+        restarted.record(gap("500-0"))
+        assertEquals("a new loss is shown", MailboxGap.Interval(500, null), restarted.interval.value)
     }
 
+    /** v1 kept only dates and is dropped; what it held does not show. */
     @Test
-    fun `a closed notice comes back with the next report`() = runTest {
+    fun `the dates an earlier build kept are dropped`() = runTest {
+        blobs.put("mailbox-gap.v1", """{"from":100,"until":200}""".toByteArray())
         val notice = MailboxGapNotice(blobs)
+        notice.load()
+        assertNull(notice.interval.value)
+        assertNull(blobs.get("mailbox-gap.v1"))
         notice.record(gap("100-0", "200-0"))
-        notice.dismiss()
-        notice.record(gap("300-0", "400-0"))
-        assertEquals(MailboxGap.Interval(300, 400), notice.interval.value)
+        assertNotNull("the next report shows", notice.interval.value)
     }
 }
