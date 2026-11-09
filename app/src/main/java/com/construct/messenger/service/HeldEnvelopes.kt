@@ -24,6 +24,9 @@ class HeldEnvelopes @Inject constructor() {
         held[message.messageId] = message
     }
 
+    /** Whether the core holds [messageId] queued: its redelivery waits for the drain. */
+    fun isHeld(messageId: String): Boolean = held.containsKey(messageId)
+
     /** The envelope held under [messageId], removed — the core has answered for it. */
     fun take(messageId: String): MessageRouter.IncomingMessage? = held.remove(messageId)
 }
