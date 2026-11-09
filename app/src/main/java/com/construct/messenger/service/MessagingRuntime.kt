@@ -300,19 +300,14 @@ class MessagingRuntime @Inject constructor(
             // `SessionCoordinator.messageRouter(_:receivedDecryptionError:payload:opened:)`. Out of a
             // session envelope the payload is the error itself (`opened`), not a box to open.
             ContentType.CONTENT_TYPE_DECRYPTION_ERROR -> {
-                val device = message.senderDeviceId
-                if (device.isEmpty()) {
+                val event = decryptionErrorEvent(message)
+                if (event == null) {
                     // Unsealed: nothing names the device, and a record is per device.
                     Log.i(TAG, "DECRYPTION_ERROR ${message.messageId.take(8)}… names no device — ignored")
                 } else {
+                    val device = event.contactId
                     runCatching {
-                        cryptoManager.handleEvent(
-                            CfeIncomingEvent.DecryptionErrorReceived(
-                                device,
-                                message.encryptedPayload,
-                                opened = message.envelopeSession != null,
-                            ),
-                        )
+                        cryptoManager.handleEvent(event)
                     }.onSuccess { actions ->
                         Log.i(TAG, "DECRYPTION_ERROR from ${device.take(8)}… — ${if (actions.isEmpty()) "stale, nothing to do" else "${actions.size} action(s)"}")
                         timerBridge.execute(actions)
@@ -393,3 +388,25 @@ private fun PendingMessage.toEnvelope(): Envelope = Envelope.newBuilder().apply 
         setEncryptedPayload(encryptedPayload)
     }
 }.build()
+
+/**
+ * What the core is handed for a DECRYPTION_ERROR, or null when nothing names the device it is
+ * from (a record is per device). The device is the writer's: the session envelope's, or the one
+ * its certificate names. `opened`: the payload came out of a session envelope and is the error
+ * itself, not the box the peer sealed to our identity key.
+ *
+ * The core acts only on a ratchet key of ours that the error names, so neither value can make a
+ * forged error act (vault todo 168, core `pqxdh_v2_tests`). What they decide is whether a genuine
+ * one is heard: under another device the key is not found, and with the wrong `opened` the core
+ * reads a box as the error, or the error as a box, and drops it as unreadable.
+ * Canon: iOS `ChatMessage` → `MessageRouter` (`SealedRoutingBoundaryTests`).
+ */
+internal fun decryptionErrorEvent(message: MessageRouter.IncomingMessage): CfeIncomingEvent.DecryptionErrorReceived? {
+    val device = message.senderDeviceId
+    if (device.isEmpty()) return null
+    return CfeIncomingEvent.DecryptionErrorReceived(
+        device,
+        message.encryptedPayload,
+        opened = message.envelopeSession != null,
+    )
+}
