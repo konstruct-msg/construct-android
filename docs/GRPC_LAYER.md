@@ -29,8 +29,10 @@ data/local/
 │                            # acked_messages/session_state
 service/
 ├── SessionManager.kt        # DR-сессии поверх CryptoManager   [РАБОТАЕТ]
-├── MessageRouter.kt         # стрим → домен-события: dedup,    [ГОТОВ+тесты]
-│                            # sealed-résolve, control/message
+├── MessageRouter.kt         # стрим → домен-события: копии     [ГОТОВ+тесты]
+│                            # в обработке/у ядра/обработанные
+│                            # (`arrival`), sealed-résolve,
+│                            # control/message
 ├── MessageProcessor.kt      # CFE handleEvent → typed actions   [ГОТОВ+тесты]
 │                            # /decrypt/persist/ack; Gateway+Effects
 ├── CfeTimerBridge.kt        # AppLaunched/reconnect/timers     [ГОТОВ]

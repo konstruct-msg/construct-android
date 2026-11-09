@@ -86,7 +86,7 @@ class UnopenedSealedTest {
     private val crypto: CryptoManager = mock { on { currentDeviceId() } doReturn ours }
     private val keystore: KeystoreManager = mock { on { getUserId() } doReturn "me" }
     private val registry: PeerDeviceRegistry = mock()
-    private val router = MessageRouter(mock(), stealth, ServerOrderBook(), tracker, crypto, keystore, registry)
+    private val router = MessageRouter(mock(), stealth, ServerOrderBook(), tracker, crypto, keystore, registry, HeldEnvelopes(), ackStore)
 
     private fun sealed(id: String, inner: ByteArray) = Envelope.newBuilder()
         .setMessageId(id)

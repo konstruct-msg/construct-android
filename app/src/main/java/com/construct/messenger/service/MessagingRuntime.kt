@@ -256,11 +256,11 @@ class MessagingRuntime @Inject constructor(
                 is MessageRouter.RoutedEvent.Incoming ->
                     runCatching { processor.process(event.message) }
                         .onSuccess { reportCursor(event.message.messageId, it) }
-                        .onFailure { Log.e(TAG, "process incoming failed", it) }
+                        .onFailure { router.abandon(event.message.messageId); Log.e(TAG, "process incoming failed", it) }
                 is MessageRouter.RoutedEvent.Control ->
                     runCatching { handleControl(event.message) }
                         .onSuccess { reportCursor(event.message.messageId, it) }
-                        .onFailure { Log.e(TAG, "process control failed", it) }
+                        .onFailure { router.abandon(event.message.messageId); Log.e(TAG, "process control failed", it) }
                 is MessageRouter.RoutedEvent.Typing -> Unit
                 is MessageRouter.RoutedEvent.ConnectionChanged -> {
                     if (event.connected) {
@@ -333,7 +333,8 @@ class MessagingRuntime @Inject constructor(
         }
 
     private fun reportCursor(messageId: String, outcome: ProcessingOutcome) {
-        cursorTracker.report(
+        // Through the router: a deferred message's redelivery must get past its in-flight check.
+        router.settle(
             messageId,
             when (outcome) {
                 ProcessingOutcome.Processed, ProcessingOutcome.Acked -> StreamCursorTracker.Outcome.Durable

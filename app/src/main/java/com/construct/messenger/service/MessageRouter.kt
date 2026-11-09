@@ -29,8 +29,10 @@ import uniffi.construct_core.SenderCertificate
  * `MessageRouter` (transport → routing → consumers).
  *
  * Responsibilities (in order, per incoming envelope):
- *  1. **Dedup** by message id (LRU window — the server re-delivers on
- *     reconnect/cursor overlap; at-least-once + dedup is the contract).
+ *  1. **Redelivery** by message id ([arrival]): a copy of one still in flight here, or held by
+ *     the core behind an open, goes no further; one already processed is passed at once. Anything
+ *     else, a redelivery of a message that was deferred included, goes on to the core, which
+ *     answers duplicates itself (`DuplicateDropped`; vault `decisions/one-answer-to-already-processed.md`).
  *  2. **Sealed-sender resolution**: envelopes with `sealed_sender` arrive with
  *     no sender and an empty outer payload; identity + real content type +
  *     E2EE payload come from [StealthSenderService.resolveSender]. One that does not
@@ -55,6 +57,8 @@ class MessageRouter @Inject constructor(
     private val cryptoManager: CryptoManager,
     private val keystoreManager: KeystoreManager,
     private val peerDevices: PeerDeviceRegistry,
+    private val held: HeldEnvelopes,
+    private val ackStore: com.construct.messenger.data.local.AckStore,
 ) {
 
     sealed interface RoutedEvent {
@@ -97,12 +101,21 @@ class MessageRouter @Inject constructor(
     )
     val routed: SharedFlow<RoutedEvent> = _routed.asSharedFlow()
 
-    /** LRU dedup window. Access is confined to the single collector coroutine. */
-    private val seenMessageIds = object : LinkedHashMap<String, Unit>(DEDUP_WINDOW, 0.75f, false) {
+    /**
+     * The messages routed and not yet settled ([settle], [abandon]): a second copy of one of them,
+     * from the stream and the pending drain at once, goes no further. Until 2026-11-08 this was a
+     * window of every id seen, left only by a sealed message that did not open: a message the
+     * processor deferred for a redelivery (an open that could not reach the server, a failed
+     * `AckDbResult`), or one whose processing threw, had that redelivery dropped here unreported,
+     * and the cursor stood on it until the process died (vault todo 282). Bounded like the window
+     * was, so an id whose event never reached the processor (the routed flow drops the oldest when
+     * full) ages out. Guarded by itself: the stream, the drain and the processor's reports touch it.
+     */
+    private val inFlight = object : LinkedHashMap<String, Unit>(DEDUP_WINDOW, 0.75f, false) {
         override fun removeEldestEntry(eldest: Map.Entry<String, Unit>) = size > DEDUP_WINDOW
     }
 
-    /** Sealed messages already given their one redelivery. Confined like [seenMessageIds]. */
+    /** Sealed messages already given their one redelivery. Confined to the stream collector. */
     private val unsealDeferred = object : LinkedHashMap<String, Unit>(DEDUP_WINDOW, 0.75f, false) {
         override fun removeEldestEntry(eldest: Map.Entry<String, Unit>) = size > DEDUP_WINDOW
     }
@@ -133,9 +146,26 @@ class MessageRouter @Inject constructor(
 
     private suspend fun route(envelope: Envelope, orderKey: String?) {
         val messageId = envelope.messageId
-        if (messageId.isNotEmpty() && seenMessageIds.put(messageId, Unit) != null) {
-            Log.d(TAG, "duplicate message ${messageId.take(8)}… — dropped")
-            return
+        if (messageId.isNotEmpty()) {
+            val verdict = synchronized(inFlight) {
+                arrival(
+                    inFlight = messageId in inFlight,
+                    heldByCore = held.isHeld(messageId),
+                    processed = ackStore.isProcessed(messageId),
+                ).also { if (it == Arrival.ROUTE) inFlight[messageId] = Unit }
+            }
+            when (verdict) {
+                Arrival.ROUTE -> Unit
+                // The copy in flight, or the open's drain, reports for it.
+                Arrival.IN_FLIGHT, Arrival.HELD_BY_CORE -> {
+                    Log.d(TAG, "redelivery of ${messageId.take(8)}… — ${verdict.name.lowercase()}, dropped")
+                    return
+                }
+                Arrival.PROCESSED -> {
+                    cursorTracker.report(messageId, StreamCursorTracker.Outcome.Durable)
+                    return
+                }
+            }
         }
         orderBook.remember(messageId, orderKey)
 
@@ -184,14 +214,19 @@ class MessageRouter @Inject constructor(
     }
 
     /**
-     * Report a sealed message that goes no further, and forget it from the dedup window: the
-     * redelivery a deferral waits for must reach [unopened] again, and so must one of a dropped
-     * message the cursor could not yet pass — the dedup would otherwise swallow it unreported and
-     * hold the cursor there.
+     * Report what became of a routed message, here or in the processor, and let its next copy in:
+     * the redelivery a deferral waits for must reach the core again, and so must one of a message
+     * the cursor could not yet pass.
      */
-    private fun settle(messageId: String, outcome: StreamCursorTracker.Outcome) {
-        seenMessageIds.remove(messageId)
+    fun settle(messageId: String, outcome: StreamCursorTracker.Outcome) {
+        synchronized(inFlight) { inFlight.remove(messageId) }
         cursorTracker.report(messageId, outcome)
+    }
+
+    /** Processing of [messageId] threw: nothing is reported, the cursor stays, and the server's
+     * redelivery is let in. */
+    fun abandon(messageId: String) {
+        synchronized(inFlight) { inFlight.remove(messageId) }
     }
 
     /** This account's devices this one knows of, itself included. */
@@ -299,4 +334,21 @@ internal fun ContentType.isControl(): Boolean = when (this) {
     ContentType.CONTENT_TYPE_HEARTBEAT,
     -> true
     else -> false
+}
+
+/** What a message arriving by id is, before anything opens it. See [MessageRouter.route]. */
+internal enum class Arrival { ROUTE, IN_FLIGHT, HELD_BY_CORE, PROCESSED }
+
+/**
+ * A copy of a message still in flight here, or one the core holds behind an open, goes no further:
+ * the first copy or the open's drain answers for it. Passing a held one on would ask the core
+ * again, and its `DuplicateDropped` would mark processed a message not yet stored. One already
+ * processed is passed without unsealing (iOS `canSkipRedeliveryBeforeUnseal`). Everything else
+ * goes to the core.
+ */
+internal fun arrival(inFlight: Boolean, heldByCore: Boolean, processed: Boolean): Arrival = when {
+    inFlight -> Arrival.IN_FLIGHT
+    heldByCore -> Arrival.HELD_BY_CORE
+    processed -> Arrival.PROCESSED
+    else -> Arrival.ROUTE
 }
