@@ -626,102 +626,11 @@ Tab bar скрывается когда `isInChat || isInSettings == true`.
 
 ## 6. Генератор анонимных имён
 
-```kotlin
-// DisplayNameGenerator.kt
-object DisplayNameGenerator {
-    private val adjectives = listOf(
-        "silent", "happy", "swift", "brave", "gentle", "calm", "bright", "bold",
-        "quick", "quiet", "wise", "noble", "free", "kind", "pure", "jolly",
-        "witty", "fierce", "proud", "sly", "lucky", "cheerful", "jovial", "merry",
-        "clever", "cunning", "valiant", "humble", "clear", "cool", "warm", "soft",
-        "strong", "wild", "misty", "sunny", "cloudy", "starry", "frosty", "stormy",
-        "ember", "blazing", "frozen", "mountain", "ocean", "river", "forest", "desert",
-        "volcanic", "thunder", "solar", "lunar", "celestial", "crystal", "golden",
-        "silver", "copper", "obsidian", "amber", "crimson", "azure", "verdant",
-        "sleek", "sharp", "smooth", "tall", "deep", "light", "dark", "ancient",
-        "agile", "majestic", "elegant", "graceful", "giant", "tiny", "nimble",
-        "radiant", "gleaming", "shadowy", "whispering", "echoing", "vivid", "mystic",
-        "hidden", "lonely", "weathered",
-        // bonus IT-слова
-        "deprecated", "recursive", "async", "frozen", "nested", "compiled", "broken",
-        "pending", "idle", "verbose", "headless", "orphaned", "forked", "stale", "cursed"
-    )
-
-    private val animals = listOf(
-        "fox", "wolf", "bear", "lion", "tiger", "panda", "jaguar", "panther",
-        "leopard", "cheetah", "lynx", "cougar", "hyena", "jackal", "dingo",
-        "wolverine", "otter", "seal", "orca", "dolphin", "whale", "shark",
-        "ferret", "mongoose", "badger", "deer", "moose", "elk", "bison",
-        "hare", "rabbit", "squirrel", "beaver", "hedgehog", "bat", "boar", "ox",
-        "ram", "stag", "marten", "meerkat",
-        "eagle", "hawk", "owl", "raven", "falcon", "swan", "dove", "crane",
-        "heron", "sparrow", "robin", "finch", "wren", "phoenix", "crow",
-        "vulture", "albatross", "kingfisher", "kestrel", "harrier", "gull",
-        "penguin", "peacock", "parrot", "hornbill", "nightjar",
-        "dragon", "griffin", "unicorn", "pegasus", "basilisk", "chimera",
-        "kraken", "hydra", "manticore", "gryphon", "yeti", "kitsune", "sphinx", "serpent",
-        "cobra", "viper", "python", "rattler", "gecko", "iguana", "scorpion",
-        "spider", "mantis", "beetle", "butterfly", "moth", "dragonfly",
-        "mammoth", "saber", "raptor", "tricera", "rex", "titan", "direwolf"
-    )
-
-    private val itNouns = listOf(
-        "printer", "keyboard", "monitor", "server", "router", "modem", "firewall",
-        "switch", "hub", "rack", "cable", "dongle", "cursor", "terminal",
-        "daemon", "kernel", "process", "thread", "socket", "buffer", "pointer",
-        "callback", "semaphore", "mutex", "cron", "webhook", "pipeline", "protocol",
-        "endpoint", "payload", "namespace", "instance", "container", "cluster",
-        "registry", "proxy", "gateway", "runtime", "compiler", "debugger",
-        "spreadsheet", "invoice", "deadline", "standup", "backlog", "ticket",
-        "milestone", "stakeholder", "deployment", "outage", "rollback", "hotfix",
-        "sprint", "retro", "roadmap", "handover", "escalation", "pivot"
-    )
-
-    /**
-     * Генерирует детерминированное имя на основе userId.
-     * Формат: "adjective animal" (~80%) или "adjective itNoun" (~20%) — БЕЗ капитализации,
-     * в нижнем регистре (как на iOS). Не добавляй replaceFirstChar/uppercase —
-     * иначе имена разойдутся с iOS.
-     */
-    fun generate(userId: String): String {
-        val hash = MessageDigest.getInstance("SHA-256").digest(userId.toByteArray())
-
-        // NB: value is treated as UNSIGNED 32-bit (matches iOS UInt32 math).
-        // Do NOT mask with 0x7FFFFFFF — that diverges from iOS and yields
-        // different names for ids whose 4-byte slice has the high bit set.
-        fun getIndex(bytes: ByteArray, start: Int, modulo: Int): Int {
-            var value = 0u
-            for (i in 0 until 4) {
-                value = value or (bytes[start + i].toUByte().toUInt() shl (24 - i * 8))
-            }
-            return (value % modulo.toUInt()).toInt()
-        }
-
-        val adjIndex = getIndex(hash, 0, adjectives.size)
-        val useITNoun = (hash[8].toInt() and 0xFF) % 5 == 0
-
-        val noun = if (useITNoun) {
-            val nounIndex = getIndex(hash, 4, itNouns.size)
-            itNouns[nounIndex]
-        } else {
-            val animalIndex = getIndex(hash, 4, animals.size)
-            animals[animalIndex]
-        }
-
-        return "${adjectives[adjIndex]} $noun"
-    }
-
-    fun generateShortId(userId: String): String {
-        val hash = MessageDigest.getInstance("SHA-256").digest(userId.toByteArray())
-        return hash.take(3).joinToString("") { "%02x".format(it) }
-    }
-}
-```
-
-**Приоритет отображения имени контакта:**
-1. `displayName` (если не пустой)
-2. `username` (если не пустой)
-3. Анонимное имя от `DisplayNameGenerator.generate(from: userId)`
+Имя, сгенерированное из id, и порядок, каким именем показывать человека, — правило ядра
+(construct-rules `names`): `generatedName`, `isGeneratedName`, `shownName`. Порядок: имя, данное
+пользователем, имя, которым человек поделился (сгенерированное не считается), username, затем
+сгенерированное; каждое обрезается, пустое — нет имени. На Android это `DisplayNameGenerator` и
+`ContactRecord.resolvedName`; списков слов в приложении нет (`decisions/client-rules-shared-in-rust.md`).
 
 ---
 

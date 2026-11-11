@@ -706,7 +706,9 @@ internal object IntegrityCheckingUniffiLib {
         uniffiCheckContractApiVersion(this)
         uniffiCheckApiChecksums(this)
     }
-    external fun uniffi_construct_core_checksum_func_compute_pow(
+    external fun uniffi_construct_core_checksum_func_after_send_failure(
+): Short
+external fun uniffi_construct_core_checksum_func_compute_pow(
 ): Short
 external fun uniffi_construct_core_checksum_func_compute_pow_with_progress(
 ): Short
@@ -722,6 +724,8 @@ external fun uniffi_construct_core_checksum_func_derive_device_id(
 ): Short
 external fun uniffi_construct_core_checksum_func_derive_recovery_keypair(
 ): Short
+external fun uniffi_construct_core_checksum_func_device_refusal_of(
+): Short
 external fun uniffi_construct_core_checksum_func_format_federated_id(
 ): Short
 external fun uniffi_construct_core_checksum_func_generate_ephemeral_keypair(
@@ -731,6 +735,8 @@ external fun uniffi_construct_core_checksum_func_generate_intake_key(
 external fun uniffi_construct_core_checksum_func_generate_mnemonic(
 ): Short
 external fun uniffi_construct_core_checksum_func_generate_private_keys(
+): Short
+external fun uniffi_construct_core_checksum_func_generated_name(
 ): Short
 external fun uniffi_construct_core_checksum_func_history_discovery_instance_name(
 ): Short
@@ -782,6 +788,8 @@ external fun uniffi_construct_core_checksum_func_intake_offer(
 ): Short
 external fun uniffi_construct_core_checksum_func_intake_tag(
 ): Short
+external fun uniffi_construct_core_checksum_func_is_generated_name(
+): Short
 external fun uniffi_construct_core_checksum_func_knst_encode_chunks(
 ): Short
 external fun uniffi_construct_core_checksum_func_knst_frame_whole(
@@ -826,6 +834,8 @@ external fun uniffi_construct_core_checksum_func_recommended_send_delay_ms(
 ): Short
 external fun uniffi_construct_core_checksum_func_recovery_public_key(
 ): Short
+external fun uniffi_construct_core_checksum_func_refusal_erases_device(
+): Short
 external fun uniffi_construct_core_checksum_func_registration_bundle_fields_from_keys(
 ): Short
 external fun uniffi_construct_core_checksum_func_seal_media(
@@ -835,6 +845,8 @@ external fun uniffi_construct_core_checksum_func_seal_to_device_key(
 external fun uniffi_construct_core_checksum_func_sealed_seal_sender_cert(
 ): Short
 external fun uniffi_construct_core_checksum_func_sealed_verify_sender_cert(
+): Short
+external fun uniffi_construct_core_checksum_func_shown_name(
 ): Short
 external fun uniffi_construct_core_checksum_func_sign_bundle_data_with_keys(
 ): Short
@@ -1859,6 +1871,8 @@ external fun uniffi_construct_core_fn_init_callback_vtable_peeksessionsource(`vt
 ): Unit
 external fun uniffi_construct_core_fn_init_callback_vtable_powprogresscallback(`vtable`: UniffiVTableCallbackInterfacePowProgressCallback,
 ): Unit
+external fun uniffi_construct_core_fn_func_after_send_failure(`failure`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_compute_pow(`challenge`: RustBuffer.ByValue,`difficulty`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_compute_pow_with_progress(`challenge`: RustBuffer.ByValue,`difficulty`: Int,`progressCallback`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1875,6 +1889,8 @@ external fun uniffi_construct_core_fn_func_derive_device_id(`identityPublicKey`:
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_derive_recovery_keypair(`seed`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_device_refusal_of(`statusCode`: Int,`trailer`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_format_federated_id(`deviceId`: RustBuffer.ByValue,`serverHostname`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_generate_ephemeral_keypair(uniffi_out_err: UniffiRustCallStatus, 
@@ -1884,6 +1900,8 @@ external fun uniffi_construct_core_fn_func_generate_intake_key(uniffi_out_err: U
 external fun uniffi_construct_core_fn_func_generate_mnemonic(`wordCount`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_generate_private_keys(uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_generated_name(`userId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_history_discovery_instance_name(`tag`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1935,6 +1953,8 @@ external fun uniffi_construct_core_fn_func_intake_offer(`held`: RustBuffer.ByVal
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_intake_tag(`intakeKey`: RustBuffer.ByValue,`recipientAccountId`: RustBuffer.ByValue,`epoch`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_is_generated_name(`name`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_func_knst_encode_chunks(`payload`: RustBuffer.ByValue,`contentType`: Byte,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_knst_frame_whole(`payload`: RustBuffer.ByValue,`contentType`: Byte,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1979,6 +1999,8 @@ external fun uniffi_construct_core_fn_func_recommended_send_delay_ms(`isHighPrio
 ): Long
 external fun uniffi_construct_core_fn_func_recovery_public_key(`mnemonic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_refusal_erases_device(`refusal`: RustBuffer.ByValue,`overDirectTls`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_func_registration_bundle_fields_from_keys(`keys`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_seal_media(`plaintext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1989,6 +2011,8 @@ external fun uniffi_construct_core_fn_func_sealed_seal_sender_cert(`certBytes`: 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sealed_verify_sender_cert(`userId`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,`identityKey`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,`issuedAt`: Long,`expiresAt`: Long,`signature`: RustBuffer.ByValue,`serverVerifyingKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_func_shown_name(`alias`: RustBuffer.ByValue,`displayName`: RustBuffer.ByValue,`username`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sign_bundle_data_with_keys(`keys`: RustBuffer.ByValue,`bundleDataJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sign_recovery_challenge(`privateKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -2134,6 +2158,9 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
+    if (lib.uniffi_construct_core_checksum_func_after_send_failure() != 17777.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_compute_pow() != 30246.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2158,6 +2185,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_derive_recovery_keypair() != 51363.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_device_refusal_of() != 19311.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_format_federated_id() != 19004.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2171,6 +2201,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_generate_private_keys() != 4994.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_generated_name() != 23821.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_history_discovery_instance_name() != 37477.toShort()) {
@@ -2248,6 +2281,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_intake_tag() != 36931.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_is_generated_name() != 37415.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_knst_encode_chunks() != 7537.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2314,6 +2350,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_recovery_public_key() != 59962.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_refusal_erases_device() != 22768.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_registration_bundle_fields_from_keys() != 32194.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2327,6 +2366,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_sealed_verify_sender_cert() != 64198.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_shown_name() != 22785.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_sign_bundle_data_with_keys() != 42671.toShort()) {
@@ -14962,6 +15004,41 @@ public object FfiConverterTypeDeviceLinkEvidence : FfiConverterRustBuffer<Device
 
 
 /**
+ * Why the server refused this device (construct-protos `DeviceRefusal`), as `device_refusal_of`
+ * reads it.
+ */
+
+enum class DeviceRefusalKind {
+    
+    UNSPECIFIED,
+    REMOVED,
+    NOT_FOUND;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeDeviceRefusalKind: FfiConverterRustBuffer<DeviceRefusalKind> {
+    override fun read(buf: ByteBuffer) = try {
+        DeviceRefusalKind.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: DeviceRefusalKind) = 4UL
+
+    override fun write(value: DeviceRefusalKind, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
  * What a session envelope's body is (first byte inside its ciphertext; the server never sees it).
  */
 
@@ -15999,6 +16076,45 @@ public object FfiConverterTypeLocalStoreTable: FfiConverterRustBuffer<LocalStore
 
 
 
+/**
+ * What an outgoing message is after its send failed.
+ */
+
+enum class MessageAfterSendFailure {
+    
+    /**
+     * Waits for a path; the same ciphertext is sent again.
+     */
+    QUEUED,
+    /**
+     * Refused; the person sees it did not go.
+     */
+    FAILED;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeMessageAfterSendFailure: FfiConverterRustBuffer<MessageAfterSendFailure> {
+    override fun read(buf: ByteBuffer) = try {
+        MessageAfterSendFailure.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: MessageAfterSendFailure) = 4UL
+
+    override fun write(value: MessageAfterSendFailure, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 
 
 /**
@@ -16594,6 +16710,83 @@ public object FfiConverterTypeReceivingInitKind: FfiConverterRustBuffer<Receivin
 
     override fun write(value: ReceivingInitKind, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * A failed send, as a platform reports it to `after_send_failure`.
+ */
+sealed class SendFailureKind {
+    
+    /**
+     * No answer came: our deadline, a broken or replaced connection, the VEIL tunnel not up yet.
+     */
+    object NoAnswer : SendFailureKind()
+    
+    
+    /**
+     * The server, or a relay on its behalf, answered with this gRPC status code.
+     */
+    data class Status(
+        val `code`: kotlin.UInt) : SendFailureKind()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSendFailureKind : FfiConverterRustBuffer<SendFailureKind>{
+    override fun read(buf: ByteBuffer): SendFailureKind {
+        return when(buf.getInt()) {
+            1 -> SendFailureKind.NoAnswer
+            2 -> SendFailureKind.Status(
+                FfiConverterUInt.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: SendFailureKind) = when(value) {
+        is SendFailureKind.NoAnswer -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is SendFailureKind.Status -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUInt.allocationSize(value.`code`)
+            )
+        }
+    }
+
+    override fun write(value: SendFailureKind, buf: ByteBuffer) {
+        when(value) {
+            is SendFailureKind.NoAnswer -> {
+                buf.putInt(1)
+                Unit
+            }
+            is SendFailureKind.Status -> {
+                buf.putInt(2)
+                FfiConverterUInt.write(value.`code`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
     }
 }
 
@@ -18326,6 +18519,20 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
         }
     }
 }
+        /**
+         * What an outgoing message is after its send failed: queued when no answer came or the
+         * status says the path failed (CANCELLED, DEADLINE_EXCEEDED, UNAVAILABLE), failed otherwise.
+         */ fun `afterSendFailure`(`failure`: SendFailureKind): MessageAfterSendFailure {
+            return FfiConverterTypeMessageAfterSendFailure.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_after_send_failure(
+    
+        FfiConverterTypeSendFailureKind.lower(`failure`),_status)
+}
+    )
+    }
+    
+
     @Throws(CryptoException::class) fun `computePow`(`challenge`: kotlin.String, `difficulty`: kotlin.UInt): PowSolution {
             return FfiConverterTypePowSolution.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
@@ -18415,6 +18622,20 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     )
     }
     
+
+        /**
+         * Why the server refused this device: from the gRPC status code and the first value of the
+         * `construct-device-refusal` trailer. Only UNAUTHENTICATED (16) carries one; never the text.
+         */ fun `deviceRefusalOf`(`statusCode`: kotlin.UInt, `trailer`: kotlin.String?): DeviceRefusalKind {
+            return FfiConverterTypeDeviceRefusalKind.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_device_refusal_of(
+    
+        FfiConverterUInt.lower(`statusCode`),FfiConverterOptionalString.lower(`trailer`),_status)
+}
+    )
+    }
+    
  fun `formatFederatedId`(`deviceId`: kotlin.String, `serverHostname`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCall() { _status ->
@@ -18467,6 +18688,20 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     UniffiLib.uniffi_construct_core_fn_func_generate_private_keys(
     
         _status)
+}
+    )
+    }
+    
+
+        /**
+         * The name generated from an account id ("silent dolphin"), lower case: what a person who
+         * chose no name is called on every client.
+         */ fun `generatedName`(`userId`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_generated_name(
+    
+        FfiConverterString.lower(`userId`),_status)
 }
     )
     }
@@ -18766,6 +19001,19 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     UniffiLib.uniffi_construct_core_fn_func_intake_tag(
     
         FfiConverterByteArray.lower(`intakeKey`),FfiConverterString.lower(`recipientAccountId`),FfiConverterULong.lower(`epoch`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Whether `name` is only `user_id`'s generated name, in any case and trimmed.
+         */ fun `isGeneratedName`(`name`: kotlin.String, `userId`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_is_generated_name(
+    
+        FfiConverterString.lower(`name`),FfiConverterString.lower(`userId`),_status)
 }
     )
     }
@@ -19090,6 +19338,20 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     
 
         /**
+         * Whether that refusal erases this device: `Removed`, and the answer came over direct TLS
+         * before and after the call. Through VEIL a relay could forge it.
+         */ fun `refusalErasesDevice`(`refusal`: DeviceRefusalKind, `overDirectTls`: kotlin.Boolean): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_refusal_erases_device(
+    
+        FfiConverterTypeDeviceRefusalKind.lower(`refusal`),FfiConverterBoolean.lower(`overDirectTls`),_status)
+}
+    )
+    }
+    
+
+        /**
          * The public registration bundle of a key record.
          */
     @Throws(CryptoException::class) fun `registrationBundleFieldsFromKeys`(`keys`: kotlin.ByteArray): RegistrationBundleFields {
@@ -19170,6 +19432,21 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     UniffiLib.uniffi_construct_core_fn_func_sealed_verify_sender_cert(
     
         FfiConverterString.lower(`userId`),FfiConverterString.lower(`domain`),FfiConverterByteArray.lower(`identityKey`),FfiConverterString.lower(`deviceId`),FfiConverterLong.lower(`issuedAt`),FfiConverterLong.lower(`expiresAt`),FfiConverterByteArray.lower(`signature`),FfiConverterByteArray.lower(`serverVerifyingKey`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The name a person is shown by: the one we gave them (`alias`), then the one they shared
+         * unless it is their generated name, then their username, then the generated name. Each
+         * trimmed; an empty one is none.
+         */ fun `shownName`(`alias`: kotlin.String?, `displayName`: kotlin.String, `username`: kotlin.String, `userId`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_shown_name(
+    
+        FfiConverterOptionalString.lower(`alias`),FfiConverterString.lower(`displayName`),FfiConverterString.lower(`username`),FfiConverterString.lower(`userId`),_status)
 }
     )
     }
