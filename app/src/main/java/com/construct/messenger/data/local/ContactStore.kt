@@ -1,7 +1,7 @@
 package com.construct.messenger.data.local
 
 import com.construct.messenger.data.model.SecurityNotice
-import com.construct.messenger.util.DisplayNameGenerator
+import uniffi.construct_core.shownName
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -87,17 +87,16 @@ data class ContactRecord(
 
 /**
  * The name to show for [userId]: the one the user gave them, the name they shared, their
- * username, then the name generated from the id. **Canon:** iOS `User.resolvedDisplayName`.
+ * username, then the name generated from the id — each trimmed, an empty one none. The rule is the
+ * core's (construct-rules `names::shown`), one for every client: the three copies had drifted in
+ * whitespace and an empty alias (an empty `localName` was shown as a blank name here).
  *
  * A generated name held in `displayName` is skipped, not shown: it stands for "no name", and
  * showing it hid a username the contact did have. Rows are created with it, and until 2026-10-02 a
  * profile carrying it overwrote the username from the invite — this repairs both.
  */
 fun ContactRecord?.resolvedName(userId: String): String =
-    this?.localName
-        ?: this?.displayName?.takeIf { it.isNotBlank() && !DisplayNameGenerator.isGenerated(it, userId) }
-        ?: this?.username?.takeIf { it.isNotBlank() }
-        ?: DisplayNameGenerator.generate(userId)
+    shownName(this?.localName, this?.displayName.orEmpty(), this?.username.orEmpty(), userId)
 
 /**
  * The people this device knows — the only way in to their rows (TODO 136, step 1). Reads are by

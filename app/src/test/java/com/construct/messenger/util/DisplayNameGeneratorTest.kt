@@ -1,6 +1,7 @@
 package com.construct.messenger.util
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -40,6 +41,13 @@ class DisplayNameGeneratorTest {
         val name = DisplayNameGenerator.generate("550e8400-e29b-41d4-a716-446655440000")
         assertEquals(name, name.lowercase())
         assertEquals(2, name.split(" ").size)
+    }
+
+    /** The core decides it: any case, trimmed. Mutation that reddens it: compare with `==`. */
+    @Test
+    fun aGeneratedNameIsKnownInAnyCase() {
+        assertTrue(DisplayNameGenerator.isGenerated(" Ancient Sphinx ", "test"))
+        assertFalse(DisplayNameGenerator.isGenerated("ancient sphinx", "construct"))
     }
 
     @Test

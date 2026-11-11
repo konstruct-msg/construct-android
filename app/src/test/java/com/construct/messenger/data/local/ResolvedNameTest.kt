@@ -22,4 +22,11 @@ class ResolvedNameTest {
         assertEquals("kostya", ContactRecord(id, username = "kostya").resolvedName(id))
         assertEquals(DisplayNameGenerator.generate(id), (null as ContactRecord?).resolvedName(id))
     }
+
+    /** A generated shared name stands for none. Mutation that reddens it: show `displayName` as is. */
+    @Test
+    fun `a generated shared name is skipped for the username`() {
+        val generated = DisplayNameGenerator.generate(id).uppercase()
+        assertEquals("kostya", ContactRecord(id, username = "kostya", displayName = generated).resolvedName(id))
+    }
 }

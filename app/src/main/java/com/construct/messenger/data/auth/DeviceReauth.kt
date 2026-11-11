@@ -13,7 +13,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import shared.proto.services.v1.AuthServiceOuterClass.AuthTokensResponse
 import shared.proto.services.v1.AuthServiceOuterClass.AuthenticateDeviceRequest
-import shared.proto.services.v1.AuthServiceOuterClass.DeviceRefusal
+import uniffi.construct_core.DeviceRefusalKind
 
 /**
  * A running device whose refresh token the server no longer takes signs in again with its device
@@ -110,7 +110,7 @@ internal suspend fun authenticateDevice(
         // `StatusRuntimeException` was caught here, so no refusal was ever read on a device.
         if (e !is io.grpc.StatusException && e !is StatusRuntimeException) throw e
         val refusal = DeviceRefusalReading.refusalOf(e)
-        if (refusal == DeviceRefusal.DEVICE_REFUSAL_UNSPECIFIED) throw e
+        if (refusal == DeviceRefusalKind.UNSPECIFIED) throw e
         throw DeviceAuthRefused(refusal, directBefore && grpcClient.veilPort == null, e)
     }
 }
