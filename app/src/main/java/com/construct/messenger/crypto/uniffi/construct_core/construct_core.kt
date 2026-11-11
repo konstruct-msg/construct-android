@@ -1326,6 +1326,22 @@ external fun uniffi_construct_core_checksum_method_rustackstore_mark_processed(
 ): Short
 external fun uniffi_construct_core_checksum_method_rustackstore_prune_expired(
 ): Short
+external fun uniffi_construct_core_checksum_method_streamcursorstate_head_blocker(
+): Short
+external fun uniffi_construct_core_checksum_method_streamcursorstate_in_flight(
+): Short
+external fun uniffi_construct_core_checksum_method_streamcursorstate_report(
+): Short
+external fun uniffi_construct_core_checksum_method_streamcursorstate_reset(
+): Short
+external fun uniffi_construct_core_checksum_method_streamcursorstate_resolve(
+): Short
+external fun uniffi_construct_core_checksum_method_streamcursorstate_skip_held_backlog(
+): Short
+external fun uniffi_construct_core_checksum_method_streamcursorstate_track(
+): Short
+external fun uniffi_construct_core_checksum_method_streamcursorstate_track_resolved(
+): Short
 external fun uniffi_construct_core_checksum_constructor_localstore_in_memory(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_localstore_new(
@@ -1337,6 +1353,8 @@ external fun uniffi_construct_core_checksum_constructor_mailboxgapstate_new(
 external fun uniffi_construct_core_checksum_constructor_notificationpeek_new(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_rustackstore_new(
+): Short
+external fun uniffi_construct_core_checksum_constructor_streamcursorstate_new(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstoreobserver_on_change(
 ): Short
@@ -1865,6 +1883,28 @@ external fun uniffi_construct_core_fn_method_rustackstore_mark_processed(`ptr`: 
 ): Unit
 external fun uniffi_construct_core_fn_method_rustackstore_prune_expired(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_clone_streamcursorstate(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_free_streamcursorstate(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_constructor_streamcursorstate_new(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_method_streamcursorstate_head_blocker(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_streamcursorstate_in_flight(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Int
+external fun uniffi_construct_core_fn_method_streamcursorstate_report(`ptr`: Long,`messageId`: RustBuffer.ByValue,`outcome`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_streamcursorstate_reset(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_streamcursorstate_resolve(`ptr`: Long,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_streamcursorstate_skip_held_backlog(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_streamcursorstate_track(`ptr`: Long,`messageId`: RustBuffer.ByValue,`cursor`: RustBuffer.ByValue,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_streamcursorstate_track_resolved(`ptr`: Long,`cursor`: RustBuffer.ByValue,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_init_callback_vtable_localstoreobserver(`vtable`: UniffiVTableCallbackInterfaceLocalStoreObserver,
 ): Unit
 external fun uniffi_construct_core_fn_init_callback_vtable_peeksessionsource(`vtable`: UniffiVTableCallbackInterfacePeekSessionSource,
@@ -3088,6 +3128,30 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_rustackstore_prune_expired() != 19780.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_streamcursorstate_head_blocker() != 49075.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_streamcursorstate_in_flight() != 6958.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_streamcursorstate_report() != 43547.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_streamcursorstate_reset() != 47862.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_streamcursorstate_resolve() != 51885.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_streamcursorstate_skip_held_backlog() != 7887.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_streamcursorstate_track() != 52313.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_streamcursorstate_track_resolved() != 7693.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_constructor_localstore_in_memory() != 10006.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3104,6 +3168,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_constructor_rustackstore_new() != 64675.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_constructor_streamcursorstate_new() != 13541.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstoreobserver_on_change() != 28445.toShort()) {
@@ -10266,6 +10333,430 @@ public object FfiConverterTypeRustAckStore: FfiConverter<RustAckStore, Long> {
 }
 
 
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+//
+/**
+ * The stream resume cursor of one connection: it never moves past a message that has not reached
+ * a durable end, since the server trims its queue up to it. Every method that can move it returns
+ * the cursor to store (`since_cursor`), or null when it did not move. Not kept itself.
+ */
+public interface StreamCursorStateInterface {
+    
+    /**
+     * The entry holding the cursor back, if any.
+     */
+    fun `headBlocker`(): StreamCursorBlocker?
+    
+    /**
+     * Entries still held.
+     */
+    fun `inFlight`(): kotlin.UInt
+    
+    /**
+     * How a tracked message ended.
+     */
+    fun `report`(`messageId`: kotlin.String, `outcome`: StreamCursorOutcome): kotlin.String?
+    
+    /**
+     * A new connection: drop what was held; the stored cursor is where it resumes.
+     */
+    fun `reset`()
+    
+    /**
+     * A message finished: a waiting one drained and kept, or given up.
+     */
+    fun `resolve`(`messageId`: kotlin.String): kotlin.String?
+    
+    /**
+     * A person's explicit action only — never a timer: abandon everything held and commit the
+     * furthest cursor delivered. What was held is trimmed on the server without being kept.
+     */
+    fun `skipHeldBacklog`(): StreamCursorSkip?
+    
+    /**
+     * A stream entry, in arrival order, before it is handled. The same id again keeps its place.
+     */
+    fun `track`(`messageId`: kotlin.String, `cursor`: kotlin.String, `nowMs`: kotlin.Long)
+    
+    /**
+     * A frame with nothing to keep (a receipt): takes its place in line so its cursor cannot
+     * pass an earlier message still held.
+     */
+    fun `trackResolved`(`cursor`: kotlin.String, `nowMs`: kotlin.Long): kotlin.String?
+    
+    companion object
+}
+
+/**
+ * The stream resume cursor of one connection: it never moves past a message that has not reached
+ * a durable end, since the server trims its queue up to it. Every method that can move it returns
+ * the cursor to store (`since_cursor`), or null when it did not move. Not kept itself.
+ */
+open class StreamCursorState: Disposable, AutoCloseable, StreamCursorStateInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+    constructor() :
+        this(UniffiWithHandle, 
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_constructor_streamcursorstate_new(
+    
+        _status)
+}
+    )
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_construct_core_fn_free_streamcursorstate(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_construct_core_fn_clone_streamcursorstate(handle, status)
+        }
+    }
+
+    
+    /**
+     * The entry holding the cursor back, if any.
+     */override fun `headBlocker`(): StreamCursorBlocker? {
+            return FfiConverterOptionalTypeStreamCursorBlocker.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_streamcursorstate_head_blocker(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Entries still held.
+     */override fun `inFlight`(): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_streamcursorstate_in_flight(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * How a tracked message ended.
+     */override fun `report`(`messageId`: kotlin.String, `outcome`: StreamCursorOutcome): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_streamcursorstate_report(
+        it,
+        FfiConverterString.lower(`messageId`),FfiConverterTypeStreamCursorOutcome.lower(`outcome`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * A new connection: drop what was held; the stored cursor is where it resumes.
+     */override fun `reset`()
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_streamcursorstate_reset(
+        it,
+        _status)
+}
+    }
+    
+    
+
+    
+    /**
+     * A message finished: a waiting one drained and kept, or given up.
+     */override fun `resolve`(`messageId`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_streamcursorstate_resolve(
+        it,
+        FfiConverterString.lower(`messageId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * A person's explicit action only — never a timer: abandon everything held and commit the
+     * furthest cursor delivered. What was held is trimmed on the server without being kept.
+     */override fun `skipHeldBacklog`(): StreamCursorSkip? {
+            return FfiConverterOptionalTypeStreamCursorSkip.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_streamcursorstate_skip_held_backlog(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * A stream entry, in arrival order, before it is handled. The same id again keeps its place.
+     */override fun `track`(`messageId`: kotlin.String, `cursor`: kotlin.String, `nowMs`: kotlin.Long)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_streamcursorstate_track(
+        it,
+        FfiConverterString.lower(`messageId`),FfiConverterString.lower(`cursor`),FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * A frame with nothing to keep (a receipt): takes its place in line so its cursor cannot
+     * pass an earlier message still held.
+     */override fun `trackResolved`(`cursor`: kotlin.String, `nowMs`: kotlin.Long): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_streamcursorstate_track_resolved(
+        it,
+        FfiConverterString.lower(`cursor`),FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
+
+
+    
+    
+    /**
+     * @suppress
+     */
+    companion object
+    
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeStreamCursorState: FfiConverter<StreamCursorState, Long> {
+    override fun lower(value: StreamCursorState): Long {
+        return value.uniffiCloneHandle()
+    }
+
+    override fun lift(value: Long): StreamCursorState {
+        return StreamCursorState(UniffiWithHandle, value)
+    }
+
+    override fun read(buf: ByteBuffer): StreamCursorState {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: StreamCursorState) = 8UL
+
+    override fun write(value: StreamCursorState, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
 
 /**
  * Binary key bundle passed across the FFI boundary — no JSON encoding.
@@ -13138,6 +13629,95 @@ public object FfiConverterTypeSessionInitResult: FfiConverterRustBuffer<SessionI
             FfiConverterByteArray.write(value.`decryptedMessage`, buf)
             FfiConverterByteArray.write(value.`storageKey`, buf)
             FfiConverterOptionalByteArray.write(value.`kyberPrekeys`, buf)
+    }
+}
+
+
+
+/**
+ * The entry holding the cursor back, for the log line that names a stall.
+ */
+data class StreamCursorBlocker (
+    var `messageId`: kotlin.String
+    , 
+    var `hold`: StreamCursorHold
+    , 
+    var `trackedAtMs`: kotlin.Long
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeStreamCursorBlocker: FfiConverterRustBuffer<StreamCursorBlocker> {
+    override fun read(buf: ByteBuffer): StreamCursorBlocker {
+        return StreamCursorBlocker(
+            FfiConverterString.read(buf),
+            FfiConverterTypeStreamCursorHold.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: StreamCursorBlocker) = (
+            FfiConverterString.allocationSize(value.`messageId`) +
+            FfiConverterTypeStreamCursorHold.allocationSize(value.`hold`) +
+            FfiConverterLong.allocationSize(value.`trackedAtMs`)
+    )
+
+    override fun write(value: StreamCursorBlocker, buf: ByteBuffer) {
+            FfiConverterString.write(value.`messageId`, buf)
+            FfiConverterTypeStreamCursorHold.write(value.`hold`, buf)
+            FfiConverterLong.write(value.`trackedAtMs`, buf)
+    }
+}
+
+
+
+/**
+ * What `skip_held_backlog` did: the cursor now committed, how many entries were abandoned, and
+ * the one that held them.
+ */
+data class StreamCursorSkip (
+    var `cursor`: kotlin.String
+    , 
+    var `held`: kotlin.UInt
+    , 
+    var `head`: StreamCursorBlocker?
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeStreamCursorSkip: FfiConverterRustBuffer<StreamCursorSkip> {
+    override fun read(buf: ByteBuffer): StreamCursorSkip {
+        return StreamCursorSkip(
+            FfiConverterString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterOptionalTypeStreamCursorBlocker.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: StreamCursorSkip) = (
+            FfiConverterString.allocationSize(value.`cursor`) +
+            FfiConverterUInt.allocationSize(value.`held`) +
+            FfiConverterOptionalTypeStreamCursorBlocker.allocationSize(value.`head`)
+    )
+
+    override fun write(value: StreamCursorSkip, buf: ByteBuffer) {
+            FfiConverterString.write(value.`cursor`, buf)
+            FfiConverterUInt.write(value.`held`, buf)
+            FfiConverterOptionalTypeStreamCursorBlocker.write(value.`head`, buf)
     }
 }
 
@@ -16834,6 +17414,82 @@ public object FfiConverterTypeStaleSpkPlan: FfiConverterRustBuffer<StaleSpkPlan>
 
 
 
+/**
+ * Why the entry at the front holds the cursor.
+ */
+
+enum class StreamCursorHold {
+    
+    PENDING,
+    DEFERRED;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeStreamCursorHold: FfiConverterRustBuffer<StreamCursorHold> {
+    override fun read(buf: ByteBuffer) = try {
+        StreamCursorHold.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: StreamCursorHold) = 4UL
+
+    override fun write(value: StreamCursorHold, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * How the pipeline ended with a tracked stream message (construct-rules `stream_cursor`).
+ */
+
+enum class StreamCursorOutcome {
+    
+    /**
+     * Kept, a control applied, or given up for good.
+     */
+    DURABLE,
+    /**
+     * Waiting (behind a session being opened, a retry): holds the cursor.
+     */
+    DEFERRED,
+    /**
+     * Not this caller's to decide: leaves the entry as it is.
+     */
+    SKIP;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeStreamCursorOutcome: FfiConverterRustBuffer<StreamCursorOutcome> {
+    override fun read(buf: ByteBuffer) = try {
+        StreamCursorOutcome.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: StreamCursorOutcome) = 4UL
+
+    override fun write(value: StreamCursorOutcome, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 
 
 /**
@@ -17656,6 +18312,70 @@ public object FfiConverterOptionalTypeSessionHealthReport: FfiConverterRustBuffe
         } else {
             buf.put(1)
             FfiConverterTypeSessionHealthReport.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeStreamCursorBlocker: FfiConverterRustBuffer<StreamCursorBlocker?> {
+    override fun read(buf: ByteBuffer): StreamCursorBlocker? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeStreamCursorBlocker.read(buf)
+    }
+
+    override fun allocationSize(value: StreamCursorBlocker?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeStreamCursorBlocker.allocationSize(value)
+        }
+    }
+
+    override fun write(value: StreamCursorBlocker?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeStreamCursorBlocker.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeStreamCursorSkip: FfiConverterRustBuffer<StreamCursorSkip?> {
+    override fun read(buf: ByteBuffer): StreamCursorSkip? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeStreamCursorSkip.read(buf)
+    }
+
+    override fun allocationSize(value: StreamCursorSkip?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeStreamCursorSkip.allocationSize(value)
+        }
+    }
+
+    override fun write(value: StreamCursorSkip?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeStreamCursorSkip.write(value, buf)
         }
     }
 }

@@ -11,6 +11,10 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+/**
+ * The rule is the core's (construct-rules `stream_cursor`, mutation-checked there); these check
+ * this class hands it each outcome, keeps the stored cursor, and reads the ack store as resolved.
+ */
 class StreamCursorTrackerTest {
 
     private val saved = mutableListOf<String>()
