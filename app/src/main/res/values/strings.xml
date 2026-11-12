@@ -774,4 +774,31 @@
     <string name="device_join_waiting">Waiting for your other device to approve…</string>
     <string name="device_link_rejected">The other device declined the link.</string>
     <string name="device_link_expired">The link code expired. Start again.</string>
+    <!-- Incoming Android Sharesheet content; never sent until the composer Send is pressed. -->
+    <string name="incoming_share_title">Share to Konstruct</string>
+    <string name="incoming_share_summary">Photos and videos: %1$d · Files: %2$d</string>
+    <string name="incoming_share_has_text">Includes text</string>
+    <string name="incoming_share_no_matches">No matching chats.</string>
+    <string name="incoming_share_preparing">Preparing attachments on this device…</string>
+    <string name="incoming_share_no_chats">No matching chats. Start a conversation in Konstruct, then share again.</string>
+    <string name="incoming_share_sign_in">Sign in to Konstruct first, then share again. Nothing has been sent.</string>
+    <string name="incoming_share_invalid">This share has no readable text or supported attachments. Share it again from the source app.</string>
+    <string name="incoming_share_unreadable">The content could not be prepared. Check file access and free space, then share again. Nothing unreadable was sent.</string>
+    <string name="incoming_share_too_large">These attachments exceed the safe import budget for this device. Try fewer or smaller files.</string>
+    <string name="incoming_share_restore_failed">The shared draft could not be saved or restored. Nothing will be sent automatically.</string>
+    <string name="incoming_share_interrupted">The import was interrupted. Share the files again from the source app.</string>
+    <string name="incoming_share_review">Sending was interrupted. Some messages may already be in the chat. Check the chat before sharing again; nothing will be resent automatically.</string>
+    <string name="incoming_share_review_close">Check chat and close this share</string>
+    <string name="incoming_share_another_title">Another share arrived</string>
+    <string name="incoming_share_another_body">Keep the current shared draft, or discard it and prepare the new content?</string>
+    <string name="incoming_share_sending">A send is already in progress. Keep it and share the new content again afterwards.</string>
+    <string name="incoming_share_keep">Keep current</string>
+    <string name="incoming_share_replace">Replace draft</string>
+    <string name="incoming_share_from">Shared content</string>
+    <string name="incoming_share_change_chat">Change chat</string>
+    <string name="incoming_share_mixed">Photos/videos and files will be two separate messages. The text goes with the photos/videos; arrival order may differ.</string>
+    <string name="incoming_share_draft_conflict">There is an unfinished message</string>
+    <string name="incoming_share_draft_conflict_body">The current text, attachments, reply, edit or recording will not be replaced without your permission.</string>
+    <string name="incoming_share_choose_another">Choose another chat</string>
+    <string name="incoming_share_finish_first">Send or cancel the shared draft before replying, editing or choosing a sticker.</string>
 </resources>

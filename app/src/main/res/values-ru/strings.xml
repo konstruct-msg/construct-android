@@ -776,4 +776,31 @@
     <string name="device_join_waiting">Ждём подтверждения на другом устройстве…</string>
     <string name="device_link_rejected">Другое устройство отклонило привязку.</string>
     <string name="device_link_expired">Срок кода привязки истёк. Начните заново.</string>
+    <!-- Входящие данные Android Sharesheet: отправка только явной кнопкой composer. -->
+    <string name="incoming_share_title">Поделиться в Конструкт</string>
+    <string name="incoming_share_summary">Фото и видео: %1$d · Файлы: %2$d</string>
+    <string name="incoming_share_has_text">Есть текст</string>
+    <string name="incoming_share_no_matches">Совпадений нет.</string>
+    <string name="incoming_share_preparing">Подготовка вложений на этом устройстве…</string>
+    <string name="incoming_share_no_chats">Нет подходящих чатов. Начните переписку в Конструкте и поделитесь снова.</string>
+    <string name="incoming_share_sign_in">Сначала войдите в Конструкт, затем поделитесь снова. Ничего не отправлено.</string>
+    <string name="incoming_share_invalid">В переданных данных нет доступного текста или вложений. Поделитесь снова из исходного приложения.</string>
+    <string name="incoming_share_unreadable">Не удалось подготовить содержимое. Проверьте доступ к файлам и свободное место, затем поделитесь снова. Нечитаемые вложения не отправлялись.</string>
+    <string name="incoming_share_too_large">Вложения превышают безопасный объём импорта для этого устройства. Выберите меньше файлов или файлы поменьше.</string>
+    <string name="incoming_share_restore_failed">Не удалось сохранить или восстановить черновик. Автоматической отправки не будет.</string>
+    <string name="incoming_share_interrupted">Импорт был прерван. Поделитесь файлами снова из исходного приложения.</string>
+    <string name="incoming_share_review">Отправка прервалась. Некоторые сообщения уже могут быть в чате. Проверьте чат, прежде чем делиться снова: автоматически ничего не повторяется.</string>
+    <string name="incoming_share_review_close">Проверить чат и закрыть передачу</string>
+    <string name="incoming_share_another_title">Поступила ещё одна передача</string>
+    <string name="incoming_share_another_body">Оставить текущий черновик или удалить его и подготовить новые данные?</string>
+    <string name="incoming_share_sending">Отправка уже выполняется. Дождитесь её завершения и поделитесь новыми данными снова.</string>
+    <string name="incoming_share_keep">Оставить текущую</string>
+    <string name="incoming_share_replace">Заменить черновик</string>
+    <string name="incoming_share_from">Из «Поделиться»</string>
+    <string name="incoming_share_change_chat">Сменить чат</string>
+    <string name="incoming_share_mixed">Фото/видео и файлы уйдут двумя сообщениями. Текст будет подписью к фото/видео; порядок прихода может отличаться.</string>
+    <string name="incoming_share_draft_conflict">Есть незавершённое сообщение</string>
+    <string name="incoming_share_draft_conflict_body">Текущие текст, вложения, ответ, правка или запись не будут заменены без вашего разрешения.</string>
+    <string name="incoming_share_choose_another">Выбрать другой чат</string>
+    <string name="incoming_share_finish_first">Сначала отправьте или отмените черновик из «Поделиться», затем отвечайте, редактируйте или выбирайте стикер.</string>
 </resources>

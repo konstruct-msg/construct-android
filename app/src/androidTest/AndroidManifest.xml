@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Test APK only: a real other UID with a private provider and explicit read grants. -->
+        <activity android:name="com.construct.messenger.share.ShareSenderActivity" android:exported="true" />
+        <provider
+            android:name="com.construct.messenger.share.ShareFixtureProvider"
+            android:authorities="com.construct.messenger.test.share-source"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+    </application>
+</manifest>

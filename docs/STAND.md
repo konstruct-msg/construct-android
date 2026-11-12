@@ -37,6 +37,36 @@ $ADB logcat -d | grep -E 'MessageProcessor|CfeTimerBridge|MessagingRuntime|Sessi
 Нажатия без рук: `$ADB shell uiautomator dump /sdcard/ui.xml`, найти `bounds` нужного узла,
 `$ADB shell input tap X Y`; текст — `$ADB shell input text '...'`.
 
+## Входящий Android share — отдельный UID и настоящий grant
+
+Только тестовое устройство. Нужны разблокированный аккаунт/готовый store; сам тест PIN не
+отключает. Оба APK должны быть подписаны сертификатом уже установленного приложения:
+обычный debug key не обновит release. Не удалять приложение ради подписи. На эмуляторе
+достаточно стандартных debug APK. `connectedAndroidTest` на живом телефоне не применять:
+Gradle может удалить приложение после теста; устанавливать и запускать явно.
+
+```bash
+./gradlew :app:assembleDebug :app:assembleDebugAndroidTest
+$ADB install -r app/build/outputs/apk/debug/app-debug.apk
+$ADB install -r -t app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+$ADB shell am instrument -w -r \
+  -e class com.construct.messenger.share.IncomingShareFilesInstrumentedTest \
+  com.construct.messenger.test/androidx.test.runner.AndroidJUnitRunner
+# Opt-in: создаёт self-chat при необходимости и оставляет canary сообщения на сервере.
+$ADB shell am instrument -w -r -e shareStand true \
+  -e class com.construct.messenger.share.IncomingShareFlowInstrumentedTest \
+  com.construct.messenger.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+Fixture Activity/provider работают под другим UID test APK, реально выдают/отзывают read grant.
+Первый класс проверяет actual byte cap, seek, own-provider rejection и cleanup. Второй ждёт
+picker, отзывает grants, проверяет отсутствие отправки, подтверждает обычной кнопкой composer;
+затем ждёт две строки, скачивает и открывает три blob, проверяет PDF байтами и декодирование
+фото/видео, проверяет удаление snapshots. Тест не выбирает чужой чат. У `am instrument` смотреть
+`OK (...)`/failure details, не один shell exit code. Это **не Android↔iOS stand**.
+Смерть процесса, rotation, PIN и исходные browser/gallery/Files проверять дополнительно;
+полная матрица — vault TODO 304. Simple `am start` с чужим URI без grant этого не заменяет.
+
 ## Сценарии, которые стоит прогонять после изменений в сессиях
 
 | Сценарий | Ожидаемое |

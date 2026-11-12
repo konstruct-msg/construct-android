@@ -162,6 +162,7 @@ fun MessageInputView(
             val focus = remember { FocusRequester() }
             LaunchedEffect(editingPreview != null) { if (editingPreview != null) runCatching { focus.requestFocus() } }
             BasicTextField(
+                enabled = enabled,
                 value = field,
                 onValueChange = {
                     field = it

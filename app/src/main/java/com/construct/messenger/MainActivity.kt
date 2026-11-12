@@ -45,6 +45,11 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
 
+    companion object {
+        internal fun viewLinkData(intent: Intent?): String? =
+            if (intent?.action == Intent.ACTION_VIEW) intent.data?.toString() else null
+    }
+
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -78,11 +83,26 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var veilConfig: com.construct.messenger.veil.VeilConfigImporter
 
+    @Inject
+    lateinit var incomingShares: com.construct.messenger.data.repository.IncomingShareRepository
+
+    // Android's Bundle is the OS lifecycle format, not a second draft store. Only the opaque
+    // request key goes there; content/keys/consent remain in the core-written CFE in LocalStore.
+    private var incomingShareLaunchId: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestNotificationPermissionIfNeeded()
         captureInvite(intent)
         captureChat(intent)
+        if (savedInstanceState?.getBoolean("incomingShareCaptured") == true) {
+            // Android may recreate us with the ORIGINAL Intent, not the last onNewIntent.
+            // Never parse that payload again: it may have been sent or explicitly discarded.
+            incomingShareLaunchId = savedInstanceState.getString("incomingShareLaunchId")
+            incomingShares.recreatedInput(savedInstanceState.getString("incomingSharePendingId"))
+        } else {
+            captureShare(intent)
+        }
         setContent {
             val appearance by appearanceRepository.appearance.collectAsStateWithLifecycle()
             val darkTheme = when (appearance.theme) {
@@ -151,6 +171,7 @@ class MainActivity : FragmentActivity() {
                     SecurityNoticeHost(
                         onOpenChat = { navController.navigate(Screen.Chat.createRoute(it)) },
                     )
+                    com.construct.messenger.ui.screens.chat.IncomingShareHost(navController)
                     // iOS `SecurityGateView`: the lock covers everything while the PIN is required.
                     val lock by appLock.lock.collectAsStateWithLifecycle()
                     LaunchedEffect(lock.pinEnabled) {
@@ -197,6 +218,22 @@ class MainActivity : FragmentActivity() {
         setIntent(intent)
         captureInvite(intent)
         captureChat(intent)
+        captureShare(intent)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        incomingShareLaunchId?.let { id ->
+            outState.putBoolean("incomingShareCaptured", true)
+            outState.putString("incomingShareLaunchId", id)
+            if (incomingShares.hasUnpreparedInput(id)) outState.putString("incomingSharePendingId", id)
+        }
+        super.onSaveInstanceState(outState)
+    }
+
+    private fun captureShare(intent: Intent?) {
+        val input = com.construct.messenger.share.IncomingShareIntent.read(intent)
+        incomingShares.offer(input)
+            ?.let { incomingShareLaunchId = it }
     }
 
     /** A tapped message notification: open that chat once the tabs are up. */
@@ -206,7 +243,8 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun captureInvite(intent: Intent?) {
-        val data = intent?.data?.toString() ?: return
+        // SEND may carry a sidecar data URI. Sharing is not an invitation/configuration action.
+        val data = viewLinkData(intent) ?: return
         if (com.construct.messenger.invite.InviteConfig.isInviteLink(data)) {
             pendingInvites.offer(data)
         } else if (com.construct.messenger.veil.VeilConfigLink.isLink(data)) {

@@ -886,6 +886,10 @@ external fun uniffi_construct_core_checksum_func_sealed_seal_sender_cert(
 ): Short
 external fun uniffi_construct_core_checksum_func_sealed_verify_sender_cert(
 ): Short
+external fun uniffi_construct_core_checksum_func_share_draft_decode(
+): Short
+external fun uniffi_construct_core_checksum_func_share_draft_encode(
+): Short
 external fun uniffi_construct_core_checksum_func_shown_name(
 ): Short
 external fun uniffi_construct_core_checksum_func_sign_bundle_data_with_keys(
@@ -2239,6 +2243,10 @@ external fun uniffi_construct_core_fn_func_sealed_seal_sender_cert(`certBytes`: 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sealed_verify_sender_cert(`userId`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,`identityKey`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,`issuedAt`: Long,`expiresAt`: Long,`signature`: RustBuffer.ByValue,`serverVerifyingKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_func_share_draft_decode(`kept`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_share_draft_encode(`draft`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_shown_name(`alias`: RustBuffer.ByValue,`displayName`: RustBuffer.ByValue,`username`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sign_bundle_data_with_keys(`keys`: RustBuffer.ByValue,`bundleDataJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -2654,6 +2662,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_sealed_verify_sender_cert() != 64198.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_share_draft_decode() != 28972.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_share_draft_encode() != 2960.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_shown_name() != 22785.toShort()) {
@@ -15127,6 +15141,111 @@ public object FfiConverterTypeSessionInitResult: FfiConverterRustBuffer<SessionI
 
 
 
+data class ShareDraft (
+    var `id`: kotlin.String
+    , 
+    var `text`: kotlin.String
+    , 
+    var `items`: List<ShareDraftItem>
+    , 
+    var `contactId`: kotlin.String?
+    , 
+    var `stage`: ShareDraftStage
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeShareDraft: FfiConverterRustBuffer<ShareDraft> {
+    override fun read(buf: ByteBuffer): ShareDraft {
+        return ShareDraft(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterSequenceTypeShareDraftItem.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterTypeShareDraftStage.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ShareDraft) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`text`) +
+            FfiConverterSequenceTypeShareDraftItem.allocationSize(value.`items`) +
+            FfiConverterOptionalString.allocationSize(value.`contactId`) +
+            FfiConverterTypeShareDraftStage.allocationSize(value.`stage`)
+    )
+
+    override fun write(value: ShareDraft, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterString.write(value.`text`, buf)
+            FfiConverterSequenceTypeShareDraftItem.write(value.`items`, buf)
+            FfiConverterOptionalString.write(value.`contactId`, buf)
+            FfiConverterTypeShareDraftStage.write(value.`stage`, buf)
+    }
+}
+
+
+
+/**
+ * Keys describe locally sealed source files, never an external provider URI.
+ */
+data class ShareDraftItem (
+    var `id`: kotlin.String
+    , 
+    var `name`: kotlin.String
+    , 
+    var `mime`: kotlin.String
+    , 
+    var `key`: kotlin.ByteArray
+    , 
+    var `size`: kotlin.ULong
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeShareDraftItem: FfiConverterRustBuffer<ShareDraftItem> {
+    override fun read(buf: ByteBuffer): ShareDraftItem {
+        return ShareDraftItem(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ShareDraftItem) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterString.allocationSize(value.`mime`) +
+            FfiConverterByteArray.allocationSize(value.`key`) +
+            FfiConverterULong.allocationSize(value.`size`)
+    )
+
+    override fun write(value: ShareDraftItem, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterString.write(value.`name`, buf)
+            FfiConverterString.write(value.`mime`, buf)
+            FfiConverterByteArray.write(value.`key`, buf)
+            FfiConverterULong.write(value.`size`, buf)
+    }
+}
+
+
+
 /**
  * The entry holding the cursor back, for the log line that names a stall.
  */
@@ -19015,6 +19134,38 @@ public object FfiConverterTypeSendFailureKind : FfiConverterRustBuffer<SendFailu
 
 
 
+
+enum class ShareDraftStage {
+    
+    IMPORTING,
+    READY,
+    SUBMITTED,
+    FINISHED;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeShareDraftStage: FfiConverterRustBuffer<ShareDraftStage> {
+    override fun read(buf: ByteBuffer) = try {
+        ShareDraftStage.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: ShareDraftStage) = 4UL
+
+    override fun write(value: ShareDraftStage, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 /**
  * What to do with a bundle refused as stale. See orchestration::stale_spk_plan.
  */
@@ -21039,6 +21190,34 @@ public object FfiConverterSequenceTypeReadIncoming: FfiConverterRustBuffer<List<
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeShareDraftItem: FfiConverterRustBuffer<List<ShareDraftItem>> {
+    override fun read(buf: ByteBuffer): List<ShareDraftItem> {
+        val len = buf.getInt()
+        return List<ShareDraftItem>(len) {
+            FfiConverterTypeShareDraftItem.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<ShareDraftItem>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeShareDraftItem.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<ShareDraftItem>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeShareDraftItem.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<CfeAction>> {
     override fun read(buf: ByteBuffer): List<CfeAction> {
         val len = buf.getInt()
@@ -22289,6 +22468,31 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     UniffiLib.uniffi_construct_core_fn_func_sealed_verify_sender_cert(
     
         FfiConverterString.lower(`userId`),FfiConverterString.lower(`domain`),FfiConverterByteArray.lower(`identityKey`),FfiConverterString.lower(`deviceId`),FfiConverterLong.lower(`issuedAt`),FfiConverterLong.lower(`expiresAt`),FfiConverterByteArray.lower(`signature`),FfiConverterByteArray.lower(`serverVerifyingKey`),_status)
+}
+    )
+    }
+    
+
+    @Throws(CryptoException::class) fun `shareDraftDecode`(`kept`: kotlin.ByteArray): ShareDraft {
+            return FfiConverterTypeShareDraft.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_share_draft_decode(
+    
+        FfiConverterByteArray.lower(`kept`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * An incoming OS share kept locally. No message is sent or ratchet advanced by this codec.
+         */
+    @Throws(CryptoException::class) fun `shareDraftEncode`(`draft`: ShareDraft): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_share_draft_encode(
+    
+        FfiConverterTypeShareDraft.lower(`draft`),_status)
 }
     )
     }

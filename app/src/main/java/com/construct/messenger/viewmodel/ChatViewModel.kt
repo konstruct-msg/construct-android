@@ -82,6 +82,7 @@ class ChatViewModel @Inject constructor(
     private val videoQualities: com.construct.messenger.media.VideoQualityStore,
     private val voiceSettings: com.construct.messenger.media.VoicePlaybackSettings,
     private val chatOnScreen: com.construct.messenger.media.ChatOnScreen,
+    private val incomingShares: com.construct.messenger.data.repository.IncomingShareRepository,
 ) : ViewModel() {
     /** How picked videos are sent; the composer offers it while a video is attached (TODO 148). */
     val videoQuality: StateFlow<com.construct.messenger.media.VideoQuality> get() = videoQualities.state
@@ -124,6 +125,38 @@ class ChatViewModel @Inject constructor(
     private val editing = MutableStateFlow<EditTarget?>(null)
     private val attachments = MutableStateFlow<List<Uri>>(emptyList())
     private val files = MutableStateFlow<List<PickedFile>>(emptyList())
+    private val _incomingShareId = MutableStateFlow<String?>(null)
+    val incomingShareId = _incomingShareId.asStateFlow()
+    private val _incomingConflict = MutableStateFlow<String?>(null)
+    val incomingConflict = _incomingConflict.asStateFlow()
+    private val _submittingShare = MutableStateFlow(false)
+    val submittingShare = _submittingShare.asStateFlow()
+    private var recordingVideo = false
+
+    fun setVideoRecording(active: Boolean) { recordingVideo = active }
+
+    fun acceptIncomingShare() {
+        val share = incomingShares.state.value.draft ?: return
+        if (share.contactId != contactId || share.stage != com.construct.messenger.data.model.IncomingShareStage.READY) return
+        recorder.cancel()
+        replying.value = null
+        editing.value = null
+        draft.value = share.text
+        attachments.value = share.items.filter { it.isVisual }.map { incomingShares.uri(share.id, it.id) }
+        files.value = share.items.filterNot { it.isVisual }.map { PickedFile(incomingShares.uri(share.id, it.id), it.name, it.size) }
+        _incomingShareId.value = share.id
+        _incomingConflict.value = null
+    }
+
+    fun cancelIncomingShare() {
+        val id = _incomingShareId.value ?: _incomingConflict.value ?: return
+        viewModelScope.launch { incomingShares.cancel(id) }
+    }
+
+    fun changeIncomingChat() {
+        val id = _incomingShareId.value ?: _incomingConflict.value ?: return
+        viewModelScope.launch { incomingShares.pickAgain(id) }
+    }
 
     private val _fileLoading = MutableStateFlow<Set<String>>(emptySet())
     val fileLoading: StateFlow<Set<String>> = _fileLoading.asStateFlow()
@@ -135,7 +168,7 @@ class ChatViewModel @Inject constructor(
     val openFile: kotlinx.coroutines.flow.SharedFlow<OpenFile> = _openFile
 
     /** Something picked could not be sent at all — no row shows it, so the screen says so. */
-    enum class AttachmentProblem { TOO_LARGE, UNREADABLE }
+    enum class AttachmentProblem { TOO_LARGE, UNREADABLE, SHARE_ACTIVE }
     private val _attachmentProblem = kotlinx.coroutines.flow.MutableSharedFlow<AttachmentProblem>(extraBufferCapacity = 1)
     val attachmentProblem: kotlinx.coroutines.flow.SharedFlow<AttachmentProblem> = _attachmentProblem
 
@@ -211,6 +244,7 @@ class ChatViewModel @Inject constructor(
 
     fun onDraftChange(value: String) {
         draft.value = value
+        _incomingShareId.value?.let { id -> viewModelScope.launch { incomingShares.editText(id, value) } }
     }
 
     /**
@@ -218,6 +252,7 @@ class ChatViewModel @Inject constructor(
      * or [quote] — the part the user selected (iOS Quote & Reply).
      */
     fun startReply(message: Message, quote: String? = null) {
+        if (_incomingShareId.value != null) { _attachmentProblem.tryEmit(AttachmentProblem.SHARE_ACTIVE); return }
         if (editing.value != null) {
             editing.value = null
             draft.value = ""
@@ -235,6 +270,7 @@ class ChatViewModel @Inject constructor(
 
     /** A sticker from the picker, sent at once (iOS `sendSticker`); the composer is left as it is. */
     fun sendSticker(ref: com.construct.messenger.stickers.StickerReference) {
+        if (_incomingShareId.value != null) { _attachmentProblem.tryEmit(AttachmentProblem.SHARE_ACTIVE); return }
         viewModelScope.launch { report(messagesRepository.sendSticker(contactId, ref)) }
     }
 
@@ -247,6 +283,7 @@ class ChatViewModel @Inject constructor(
      * filled with what it says now.
      */
     fun startEdit(message: Message) {
+        if (_incomingShareId.value != null) { _attachmentProblem.tryEmit(AttachmentProblem.SHARE_ACTIVE); return }
         if (!message.isEditable) return
         replying.value = null
         editing.value = EditTarget(message.id, message.body)
@@ -331,6 +368,25 @@ class ChatViewModel @Inject constructor(
     }
 
     init {
+        viewModelScope.launch {
+            incomingShares.state.collect { state ->
+                val share = state.draft
+                val forHere = share != null && share.contactId == contactId && share.stage == com.construct.messenger.data.model.IncomingShareStage.READY
+                if (!forHere) {
+                    _incomingConflict.value = null
+                    if (_incomingShareId.value != null) {
+                        _incomingShareId.value = null
+                        draft.value = ""
+                        attachments.value = emptyList()
+                        files.value = emptyList()
+                    }
+                } else if (_incomingShareId.value != share!!.id) {
+                    val occupied = draft.value.isNotEmpty() || attachments.value.isNotEmpty() || files.value.isNotEmpty() ||
+                        replying.value != null || editing.value != null || recordingVideo || recorder.state.value !is VoiceRecorder.State.Idle
+                    if (occupied) _incomingConflict.value = share.id else acceptIncomingShare()
+                }
+            }
+        }
         // What was forwarded to this chat: taken once, sent through this chat's own path.
         viewModelScope.launch {
             forwardDrafts.pending.collect { pending ->
@@ -380,22 +436,25 @@ class ChatViewModel @Inject constructor(
     /** Photos from the picker join the ones already chosen (iOS allows 99 in one album). */
     fun attach(uris: List<Uri>) {
         if (editing.value != null || uris.isEmpty()) return
-        attachments.value = (attachments.value + uris).distinct().take(MAX_ATTACHMENTS)
+        if (_incomingShareId.value != null) return
+        attachments.value = (attachments.value + uris).distinct().take(com.construct.messenger.data.model.ComposerCapacity.ATTACHMENTS)
     }
 
     fun removeAttachment(uri: Uri) {
         attachments.value = attachments.value - uri
         files.value = files.value.filterNot { it.uri == uri }
+        _incomingShareId.value?.let { id -> viewModelScope.launch { incomingShares.remove(id, uri) } }
     }
 
     fun attachFiles(uris: List<Uri>) {
         if (editing.value != null || uris.isEmpty()) return
+        if (_incomingShareId.value != null) return
         val known = files.value.map { it.uri }.toSet()
         val added = uris.filterNot { it in known }.map { uri ->
             val (name, size) = runCatching { messagesRepository.describe(uri) }.getOrDefault("file" to -1L)
             PickedFile(uri, name, size)
         }
-        files.value = (files.value + added).take(MAX_ATTACHMENTS)
+        files.value = (files.value + added).take(com.construct.messenger.data.model.ComposerCapacity.ATTACHMENTS)
     }
 
     private val _galleryResult = kotlinx.coroutines.flow.MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
@@ -593,6 +652,28 @@ class ChatViewModel @Inject constructor(
         val photos = attachments.value
         val picked = files.value
         if (text.isEmpty() && photos.isEmpty() && picked.isEmpty()) return
+        val shareId = _incomingShareId.value
+        if (shareId != null) {
+            if (_submittingShare.value) return
+            _submittingShare.value = true
+            val quality = videoQualities.state.value
+            viewModelScope.launch {
+                try {
+                    incomingShares.submit(shareId, contactId, typed, photos + picked.map { it.uri }) {
+                        if (photos.isEmpty() && picked.isEmpty()) {
+                            listOf(messagesRepository.send(contactId, text))
+                        } else buildList {
+                            // The request's application scope owns both groups. Do not start two
+                            // ordinary sends concurrently against a session not yet established.
+                            // No session checks/decisions or share-specific retry path here.
+                            if (photos.isNotEmpty()) add(messagesRepository.sendPhotos(contactId, photos, text, null, quality).also(::report))
+                            if (picked.isNotEmpty()) add(messagesRepository.sendFiles(contactId, picked.map { it.uri }, if (photos.isEmpty()) text else "", null).also(::report))
+                        }
+                    }
+                } finally { _submittingShare.value = false }
+            }
+            return
+        }
         val reply = replying.value
         val edit = editing.value
         draft.value = ""
@@ -638,9 +719,6 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    private companion object {
-        const val MAX_ATTACHMENTS = 99
-    }
 }
 
 /**

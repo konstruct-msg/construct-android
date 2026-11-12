@@ -32,6 +32,9 @@ class OwnOriginals @Inject constructor(@ApplicationContext private val context: 
      * [sha256]. False when the picker gave no lasting grant: the app's copy must then stay.
      */
     fun remember(mediaId: String, uri: Uri, size: Long, sha256: ByteArray): Boolean {
+        // Incoming-share snapshots are disposable sources, never durable external originals.
+        // The normal sender must keep its sealed copy before the snapshot is discarded.
+        if (uri.authority == com.construct.messenger.share.ShareSourceUris.authority(context.packageName)) return false
         val granted = runCatching {
             context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }.isSuccess

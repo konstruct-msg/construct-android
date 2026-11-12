@@ -60,6 +60,17 @@ class VideoPreparer @Inject constructor(
 
     class TooLarge : Exception("video over the store's limit after re-encoding")
 
+    // Media3 writes a temporary plaintext export. finally removes it normally; after process
+    // death the next singleton instance removes this preparer's abandoned exports before use.
+    private val exportDirectory = File(context.cacheDir, "video")
+    private val abandonedExports = exportDirectory.listFiles().orEmpty()
+        .filter { it.name.startsWith("v_") && it.extension == "mp4" }
+        .filter { !it.delete() && it.exists() }
+
+    init {
+        if (abandonedExports.isNotEmpty()) com.construct.messenger.diagnostics.Log.w("VideoPreparer", "abandoned exports could not be removed; video preparation will wait for cleanup")
+    }
+
     fun isVideo(uri: Uri): Boolean = context.contentResolver.getType(uri)?.startsWith("video/") == true
 
     suspend fun prepare(uri: Uri, quality: VideoQuality = VideoQuality.DEFAULT): Prepared {
@@ -132,8 +143,10 @@ class VideoPreparer @Inject constructor(
     }
 
     private suspend fun encode(items: List<EditedMediaItem>, outW: Int, outH: Int, passthrough: Boolean = false): Prepared {
-        val dir = File(context.cacheDir, "video").apply { mkdirs() }
-        val out = File(dir, "v_${UUID.randomUUID()}.mp4")
+        // A cache failure must be a preparation error, not an eager DI/startup crash.
+        check(abandonedExports.none { it.exists() })
+        check(exportDirectory.isDirectory || exportDirectory.mkdirs())
+        val out = File(exportDirectory, "v_${UUID.randomUUID()}.mp4")
         try {
             transcode(items, out, outW, outH, passthrough)
             if (out.length() > PickedFiles.MAX_BYTES) throw TooLarge()
