@@ -8,6 +8,10 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
 import org.json.JSONObject
+import uniffi.construct_core.FanoutRetryState
+import uniffi.construct_core.OwedCopy
+import uniffi.construct_core.fanoutRetryBaseBackoffMs
+import uniffi.construct_core.fanoutRetryMaxAttempts
 
 /**
  * Devices of a recipient still owed their copy of a message this device already calls sent
@@ -32,16 +36,15 @@ data class FanoutRetryEntry(
 }
 
 /**
- * Where owed copies wait, and the rules they wait by. **Canon:** iOS `FanoutRetryQueue`.
+ * Where owed copies wait. The rules they wait by are the core's ([FanoutRetryState], construct-rules
+ * `fanout_retry`), one for every client (todo 300): five attempts — the original send counts as
+ * the first — 30 s doubling to an hour, a day's life from the first enqueue, merge on a second
+ * enqueue, narrow to what a retry lost.
  *
- * Identifiers only, never a payload: the retry rebuilds the copy from the message's row, as a
- * resend after a DECRYPTION_ERROR does. Those ids still say who one writes to, so they live in the
- * core's encrypted store (its `kv`, through [SessionBlobStore] under [STORAGE_KEY]) — not in plain
- * SharedPreferences.
- *
- * The original send counts as the first of [MAX_ATTEMPTS]; the waits after it are 30 s, doubling
- * to at most an hour. An entry lives a day from when it was first queued — failing again does not
- * extend it — and an expired one is dropped when the queue is read.
+ * Identifiers only, never a payload: the retry rebuilds the copy from the message's row. Those ids
+ * still say who one writes to, so they live in the core's encrypted store (its `kv`, through
+ * [SessionBlobStore]) as the core's CFE under [STORAGE_KEY]. Until 2026-11-12 they were JSON under
+ * [LEGACY_KEY]; that is read once into the core's state, until [LEGACY_UNTIL_MS].
  */
 @Singleton
 class FanoutRetryQueue internal constructor(
@@ -55,103 +58,87 @@ class FanoutRetryQueue internal constructor(
 
     /**
      * [owed] devices of [recipientUserId] still need their copy of [baseMessageId]. A second
-     * enqueue of the same message adds devices and keeps the entry's age and attempts.
+     * enqueue of the same message adds devices and keeps the entry's age and attempts. Never empty
+     * here: on Android a send that reached none of the devices is FAILED.
      */
     suspend fun enqueue(baseMessageId: String, recipientUserId: String, senderUserId: String, owed: List<String>) {
-        if (baseMessageId.isEmpty() || recipientUserId.isEmpty() || owed.isEmpty()) return
-        lock.withLock {
-            val all = load().toMutableList()
-            val key = "$baseMessageId|$recipientUserId"
-            val at = all.indexOfFirst { it.key == key }
-            if (at >= 0) {
-                all[at] = all[at].copy(owedDeviceIds = (all[at].owedDeviceIds + owed).distinct().sorted())
-            } else {
-                val t = now()
-                all += FanoutRetryEntry(baseMessageId, recipientUserId, senderUserId, owed.distinct().sorted(), 0, t + BASE_BACKOFF_MS, t)
-            }
-            save(all)
-        }
+        if (owed.isEmpty()) return
+        changing { it.enqueue(baseMessageId, recipientUserId, senderUserId, owed, now()) }
     }
 
     /**
      * One attempt spent, before it is made: a pass cut short mid-send must not leave the count
      * untouched. The entry afterwards, or null once it is exhausted and removed.
      */
-    suspend fun recordAttempt(key: String): FanoutRetryEntry? = lock.withLock {
-        val all = load().toMutableList()
-        val at = all.indexOfFirst { it.key == key }
-        if (at < 0) return null
-        val attempts = all[at].attempts + 1
-        if (attempts >= MAX_ATTEMPTS) {
-            all.removeAt(at)
-            save(all)
-            return null
-        }
-        val backoff = minOf(BASE_BACKOFF_MS shl attempts, MAX_BACKOFF_MS)
-        val entry = all[at].copy(attempts = attempts, nextAttemptAtMs = now() + backoff)
-        all[at] = entry
-        save(all)
-        entry
-    }
+    suspend fun recordAttempt(key: String): FanoutRetryEntry? = changing { it.recordAttempt(key, now()) }?.let(::entry)
 
     /** Narrow [key] to exactly the devices a retry just lost — not a union, or a device that took its copy gets a second. */
-    suspend fun replaceOwed(key: String, owed: List<String>) {
-        if (owed.isEmpty()) return remove(key)
-        lock.withLock {
-            val all = load().toMutableList()
-            val at = all.indexOfFirst { it.key == key }
-            if (at < 0) return
-            all[at] = all[at].copy(owedDeviceIds = owed.distinct().sorted())
-            save(all)
-        }
-    }
+    suspend fun replaceOwed(key: String, owed: List<String>) = changing { it.replaceOwed(key, owed) }
 
-    suspend fun remove(key: String) {
-        lock.withLock {
-            val all = load()
-            if (all.any { it.key == key }) save(all.filterNot { it.key == key })
-        }
-    }
+    suspend fun remove(key: String) = changing { it.remove(key) }
 
     /** Entries whose wait is over, oldest first. Expired ones are dropped on the way. */
-    suspend fun due(): List<FanoutRetryEntry> = lock.withLock {
-        val t = now()
-        val all = load()
-        val live = all.filter { t - it.createdAtMs < ENTRY_TTL_MS }
-        if (live.size != all.size) save(live)
-        live.filter { it.nextAttemptAtMs <= t }.sortedBy { it.createdAtMs }
-    }
+    suspend fun due(): List<FanoutRetryEntry> = changing { it.due(now()) }.map(::entry)
 
     /** When the next live entry comes due; null when nothing is owed. */
-    suspend fun nextDue(): Long? = lock.withLock {
-        val t = now()
-        load().filter { t - it.createdAtMs < ENTRY_TTL_MS }.minOfOrNull { it.nextAttemptAtMs }
+    suspend fun nextDue(): Long? = lock.withLock { load().nextDue(now()) }
+
+    suspend fun all(): List<FanoutRetryEntry> = lock.withLock { load().all() }.map(::entry)
+
+    private suspend fun <T> changing(body: (FanoutRetryState) -> T): T = lock.withLock {
+        val state = load()
+        body(state).also { save(state) }
     }
 
-    suspend fun all(): List<FanoutRetryEntry> = lock.withLock { load() }
-
-    private suspend fun load(): List<FanoutRetryEntry> {
-        val bytes = runCatching { store.get(STORAGE_KEY) }.getOrNull() ?: return emptyList()
-        return runCatching { decode(bytes) }
-            .onFailure { Log.w(TAG, "owed copies do not parse — dropped", it) }
+    private suspend fun load(): FanoutRetryState {
+        val kept = runCatching { store.get(STORAGE_KEY) }.getOrNull()
+        if (kept != null) return FanoutRetryState.fromBytes(kept)
+        val v1 = runCatching { store.get(LEGACY_KEY) }.getOrNull() ?: return FanoutRetryState()
+        // JSON by rule 6's exception: an earlier build's format, read once.
+        val entries = runCatching { decode(v1) }
+            .onFailure { Log.w(TAG, "owed copies of v1 do not parse — dropped", it) }
             .getOrDefault(emptyList())
+        val state = FanoutRetryState.restore(entries.map { it.core })
+        save(state)
+        runCatching { store.remove(LEGACY_KEY) }
+        return state
     }
 
-    private suspend fun save(entries: List<FanoutRetryEntry>) {
+    private suspend fun save(state: FanoutRetryState) {
         runCatching {
-            if (entries.isEmpty()) store.remove(STORAGE_KEY) else store.put(STORAGE_KEY, encode(entries))
+            if (state.all().isEmpty()) store.remove(STORAGE_KEY) else store.put(STORAGE_KEY, state.toBytes())
         }.onFailure { Log.e(TAG, "owed copies not saved — they will not survive a restart", it) }
     }
 
     internal companion object {
         const val TAG = "FanoutRetry"
-        const val STORAGE_KEY = "fanout:retry-queue.v1"
-        const val MAX_ATTEMPTS = 5
-        const val BASE_BACKOFF_MS = 30_000L
-        const val MAX_BACKOFF_MS = 3_600_000L
+        const val STORAGE_KEY = "fanout:retry-queue.v2"
+        const val LEGACY_KEY = "fanout:retry-queue.v1"
+
+        /** 2027-01-31: after it v1 JSON is no longer read (rule 11); a test fails then. */
+        const val LEGACY_UNTIL_MS = 1_801_353_600_000L
+
+        val MAX_ATTEMPTS: Int = fanoutRetryMaxAttempts().toInt()
+        val BASE_BACKOFF_MS: Long = fanoutRetryBaseBackoffMs()
+
+        /** The core's day of life (`fanout_retry::ENTRY_TTL_MS`), for the drain's tests; they fail if it drifts. */
         const val ENTRY_TTL_MS = 24L * 60 * 60 * 1000
 
-        fun encode(entries: List<FanoutRetryEntry>): ByteArray = JSONArray().apply {
+        fun entry(copy: OwedCopy) = FanoutRetryEntry(
+            baseMessageId = copy.baseMessageId,
+            recipientUserId = copy.recipientUserId,
+            senderUserId = copy.senderUserId,
+            owedDeviceIds = copy.owedDeviceIds,
+            attempts = copy.attempts.toInt(),
+            nextAttemptAtMs = copy.nextAttemptAtMs,
+            createdAtMs = copy.createdAtMs,
+        )
+
+        private val FanoutRetryEntry.core: OwedCopy
+            get() = OwedCopy(key, baseMessageId, recipientUserId, senderUserId, owedDeviceIds, attempts.toUInt(), nextAttemptAtMs, createdAtMs)
+
+        /** v1, as an earlier build wrote it. */
+        fun encodeV1(entries: List<FanoutRetryEntry>): ByteArray = JSONArray().apply {
             entries.forEach { e ->
                 put(
                     JSONObject()

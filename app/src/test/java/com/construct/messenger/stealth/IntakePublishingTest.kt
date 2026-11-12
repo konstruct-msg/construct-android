@@ -131,10 +131,12 @@ class IntakePublishingTest {
     @Test
     fun `a stale publish re-mints once above the generation it names, nothing else does`() {
         val stale = IntakeCredentials.PublishOutcome.Stale(12u)
-        assertEquals(12u, IntakeCredentials.Rotation.reMintAbove(stale, alreadyReMinted = false))
-        assertNull(IntakeCredentials.Rotation.reMintAbove(stale, alreadyReMinted = true))
-        assertNull(IntakeCredentials.Rotation.reMintAbove(IntakeCredentials.PublishOutcome.Failed, alreadyReMinted = false))
-        assertNull(IntakeCredentials.Rotation.reMintAbove(IntakeCredentials.PublishOutcome.Stored, alreadyReMinted = false))
+        assertEquals(12u, IntakeCredentials.Rotation.reMintAbove(stale, minted = 10u, alreadyReMinted = false))
+        assertNull(IntakeCredentials.Rotation.reMintAbove(stale, minted = 10u, alreadyReMinted = true))
+        // Only above what was minted (iOS's condition, both kept since 2026-11-12).
+        assertNull(IntakeCredentials.Rotation.reMintAbove(stale, minted = 12u, alreadyReMinted = false))
+        assertNull(IntakeCredentials.Rotation.reMintAbove(IntakeCredentials.PublishOutcome.Failed, minted = 10u, alreadyReMinted = false))
+        assertNull(IntakeCredentials.Rotation.reMintAbove(IntakeCredentials.PublishOutcome.Stored, minted = 10u, alreadyReMinted = false))
     }
 
     /** Mutation: keep the dropped contact, or our own account — the key goes to the one it was taken from, or to note-to-self. */
