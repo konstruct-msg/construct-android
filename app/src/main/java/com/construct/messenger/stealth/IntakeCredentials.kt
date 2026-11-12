@@ -9,7 +9,6 @@ import com.construct.messenger.invite.ContactCardPayload
 import com.google.protobuf.ByteString
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.grpc.Status
-import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
@@ -22,10 +21,24 @@ import shared.proto.services.v1.MessagingServiceOuterClass.IntakeVerdict
 import shared.proto.services.v1.MessagingServiceOuterClass.PublishIntakeTagsRequest
 import uniffi.construct_core.IntakeKeyState
 import uniffi.construct_core.IntakeOffer
+import uniffi.construct_core.IntakeOwnKeyNext
+import uniffi.construct_core.IntakePublished
+import uniffi.construct_core.intakeCardSchedule
 import uniffi.construct_core.intakeEpoch
+import uniffi.construct_core.intakeKeyId
+import uniffi.construct_core.intakeKeyRecordDecode
+import uniffi.construct_core.intakeKeyRecordEncode
 import uniffi.construct_core.intakeMint
+import uniffi.construct_core.intakeMintAbove
 import uniffi.construct_core.intakeOffer
+import uniffi.construct_core.intakeOwnKey
+import uniffi.construct_core.intakeReMintAbove
+import uniffi.construct_core.intakeRefusedAsStale
+import uniffi.construct_core.intakeServerHolds
+import uniffi.construct_core.intakeShouldPublish
 import uniffi.construct_core.intakeTag
+import uniffi.construct_core.intakeVerdictSuspendsKey
+import uniffi.construct_core.intakeWindow
 import uniffi.construct_core.ppSealTokenBytes
 
 /**
@@ -187,12 +200,14 @@ class IntakeCredentials @Inject constructor(
         }
 
         /** Each case is named by state — never by a key being late. */
-        fun next(held: IntakeKeyState?, serverGeneration: UInt, serverHasLiveTags: Boolean): Next {
-            if (held != null && held.generation > 0u) return Next.Use(held)
-            val accountIsLive = serverGeneration > 0u && serverHasLiveTags
-            if (held != null && serverGeneration == 0u) return Next.Promote(IntakeKeyState(1u, held.key))
-            return if (accountIsLive) Next.Wait else Next.Mint(serverGeneration)
-        }
+        fun next(held: IntakeKeyState?, serverGeneration: UInt, serverHasLiveTags: Boolean): Next =
+            // The core's decision (construct-rules `intake::own_key`); this attaches the held key.
+            when (val next = intakeOwnKey(held?.generation, serverGeneration, serverHasLiveTags)) {
+                IntakeOwnKeyNext.Use -> held?.let { Next.Use(it) } ?: Next.Mint(serverGeneration)
+                IntakeOwnKeyNext.Promote -> held?.let { Next.Promote(IntakeKeyState(1u, it.key)) } ?: Next.Mint(serverGeneration)
+                is IntakeOwnKeyNext.Mint -> Next.Mint(next.above)
+                IntakeOwnKeyNext.Wait -> Next.Wait
+            }
     }
 
     /**
@@ -201,19 +216,9 @@ class IntakeCredentials @Inject constructor(
      * migrates. Anything else is damaged. **Canon:** iOS `IntakeKeyRecord`.
      */
     internal object KeyRecord {
-        fun encode(state: IntakeKeyState): ByteArray {
-            val g = state.generation.toInt()
-            return byteArrayOf((g ushr 24).toByte(), (g ushr 16).toByte(), (g ushr 8).toByte(), g.toByte()) + state.key
-        }
+        fun encode(state: IntakeKeyState): ByteArray = intakeKeyRecordEncode(state)
 
-        fun decode(stored: ByteArray): IntakeKeyState? = when (stored.size) {
-            KEY_LENGTH -> IntakeKeyState(0u, stored)
-            KEY_LENGTH + 4 -> IntakeKeyState(
-                stored.take(4).fold(0u) { acc, b -> (acc shl 8) or (b.toUInt() and 0xFFu) },
-                stored.copyOfRange(4, stored.size),
-            )
-            else -> null
-        }
+        fun decode(stored: ByteArray): IntakeKeyState? = intakeKeyRecordDecode(stored)
     }
 
     /**
@@ -272,7 +277,7 @@ class IntakeCredentials @Inject constructor(
                 ?: return@withLock null
             val outcome = publish(fresh, Published(accountId, epoch, Published.keyId(fresh.key)))
             if (outcome is PublishOutcome.Stored) return@withLock fresh
-            above = Rotation.reMintAbove(outcome, alreadyReMinted = pass > 0) ?: return@withLock null
+            above = Rotation.reMintAbove(outcome, fresh.generation, alreadyReMinted = pass > 0) ?: return@withLock null
         }
         null
     }
@@ -280,15 +285,15 @@ class IntakeCredentials @Inject constructor(
     /** Pure decisions about a rotation, apart so a test can argue with them. */
     internal object Rotation {
         /** Above every generation this account is known to have used: ours, and the server's. */
-        fun above(held: UInt?, server: UInt): UInt = maxOf(held ?: 0u, server)
+        fun above(held: UInt?, server: UInt?): UInt = intakeMintAbove(held, server)
 
         /**
          * A sibling rotated meanwhile and the server holds its key: once more, above the
          * generation it named. Once — that generation is the address, not a retry budget. Any
          * other outcome ends it: a failed publish is retried by the next ordinary one.
          */
-        fun reMintAbove(outcome: PublishOutcome, alreadyReMinted: Boolean): UInt? =
-            (outcome as? PublishOutcome.Stale)?.current?.takeIf { !alreadyReMinted }
+        fun reMintAbove(outcome: PublishOutcome, minted: UInt, alreadyReMinted: Boolean): UInt? =
+            (outcome as? PublishOutcome.Stale)?.current?.let { intakeReMintAbove(minted, it, alreadyReMinted) }
 
         /** An hour, in which the cards to the remaining contacts are spread. */
         const val SPREAD_MS = 3_600_000L
@@ -305,9 +310,10 @@ class IntakeCredentials @Inject constructor(
             ownAccount: String?,
             random: Random,
         ): List<Pair<String, Long>> =
-            contacts.filterNot { it.equals(dropped, ignoreCase = true) || it.equals(ownAccount, ignoreCase = true) }
-                .distinctBy { it.lowercase() }
-                .map { it to random.nextLong(SPREAD_MS) }
+            // The core's schedule; `observeContacts` already leaves the blocked out. Each delay is drawn
+            // from 32 bytes of [random].
+            intakeCardSchedule(contacts.toList(), dropped, emptyList(), ownAccount.orEmpty(), random.nextBytes(32))
+                .map { it.contact to it.delayMs.toLong() }
     }
 
     /** What the server did with a publish. */
@@ -368,6 +374,8 @@ class IntakeCredentials @Inject constructor(
     internal data class Published(val accountId: String, val epoch: ULong, val keyId: String) {
         fun encoded(): String = "${accountId.lowercase()}|$epoch|$keyId"
 
+        val core: IntakePublished get() = IntakePublished(accountId, epoch, keyId)
+
         companion object {
             fun decode(stored: String?): Published? {
                 val parts = stored?.split('|')?.takeIf { it.size == 3 } ?: return null
@@ -376,25 +384,22 @@ class IntakeCredentials @Inject constructor(
             }
 
             /** Names the key without storing it twice. */
-            fun keyId(key: ByteArray): String =
-                MessageDigest.getInstance("SHA-256").digest(key).take(8).joinToString("") { "%02x".format(it) }
+            fun keyId(key: ByteArray): String = intakeKeyId(key)
         }
     }
 
     /** Pure decisions about publishing, apart so a test can argue with them. Canon: iOS `IntakePublishing`. */
     internal object Publishing {
         /** Seven days ahead: a device offline for a week must not break its own incoming traffic. */
-        const val WINDOW_EPOCHS = 7
+        val WINDOW_EPOCHS: Int = intakeWindow(0uL).size
 
-        fun window(current: ULong): List<ULong> = (0 until WINDOW_EPOCHS).map { current + it.toULong() }
+        fun window(current: ULong): List<ULong> = intakeWindow(current)
 
         /**
          * Once per epoch per account and key: a new key, or another account, publishes at once. A
          * clock that went backwards is not a reason to skip.
          */
-        fun shouldPublish(last: Published?, due: Published): Boolean =
-            last == null || last.epoch != due.epoch || last.keyId != due.keyId ||
-                !last.accountId.equals(due.accountId, ignoreCase = true)
+        fun shouldPublish(last: Published?, due: Published): Boolean = intakeShouldPublish(last?.core, due.core)
 
         /**
          * The last publish the server took was this key's, for this account, and its window still
@@ -403,11 +408,10 @@ class IntakeCredentials @Inject constructor(
          * set back) is not trusted. **Canon:** iOS `IntakePublishing.serverHolds`.
          */
         fun serverHolds(last: Published?, accountId: String, keyId: String, currentEpoch: ULong): Boolean =
-            last != null && last.keyId == keyId && last.accountId.equals(accountId, ignoreCase = true) &&
-                currentEpoch >= last.epoch && (currentEpoch - last.epoch).toLong() < WINDOW_EPOCHS
+            intakeServerHolds(last?.core, accountId, keyId, currentEpoch)
 
         /** The account's generation above ours: nothing was stored. An old server answers 0. */
-        fun refusedAsStale(currentGeneration: UInt, ours: UInt): Boolean = currentGeneration > ours
+        fun refusedAsStale(currentGeneration: UInt, ours: UInt): Boolean = intakeRefusedAsStale(currentGeneration, ours)
     }
 
     /**
@@ -475,7 +479,7 @@ class IntakeCredentials @Inject constructor(
          * "Unchecked" is the server's fault (its store, its key, or a tag sealed to a key it no
          * longer has), not the key's; "none", "accepted" and an old server say nothing against it.
          */
-        fun suspendsKey(verdict: IntakeVerdict): Boolean = verdict == IntakeVerdict.INTAKE_VERDICT_NOT_ACCEPTED
+        fun suspendsKey(verdict: IntakeVerdict): Boolean = intakeVerdictSuspendsKey(verdict.number)
     }
 
     /**

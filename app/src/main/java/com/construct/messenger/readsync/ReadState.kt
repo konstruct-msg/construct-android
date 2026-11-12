@@ -8,6 +8,8 @@ import com.construct.messenger.util.ConversationId
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.first
+import uniffi.construct_core.ReadIncoming
+import uniffi.construct_core.readUnreadLeft
 
 /** What the receive path asks about "read" (TODO 153). [NONE] where nothing is synced. */
 interface ReadState {
@@ -32,7 +34,7 @@ interface ReadState {
 /**
  * The receive side of read sync. A marker from another device of this account moves the chat's
  * boundary if it is later and lowers the unread count to what is past it; one from anyone else
- * changes nothing and is logged. **Canon:** iOS `MessageRouter.applyReadMarkers`.
+ * changes nothing and is logged. Applying is the core's (`ReadMarkerState.applyMarker`).
  */
 @Singleton
 class ReadSyncState @Inject constructor(
@@ -59,9 +61,7 @@ class ReadSyncState @Inject constructor(
             return
         }
         for ((partner, boundary) in markers) {
-            if (partner == myId.lowercase()) continue
-            if (ReadSync.outcome(boundary, boundaries.boundary(partner), fromOwnAccount = true) != ReadSync.Outcome.APPLY) continue
-            if (!boundaries.advance(partner, boundary)) continue
+            if (boundaries.apply(partner, boundary, fromOwnAccount = true, ownAccount = myId) != ReadSync.Outcome.APPLY) continue
             val chatId = ConversationId.direct(myId, partner)
             val chat = chats.get(chatId) ?: continue
             val left = unreadLeft(chat.unreadCount, messages.observeChat(chatId).first(), boundary)
@@ -74,24 +74,20 @@ class ReadSyncState @Inject constructor(
         const val TAG = "ReadSync"
 
         /**
-         * Of the [unread] newest incoming [rows], how many are past [boundary]. Only ever lower.
+         * Of the [unread] newest incoming [rows], how many are past [boundary]. Only ever lower. The
+         * core's count (construct-rules `read_sync::unread_left`), the same on every client.
          *
          * By position when the boundary's message is here: what comes after it in the chat's order
          * is unread. When it is not (not arrived yet), by time — and this device keeps the time it
          * received a message, never earlier than its envelope's, so the count errs toward unread
          * rather than hiding one.
          */
-        fun unreadLeft(unread: Int, rows: List<MessageRecord>, boundary: ReadSync.Boundary): Int {
-            if (unread <= 0) return 0
-            val incoming = rows.filter { !it.isSentByMe } // oldest first, as the store gives them
-            val counted = incoming.takeLast(unread)
-            val at = incoming.indexOfFirst { it.id.equals(boundary.messageId, ignoreCase = true) }
-            val past = if (at >= 0) {
-                counted.count { incoming.indexOf(it) > at }
-            } else {
-                counted.count { it.timestampMs > boundary.sentAtMs }
-            }
-            return minOf(unread, past)
-        }
+        fun unreadLeft(unread: Int, rows: List<MessageRecord>, boundary: ReadSync.Boundary): Int =
+            readUnreadLeft(
+                unread.coerceAtLeast(0).toUInt(),
+                // Oldest first, as the store gives them.
+                rows.filter { !it.isSentByMe }.map { ReadIncoming(it.id, it.timestampMs.coerceAtLeast(0).toULong()) },
+                boundary.core,
+            ).toInt()
     }
 }

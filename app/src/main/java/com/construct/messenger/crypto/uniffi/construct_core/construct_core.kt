@@ -726,6 +726,10 @@ external fun uniffi_construct_core_checksum_func_derive_recovery_keypair(
 ): Short
 external fun uniffi_construct_core_checksum_func_device_refusal_of(
 ): Short
+external fun uniffi_construct_core_checksum_func_fanout_retry_base_backoff_ms(
+): Short
+external fun uniffi_construct_core_checksum_func_fanout_retry_max_attempts(
+): Short
 external fun uniffi_construct_core_checksum_func_format_federated_id(
 ): Short
 external fun uniffi_construct_core_checksum_func_generate_ephemeral_keypair(
@@ -780,13 +784,43 @@ external fun uniffi_construct_core_checksum_func_hybrid_signature_keygen(
 ): Short
 external fun uniffi_construct_core_checksum_func_hybrid_verify(
 ): Short
+external fun uniffi_construct_core_checksum_func_intake_card_schedule(
+): Short
 external fun uniffi_construct_core_checksum_func_intake_epoch(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_key_id(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_key_record_decode(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_key_record_encode(
 ): Short
 external fun uniffi_construct_core_checksum_func_intake_mint(
 ): Short
+external fun uniffi_construct_core_checksum_func_intake_mint_above(
+): Short
 external fun uniffi_construct_core_checksum_func_intake_offer(
 ): Short
+external fun uniffi_construct_core_checksum_func_intake_own_key(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_published_from_bytes(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_published_to_bytes(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_re_mint_above(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_recheck_ms(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_refused_as_stale(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_server_holds(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_should_publish(
+): Short
 external fun uniffi_construct_core_checksum_func_intake_tag(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_verdict_suspends_key(
+): Short
+external fun uniffi_construct_core_checksum_func_intake_window(
 ): Short
 external fun uniffi_construct_core_checksum_func_is_generated_name(
 ): Short
@@ -827,6 +861,12 @@ external fun uniffi_construct_core_checksum_func_pp_seal_token_bytes(
 external fun uniffi_construct_core_checksum_func_pp_verify_client(
 ): Short
 external fun uniffi_construct_core_checksum_func_pp_verify_dleq(
+): Short
+external fun uniffi_construct_core_checksum_func_read_boundary_covers(
+): Short
+external fun uniffi_construct_core_checksum_func_read_boundary_is_later(
+): Short
+external fun uniffi_construct_core_checksum_func_read_unread_left(
 ): Short
 external fun uniffi_construct_core_checksum_func_receiving_init_kind(
 ): Short
@@ -909,6 +949,24 @@ external fun uniffi_construct_core_checksum_method_classiccryptocore_rotate_sign
 external fun uniffi_construct_core_checksum_method_classiccryptocore_set_local_user_id(
 ): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_sign_bundle_data(
+): Short
+external fun uniffi_construct_core_checksum_method_fanoutretrystate_all(
+): Short
+external fun uniffi_construct_core_checksum_method_fanoutretrystate_due(
+): Short
+external fun uniffi_construct_core_checksum_method_fanoutretrystate_enqueue(
+): Short
+external fun uniffi_construct_core_checksum_method_fanoutretrystate_next_due(
+): Short
+external fun uniffi_construct_core_checksum_method_fanoutretrystate_record_attempt(
+): Short
+external fun uniffi_construct_core_checksum_method_fanoutretrystate_remove(
+): Short
+external fun uniffi_construct_core_checksum_method_fanoutretrystate_remove_all(
+): Short
+external fun uniffi_construct_core_checksum_method_fanoutretrystate_replace_owed(
+): Short
+external fun uniffi_construct_core_checksum_method_fanoutretrystate_to_bytes(
 ): Short
 external fun uniffi_construct_core_checksum_method_historyreceiver_accept(
 ): Short
@@ -1318,6 +1376,28 @@ external fun uniffi_construct_core_checksum_method_orchestratorcore_sign_with_de
 ): Short
 external fun uniffi_construct_core_checksum_method_orchestratorcore_verify_kt_proofs(
 ): Short
+external fun uniffi_construct_core_checksum_method_readmarkerstate_advance(
+): Short
+external fun uniffi_construct_core_checksum_method_readmarkerstate_apply_marker(
+): Short
+external fun uniffi_construct_core_checksum_method_readmarkerstate_boundary(
+): Short
+external fun uniffi_construct_core_checksum_method_readmarkerstate_covers(
+): Short
+external fun uniffi_construct_core_checksum_method_readmarkerstate_has_pending(
+): Short
+external fun uniffi_construct_core_checksum_method_readmarkerstate_newest_incoming(
+): Short
+external fun uniffi_construct_core_checksum_method_readmarkerstate_note_incoming(
+): Short
+external fun uniffi_construct_core_checksum_method_readmarkerstate_note_read(
+): Short
+external fun uniffi_construct_core_checksum_method_readmarkerstate_return_pending(
+): Short
+external fun uniffi_construct_core_checksum_method_readmarkerstate_take_pending(
+): Short
+external fun uniffi_construct_core_checksum_method_readmarkerstate_to_bytes(
+): Short
 external fun uniffi_construct_core_checksum_method_rustackstore_cache_len(
 ): Short
 external fun uniffi_construct_core_checksum_method_rustackstore_is_processed(
@@ -1342,6 +1422,12 @@ external fun uniffi_construct_core_checksum_method_streamcursorstate_track(
 ): Short
 external fun uniffi_construct_core_checksum_method_streamcursorstate_track_resolved(
 ): Short
+external fun uniffi_construct_core_checksum_constructor_fanoutretrystate_from_bytes(
+): Short
+external fun uniffi_construct_core_checksum_constructor_fanoutretrystate_new(
+): Short
+external fun uniffi_construct_core_checksum_constructor_fanoutretrystate_restore(
+): Short
 external fun uniffi_construct_core_checksum_constructor_localstore_in_memory(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_localstore_new(
@@ -1351,6 +1437,10 @@ external fun uniffi_construct_core_checksum_constructor_mailboxgapstate_from_byt
 external fun uniffi_construct_core_checksum_constructor_mailboxgapstate_new(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_notificationpeek_new(
+): Short
+external fun uniffi_construct_core_checksum_constructor_readmarkerstate_from_bytes(
+): Short
+external fun uniffi_construct_core_checksum_constructor_readmarkerstate_new(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_rustackstore_new(
 ): Short
@@ -1422,6 +1512,34 @@ external fun uniffi_construct_core_fn_method_classiccryptocore_rotate_signed_pre
 external fun uniffi_construct_core_fn_method_classiccryptocore_set_local_user_id(`ptr`: Long,`userId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_classiccryptocore_sign_bundle_data(`ptr`: Long,`bundleDataJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_clone_fanoutretrystate(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_free_fanoutretrystate(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_constructor_fanoutretrystate_from_bytes(`kept`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_constructor_fanoutretrystate_new(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_constructor_fanoutretrystate_restore(`entries`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_method_fanoutretrystate_all(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_fanoutretrystate_due(`ptr`: Long,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_fanoutretrystate_enqueue(`ptr`: Long,`baseMessageId`: RustBuffer.ByValue,`recipientUserId`: RustBuffer.ByValue,`senderUserId`: RustBuffer.ByValue,`owed`: RustBuffer.ByValue,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_fanoutretrystate_next_due(`ptr`: Long,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_fanoutretrystate_record_attempt(`ptr`: Long,`key`: RustBuffer.ByValue,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_fanoutretrystate_remove(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_fanoutretrystate_remove_all(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_fanoutretrystate_replace_owed(`ptr`: Long,`key`: RustBuffer.ByValue,`owed`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_fanoutretrystate_to_bytes(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_clone_historyreceiver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
@@ -1869,6 +1987,36 @@ external fun uniffi_construct_core_fn_method_orchestratorcore_sign_with_device_k
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_orchestratorcore_verify_kt_proofs(`ptr`: Long,`deviceId`: RustBuffer.ByValue,`identityKey`: RustBuffer.ByValue,`identityProof`: RustBuffer.ByValue,`hybridIdentityKey`: RustBuffer.ByValue,`hybridProof`: RustBuffer.ByValue,`treeHead`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_clone_readmarkerstate(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_free_readmarkerstate(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_constructor_readmarkerstate_from_bytes(`kept`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_constructor_readmarkerstate_new(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_method_readmarkerstate_advance(`ptr`: Long,`partner`: RustBuffer.ByValue,`to`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_readmarkerstate_apply_marker(`ptr`: Long,`partner`: RustBuffer.ByValue,`marker`: RustBuffer.ByValue,`fromOwnAccount`: Byte,`ownAccount`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_readmarkerstate_boundary(`ptr`: Long,`partner`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_readmarkerstate_covers(`ptr`: Long,`partner`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_readmarkerstate_has_pending(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_readmarkerstate_newest_incoming(`ptr`: Long,`partner`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_readmarkerstate_note_incoming(`ptr`: Long,`partner`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_readmarkerstate_note_read(`ptr`: Long,`partner`: RustBuffer.ByValue,`boundary`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_readmarkerstate_return_pending(`ptr`: Long,`unsent`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_readmarkerstate_take_pending(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_readmarkerstate_to_bytes(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_clone_rustackstore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_free_rustackstore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1931,6 +2079,10 @@ external fun uniffi_construct_core_fn_func_derive_recovery_keypair(`seed`: RustB
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_device_refusal_of(`statusCode`: Int,`trailer`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_fanout_retry_base_backoff_ms(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_func_fanout_retry_max_attempts(uniffi_out_err: UniffiRustCallStatus, 
+): Int
 external fun uniffi_construct_core_fn_func_format_federated_id(`deviceId`: RustBuffer.ByValue,`serverHostname`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_generate_ephemeral_keypair(uniffi_out_err: UniffiRustCallStatus, 
@@ -1985,13 +2137,43 @@ external fun uniffi_construct_core_fn_func_hybrid_signature_keygen(uniffi_out_er
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_hybrid_verify(`publicKey`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,`signature`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_func_intake_card_schedule(`contacts`: RustBuffer.ByValue,`dropped`: RustBuffer.ByValue,`blocked`: RustBuffer.ByValue,`ownAccount`: RustBuffer.ByValue,`seed`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_intake_epoch(`unixSeconds`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_construct_core_fn_func_intake_key_id(`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_intake_key_record_decode(`kept`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_intake_key_record_encode(`state`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_intake_mint(`aboveGeneration`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_intake_mint_above(`held`: RustBuffer.ByValue,`server`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Int
 external fun uniffi_construct_core_fn_func_intake_offer(`held`: RustBuffer.ByValue,`offered`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_intake_own_key(`heldGeneration`: RustBuffer.ByValue,`serverGeneration`: Int,`serverHasLiveTags`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_intake_published_from_bytes(`kept`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_intake_published_to_bytes(`published`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_intake_re_mint_above(`minted`: Int,`current`: Int,`alreadyReMinted`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_intake_recheck_ms(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_func_intake_refused_as_stale(`current`: Int,`ours`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_func_intake_server_holds(`last`: RustBuffer.ByValue,`accountId`: RustBuffer.ByValue,`keyId`: RustBuffer.ByValue,`current`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_func_intake_should_publish(`last`: RustBuffer.ByValue,`due`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_func_intake_tag(`intakeKey`: RustBuffer.ByValue,`recipientAccountId`: RustBuffer.ByValue,`epoch`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_intake_verdict_suspends_key(`verdict`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_func_intake_window(`current`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_is_generated_name(`name`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
@@ -2033,6 +2215,12 @@ external fun uniffi_construct_core_fn_func_pp_verify_client(`evaluatedBytes`: Ru
 ): Byte
 external fun uniffi_construct_core_fn_func_pp_verify_dleq(`blinded`: RustBuffer.ByValue,`evaluated`: RustBuffer.ByValue,`proof`: RustBuffer.ByValue,`issuerPublic`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_func_read_boundary_covers(`boundary`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_func_read_boundary_is_later(`a`: RustBuffer.ByValue,`b`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_func_read_unread_left(`unread`: Int,`incoming`: RustBuffer.ByValue,`boundary`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Int
 external fun uniffi_construct_core_fn_func_receiving_init_kind(`carrier`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_recommended_send_delay_ms(`isHighPriority`: Byte,`batteryLevel`: Float,uniffi_out_err: UniffiRustCallStatus, 
@@ -2228,6 +2416,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_device_refusal_of() != 19311.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_fanout_retry_base_backoff_ms() != 25894.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_fanout_retry_max_attempts() != 42892.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_format_federated_id() != 19004.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2309,16 +2503,61 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_hybrid_verify() != 15987.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_intake_card_schedule() != 25376.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_intake_epoch() != 2449.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_key_id() != 57613.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_key_record_decode() != 29867.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_key_record_encode() != 3485.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_intake_mint() != 50104.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_intake_mint_above() != 14344.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_intake_offer() != 15257.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_intake_own_key() != 44333.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_published_from_bytes() != 2871.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_published_to_bytes() != 20597.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_re_mint_above() != 38378.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_recheck_ms() != 17732.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_refused_as_stale() != 56624.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_server_holds() != 61908.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_should_publish() != 7579.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_intake_tag() != 36931.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_verdict_suspends_key() != 20975.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_intake_window() != 49655.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_is_generated_name() != 37415.toShort()) {
@@ -2379,6 +2618,15 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_pp_verify_dleq() != 53114.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_read_boundary_covers() != 17113.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_read_boundary_is_later() != 63601.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_read_unread_left() != 1806.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_receiving_init_kind() != 46602.toShort()) {
@@ -2502,6 +2750,33 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_sign_bundle_data() != 43516.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_fanoutretrystate_all() != 58673.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_fanoutretrystate_due() != 42169.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_fanoutretrystate_enqueue() != 29242.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_fanoutretrystate_next_due() != 31878.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_fanoutretrystate_record_attempt() != 15242.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_fanoutretrystate_remove() != 7559.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_fanoutretrystate_remove_all() != 9330.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_fanoutretrystate_replace_owed() != 5628.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_fanoutretrystate_to_bytes() != 21926.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_historyreceiver_accept() != 5082.toShort()) {
@@ -3116,6 +3391,39 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_orchestratorcore_verify_kt_proofs() != 62141.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_readmarkerstate_advance() != 27828.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_readmarkerstate_apply_marker() != 47959.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_readmarkerstate_boundary() != 55091.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_readmarkerstate_covers() != 42689.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_readmarkerstate_has_pending() != 33911.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_readmarkerstate_newest_incoming() != 61510.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_readmarkerstate_note_incoming() != 38149.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_readmarkerstate_note_read() != 64423.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_readmarkerstate_return_pending() != 16176.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_readmarkerstate_take_pending() != 57449.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_readmarkerstate_to_bytes() != 28818.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_rustackstore_cache_len() != 41894.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3152,6 +3460,15 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_streamcursorstate_track_resolved() != 7693.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_constructor_fanoutretrystate_from_bytes() != 2145.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_constructor_fanoutretrystate_new() != 56433.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_constructor_fanoutretrystate_restore() != 39857.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_constructor_localstore_in_memory() != 10006.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3165,6 +3482,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_constructor_notificationpeek_new() != 3700.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_constructor_readmarkerstate_from_bytes() != 41859.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_constructor_readmarkerstate_new() != 44161.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_constructor_rustackstore_new() != 64675.toShort()) {
@@ -4181,6 +4504,446 @@ public object FfiConverterTypeClassicCryptoCore: FfiConverter<ClassicCryptoCore,
     override fun allocationSize(value: ClassicCryptoCore) = 8UL
 
     override fun write(value: ClassicCryptoCore, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+//
+/**
+ * The owed copies a client keeps: five attempts, 30 s doubling to an hour, a day's life.
+ * Persist `to_bytes` after every change.
+ */
+public interface FanoutRetryStateInterface {
+    
+    fun `all`(): List<OwedCopy>
+    
+    /**
+     * Entries whose wait is over, oldest first; expired ones are dropped.
+     */
+    fun `due`(`nowMs`: kotlin.Long): List<OwedCopy>
+    
+    /**
+     * `owed` devices still need their copy; a second enqueue merges, keeping age and attempts.
+     */
+    fun `enqueue`(`baseMessageId`: kotlin.String, `recipientUserId`: kotlin.String, `senderUserId`: kotlin.String, `owed`: List<kotlin.String>, `nowMs`: kotlin.Long)
+    
+    /**
+     * When the next live entry comes due.
+     */
+    fun `nextDue`(`nowMs`: kotlin.Long): kotlin.Long?
+    
+    /**
+     * One attempt spent, before it is made: the entry after, or null once it is given up.
+     */
+    fun `recordAttempt`(`key`: kotlin.String, `nowMs`: kotlin.Long): OwedCopy?
+    
+    fun `remove`(`key`: kotlin.String)
+    
+    fun `removeAll`()
+    
+    /**
+     * Exactly the devices a retry lost; none left removes the entry.
+     */
+    fun `replaceOwed`(`key`: kotlin.String, `owed`: List<kotlin.String>)
+    
+    fun `toBytes`(): kotlin.ByteArray
+    
+    companion object
+}
+
+/**
+ * The owed copies a client keeps: five attempts, 30 s doubling to an hour, a day's life.
+ * Persist `to_bytes` after every change.
+ */
+open class FanoutRetryState: Disposable, AutoCloseable, FanoutRetryStateInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+    constructor() :
+        this(UniffiWithHandle, 
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_constructor_fanoutretrystate_new(
+    
+        _status)
+}
+    )
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_construct_core_fn_free_fanoutretrystate(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_construct_core_fn_clone_fanoutretrystate(handle, status)
+        }
+    }
+
+    override fun `all`(): List<OwedCopy> {
+            return FfiConverterSequenceTypeOwedCopy.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_fanoutretrystate_all(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Entries whose wait is over, oldest first; expired ones are dropped.
+     */override fun `due`(`nowMs`: kotlin.Long): List<OwedCopy> {
+            return FfiConverterSequenceTypeOwedCopy.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_fanoutretrystate_due(
+        it,
+        FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * `owed` devices still need their copy; a second enqueue merges, keeping age and attempts.
+     */override fun `enqueue`(`baseMessageId`: kotlin.String, `recipientUserId`: kotlin.String, `senderUserId`: kotlin.String, `owed`: List<kotlin.String>, `nowMs`: kotlin.Long)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_fanoutretrystate_enqueue(
+        it,
+        FfiConverterString.lower(`baseMessageId`),FfiConverterString.lower(`recipientUserId`),FfiConverterString.lower(`senderUserId`),FfiConverterSequenceString.lower(`owed`),FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * When the next live entry comes due.
+     */override fun `nextDue`(`nowMs`: kotlin.Long): kotlin.Long? {
+            return FfiConverterOptionalLong.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_fanoutretrystate_next_due(
+        it,
+        FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * One attempt spent, before it is made: the entry after, or null once it is given up.
+     */override fun `recordAttempt`(`key`: kotlin.String, `nowMs`: kotlin.Long): OwedCopy? {
+            return FfiConverterOptionalTypeOwedCopy.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_fanoutretrystate_record_attempt(
+        it,
+        FfiConverterString.lower(`key`),FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `remove`(`key`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_fanoutretrystate_remove(
+        it,
+        FfiConverterString.lower(`key`),_status)
+}
+    }
+    
+    
+
+    override fun `removeAll`()
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_fanoutretrystate_remove_all(
+        it,
+        _status)
+}
+    }
+    
+    
+
+    
+    /**
+     * Exactly the devices a retry lost; none left removes the entry.
+     */override fun `replaceOwed`(`key`: kotlin.String, `owed`: List<kotlin.String>)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_fanoutretrystate_replace_owed(
+        it,
+        FfiConverterString.lower(`key`),FfiConverterSequenceString.lower(`owed`),_status)
+}
+    }
+    
+    
+
+    
+    @Throws(CryptoException::class)override fun `toBytes`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_fanoutretrystate_to_bytes(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
+
+
+    
+    companion object {
+        
+    /**
+     * The queue as it was kept; bytes that are not one start it empty.
+     */ fun `fromBytes`(`kept`: kotlin.ByteArray): FanoutRetryState {
+            return FfiConverterTypeFanoutRetryState.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_constructor_fanoutretrystate_from_bytes(
+    
+        FfiConverterByteArray.lower(`kept`),_status)
+}
+    )
+    }
+    
+
+        
+    /**
+     * The entries an earlier build kept in its own format, read once.
+     */ fun `restore`(`entries`: List<OwedCopy>): FanoutRetryState {
+            return FfiConverterTypeFanoutRetryState.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_constructor_fanoutretrystate_restore(
+    
+        FfiConverterSequenceTypeOwedCopy.lower(`entries`),_status)
+}
+    )
+    }
+    
+
+        
+    }
+    
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFanoutRetryState: FfiConverter<FanoutRetryState, Long> {
+    override fun lower(value: FanoutRetryState): Long {
+        return value.uniffiCloneHandle()
+    }
+
+    override fun lift(value: Long): FanoutRetryState {
+        return FanoutRetryState(UniffiWithHandle, value)
+    }
+
+    override fun read(buf: ByteBuffer): FanoutRetryState {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: FanoutRetryState) = 8UL
+
+    override fun write(value: FanoutRetryState, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
@@ -10092,6 +10855,469 @@ public object FfiConverterTypeOrchestratorCore: FfiConverter<OrchestratorCore, L
 
 //
 /**
+ * What a client keeps of read sync, per partner (lowercased): how far the account has read, the
+ * newest incoming seen, and markers not yet sent to our other devices. Persist `to_bytes` after
+ * every change.
+ */
+public interface ReadMarkerStateInterface {
+    
+    /**
+     * Move the boundary if later; whether it moved.
+     */
+    fun `advance`(`partner`: kotlin.String, `to`: ReadBoundary): kotlin.Boolean
+    
+    /**
+     * A marker from another device: applied when from our own account and later.
+     */
+    fun `applyMarker`(`partner`: kotlin.String, `marker`: ReadBoundary, `fromOwnAccount`: kotlin.Boolean, `ownAccount`: kotlin.String): ReadMarkerOutcome
+    
+    fun `boundary`(`partner`: kotlin.String): ReadBoundary?
+    
+    /**
+     * Whether a message from `partner` is already read on one of our devices.
+     */
+    fun `covers`(`partner`: kotlin.String, `message`: ReadBoundary): kotlin.Boolean
+    
+    fun `hasPending`(): kotlin.Boolean
+    
+    fun `newestIncoming`(`partner`: kotlin.String): ReadBoundary?
+    
+    fun `noteIncoming`(`partner`: kotlin.String, `message`: ReadBoundary)
+    
+    /**
+     * Read here: the boundary moves and the marker waits to go out. Whether it moved.
+     */
+    fun `noteRead`(`partner`: kotlin.String, `boundary`: ReadBoundary): kotlin.Boolean
+    
+    /**
+     * A send that failed: back into pending unless reading moved further meanwhile.
+     */
+    fun `returnPending`(`unsent`: List<PartnerBoundary>)
+    
+    /**
+     * What to send now; pending is emptied.
+     */
+    fun `takePending`(): List<PartnerBoundary>
+    
+    fun `toBytes`(): kotlin.ByteArray
+    
+    companion object
+}
+
+/**
+ * What a client keeps of read sync, per partner (lowercased): how far the account has read, the
+ * newest incoming seen, and markers not yet sent to our other devices. Persist `to_bytes` after
+ * every change.
+ */
+open class ReadMarkerState: Disposable, AutoCloseable, ReadMarkerStateInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+    constructor() :
+        this(UniffiWithHandle, 
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_constructor_readmarkerstate_new(
+    
+        _status)
+}
+    )
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_construct_core_fn_free_readmarkerstate(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_construct_core_fn_clone_readmarkerstate(handle, status)
+        }
+    }
+
+    
+    /**
+     * Move the boundary if later; whether it moved.
+     */override fun `advance`(`partner`: kotlin.String, `to`: ReadBoundary): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_readmarkerstate_advance(
+        it,
+        FfiConverterString.lower(`partner`),FfiConverterTypeReadBoundary.lower(`to`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * A marker from another device: applied when from our own account and later.
+     */override fun `applyMarker`(`partner`: kotlin.String, `marker`: ReadBoundary, `fromOwnAccount`: kotlin.Boolean, `ownAccount`: kotlin.String): ReadMarkerOutcome {
+            return FfiConverterTypeReadMarkerOutcome.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_readmarkerstate_apply_marker(
+        it,
+        FfiConverterString.lower(`partner`),FfiConverterTypeReadBoundary.lower(`marker`),FfiConverterBoolean.lower(`fromOwnAccount`),FfiConverterString.lower(`ownAccount`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `boundary`(`partner`: kotlin.String): ReadBoundary? {
+            return FfiConverterOptionalTypeReadBoundary.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_readmarkerstate_boundary(
+        it,
+        FfiConverterString.lower(`partner`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Whether a message from `partner` is already read on one of our devices.
+     */override fun `covers`(`partner`: kotlin.String, `message`: ReadBoundary): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_readmarkerstate_covers(
+        it,
+        FfiConverterString.lower(`partner`),FfiConverterTypeReadBoundary.lower(`message`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `hasPending`(): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_readmarkerstate_has_pending(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `newestIncoming`(`partner`: kotlin.String): ReadBoundary? {
+            return FfiConverterOptionalTypeReadBoundary.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_readmarkerstate_newest_incoming(
+        it,
+        FfiConverterString.lower(`partner`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `noteIncoming`(`partner`: kotlin.String, `message`: ReadBoundary)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_readmarkerstate_note_incoming(
+        it,
+        FfiConverterString.lower(`partner`),FfiConverterTypeReadBoundary.lower(`message`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * Read here: the boundary moves and the marker waits to go out. Whether it moved.
+     */override fun `noteRead`(`partner`: kotlin.String, `boundary`: ReadBoundary): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_readmarkerstate_note_read(
+        it,
+        FfiConverterString.lower(`partner`),FfiConverterTypeReadBoundary.lower(`boundary`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * A send that failed: back into pending unless reading moved further meanwhile.
+     */override fun `returnPending`(`unsent`: List<PartnerBoundary>)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_readmarkerstate_return_pending(
+        it,
+        FfiConverterSequenceTypePartnerBoundary.lower(`unsent`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * What to send now; pending is emptied.
+     */override fun `takePending`(): List<PartnerBoundary> {
+            return FfiConverterSequenceTypePartnerBoundary.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_readmarkerstate_take_pending(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(CryptoException::class)override fun `toBytes`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_readmarkerstate_to_bytes(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
+
+
+    
+    companion object {
+         fun `fromBytes`(`kept`: kotlin.ByteArray): ReadMarkerState {
+            return FfiConverterTypeReadMarkerState.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_constructor_readmarkerstate_from_bytes(
+    
+        FfiConverterByteArray.lower(`kept`),_status)
+}
+    )
+    }
+    
+
+        
+    }
+    
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeReadMarkerState: FfiConverter<ReadMarkerState, Long> {
+    override fun lower(value: ReadMarkerState): Long {
+        return value.uniffiCloneHandle()
+    }
+
+    override fun lift(value: Long): ReadMarkerState {
+        return ReadMarkerState(UniffiWithHandle, value)
+    }
+
+    override fun read(buf: ByteBuffer): ReadMarkerState {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: ReadMarkerState) = 8UL
+
+    override fun write(value: ReadMarkerState, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+//
+/**
  * Thread-safe ACK deduplication store.
  *
  * Replaces Swift `PersistentACKStore`. The in-memory `HashSet` lives here;
@@ -11513,6 +12739,45 @@ public object FfiConverterTypeInitiationContext: FfiConverterRustBuffer<Initiati
 
 
 /**
+ * One contact's card after a rotation, `delay_ms` from now.
+ */
+data class IntakeCard (
+    var `contact`: kotlin.String
+    , 
+    var `delayMs`: kotlin.ULong
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeIntakeCard: FfiConverterRustBuffer<IntakeCard> {
+    override fun read(buf: ByteBuffer): IntakeCard {
+        return IntakeCard(
+            FfiConverterString.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: IntakeCard) = (
+            FfiConverterString.allocationSize(value.`contact`) +
+            FfiConverterULong.allocationSize(value.`delayMs`)
+    )
+
+    override fun write(value: IntakeCard, buf: ByteBuffer) {
+            FfiConverterString.write(value.`contact`, buf)
+            FfiConverterULong.write(value.`delayMs`, buf)
+    }
+}
+
+
+
+/**
  * A parsed KNST frame. `message_id` is the dashed lowercase UUID; `payload` is everything after
  * the header — for a control frame (`total_chunks == 1`) the body is its first
  * `plaintext_length` bytes.
@@ -11550,6 +12815,50 @@ public object FfiConverterTypeIntakeKeyState: FfiConverterRustBuffer<IntakeKeySt
     override fun write(value: IntakeKeyState, buf: ByteBuffer) {
             FfiConverterUInt.write(value.`generation`, buf)
             FfiConverterByteArray.write(value.`key`, buf)
+    }
+}
+
+
+
+/**
+ * What the last intake publish covered.
+ */
+data class IntakePublished (
+    var `accountId`: kotlin.String
+    , 
+    var `epoch`: kotlin.ULong
+    , 
+    var `keyId`: kotlin.String
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeIntakePublished: FfiConverterRustBuffer<IntakePublished> {
+    override fun read(buf: ByteBuffer): IntakePublished {
+        return IntakePublished(
+            FfiConverterString.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: IntakePublished) = (
+            FfiConverterString.allocationSize(value.`accountId`) +
+            FfiConverterULong.allocationSize(value.`epoch`) +
+            FfiConverterString.allocationSize(value.`keyId`)
+    )
+
+    override fun write(value: IntakePublished, buf: ByteBuffer) {
+            FfiConverterString.write(value.`accountId`, buf)
+            FfiConverterULong.write(value.`epoch`, buf)
+            FfiConverterString.write(value.`keyId`, buf)
     }
 }
 
@@ -12983,6 +14292,112 @@ public object FfiConverterTypeOtpkPair: FfiConverterRustBuffer<OtpkPair> {
 
 
 
+/**
+ * One message to one recipient and the devices of theirs still owed it (construct-rules
+ * `fanout_retry`). `owed_device_ids` empty: plan the fan-out again. `key` names the entry.
+ */
+data class OwedCopy (
+    var `key`: kotlin.String
+    , 
+    var `baseMessageId`: kotlin.String
+    , 
+    var `recipientUserId`: kotlin.String
+    , 
+    var `senderUserId`: kotlin.String
+    , 
+    var `owedDeviceIds`: List<kotlin.String>
+    , 
+    var `attempts`: kotlin.UInt
+    , 
+    var `nextAttemptAtMs`: kotlin.Long
+    , 
+    var `createdAtMs`: kotlin.Long
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeOwedCopy: FfiConverterRustBuffer<OwedCopy> {
+    override fun read(buf: ByteBuffer): OwedCopy {
+        return OwedCopy(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: OwedCopy) = (
+            FfiConverterString.allocationSize(value.`key`) +
+            FfiConverterString.allocationSize(value.`baseMessageId`) +
+            FfiConverterString.allocationSize(value.`recipientUserId`) +
+            FfiConverterString.allocationSize(value.`senderUserId`) +
+            FfiConverterSequenceString.allocationSize(value.`owedDeviceIds`) +
+            FfiConverterUInt.allocationSize(value.`attempts`) +
+            FfiConverterLong.allocationSize(value.`nextAttemptAtMs`) +
+            FfiConverterLong.allocationSize(value.`createdAtMs`)
+    )
+
+    override fun write(value: OwedCopy, buf: ByteBuffer) {
+            FfiConverterString.write(value.`key`, buf)
+            FfiConverterString.write(value.`baseMessageId`, buf)
+            FfiConverterString.write(value.`recipientUserId`, buf)
+            FfiConverterString.write(value.`senderUserId`, buf)
+            FfiConverterSequenceString.write(value.`owedDeviceIds`, buf)
+            FfiConverterUInt.write(value.`attempts`, buf)
+            FfiConverterLong.write(value.`nextAttemptAtMs`, buf)
+            FfiConverterLong.write(value.`createdAtMs`, buf)
+    }
+}
+
+
+
+data class PartnerBoundary (
+    var `partner`: kotlin.String
+    , 
+    var `boundary`: ReadBoundary
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePartnerBoundary: FfiConverterRustBuffer<PartnerBoundary> {
+    override fun read(buf: ByteBuffer): PartnerBoundary {
+        return PartnerBoundary(
+            FfiConverterString.read(buf),
+            FfiConverterTypeReadBoundary.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: PartnerBoundary) = (
+            FfiConverterString.allocationSize(value.`partner`) +
+            FfiConverterTypeReadBoundary.allocationSize(value.`boundary`)
+    )
+
+    override fun write(value: PartnerBoundary, buf: ByteBuffer) {
+            FfiConverterString.write(value.`partner`, buf)
+            FfiConverterTypeReadBoundary.write(value.`boundary`, buf)
+    }
+}
+
+
+
 data class PowChallenge (
     var `challenge`: kotlin.String
     , 
@@ -13055,6 +14470,84 @@ public object FfiConverterTypePowSolution: FfiConverterRustBuffer<PowSolution> {
     override fun write(value: PowSolution, buf: ByteBuffer) {
             FfiConverterULong.write(value.`nonce`, buf)
             FfiConverterString.write(value.`hash`, buf)
+    }
+}
+
+
+
+/**
+ * A point in a chat (construct-rules `read_sync`): the sender's time, then the message id.
+ */
+data class ReadBoundary (
+    var `sentAtMs`: kotlin.ULong
+    , 
+    var `messageId`: kotlin.String
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeReadBoundary: FfiConverterRustBuffer<ReadBoundary> {
+    override fun read(buf: ByteBuffer): ReadBoundary {
+        return ReadBoundary(
+            FfiConverterULong.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ReadBoundary) = (
+            FfiConverterULong.allocationSize(value.`sentAtMs`) +
+            FfiConverterString.allocationSize(value.`messageId`)
+    )
+
+    override fun write(value: ReadBoundary, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`sentAtMs`, buf)
+            FfiConverterString.write(value.`messageId`, buf)
+    }
+}
+
+
+
+/**
+ * An incoming message as the unread count reads it: its id and the time this device keeps.
+ */
+data class ReadIncoming (
+    var `messageId`: kotlin.String
+    , 
+    var `atMs`: kotlin.ULong
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeReadIncoming: FfiConverterRustBuffer<ReadIncoming> {
+    override fun read(buf: ByteBuffer): ReadIncoming {
+        return ReadIncoming(
+            FfiConverterString.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ReadIncoming) = (
+            FfiConverterString.allocationSize(value.`messageId`) +
+            FfiConverterULong.allocationSize(value.`atMs`)
+    )
+
+    override fun write(value: ReadIncoming, buf: ByteBuffer) {
+            FfiConverterString.write(value.`messageId`, buf)
+            FfiConverterULong.write(value.`atMs`, buf)
     }
 }
 
@@ -16444,6 +17937,114 @@ public object FfiConverterTypeIntakeOffer: FfiConverterRustBuffer<IntakeOffer> {
 
 
 
+/**
+ * What to do about our own intake key.
+ */
+sealed class IntakeOwnKeyNext {
+    
+    object Use : IntakeOwnKeyNext()
+    
+    
+    /**
+     * The pre-generation key becomes the account's generation 1.
+     */
+    object Promote : IntakeOwnKeyNext()
+    
+    
+    /**
+     * No live key on the account: a new one above `above`.
+     */
+    data class Mint(
+        val `above`: kotlin.UInt) : IntakeOwnKeyNext()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The account has a live key this device lacks: due from our own devices.
+     */
+    object Wait : IntakeOwnKeyNext()
+    
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeIntakeOwnKeyNext : FfiConverterRustBuffer<IntakeOwnKeyNext>{
+    override fun read(buf: ByteBuffer): IntakeOwnKeyNext {
+        return when(buf.getInt()) {
+            1 -> IntakeOwnKeyNext.Use
+            2 -> IntakeOwnKeyNext.Promote
+            3 -> IntakeOwnKeyNext.Mint(
+                FfiConverterUInt.read(buf),
+                )
+            4 -> IntakeOwnKeyNext.Wait
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: IntakeOwnKeyNext) = when(value) {
+        is IntakeOwnKeyNext.Use -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is IntakeOwnKeyNext.Promote -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is IntakeOwnKeyNext.Mint -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUInt.allocationSize(value.`above`)
+            )
+        }
+        is IntakeOwnKeyNext.Wait -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: IntakeOwnKeyNext, buf: ByteBuffer) {
+        when(value) {
+            is IntakeOwnKeyNext.Use -> {
+                buf.putInt(1)
+                Unit
+            }
+            is IntakeOwnKeyNext.Promote -> {
+                buf.putInt(2)
+                Unit
+            }
+            is IntakeOwnKeyNext.Mint -> {
+                buf.putInt(3)
+                FfiConverterUInt.write(value.`above`, buf)
+                Unit
+            }
+            is IntakeOwnKeyNext.Wait -> {
+                buf.putInt(4)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
 
 enum class KtVerdict {
     
@@ -17259,6 +18860,46 @@ public object FfiConverterTypePqxdhRefusal: FfiConverterRustBuffer<PqxdhRefusal>
 
 
 /**
+ * What a received read marker did.
+ */
+
+enum class ReadMarkerOutcome {
+    
+    APPLY,
+    /**
+     * Not later than what is held.
+     */
+    IGNORE,
+    /**
+     * Not from our own account.
+     */
+    DROP;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeReadMarkerOutcome: FfiConverterRustBuffer<ReadMarkerOutcome> {
+    override fun read(buf: ByteBuffer) = try {
+        ReadMarkerOutcome.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: ReadMarkerOutcome) = 4UL
+
+    override fun write(value: ReadMarkerOutcome, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
  * What a message is, for the purpose of opening a receiving session.
  */
 
@@ -17938,6 +19579,38 @@ public object FfiConverterOptionalTypeIntakeKeyState: FfiConverterRustBuffer<Int
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeIntakePublished: FfiConverterRustBuffer<IntakePublished?> {
+    override fun read(buf: ByteBuffer): IntakePublished? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeIntakePublished.read(buf)
+    }
+
+    override fun allocationSize(value: IntakePublished?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeIntakePublished.allocationSize(value)
+        }
+    }
+
+    override fun write(value: IntakePublished?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeIntakePublished.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeKnstFrame: FfiConverterRustBuffer<KnstFrame?> {
     override fun read(buf: ByteBuffer): KnstFrame? {
         if (buf.get().toInt() == 0) {
@@ -18258,6 +19931,70 @@ public object FfiConverterOptionalTypeMailboxGapInterval: FfiConverterRustBuffer
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeOwedCopy: FfiConverterRustBuffer<OwedCopy?> {
+    override fun read(buf: ByteBuffer): OwedCopy? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeOwedCopy.read(buf)
+    }
+
+    override fun allocationSize(value: OwedCopy?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeOwedCopy.allocationSize(value)
+        }
+    }
+
+    override fun write(value: OwedCopy?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeOwedCopy.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeReadBoundary: FfiConverterRustBuffer<ReadBoundary?> {
+    override fun read(buf: ByteBuffer): ReadBoundary? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeReadBoundary.read(buf)
+    }
+
+    override fun allocationSize(value: ReadBoundary?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeReadBoundary.allocationSize(value)
+        }
+    }
+
+    override fun write(value: ReadBoundary?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeReadBoundary.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeSenderCertificate: FfiConverterRustBuffer<SenderCertificate?> {
     override fun read(buf: ByteBuffer): SenderCertificate? {
         if (buf.get().toInt() == 0) {
@@ -18546,6 +20283,34 @@ public object FfiConverterOptionalSequenceByteArray: FfiConverterRustBuffer<List
 /**
  * @suppress
  */
+public object FfiConverterSequenceULong: FfiConverterRustBuffer<List<kotlin.ULong>> {
+    override fun read(buf: ByteBuffer): List<kotlin.ULong> {
+        val len = buf.getInt()
+        return List<kotlin.ULong>(len) {
+            FfiConverterULong.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<kotlin.ULong>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterULong.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<kotlin.ULong>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterULong.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.String>> {
     override fun read(buf: ByteBuffer): List<kotlin.String> {
         val len = buf.getInt()
@@ -18676,6 +20441,34 @@ public object FfiConverterSequenceTypeHistoryRecordOut: FfiConverterRustBuffer<L
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeHistoryRecordOut.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeIntakeCard: FfiConverterRustBuffer<List<IntakeCard>> {
+    override fun read(buf: ByteBuffer): List<IntakeCard> {
+        val len = buf.getInt()
+        return List<IntakeCard>(len) {
+            FfiConverterTypeIntakeCard.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<IntakeCard>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeIntakeCard.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<IntakeCard>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeIntakeCard.write(it, buf)
         }
     }
 }
@@ -19162,6 +20955,90 @@ public object FfiConverterSequenceTypeOtpkPair: FfiConverterRustBuffer<List<Otpk
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeOwedCopy: FfiConverterRustBuffer<List<OwedCopy>> {
+    override fun read(buf: ByteBuffer): List<OwedCopy> {
+        val len = buf.getInt()
+        return List<OwedCopy>(len) {
+            FfiConverterTypeOwedCopy.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<OwedCopy>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeOwedCopy.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<OwedCopy>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeOwedCopy.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypePartnerBoundary: FfiConverterRustBuffer<List<PartnerBoundary>> {
+    override fun read(buf: ByteBuffer): List<PartnerBoundary> {
+        val len = buf.getInt()
+        return List<PartnerBoundary>(len) {
+            FfiConverterTypePartnerBoundary.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<PartnerBoundary>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypePartnerBoundary.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<PartnerBoundary>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypePartnerBoundary.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeReadIncoming: FfiConverterRustBuffer<List<ReadIncoming>> {
+    override fun read(buf: ByteBuffer): List<ReadIncoming> {
+        val len = buf.getInt()
+        return List<ReadIncoming>(len) {
+            FfiConverterTypeReadIncoming.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<ReadIncoming>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeReadIncoming.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<ReadIncoming>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeReadIncoming.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeCfeAction: FfiConverterRustBuffer<List<CfeAction>> {
     override fun read(buf: ByteBuffer): List<CfeAction> {
         val len = buf.getInt()
@@ -19352,6 +21229,30 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     UniffiLib.uniffi_construct_core_fn_func_device_refusal_of(
     
         FfiConverterUInt.lower(`statusCode`),FfiConverterOptionalString.lower(`trailer`),_status)
+}
+    )
+    }
+    
+ fun `fanoutRetryBaseBackoffMs`(): kotlin.Long {
+            return FfiConverterLong.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_fanout_retry_base_backoff_ms(
+    
+        _status)
+}
+    )
+    }
+    
+
+        /**
+         * Fan-out retry (construct-rules `fanout_retry`): attempts before an owed copy is given up,
+         * and the first wait.
+         */ fun `fanoutRetryMaxAttempts`(): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_fanout_retry_max_attempts(
+    
+        _status)
 }
     )
     }
@@ -19682,12 +21583,64 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     )
     }
     
+
+        /**
+         * Who gets the new card after a rotation and when (ms from now, within the hour): everyone
+         * but the dropped, the blocked and ourselves, once each, each at its own moment drawn from
+         * `seed` (random bytes).
+         */ fun `intakeCardSchedule`(`contacts`: List<kotlin.String>, `dropped`: kotlin.String, `blocked`: List<kotlin.String>, `ownAccount`: kotlin.String, `seed`: kotlin.ByteArray): List<IntakeCard> {
+            return FfiConverterSequenceTypeIntakeCard.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_card_schedule(
+    
+        FfiConverterSequenceString.lower(`contacts`),FfiConverterString.lower(`dropped`),FfiConverterSequenceString.lower(`blocked`),FfiConverterString.lower(`ownAccount`),FfiConverterByteArray.lower(`seed`),_status)
+}
+    )
+    }
+    
  fun `intakeEpoch`(`unixSeconds`: kotlin.ULong): kotlin.ULong {
             return FfiConverterULong.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_construct_core_fn_func_intake_epoch(
     
         FfiConverterULong.lower(`unixSeconds`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Names a key without storing it twice: the first 8 bytes of its SHA-256, hex.
+         */ fun `intakeKeyId`(`key`: kotlin.ByteArray): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_key_id(
+    
+        FfiConverterByteArray.lower(`key`),_status)
+}
+    )
+    }
+    
+ fun `intakeKeyRecordDecode`(`kept`: kotlin.ByteArray): IntakeKeyState? {
+            return FfiConverterOptionalTypeIntakeKeyState.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_key_record_decode(
+    
+        FfiConverterByteArray.lower(`kept`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * A key as a client keeps it: the generation big-endian then the key; 32 bytes alone is
+         * generation 0. Null when damaged.
+         */ fun `intakeKeyRecordEncode`(`state`: IntakeKeyState): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_key_record_encode(
+    
+        FfiConverterTypeIntakeKeyState.lower(`state`),_status)
 }
     )
     }
@@ -19704,6 +21657,19 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     }
     
 
+        /**
+         * A rotation mints above what we hold and what the server has (null: could not be asked).
+         */ fun `intakeMintAbove`(`held`: kotlin.UInt?, `server`: kotlin.UInt?): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_mint_above(
+    
+        FfiConverterOptionalUInt.lower(`held`),FfiConverterOptionalUInt.lower(`server`),_status)
+}
+    )
+    }
+    
+
     @Throws(CryptoException::class) fun `intakeOffer`(`held`: IntakeKeyState?, `offered`: IntakeKeyState): IntakeOffer {
             return FfiConverterTypeIntakeOffer.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
@@ -19715,12 +21681,142 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     }
     
 
+        /**
+         * What to do about our own key, from the generation this device holds (null: none) and what
+         * the server says of the account.
+         */ fun `intakeOwnKey`(`heldGeneration`: kotlin.UInt?, `serverGeneration`: kotlin.UInt, `serverHasLiveTags`: kotlin.Boolean): IntakeOwnKeyNext {
+            return FfiConverterTypeIntakeOwnKeyNext.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_own_key(
+    
+        FfiConverterOptionalUInt.lower(`heldGeneration`),FfiConverterUInt.lower(`serverGeneration`),FfiConverterBoolean.lower(`serverHasLiveTags`),_status)
+}
+    )
+    }
+    
+ fun `intakePublishedFromBytes`(`kept`: kotlin.ByteArray): IntakePublished? {
+            return FfiConverterOptionalTypeIntakePublished.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_published_from_bytes(
+    
+        FfiConverterByteArray.lower(`kept`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The publish marker as bytes to keep, and back; null when the bytes are not one.
+         */
+    @Throws(CryptoException::class) fun `intakePublishedToBytes`(`published`: IntakePublished): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_published_to_bytes(
+    
+        FfiConverterTypeIntakePublished.lower(`published`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * After a stale refusal: mint once more above `current` — once, and only above `minted`.
+         */ fun `intakeReMintAbove`(`minted`: kotlin.UInt, `current`: kotlin.UInt, `alreadyReMinted`: kotlin.Boolean): kotlin.UInt? {
+            return FfiConverterOptionalUInt.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_re_mint_above(
+    
+        FfiConverterUInt.lower(`minted`),FfiConverterUInt.lower(`current`),FfiConverterBoolean.lower(`alreadyReMinted`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * How often a running process asks `intake_should_publish` again.
+         */ fun `intakeRecheckMs`(): kotlin.ULong {
+            return FfiConverterULong.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_recheck_ms(
+    
+        _status)
+}
+    )
+    }
+    
+
+        /**
+         * The server refused a publish as stale: the account is at `current`, above `ours`.
+         */ fun `intakeRefusedAsStale`(`current`: kotlin.UInt, `ours`: kotlin.UInt): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_refused_as_stale(
+    
+        FfiConverterUInt.lower(`current`),FfiConverterUInt.lower(`ours`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The last publish the server took was this key's, for this account, and still covers
+         * `current`.
+         */ fun `intakeServerHolds`(`last`: IntakePublished?, `accountId`: kotlin.String, `keyId`: kotlin.String, `current`: kotlin.ULong): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_server_holds(
+    
+        FfiConverterOptionalTypeIntakePublished.lower(`last`),FfiConverterString.lower(`accountId`),FfiConverterString.lower(`keyId`),FfiConverterULong.lower(`current`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Once per epoch per account and key; a clock set back is no reason to skip.
+         */ fun `intakeShouldPublish`(`last`: IntakePublished?, `due`: IntakePublished): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_should_publish(
+    
+        FfiConverterOptionalTypeIntakePublished.lower(`last`),FfiConverterTypeIntakePublished.lower(`due`),_status)
+}
+    )
+    }
+    
+
     @Throws(CryptoException::class) fun `intakeTag`(`intakeKey`: kotlin.ByteArray, `recipientAccountId`: kotlin.String, `epoch`: kotlin.ULong): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     uniffiRustCallWithError(CryptoException) { _status ->
     UniffiLib.uniffi_construct_core_fn_func_intake_tag(
     
         FfiConverterByteArray.lower(`intakeKey`),FfiConverterString.lower(`recipientAccountId`),FfiConverterULong.lower(`epoch`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Whether a send's verdict suspends the key: NOT_ACCEPTED (3) only.
+         */ fun `intakeVerdictSuspendsKey`(`verdict`: kotlin.Int): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_verdict_suspends_key(
+    
+        FfiConverterInt.lower(`verdict`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Intake decisions (construct-rules `intake`). The epochs a publish covers, from `current`.
+         */ fun `intakeWindow`(`current`: kotlin.ULong): List<kotlin.ULong> {
+            return FfiConverterSequenceULong.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_intake_window(
+    
+        FfiConverterULong.lower(`current`),_status)
 }
     )
     }
@@ -20013,6 +22109,47 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     UniffiLib.uniffi_construct_core_fn_func_pp_verify_dleq(
     
         FfiConverterSequenceByteArray.lower(`blinded`),FfiConverterSequenceByteArray.lower(`evaluated`),FfiConverterByteArray.lower(`proof`),FfiConverterByteArray.lower(`issuerPublic`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * An incoming message is read when it is at or before the boundary.
+         */ fun `readBoundaryCovers`(`boundary`: ReadBoundary, `message`: ReadBoundary): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_read_boundary_covers(
+    
+        FfiConverterTypeReadBoundary.lower(`boundary`),FfiConverterTypeReadBoundary.lower(`message`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Read sync (construct-rules `read_sync`; vectors `knst_read_markers.json`). `a` strictly
+         * after `b`: a later time, or the same time and a greater id by its UTF-8 bytes.
+         */ fun `readBoundaryIsLater`(`a`: ReadBoundary, `b`: ReadBoundary): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_read_boundary_is_later(
+    
+        FfiConverterTypeReadBoundary.lower(`a`),FfiConverterTypeReadBoundary.lower(`b`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Of the `unread` newest of `incoming` (oldest first), how many are past `boundary`: by the
+         * position of the boundary's message when it is there, by time when it is not. Only lowers.
+         */ fun `readUnreadLeft`(`unread`: kotlin.UInt, `incoming`: List<ReadIncoming>, `boundary`: ReadBoundary): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_read_unread_left(
+    
+        FfiConverterUInt.lower(`unread`),FfiConverterSequenceTypeReadIncoming.lower(`incoming`),FfiConverterTypeReadBoundary.lower(`boundary`),_status)
 }
     )
     }

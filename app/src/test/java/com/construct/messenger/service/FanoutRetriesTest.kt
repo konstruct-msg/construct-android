@@ -188,14 +188,35 @@ class FanoutRetriesTest {
         assertNull(store.rows[FanoutRetryQueue.STORAGE_KEY])
     }
 
-    /** Identifiers only: no text, no media — the copy is rebuilt from the row. */
+    /**
+     * Identifiers only: no text, no media — the copy is rebuilt from the row. Kept as the core's CFE,
+     * not JSON (rule 6). Mutation that reddens it: save with `encodeV1`.
+     */
     @Test
-    fun `what is stored is ids and times`() = runTest {
+    fun `what is stored is the cores state of ids and times`() = runTest {
         queue().enqueue("m-1", "peer", "me", listOf("dev-2"))
-        val stored = String(store.rows.getValue(FanoutRetryQueue.STORAGE_KEY))
-        assertEquals(
-            setOf("baseMessageId", "recipientUserId", "senderUserId", "owedDeviceIds", "attempts", "nextAttemptAtMs", "createdAtMs"),
-            org.json.JSONArray(stored).getJSONObject(0).keys().asSequence().toSet(),
+        val stored = store.rows.getValue(FanoutRetryQueue.STORAGE_KEY)
+        assertTrue(runCatching { org.json.JSONArray(String(stored)) }.isFailure)
+        val kept = uniffi.construct_core.FanoutRetryState.fromBytes(stored).all().single()
+        assertEquals(Triple("m-1", "peer", listOf("dev-2")), Triple(kept.baseMessageId, kept.recipientUserId, kept.owedDeviceIds))
+    }
+
+    /** v1 JSON is read once into the core's state and removed. Mutation: skip the v1 read, or keep v1. */
+    @Test
+    fun `v1 is moved once`() = runTest {
+        val old = FanoutRetryEntry("m-old", "peer", "me", listOf("d1"), attempts = 2, nextAttemptAtMs = 5_000, createdAtMs = 1_000)
+        store.rows[FanoutRetryQueue.LEGACY_KEY] = FanoutRetryQueue.encodeV1(listOf(old))
+        assertEquals(listOf(old), queue().all())
+        assertTrue(FanoutRetryQueue.LEGACY_KEY !in store.rows)
+        assertTrue(FanoutRetryQueue.STORAGE_KEY in store.rows)
+    }
+
+    /** Rule 11: reading v1 is temporary, and this fails on the day it should be gone. */
+    @Test
+    fun `the v1 reading has an end`() {
+        assertTrue(
+            "2027-01-31 has passed: remove the v1 reading in FanoutRetryQueue.load and this test",
+            System.currentTimeMillis() < FanoutRetryQueue.LEGACY_UNTIL_MS,
         )
     }
 }
