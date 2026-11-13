@@ -66,6 +66,40 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
 
     private val coreLock = Any()
 
+    /** Local OS-share storage only. These APIs neither open a session nor advance a ratchet. */
+    val incomingSourceByteLimit: Long get() = uniffi.construct_core.mediaMaxPlaintextLen().toLong()
+
+    fun sealIncomingSource(bytes: ByteArray): com.construct.messenger.media.MediaCrypto.Sealed = synchronized(coreLock) {
+        uniffi.construct_core.sealMedia(bytes).let {
+            com.construct.messenger.media.MediaCrypto.Sealed(it.key, it.blob, it.sha256)
+        }
+    }
+
+    fun openIncomingSource(key: ByteArray, blob: ByteArray): ByteArray = synchronized(coreLock) {
+        uniffi.construct_core.openMedia(key, blob)
+    }
+
+    fun exportIncomingShare(draft: com.construct.messenger.data.model.IncomingShare): ByteArray = synchronized(coreLock) {
+        uniffi.construct_core.shareDraftEncode(uniffi.construct_core.ShareDraft(
+            id = draft.id,
+            text = draft.text,
+            items = draft.items.map { uniffi.construct_core.ShareDraftItem(it.id, it.name, it.mime, it.key, it.size.toULong()) },
+            contactId = draft.contactId,
+            stage = uniffi.construct_core.ShareDraftStage.valueOf(draft.stage.name),
+        ))
+    }
+
+    fun importIncomingShare(bytes: ByteArray): com.construct.messenger.data.model.IncomingShare = synchronized(coreLock) {
+        uniffi.construct_core.shareDraftDecode(bytes).let { kept ->
+            com.construct.messenger.data.model.IncomingShare(
+                kept.id, kept.text,
+                kept.items.map { com.construct.messenger.data.model.SharedSource(it.id, it.name, it.mime, it.size.toLong(), it.key) },
+                kept.contactId,
+                com.construct.messenger.data.model.IncomingShareStage.valueOf(kept.stage.name),
+            )
+        }
+    }
+
     @Volatile
     private var bootstrapCore: ClassicCryptoCore? = null
 

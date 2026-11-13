@@ -153,8 +153,9 @@ bits 4-7      – Reserved, = 0
 
 ## 3. Каталог типов сообщений
 
-Точный список из `construct-core/src/cfe/types.rs` (`from_u8` — единственный
-источник истины; неизвестный тег отвергается):
+Активный реестр — **только** `construct-core/src/cfe/types.rs::CfeMessageType::from_u8`;
+неизвестный тег отвергается. Перечисление ниже — исторический пример 2026-06-05, не источник
+номеров для нового API; оно содержит имена прежних резервов, отсутствующие в текущем коде.
 
 ```rust
 /// CFE message type registry
@@ -195,10 +196,20 @@ pub enum CfeMessageType {
 }
 ```
 
-> Типы 0x06–0x08, 0x20–0x21, 0x30–0x31, 0x40–0x43 **зарегистрированы** (парсятся
-> и используются для соответствующих export/import); это уже не «будущее», как было
-> в ранних версиях документа. Полнота payload-схем для Calls/MLS может ещё
-> уточняться — но теги стабильны.
+> Не считать перечисленные исторические резервы зарегистрированными: проверять `from_u8`.
+> Новый тип состояния добавляется в кодовый реестр, не резервируется в Kotlin или в этой таблице.
+
+**Локальный входящий share (core 0.71.0, 2026-11-12):** `ClientShareDraft = 0x6C`,
+`share_draft_encode(ShareDraft)` / `share_draft_decode(bytes)`. Payload — id запроса, текст,
+упорядоченные source refs (локальный id, безопасное имя, MIME, размер и ключ blob), nullable
+локальный account/contact id получателя и этап `Importing | Ready | Submitted | Finished`.
+Это app storage, **не** CryptoDeviceId оркестратора, новый KNST type или MessageContent.
+`Submitted` не разрешает повторить отправку после перезапуска. `Finished` держит лишь id и этап.
+
+Метаданные/ключи — CFE в зашифрованном store (`incoming-share:v1`). Source files — opaque
+объекты существующего `media.rs` wire format; Kotlin не пишет ещё один cipher/контейнер.
+`CryptoManager.exportIncomingShare/importIncomingShare` — Android-обёртка над codec. Формат
+пишется ядром, Kotlin хранит байты как есть. CRC32 — не шифрование: CFE требует encrypted store.
 
 ### Правила использования типов
 

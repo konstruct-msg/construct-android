@@ -1,0 +1,3 @@
+# UniFFI output stays byte-for-byte as generated from the paired native build. Its template
+# emits trailing spaces; do not hand-edit bindings just to satisfy a source whitespace check.
+app/src/main/java/com/construct/messenger/crypto/uniffi/construct_core/construct_core.kt linguist-generated=true whitespace=-blank-at-eol

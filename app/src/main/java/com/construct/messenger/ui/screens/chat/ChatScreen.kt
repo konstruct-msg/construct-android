@@ -98,6 +98,14 @@ fun ChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val recording by viewModel.recording.collectAsStateWithLifecycle()
+    val incomingShareId by viewModel.incomingShareId.collectAsStateWithLifecycle()
+    val incomingConflict by viewModel.incomingConflict.collectAsStateWithLifecycle()
+    val submittingShare by viewModel.submittingShare.collectAsStateWithLifecycle()
+    fun leaveChat() {
+        if (incomingShareId != null) viewModel.cancelIncomingShare()
+        onNavigateBack()
+    }
+    androidx.activity.compose.BackHandler(enabled = incomingShareId != null, onBack = ::leaveChat)
     val playing by viewModel.playing.collectAsStateWithLifecycle()
     val voiceRate by viewModel.voiceRate.collectAsStateWithLifecycle()
     val videoNote by viewModel.videoNote.collectAsStateWithLifecycle()
@@ -115,9 +123,14 @@ fun ChatScreen(
     val noApp = stringResource(R.string.no_app_to_open)
     val tooLarge = stringResource(R.string.attachment_too_large)
     val unreadable = stringResource(R.string.attachment_unreadable)
+    val shareActive = stringResource(R.string.incoming_share_finish_first)
     LaunchedEffect(Unit) {
         viewModel.attachmentProblem.collect { problem ->
-            val text = if (problem == ChatViewModel.AttachmentProblem.TOO_LARGE) tooLarge else unreadable
+            val text = when (problem) {
+                ChatViewModel.AttachmentProblem.TOO_LARGE -> tooLarge
+                ChatViewModel.AttachmentProblem.UNREADABLE -> unreadable
+                ChatViewModel.AttachmentProblem.SHARE_ACTIVE -> shareActive
+            }
             android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_LONG).show()
         }
     }
@@ -144,6 +157,25 @@ fun ChatScreen(
     }
     // A video note: the camera and the microphone, asked for the first time one is recorded.
     var recordingNote by remember { mutableStateOf(false) }
+    LaunchedEffect(recordingNote) { viewModel.setVideoRecording(recordingNote) }
+    if (incomingConflict != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = viewModel::cancelIncomingShare,
+            title = { Text(stringResource(R.string.incoming_share_draft_conflict)) },
+            text = { Text(stringResource(R.string.incoming_share_draft_conflict_body)) },
+            confirmButton = {
+                TextButton(onClick = { recordingNote = false; viewModel.acceptIncomingShare() }) {
+                    Text(stringResource(R.string.incoming_share_replace))
+                }
+            },
+            dismissButton = {
+                Column {
+                    TextButton(onClick = viewModel::changeIncomingChat) { Text(stringResource(R.string.incoming_share_choose_another)) }
+                    TextButton(onClick = viewModel::cancelIncomingShare) { Text(stringResource(R.string.action_cancel)) }
+                }
+            },
+        )
+    }
     val noteUnavailable = stringResource(R.string.video_note_camera_unavailable)
     val askNote = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
         if (granted.values.all { it }) recordingNote = true
@@ -323,7 +355,7 @@ fun ChatScreen(
         } else {
             ChatNavBar(
                 title = uiState.title,
-                onBack = onNavigateBack,
+                onBack = ::leaveChat,
                 onOpenProfile = onOpenProfile,
                 selecting = selectedIds != null,
                 onDoneSelecting = { selectedIds = null },
@@ -549,8 +581,20 @@ fun ChatScreen(
             )
             return@Column
         }
+        if (incomingShareId != null) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = CTLayout.edgePad)) {
+                Text(stringResource(R.string.incoming_share_from), style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+                TextButton(onClick = viewModel::changeIncomingChat, enabled = !submittingShare) { Text(stringResource(R.string.incoming_share_change_chat)) }
+                TextButton(onClick = viewModel::cancelIncomingShare, enabled = !submittingShare) { Text(stringResource(R.string.action_cancel)) }
+            }
+            if (uiState.attachments.isNotEmpty() && uiState.files.isNotEmpty()) {
+                Text(stringResource(R.string.incoming_share_mixed), style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = CTLayout.edgePad, vertical = CTSpace.xs))
+            }
+        }
         MessageInputView(
-            onMic = if (uiState.editingOriginal == null) {
+            enabled = !submittingShare,
+            onMic = if (uiState.editingOriginal == null && incomingShareId == null) {
                 {
                     val granted = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
                         android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -559,7 +603,7 @@ fun ChatScreen(
             } else {
                 null
             },
-            onVideoNote = if (uiState.editingOriginal == null) ({ startVideoNote() }) else null,
+            onVideoNote = if (uiState.editingOriginal == null && incomingShareId == null) ({ startVideoNote() }) else null,
             voiceBar = when (val r = recording) {
                 is VoiceRecorder.State.Recording -> {
                     { VoiceComposerBar(true, r.durationMs, r.recent, viewModel::cancelRecording, viewModel::stopRecording) }
@@ -572,7 +616,7 @@ fun ChatScreen(
             attachments = uiState.attachments,
             videoQuality = videoQuality.takeIf { videoAttached },
             onVideoQuality = viewModel::setVideoQuality,
-            onAttach = if (uiState.editingOriginal == null) {
+            onAttach = if (uiState.editingOriginal == null && incomingShareId == null) {
                 { attachMenuOpen = true }
             } else {
                 null
@@ -615,7 +659,9 @@ fun ChatScreen(
                     )
                 }
             },
-            files = uiState.files.map { it.uri to it.name },
+            files = uiState.files.map { file ->
+                file.uri to if (file.sizeBytes >= 0) "${file.name} · ${android.text.format.Formatter.formatShortFileSize(context, file.sizeBytes)}" else file.name
+            },
             onRemoveAttachment = viewModel::removeAttachment,
             value = uiState.draft,
             onValueChange = viewModel::onDraftChange,
