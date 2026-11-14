@@ -976,6 +976,8 @@ external fun uniffi_construct_core_checksum_method_historyreceiver_accept(
 ): Short
 external fun uniffi_construct_core_checksum_method_historyreceiver_end_of_input(
 ): Short
+external fun uniffi_construct_core_checksum_method_historyreceiver_expect_media(
+): Short
 external fun uniffi_construct_core_checksum_method_historyreceiver_feed(
 ): Short
 external fun uniffi_construct_core_checksum_method_historyreceiver_need(
@@ -1552,6 +1554,8 @@ external fun uniffi_construct_core_fn_free_historyreceiver(`handle`: Long,uniffi
 external fun uniffi_construct_core_fn_method_historyreceiver_accept(`ptr`: Long,`known`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_historyreceiver_end_of_input(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_historyreceiver_expect_media(`ptr`: Long,`mediaIds`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_historyreceiver_feed(`ptr`: Long,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -2797,6 +2801,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_historyreceiver_end_of_input() != 37985.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_historyreceiver_expect_media() != 19586.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_historyreceiver_feed() != 49701.toShort()) {
@@ -5075,6 +5082,12 @@ public interface HistoryReceiverInterface {
      */
     fun `endOfInput`()
     
+    /**
+     * The media ids this device's own messages refer to. A media-only (phase 2) transfer carries
+     * no messages; without these every blob in it is refused.
+     */
+    fun `expectMedia`(`mediaIds`: List<kotlin.String>)
+    
     fun `feed`(`data`: kotlin.ByteArray): HistoryStep
     
     fun `need`(): kotlin.UInt
@@ -5210,6 +5223,22 @@ open class HistoryReceiver: Disposable, AutoCloseable, HistoryReceiverInterface
     UniffiLib.uniffi_construct_core_fn_method_historyreceiver_end_of_input(
         it,
         _status)
+}
+    }
+    
+    
+
+    
+    /**
+     * The media ids this device's own messages refer to. A media-only (phase 2) transfer carries
+     * no messages; without these every blob in it is refused.
+     */override fun `expectMedia`(`mediaIds`: List<kotlin.String>)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_historyreceiver_expect_media(
+        it,
+        FfiConverterSequenceString.lower(`mediaIds`),_status)
 }
     }
     
@@ -17462,6 +17491,18 @@ sealed class HistoryEvent {
     object MediaEnd : HistoryEvent()
     
     
+    /**
+     * A whole blob this device may not write: no `MediaStart`, no bytes. The transfer goes on.
+     */
+    data class MediaRefused(
+        val `reason`: HistoryMediaRefusal) : HistoryEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
     object End : HistoryEvent()
     
     
@@ -17492,7 +17533,10 @@ public object FfiConverterTypeHistoryEvent : FfiConverterRustBuffer<HistoryEvent
                 FfiConverterByteArray.read(buf),
                 )
             5 -> HistoryEvent.MediaEnd
-            6 -> HistoryEvent.End
+            6 -> HistoryEvent.MediaRefused(
+                FfiConverterTypeHistoryMediaRefusal.read(buf),
+                )
+            7 -> HistoryEvent.End
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
     }
@@ -17535,6 +17579,13 @@ public object FfiConverterTypeHistoryEvent : FfiConverterRustBuffer<HistoryEvent
                 4UL
             )
         }
+        is HistoryEvent.MediaRefused -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeHistoryMediaRefusal.allocationSize(value.`reason`)
+            )
+        }
         is HistoryEvent.End -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
@@ -17572,11 +17623,55 @@ public object FfiConverterTypeHistoryEvent : FfiConverterRustBuffer<HistoryEvent
                 buf.putInt(5)
                 Unit
             }
-            is HistoryEvent.End -> {
+            is HistoryEvent.MediaRefused -> {
                 buf.putInt(6)
+                FfiConverterTypeHistoryMediaRefusal.write(value.`reason`, buf)
+                Unit
+            }
+            is HistoryEvent.End -> {
+                buf.putInt(7)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * Why a media blob was dropped (`construct-docs/decisions/history-transfer-whole-in-the-core.md`).
+ */
+
+enum class HistoryMediaRefusal {
+    
+    /**
+     * Its id is not a server media id (a dashed UUID): it would become a file name.
+     */
+    BAD_ID,
+    /**
+     * No message of the transcript — this transfer's, or one `expect_media` named — refers to it.
+     */
+    NOT_REFERENCED;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHistoryMediaRefusal: FfiConverterRustBuffer<HistoryMediaRefusal> {
+    override fun read(buf: ByteBuffer) = try {
+        HistoryMediaRefusal.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: HistoryMediaRefusal) = 4UL
+
+    override fun write(value: HistoryMediaRefusal, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 
