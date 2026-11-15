@@ -28,6 +28,8 @@ import shared.proto.signaling.v1.Webrtc.HangupReason
 import shared.proto.signaling.v1.Webrtc.IceCandidate
 import shared.proto.signaling.v1.Webrtc.TurnCredentials
 import shared.proto.signaling.v1.Webrtc.WebRTCSignal
+import uniffi.construct_core.CallAnswerDisposition
+import uniffi.construct_core.CallHangupDisposition
 
 /**
  * One call at a time: its state, its signals, its timers. **Canon:** iOS `CallManager` — the
@@ -495,11 +497,11 @@ class CallManager internal constructor(
             return
         }
         when (val decision = CallDeviceRouting.onAnswer(from, call.peerDevice, call.offered)) {
-            is CallDeviceRouting.AnswerDisposition.ReleaseLate -> {
+            is CallAnswerDisposition.ReleaseLate -> {
                 Log.i(TAG, "late answer from ${from.take(8)}… — taken elsewhere ${describe(call)}")
                 release(call, listOf(decision.device))
             }
-            is CallDeviceRouting.AnswerDisposition.Accept -> {
+            is CallAnswerDisposition.Accept -> {
                 if (call.peerDevice == null) {
                     call.peerDevice = decision.device
                     Log.i(TAG, "answered on ${from.take(8)}…, releasing ${decision.release.size} other device(s) ${describe(call)}")
@@ -513,17 +515,18 @@ class CallManager internal constructor(
     /** A hangup or a busy from [from]: a decline anywhere ends the call, busy only takes one device out. */
     private fun remoteHangup(call: ActiveCall, from: String, reason: HangupReason) {
         when (val decision = CallDeviceRouting.onHangup(from, reason, call.peerDevice, call.offered)) {
-            CallDeviceRouting.HangupDisposition.Ignore ->
+            CallHangupDisposition.Ignore ->
                 Log.i(TAG, "hangup from ${from.take(8)}…, not this call's device — ignored ${describe(call)}")
-            is CallDeviceRouting.HangupDisposition.DropDevice -> {
+            // Another of our devices took it: stop ringing, tell nobody — a callee hangup on the
+            // stream would end the sibling's call (`remove_call`) — and record nothing.
+            CallHangupDisposition.EndTakenElsewhere -> endActive(CallEndReason.Hangup(reason))
+            is CallHangupDisposition.DropDevice -> {
                 call.offered = decision.remaining
                 Log.i(TAG, "${from.take(8)}… is busy — ringing ${decision.remaining.size} other device(s) ${describe(call)}")
             }
-            is CallDeviceRouting.HangupDisposition.End -> {
+            is CallHangupDisposition.End -> {
                 release(call, decision.release)
-                // The peer knows; the server does not until our stream says so (AC92380B). Taken
-                // elsewhere, nothing reaches the stream: a ringing device has none open, and a
-                // callee hangup there would end the sibling's call (`remove_call`).
+                // The peer knows; the server does not until our stream says so (AC92380B).
                 sendHangup(call, reason, CallRules.HangupOrigin.REMOTE)
                 endActive(CallEndReason.Hangup(reason))
             }
@@ -886,13 +889,9 @@ class CallManager internal constructor(
         val endedState = CallState.Ended(call.session, reason)
         _state.value = endedState
         val endedAt = nowMs()
-        if (CallHistoryRules.records(reason)) history.record(
-            call.session,
-            CallHistoryRules.status(call.session.isIncoming, reason, call.answeredAtMs != null),
-            call.startedAtMs,
-            endedAt,
-            CallHistoryRules.durationSeconds(call.answeredAtMs, endedAt),
-        )
+        CallHistoryRules.status(call.session.isIncoming, reason, call.answeredAtMs != null)?.let { status ->
+            history.record(call.session, status, call.startedAtMs, endedAt, CallHistoryRules.durationSeconds(call.answeredAtMs, endedAt))
+        }
         scope.launch {
             delay(CallTiming.ENDED_AUTO_CLEAR_MS)
             if (_state.value == endedState) _state.value = CallState.Idle
