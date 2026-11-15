@@ -1,6 +1,7 @@
 package com.construct.messenger.calls
 
-import shared.proto.signaling.v1.Webrtc.HangupReason
+import uniffi.construct_core.callDurationSeconds
+import uniffi.construct_core.callHistoryStatus
 
 /** How a call in the history ended. **Canon:** iOS `CTCallRecord.Status`. */
 enum class CallRecordStatus {
@@ -29,30 +30,17 @@ fun interface CallHistoryPort {
     }
 }
 
+/** The history row, by the core's rule (`call_history_status`, construct-core 0.73.0, todo 295). */
 object CallHistoryRules {
     /**
-     * iOS `CallManager.endActiveCall`, rule for rule: a decline is ours on an incoming call and a
-     * miss on an outgoing one, busy is a miss, and otherwise whether anyone answered decides.
+     * How the call is recorded here, or null when it is not: a call taken on another of our devices
+     * is recorded by that device, and here it was neither missed nor declined.
      */
-    fun status(incoming: Boolean, reason: CallEndReason, answered: Boolean): CallRecordStatus = when (reason) {
-        is CallEndReason.Hangup -> when (reason.reason) {
-            HangupReason.HANGUP_REASON_DECLINED -> if (incoming) CallRecordStatus.DECLINED else CallRecordStatus.MISSED
-            HangupReason.HANGUP_REASON_BUSY -> CallRecordStatus.MISSED
-            else -> if (answered) CallRecordStatus.COMPLETED else CallRecordStatus.MISSED
-        }
-        is CallEndReason.Error, is CallEndReason.Local ->
-            if (answered) CallRecordStatus.COMPLETED else CallRecordStatus.FAILED
-    }
-
-    /**
-     * Whether the call leaves a record here. Not one taken on another of our devices: that device
-     * records it, and here it was neither missed nor declined. iOS `CallManager.endActiveCall`
-     * skips the record the same way; the statuses stay 0–3 on both.
-     */
-    fun records(reason: CallEndReason): Boolean =
-        !(reason is CallEndReason.Hangup && reason.reason == HangupReason.HANGUP_REASON_ACCEPTED_ELSEWHERE)
+    fun status(incoming: Boolean, reason: CallEndReason, answered: Boolean): CallRecordStatus? =
+        callHistoryStatus(CallRuleWire.direction(incoming), CallRuleWire.cause(reason), answered)
+            ?.let(CallRuleWire::record)
 
     /** Whole seconds since it was answered; 0 for a call nobody answered. */
     fun durationSeconds(answeredAtMs: Long?, endedAtMs: Long): Int =
-        answeredAtMs?.let { ((endedAtMs - it) / 1000).coerceAtLeast(0).toInt() } ?: 0
+        callDurationSeconds(answeredAtMs, endedAtMs).toLong().coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
 }

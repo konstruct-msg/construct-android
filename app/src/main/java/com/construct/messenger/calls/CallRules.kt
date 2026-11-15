@@ -1,6 +1,9 @@
 package com.construct.messenger.calls
 
 import shared.proto.signaling.v1.Webrtc.HangupReason
+import uniffi.construct_core.CallGlare
+import uniffi.construct_core.callGlare
+import uniffi.construct_core.callLocalHangupReason
 
 /**
  * Every decision the call machine makes that does not need a call to make it. **Canon:** iOS
@@ -123,11 +126,14 @@ object CallRules {
 
     /**
      * Both sides dialled each other at once, each with its own call id. The larger user id keeps
-     * its outgoing call and ignores the offer; the smaller one answers it. Compared as iOS
-     * compares them (`myUserId > callerUserId`, the ids as the server gave them): if the two
-     * platforms ordered differently, both would yield, or both would keep.
+     * its outgoing call and ignores the offer; the smaller one answers it. The core decides
+     * (`call_glare`, todo 295) for every client: if two platforms ordered differently, both would
+     * yield, or both would keep.
      */
-    fun glare(myUserId: String, peerUserId: String): Glare = if (myUserId > peerUserId) Glare.KEEP_OURS else Glare.YIELD
+    fun glare(myUserId: String, peerUserId: String): Glare = when (callGlare(myUserId, peerUserId)) {
+        CallGlare.KEEP_OURS -> Glare.KEEP_OURS
+        CallGlare.YIELD -> Glare.YIELD
+    }
 
     /** A new call id arrived while another call is held. */
     enum class NewCallDisposition {
@@ -184,11 +190,7 @@ object CallRules {
 
     /** A call ended by our side: declining one that is still ringing, otherwise a normal hangup. */
     fun localHangupReason(isIncoming: Boolean, stillRinging: Boolean): HangupReason =
-        if (isIncoming && stillRinging) {
-            HangupReason.HANGUP_REASON_DECLINED
-        } else {
-            HangupReason.HANGUP_REASON_NORMAL
-        }
+        CallRuleWire.proto(callLocalHangupReason(CallRuleWire.direction(isIncoming), stillRinging))
 }
 
 /** **Canon:** iOS `NetworkTiming.Calls` and the constants in `CallManager`. */
