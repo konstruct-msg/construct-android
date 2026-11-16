@@ -30,6 +30,11 @@ import shared.proto.signaling.v1.Webrtc.TurnCredentials
 import shared.proto.signaling.v1.Webrtc.WebRTCSignal
 import uniffi.construct_core.CallAnswerDisposition
 import uniffi.construct_core.CallHangupDisposition
+import uniffi.construct_core.CallHangupSide
+import uniffi.construct_core.CallOfferAction
+import uniffi.construct_core.CallStreamClosedAction
+import uniffi.construct_core.callOnOffer
+import uniffi.construct_core.callOnStreamClosed
 
 /**
  * One call at a time: its state, its signals, its timers. **Canon:** iOS `CallManager` — the
@@ -50,7 +55,7 @@ import uniffi.construct_core.CallHangupDisposition
  * core opened it under.
  *
  * Where Android differs, it is because a carrier iOS has does not exist here — there is no VoIP
- * push, so the offer is how a call arrives and busy is decided on it ([CallRules.newCallDisposition]),
+ * push, so the offer is how a call arrives and busy is decided on it (the core's `callOnOffer`),
  * and an unanswered call ends after [CallTiming.RING_TIMEOUT_MS] because no CallKit screen does it.
  */
 @Singleton
@@ -274,7 +279,7 @@ class CallManager internal constructor(
             // InitiateCall may already have made the callee ring; tell them and the server.
             if (active !== call) return
             openStream(call)
-            sendHangup(call, HangupReason.HANGUP_REASON_NORMAL, CallRules.HangupOrigin.LOCAL)
+            sendHangup(call, HangupReason.HANGUP_REASON_NORMAL, CallHangupSide.LOCAL)
             endActive(CallEndReason.Local("Call setup failed"))
         }
     }
@@ -330,20 +335,7 @@ class CallManager internal constructor(
             return
         }
         when (signal.signalCase) {
-            WebRTCSignal.SignalCase.OFFER -> {
-                if (call != null) {
-                    if (call.peerDevice == null) call.peerDevice = from
-                    when (CallRules.remoteOfferDisposition(call.session.isIncoming, call.answeredAtMs != null)) {
-                        CallRules.RemoteOfferDisposition.HOLD_UNTIL_ANSWERED -> {
-                            takeUpVideoCall(call, signal.offer.callType)
-                            holdOffer(call, signal.offer.sdp)
-                        }
-                        CallRules.RemoteOfferDisposition.RENEGOTIATE -> renegotiate(call, signal.offer.sdp)
-                    }
-                } else {
-                    incomingOffer(signal.callId, incoming.accountId, incoming.deviceId, signal.offer.sdp, signal.offer.callType)
-                }
-            }
+            WebRTCSignal.SignalCase.OFFER -> onOffer(signal.callId, incoming.accountId, from, signal.offer)
             WebRTCSignal.SignalCase.ANSWER -> if (call != null) answerFrom(call, from, signal.answer.sdp)
             WebRTCSignal.SignalCase.ICE_CANDIDATE -> if (call != null) remoteCandidates(call, from, listOf(signal.iceCandidate))
             WebRTCSignal.SignalCase.ICE_CANDIDATES -> if (call != null) remoteCandidates(call, from, signal.iceCandidates.candidatesList)
@@ -362,38 +354,55 @@ class CallManager internal constructor(
         }
     }
 
-    private suspend fun incomingOffer(callId: String, callerId: String, callerDevice: String, sdp: String, callType: CallType) {
-        // Refused, not stored: an offer that cannot be negotiated would ring for a call that cannot connect.
-        if (!CallRules.offerSdpIsUsable(sdp)) {
-            Log.w(TAG, "offer from ${callerId.take(8)}… carries no SDP — not ringing (call=${callId.take(8)}…)")
-            return
-        }
-        // No call with this id is held (the caller checked); the dispositions that need one are
-        // reached through holdOffer. What is left: ended, or new.
-        when (CallRules.offerDisposition(ended.contains(callId), matchesActiveIncomingCall = false, awaitingOfferAfterAnswer = false)) {
-            CallRules.OfferDisposition.IGNORE_ENDED -> {
-                Log.i(TAG, "offer for ended call ${callId.take(8)}… — not ringing again")
-                return
-            }
-            else -> Unit
-        }
+    /**
+     * An SDP offer, out of the Double Ratchet. What it means is the core's rule (`callOnOffer`,
+     * todo 295), shared with iOS and construct-client; this reads the call held here into it and
+     * does what it says. [callerDevice]: the device the core opened the offer under — the call it
+     * starts or completes talks to that device and no other.
+     */
+    private suspend fun onOffer(callId: String, callerId: String, callerDevice: String, offer: CallOffer) {
         val current = active
-        val outgoingToCaller = current != null && !current.session.isIncoming && current.session.peerUserId == callerId
-        val glare = if (outgoingToCaller) CallRules.glare(peers.myUserId().orEmpty(), callerId) else null
-        when (CallRules.newCallDisposition(current != null, outgoingToCaller, glare)) {
-            CallRules.NewCallDisposition.IGNORE_GLARE -> {
-                Log.i(TAG, "glare: keeping our call to ${callerId.take(8)}… — ignoring theirs")
-                return
-            }
-            CallRules.NewCallDisposition.BUSY -> {
+        val action = callOnOffer(
+            ended.contains(callId),
+            CallRuleWire.held(callId, callerId, current?.session, answered = current?.answeredAtMs != null),
+            peers.myUserId().orEmpty(),
+            callerId,
+        )
+        when (action) {
+            CallOfferAction.IGNORE_ENDED -> Log.i(TAG, "offer for ended call ${callId.take(8)}… — not ringing again")
+            CallOfferAction.BUSY -> {
                 Log.i(TAG, "busy — refusing call ${callId.take(8)}… from ${callerId.take(8)}…")
                 ended.remember(callId)
                 scope.launch { signals.send(callerId, callerDevice, CallSignalWire.hangup(callId, myDevice(), HangupReason.HANGUP_REASON_BUSY, nowMs())) }
-                return
             }
-            CallRules.NewCallDisposition.REPLACE_OUTGOING -> Log.i(TAG, "glare: yielding our call to ${callerId.take(8)}… — taking theirs")
-            CallRules.NewCallDisposition.RING -> Unit
+            CallOfferAction.KEEP_OURS -> Log.i(TAG, "glare: keeping our call to ${callerId.take(8)}… — ignoring theirs")
+            // RESUME_ANSWER is not reached here (`CallRuleWire.held`); were it, holding the offer is
+            // where the answer would find it.
+            CallOfferAction.HOLD_UNTIL_ANSWERED, CallOfferAction.RESUME_ANSWER -> {
+                val call = current?.takeIf { it.session.id == callId } ?: return
+                if (call.peerDevice == null) call.peerDevice = callerDevice
+                takeUpVideoCall(call, offer.callType)
+                holdOffer(call, offer.sdp)
+            }
+            CallOfferAction.RENEGOTIATE -> {
+                val call = current?.takeIf { it.session.id == callId } ?: return
+                if (call.peerDevice == null) call.peerDevice = callerDevice
+                renegotiate(call, offer.sdp)
+            }
+            CallOfferAction.REPLACE_OUTGOING, CallOfferAction.RING -> {
+                // Refused, not stored: an offer that cannot be negotiated would ring for a call that cannot connect.
+                if (!CallRules.offerSdpIsUsable(offer.sdp)) {
+                    Log.w(TAG, "offer from ${callerId.take(8)}… carries no SDP — not ringing (call=${callId.take(8)}…)")
+                    return
+                }
+                if (action == CallOfferAction.REPLACE_OUTGOING) Log.i(TAG, "glare: yielding our call to ${callerId.take(8)}… — taking theirs")
+                ringNewCall(callId, callerId, callerDevice, offer.sdp, offer.callType)
+            }
         }
+    }
+
+    /** A call this device first hears of from its offer. */
+    private suspend fun ringNewCall(callId: String, callerId: String, callerDevice: String, sdp: String, callType: CallType) {
         val session = CallSession(callId, callerId, peers.name(callerId), CallSession.Direction.INCOMING, isVideo = CallVideoSignal.answersWithCamera(callType))
         val call = begin(session, CallState.Incoming(session))
         takeUpVideoCall(call, callType)
@@ -527,7 +536,7 @@ class CallManager internal constructor(
             is CallHangupDisposition.End -> {
                 release(call, decision.release)
                 // The peer knows; the server does not until our stream says so (AC92380B).
-                sendHangup(call, reason, CallRules.HangupOrigin.REMOTE)
+                sendHangup(call, reason, CallHangupSide.REMOTE)
                 endActive(CallEndReason.Hangup(reason))
             }
         }
@@ -785,18 +794,19 @@ class CallManager internal constructor(
     private fun onStreamClosed(call: ActiveCall, outbound: Channel<SignalRequest>) {
         if (active !== call || call.outbound !== outbound) return
         val canReconnect = CallRules.canReconnectStream(call.mediaConnected, call.streamRetries, call.postMediaReconnects)
-        when (CallRules.streamClosedDisposition(call.mediaConnected, awaitingOfferAfterAnswer = false, canReconnect = canReconnect)) {
-            CallRules.StreamClosedDisposition.RECONNECT -> {
+        // The core's rule (`callOnStreamClosed`, todo 295). No answer here waits for its offer.
+        when (callOnStreamClosed(canReconnect, call.mediaConnected, awaitingOfferAfterAnswer = false)) {
+            CallStreamClosedAction.RECONNECT -> {
                 call.outbound = null
                 if (call.mediaConnected) call.postMediaReconnects += 1 else call.streamRetries += 1
                 Log.i(TAG, "signalling stream closed — reopening (retries=${call.streamRetries}, after media=${call.postMediaReconnects})")
                 openStream(call)
             }
-            CallRules.StreamClosedDisposition.KEEP_ON_MESSAGE_PATH -> {
+            CallStreamClosedAction.KEEP_ON_MESSAGE_PATH -> {
                 call.outbound = null
                 Log.i(TAG, "signalling stream closed — call stays on the message path")
             }
-            CallRules.StreamClosedDisposition.END_CALL -> {
+            CallStreamClosedAction.END_CALL -> {
                 Log.w(TAG, "signalling stream gone before media, nothing else bounds the call — ending")
                 endActive(CallEndReason.Local("Signal stream closed"))
             }
@@ -834,19 +844,22 @@ class CallManager internal constructor(
         return done
     }
 
-    private fun sendHangup(call: ActiveCall, reason: HangupReason, origin: CallRules.HangupOrigin) {
-        val channels = CallRules.hangupChannels(origin)
+    private fun sendHangup(call: ActiveCall, reason: HangupReason, origin: CallHangupSide) {
+        // The core's rule (`callHangupRoute`, todo 295): ours goes to the peer and the server; one
+        // the peer sent goes to the server only (iOS AC92380B); "accepted elsewhere" never goes to
+        // the stream, where the server would end the call for the device that took it.
+        val route = CallRuleWire.hangupRoute(origin, reason)
         val hangup = CallSignalWire.hangup(call.session.id, myDevice(), reason, nowMs())
-        if (CallRules.HangupChannel.E2EE in channels) sendE2ee(call, hangup)
-        val onStream = CallRules.HangupChannel.SIGNALING_STREAM in channels && call.outbound != null
+        if (route.e2ee) sendE2ee(call, hangup)
+        val onStream = route.stream && call.outbound != null
         if (onStream) sendStream(call, hangup)
-        Log.i(TAG, "hangup reason=$reason origin=$origin e2ee=${CallRules.HangupChannel.E2EE in channels} stream=$onStream ${describe(call)}")
+        Log.i(TAG, "hangup reason=$reason origin=$origin e2ee=${route.e2ee} stream=$onStream ${describe(call)}")
     }
 
     /** Our side ends it: open the stream so the server hears too, tell the peer, end. */
     private fun endLocally(call: ActiveCall, reason: HangupReason) {
         openStream(call)
-        sendHangup(call, reason, CallRules.HangupOrigin.LOCAL)
+        sendHangup(call, reason, CallHangupSide.LOCAL)
         endActive(CallEndReason.Hangup(reason))
     }
 

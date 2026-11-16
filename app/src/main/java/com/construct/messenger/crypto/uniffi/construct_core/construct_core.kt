@@ -720,6 +720,8 @@ external fun uniffi_construct_core_checksum_func_call_hangup_reason_from_wire(
 ): Short
 external fun uniffi_construct_core_checksum_func_call_hangup_reason_wire(
 ): Short
+external fun uniffi_construct_core_checksum_func_call_hangup_route(
+): Short
 external fun uniffi_construct_core_checksum_func_call_history_status(
 ): Short
 external fun uniffi_construct_core_checksum_func_call_local_hangup_reason(
@@ -729,6 +731,10 @@ external fun uniffi_construct_core_checksum_func_call_offer_devices(
 external fun uniffi_construct_core_checksum_func_call_on_answer(
 ): Short
 external fun uniffi_construct_core_checksum_func_call_on_hangup(
+): Short
+external fun uniffi_construct_core_checksum_func_call_on_offer(
+): Short
+external fun uniffi_construct_core_checksum_func_call_on_stream_closed(
 ): Short
 external fun uniffi_construct_core_checksum_func_call_outcome_wants_attention(
 ): Short
@@ -2109,6 +2115,8 @@ external fun uniffi_construct_core_fn_func_call_hangup_reason_from_wire(`value`:
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_call_hangup_reason_wire(`reason`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
+external fun uniffi_construct_core_fn_func_call_hangup_route(`side`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_call_history_status(`direction`: RustBuffer.ByValue,`cause`: RustBuffer.ByValue,`answered`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_call_local_hangup_reason(`direction`: RustBuffer.ByValue,`stillRinging`: Byte,uniffi_out_err: UniffiRustCallStatus, 
@@ -2118,6 +2126,10 @@ external fun uniffi_construct_core_fn_func_call_offer_devices(`planned`: RustBuf
 external fun uniffi_construct_core_fn_func_call_on_answer(`device`: RustBuffer.ByValue,`chosen`: RustBuffer.ByValue,`offered`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_call_on_hangup(`device`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,`chosen`: RustBuffer.ByValue,`offered`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_call_on_offer(`recentlyEnded`: Byte,`held`: RustBuffer.ByValue,`myUserId`: RustBuffer.ByValue,`offererUserId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_call_on_stream_closed(`canReconnect`: Byte,`mediaConnected`: Byte,`awaitingOfferAfterAnswer`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_call_outcome_wants_attention(`outcome`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
@@ -2475,6 +2487,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_call_hangup_reason_wire() != 2312.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_call_hangup_route() != 12811.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_call_history_status() != 36393.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2488,6 +2503,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_call_on_hangup() != 58669.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_call_on_offer() != 34755.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_call_on_stream_closed() != 43170.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_call_outcome_wants_attention() != 65524.toShort()) {
@@ -12280,6 +12301,96 @@ public object FfiConverterTypeBinaryKeyBundle: FfiConverterRustBuffer<BinaryKeyB
 
 
 
+data class CallHangupRoute (
+    var `e2ee`: kotlin.Boolean
+    , 
+    var `stream`: kotlin.Boolean
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallHangupRoute: FfiConverterRustBuffer<CallHangupRoute> {
+    override fun read(buf: ByteBuffer): CallHangupRoute {
+        return CallHangupRoute(
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: CallHangupRoute) = (
+            FfiConverterBoolean.allocationSize(value.`e2ee`) +
+            FfiConverterBoolean.allocationSize(value.`stream`)
+    )
+
+    override fun write(value: CallHangupRoute, buf: ByteBuffer) {
+            FfiConverterBoolean.write(value.`e2ee`, buf)
+            FfiConverterBoolean.write(value.`stream`, buf)
+    }
+}
+
+
+
+/**
+ * The call this device holds when an offer arrives.
+ */
+data class CallHeldCall (
+    var `sameCall`: kotlin.Boolean
+    , 
+    var `direction`: CallDirection
+    , 
+    var `withOfferer`: kotlin.Boolean
+    , 
+    var `answered`: kotlin.Boolean
+    , 
+    var `awaitingOfferAfterAnswer`: kotlin.Boolean
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallHeldCall: FfiConverterRustBuffer<CallHeldCall> {
+    override fun read(buf: ByteBuffer): CallHeldCall {
+        return CallHeldCall(
+            FfiConverterBoolean.read(buf),
+            FfiConverterTypeCallDirection.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: CallHeldCall) = (
+            FfiConverterBoolean.allocationSize(value.`sameCall`) +
+            FfiConverterTypeCallDirection.allocationSize(value.`direction`) +
+            FfiConverterBoolean.allocationSize(value.`withOfferer`) +
+            FfiConverterBoolean.allocationSize(value.`answered`) +
+            FfiConverterBoolean.allocationSize(value.`awaitingOfferAfterAnswer`)
+    )
+
+    override fun write(value: CallHeldCall, buf: ByteBuffer) {
+            FfiConverterBoolean.write(value.`sameCall`, buf)
+            FfiConverterTypeCallDirection.write(value.`direction`, buf)
+            FfiConverterBoolean.write(value.`withOfferer`, buf)
+            FfiConverterBoolean.write(value.`answered`, buf)
+            FfiConverterBoolean.write(value.`awaitingOfferAfterAnswer`, buf)
+    }
+}
+
+
+
 data class DecryptedMessageResult (
     var `plaintext`: kotlin.ByteArray
     , 
@@ -16167,6 +16278,36 @@ public object FfiConverterTypeCallHangupReason: FfiConverterRustBuffer<CallHangu
 
 
 
+
+enum class CallHangupSide {
+    
+    LOCAL,
+    REMOTE;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallHangupSide: FfiConverterRustBuffer<CallHangupSide> {
+    override fun read(buf: ByteBuffer) = try {
+        CallHangupSide.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: CallHangupSide) = 4UL
+
+    override fun write(value: CallHangupSide, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 /**
  * A call history row's status; codes 0–3 in this order (history_snapshot.proto).
  */
@@ -16194,6 +16335,42 @@ public object FfiConverterTypeCallHistoryStatus: FfiConverterRustBuffer<CallHist
     override fun allocationSize(value: CallHistoryStatus) = 4UL
 
     override fun write(value: CallHistoryStatus, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
+enum class CallOfferAction {
+    
+    IGNORE_ENDED,
+    RESUME_ANSWER,
+    HOLD_UNTIL_ANSWERED,
+    RENEGOTIATE,
+    RING,
+    KEEP_OURS,
+    REPLACE_OUTGOING,
+    BUSY;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallOfferAction: FfiConverterRustBuffer<CallOfferAction> {
+    override fun read(buf: ByteBuffer) = try {
+        CallOfferAction.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: CallOfferAction) = 4UL
+
+    override fun write(value: CallOfferAction, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
@@ -16231,6 +16408,37 @@ public object FfiConverterTypeCallSignalError: FfiConverterRustBuffer<CallSignal
     override fun allocationSize(value: CallSignalError) = 4UL
 
     override fun write(value: CallSignalError, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
+enum class CallStreamClosedAction {
+    
+    RECONNECT,
+    KEEP_ON_MESSAGE_PATH,
+    END_CALL;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallStreamClosedAction: FfiConverterRustBuffer<CallStreamClosedAction> {
+    override fun read(buf: ByteBuffer) = try {
+        CallStreamClosedAction.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: CallStreamClosedAction) = 4UL
+
+    override fun write(value: CallStreamClosedAction, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
@@ -20461,6 +20669,38 @@ public object FfiConverterOptionalByteArray: FfiConverterRustBuffer<kotlin.ByteA
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeCallHeldCall: FfiConverterRustBuffer<CallHeldCall?> {
+    override fun read(buf: ByteBuffer): CallHeldCall? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeCallHeldCall.read(buf)
+    }
+
+    override fun allocationSize(value: CallHeldCall?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeCallHeldCall.allocationSize(value)
+        }
+    }
+
+    override fun write(value: CallHeldCall?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeCallHeldCall.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeEnvelopeOpened: FfiConverterRustBuffer<EnvelopeOpened?> {
     override fun read(buf: ByteBuffer): EnvelopeOpened? {
         if (buf.get().toInt() == 0) {
@@ -22214,6 +22454,19 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     
 
         /**
+         * Which channels a hangup is written to (end to end, the signalling stream).
+         */ fun `callHangupRoute`(`side`: CallHangupSide, `reason`: CallHangupReason): CallHangupRoute {
+            return FfiConverterTypeCallHangupRoute.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_call_hangup_route(
+    
+        FfiConverterTypeCallHangupSide.lower(`side`),FfiConverterTypeCallHangupReason.lower(`reason`),_status)
+}
+    )
+    }
+    
+
+        /**
          * The history row's status; none for a call taken on another of our devices.
          */ fun `callHistoryStatus`(`direction`: CallDirection, `cause`: CallEndCause, `answered`: kotlin.Boolean): CallHistoryStatus? {
             return FfiConverterOptionalTypeCallHistoryStatus.lift(
@@ -22274,6 +22527,33 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     UniffiLib.uniffi_construct_core_fn_func_call_on_hangup(
     
         FfiConverterString.lower(`device`),FfiConverterTypeCallHangupReason.lower(`reason`),FfiConverterOptionalString.lower(`chosen`),FfiConverterSequenceString.lower(`offered`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * What an arriving offer means: ring, wait for consent, resume an answer, renegotiate, glare
+         * or busy (construct-rules `calls::on_offer`; `held` none for no call or one that is over).
+         */ fun `callOnOffer`(`recentlyEnded`: kotlin.Boolean, `held`: CallHeldCall?, `myUserId`: kotlin.String, `offererUserId`: kotlin.String): CallOfferAction {
+            return FfiConverterTypeCallOfferAction.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_call_on_offer(
+    
+        FfiConverterBoolean.lower(`recentlyEnded`),FfiConverterOptionalTypeCallHeldCall.lower(`held`),FfiConverterString.lower(`myUserId`),FfiConverterString.lower(`offererUserId`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * What the signalling stream closing means for the call.
+         */ fun `callOnStreamClosed`(`canReconnect`: kotlin.Boolean, `mediaConnected`: kotlin.Boolean, `awaitingOfferAfterAnswer`: kotlin.Boolean): CallStreamClosedAction {
+            return FfiConverterTypeCallStreamClosedAction.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_call_on_stream_closed(
+    
+        FfiConverterBoolean.lower(`canReconnect`),FfiConverterBoolean.lower(`mediaConnected`),FfiConverterBoolean.lower(`awaitingOfferAfterAnswer`),_status)
 }
     )
     }

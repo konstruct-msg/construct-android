@@ -68,7 +68,7 @@ class SignalingClient @Inject constructor(
     /**
      * The signalling stream: what goes into [outbound] is sent, with a ping every 10 s; what the
      * server sends comes out. Ends when the server closes it or the collector stops — a closed
-     * stream is not a hung-up call (iOS `signalingStreamClosedDisposition`), the caller decides.
+     * stream is not a hung-up call (the core's `callOnStreamClosed`), the caller decides.
      */
     override fun stream(outbound: Channel<SignalRequest>): Flow<SignalResponse> = channelFlow {
         val requests = merge(

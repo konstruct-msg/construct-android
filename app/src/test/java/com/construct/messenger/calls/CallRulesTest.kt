@@ -1,44 +1,18 @@
 package com.construct.messenger.calls
 
-import com.construct.messenger.calls.CallRules.Glare
-import com.construct.messenger.calls.CallRules.HangupChannel
-import com.construct.messenger.calls.CallRules.HangupOrigin
 import com.construct.messenger.calls.CallRules.IceRestartDisposition
-import com.construct.messenger.calls.CallRules.NewCallDisposition
-import com.construct.messenger.calls.CallRules.OfferDisposition
 import com.construct.messenger.calls.CallRules.OutgoingRequest
-import com.construct.messenger.calls.CallRules.RemoteOfferDisposition
-import com.construct.messenger.calls.CallRules.StreamClosedDisposition
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import shared.proto.signaling.v1.Webrtc.HangupReason
 
-/** iOS `CallOfferOrderingTests` and `CallSetupHolesTests`, for the rules Android has a carrier for. */
+/**
+ * iOS `CallOfferOrderingTests` and `CallSetupHolesTests`, for the rules Android has a carrier for.
+ * The offer, stream-closed and hangup-route rules are the core's: [CallRuleWireTest].
+ */
 class CallRulesTest {
-
-    @Test
-    fun `an offer after the answer resumes it, before the answer is stored`() {
-        assertEquals(OfferDisposition.RESUME_ANSWER, CallRules.offerDisposition(false, true, true))
-        assertEquals(OfferDisposition.STORE_FOR_ANSWER, CallRules.offerDisposition(false, true, false))
-    }
-
-    @Test
-    fun `an ended call outranks everything, an unknown id rings`() {
-        assertEquals(OfferDisposition.IGNORE_ENDED, CallRules.offerDisposition(true, true, true))
-        assertEquals(OfferDisposition.IGNORE_ENDED, CallRules.offerDisposition(true, false, false))
-        assertEquals(OfferDisposition.NEW_CALL, CallRules.offerDisposition(false, false, false))
-        // Awaiting with nothing matched is not something to resume.
-        assertEquals(OfferDisposition.NEW_CALL, CallRules.offerDisposition(false, false, true))
-    }
-
-    @Test
-    fun `only consent separates holding from renegotiating`() {
-        assertEquals(RemoteOfferDisposition.HOLD_UNTIL_ANSWERED, CallRules.remoteOfferDisposition(isIncomingCall = true, hasAnswered = false))
-        assertEquals(RemoteOfferDisposition.RENEGOTIATE, CallRules.remoteOfferDisposition(isIncomingCall = true, hasAnswered = true))
-        assertEquals(RemoteOfferDisposition.RENEGOTIATE, CallRules.remoteOfferDisposition(isIncomingCall = false, hasAnswered = false))
-    }
 
     @Test
     fun `an empty offer is not an offer`() {
@@ -48,41 +22,11 @@ class CallRulesTest {
     }
 
     @Test
-    fun `a closed stream reconnects while it can, then ends only an unbounded call`() {
-        assertEquals(StreamClosedDisposition.RECONNECT, CallRules.streamClosedDisposition(false, false, canReconnect = true))
-        assertEquals(StreamClosedDisposition.KEEP_ON_MESSAGE_PATH, CallRules.streamClosedDisposition(true, false, false))
-        assertEquals(StreamClosedDisposition.KEEP_ON_MESSAGE_PATH, CallRules.streamClosedDisposition(false, true, false))
-        assertEquals(StreamClosedDisposition.END_CALL, CallRules.streamClosedDisposition(false, false, false))
-    }
-
-    @Test
     fun `reconnect budgets differ before and after media`() {
         assertTrue(CallRules.canReconnectStream(false, streamRetries = 2, postMediaReconnects = 9))
         assertFalse(CallRules.canReconnectStream(false, streamRetries = 3, postMediaReconnects = 0))
         assertTrue(CallRules.canReconnectStream(true, streamRetries = 9, postMediaReconnects = 4))
         assertFalse(CallRules.canReconnectStream(true, streamRetries = 0, postMediaReconnects = 5))
-    }
-
-    @Test
-    fun `a local hangup goes to the peer and the server, a remote one only to the server`() {
-        assertEquals(listOf(HangupChannel.E2EE, HangupChannel.SIGNALING_STREAM), CallRules.hangupChannels(HangupOrigin.LOCAL))
-        assertEquals(listOf(HangupChannel.SIGNALING_STREAM), CallRules.hangupChannels(HangupOrigin.REMOTE))
-    }
-
-    @Test
-    fun `glare is decided the same way on both sides`() {
-        val a = "aaaaaaaa-0000-0000-0000-000000000000"
-        val b = "bbbbbbbb-0000-0000-0000-000000000000"
-        assertEquals(Glare.KEEP_OURS, CallRules.glare(b, a))
-        assertEquals(Glare.YIELD, CallRules.glare(a, b))
-    }
-
-    @Test
-    fun `a new call while another is up is busy, unless it is glare`() {
-        assertEquals(NewCallDisposition.RING, CallRules.newCallDisposition(false, false, null))
-        assertEquals(NewCallDisposition.BUSY, CallRules.newCallDisposition(true, false, null))
-        assertEquals(NewCallDisposition.IGNORE_GLARE, CallRules.newCallDisposition(true, true, Glare.KEEP_OURS))
-        assertEquals(NewCallDisposition.REPLACE_OUTGOING, CallRules.newCallDisposition(true, true, Glare.YIELD))
     }
 
     @Test
