@@ -33,8 +33,8 @@ import uniffi.construct_core.CallAcceptStep
 import uniffi.construct_core.CallDialAction
 import uniffi.construct_core.CallDue
 import uniffi.construct_core.CallEnded
+import uniffi.construct_core.CallFailure
 import uniffi.construct_core.CallHangupRoute
-import uniffi.construct_core.CallHangupSide
 import uniffi.construct_core.CallIceStep
 import uniffi.construct_core.CallLocalHangup
 import uniffi.construct_core.CallMachine
@@ -166,7 +166,7 @@ class CallManager internal constructor(
                 sendHangup(call, due.hangup)
                 finish(call, CallEndReason.Hangup(CallRuleWire.proto(due.hangup.reason)), due.hangup.ended)
             }
-            is CallDue.NoOffer -> finish(call, CallEndReason.Local("No offer received"), due.ended)
+            is CallDue.NoOffer -> failed(call, CallEndReason.Local("No offer received"), due.failure)
             CallDue.RestartIce -> restartIce(call)
         }
     }
@@ -334,14 +334,10 @@ class CallManager internal constructor(
                 status.description?.contains("busy", ignoreCase = true) == true -> CallError.BUSY
                 else -> CallError.SETUP_FAILED
             }
-            // InitiateCall may already have made the callee ring; tell them and the server.
+            // InitiateCall may already have made the callee ring; the failure's hangup tells them
+            // and the server ([endActive]), on the stream too once it is open.
             if (active !== call) return
             openStream(call)
-            sendHangup(
-                call, HangupReason.HANGUP_REASON_NORMAL,
-                CallRuleWire.hangupRoute(CallHangupSide.LOCAL, HangupReason.HANGUP_REASON_NORMAL),
-                machineCall?.targets.orEmpty(),
-            )
             endActive(CallEndReason.Local("Call setup failed"))
         }
     }
@@ -454,7 +450,7 @@ class CallManager internal constructor(
             is CallOfferStep.Fail -> {
                 val call = active ?: return
                 Log.w(TAG, "offer for the call in progress carries no SDP — ending rather than waiting on it ${describe(call)}")
-                finish(call, CallEndReason.Local("Offer handling failed"), step.ended)
+                failed(call, CallEndReason.Local("Offer handling failed"), step.failure)
             }
             is CallOfferStep.ReplaceOutgoing -> {
                 Log.i(TAG, "glare: yielding our call to ${callerId.take(8)}… — taking theirs")
@@ -837,7 +833,7 @@ class CallManager internal constructor(
             }
             is CallStreamStep.End -> {
                 Log.w(TAG, "signalling stream gone before media, nothing else bounds the call — ending")
-                finish(call, CallEndReason.Local("Signal stream closed"), step.ended)
+                failed(call, CallEndReason.Local("Signal stream closed"), step.failure)
             }
             null -> Unit
         }
@@ -869,7 +865,7 @@ class CallManager internal constructor(
 
     /**
      * Into the call's queue. [build] runs in the queue — candidates are sealed there, in order with
-     * everything else that moves the ratchet. Completes true when every signal it made was taken.
+     * everything else that moves the ratchet. Completes true when a device took what it made.
      */
     private fun enqueue(call: ActiveCall, build: suspend () -> List<Pair<String, WebRTCSignal>>): CompletableDeferred<Boolean> {
         val done = CompletableDeferred<Boolean>()
@@ -924,7 +920,10 @@ class CallManager internal constructor(
             for (o in call.outbox) {
                 val ok = try {
                     val addressed = o.build()
-                    addressed.isNotEmpty() && addressed.map { (device, signal) -> signals.send(session.peerUserId, device, signal) }.all { it }
+                    // Taken when one device took it: an offer that reached two of three devices
+                    // rings two, and one device the server no longer knows (NOT_FOUND) failed the
+                    // whole call while two rang (2026-11-16). `map` sends to every device first.
+                    addressed.isNotEmpty() && addressed.map { (device, signal) -> signals.send(session.peerUserId, device, signal) }.any { it }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -937,10 +936,24 @@ class CallManager internal constructor(
         return call
     }
 
-    /** End the call for [reason] the machine has not decided yet: a server's, or a failure of ours. */
+    /**
+     * End the call for [reason] the machine has not decided yet: a server's, or a failure of ours.
+     * A failure is the machine's `fail`, which says whether the peer is told — here, so no failure
+     * path ends the call alone: until construct-core 0.76.0 none told, and the other side sat in
+     * "connecting" or "calling" until a person hung up (2026-11-16, iOS 779 and this build 724).
+     */
     private fun endActive(reason: CallEndReason) {
         val call = active ?: return
+        if (reason is CallEndReason.Local) {
+            withMachine { it.fail(nowMs()) }?.let { return failed(call, reason, it) }
+        }
         finish(call, reason, withMachine { CallRuleWire.end(reason, it, nowMs()) })
+    }
+
+    /** A failure the machine ended: its hangup (CONNECTION_FAILED) first, while the call's stream is here, then the teardown. */
+    private fun failed(call: ActiveCall, reason: CallEndReason, failure: CallFailure) {
+        failure.hangup?.let { sendHangup(call, CallRuleWire.proto(it.reason), it.route, it.targets) }
+        finish(call, reason, failure.ended)
     }
 
     /** Tear the call down here. The history row and its length are the machine's [ended]. */

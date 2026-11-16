@@ -1,14 +1,14 @@
 package com.construct.messenger.calls
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * With VEIL On a call goes through TURN only, over TLS where offered, and never falls back to a
- * direct call (vault `decisions/veil-on-never-goes-direct.md`). Canon: iOS `CallIcePlanTests`.
+ * Every call goes through TURN only, over TLS with VEIL On where offered, and never falls back to
+ * a direct call (owner, 2026-10-16; the rule is the core's `callRelayUrls` since 0.76.0). Canon:
+ * iOS `CallIcePlanTests`. These hold the bridge and the relay-only policy this side applies.
  */
 class CallIcePlanTest {
 
@@ -18,7 +18,7 @@ class CallIcePlanTest {
         "turns:t.example:5349?transport=tcp",
     )
 
-    /** Mutation: `relayOnly = false` under On, or drop the TLS filter — this fails. */
+    /** Mutation: `relayOnly = false`, or drop the TLS filter — this fails. */
     @Test
     fun `with VEIL on the call is relayed over TLS`() {
         val plan = CallIcePlan.make(turn, "u", "c", veilOn = true)!!
@@ -35,20 +35,21 @@ class CallIcePlanTest {
         assertEquals(plain, plan.servers.flatMap { it.urls })
     }
 
-    /** A STUN fallback is a direct call; with VEIL on no call is better than that one. */
+    /**
+     * Until 0.76.0 VEIL off went direct here: the first candidate, a private host address, failed
+     * the iPhone's relay-only check within a second (2026-11-16). Mutation: `relayOnly = !veilOn`.
+     */
     @Test
-    fun `with VEIL on and no TURN there is no call`() {
-        assertNull(CallIcePlan.make(emptyList(), "", "", veilOn = true))
+    fun `without VEIL the call is still relay only over every TURN url`() {
+        val plan = CallIcePlan.make(turn, "u", "c", veilOn = false)!!
+        assertTrue("a direct call hands the peer our address", plan.relayOnly)
+        assertEquals("plain TURN kept for latency without VEIL", turn, plan.servers.flatMap { it.urls })
     }
 
+    /** A STUN fallback is a direct call; no call is better than that one. Mutation: bring it back. */
     @Test
-    fun `without VEIL on nothing changes`() {
-        val plan = CallIcePlan.make(turn, "u", "c", veilOn = false)!!
-        assertFalse(plan.relayOnly)
-        assertEquals(turn, plan.servers.flatMap { it.urls })
-
-        val fallback = CallIcePlan.make(emptyList(), "", "", veilOn = false)!!
-        assertEquals(listOf(CallIcePlan.OWN_STUN), fallback.servers.flatMap { it.urls })
-        assertFalse(fallback.servers.flatMap { it.urls }.any { "google" in it || "cloudflare" in it })
+    fun `with no TURN there is no call`() {
+        assertNull(CallIcePlan.make(emptyList(), "", "", veilOn = true))
+        assertNull(CallIcePlan.make(emptyList(), "", "", veilOn = false))
     }
 }

@@ -39,9 +39,8 @@ import shared.proto.signaling.v1.Webrtc.TurnCredentials
  * [CallMedia] on webrtc-sdk: one peer connection, one audio track, one video transceiver. **Canon:**
  * iOS `WebRTCSession`.
  *
- * Configuration as iOS: unified plan, max-bundle, rtcp-mux required, every transport allowed —
- * except with VEIL On, when the call is relayed only ([CallIcePlan]). ICE servers are only ours —
- * the TURN credentials, or without them our own STUN; never a public one, which would hand a third
+ * Configuration as iOS: unified plan, max-bundle, rtcp-mux required, relayed only ([CallIcePlan]).
+ * ICE servers are only ours — the TURN credentials; never a public one, which would hand a third
  * party the fact and the addresses of every call.
  *
  * Video, as iOS since 2026-10-03: the caller offers a `sendrecv` video section in every call, with
@@ -381,24 +380,35 @@ class WebRtcCallMedia private constructor(
     ) : CallMedia.Factory {
 
         override fun create(role: CallMedia.Role, turn: TurnCredentials?, listener: CallMedia.Listener): CallMedia {
-            // Without the microphone the call would connect and carry nothing from us. The call
-            // screen asks before calling or answering; reaching here without it is a bug there.
-            check(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                "RECORD_AUDIO not granted"
-            }
             val plan = CallIcePlan.make(
                 turnUrls = turn?.urlsList.orEmpty(),
                 username = turn?.username.orEmpty(),
                 credential = turn?.credential.orEmpty(),
                 veilOn = veilModes.state.value == VeilMode.ON,
             ) ?: run {
-                Log.e(TAG, "ICE: VEIL is on and no TURN credentials — not placing a direct call")
-                throw NoRelayWhileVeilOn()
+                Log.e(TAG, "ICE: no TURN credentials — not placing a direct call")
+                throw NoRelay()
+            }
+            val config = PeerConnection.RTCConfiguration(iceServers(plan)).apply {
+                iceTransportsType = if (plan.relayOnly) PeerConnection.IceTransportsType.RELAY else PeerConnection.IceTransportsType.ALL
+            }
+            Log.i(TAG, "media ice=${plan.servers.sumOf { it.urls.size }} url(s) relayOnly=${plan.relayOnly}")
+            return create(role, config, listener)
+        }
+
+        /**
+         * The media on [config]. A call's comes from [CallIcePlan], relayed only; the loopback
+         * tests pass one with no servers and every candidate kind, which a call must never have.
+         */
+        internal fun create(role: CallMedia.Role, config: PeerConnection.RTCConfiguration, listener: CallMedia.Listener): CallMedia {
+            // Without the microphone the call would connect and carry nothing from us. The call
+            // screen asks before calling or answering; reaching here without it is a bug there.
+            check(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                "RECORD_AUDIO not granted"
             }
             val factory = WebRtcRuntime.factory(context)
             val media = WebRtcCallMedia(context, factory, audio, listener)
-            val config = PeerConnection.RTCConfiguration(iceServers(plan)).apply {
-                iceTransportsType = if (plan.relayOnly) PeerConnection.IceTransportsType.RELAY else PeerConnection.IceTransportsType.ALL
+            config.apply {
                 sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
                 bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE
                 rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.REQUIRE
@@ -410,7 +420,7 @@ class WebRtcCallMedia private constructor(
             media.peer.addTrack(media.track, listOf("audio"))
             // The callee's comes from the offer instead (`adoptOfferedVideo`).
             if (role == CallMedia.Role.CALLER) media.addVideoTransceiver()
-            Log.i(TAG, "media created role=$role ice=${plan.servers.sumOf { it.urls.size }} url(s) relayOnly=${plan.relayOnly}")
+            Log.i(TAG, "media created role=$role")
             return media
         }
 
