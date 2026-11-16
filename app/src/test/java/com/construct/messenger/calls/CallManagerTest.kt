@@ -191,6 +191,31 @@ class CallManagerTest {
         assertEquals(2, rig.history.size)
     }
 
+    /**
+     * An end the machine did not decide — a failure of ours — still leaves its row: failed before
+     * the answer, completed with its length after.
+     *
+     * Mutation: `endActive` passes no machine end to `finish` — no row at all.
+     */
+    @Test
+    fun `a call that fails goes to the history too`() = runTest {
+        val rig = Rig(this)
+        rig.calls.startOutgoingCall(peer)
+        runCurrent()
+        rig.media.single().listener.onFailed()
+        runCurrent()
+        assertEquals(CallRecordStatus.FAILED, rig.history.single().second)
+
+        advanceTimeBy(CallTiming.ENDED_AUTO_CLEAR_MS + 1)
+        rig.deliver(offer("c2"))
+        rig.calls.answer()
+        runCurrent()
+        advanceTimeBy(30_000)
+        rig.media.last().listener.onFailed()
+        runCurrent()
+        assertEquals(Triple("c2", CallRecordStatus.COMPLETED, 30), rig.history.last())
+    }
+
     @Test
     fun `an offer rings and negotiates nothing until the user answers`() = runTest {
         val rig = Rig(this)
