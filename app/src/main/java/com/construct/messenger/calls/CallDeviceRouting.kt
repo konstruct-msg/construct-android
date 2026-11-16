@@ -7,10 +7,14 @@ import uniffi.construct_core.CallDirection
 import uniffi.construct_core.CallEndCause
 import uniffi.construct_core.CallHangupDisposition
 import uniffi.construct_core.CallHangupReason
+import uniffi.construct_core.CallHangupRoute
+import uniffi.construct_core.CallHangupSide
+import uniffi.construct_core.CallHeldCall
 import uniffi.construct_core.CallHistoryStatus
 import uniffi.construct_core.callAdmits
 import uniffi.construct_core.callHangupReasonFromWire
 import uniffi.construct_core.callHangupReasonWire
+import uniffi.construct_core.callHangupRoute
 import uniffi.construct_core.callOfferDevices
 import uniffi.construct_core.callOnAnswer
 import uniffi.construct_core.callOnHangup
@@ -88,6 +92,26 @@ object CallRuleWire {
     }
 
     fun direction(incoming: Boolean): CallDirection = if (incoming) CallDirection.INCOMING else CallDirection.OUTGOING
+
+    /**
+     * The call this device holds when an offer for [callId] from [offerer] arrives, as the core's
+     * offer rule reads it (`callOnOffer`). [session]: the call [CallManager] holds, if any — it
+     * holds one only while the call is up. Never "awaiting the offer after the answer": a call
+     * starts here only from its offer.
+     */
+    fun held(callId: String, offerer: String, session: CallSession?, answered: Boolean): CallHeldCall? =
+        session?.let {
+            CallHeldCall(
+                sameCall = it.id == callId,
+                direction = direction(it.isIncoming),
+                withOfferer = it.peerUserId == offerer,
+                answered = answered,
+                awaitingOfferAfterAnswer = false,
+            )
+        }
+
+    /** Which channels a hangup with this wire reason is written to (`callHangupRoute`). */
+    fun hangupRoute(side: CallHangupSide, r: HangupReason): CallHangupRoute = callHangupRoute(side, reason(r))
 
     /** The history status as this app stores it (the same codes 0–3 as the core's and iOS's). */
     fun record(s: CallHistoryStatus): CallRecordStatus = when (s) {
