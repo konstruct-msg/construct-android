@@ -27,6 +27,7 @@ import shared.proto.signaling.v1.Webrtc.HangupReason
 import shared.proto.signaling.v1.Webrtc.IceCandidate
 import shared.proto.signaling.v1.Webrtc.TurnCredentials
 import shared.proto.signaling.v1.Webrtc.WebRTCSignal
+import uniffi.construct_core.callTimings
 
 /**
  * The call machine against fakes for the core, the server and WebRTC. Each test is one of the
@@ -36,6 +37,8 @@ import shared.proto.signaling.v1.Webrtc.WebRTCSignal
 class CallManagerTest {
 
     private val me = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    /** The core's call timings: the machine's deadlines and budgets. */
+    private val timings = callTimings()
     private val peer = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
     private val third = "dddddddd-dddd-dddd-dddd-dddddddddddd"
 
@@ -351,7 +354,7 @@ class CallManagerTest {
         val rig = Rig(this)
         rig.calls.startOutgoingCall(peer)
         runCurrent()
-        repeat(CallTiming.MAX_STREAM_RETRIES) {
+        repeat(timings.maxStreamRetries.toInt()) {
             rig.signaling.close()
             runCurrent()
             assertTrue(rig.state is CallState.Dialing)
@@ -359,7 +362,7 @@ class CallManagerTest {
         rig.signaling.close()
         runCurrent()
         assertEquals(CallEndReason.Local("Signal stream closed"), (rig.state as CallState.Ended).reason)
-        assertEquals(1 + CallTiming.MAX_STREAM_RETRIES, rig.signaling.streams)
+        assertEquals(1 + timings.maxStreamRetries.toInt(), rig.signaling.streams)
     }
 
     @Test
@@ -370,19 +373,19 @@ class CallManagerTest {
         rig.deliver(answerSignal(rig.outgoingCallId()))
         rig.media.single().listener.onConnected()
         runCurrent()
-        repeat(CallTiming.MAX_POST_MEDIA_RECONNECTS + 2) {
+        repeat(timings.maxPostMediaReconnects.toInt() + 2) {
             rig.signaling.close()
             runCurrent()
         }
         assertTrue(rig.state is CallState.Active)
-        assertEquals(1 + CallTiming.MAX_POST_MEDIA_RECONNECTS, rig.signaling.streams)
+        assertEquals(1 + timings.maxPostMediaReconnects.toInt(), rig.signaling.streams)
     }
 
     @Test
     fun `an unanswered call ends after the ring timeout and says so`() = runTest {
         val rig = Rig(this)
         rig.deliver(offer("c1"))
-        advanceTimeBy(CallTiming.RING_TIMEOUT_MS - 1)
+        advanceTimeBy(timings.unansweredMs - 1)
         assertTrue(rig.state is CallState.Incoming)
         advanceTimeBy(2)
         assertEquals(CallEndReason.Hangup(HangupReason.HANGUP_REASON_TIMEOUT), (rig.state as CallState.Ended).reason)
@@ -411,7 +414,7 @@ class CallManagerTest {
         val media = caller.media.single()
         media.listener.onConnected()
         media.listener.onQuality(CallQuality.RECONNECTING)
-        advanceTimeBy(CallTiming.ICE_RESTART_GRACE_MS + 1)
+        advanceTimeBy(timings.iceRestartGraceMs + 1)
         assertTrue("restartIce" in media.log)
         assertEquals("restart-offer", caller.signals.sent.last().second.offer.sdp)
 
@@ -422,7 +425,7 @@ class CallManagerTest {
         val calleeMedia = callee.media.single()
         calleeMedia.listener.onConnected()
         calleeMedia.listener.onQuality(CallQuality.RECONNECTING)
-        advanceTimeBy(CallTiming.ICE_RESTART_GRACE_MS + 1)
+        advanceTimeBy(timings.iceRestartGraceMs + 1)
         assertTrue("restartIce" !in calleeMedia.log)
     }
 

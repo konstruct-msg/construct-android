@@ -2,22 +2,18 @@ package com.construct.messenger.calls
 
 import shared.proto.signaling.v1.SignalingServiceOuterClass.SignalErrorCode
 import shared.proto.signaling.v1.Webrtc.HangupReason
-import uniffi.construct_core.CallAnswerDisposition
-import uniffi.construct_core.CallDirection
-import uniffi.construct_core.CallEndCause
-import uniffi.construct_core.CallHangupDisposition
+import uniffi.construct_core.CallEnded
 import uniffi.construct_core.CallHangupReason
 import uniffi.construct_core.CallHangupRoute
 import uniffi.construct_core.CallHangupSide
-import uniffi.construct_core.CallHeldCall
 import uniffi.construct_core.CallHistoryStatus
+import uniffi.construct_core.CallMachine
+import uniffi.construct_core.CallMachinePhase
 import uniffi.construct_core.callAdmits
 import uniffi.construct_core.callHangupReasonFromWire
 import uniffi.construct_core.callHangupReasonWire
 import uniffi.construct_core.callHangupRoute
 import uniffi.construct_core.callOfferDevices
-import uniffi.construct_core.callOnAnswer
-import uniffi.construct_core.callOnHangup
 import uniffi.construct_core.callSignalErrorFromWire
 import uniffi.construct_core.callSignalTargets
 
@@ -58,17 +54,6 @@ object CallDeviceRouting {
 
     /** Before a device is chosen, any of the peer's devices may speak (an answer, a decline); after, only the chosen one. */
     fun admits(device: String, chosen: String?): Boolean = callAdmits(device, chosen)
-
-    fun onAnswer(from: String, chosen: String?, offered: List<String>): CallAnswerDisposition =
-        callOnAnswer(from, chosen, offered)
-
-    /**
-     * A hangup (or busy) from one of the peer's devices. Declining anywhere ends the call for every
-     * device; busy on one only takes that one out until all are busy; taken on another of our
-     * devices ends this one's ringing and nothing else.
-     */
-    fun onHangup(from: String, reason: HangupReason, chosen: String?, offered: List<String>): CallHangupDisposition =
-        callOnHangup(from, CallRuleWire.reason(reason), chosen, offered)
 }
 
 /**
@@ -82,33 +67,29 @@ object CallRuleWire {
     fun proto(r: CallHangupReason): HangupReason =
         HangupReason.forNumber(callHangupReasonWire(r)) ?: HangupReason.HANGUP_REASON_UNSPECIFIED
 
-    fun cause(reason: CallEndReason): CallEndCause = when (reason) {
-        is CallEndReason.Hangup -> CallEndCause.Hangup(reason(reason.reason))
-        is CallEndReason.Error -> CallEndCause.ServerError(
-            callSignalErrorFromWire(if (reason.code == SignalErrorCode.UNRECOGNIZED) 0 else reason.code.number),
-        )
-        // Every local reason is a setup or path failure; a person ending the call is a hangup.
-        is CallEndReason.Local -> CallEndCause.Local
+    /** What the call screen shows for the machine's [phase] of [session]; [sinceMs]: when it was answered. */
+    fun state(phase: CallMachinePhase, session: CallSession, sinceMs: Long): CallState = when (phase) {
+        CallMachinePhase.INCOMING -> CallState.Incoming(session)
+        CallMachinePhase.DIALING -> CallState.Dialing(session)
+        CallMachinePhase.RINGING -> CallState.Ringing(session)
+        CallMachinePhase.CONNECTING -> CallState.Connecting(session)
+        CallMachinePhase.ACTIVE -> CallState.Active(session, sinceMs)
     }
 
-    fun direction(incoming: Boolean): CallDirection = if (incoming) CallDirection.INCOMING else CallDirection.OUTGOING
-
     /**
-     * The call this device holds when an offer for [callId] from [offerer] arrives, as the core's
-     * offer rule reads it (`callOnOffer`). [session]: the call [CallManager] holds, if any — it
-     * holds one only while the call is up. Never "awaiting the offer after the answer": a call
-     * starts here only from its offer.
+     * End the machine's call for [reason]: a server's hangup or busy (over the stream, so nothing
+     * goes back), a server's error, or a failure of ours. A hangup we send, or one the peer sent end
+     * to end, ends through `hangUp` / `hangupFrom`, which also say where it goes. Null when the
+     * machine holds no call, or for a rate limit, which ends nothing.
      */
-    fun held(callId: String, offerer: String, session: CallSession?, answered: Boolean): CallHeldCall? =
-        session?.let {
-            CallHeldCall(
-                sameCall = it.id == callId,
-                direction = direction(it.isIncoming),
-                withOfferer = it.peerUserId == offerer,
-                answered = answered,
-                awaitingOfferAfterAnswer = false,
-            )
-        }
+    fun end(reason: CallEndReason, machine: CallMachine, nowMs: Long): CallEnded? = when (reason) {
+        is CallEndReason.Hangup -> machine.endedByServer(reason(reason.reason), nowMs)
+        is CallEndReason.Error -> machine.serverError(
+            callSignalErrorFromWire(if (reason.code == SignalErrorCode.UNRECOGNIZED) 0 else reason.code.number),
+            nowMs,
+        )
+        is CallEndReason.Local -> machine.fail(nowMs)
+    }
 
     /** Which channels a hangup with this wire reason is written to (`callHangupRoute`). */
     fun hangupRoute(side: CallHangupSide, r: HangupReason): CallHangupRoute = callHangupRoute(side, reason(r))
