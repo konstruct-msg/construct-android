@@ -742,6 +742,8 @@ external fun uniffi_construct_core_checksum_func_call_signal_error_from_wire(
 ): Short
 external fun uniffi_construct_core_checksum_func_call_signal_targets(
 ): Short
+external fun uniffi_construct_core_checksum_func_call_timings(
+): Short
 external fun uniffi_construct_core_checksum_func_compute_pow(
 ): Short
 external fun uniffi_construct_core_checksum_func_compute_pow_with_progress(
@@ -951,6 +953,48 @@ external fun uniffi_construct_core_checksum_func_verify_recovery_signature(
 external fun uniffi_construct_core_checksum_func_wire_payload_unpack(
 ): Short
 external fun uniffi_construct_core_checksum_func_wire_summary(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_accept(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_active(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_answer_from(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_answered(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_dial(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_ended_by_server(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_fail(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_hang_up(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_hangup_from(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_ice_restart_sent(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_media_connected(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_media_quality(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_next_deadline(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_offer(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_offer_sent(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_push(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_recently_ended(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_ringing(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_server_error(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_stream_closed(
+): Short
+external fun uniffi_construct_core_checksum_method_callmachine_tick(
 ): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_export_one_time_prekeys(
 ): Short
@@ -1462,6 +1506,8 @@ external fun uniffi_construct_core_checksum_method_streamcursorstate_track(
 ): Short
 external fun uniffi_construct_core_checksum_method_streamcursorstate_track_resolved(
 ): Short
+external fun uniffi_construct_core_checksum_constructor_callmachine_new(
+): Short
 external fun uniffi_construct_core_checksum_constructor_fanoutretrystate_from_bytes(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_fanoutretrystate_new(
@@ -1513,7 +1559,55 @@ internal object UniffiLib {
         uniffiCallbackInterfacePowProgressCallback.register(this)
         
     }
-    external fun uniffi_construct_core_fn_clone_classiccryptocore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_construct_core_fn_clone_callmachine(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_free_callmachine(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_constructor_callmachine_new(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_method_callmachine_accept(`ptr`: Long,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_callmachine_active(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_callmachine_answer_from(`ptr`: Long,`callId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_callmachine_answered(`ptr`: Long,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_callmachine_dial(`ptr`: Long,`callId`: RustBuffer.ByValue,`peerUserId`: RustBuffer.ByValue,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_callmachine_ended_by_server(`ptr`: Long,`reason`: RustBuffer.ByValue,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_callmachine_fail(`ptr`: Long,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_callmachine_hang_up(`ptr`: Long,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_callmachine_hangup_from(`ptr`: Long,`callId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_callmachine_ice_restart_sent(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_callmachine_media_connected(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_callmachine_media_quality(`ptr`: Long,`reconnecting`: Byte,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_callmachine_next_deadline(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_callmachine_offer(`ptr`: Long,`callId`: RustBuffer.ByValue,`peerUserId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,`usable`: Byte,`myUserId`: RustBuffer.ByValue,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_callmachine_offer_sent(`ptr`: Long,`devices`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_callmachine_push(`ptr`: Long,`callId`: RustBuffer.ByValue,`peerUserId`: RustBuffer.ByValue,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_callmachine_recently_ended(`ptr`: Long,`callId`: RustBuffer.ByValue,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_callmachine_ringing(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_callmachine_server_error(`ptr`: Long,`error`: RustBuffer.ByValue,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_callmachine_stream_closed(`ptr`: Long,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_callmachine_tick(`ptr`: Long,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_clone_classiccryptocore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_free_classiccryptocore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -2137,6 +2231,8 @@ external fun uniffi_construct_core_fn_func_call_signal_error_from_wire(`value`: 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_call_signal_targets(`chosen`: RustBuffer.ByValue,`offered`: RustBuffer.ByValue,`pinned`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_call_timings(uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_compute_pow(`challenge`: RustBuffer.ByValue,`difficulty`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_compute_pow_with_progress(`challenge`: RustBuffer.ByValue,`difficulty`: Int,`progressCallback`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -2520,6 +2616,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_call_signal_targets() != 44640.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_call_timings() != 7056.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_compute_pow() != 30246.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2833,6 +2932,69 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_wire_summary() != 13986.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_accept() != 60439.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_active() != 568.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_answer_from() != 46867.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_answered() != 8364.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_dial() != 29570.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_ended_by_server() != 4791.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_fail() != 39277.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_hang_up() != 63859.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_hangup_from() != 44865.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_ice_restart_sent() != 10497.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_media_connected() != 9966.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_media_quality() != 13590.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_next_deadline() != 2974.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_offer() != 11937.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_offer_sent() != 16470.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_push() != 52893.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_recently_ended() != 19460.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_ringing() != 9310.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_server_error() != 18416.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_stream_closed() != 27173.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_callmachine_tick() != 31165.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_export_one_time_prekeys() != 37697.toShort()) {
@@ -3600,6 +3762,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_streamcursorstate_track_resolved() != 7693.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_constructor_callmachine_new() != 57398.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_constructor_fanoutretrystate_from_bytes() != 2145.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -4113,6 +4278,657 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
     override fun write(value: ByteArray, buf: ByteBuffer) {
         buf.putInt(value.size)
         buf.put(value)
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+//
+/**
+ * The call this device is in (construct-rules `call_machine`): its phase, devices, held or
+ * awaited offer, media, stream and ICE-restart budgets, ended ids and deadlines. Each method
+ * takes an event and the time (Unix ms) and returns what it decided; the app sends, runs WebRTC
+ * and CallKit, and keeps one timer at `next_deadline`, calling `tick` when it fires.
+ */
+public interface CallMachineInterface {
+    
+    /**
+     * The person answered the incoming call.
+     */
+    fun `accept`(`nowMs`: kotlin.Long): CallAcceptStep
+    
+    fun `active`(): CallSnapshot?
+    
+    /**
+     * An answer to our call from `device`; null when it is not for this outgoing call.
+     */
+    fun `answerFrom`(`callId`: kotlin.String, `device`: kotlin.String): CallAnswerDisposition?
+    
+    /**
+     * Our answer went out (or a renegotiation's): the call is answered.
+     */
+    fun `answered`(`nowMs`: kotlin.Long)
+    
+    /**
+     * The person asked to call `peer_user_id`.
+     */
+    fun `dial`(`callId`: kotlin.String, `peerUserId`: kotlin.String, `nowMs`: kotlin.Long): CallDialAction
+    
+    /**
+     * The server ended it over the stream; nothing goes back.
+     */
+    fun `endedByServer`(`reason`: CallHangupReason, `nowMs`: kotlin.Long): CallEnded?
+    
+    /**
+     * Our own setup or path failed.
+     */
+    fun `fail`(`nowMs`: kotlin.Long): CallEnded?
+    
+    /**
+     * We end the call.
+     */
+    fun `hangUp`(`nowMs`: kotlin.Long): CallLocalHangup?
+    
+    /**
+     * A hangup or busy from one of the peer's devices, end to end.
+     */
+    fun `hangupFrom`(`callId`: kotlin.String, `device`: kotlin.String, `reason`: CallHangupReason, `nowMs`: kotlin.Long): CallRemoteHangupStep
+    
+    /**
+     * The ICE-restart offer went out, or failed to.
+     */
+    fun `iceRestartSent`()
+    
+    fun `mediaConnected`()
+    
+    fun `mediaQuality`(`reconnecting`: kotlin.Boolean, `nowMs`: kotlin.Long): CallIceStep
+    
+    fun `nextDeadline`(): kotlin.Long?
+    
+    /**
+     * An offer out of the Double Ratchet from `device`; `usable`: it carries an SDP.
+     */
+    fun `offer`(`callId`: kotlin.String, `peerUserId`: kotlin.String, `device`: kotlin.String, `usable`: kotlin.Boolean, `myUserId`: kotlin.String, `nowMs`: kotlin.Long): CallOfferStep
+    
+    /**
+     * Our offer went to `devices`.
+     */
+    fun `offerSent`(`devices`: List<kotlin.String>)
+    
+    /**
+     * A VoIP push (iOS): a call id, no SDP.
+     */
+    fun `push`(`callId`: kotlin.String, `peerUserId`: kotlin.String, `nowMs`: kotlin.Long): CallPushAction
+    
+    fun `recentlyEnded`(`callId`: kotlin.String, `nowMs`: kotlin.Long): kotlin.Boolean
+    
+    /**
+     * One of their devices rang; whether the phase moved.
+     */
+    fun `ringing`(): kotlin.Boolean
+    
+    /**
+     * A signalling error; null when the call goes on (a rate limit).
+     */
+    fun `serverError`(`error`: CallSignalError, `nowMs`: kotlin.Long): CallEnded?
+    
+    fun `streamClosed`(`nowMs`: kotlin.Long): CallStreamStep?
+    
+    fun `tick`(`nowMs`: kotlin.Long): CallDue?
+    
+    companion object
+}
+
+/**
+ * The call this device is in (construct-rules `call_machine`): its phase, devices, held or
+ * awaited offer, media, stream and ICE-restart budgets, ended ids and deadlines. Each method
+ * takes an event and the time (Unix ms) and returns what it decided; the app sends, runs WebRTC
+ * and CallKit, and keeps one timer at `next_deadline`, calling `tick` when it fires.
+ */
+open class CallMachine: Disposable, AutoCloseable, CallMachineInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+    constructor() :
+        this(UniffiWithHandle, 
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_constructor_callmachine_new(
+    
+        _status)
+}
+    )
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_construct_core_fn_free_callmachine(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_construct_core_fn_clone_callmachine(handle, status)
+        }
+    }
+
+    
+    /**
+     * The person answered the incoming call.
+     */override fun `accept`(`nowMs`: kotlin.Long): CallAcceptStep {
+            return FfiConverterTypeCallAcceptStep.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_accept(
+        it,
+        FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `active`(): CallSnapshot? {
+            return FfiConverterOptionalTypeCallSnapshot.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_active(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * An answer to our call from `device`; null when it is not for this outgoing call.
+     */override fun `answerFrom`(`callId`: kotlin.String, `device`: kotlin.String): CallAnswerDisposition? {
+            return FfiConverterOptionalTypeCallAnswerDisposition.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_answer_from(
+        it,
+        FfiConverterString.lower(`callId`),FfiConverterString.lower(`device`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Our answer went out (or a renegotiation's): the call is answered.
+     */override fun `answered`(`nowMs`: kotlin.Long)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_answered(
+        it,
+        FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * The person asked to call `peer_user_id`.
+     */override fun `dial`(`callId`: kotlin.String, `peerUserId`: kotlin.String, `nowMs`: kotlin.Long): CallDialAction {
+            return FfiConverterTypeCallDialAction.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_dial(
+        it,
+        FfiConverterString.lower(`callId`),FfiConverterString.lower(`peerUserId`),FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The server ended it over the stream; nothing goes back.
+     */override fun `endedByServer`(`reason`: CallHangupReason, `nowMs`: kotlin.Long): CallEnded? {
+            return FfiConverterOptionalTypeCallEnded.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_ended_by_server(
+        it,
+        FfiConverterTypeCallHangupReason.lower(`reason`),FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Our own setup or path failed.
+     */override fun `fail`(`nowMs`: kotlin.Long): CallEnded? {
+            return FfiConverterOptionalTypeCallEnded.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_fail(
+        it,
+        FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * We end the call.
+     */override fun `hangUp`(`nowMs`: kotlin.Long): CallLocalHangup? {
+            return FfiConverterOptionalTypeCallLocalHangup.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_hang_up(
+        it,
+        FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * A hangup or busy from one of the peer's devices, end to end.
+     */override fun `hangupFrom`(`callId`: kotlin.String, `device`: kotlin.String, `reason`: CallHangupReason, `nowMs`: kotlin.Long): CallRemoteHangupStep {
+            return FfiConverterTypeCallRemoteHangupStep.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_hangup_from(
+        it,
+        FfiConverterString.lower(`callId`),FfiConverterString.lower(`device`),FfiConverterTypeCallHangupReason.lower(`reason`),FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The ICE-restart offer went out, or failed to.
+     */override fun `iceRestartSent`()
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_ice_restart_sent(
+        it,
+        _status)
+}
+    }
+    
+    
+
+    override fun `mediaConnected`()
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_media_connected(
+        it,
+        _status)
+}
+    }
+    
+    
+
+    override fun `mediaQuality`(`reconnecting`: kotlin.Boolean, `nowMs`: kotlin.Long): CallIceStep {
+            return FfiConverterTypeCallIceStep.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_media_quality(
+        it,
+        FfiConverterBoolean.lower(`reconnecting`),FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `nextDeadline`(): kotlin.Long? {
+            return FfiConverterOptionalLong.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_next_deadline(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * An offer out of the Double Ratchet from `device`; `usable`: it carries an SDP.
+     */override fun `offer`(`callId`: kotlin.String, `peerUserId`: kotlin.String, `device`: kotlin.String, `usable`: kotlin.Boolean, `myUserId`: kotlin.String, `nowMs`: kotlin.Long): CallOfferStep {
+            return FfiConverterTypeCallOfferStep.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_offer(
+        it,
+        FfiConverterString.lower(`callId`),FfiConverterString.lower(`peerUserId`),FfiConverterString.lower(`device`),FfiConverterBoolean.lower(`usable`),FfiConverterString.lower(`myUserId`),FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Our offer went to `devices`.
+     */override fun `offerSent`(`devices`: List<kotlin.String>)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_offer_sent(
+        it,
+        FfiConverterSequenceString.lower(`devices`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * A VoIP push (iOS): a call id, no SDP.
+     */override fun `push`(`callId`: kotlin.String, `peerUserId`: kotlin.String, `nowMs`: kotlin.Long): CallPushAction {
+            return FfiConverterTypeCallPushAction.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_push(
+        it,
+        FfiConverterString.lower(`callId`),FfiConverterString.lower(`peerUserId`),FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `recentlyEnded`(`callId`: kotlin.String, `nowMs`: kotlin.Long): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_recently_ended(
+        it,
+        FfiConverterString.lower(`callId`),FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * One of their devices rang; whether the phase moved.
+     */override fun `ringing`(): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_ringing(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * A signalling error; null when the call goes on (a rate limit).
+     */override fun `serverError`(`error`: CallSignalError, `nowMs`: kotlin.Long): CallEnded? {
+            return FfiConverterOptionalTypeCallEnded.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_server_error(
+        it,
+        FfiConverterTypeCallSignalError.lower(`error`),FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `streamClosed`(`nowMs`: kotlin.Long): CallStreamStep? {
+            return FfiConverterOptionalTypeCallStreamStep.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_stream_closed(
+        it,
+        FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `tick`(`nowMs`: kotlin.Long): CallDue? {
+            return FfiConverterOptionalTypeCallDue.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_callmachine_tick(
+        it,
+        FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
+
+
+    
+    
+    /**
+     * @suppress
+     */
+    companion object
+    
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallMachine: FfiConverter<CallMachine, Long> {
+    override fun lower(value: CallMachine): Long {
+        return value.uniffiCloneHandle()
+    }
+
+    override fun lift(value: Long): CallMachine {
+        return CallMachine(UniffiWithHandle, value)
+    }
+
+    override fun read(buf: ByteBuffer): CallMachine {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: CallMachine) = 8UL
+
+    override fun write(value: CallMachine, buf: ByteBuffer) {
+        buf.putLong(lower(value))
     }
 }
 
@@ -12301,6 +13117,75 @@ public object FfiConverterTypeBinaryKeyBundle: FfiConverterRustBuffer<BinaryKeyB
 
 
 
+/**
+ * A call that ended: its screen and its history row (none: taken on another of our devices).
+ */
+data class CallEnded (
+    var `callId`: kotlin.String
+    , 
+    var `peerUserId`: kotlin.String
+    , 
+    var `direction`: CallDirection
+    , 
+    var `cause`: CallEndCause
+    , 
+    var `outcome`: CallEndOutcome
+    , 
+    var `history`: CallHistoryStatus?
+    , 
+    var `startedAtMs`: kotlin.Long
+    , 
+    var `durationSeconds`: kotlin.UInt
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallEnded: FfiConverterRustBuffer<CallEnded> {
+    override fun read(buf: ByteBuffer): CallEnded {
+        return CallEnded(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterTypeCallDirection.read(buf),
+            FfiConverterTypeCallEndCause.read(buf),
+            FfiConverterTypeCallEndOutcome.read(buf),
+            FfiConverterOptionalTypeCallHistoryStatus.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: CallEnded) = (
+            FfiConverterString.allocationSize(value.`callId`) +
+            FfiConverterString.allocationSize(value.`peerUserId`) +
+            FfiConverterTypeCallDirection.allocationSize(value.`direction`) +
+            FfiConverterTypeCallEndCause.allocationSize(value.`cause`) +
+            FfiConverterTypeCallEndOutcome.allocationSize(value.`outcome`) +
+            FfiConverterOptionalTypeCallHistoryStatus.allocationSize(value.`history`) +
+            FfiConverterLong.allocationSize(value.`startedAtMs`) +
+            FfiConverterUInt.allocationSize(value.`durationSeconds`)
+    )
+
+    override fun write(value: CallEnded, buf: ByteBuffer) {
+            FfiConverterString.write(value.`callId`, buf)
+            FfiConverterString.write(value.`peerUserId`, buf)
+            FfiConverterTypeCallDirection.write(value.`direction`, buf)
+            FfiConverterTypeCallEndCause.write(value.`cause`, buf)
+            FfiConverterTypeCallEndOutcome.write(value.`outcome`, buf)
+            FfiConverterOptionalTypeCallHistoryStatus.write(value.`history`, buf)
+            FfiConverterLong.write(value.`startedAtMs`, buf)
+            FfiConverterUInt.write(value.`durationSeconds`, buf)
+    }
+}
+
+
+
 data class CallHangupRoute (
     var `e2ee`: kotlin.Boolean
     , 
@@ -12386,6 +13271,213 @@ public object FfiConverterTypeCallHeldCall: FfiConverterRustBuffer<CallHeldCall>
             FfiConverterBoolean.write(value.`withOfferer`, buf)
             FfiConverterBoolean.write(value.`answered`, buf)
             FfiConverterBoolean.write(value.`awaitingOfferAfterAnswer`, buf)
+    }
+}
+
+
+
+/**
+ * A hangup of ours: to `targets` (empty: the pinned device) on `route`.
+ */
+data class CallLocalHangup (
+    var `reason`: CallHangupReason
+    , 
+    var `targets`: List<kotlin.String>
+    , 
+    var `route`: CallHangupRoute
+    , 
+    var `ended`: CallEnded
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallLocalHangup: FfiConverterRustBuffer<CallLocalHangup> {
+    override fun read(buf: ByteBuffer): CallLocalHangup {
+        return CallLocalHangup(
+            FfiConverterTypeCallHangupReason.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterTypeCallHangupRoute.read(buf),
+            FfiConverterTypeCallEnded.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: CallLocalHangup) = (
+            FfiConverterTypeCallHangupReason.allocationSize(value.`reason`) +
+            FfiConverterSequenceString.allocationSize(value.`targets`) +
+            FfiConverterTypeCallHangupRoute.allocationSize(value.`route`) +
+            FfiConverterTypeCallEnded.allocationSize(value.`ended`)
+    )
+
+    override fun write(value: CallLocalHangup, buf: ByteBuffer) {
+            FfiConverterTypeCallHangupReason.write(value.`reason`, buf)
+            FfiConverterSequenceString.write(value.`targets`, buf)
+            FfiConverterTypeCallHangupRoute.write(value.`route`, buf)
+            FfiConverterTypeCallEnded.write(value.`ended`, buf)
+    }
+}
+
+
+
+/**
+ * The call in progress, as `CallMachine` holds it.
+ */
+data class CallSnapshot (
+    var `callId`: kotlin.String
+    , 
+    var `peerUserId`: kotlin.String
+    , 
+    var `direction`: CallDirection
+    , 
+    var `phase`: CallMachinePhase
+    , 
+    var `chosen`: kotlin.String?
+    , 
+    var `offered`: List<kotlin.String>
+    , 
+    /**
+     * Who a signal of ours goes to now; empty: the pinned device.
+     */
+    var `targets`: List<kotlin.String>
+    , 
+    var `startedAtMs`: kotlin.Long
+    , 
+    var `answeredAtMs`: kotlin.Long?
+    , 
+    var `holdsOffer`: kotlin.Boolean
+    , 
+    var `awaitingOfferAfterAnswer`: kotlin.Boolean
+    , 
+    var `mediaConnected`: kotlin.Boolean
+    , 
+    var `reconnecting`: kotlin.Boolean
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallSnapshot: FfiConverterRustBuffer<CallSnapshot> {
+    override fun read(buf: ByteBuffer): CallSnapshot {
+        return CallSnapshot(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterTypeCallDirection.read(buf),
+            FfiConverterTypeCallMachinePhase.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterOptionalLong.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: CallSnapshot) = (
+            FfiConverterString.allocationSize(value.`callId`) +
+            FfiConverterString.allocationSize(value.`peerUserId`) +
+            FfiConverterTypeCallDirection.allocationSize(value.`direction`) +
+            FfiConverterTypeCallMachinePhase.allocationSize(value.`phase`) +
+            FfiConverterOptionalString.allocationSize(value.`chosen`) +
+            FfiConverterSequenceString.allocationSize(value.`offered`) +
+            FfiConverterSequenceString.allocationSize(value.`targets`) +
+            FfiConverterLong.allocationSize(value.`startedAtMs`) +
+            FfiConverterOptionalLong.allocationSize(value.`answeredAtMs`) +
+            FfiConverterBoolean.allocationSize(value.`holdsOffer`) +
+            FfiConverterBoolean.allocationSize(value.`awaitingOfferAfterAnswer`) +
+            FfiConverterBoolean.allocationSize(value.`mediaConnected`) +
+            FfiConverterBoolean.allocationSize(value.`reconnecting`)
+    )
+
+    override fun write(value: CallSnapshot, buf: ByteBuffer) {
+            FfiConverterString.write(value.`callId`, buf)
+            FfiConverterString.write(value.`peerUserId`, buf)
+            FfiConverterTypeCallDirection.write(value.`direction`, buf)
+            FfiConverterTypeCallMachinePhase.write(value.`phase`, buf)
+            FfiConverterOptionalString.write(value.`chosen`, buf)
+            FfiConverterSequenceString.write(value.`offered`, buf)
+            FfiConverterSequenceString.write(value.`targets`, buf)
+            FfiConverterLong.write(value.`startedAtMs`, buf)
+            FfiConverterOptionalLong.write(value.`answeredAtMs`, buf)
+            FfiConverterBoolean.write(value.`holdsOffer`, buf)
+            FfiConverterBoolean.write(value.`awaitingOfferAfterAnswer`, buf)
+            FfiConverterBoolean.write(value.`mediaConnected`, buf)
+            FfiConverterBoolean.write(value.`reconnecting`, buf)
+    }
+}
+
+
+
+data class CallTimings (
+    var `unansweredMs`: kotlin.Long
+    , 
+    var `offerWaitMs`: kotlin.Long
+    , 
+    var `iceRestartGraceMs`: kotlin.Long
+    , 
+    var `maxIceRestarts`: kotlin.UInt
+    , 
+    var `maxStreamRetries`: kotlin.UInt
+    , 
+    var `maxPostMediaReconnects`: kotlin.UInt
+    , 
+    var `endedMemoryMs`: kotlin.Long
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallTimings: FfiConverterRustBuffer<CallTimings> {
+    override fun read(buf: ByteBuffer): CallTimings {
+        return CallTimings(
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: CallTimings) = (
+            FfiConverterLong.allocationSize(value.`unansweredMs`) +
+            FfiConverterLong.allocationSize(value.`offerWaitMs`) +
+            FfiConverterLong.allocationSize(value.`iceRestartGraceMs`) +
+            FfiConverterUInt.allocationSize(value.`maxIceRestarts`) +
+            FfiConverterUInt.allocationSize(value.`maxStreamRetries`) +
+            FfiConverterUInt.allocationSize(value.`maxPostMediaReconnects`) +
+            FfiConverterLong.allocationSize(value.`endedMemoryMs`)
+    )
+
+    override fun write(value: CallTimings, buf: ByteBuffer) {
+            FfiConverterLong.write(value.`unansweredMs`, buf)
+            FfiConverterLong.write(value.`offerWaitMs`, buf)
+            FfiConverterLong.write(value.`iceRestartGraceMs`, buf)
+            FfiConverterUInt.write(value.`maxIceRestarts`, buf)
+            FfiConverterUInt.write(value.`maxStreamRetries`, buf)
+            FfiConverterUInt.write(value.`maxPostMediaReconnects`, buf)
+            FfiConverterLong.write(value.`endedMemoryMs`, buf)
     }
 }
 
@@ -15748,6 +16840,37 @@ public object FfiConverterTypeAckCheckResult: FfiConverterRustBuffer<AckCheckRes
 
 
 
+
+enum class CallAcceptStep {
+    
+    APPLY_OFFER,
+    WAIT_FOR_OFFER,
+    IGNORE;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallAcceptStep: FfiConverterRustBuffer<CallAcceptStep> {
+    override fun read(buf: ByteBuffer) = try {
+        CallAcceptStep.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: CallAcceptStep) = 4UL
+
+    override fun write(value: CallAcceptStep, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 sealed class CallAnswerDisposition {
     
     /**
@@ -15836,6 +16959,37 @@ public object FfiConverterTypeCallAnswerDisposition : FfiConverterRustBuffer<Cal
 
 
 
+
+enum class CallDialAction {
+    
+    START,
+    ANSWER_INSTEAD,
+    BUSY;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallDialAction: FfiConverterRustBuffer<CallDialAction> {
+    override fun read(buf: ByteBuffer) = try {
+        CallDialAction.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: CallDialAction) = 4UL
+
+    override fun write(value: CallDialAction, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 /**
  * Which side of the call we are.
  */
@@ -15862,6 +17016,98 @@ public object FfiConverterTypeCallDirection: FfiConverterRustBuffer<CallDirectio
 
     override fun write(value: CallDirection, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+sealed class CallDue {
+    
+    data class Unanswered(
+        val `hangup`: CallLocalHangup) : CallDue()
+        
+    {
+        
+
+        companion object
+    }
+    
+    data class NoOffer(
+        val `ended`: CallEnded) : CallDue()
+        
+    {
+        
+
+        companion object
+    }
+    
+    object RestartIce : CallDue()
+    
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallDue : FfiConverterRustBuffer<CallDue>{
+    override fun read(buf: ByteBuffer): CallDue {
+        return when(buf.getInt()) {
+            1 -> CallDue.Unanswered(
+                FfiConverterTypeCallLocalHangup.read(buf),
+                )
+            2 -> CallDue.NoOffer(
+                FfiConverterTypeCallEnded.read(buf),
+                )
+            3 -> CallDue.RestartIce
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: CallDue) = when(value) {
+        is CallDue.Unanswered -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeCallLocalHangup.allocationSize(value.`hangup`)
+            )
+        }
+        is CallDue.NoOffer -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeCallEnded.allocationSize(value.`ended`)
+            )
+        }
+        is CallDue.RestartIce -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: CallDue, buf: ByteBuffer) {
+        when(value) {
+            is CallDue.Unanswered -> {
+                buf.putInt(1)
+                FfiConverterTypeCallLocalHangup.write(value.`hangup`, buf)
+                Unit
+            }
+            is CallDue.NoOffer -> {
+                buf.putInt(2)
+                FfiConverterTypeCallEnded.write(value.`ended`, buf)
+                Unit
+            }
+            is CallDue.RestartIce -> {
+                buf.putInt(3)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
     }
 }
 
@@ -16344,6 +17590,74 @@ public object FfiConverterTypeCallHistoryStatus: FfiConverterRustBuffer<CallHist
 
 
 
+enum class CallIceStep {
+    
+    SCHEDULE,
+    CALLEE_WAITS,
+    SKIP;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallIceStep: FfiConverterRustBuffer<CallIceStep> {
+    override fun read(buf: ByteBuffer) = try {
+        CallIceStep.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: CallIceStep) = 4UL
+
+    override fun write(value: CallIceStep, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * Where the call in progress is. An ended call is not a phase: it leaves the machine as a
+ * `CallEnded`.
+ */
+
+enum class CallMachinePhase {
+    
+    INCOMING,
+    DIALING,
+    RINGING,
+    CONNECTING,
+    ACTIVE;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallMachinePhase: FfiConverterRustBuffer<CallMachinePhase> {
+    override fun read(buf: ByteBuffer) = try {
+        CallMachinePhase.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: CallMachinePhase) = 4UL
+
+    override fun write(value: CallMachinePhase, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
 enum class CallOfferAction {
     
     IGNORE_ENDED,
@@ -16372,6 +17686,318 @@ public object FfiConverterTypeCallOfferAction: FfiConverterRustBuffer<CallOfferA
 
     override fun write(value: CallOfferAction, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+sealed class CallOfferStep {
+    
+    object Ignore : CallOfferStep()
+    
+    
+    object Ring : CallOfferStep()
+    
+    
+    data class ReplaceOutgoing(
+        val `replaced`: kotlin.String) : CallOfferStep()
+        
+    {
+        
+
+        companion object
+    }
+    
+    object KeepOurs : CallOfferStep()
+    
+    
+    object Busy : CallOfferStep()
+    
+    
+    object Hold : CallOfferStep()
+    
+    
+    object ResumeAnswer : CallOfferStep()
+    
+    
+    object Renegotiate : CallOfferStep()
+    
+    
+    data class Fail(
+        val `ended`: CallEnded) : CallOfferStep()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallOfferStep : FfiConverterRustBuffer<CallOfferStep>{
+    override fun read(buf: ByteBuffer): CallOfferStep {
+        return when(buf.getInt()) {
+            1 -> CallOfferStep.Ignore
+            2 -> CallOfferStep.Ring
+            3 -> CallOfferStep.ReplaceOutgoing(
+                FfiConverterString.read(buf),
+                )
+            4 -> CallOfferStep.KeepOurs
+            5 -> CallOfferStep.Busy
+            6 -> CallOfferStep.Hold
+            7 -> CallOfferStep.ResumeAnswer
+            8 -> CallOfferStep.Renegotiate
+            9 -> CallOfferStep.Fail(
+                FfiConverterTypeCallEnded.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: CallOfferStep) = when(value) {
+        is CallOfferStep.Ignore -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is CallOfferStep.Ring -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is CallOfferStep.ReplaceOutgoing -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`replaced`)
+            )
+        }
+        is CallOfferStep.KeepOurs -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is CallOfferStep.Busy -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is CallOfferStep.Hold -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is CallOfferStep.ResumeAnswer -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is CallOfferStep.Renegotiate -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is CallOfferStep.Fail -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeCallEnded.allocationSize(value.`ended`)
+            )
+        }
+    }
+
+    override fun write(value: CallOfferStep, buf: ByteBuffer) {
+        when(value) {
+            is CallOfferStep.Ignore -> {
+                buf.putInt(1)
+                Unit
+            }
+            is CallOfferStep.Ring -> {
+                buf.putInt(2)
+                Unit
+            }
+            is CallOfferStep.ReplaceOutgoing -> {
+                buf.putInt(3)
+                FfiConverterString.write(value.`replaced`, buf)
+                Unit
+            }
+            is CallOfferStep.KeepOurs -> {
+                buf.putInt(4)
+                Unit
+            }
+            is CallOfferStep.Busy -> {
+                buf.putInt(5)
+                Unit
+            }
+            is CallOfferStep.Hold -> {
+                buf.putInt(6)
+                Unit
+            }
+            is CallOfferStep.ResumeAnswer -> {
+                buf.putInt(7)
+                Unit
+            }
+            is CallOfferStep.Renegotiate -> {
+                buf.putInt(8)
+                Unit
+            }
+            is CallOfferStep.Fail -> {
+                buf.putInt(9)
+                FfiConverterTypeCallEnded.write(value.`ended`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+
+enum class CallPushAction {
+    
+    BEGIN,
+    ALREADY_TRACKING,
+    DEFER_TO_GLARE,
+    DECLINE_BUSY;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallPushAction: FfiConverterRustBuffer<CallPushAction> {
+    override fun read(buf: ByteBuffer) = try {
+        CallPushAction.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: CallPushAction) = 4UL
+
+    override fun write(value: CallPushAction, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+sealed class CallRemoteHangupStep {
+    
+    object Ignore : CallRemoteHangupStep()
+    
+    
+    data class DropDevice(
+        val `remaining`: List<kotlin.String>) : CallRemoteHangupStep()
+        
+    {
+        
+
+        companion object
+    }
+    
+    data class End(
+        val `release`: List<kotlin.String>, 
+        val `reason`: CallHangupReason, 
+        val `route`: CallHangupRoute, 
+        val `ended`: CallEnded) : CallRemoteHangupStep()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallRemoteHangupStep : FfiConverterRustBuffer<CallRemoteHangupStep>{
+    override fun read(buf: ByteBuffer): CallRemoteHangupStep {
+        return when(buf.getInt()) {
+            1 -> CallRemoteHangupStep.Ignore
+            2 -> CallRemoteHangupStep.DropDevice(
+                FfiConverterSequenceString.read(buf),
+                )
+            3 -> CallRemoteHangupStep.End(
+                FfiConverterSequenceString.read(buf),
+                FfiConverterTypeCallHangupReason.read(buf),
+                FfiConverterTypeCallHangupRoute.read(buf),
+                FfiConverterTypeCallEnded.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: CallRemoteHangupStep) = when(value) {
+        is CallRemoteHangupStep.Ignore -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is CallRemoteHangupStep.DropDevice -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterSequenceString.allocationSize(value.`remaining`)
+            )
+        }
+        is CallRemoteHangupStep.End -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterSequenceString.allocationSize(value.`release`)
+                + FfiConverterTypeCallHangupReason.allocationSize(value.`reason`)
+                + FfiConverterTypeCallHangupRoute.allocationSize(value.`route`)
+                + FfiConverterTypeCallEnded.allocationSize(value.`ended`)
+            )
+        }
+    }
+
+    override fun write(value: CallRemoteHangupStep, buf: ByteBuffer) {
+        when(value) {
+            is CallRemoteHangupStep.Ignore -> {
+                buf.putInt(1)
+                Unit
+            }
+            is CallRemoteHangupStep.DropDevice -> {
+                buf.putInt(2)
+                FfiConverterSequenceString.write(value.`remaining`, buf)
+                Unit
+            }
+            is CallRemoteHangupStep.End -> {
+                buf.putInt(3)
+                FfiConverterSequenceString.write(value.`release`, buf)
+                FfiConverterTypeCallHangupReason.write(value.`reason`, buf)
+                FfiConverterTypeCallHangupRoute.write(value.`route`, buf)
+                FfiConverterTypeCallEnded.write(value.`ended`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
     }
 }
 
@@ -16440,6 +18066,88 @@ public object FfiConverterTypeCallStreamClosedAction: FfiConverterRustBuffer<Cal
 
     override fun write(value: CallStreamClosedAction, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+sealed class CallStreamStep {
+    
+    object Reconnect : CallStreamStep()
+    
+    
+    object KeepOnMessagePath : CallStreamStep()
+    
+    
+    data class End(
+        val `ended`: CallEnded) : CallStreamStep()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallStreamStep : FfiConverterRustBuffer<CallStreamStep>{
+    override fun read(buf: ByteBuffer): CallStreamStep {
+        return when(buf.getInt()) {
+            1 -> CallStreamStep.Reconnect
+            2 -> CallStreamStep.KeepOnMessagePath
+            3 -> CallStreamStep.End(
+                FfiConverterTypeCallEnded.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: CallStreamStep) = when(value) {
+        is CallStreamStep.Reconnect -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is CallStreamStep.KeepOnMessagePath -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is CallStreamStep.End -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeCallEnded.allocationSize(value.`ended`)
+            )
+        }
+    }
+
+    override fun write(value: CallStreamStep, buf: ByteBuffer) {
+        when(value) {
+            is CallStreamStep.Reconnect -> {
+                buf.putInt(1)
+                Unit
+            }
+            is CallStreamStep.KeepOnMessagePath -> {
+                buf.putInt(2)
+                Unit
+            }
+            is CallStreamStep.End -> {
+                buf.putInt(3)
+                FfiConverterTypeCallEnded.write(value.`ended`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
     }
 }
 
@@ -20669,6 +22377,38 @@ public object FfiConverterOptionalByteArray: FfiConverterRustBuffer<kotlin.ByteA
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeCallEnded: FfiConverterRustBuffer<CallEnded?> {
+    override fun read(buf: ByteBuffer): CallEnded? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeCallEnded.read(buf)
+    }
+
+    override fun allocationSize(value: CallEnded?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeCallEnded.allocationSize(value)
+        }
+    }
+
+    override fun write(value: CallEnded?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeCallEnded.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeCallHeldCall: FfiConverterRustBuffer<CallHeldCall?> {
     override fun read(buf: ByteBuffer): CallHeldCall? {
         if (buf.get().toInt() == 0) {
@@ -20691,6 +22431,70 @@ public object FfiConverterOptionalTypeCallHeldCall: FfiConverterRustBuffer<CallH
         } else {
             buf.put(1)
             FfiConverterTypeCallHeldCall.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeCallLocalHangup: FfiConverterRustBuffer<CallLocalHangup?> {
+    override fun read(buf: ByteBuffer): CallLocalHangup? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeCallLocalHangup.read(buf)
+    }
+
+    override fun allocationSize(value: CallLocalHangup?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeCallLocalHangup.allocationSize(value)
+        }
+    }
+
+    override fun write(value: CallLocalHangup?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeCallLocalHangup.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeCallSnapshot: FfiConverterRustBuffer<CallSnapshot?> {
+    override fun read(buf: ByteBuffer): CallSnapshot? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeCallSnapshot.read(buf)
+    }
+
+    override fun allocationSize(value: CallSnapshot?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeCallSnapshot.allocationSize(value)
+        }
+    }
+
+    override fun write(value: CallSnapshot?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeCallSnapshot.write(value, buf)
         }
     }
 }
@@ -21309,6 +23113,70 @@ public object FfiConverterOptionalTypeStreamCursorSkip: FfiConverterRustBuffer<S
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeCallAnswerDisposition: FfiConverterRustBuffer<CallAnswerDisposition?> {
+    override fun read(buf: ByteBuffer): CallAnswerDisposition? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeCallAnswerDisposition.read(buf)
+    }
+
+    override fun allocationSize(value: CallAnswerDisposition?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeCallAnswerDisposition.allocationSize(value)
+        }
+    }
+
+    override fun write(value: CallAnswerDisposition?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeCallAnswerDisposition.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeCallDue: FfiConverterRustBuffer<CallDue?> {
+    override fun read(buf: ByteBuffer): CallDue? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeCallDue.read(buf)
+    }
+
+    override fun allocationSize(value: CallDue?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeCallDue.allocationSize(value)
+        }
+    }
+
+    override fun write(value: CallDue?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeCallDue.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeCallHistoryStatus: FfiConverterRustBuffer<CallHistoryStatus?> {
     override fun read(buf: ByteBuffer): CallHistoryStatus? {
         if (buf.get().toInt() == 0) {
@@ -21331,6 +23199,38 @@ public object FfiConverterOptionalTypeCallHistoryStatus: FfiConverterRustBuffer<
         } else {
             buf.put(1)
             FfiConverterTypeCallHistoryStatus.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeCallStreamStep: FfiConverterRustBuffer<CallStreamStep?> {
+    override fun read(buf: ByteBuffer): CallStreamStep? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeCallStreamStep.read(buf)
+    }
+
+    override fun allocationSize(value: CallStreamStep?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeCallStreamStep.allocationSize(value)
+        }
+    }
+
+    override fun write(value: CallStreamStep?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeCallStreamStep.write(value, buf)
         }
     }
 }
@@ -22587,6 +24487,19 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     UniffiLib.uniffi_construct_core_fn_func_call_signal_targets(
     
         FfiConverterOptionalString.lower(`chosen`),FfiConverterSequenceString.lower(`offered`),FfiConverterOptionalString.lower(`pinned`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The call timings the call machine keeps (construct-rules `call_machine::timing`).
+         */ fun `callTimings`(): CallTimings {
+            return FfiConverterTypeCallTimings.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_call_timings(
+    
+        _status)
 }
     )
     }

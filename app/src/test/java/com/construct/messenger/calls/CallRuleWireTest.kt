@@ -1,6 +1,8 @@
 package com.construct.messenger.calls
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Test
 import shared.proto.signaling.v1.SignalingServiceOuterClass.SignalErrorCode
 import shared.proto.signaling.v1.Webrtc.HangupReason
@@ -8,9 +10,9 @@ import uniffi.construct_core.CallEndCause
 import uniffi.construct_core.CallHangupReason
 import uniffi.construct_core.CallHangupRoute
 import uniffi.construct_core.CallHangupSide
-import uniffi.construct_core.CallOfferAction
+import uniffi.construct_core.CallMachine
+import uniffi.construct_core.CallMachinePhase
 import uniffi.construct_core.CallSignalError
-import uniffi.construct_core.callOnOffer
 
 /** The bridge between this app's call values and the core rule's types (todo 295). */
 class CallRuleWireTest {
@@ -29,73 +31,43 @@ class CallRuleWireTest {
         assertEquals(CallHangupReason.UNSPECIFIED, CallRuleWire.reason(HangupReason.UNRECOGNIZED))
     }
 
-    /** Mutations: a server error read as a hangup or a local failure; an error code by the wrong number. */
+    private val session = CallSession("c1", "peer", "P", CallSession.Direction.INCOMING)
+
+    /** Mutation: any two phases swapped in `CallRuleWire.state`, or the answer time dropped. */
     @Test
-    fun howACallEndedReachesTheRuleAsItHappened() {
+    fun theScreenShowsTheMachinesPhase() {
+        assertEquals(CallState.Incoming(session), CallRuleWire.state(CallMachinePhase.INCOMING, session, 7))
+        assertEquals(CallState.Dialing(session), CallRuleWire.state(CallMachinePhase.DIALING, session, 7))
+        assertEquals(CallState.Ringing(session), CallRuleWire.state(CallMachinePhase.RINGING, session, 7))
+        assertEquals(CallState.Connecting(session), CallRuleWire.state(CallMachinePhase.CONNECTING, session, 7))
+        assertEquals(CallState.Active(session, 7), CallRuleWire.state(CallMachinePhase.ACTIVE, session, 7))
+    }
+
+    private fun dialled() = CallMachine().also { it.dial("c1", "peer", 0) }
+
+    /**
+     * How the call ended reaches the machine as it happened. Mutations: a server's hangup ended as a
+     * local failure; an error read by the wrong number; a local failure ended as a hangup.
+     */
+    @Test
+    fun theEndReachesTheMachineAsItHappened() {
         assertEquals(
-            CallEndCause.Hangup(CallHangupReason.DECLINED),
-            CallRuleWire.cause(CallEndReason.Hangup(HangupReason.HANGUP_REASON_DECLINED)),
+            CallEndCause.Hangup(CallHangupReason.BUSY),
+            CallRuleWire.end(CallEndReason.Hangup(HangupReason.HANGUP_REASON_BUSY), dialled(), 0)?.cause,
         )
         assertEquals(
             CallEndCause.ServerError(CallSignalError.CALLEE_BUSY),
-            CallRuleWire.cause(CallEndReason.Error(SignalErrorCode.SIGNAL_ERROR_CODE_CALLEE_BUSY)),
+            CallRuleWire.end(CallEndReason.Error(SignalErrorCode.SIGNAL_ERROR_CODE_CALLEE_BUSY), dialled(), 0)?.cause,
         )
         assertEquals(
             CallEndCause.ServerError(CallSignalError.CALL_EXPIRED),
-            CallRuleWire.cause(CallEndReason.Error(SignalErrorCode.SIGNAL_ERROR_CODE_CALL_EXPIRED)),
+            CallRuleWire.end(CallEndReason.Error(SignalErrorCode.SIGNAL_ERROR_CODE_CALL_EXPIRED), dialled(), 0)?.cause,
         )
-        assertEquals(CallEndCause.Local, CallRuleWire.cause(CallEndReason.Local("ICE failed")))
-    }
-
-    private fun incoming(id: String = "c1", from: String = "peer") = CallSession(id, from, "P", CallSession.Direction.INCOMING)
-    private fun outgoing(id: String = "c0", to: String = "peer") = CallSession(id, to, "P", CallSession.Direction.OUTGOING)
-
-    /** An offer for [callId] from [offerer], read through [CallRuleWire.held] into the core's rule. */
-    private fun action(
-        session: CallSession?,
-        callId: String = "c1",
-        offerer: String = "peer",
-        me: String = "me",
-        ended: Boolean = false,
-        answered: Boolean = false,
-    ): CallOfferAction = callOnOffer(ended, CallRuleWire.held(callId, offerer, session, answered), me, offerer)
-
-    /** Mutations: `held` never names the same call; `held` reads every call as answered. */
-    @Test
-    fun anOfferForTheRingingCallIsHeldUntilTheAnswer() {
-        assertEquals(CallOfferAction.HOLD_UNTIL_ANSWERED, action(incoming()))
-    }
-
-    /** Mutation: `held` reads every call as unanswered — an ICE restart would wait for a consent given long ago. */
-    @Test
-    fun anAnsweredCallRenegotiates() {
-        assertEquals(CallOfferAction.RENEGOTIATE, action(incoming(), answered = true))
-    }
-
-    /** Mutation: `direction` reads outgoing as incoming. */
-    @Test
-    fun anOfferOnOurOwnCallRenegotiates() {
-        assertEquals(CallOfferAction.RENEGOTIATE, action(outgoing(), callId = "c0"))
-    }
-
-    @Test
-    fun anEndedCallStaysEndedAndANewOneRings() {
-        assertEquals(CallOfferAction.IGNORE_ENDED, action(incoming(), ended = true))
-        assertEquals(CallOfferAction.RING, action(null))
-    }
-
-    /** Mutation: `held` never with the offerer — both sides of glare would refuse each other as busy. */
-    @Test
-    fun glareKeepsOneCallOfTheTwo() {
-        assertEquals(CallOfferAction.KEEP_OURS, action(outgoing(to = "a"), offerer = "a", me = "b"))
-        assertEquals(CallOfferAction.REPLACE_OUTGOING, action(outgoing(to = "b"), offerer = "b", me = "a"))
-    }
-
-    /** Mutation: `held` always with the offerer — a second caller would replace the call in progress. */
-    @Test
-    fun aSecondCallerIsBusy() {
-        assertEquals(CallOfferAction.BUSY, action(outgoing(to = "c"), offerer = "a", me = "b"))
-        assertEquals(CallOfferAction.BUSY, action(incoming("c0")))
+        val limited = dialled()
+        assertNull(CallRuleWire.end(CallEndReason.Error(SignalErrorCode.SIGNAL_ERROR_CODE_RATE_LIMITED), limited, 0))
+        assertNotNull("a rate limit drops one signal and ends nothing", limited.active())
+        assertEquals(CallEndCause.Local, CallRuleWire.end(CallEndReason.Local("ICE failed"), dialled(), 0)?.cause)
+        assertNull(CallRuleWire.end(CallEndReason.Local("x"), CallMachine(), 0))
     }
 
     /** Mutation: `hangupRoute` passes a fixed reason. "Accepted elsewhere" on the stream ends the call for the device that took it. */
