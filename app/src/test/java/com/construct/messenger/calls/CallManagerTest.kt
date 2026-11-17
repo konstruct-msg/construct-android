@@ -50,7 +50,10 @@ class CallManagerTest {
         val sealedFor = mutableListOf<Pair<String, String>>()
         /** The devices an offer to an account goes to; one, `dev-<account>`, unless set. */
         val devices = mutableMapOf<String, List<String>>()
+        /** Devices the server no longer knows: a send to one is refused (NOT_FOUND). */
+        val unknown = mutableSetOf<String>()
         override suspend fun send(peerAccountId: String, deviceId: String, signal: WebRTCSignal): Boolean {
+            if (deviceId in unknown) return false
             sent += peerAccountId to signal
             sentTo += deviceId to signal
             return true
@@ -667,6 +670,60 @@ class CallManagerTest {
         assertEquals(listOf("mac" to "a"), rig.signals.sealedFor)
         assertEquals(WebRTCSignal.SignalCase.ICE_CANDIDATE, rig.casesTo("mac").last())
         assertEquals(listOf(WebRTCSignal.SignalCase.OFFER, WebRTCSignal.SignalCase.HANGUP), rig.casesTo("phone"))
+    }
+
+    /**
+     * 2026-11-16, this build 724: one of three devices of the callee was gone from the server
+     * (NOT_FOUND), the offer reached the other two, and the call failed "offer not sent" while
+     * both rang. An offer one device took is sent.
+     *
+     * Mutation: `.all { it }` for `.any { it }` — the call ends in setup; this fails.
+     */
+    @Test
+    fun `an offer one device the server forgot refused still rings the others`() = runTest {
+        val rig = Rig(this)
+        rig.signals.devices[peer] = listOf("phone", "gone", "mac")
+        rig.signals.unknown += "gone"
+        rig.calls.startOutgoingCall(peer)
+        runCurrent()
+        assertTrue("the call goes on: ${rig.state}", rig.state is CallState.Dialing)
+        assertEquals(listOf(WebRTCSignal.SignalCase.OFFER), rig.casesTo("phone"))
+        assertEquals(listOf(WebRTCSignal.SignalCase.OFFER), rig.casesTo("mac"))
+    }
+
+    /**
+     * A failure of ours tells the peer (construct-core 0.76.0). 2026-11-16: an iPhone's ICE failed
+     * and it ended alone; this side sat in "connecting" until a person hung up.
+     *
+     * Mutation: drop the `Local` branch in `endActive` — nothing goes out; this fails.
+     */
+    @Test
+    fun `our call that fails tells every device that rang, and the server`() = runTest {
+        val rig = Rig(this)
+        rig.callTwoDevices()
+        rig.media.single().listener.onFailed()
+        runCurrent()
+        assertEquals(HangupReason.HANGUP_REASON_CONNECTION_FAILED, rig.signals.sentTo.last { it.first == "phone" }.second.hangup.reason)
+        assertEquals(HangupReason.HANGUP_REASON_CONNECTION_FAILED, rig.signals.sentTo.last { it.first == "mac" }.second.hangup.reason)
+        assertTrue("and the server frees the call", WebRTCSignal.SignalCase.HANGUP in rig.signaling.streamSignals())
+        assertTrue(rig.state is CallState.Ended)
+    }
+
+    /**
+     * Their call still ringing here ends quietly when it fails: the caller may be ringing our
+     * other devices, and a hangup from this one would end it there too.
+     *
+     * Mutation: send the hangup whatever the machine says; this fails.
+     */
+    @Test
+    fun `their call that fails while it rings tells nobody`() = runTest {
+        val rig = Rig(this)
+        rig.deliver(offer("c2"))
+        assertTrue(rig.state is CallState.Incoming)
+        // An unusable offer for the ringing call: it fails here.
+        rig.deliver(offer("c2", sdp = ""))
+        assertTrue(rig.state is CallState.Ended)
+        assertTrue("nothing to the caller: ${rig.sentCases()}", WebRTCSignal.SignalCase.HANGUP !in rig.sentCases())
     }
 
     @Test

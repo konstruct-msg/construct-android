@@ -62,7 +62,7 @@ class CallVideoNegotiationTest {
         )
 
         val android = Side()
-        val media = WebRtcCallMedia.Factory(context, CallAudio(context), com.construct.messenger.veil.VeilModeStore(context)).create(CallMedia.Role.CALLEE, null, android)
+        val media = WebRtcCallMedia.Factory(context, CallAudio(context), com.construct.messenger.veil.VeilModeStore(context)).create(CallMedia.Role.CALLEE, loopback(), android)
         try {
             val offer = create { ios.pc.createOffer(it, MediaConstraints()) }
             set { ios.pc.setLocalDescription(it, offer) }
@@ -87,7 +87,7 @@ class CallVideoNegotiationTest {
 
     private fun media(role: CallMedia.Role, side: Side = Side()): CallMedia {
         instrumentation.uiAutomation.grantRuntimePermission(context.packageName, Manifest.permission.RECORD_AUDIO)
-        return WebRtcCallMedia.Factory(context, CallAudio(context), com.construct.messenger.veil.VeilModeStore(context)).create(role, null, side)
+        return WebRtcCallMedia.Factory(context, CallAudio(context), com.construct.messenger.veil.VeilModeStore(context)).create(role, loopback(), side)
     }
 
     /**
@@ -198,7 +198,7 @@ class CallVideoNegotiationTest {
         val connected = CountDownLatch(1)
         val candidates = mutableListOf<IceCandidate>()
         val pc: PeerConnection = factory.createPeerConnection(
-            PeerConnection.RTCConfiguration(WebRtcCallMedia.iceServers(CallIcePlan.make(emptyList(), "", "", veilOn = false)!!)).apply {
+            PeerConnection.RTCConfiguration(emptyList()).apply {
                 sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
                 bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE
                 rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.REQUIRE
@@ -272,6 +272,14 @@ class CallVideoNegotiationTest {
     }
 
     private companion object {
+        /**
+         * No servers and every candidate kind: two peers in one emulator meet over host candidates.
+         * A call never has this — it is relayed only ([CallIcePlan]).
+         */
+        fun loopback() = PeerConnection.RTCConfiguration(emptyList()).apply {
+            iceTransportsType = PeerConnection.IceTransportsType.ALL
+        }
+
         fun sections(sdp: String) = sdp.lines().filter { it.startsWith("m=") }.map { it.removePrefix("m=").substringBefore(' ') }
 
         /** The video section's lines, or null when the SDP has none. */

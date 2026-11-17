@@ -88,7 +88,9 @@ object CallRuleWire {
             callSignalErrorFromWire(if (reason.code == SignalErrorCode.UNRECOGNIZED) 0 else reason.code.number),
             nowMs,
         )
-        is CallEndReason.Local -> machine.fail(nowMs)
+        // `CallManager.endActive` ends a failure through `fail` itself and sends its hangup; this
+        // is reached with no call in the machine, or by a caller that only wants the end.
+        is CallEndReason.Local -> machine.fail(nowMs)?.ended
     }
 
     /** Which channels a hangup with this wire reason is written to (`callHangupRoute`). */
