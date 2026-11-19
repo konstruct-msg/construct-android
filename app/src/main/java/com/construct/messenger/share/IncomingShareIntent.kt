@@ -61,3 +61,16 @@ object ShareSourceUris {
 
     fun isId(value: String): Boolean = runCatching { java.util.UUID.fromString(value).toString() == value }.getOrDefault(false)
 }
+
+/**
+ * A file this app offers to its own share draft — today only the log archive. It never comes from
+ * an Intent; the draft reads it straight from disk. Only a file directly inside the export
+ * directory counts, after symlinks resolve, so this entry cannot read any other private file.
+ */
+object OwnShareSource {
+    fun isExport(file: java.io.File, exportDir: java.io.File): Boolean {
+        val resolved = runCatching { file.canonicalFile }.getOrNull() ?: return false
+        val dir = runCatching { exportDir.canonicalFile }.getOrNull() ?: return false
+        return resolved.parentFile == dir && resolved.isFile
+    }
+}

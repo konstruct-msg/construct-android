@@ -14,6 +14,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
@@ -30,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.construct.messenger.R
 import com.construct.messenger.diagnostics.Diagnostics
 import com.construct.messenger.ui.components.CTNavBar
@@ -39,6 +41,7 @@ import com.construct.messenger.ui.components.CTSettingsSectionHeader
 import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.ui.theme.CTFont
 import com.construct.messenger.ui.theme.CTSpace
+import com.construct.messenger.viewmodel.DiagnosticsViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -48,7 +51,7 @@ import kotlinx.coroutines.withContext
  * its log half; debug builds only, as the collector itself.
  */
 @Composable
-fun DiagnosticsScreen(onNavigateBack: () -> Unit) {
+fun DiagnosticsScreen(onNavigateBack: () -> Unit, model: DiagnosticsViewModel = hiltViewModel()) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var bytes by remember { mutableLongStateOf(-1L) }
@@ -85,6 +88,19 @@ fun DiagnosticsScreen(onNavigateBack: () -> Unit) {
                         scope.launch {
                             withContext(Dispatchers.IO) { Diagnostics.collector?.flush() }
                             Diagnostics.share(context)
+                        }
+                    },
+                )
+                HorizontalDivider()
+                val noLogs = stringResource(R.string.diagnostics_logs_unavailable)
+                CTSettingsRow(
+                    label = stringResource(R.string.diagnostics_send_logs_to_chat).uppercase(),
+                    icon = Icons.AutoMirrored.Filled.Send,
+                    modifier = Modifier.clickable {
+                        scope.launch {
+                            if (!model.sendLogsToChat(context)) {
+                                android.widget.Toast.makeText(context, noLogs, android.widget.Toast.LENGTH_SHORT).show()
+                            }
                         }
                     },
                 )

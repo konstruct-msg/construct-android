@@ -42,7 +42,8 @@ class IncomingShareRepository @Inject constructor(
         val problem: Problem? = null,
         val submitting: Boolean = false,
     )
-    private data class Offer(val id: String, val input: IncomingShareIntent.Result)
+    /** [own]: files this app offers itself (the log archive); read from disk, never via an Intent. */
+    private data class Offer(val id: String, val input: IncomingShareIntent.Result, val own: List<java.io.File> = emptyList())
     @Volatile private var offered: Offer? = null
     @Volatile private var recreatedPendingId: String? = null
     val hasInput: Boolean get() = offered != null || recreatedPendingId != null
@@ -72,6 +73,15 @@ class IncomingShareRepository @Inject constructor(
             offered = Offer(id, input)
             changes.update { it + 1 }
         }
+        return id
+    }
+
+    /** "Send logs to a chat": the same draft as an OS share — the person picks the chat and sends. */
+    fun offerOwn(file: java.io.File, id: String = UUID.randomUUID().toString()): String {
+        require(com.construct.messenger.share.ShareSourceUris.isId(id))
+        val empty = IncomingShareIntent.Result.Content(IncomingShareIntent.Payload("", emptyList()))
+        offered = Offer(id, empty, listOf(file))
+        changes.update { it + 1 }
         return id
     }
 
@@ -125,6 +135,12 @@ class IncomingShareRepository @Inject constructor(
             var remaining = sources.importBudget
             for (uri in payload.uris) {
                 val item = sources.import(draft.id, uri, remaining)
+                remaining -= item.size
+                draft = draft.copy(items = draft.items + item)
+                save(draft)
+            }
+            for (file in input.own) {
+                val item = sources.importOwn(draft.id, file, remaining)
                 remaining -= item.size
                 draft = draft.copy(items = draft.items + item)
                 save(draft)
