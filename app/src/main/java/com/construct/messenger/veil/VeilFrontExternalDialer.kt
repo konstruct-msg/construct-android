@@ -1,6 +1,7 @@
 package com.construct.messenger.veil
 
 import android.os.ParcelFileDescriptor
+import android.os.SystemClock
 import android.system.Os
 import android.system.OsConstants
 import com.construct.messenger.diagnostics.Log
@@ -110,7 +111,7 @@ class VeilFrontExternalDialer(
             runCatching { Os.close(it) }
         }
         listenFd = null
-        synchronized(sessions) { sessions.toList() }.forEach { it.close() }
+        synchronized(sessions) { sessions.toList() }.forEach { it.close(FerrySessionEnd.STOPPED) }
         sessions.clear()
         relay = null
     }
@@ -179,7 +180,7 @@ class VeilFrontExternalDialer(
             if (rc != 0) {
                 // Rust already closed localInt/rustInt. Tear down our side.
                 Log.e(TAG, "veil_front_ferry_fd rc=$rc")
-                session.close()
+                session.close(FerrySessionEnd.FERRY_FAILED)
             }
         } catch (e: Exception) {
             Log.e(TAG, "native veil-front connection failed: ${e.message}")
@@ -192,7 +193,7 @@ class VeilFrontExternalDialer(
                 // once-only close. Closing it here as well raced them — libcore reads the number and
                 // then marks it -1, so two threads could both close it, the second hitting whatever
                 // took the number next.
-                live.close()
+                live.close(FerrySessionEnd.FERRY_FAILED)
             } else {
                 runCatching { ssl?.close() }
                 hostSide?.let { runCatching { Os.close(it) } }
@@ -200,36 +201,29 @@ class VeilFrontExternalDialer(
         }
     }
 
-    /** Pump plaintext between the SSLSocket and the socketpair host end. Either side's end closes both. */
+    /**
+     * Pump plaintext between the SSLSocket and the socketpair host end. Either side's end closes
+     * both, and the side that ended first names the reason: once one side closes, the other's
+     * read or write fails because of that close, not on its own.
+     */
     private fun startPumps(s: Session) {
         thread(name = "veil-ferry-r2h", isDaemon = true) {
             val buf = ByteArray(BUF)
-            try {
-                val input = s.ssl.inputStream
-                while (true) {
-                    val n = input.read(buf)
-                    if (n < 0) break
-                    if (n > 0) Os.write(s.host, buf, 0, n)
-                }
-            } catch (_: Exception) {
-            } finally {
-                s.close()
-            }
+            val end = runCatching { s.ssl.inputStream }.fold(
+                onSuccess = { input -> pumpFromRelay({ input.read(buf) }, { n -> Os.write(s.host, buf, 0, n) }, s.stats) },
+                onFailure = { FerrySessionEnd.RELAY_ERROR },
+            )
+            s.close(end)
         }
         thread(name = "veil-ferry-h2r", isDaemon = true) {
             val buf = ByteArray(BUF)
-            try {
-                val output = s.ssl.outputStream
-                while (true) {
-                    val n = Os.read(s.host, buf, 0, buf.size)
-                    if (n <= 0) break // 0 = EOF on the socketpair
-                    output.write(buf, 0, n)
-                    output.flush()
-                }
-            } catch (_: Exception) {
-            } finally {
-                s.close()
-            }
+            val end = runCatching { s.ssl.outputStream }.fold(
+                onSuccess = { output ->
+                    pumpToRelay({ Os.read(s.host, buf, 0, buf.size) }, { n -> output.write(buf, 0, n); output.flush() }, s.stats)
+                },
+                onFailure = { FerrySessionEnd.SEND_FAILED },
+            )
+            s.close(end)
         }
     }
 
@@ -256,11 +250,16 @@ class VeilFrontExternalDialer(
         return ssl
     }
 
-    /** A live ferry: the SSLSocket and our socketpair end, torn down exactly once. */
+    /**
+     * A live ferry: the SSLSocket and our socketpair end, torn down exactly once. The first close
+     * logs how the session ended ([FerrySessionStats]).
+     */
     private inner class Session(val ssl: SSLSocket, val host: FileDescriptor) {
         private val closed = AtomicBoolean(false)
-        fun close() {
+        val stats = FerrySessionStats(SystemClock::elapsedRealtime)
+        fun close(reason: FerrySessionEnd) {
             if (!closed.compareAndSet(false, true)) return
+            stats.end(reason)?.let { Log.i(TAG, it) }
             sessions.remove(this)
             runCatching { ssl.close() } // unblocks the r2h read / h2r write
             runCatching { Os.shutdown(host, OsConstants.SHUT_RDWR) } // unblocks the h2r Os.read
@@ -334,3 +333,46 @@ internal fun runAcceptLoop(
 
 /** 10 ms doubling to 1 s. */
 internal fun acceptBackoffMs(misses: Int): Long = minOf(1_000L, 10L shl misses.coerceAtMost(7))
+
+/**
+ * Relay → gRPC until one side ends; returns which. [readRelay] answers bytes read, or < 0 at the
+ * relay's EOF; [writeLocal] writes that many to the socketpair.
+ */
+internal fun pumpFromRelay(readRelay: () -> Int, writeLocal: (Int) -> Unit, stats: FerrySessionStats): FerrySessionEnd {
+    while (true) {
+        val n = try {
+            readRelay()
+        } catch (_: Exception) {
+            return FerrySessionEnd.RELAY_ERROR
+        }
+        if (n < 0) return FerrySessionEnd.RELAY_CLOSED
+        if (n == 0) continue
+        stats.received(n)
+        try {
+            writeLocal(n)
+        } catch (_: Exception) {
+            return FerrySessionEnd.LOCAL_CLOSED
+        }
+    }
+}
+
+/**
+ * gRPC → relay until one side ends; returns which. [readLocal] answers bytes read from the
+ * socketpair, 0 at its EOF; [writeRelay] sends that many to the relay.
+ */
+internal fun pumpToRelay(readLocal: () -> Int, writeRelay: (Int) -> Unit, stats: FerrySessionStats): FerrySessionEnd {
+    while (true) {
+        val n = try {
+            readLocal()
+        } catch (_: Exception) {
+            return FerrySessionEnd.LOCAL_CLOSED
+        }
+        if (n <= 0) return FerrySessionEnd.LOCAL_CLOSED
+        try {
+            writeRelay(n)
+        } catch (_: Exception) {
+            return FerrySessionEnd.SEND_FAILED
+        }
+        stats.sent(n)
+    }
+}
