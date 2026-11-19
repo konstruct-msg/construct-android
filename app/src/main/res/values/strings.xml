@@ -526,6 +526,8 @@
     <!-- Diagnostics (debug builds only; iOS DiagnosticsView / DiagnosticLogShare) -->
     <string name="diagnostics_title">Diagnostics</string>
     <string name="diagnostics_share_logs">Share logs</string>
+    <string name="diagnostics_send_logs_to_chat">Send logs to a chat</string>
+    <string name="diagnostics_logs_unavailable">No logs to send yet.</string>
     <string name="diagnostics_clear_logs">Clear logs</string>
     <!-- Settings parity with iOS SettingsView -->
     <string name="settings_section_developer">Developer</string>

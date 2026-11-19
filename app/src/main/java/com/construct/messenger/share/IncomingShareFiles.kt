@@ -63,9 +63,30 @@ class IncomingShareFiles @Inject constructor(
         if (!IncomingShareIntent.isExternalContent(uri) || provider.applicationInfo.uid == android.os.Process.myUid()) {
             throw SecurityException("private share source")
         }
-        val source = readSource(uri, remaining)
+        keep(request, readSource(uri, remaining))
+    }
+
+    /**
+     * This app's own export (the log archive), offered by the app itself — never by an Intent,
+     * which [import] refuses for this app's providers. The plaintext export is deleted once its
+     * sealed copy is written.
+     */
+    suspend fun importOwn(request: String, file: File, remaining: Long): SharedSource = withContext(Dispatchers.IO) {
+        require(ShareSourceUris.isId(request))
+        require(remaining >= 0)
+        if (!OwnShareSource.isExport(file, com.construct.messenger.diagnostics.Diagnostics.exportDir(context))) {
+            throw SecurityException("not an own export")
+        }
+        if (file.length() > remaining) throw PickedFiles.TooLarge(file.length())
+        val name = com.construct.messenger.media.FileContent.safeName(file.name)
+        val kept = keep(request, ReadSource(name, "text/plain", file.readBytes()))
+        file.delete()
+        kept
+    }
+
+    private fun keep(request: String, source: ReadSource): SharedSource {
         val plain = source.bytes
-        try {
+        return try {
             val id = UUID.randomUUID().toString()
             val sealed = crypto.sealIncomingSource(plain)
             val file = file(request, id)

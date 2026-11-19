@@ -49,13 +49,7 @@ object Diagnostics {
      * Returns false when there is nothing to send.
      */
     fun share(context: Context): Boolean {
-        val collector = collector?.takeIf { it.enabled } ?: return false
-        val archive = runCatching {
-            collector.createArchive(File(context.cacheDir, EXPORT_DIR), deviceInfo())
-        }.getOrElse {
-            Log.e("Diagnostics", "log archive not created", it)
-            return false
-        }
+        val archive = archive(context) ?: return false
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.logs", archive)
         val send = Intent(Intent.ACTION_SEND)
             .setType("text/plain")
@@ -70,6 +64,20 @@ object Diagnostics {
             false
         }
     }
+
+    /**
+     * The archive [share] sends, written under [exportDir]; null when logs are off or the write
+     * failed. "Send logs to a chat" offers this file to the share draft directly, not through an
+     * Intent: the draft refuses this app's own providers (IncomingShareFiles.import).
+     */
+    fun archive(context: Context): File? {
+        val collector = collector?.takeIf { it.enabled } ?: return null
+        return runCatching { collector.createArchive(exportDir(context), deviceInfo()) }
+            .onFailure { Log.e("Diagnostics", "log archive not created", it) }
+            .getOrNull()
+    }
+
+    fun exportDir(context: Context): File = File(context.cacheDir, EXPORT_DIR)
 
     private fun deviceInfo(): String =
         "App Version: ${BuildConfig.VERSION_NAME}\n" +

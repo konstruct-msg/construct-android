@@ -160,4 +160,22 @@ class IncomingShareRepositoryTest {
         override suspend fun remove(key: String) { values.remove(key) }
         override suspend fun withPrefix(prefix: String) = values.filterKeys { it.startsWith(prefix) }
     }
+
+    @Test
+    fun theLogArchiveBecomesAReadyDraftWithoutAnIntent() = runBlocking {
+        val archive = java.io.File("logs-export/construct-logs-1.txt")
+        val item = com.construct.messenger.data.model.SharedSource("30000000-0000-4000-8000-000000000003", archive.name, "text/plain", 3, byteArrayOf(1))
+        whenever(sources.importOwn(eq(firstId), eq(archive), any())).thenReturn(item)
+        val repo = repository()
+        repo.offerOwn(archive, firstId)
+        repo.prepare()
+        val draft = repo.state.value.draft!!
+        assertNull(repo.state.value.problem)
+        assertEquals(IncomingShareStage.READY, draft.stage)
+        assertEquals(listOf(item), draft.items)
+        assertNull(draft.contactId) // the person still picks the chat
+        verify(sources).importOwn(eq(firstId), eq(archive), eq(1024L))
+        verify(sources, never()).import(any(), any(), any())
+        verifyNoInteractions(messages)
+    }
 }
