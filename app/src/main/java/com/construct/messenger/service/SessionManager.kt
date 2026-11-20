@@ -34,6 +34,8 @@ class SessionManager @Inject constructor(
     private val contactKt: com.construct.messenger.security.ContactKt,
     private val vetting: PeerDeviceVetting,
     private val atRisk: com.construct.messenger.data.local.AtRiskSessionStore,
+    /** Where an open is asked for: the core's machine, through [CfeTimerBridge.needSession]. Lazy — the bridge answers opens with this class. */
+    private val opens: dagger.Lazy<CfeTimerBridge>,
 ) {
 
     suspend fun hasSession(contactId: String): Boolean {
@@ -48,29 +50,56 @@ class SessionManager @Inject constructor(
     )
 
     /**
-     * Ensure a live Double-Ratchet session exists for [contactId].
+     * Ensure a live Double-Ratchet session exists with the device [contactId] pins.
      *
      * @return the peer's X25519 identity public key (needed for sealed sender).
-     *   Fetched with the prekey bundle on first init and remembered on its [com.construct.messenger.data.local.ContactRecord].
      *   GetPreKeyBundle is destructive (consumes an OTPK) — never call it just
      *   to read the identity key when a session already exists.
+     *
+     * A device the registry does not know yet is learned first from the non-destructive answer
+     * ([discoverPeerDevices]): an open is asked for by device, and a bundle fetched before the
+     * device is known would spend a one-time prekey before the core could say «already opening».
      */
     suspend fun ensureSession(contactId: String): SessionPeer {
         val deviceId = peerDeviceRegistry.resolveDeviceId(contactId)
-        if (deviceId != null && cryptoManager.hasSession(deviceId)) {
-            val identity = peerDeviceRegistry.identityForDevice(deviceId)
-                ?: contacts.get(contactId)?.identityPublic
-                ?: error("missing identity key for $contactId")
-            return SessionPeer(
-                accountId = peerDeviceRegistry.accountIdForDevice(deviceId) ?: contactId,
-                deviceId = deviceId,
-                identityPublic = identity,
-            )
-        }
-        val fetched = fetchPeerBundleData(contactId, consumeOtpk = consumesOneTimePrekey(deviceId), deviceId = deviceId)
-        openSession(fetched)
-        return SessionPeer(fetched.accountId, fetched.deviceId, fetched.identityPublic)
+            ?: run {
+                discoverPeerDevices(contactId)
+                peerDeviceRegistry.resolveDeviceId(contactId)
+            }
+            ?: error("no device known for ${contactId.take(8)}…")
+        openForSend(deviceId)
+        val identity = peerDeviceRegistry.identityForDevice(deviceId)
+            ?: contacts.get(contactId)?.identityPublic
+            ?: error("missing identity key for ${contactId.take(8)}…")
+        return SessionPeer(
+            accountId = peerDeviceRegistry.accountIdForDevice(deviceId) ?: contactId,
+            deviceId = deviceId,
+            identityPublic = identity,
+        )
     }
+
+    /**
+     * A send to [deviceId] needs a session: held, or opened now through the core's machine
+     * (`SessionNeeded`, construct-core 0.77, todo 305). The machine grants one open per device;
+     * a send that comes while that open runs is told to wait ([OpenInFlight]), and its copy waits
+     * in the outbox until the open is answered ([CfeTimerBridge.answerOpenSession]).
+     *
+     * Until 2026-11-20 this checked `hasSession`, fetched a bundle and called `init_session`
+     * itself: two sends at once both fetched — two one-time prekeys — and the second init was
+     * refused ("Session already exists"), its message FAILED (stand 304).
+     */
+    private suspend fun openForSend(deviceId: String) {
+        if (cryptoManager.hasSession(deviceId)) return
+        when (opens.get().needSession(deviceId)) {
+            CfeTimerBridge.SessionNeed.HELD, CfeTimerBridge.SessionNeed.OPENED -> Unit
+            CfeTimerBridge.SessionNeed.WAITING -> throw OpenInFlight(deviceId)
+            CfeTimerBridge.SessionNeed.NOT_OPENED -> error("no session opened with ${deviceId.take(8)}…")
+        }
+    }
+
+    /** The core is opening a session with [deviceId] for another send: this one waits for it. */
+    class OpenInFlight(val deviceId: String) :
+        IllegalStateException("a session with ${deviceId.take(8)}… is being opened")
 
     /**
      * Whether the bundle for an open with [deviceId] should carry one of the peer's one-time
@@ -87,13 +116,11 @@ class SessionManager @Inject constructor(
     suspend fun ensureSessionForDevice(accountOrDeviceId: String, deviceId: String): SessionPeer {
         require(IdentityIds.isCryptoDeviceId(deviceId)) { "invalid peer CryptoDeviceId" }
         val accountId = accountFor(accountOrDeviceId)
+        openForSend(deviceId)
+        // The open recorded it (`fetchPeerBundleData`), and so did the answer that named the device.
         val identity = peerDeviceRegistry.identityForDevice(deviceId)
-        if (cryptoManager.hasSession(deviceId) && identity != null) {
-            return SessionPeer(accountId, deviceId, identity)
-        }
-        val fetched = fetchPeerBundleData(accountId, consumeOtpk = consumesOneTimePrekey(deviceId), deviceId = deviceId)
-        openSession(fetched)
-        return SessionPeer(fetched.accountId, fetched.deviceId, fetched.identityPublic)
+            ?: error("missing identity key for ${deviceId.take(8)}…")
+        return SessionPeer(accountId, deviceId, identity)
     }
 
     /**
@@ -264,16 +291,13 @@ class SessionManager @Inject constructor(
         }.getOrNull() ?: stored
     }
 
-    /** INITIATOR path: fetch [contactId]'s pre-key bundle and start a new session. */
-    suspend fun initSession(contactId: String): String {
-        val fetched = fetchPeerBundleData(contactId, consumeOtpk = true)
-        return openSession(fetched)
-    }
-
     /**
      * The bundle that answers the core's `OpenSession` for [deviceId] — fetched, and checked to be
      * that device's. Nothing is opened here: [CfeTimerBridge.answerOpenSession] hands the bundle to
-     * the core as an event, and the core's answer carries the save and the drained queue.
+     * the core as an event, and the core's answer carries the save and the drained queue. A stale
+     * signed prekey is the core's to judge there too (0.77): with no session held and the peer
+     * away longer than a rotation takes it opens at risk (`SessionOpenedAtRisk`), otherwise it
+     * refuses — the rule Android ran here itself until then (`decisions/stale-peer-reachability.md`).
      *
      * Asks [consumesOneTimePrekey] like every other open.
      */
@@ -286,46 +310,23 @@ class SessionManager @Inject constructor(
         return fetched.bundle
     }
 
-    /**
-     * `initSession`, with the two refusals that are not faults said as such.
-     *
-     * A peer whose bundle has no PQXDH v2 keys (a build before ML-KEM-1024, or keys not published
-     * yet) is refused with `PQ_REQUIRED`. PQ is mandatory, so there is no classical session to fall
-     * back to and the error still propagates; the log line is what tells it apart from a broken
-     * bundle.
-     *
-     * A bundle whose signed prekey is past the core's age limit is refused with `PeerSpkStale`. When
-     * the core says waiting will not help ([CryptoManager.opensDegraded]), the session is opened
-     * anyway and marked at risk; otherwise the refusal propagates and the next open fetches again.
-     * Without this, a peer away more than 30 days could not be written to from Android at all,
-     * while iOS could (`decisions/stale-peer-reachability.md`, todo/282).
-     */
-    private suspend fun openSession(fetched: PeerBundle): String {
-        val sessionId = try {
-            cryptoManager.initSession(fetched.deviceId, fetched.bundle)
-        } catch (e: Exception) {
-            if (CryptoManager.isPeerNotPostQuantum(e)) {
-                Log.w(TAG, "peer device ${fetched.deviceId.take(8)}… has no PQXDH v2 keys — session refused (${e.message})")
-            }
-            if (!CryptoManager.opensDegraded(e)) {
-                if (e is uniffi.construct_core.CryptoException.PeerSpkStale) {
-                    Log.w(TAG, "peer device ${fetched.deviceId.take(8)}… SPK stale (${e.ageSecs / 3_600UL} h), may have rotated — not opened now")
-                }
-                throw e
-            }
-            Log.w(TAG, "SESSION_STATE[stale_spk_degraded_init]: ${fetched.deviceId.take(8)}… SPK " +
-                "${(e as uniffi.construct_core.CryptoException.PeerSpkStale).ageSecs / 86_400UL} d old — opening at risk")
-            val degraded = cryptoManager.initSessionAllowingStale(fetched.deviceId, fetched.bundle)
-            atRisk.mark(fetched.deviceId, fetched.accountId)
-            return degraded
-        }
-        openedCleanly(fetched.deviceId)
-        return sessionId
-    }
-
     /** A session with [deviceId] was opened from a fresh bundle, ours or theirs: it is not at risk. */
     suspend fun openedCleanly(deviceId: String) {
         atRisk.clear(deviceId)
+    }
+
+    /**
+     * The core opened a session with [deviceId] from a stale bundle (`SessionOpenedAtRisk`): no
+     * session was held and the peer has been away longer than a rotation takes. Marked under its
+     * account until the peer is heard from ([heardFrom]).
+     */
+    suspend fun openedAtRisk(deviceId: String) {
+        val account = peerDeviceRegistry.accountIdForDevice(deviceId) ?: run {
+            Log.w(TAG, "session with ${deviceId.take(8)}… opened at risk, no account to mark it under")
+            return
+        }
+        Log.w(TAG, "SESSION_STATE[stale_spk_degraded_init]: ${deviceId.take(8)}… — opened at risk")
+        atRisk.mark(deviceId, account)
     }
 
     /**

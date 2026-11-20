@@ -246,6 +246,7 @@ class IncomingShareRepository @Inject constructor(
                     val messageId = when (outcome) {
                         is SendOutcome.Sent -> outcome.messageId
                         is SendOutcome.Failed -> outcome.messageId
+                        is SendOutcome.Queued -> outcome.messageId
                     }
                     messages.get(messageId) != null
                 }

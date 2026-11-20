@@ -45,4 +45,9 @@ abstract class CryptoModule {
     @Binds
     @Singleton
     abstract fun bindOwedCopies(impl: FanoutRetries): OwedCopies
+
+    /** A copy that waited for an open goes once the core has opened it (todo 305). */
+    @Binds
+    @Singleton
+    abstract fun bindWaitingCopies(impl: FanoutRetries): com.construct.messenger.service.WaitingCopies
 }

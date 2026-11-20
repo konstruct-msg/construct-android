@@ -94,6 +94,19 @@ abstract class MessageStoreContract {
         assertTrue(store.setDeliveryStatus("a", DeliveryStatus.SENT))
     }
 
+    /**
+     * Queued is its own status, kept as the core's 3 and read back as itself, and it goes to sent
+     * (todo 305). Mutations: store it as 0, or read 3 as sending — this reddens on the real store.
+     */
+    @Test
+    fun aQueuedMessageStaysQueuedUntilSent() = runTest {
+        store.insert(message("q", 1, DeliveryStatus.SENDING))
+        assertTrue(store.setDeliveryStatus("q", DeliveryStatus.QUEUED))
+        assertEquals(DeliveryStatus.QUEUED, store.get("q")!!.deliveryStatus)
+        assertTrue(store.setDeliveryStatus("q", DeliveryStatus.SENT))
+        assertEquals(DeliveryStatus.SENT, store.get("q")!!.deliveryStatus)
+    }
+
     @Test
     fun anEditOfTextMarksIt() = runTest {
         store.insert(message("t", 1, text = "helo"))

@@ -14,6 +14,12 @@ import kotlinx.coroutines.sync.withLock
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
 
+/** The outbox copies that waited for an open with a device (todo 305): [FanoutRetries]. */
+fun interface WaitingCopies {
+    /** The core has its answer to the open with [deviceId]: send what waited for it. */
+    fun openAnswered(deviceId: String)
+}
+
 /**
  * Executes the platform half of Rust CFE scheduling.
  *
@@ -27,6 +33,8 @@ class CfeTimerBridge @Inject constructor(
     private val effects: ProcessorEffects,
     private val held: HeldEnvelopes,
     private val sessionManager: SessionManager,
+    /** The outbox copies that wait for an open; walked once the core has its answer. */
+    private val waiting: WaitingCopies = WaitingCopies {},
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val eventMutex = Mutex()
@@ -96,28 +104,67 @@ class CfeTimerBridge @Inject constructor(
      * Until 2026-09-28 this called `reopen_session` directly: it returns an id and nothing else,
      * so the record went unsaved until the next send and nothing drained the queue.
      */
-    suspend fun answerOpenSession(deviceId: String) {
+    suspend fun answerOpenSession(deviceId: String): Boolean {
         val short = deviceId.take(8)
         val event = try {
             CfeIncomingEvent.SessionBundleFetched(deviceId, sessionManager.bundleForOpenSession(deviceId))
         } catch (e: Exception) {
-            Log.w(TAG, "session reopen for $short… unavailable: ${e.message}")
+            Log.w(TAG, "session open for $short… unavailable: ${e.message}")
             CfeIncomingEvent.SessionBundleUnavailable(deviceId)
         }
         val answer = runCatching { eventMutex.withLock { orchestrator.handleEvent(event) } }
             .onFailure { Log.e(TAG, "OpenSession answer not delivered to the core for $short…", it) }
-            .getOrNull() ?: return
-        val refused = answer.any { it is CfeAction.NotifyError && it.code == OPEN_SESSION_REFUSED }
+            .getOrNull() ?: return false
+        val refusal = answer.filterIsInstance<CfeAction.NotifyError>().firstOrNull { it.code == OPEN_SESSION_REFUSED }
+        val atRisk = answer.any { it is CfeAction.SessionOpenedAtRisk }
+        val opened = event is CfeIncomingEvent.SessionBundleFetched && refusal == null
         if (event is CfeIncomingEvent.SessionBundleFetched) {
             // Counted by scripts/verify.sh --device.
-            if (refused) Log.w(TAG, "session reopen for $short… refused — the held session stays")
+            if (refusal != null) Log.w(TAG, "session open for $short… refused — ${refusal.message}")
             else {
-                Log.i(TAG, "session reopen for $short… done — PQXDH v2, the held state kept as previous")
-                // The core opens this one strictly: a stale bundle is refused above, never degraded.
-                sessionManager.openedCleanly(deviceId)
+                Log.i(TAG, "session open for $short… done — PQXDH v2${if (atRisk) ", at risk" else ""}")
+                // A stale bundle the core opened anyway is marked by its own action below.
+                if (!atRisk) sessionManager.openedCleanly(deviceId)
             }
         }
         execute(answer)
+        // What waited for this open goes now, over the session it opened. After a failed open it
+        // keeps its place in the retry, at the retry's pace: walking it now would ask for another
+        // open at once, and one that keeps failing would never stop.
+        if (opened) waiting.openAnswered(deviceId)
+        return opened
+    }
+
+    /** What the core answered a send that needs a session with a device ([needSession]). */
+    enum class SessionNeed {
+        /** Opened meanwhile: send now. */
+        HELD,
+        /** This send was granted the open, and it opened. */
+        OPENED,
+        /** Another send's open is running: wait for it in the outbox. */
+        WAITING,
+        /** Granted, but no session came of it: no bundle, or the core refused it. */
+        NOT_OPENED,
+    }
+
+    /**
+     * A send needs a session with [deviceId] and none is held: ask the core's machine
+     * (`SessionNeeded`, 0.77, todo 305). It grants one open per device — this call carries it
+     * out at once, as for any `OpenSession` — and tells a send that comes meanwhile to wait.
+     */
+    suspend fun needSession(deviceId: String): SessionNeed {
+        val answer = eventMutex.withLock { orchestrator.handleEvent(CfeIncomingEvent.SessionNeeded(deviceId)) }
+        var need = SessionNeed.NOT_OPENED
+        for (action in answer) {
+            when (action) {
+                is CfeAction.SessionHeld -> need = SessionNeed.HELD
+                is CfeAction.OpenInFlight -> need = SessionNeed.WAITING
+                is CfeAction.OpenSession ->
+                    need = if (answerOpenSession(action.contactId)) SessionNeed.OPENED else SessionNeed.NOT_OPENED
+                else -> execute(listOf(action))
+            }
+        }
+        return need
     }
 
     /**
@@ -165,6 +212,13 @@ class CfeTimerBridge @Inject constructor(
                 is CfeAction.SendEncryptedMessage,
                 -> Log.d(TAG, "CFE routing action on timer path: ${action::class.simpleName}")
                 is CfeAction.OpenSession -> answerOpenSession(action.contactId)
+                // Answers to a send's `SessionNeeded`, read where it was asked ([needSession]).
+                is CfeAction.OpenInFlight,
+                is CfeAction.SessionHeld,
+                -> Log.d(TAG, "CFE send answer off its send: ${action::class.simpleName}")
+                // The core opened from a stale bundle (no session held, the peer away longer
+                // than a rotation takes): marked until the peer is heard from.
+                is CfeAction.SessionOpenedAtRisk -> sessionManager.openedAtRisk(action.contactId)
             }
         }
     }

@@ -291,6 +291,12 @@ class MessageProcessor @Inject constructor(
                 -> Log.d(TAG, "CFE action consumed by routing layer: ${action::class.simpleName}")
                 // One implementation of the answer, on the bridge: it owns the event lock.
                 is CfeAction.OpenSession -> timerBridge.answerOpenSession(action.contactId)
+                // Answers to a send's `SessionNeeded`, never to a message: read where it was asked.
+                is CfeAction.OpenInFlight,
+                is CfeAction.SessionHeld,
+                -> Log.d(TAG, "CFE send answer on the message path: ${action::class.simpleName}")
+                // An open that drained behind a message can still have been a stale one.
+                is CfeAction.SessionOpenedAtRisk -> timerBridge.execute(listOf(action))
             }
         }
     }

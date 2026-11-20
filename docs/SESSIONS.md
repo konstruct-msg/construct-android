@@ -32,24 +32,33 @@ never opens.
 
 ## 2. Sending opens, sending renews
 
-- No session with a device → `SessionManager.initSession` fetches that device's bundle and the
-  core opens a state (PQXDH). The first message carries the handshake header.
+- No session with a device → the send asks the core's machine (`SessionNeeded(device)`, core
+  0.77, vault todo 305, `decisions/a-first-send-asks-the-machine-to-open.md`). It answers once per
+  open: `OpenSession` to the first send — `CfeTimerBridge.needSession` fetches the bundle and
+  answers with `SessionBundleFetched`, and the core opens a state (PQXDH) inside the event;
+  `OpenInFlight` to a send that comes meanwhile — its copy waits in the outbox
+  (`SessionManager.OpenInFlight` → `FanoutRetryQueue`; the row `QUEUED` while no device has it) and goes once the open
+  is answered (`FanoutRetries.openAnswered`); `SessionHeld` when it opened in between. Kotlin
+  holds no «open in flight» of its own. The first message carries the handshake header.
+- A device the registry does not know is learned first from the non-destructive
+  `GetPreKeyBundles`: a bundle fetched before the device is known would spend a one-time prekey
+  before the core could say «already opening».
 - A session held → the message goes out on the current state.
 - **Any** message carrying the handshake header opens a new state beside the one held. The record
   keeps previous states and the core promotes the one that decrypts. Two sides opening at once
   converge by themselves: nothing is announced, confirmed, tie-broken or waited for.
 - The core's `Opening` phase is only a lock: two inits in flight would spend two one-time
-  prekeys for one state.
+  prekeys for one state. An `Opening` restored after a restart holds no send: nobody runs it.
 - **A bundle past the SPK age limit** (`PeerSpkStale { age_secs }`, 30 days) is not a dead end
-  (vault `decisions/stale-peer-reachability.md`). The core answers `plan_stale_spk(age_secs)`:
-  `OpenDegraded` (past the limit by more than a rotation takes to reach the key server) →
-  `initSessionAllowingStale`, and the device is marked in `AtRiskSessionStore`; `WaitForRotation`
-  → the refusal propagates and the next open fetches again. Android waits on no timer here; iOS
-  refetches twice, 60 s apart. The mark shows a banner in the chat (`AtRiskSessionBanner`) and ends
+  (vault `decisions/stale-peer-reachability.md`). The core decides inside `SessionBundleFetched`
+  (0.77; Android judged it itself until then): with no session held and `plan_stale_spk` saying
+  `OpenDegraded` (past the limit by more than a rotation takes to reach the key server) it opens
+  and answers `SessionOpenedAtRisk`, and the device is marked in `AtRiskSessionStore`
+  (`SessionManager.openedAtRisk`); `WaitForRotation`, or a session held, → refused, and the next
+  open fetches again. Android waits on no timer here; iOS refetches twice, 60 s apart. The mark shows a banner in the chat (`AtRiskSessionBanner`) and ends
   on an event: the first message from that device the core decrypts (`SessionManager.heardFrom`:
   its reply ratchets past the stale prekey), or a clean open with it. iOS also re-keys on a 1 h
-  cooldown once the peer's prekey looks fresh; Android does not (vault todo 282). The core's own
-  reopen (`OpenSession`) stays strict: there a session is held, so a stale bundle leaves it.
+  cooldown once the peer's prekey looks fresh; Android does not (vault todo 282).
 
 ## 3. Receiving opens without the server
 

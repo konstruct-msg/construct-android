@@ -161,14 +161,15 @@ private fun DeliveryStatus.code(): Short = when (this) {
     DeliveryStatus.SENDING -> 0
     DeliveryStatus.SENT -> 1
     DeliveryStatus.DELIVERED -> 2
+    DeliveryStatus.QUEUED -> 3
     DeliveryStatus.FAILED -> 4
 }
 
 private fun deliveryStatusOf(code: Short): DeliveryStatus = when (code.toInt()) {
     1 -> DeliveryStatus.SENT
     2 -> DeliveryStatus.DELIVERED
+    3 -> DeliveryStatus.QUEUED
     4 -> DeliveryStatus.FAILED
-    // 3, queued: iOS's "to send again" — Android has one waiting state.
     else -> DeliveryStatus.SENDING
 }
 

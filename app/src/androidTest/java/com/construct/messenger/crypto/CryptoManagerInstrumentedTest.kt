@@ -115,7 +115,11 @@ class CryptoManagerInstrumentedTest {
         val bobId = requireNotNull(bob.currentDeviceId())
 
         val bobBundle = bob.pqxdhTestBundle(bobFields, withOneTimeKey = true)
-        alice.initSession(bobId, bobBundle)
+        // As a send opens (todo 305): ask the machine, answer its `OpenSession` with the bundle.
+        assertTrue(alice.handleEvent(CfeIncomingEvent.SessionNeeded(bobId)).any { it is CfeAction.OpenSession && it.contactId == bobId })
+        val answer = alice.handleEvent(CfeIncomingEvent.SessionBundleFetched(bobId, bobBundle))
+        assertTrue("$answer", answer.none { it is CfeAction.NotifyError })
+        assertTrue("the open is over: a send now finds it held", alice.handleEvent(CfeIncomingEvent.SessionNeeded(bobId)).any { it is CfeAction.SessionHeld })
         // The bare wire payload, as the send path hands it on: the first message on a new session
         // carries the ML-KEM-1024 ciphertext (1568 bytes) on top of everything else.
         val wire = alice.encryptToWire(bobId, "hello from alice".toByteArray())
@@ -156,7 +160,7 @@ class CryptoManagerInstrumentedTest {
     }
 
     /** A bundle without the hybrid identity is refused before anything is created, and the
-     * refusal is recognisable as "peer not post-quantum". */
+     * refusal names it: `PQ_REQUIRED`. */
     @Test
     fun pqxdhV2_aBundleWithoutTheHybridIdentityIsRefused() {
         val alice = CryptoManager()
@@ -170,8 +174,10 @@ class CryptoManagerInstrumentedTest {
         val bobId = requireNotNull(bob.currentDeviceId())
         val bundle = bob.pqxdhTestBundle(bobFields).copy(hybridIdentityKey = null, hybridIdentitySignature = null)
 
-        val error = runCatching { alice.initSession(bobId, bundle) }.exceptionOrNull()
-        assertTrue("expected PQ_REQUIRED, got $error", error != null && CryptoManager.isPeerNotPostQuantum(error))
+        alice.handleEvent(CfeIncomingEvent.SessionNeeded(bobId))
+        val answer = alice.handleEvent(CfeIncomingEvent.SessionBundleFetched(bobId, bundle))
+        val refusal = answer.filterIsInstance<CfeAction.NotifyError>().singleOrNull()
+        assertTrue("expected PQ_REQUIRED, got $answer", refusal?.code == "OPEN_SESSION_REFUSED" && "PQ_REQUIRED" in refusal.message)
         assertTrue("the refusal leaves no session behind", alice.getAllSessionContactIds().isEmpty())
 
         alice.close()

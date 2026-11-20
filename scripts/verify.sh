@@ -173,8 +173,9 @@ if [ "$DEVICE" = 1 ]; then
       [ "$nw" = 0 ] && pass "no unwired core action at run time" || fail "unwired core action" "$nw 'not acted on' line(s) in logcat"
       # What happened to sessions — counted, not judged: a fresh install and an upgraded one
       # differ, and the reader knows which this was.
-      for label in "sessions reopened (OpenSession):session reopen for .* done" \
-                   "reopens refused or unavailable:session reopen for .* (refused|unavailable)" \
+      for label in "sessions opened (OpenSession):session open for .* done" \
+                   "opens refused or unavailable:session open for .* (refused|unavailable)" \
+                   "sends that waited for an open:waits for the open" \
                    "PQ upgrade deferred:upgrade deferred" \
                    "decryption errors sent:DECRYPTION_ERROR" "decrypt failures:decrypt_failed" \
                    "sessions retired:SessionRetired|retired" "app errors (E/, system noise excluded):^[0-9-]+ [0-9:.]+ +[0-9]+ +[0-9]+ E (MessageProcessor|CfeTimerBridge|SessionManager|MessagingRuntime|MessageRouter|MessageStream|ProcessorEffects|SendMessageUseCase|SessionControl|ReceivingOpen|AuthRepository|StealthSender)"; do

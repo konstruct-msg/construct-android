@@ -23,10 +23,9 @@ import shared.proto.services.v1.KeyServiceOuterClass.DevicePreKeyBundle
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundleResponse
 import shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundlesResponse
 import shared.proto.services.v1.KeyServiceOuterClass.PreKeyBundle
-import uniffi.construct_core.BinaryKeyBundle
 
 /**
- * Covers [SessionManager.initSession]'s private `PreKeyBundle.toBinaryKeyBundle()` mapper
+ * Covers [SessionManager.bundleForOpenSession]'s `PreKeyBundle.toBinaryKeyBundle()` mapper
  * indirectly (through the public entry point) since it's the riskiest hand-written part of
  * the gRPC integration: 14 fields, several optional, no compiler help if a field is dropped.
  */
@@ -46,11 +45,11 @@ class SessionManagerTest {
         // Only the token-free stub: a bundle fetched with a token names who is about to write to
         // whom (BF-1). Mutation that reddens every init test: fetch through `grpcClient.key`.
         whenever(grpcClient.sealedKey).thenReturn(keyStub)
-        sessionManager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), mock(), atRisk)
+        sessionManager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), mock(), atRisk, dagger.Lazy { mock() })
     }
 
     @Test
-    fun initSession_mapsRequiredClassicFields_andLeavesOptionalsNull() = runTest {
+    fun bundleForOpenSession_mapsRequiredClassicFields_andLeavesOptionalsNull() = runTest {
         val bundle = PreKeyBundle.newBuilder()
             .setIdentityKey(ByteString.copyFrom(byteArrayOf(1, 2, 3)))
             .setSignedPreKey(ByteString.copyFrom(byteArrayOf(4, 5, 6)))
@@ -65,15 +64,9 @@ class SessionManagerTest {
             .build()
         whenever(keyStub.getPreKeyBundle(org.mockito.kotlin.any(), org.mockito.kotlin.any())).thenReturn(response)
         whenever(cryptoManager.deriveDeviceIdFromIdentity(org.mockito.kotlin.any())).thenReturn("11111111111111111111111111111111")
-        whenever(cryptoManager.initSession(eq("11111111111111111111111111111111"), org.mockito.kotlin.any())).thenReturn("session-1")
+        whenever(peerDeviceRegistry.accountIdForDevice("11111111111111111111111111111111")).thenReturn("contact-1")
 
-        val result = sessionManager.initSession("contact-1")
-
-        assertEquals("session-1", result)
-
-        val bundleCaptor = argumentCaptor<BinaryKeyBundle>()
-        verify(cryptoManager).initSession(eq("11111111111111111111111111111111"), bundleCaptor.capture())
-        val mapped = bundleCaptor.firstValue
+        val mapped = sessionManager.bundleForOpenSession("11111111111111111111111111111111")
 
         assertArrayEquals(byteArrayOf(1, 2, 3), mapped.identityPublic)
         assertArrayEquals(byteArrayOf(4, 5, 6), mapped.signedPrekeyPublic)
@@ -105,7 +98,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun initSession_mapsOptionalAndKyberFieldsWhenPresent() = runTest {
+    fun bundleForOpenSession_mapsOptionalAndKyberFieldsWhenPresent() = runTest {
         val bundle = PreKeyBundle.newBuilder()
             .setIdentityKey(ByteString.copyFrom(byteArrayOf(1)))
             .setSignedPreKey(ByteString.copyFrom(byteArrayOf(2)))
@@ -135,14 +128,10 @@ class SessionManagerTest {
             .setVerifyingKey(ByteString.copyFrom(byteArrayOf(8)))
             .build()
         whenever(keyStub.getPreKeyBundle(org.mockito.kotlin.any(), org.mockito.kotlin.any())).thenReturn(response)
-        whenever(cryptoManager.initSession(org.mockito.kotlin.any(), org.mockito.kotlin.any())).thenReturn("session-2")
         whenever(cryptoManager.deriveDeviceIdFromIdentity(org.mockito.kotlin.any())).thenReturn("22222222222222222222222222222222")
+        whenever(peerDeviceRegistry.accountIdForDevice("22222222222222222222222222222222")).thenReturn("contact-2")
 
-        sessionManager.initSession("contact-2")
-
-        val bundleCaptor = argumentCaptor<BinaryKeyBundle>()
-        verify(cryptoManager).initSession(eq("22222222222222222222222222222222"), bundleCaptor.capture())
-        val mapped = bundleCaptor.firstValue
+        val mapped = sessionManager.bundleForOpenSession("22222222222222222222222222222222")
 
         assertArrayEquals(byteArrayOf(4), mapped.oneTimePrekeyPublic)
         assertEquals(42u, mapped.oneTimePrekeyId)
@@ -176,7 +165,7 @@ class SessionManagerTest {
     @Test
     fun discoverPeerBundles_vetsAgainstTheDevicesKnownBeforeTheAnswer() = runTest {
         val vetting: PeerDeviceVetting = mock()
-        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting, atRisk)
+        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting, atRisk, dagger.Lazy { mock() })
         val (old, new) = "a".repeat(32) to "b".repeat(32)
         val known = mutableListOf(PeerDeviceRecord(old, "acct", byteArrayOf(1), 0))
         whenever(peerDeviceRegistry.trusted("acct")).thenAnswer { known.map { it.deviceId } }
@@ -210,7 +199,7 @@ class SessionManagerTest {
     @Test
     fun discoverPeerBundles_judgesNothingWhenTheTrustedDevicesCannotBeRead() = runTest {
         val vetting: PeerDeviceVetting = mock()
-        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting, atRisk)
+        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting, atRisk, dagger.Lazy { mock() })
         whenever(peerDeviceRegistry.trusted("acct")).thenReturn(null)
         whenever(keyStub.getPreKeyBundles(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
             .thenReturn(GetPreKeyBundlesResponse.getDefaultInstance())
@@ -250,49 +239,53 @@ class SessionManagerTest {
     }
 
     /**
-     * A bundle refused as stale past what a rotation takes to reach the key server opens degraded,
-     * and the session is marked at risk under its device and account (todo/282). The plan is the
-     * real core's (`plan_stale_spk`). Mutations, one at a time: never degrade (reddens here);
-     * degrade on every stale refusal (the next test reddens); skip the mark (reddens here).
+     * A first send to an account whose device the registry does not know learns the device from
+     * the non-destructive answer, then asks the core for that device's session: no one-time prekey
+     * is spent before the core could say «already opening» (todo 305). Mutation: skip the
+     * discovery — the send fails with no device.
      */
     @Test
-    fun initSession_opensDegradedWhenTheCoreSaysWaitingWillNotHelp() = runTest {
-        val device = "33333333333333333333333333333333"
-        stubBundleFor(device)
-        whenever(cryptoManager.initSession(eq(device), org.mockito.kotlin.any()))
-            .thenAnswer { throw uniffi.construct_core.CryptoException.PeerSpkStale(SPK_MAX_AGE + GRACE + 1UL) }
-        whenever(cryptoManager.initSessionAllowingStale(eq(device), org.mockito.kotlin.any())).thenReturn("degraded")
+    fun ensureSession_learnsAnUnknownDeviceWithoutSpendingAPrekey() = runTest {
+        val device = "55555555555555555555555555555555"
+        val bridge: CfeTimerBridge = mock()
+        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), mock(), atRisk, dagger.Lazy { bridge })
+        whenever(peerDeviceRegistry.resolveDeviceId("acct")).thenReturn(null, device)
+        whenever(peerDeviceRegistry.identityForDevice(device)).thenReturn(byteArrayOf(1))
+        whenever(keyStub.getPreKeyBundles(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
+            .thenReturn(GetPreKeyBundlesResponse.getDefaultInstance())
+        whenever(bridge.needSession(device)).thenReturn(CfeTimerBridge.SessionNeed.OPENED)
 
-        assertEquals("degraded", sessionManager.initSession("acct"))
+        assertEquals(device, manager.ensureSession("acct").deviceId)
+
+        val asked = argumentCaptor<shared.proto.services.v1.KeyServiceOuterClass.GetPreKeyBundlesRequest>()
+        verify(keyStub).getPreKeyBundles(asked.capture(), org.mockito.kotlin.any())
+        assertEquals(false, asked.firstValue.consumeOneTimePrekey)
+        verify(keyStub, org.mockito.kotlin.never()).getPreKeyBundle(org.mockito.kotlin.any(), org.mockito.kotlin.any())
+    }
+
+    /**
+     * The core opened from a stale bundle (`SessionOpenedAtRisk`): the session is marked under
+     * its device and account — the mark Android set itself until 0.77 (todo/282).
+     * Mutation: skip the mark.
+     */
+    @Test
+    fun openedAtRisk_marksTheDeviceUnderItsAccount() = runTest {
+        val device = "33333333333333333333333333333333"
+        whenever(peerDeviceRegistry.accountIdForDevice(device)).thenReturn("acct")
+
+        sessionManager.openedAtRisk(device)
 
         assertEquals(mapOf(device to "acct"), atRisk.marked.value)
     }
 
-    /** Within the rotation grace the core says wait: the refusal propagates, nothing degraded or marked. */
-    @Test
-    fun initSession_refusesAStaleBundleThePeerMayHaveRotated() = runTest {
-        val device = "33333333333333333333333333333333"
-        stubBundleFor(device)
-        val stale = uniffi.construct_core.CryptoException.PeerSpkStale(SPK_MAX_AGE + 1UL)
-        whenever(cryptoManager.initSession(eq(device), org.mockito.kotlin.any())).thenAnswer { throw stale }
-
-        val thrown = runCatching { sessionManager.initSession("acct") }.exceptionOrNull()
-
-        assertEquals(stale, thrown)
-        verify(cryptoManager, org.mockito.kotlin.never()).initSessionAllowingStale(org.mockito.kotlin.any(), org.mockito.kotlin.any())
-        assertEquals(emptyMap<String, String>(), atRisk.marked.value)
-    }
-
     /** A clean open ends the mark, and only that device's. Mutation: keep the mark on a clean open. */
     @Test
-    fun initSession_aCleanOpenEndsTheMark() = runTest {
+    fun openedCleanly_endsOnlyThatDevicesMark() = runTest {
         val device = "33333333333333333333333333333333"
         atRisk.mark(device, "acct")
         atRisk.mark("44444444444444444444444444444444", "other")
-        stubBundleFor(device)
-        whenever(cryptoManager.initSession(eq(device), org.mockito.kotlin.any())).thenReturn("fresh")
 
-        sessionManager.initSession("acct")
+        sessionManager.openedCleanly(device)
 
         assertEquals(mapOf("44444444444444444444444444444444" to "other"), atRisk.marked.value)
     }
@@ -317,7 +310,7 @@ class SessionManagerTest {
     @Test
     fun discoverOwnDeviceBundles_judgesNothing() = runTest {
         val vetting: PeerDeviceVetting = mock()
-        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting, atRisk)
+        val manager = SessionManager(cryptoManager, grpcClient, userDao, peerDeviceRegistry, mock(), vetting, atRisk, dagger.Lazy { mock() })
         whenever(keyStub.getPreKeyBundles(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
             .thenReturn(GetPreKeyBundlesResponse.getDefaultInstance())
 
@@ -325,11 +318,5 @@ class SessionManagerTest {
 
         verify(peerDeviceRegistry, org.mockito.kotlin.never()).trusted(org.mockito.kotlin.any())
         verify(vetting, org.mockito.kotlin.never()).vet(org.mockito.kotlin.any(), org.mockito.kotlin.any(), org.mockito.kotlin.any())
-    }
-
-    private companion object {
-        /** The core's `SPK_MAX_AGE_SECS` and `SPK_ROTATION_GRACE_SECS`. */
-        const val SPK_MAX_AGE = 2_592_000UL
-        const val GRACE = 21_600UL
     }
 }
