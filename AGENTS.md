@@ -227,7 +227,8 @@ before touching UI.
 - Conventional Commits: `feat|fix|refactor|chore|docs|test(scope): …`.
 - **Never commit on `develop` (testers) or `main` (public).** Cut a topic branch from an up-to-date
   `develop` and merge it through a PR. `develop → main` is the owner's step. Agents push and open
-  PRs only when asked, after `verify.sh` passes.
+  the PR as soon as the work is done and `verify.sh` passes, without waiting to be asked (owner,
+  2026-11-20); a check still to run on a device or the stand is named in the PR.
 - A commit made on `develop` by mistake and not pushed moves with
   `git branch <topic> && git reset --keep origin/develop && git switch <topic>`. Never rewrite
   pushed history.
