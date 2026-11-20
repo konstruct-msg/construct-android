@@ -46,6 +46,8 @@ import uniffi.construct_core.DeliveryAudience
 sealed interface SendOutcome {
     data class Sent(val messageId: String) : SendOutcome
     data class Failed(val messageId: String, val reason: String) : SendOutcome
+    /** No device has it yet: its copies wait in the outbox for a session the core is opening (todo 305). */
+    data class Queued(val messageId: String) : SendOutcome
 }
 
 /**
@@ -229,15 +231,14 @@ class SendMessageUseCase @Inject constructor(
         content: ByteArray,
     ): SendOutcome {
         return try {
-            // Establishment is deliberately unchanged by this: the first send to a peer we hold
-            // nothing with still opens a session with the device the registry pins, and that
-            // device is also the offline answer for the set below when the key server cannot be
-            // reached. Which devices a send must hold sessions with is the machine's question,
-            // not this one's.
-            val pinned = sessionManager.ensureSession(contactId)
             if (contactId == myId) {
-                return sendNoteToSelf(myId, messageId, timestampMs, content, pinned)
+                return sendNoteToSelf(myId, messageId, timestampMs, content, sessionManager.ensureSession(myId))
             }
+            // Nothing is opened here: each copy asks for its own device's session below, through
+            // the core's machine. Two sends at once to a device with none used to open it twice
+            // here, account-wide, before either knew the other (todo 305). The pinned device is
+            // only the offline answer for the set when the key server cannot be reached.
+            val pinned = sessionManager.resolveTarget(contactId)
             val tally = deliverCopies(myId, contactId, messageId, timestampMs, content, pinned)
             if (tally.recipientAccepted > 0) {
                 // `sent` has always meant "in the person's mailbox", and one accepted copy puts
@@ -258,6 +259,12 @@ class SendMessageUseCase @Inject constructor(
                     owedCopies.owed(messageId, contactId, myId, tally.owed)
                 }
                 SendOutcome.Sent(messageId)
+            } else if (tally.waiting.isNotEmpty()) {
+                // Waiting is not failing: the open another send was granted answers these copies,
+                // and the retry sends them over it ([FanoutRetries.openAnswered]).
+                messages.setDeliveryStatus(messageId, DeliveryStatus.QUEUED)
+                owedCopies.owed(messageId, contactId, myId, tally.owed)
+                SendOutcome.Queued(messageId)
             } else {
                 messages.setDeliveryStatus(messageId, DeliveryStatus.FAILED)
                 SendOutcome.Failed(messageId, tally.lastError)
@@ -314,13 +321,33 @@ class SendMessageUseCase @Inject constructor(
             )
             val sent = result?.success == true
             Log.i(TAG, "resend ${messageId.take(8)}… to ${deviceId.take(8)}… — ${if (sent) "sent" else "failed"}")
+            if (sent && row.deliveryStatus == DeliveryStatus.QUEUED) {
+                // The first copy of a message that waited for its session: now in the mailbox.
+                messages.setDeliveryStatus(row.id, DeliveryStatus.SENT)
+                result?.orderKey?.let {
+                    messages.setOrderKey(row.id, it)
+                    messages.refreshChatPreview(chats, ConversationId.direct(myId, contactId), mediaPreview::of)
+                }
+            }
             if (sent) ResendOutcome.SENT else ResendOutcome.FAILED
         } catch (e: CancellationException) {
             throw e
+        } catch (e: SessionManager.OpenInFlight) {
+            Log.i(TAG, "resend ${messageId.take(8)}… to ${deviceId.take(8)}… waits for the open")
+            ResendOutcome.FAILED
         } catch (e: Exception) {
             Log.w(TAG, "resend ${messageId.take(8)}… to ${deviceId.take(8)}… threw", e)
             ResendOutcome.FAILED
         }
+    }
+
+    /**
+     * The retry gave up on [messageId]'s copies. A message no device took, waiting for a session
+     * that never opened, is not sent: it says so, and the person can retry it.
+     */
+    suspend fun givenUp(messageId: String) {
+        val row = messages.get(messageId) ?: return
+        if (row.deliveryStatus == DeliveryStatus.QUEUED) messages.setDeliveryStatus(row.id, DeliveryStatus.FAILED)
     }
 
     /**
@@ -427,6 +454,8 @@ class SendMessageUseCase @Inject constructor(
                 outcome
             }
             is SendOutcome.Failed -> SendOutcome.Failed(targetMessageId, outcome.reason)
+            // An action is not kept in the outbox: one no device took is not sent.
+            is SendOutcome.Queued -> SendOutcome.Failed(targetMessageId, "not sent")
         }
     }
 
@@ -520,6 +549,8 @@ class SendMessageUseCase @Inject constructor(
         val owed: List<String> = emptyList(),
         /** Our own devices that took their copy. */
         val reachedOwn: List<String> = emptyList(),
+        /** Recipient devices whose session another send is opening: their copies wait for it (in [owed] too). */
+        val waiting: List<String> = emptyList(),
     )
 
     /**
@@ -542,7 +573,7 @@ class SendMessageUseCase @Inject constructor(
         baseMessageId: String,
         timestampMs: Long,
         content: ByteArray,
-        /** The contact's pinned device; null only when [contactId] is this account. */
+        /** The contact's pinned device, the offline answer for its set; null when none is known, or [contactId] is this account. */
         pinned: SessionManager.SessionPeer?,
         recipientsOnly: Boolean = false,
         /** What a recipient's frames say they carry; an ordinary message is type 1. */
@@ -562,7 +593,7 @@ class SendMessageUseCase @Inject constructor(
         check(!KnstFrame.isOwnDevicesOnly(contentType)) { "type $contentType is for own devices only" }
         if (replicaContentType != KnstFrame.TYPE_SENDER_SYNC) check(recipientIsSelf) { "type $replicaContentType addressed to a contact" }
         val recipientDevices =
-            if (recipientIsSelf) emptyList() else recipientDeviceSet(contactId, requireNotNull(pinned))
+            if (recipientIsSelf) emptyList() else recipientDeviceSet(contactId, pinned)
         val ownBundles = if (recipientsOnly) {
             emptyList()
         } else {
@@ -592,6 +623,7 @@ class SendMessageUseCase @Inject constructor(
         var orderKey: String? = null
         val owed = mutableListOf<String>()
         val reachedOwn = mutableListOf<String>()
+        val waiting = mutableListOf<String>()
         for (target in targets) {
             val isOwnReplica = target.audience == DeliveryAudience.OWN_REPLICA
             // The certificate names the device that wrote a copy, and every copy carries it: nothing
@@ -612,6 +644,16 @@ class SendMessageUseCase @Inject constructor(
             val peer = runCatching {
                 sessionManager.ensureSessionForDevice(accountId, target.deviceId)
             }.getOrElse {
+                if (it is CancellationException) throw it
+                if (it is SessionManager.OpenInFlight) {
+                    // Counted by scripts/verify.sh --device.
+                    Log.i(TAG, "copy for ${target.deviceId.take(8)}… waits for the open")
+                    if (!isOwnReplica) {
+                        waiting += target.deviceId
+                        owed += target.deviceId
+                    }
+                    continue
+                }
                 Log.w(TAG, "session init failed ${target.deviceId.take(8)}…", it)
                 lastError = "session init failed"
                 if (!isOwnReplica) owed += target.deviceId
@@ -660,7 +702,7 @@ class SendMessageUseCase @Inject constructor(
                 if (!isOwnReplica) owed += target.deviceId
             }
         }
-        return DeliveryTally(recipientAccepted, replicaAccepted, lastError, orderKey, owed, reachedOwn)
+        return DeliveryTally(recipientAccepted, replicaAccepted, lastError, orderKey, owed, reachedOwn, waiting)
     }
 
     /**
@@ -674,7 +716,7 @@ class SendMessageUseCase @Inject constructor(
      */
     private suspend fun recipientDeviceSet(
         contactId: String,
-        pinned: SessionManager.SessionPeer,
+        pinned: SessionManager.SessionPeer?,
     ): List<SessionManager.SessionPeer> {
         val merged = LinkedHashMap<String, SessionManager.SessionPeer>()
         sessionManager.knownPeerDevices(contactId).forEach { merged[it.deviceId] = it }
@@ -690,7 +732,7 @@ class SendMessageUseCase @Inject constructor(
                     identityPublic = it.identityPublic,
                 )
             }
-        if (merged.isEmpty()) merged[pinned.deviceId] = pinned
+        if (merged.isEmpty() && pinned != null) merged[pinned.deviceId] = pinned
         return merged.values.toList()
     }
 

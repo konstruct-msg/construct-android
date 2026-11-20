@@ -51,7 +51,7 @@ class FanoutRetries internal constructor(
     private val send: () -> SendMessageUseCase,
     private val scope: CoroutineScope,
     private val now: () -> Long,
-) : OwedCopies {
+) : OwedCopies, WaitingCopies {
     @Inject
     constructor(queue: FanoutRetryQueue, send: dagger.Lazy<SendMessageUseCase>) : this(
         queue,
@@ -77,6 +77,32 @@ class FanoutRetries internal constructor(
         scope.launch { runCatching { drain() }.onFailure { Log.w(TAG, "drain failed", it) } }
     }
 
+    /**
+     * The core opened a session with [deviceId] that copies in the queue waited for
+     * ([SessionManager.OpenInFlight], todo 305): they go now, not when their wait is over —
+     * `decisions/a-first-send-asks-the-machine-to-open.md`, «the platform walks its outbox for
+     * that device». No attempt is spent: none was made.
+     */
+    override fun openAnswered(deviceId: String) {
+        scope.launch {
+            runCatching { sendWaiting(deviceId) }
+                .onFailure { Log.w(TAG, "copies waiting for ${deviceId.take(8)}… failed", it) }
+        }
+    }
+
+    internal suspend fun sendWaiting(deviceId: String) {
+        draining.withLock {
+            for (entry in queue.all()) {
+                if (deviceId !in entry.owedDeviceIds) continue
+                if (send().resend(entry.recipientUserId, deviceId, entry.baseMessageId) == ResendOutcome.SENT) {
+                    queue.replaceOwed(entry.key, entry.owedDeviceIds - deviceId)
+                    Log.i(TAG, "${entry.baseMessageId.take(8)}… sent to ${deviceId.take(8)}… once its session opened")
+                }
+            }
+        }
+        schedule()
+    }
+
     suspend fun drain() {
         if (!draining.tryLock()) return
         try {
@@ -99,6 +125,7 @@ class FanoutRetries internal constructor(
         val short = entry.baseMessageId.take(8)
         if (queue.recordAttempt(entry.key) == null) {
             Log.w(TAG, "$short… given up after ${FanoutRetryQueue.MAX_ATTEMPTS} attempts, ${entry.owedDeviceIds.size} device(s) without it")
+            send().givenUp(entry.baseMessageId)
             return
         }
         val lost = mutableListOf<String>()

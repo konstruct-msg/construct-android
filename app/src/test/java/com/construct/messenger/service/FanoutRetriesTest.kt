@@ -103,6 +103,32 @@ class FanoutRetriesTest {
 
         verify(send, times(FanoutRetryQueue.MAX_ATTEMPTS - 1)).resend("peer", "dev-2", "m-1")
         assertTrue(q.all().isEmpty())
+        // A message that waited for a session nobody opened is said to be not sent (todo 305).
+        verify(send).givenUp("m-1")
+    }
+
+    /**
+     * Todo 305: a copy that waited for another send's open goes once the core opened it — at once,
+     * not at the entry's due time, and without spending an attempt. Only copies owed to that
+     * device. Mutations, one at a time: walk nothing (no resend before the due time); resend every
+     * owed device (dev-3 gets one); count an attempt (the attempts reddens).
+     */
+    @Test
+    fun `the copies that waited for an open go once it opened, and only to that device`() = runTest {
+        ready()
+        val q = queue()
+        val r = retries(q)
+        r.owed("m-1", "peer", "me", listOf("dev-2", "dev-3"))
+        r.owed("m-2", "peer", "me", listOf("dev-3"))
+
+        r.openAnswered("dev-2")
+        runCurrent()
+
+        verify(send).resend("peer", "dev-2", "m-1")
+        verify(send, never()).resend(any(), eq("dev-3"), any())
+        verify(send, never()).resend(any(), any(), eq("m-2"))
+        assertEquals(listOf(listOf("dev-3"), listOf("dev-3")), q.all().map { it.owedDeviceIds })
+        assertEquals(listOf(0, 0), q.all().map { it.attempts })
     }
 
     @Test

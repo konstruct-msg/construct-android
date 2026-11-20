@@ -577,6 +577,74 @@ class SendMessageUseCaseTest {
     }
 
     /**
+     * Todo 305: a send whose recipient device is being opened by another send waits — QUEUED, its
+     * copy owed to that device for the open's answer — rather than FAILED, as the second album of
+     * a share was on stand 304. Mutation: take `OpenInFlight` as any session failure — the row is
+     * FAILED and nothing is owed.
+     */
+    @Test
+    fun `a send that waits for another send's open is queued, not failed`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        whenever(h.sessionManager.ensureSessionForDevice(peer, pinnedDevice))
+            .thenThrow(SessionManager.OpenInFlight(pinnedDevice))
+
+        val outcome = h.useCase()(peer, "hello")
+
+        assertTrue(outcome is SendOutcome.Queued)
+        assertEquals(DeliveryStatus.QUEUED, h.messages.rows[(outcome as SendOutcome.Queued).messageId]?.deliveryStatus)
+        assertEquals(listOf(peer to listOf(pinnedDevice)), h.owed.owed)
+    }
+
+    /** Another device took it: sent, and the waiting one is owed. Mutation: owe only refusals. */
+    @Test
+    fun `a device whose open is running is owed its copy when another took it`() = runTest {
+        val h = harness()
+        whenever(h.sessionManager.ensureSessionForDevice(peer, siblingDevice))
+            .thenThrow(SessionManager.OpenInFlight(siblingDevice))
+
+        val outcome = h.useCase()(peer, "hello")
+
+        assertTrue(outcome is SendOutcome.Sent)
+        assertEquals(listOf(peer to listOf(siblingDevice)), h.owed.owed)
+    }
+
+    /**
+     * The waiting copy taken is the message in the mailbox: QUEUED becomes SENT. Mutation: leave
+     * the row as it was — it stays queued for good.
+     */
+    @Test
+    fun `a queued message is sent once its waiting copy is taken`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        val id = "55555555-5555-4555-8555-555555555555"
+        h.messages.rows[id] = MessageRecord(id, com.construct.messenger.util.ConversationId.direct(myId, peer), "waited", true, 5L, DeliveryStatus.QUEUED)
+
+        assertEquals(ResendOutcome.SENT, h.useCase().resend(peer, pinnedDevice, id))
+
+        assertEquals(DeliveryStatus.SENT, h.messages.rows[id]?.deliveryStatus)
+    }
+
+    /**
+     * The retry gave up: a message no device took is FAILED; one being sent again right now (the
+     * person pressed retry) is left to that send. Mutation: fail every row given up — the sending
+     * one reddens. (A SENT row is held by the store's evidence rank whatever this does.)
+     */
+    @Test
+    fun `a queued message the retry gave up on is failed, one being sent stays`() = runTest {
+        val h = harness()
+        val chatId = com.construct.messenger.util.ConversationId.direct(myId, peer)
+        val queued = "66666666-6666-4666-8666-666666666666"
+        val sending = "77777777-7777-4777-8777-777777777777"
+        h.messages.rows[queued] = MessageRecord(queued, chatId, "a", true, 5L, DeliveryStatus.QUEUED)
+        h.messages.rows[sending] = MessageRecord(sending, chatId, "b", true, 6L, DeliveryStatus.SENDING)
+
+        h.useCase().givenUp(queued)
+        h.useCase().givenUp(sending)
+
+        assertEquals(DeliveryStatus.FAILED, h.messages.rows[queued]?.deliveryStatus)
+        assertEquals(DeliveryStatus.SENDING, h.messages.rows[sending]?.deliveryStatus)
+    }
+
+    /**
      * Fail closed: with stealth on, an empty identity key is an identified downgrade wearing a
      * seal's name. The copy is refused rather than sealed to nothing — and with no copy left,
      * the send fails.

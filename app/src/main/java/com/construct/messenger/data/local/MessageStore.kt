@@ -74,7 +74,7 @@ data class MessageRecord(
 internal fun DeliveryStatus.evidenceRank(): Int = when (this) {
     DeliveryStatus.DELIVERED -> 2
     DeliveryStatus.SENT -> 1
-    DeliveryStatus.SENDING, DeliveryStatus.FAILED -> 0
+    DeliveryStatus.SENDING, DeliveryStatus.QUEUED, DeliveryStatus.FAILED -> 0
 }
 
 /**

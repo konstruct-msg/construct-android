@@ -554,7 +554,8 @@ private fun ReplyQuoteStrip(
 
 /**
  * iOS `deliveryStatusView`: sending — an empty circle; sent — a filled one; delivered — a green
- * check in a circle (read renders the same: iOS has no separate read mark); failed — danger.
+ * check in a circle (read renders the same: iOS has no separate read mark); queued — a dim
+ * clockwise arrow (iOS `arrow.clockwise`); failed — danger.
  */
 @Composable
 private fun DeliveryStatusIcon(status: DeliveryStatus) {
@@ -562,6 +563,7 @@ private fun DeliveryStatusIcon(status: DeliveryStatus) {
         DeliveryStatus.SENDING -> Icons.Outlined.Circle to CTColor.textDim
         DeliveryStatus.SENT -> Icons.Filled.Circle to CTColor.textDim
         DeliveryStatus.DELIVERED -> Icons.Outlined.CheckCircle to SYSTEM_GREEN
+        DeliveryStatus.QUEUED -> Icons.Filled.Refresh to CTColor.textDim
         DeliveryStatus.FAILED -> Icons.Filled.Error to CTColor.danger
     }
     Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(CTIcon.caption))
