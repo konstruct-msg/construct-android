@@ -30,6 +30,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import io.grpc.Status
+import io.grpc.StatusException
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -593,6 +595,51 @@ class SendMessageUseCaseTest {
         assertTrue(outcome is SendOutcome.Queued)
         assertEquals(DeliveryStatus.QUEUED, h.messages.rows[(outcome as SendOutcome.Queued).messageId]?.deliveryStatus)
         assertEquals(listOf(peer to listOf(pinnedDevice)), h.owed.owed)
+    }
+
+    /**
+     * Todo 321: a copy the path cut off — the channel shut under it when the stream was declared
+     * dead — got no answer about the message. It waits (QUEUED), owed to that device, and the same
+     * ciphertext goes again; FAILED made the person send it again, after the ones written later.
+     * The decision is the core's (`after_send_failure`), as on iOS. Mutation: fold a cut copy as
+     * any failure — the row is FAILED and nothing is owed.
+     */
+    @Test
+    fun `a copy the path cut off is queued, not failed`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        whenever(
+            h.messaging.sendMessage(
+                messageId = any(), senderId = any(), recipientId = any(), conversationId = any(),
+                encryptedPayload = any(), timestampMs = any(), contentType = any(),
+            ),
+        ).thenAnswer { throw StatusException(Status.CANCELLED.withDescription("Channel is forcefully shutdown")) }
+
+        val outcome = h.useCase()(peer, "hello")
+
+        assertTrue(outcome is SendOutcome.Queued)
+        assertEquals(DeliveryStatus.QUEUED, h.messages.rows[(outcome as SendOutcome.Queued).messageId]?.deliveryStatus)
+        assertEquals(listOf(peer to listOf(pinnedDevice)), h.owed.owed)
+    }
+
+    /**
+     * A status that is the server's answer about the message fails it. Mutation: queue every
+     * thrown error — a refused message would wait for good.
+     */
+    @Test
+    fun `a copy the server refused fails the message`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        whenever(
+            h.messaging.sendMessage(
+                messageId = any(), senderId = any(), recipientId = any(), conversationId = any(),
+                encryptedPayload = any(), timestampMs = any(), contentType = any(),
+            ),
+        ).thenAnswer { throw StatusException(Status.PERMISSION_DENIED) }
+
+        val outcome = h.useCase()(peer, "hello")
+
+        assertTrue(outcome is SendOutcome.Failed)
+        assertEquals(DeliveryStatus.FAILED, h.messages.rows[(outcome as SendOutcome.Failed).messageId]?.deliveryStatus)
+        assertTrue(h.owed.owed.isEmpty())
     }
 
     /** Another device took it: sent, and the waiting one is owed. Mutation: owe only refusals. */

@@ -73,7 +73,7 @@ class MessagesRepositoryImpl @Inject constructor(
 
     override suspend fun sendSticker(contactId: String, ref: com.construct.messenger.stickers.StickerReference): SendOutcome {
         stickers.recordUsed(ref)
-        val outcome = sendMessage.sendSticker(contactId, ref)
+        val outcome = lanes.inOrder(contactId, ChatSendLanes.Lane.TEXT) { sendMessage.sendSticker(contactId, ref) }
         if (outcome is SendOutcome.Sent) runCatching { sendContactCard.sendIfOwed(contactId) }
         return outcome
     }
@@ -101,7 +101,7 @@ class MessagesRepositoryImpl @Inject constructor(
                             skipped++
                             continue
                         }
-                        sendMedia.forward(contactId, item.items, plain, item.caption)
+                        lanes.inOrder(contactId, ChatSendLanes.Lane.MEDIA) { sendMedia.forward(contactId, item.items, plain, item.caption) }
                     }
                     is ForwardItem.Voice -> {
                         val audio = try {
@@ -113,7 +113,9 @@ class MessagesRepositoryImpl @Inject constructor(
                             skipped++
                             continue
                         }
-                        sendMedia.voice(contactId, audio, item.audio.durationMs ?: 0, item.waveform.map { it / 255f })
+                        lanes.inOrder(contactId, ChatSendLanes.Lane.MEDIA) {
+                            sendMedia.voice(contactId, audio, item.audio.durationMs ?: 0, item.waveform.map { it / 255f })
+                        }
                     }
                 }
             }
@@ -154,7 +156,7 @@ class MessagesRepositoryImpl @Inject constructor(
      */
     override suspend fun send(contactId: String, text: String, reply: ReplyRef?): SendOutcome =
         scope.async {
-            val outcome = sendMessage(contactId, text, reply)
+            val outcome = lanes.inOrder(contactId, ChatSendLanes.Lane.TEXT) { sendMessage(contactId, text, reply) }
             // The first time we write to a device, it gets our card too (the other trigger is
             // hearing from it). After the message, so a control envelope never delays the bubble.
             if (outcome is SendOutcome.Sent) {
@@ -172,7 +174,7 @@ class MessagesRepositoryImpl @Inject constructor(
         quality: com.construct.messenger.media.VideoQuality,
     ): SendOutcome =
         scope.async {
-            val outcome = sendMedia.photos(contactId, uris, caption, reply, quality)
+            val outcome = lanes.inOrder(contactId, ChatSendLanes.Lane.MEDIA) { sendMedia.photos(contactId, uris, caption, reply, quality) }
             if (outcome is SendOutcome.Sent) {
                 runCatching { sendContactCard.sendIfOwed(contactId) }
             }
@@ -180,13 +182,13 @@ class MessagesRepositoryImpl @Inject constructor(
         }.await()
 
     override suspend fun sendVoice(contactId: String, recording: java.io.File, durationMs: Long, waveform: List<Float>, reply: ReplyRef?): SendOutcome =
-        scope.async { sendMedia.voice(contactId, recording, durationMs, waveform, reply) }.await()
+        scope.async { lanes.inOrder(contactId, ChatSendLanes.Lane.MEDIA) { sendMedia.voice(contactId, recording, durationMs, waveform, reply) } }.await()
 
     override suspend fun sendVideoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake, reply: ReplyRef?): SendOutcome =
-        scope.async { sendMedia.videoNote(contactId, take, reply) }.await()
+        scope.async { lanes.inOrder(contactId, ChatSendLanes.Lane.MEDIA) { sendMedia.videoNote(contactId, take, reply) } }.await()
 
     override suspend fun sendFiles(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef?): SendOutcome =
-        scope.async { sendMedia.files(contactId, uris, caption, reply) }.await()
+        scope.async { lanes.inOrder(contactId, ChatSendLanes.Lane.MEDIA) { sendMedia.files(contactId, uris, caption, reply) } }.await()
 
     override suspend fun openable(item: com.construct.messenger.data.model.MediaItem, name: String): Uri = media.openable(item, name)
 
@@ -197,6 +199,9 @@ class MessagesRepositoryImpl @Inject constructor(
     override suspend fun mediaBytes(item: com.construct.messenger.data.model.MediaItem): ByteArray = media.bytes(item)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** Sends to one person go one at a time, in the order written (todo 321). */
+    private val lanes = ChatSendLanes()
 
     override suspend fun edit(contactId: String, messageId: String, newText: String): SendOutcome =
         scope.async { sendMessage.edit(contactId, messageId, newText) }.await()

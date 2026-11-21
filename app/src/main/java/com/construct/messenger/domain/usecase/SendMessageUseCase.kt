@@ -4,6 +4,7 @@ import com.construct.messenger.util.ServerMessageOrder
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.MessagingService
+import com.construct.messenger.data.api.SendFailureReading
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.SessionStateStore
 import com.construct.messenger.data.local.ChatStore
@@ -259,9 +260,10 @@ class SendMessageUseCase @Inject constructor(
                     owedCopies.owed(messageId, contactId, myId, tally.owed)
                 }
                 SendOutcome.Sent(messageId)
-            } else if (tally.waiting.isNotEmpty()) {
+            } else if (tally.waiting.isNotEmpty() || tally.unanswered.isNotEmpty()) {
                 // Waiting is not failing: the open another send was granted answers these copies,
-                // and the retry sends them over it ([FanoutRetries.openAnswered]).
+                // and the retry sends them over it ([FanoutRetries.openAnswered]). Nor is a copy the
+                // path cut off (todo 321, the core's `after_send_failure`): the retry sends it again.
                 messages.setDeliveryStatus(messageId, DeliveryStatus.QUEUED)
                 owedCopies.owed(messageId, contactId, myId, tally.owed)
                 SendOutcome.Queued(messageId)
@@ -551,6 +553,8 @@ class SendMessageUseCase @Inject constructor(
         val reachedOwn: List<String> = emptyList(),
         /** Recipient devices whose session another send is opening: their copies wait for it (in [owed] too). */
         val waiting: List<String> = emptyList(),
+        /** Recipient devices whose copy got no answer: the path failed, not the message (in [owed] too). */
+        val unanswered: List<String> = emptyList(),
     )
 
     /**
@@ -624,6 +628,7 @@ class SendMessageUseCase @Inject constructor(
         val owed = mutableListOf<String>()
         val reachedOwn = mutableListOf<String>()
         val waiting = mutableListOf<String>()
+        val unanswered = mutableListOf<String>()
         for (target in targets) {
             val isOwnReplica = target.audience == DeliveryAudience.OWN_REPLICA
             // The certificate names the device that wrote a copy, and every copy carries it: nothing
@@ -698,11 +703,17 @@ class SendMessageUseCase @Inject constructor(
                 if (!isOwnReplica && orderKey == null) orderKey = result.orderKey
             } else {
                 lastError = result?.errorCode?.ifEmpty { "send failed" } ?: "send failed"
-                Log.w(TAG, "copy rejected ${target.deviceId.take(8)}… $lastError")
+                if (result?.unanswered == true) {
+                    // Counted by scripts/verify.sh --device.
+                    Log.w(TAG, "copy unanswered ${target.deviceId.take(8)}… $lastError — waits for a path")
+                    if (!isOwnReplica) unanswered += target.deviceId
+                } else {
+                    Log.w(TAG, "copy rejected ${target.deviceId.take(8)}… $lastError")
+                }
                 if (!isOwnReplica) owed += target.deviceId
             }
         }
-        return DeliveryTally(recipientAccepted, replicaAccepted, lastError, orderKey, owed, reachedOwn, waiting)
+        return DeliveryTally(recipientAccepted, replicaAccepted, lastError, orderKey, owed, reachedOwn, waiting, unanswered)
     }
 
     /**
@@ -807,7 +818,17 @@ class SendMessageUseCase @Inject constructor(
             } catch (e: Exception) {
                 if (attempt == MAX_ATTEMPTS - 1) {
                     Log.w(TAG, "copy send threw ${wireMessageId.takeLast(16)}", e)
-                    return last
+                    // What the throw says about the message is the core's rule; the queue resends
+                    // an unanswered copy, a refused one is the person's to see.
+                    return MessagingService.SendResult(
+                        messageId = wireMessageId,
+                        success = false,
+                        errorCode = io.grpc.Status.fromThrowable(e).code.name,
+                        retryable = false,
+                        retryAfterMs = 0,
+                        attemptId = "",
+                        unanswered = SendFailureReading.waitsForAPath(e),
+                    )
                 }
                 delay(BACKOFF_MS * (attempt + 1))
                 return@repeat
