@@ -17,6 +17,7 @@ import com.construct.messenger.data.model.ReplyRef
 import com.construct.messenger.service.MediaPreviewText
 import com.construct.messenger.service.of
 import com.construct.messenger.service.OrchestratorGateway
+import com.construct.messenger.service.DeviceSetAnswers
 import com.construct.messenger.service.OwedCopies
 import com.construct.messenger.service.ServerMessageIds
 import com.construct.messenger.service.SessionManager
@@ -43,6 +44,7 @@ import shared.proto.core.v1.EnvelopeOuterClass.ContentType
 import uniffi.construct_core.CfeAction
 import uniffi.construct_core.CfeIncomingEvent
 import uniffi.construct_core.DeliveryAudience
+import uniffi.construct_core.DeliveryTarget
 
 sealed interface SendOutcome {
     data class Sent(val messageId: String) : SendOutcome
@@ -89,6 +91,7 @@ class SendMessageUseCase @Inject constructor(
     private val serverMessageIds: ServerMessageIds,
     private val mediaPreview: MediaPreviewText,
     private val owedCopies: OwedCopies,
+    private val deviceSets: DeviceSetAnswers = DeviceSetAnswers(),
 ) {
     suspend operator fun invoke(contactId: String, text: String, reply: ReplyRef? = null, turn: SendTurn = SendTurn.NOW): SendOutcome {
         val body = text.trim()
@@ -610,12 +613,7 @@ class SendMessageUseCase @Inject constructor(
         val ownBundles = if (recipientsOnly) {
             emptyList()
         } else {
-            runCatching { sessionManager.discoverOwnDeviceBundles(myId) }
-                .getOrElse {
-                    Log.w(TAG, "own device discovery failed", it)
-                    emptyList()
-                }
-                .filter { it.deviceId.lowercase() !in skipOwn }
+            ownDeviceSet(myId).filter { it.deviceId.lowercase() !in skipOwn }
         }
 
         val targets = cryptoManager.planSend(
@@ -638,7 +636,11 @@ class SendMessageUseCase @Inject constructor(
         val reachedOwn = mutableListOf<String>()
         val waiting = mutableListOf<String>()
         val unanswered = mutableListOf<String>()
-        for (target in targets) {
+        // The answer each sealed recipient copy carries about the recipient's devices (empty
+        // from an identified send, an older server, another server).
+        val answers = mutableListOf<List<String>>()
+
+        suspend fun deliver(target: DeliveryTarget) {
             val isOwnReplica = target.audience == DeliveryAudience.OWN_REPLICA
             // The certificate names the device that wrote a copy, and every copy carries it: nothing
             // else says which session it is read on, and whether the sibling still holds this
@@ -649,7 +651,7 @@ class SendMessageUseCase @Inject constructor(
                     .getOrElse {
                         Log.w(TAG, "no sender certificate — no copy for ${target.deviceId.take(8)}…", it)
                         lastError = "no sender certificate"
-                        continue
+                        return
                     }
             } else {
                 null
@@ -666,12 +668,12 @@ class SendMessageUseCase @Inject constructor(
                         waiting += target.deviceId
                         owed += target.deviceId
                     }
-                    continue
+                    return
                 }
                 Log.w(TAG, "session init failed ${target.deviceId.take(8)}…", it)
                 lastError = "session init failed"
                 if (!isOwnReplica) owed += target.deviceId
-                continue
+                return
             }
             val identity = identityByDevice[target.deviceId] ?: peer.identityPublic
             if (identity.isEmpty()) {
@@ -681,7 +683,7 @@ class SendMessageUseCase @Inject constructor(
                 Log.w(TAG, "identity missing ${target.deviceId.take(8)}… — copy skipped")
                 lastError = "no identity key"
                 if (!isOwnReplica) owed += target.deviceId
-                continue
+                return
             }
             val tag = runCatching {
                 cryptoManager.deviceCopyTag(baseMessageId, target.deviceId, identity)
@@ -689,7 +691,7 @@ class SendMessageUseCase @Inject constructor(
                 Log.w(TAG, "copy tag failed ${target.deviceId.take(8)}…", it)
                 lastError = "tag failed"
                 if (!isOwnReplica) owed += target.deviceId
-                continue
+                return
             }
             val result = sendFrames(
                 frames = framesOf(content, baseMessageId, isOwnReplica, partner = contactId, contentType, replicaContentType),
@@ -702,6 +704,7 @@ class SendMessageUseCase @Inject constructor(
                 identityPublic = identity,
                 ownCopyCertificate = ownCopyCertificate,
             )
+            if (!isOwnReplica && result != null) answers += result.recipientActiveDevices
             if (result?.success == true) {
                 if (isOwnReplica) {
                     replicaAccepted++
@@ -722,38 +725,79 @@ class SendMessageUseCase @Inject constructor(
                 if (!isOwnReplica) owed += target.deviceId
             }
         }
+
+        for (target in targets) deliver(target)
+
+        // The answers name the devices the server holds. One the plan did not have gets its copy
+        // of this message now, while the plan is in hand; the retry queue cannot rebuild media.
+        // Only a message asks: a receipt or a control answers someone, and receiving fetches
+        // nothing. A device the key server does not hand over stays owed.
+        if (!recipientIsSelf && contentType == KnstFrame.TYPE_E2EE_SIGNAL) {
+            val planned = recipientDevices.map { it.deviceId }
+            deviceSets.toAsk(contactId, answers, planned)?.let { named ->
+                val found = runCatching { sessionManager.discoverPeerBundles(contactId) }
+                    .getOrElse {
+                        if (it is CancellationException) throw it
+                        Log.w(TAG, "the device set the answer named for ${contactId.take(8)}… was not asked about", it)
+                        owed += named.filter { device -> device !in planned }
+                        null
+                    }
+                    ?.also { deviceSets.asked(contactId, named) }
+                    ?.filter { it.deviceId !in planned }
+                    .orEmpty()
+                // Counted by scripts/verify.sh --device.
+                Log.i(TAG, "server names ${named.size} device(s) of ${contactId.take(8)}…, planned ${planned.size}; ${found.size} new with keys")
+                found.forEach { identityByDevice[it.deviceId] = it.identityPublic }
+                found.forEach { deliver(DeliveryTarget(it.deviceId, DeliveryAudience.RECIPIENT)) }
+            }
+        }
         return DeliveryTally(recipientAccepted, replicaAccepted, lastError, orderKey, owed, reachedOwn, waiting, unanswered)
     }
 
     /**
-     * The devices of [contactId] this send must reach.
+     * The devices of [contactId] this send must reach: the ones this device knows.
      *
-     * The registry answers first so a send to someone we already hold sessions with never waits
-     * on the key server, and the directory only corrects it — a device the account has since
-     * added appears, a key that rotated wins. The pinned device is the *offline* answer and only
-     * that: adding it unconditionally would resurrect a device the directory deliberately
-     * dropped.
+     * The key server is asked only when it knows none — a first message to someone. Until todo
+     * 321 every send asked it first, and on a bad path that request held the message for up to
+     * 30 s. A device added since, or one removed, shows in the answer to the send
+     * ([DeviceSetAnswers]), and that answer is what asks. The pinned device is the *offline*
+     * answer and only that: adding it unconditionally would resurrect a device the directory
+     * deliberately dropped.
      */
     private suspend fun recipientDeviceSet(
         contactId: String,
         pinned: SessionManager.SessionPeer?,
     ): List<SessionManager.SessionPeer> {
-        val merged = LinkedHashMap<String, SessionManager.SessionPeer>()
-        sessionManager.knownPeerDevices(contactId).forEach { merged[it.deviceId] = it }
-        runCatching { sessionManager.discoverPeerBundles(contactId) }
+        val known = sessionManager.knownPeerDevices(contactId)
+        if (known.isNotEmpty()) return known
+        val discovered = runCatching { sessionManager.discoverPeerBundles(contactId) }
             .getOrElse {
+                if (it is CancellationException) throw it
                 Log.w(TAG, "recipient device discovery failed ${contactId.take(8)}…", it)
                 emptyList()
             }
-            .forEach {
-                merged[it.deviceId] = SessionManager.SessionPeer(
-                    accountId = it.accountId,
-                    deviceId = it.deviceId,
-                    identityPublic = it.identityPublic,
-                )
+            .map { SessionManager.SessionPeer(accountId = it.accountId, deviceId = it.deviceId, identityPublic = it.identityPublic) }
+        if (discovered.isEmpty() && pinned != null) return listOf(pinned)
+        return discovered
+    }
+
+    /**
+     * Our own devices a copy goes to: the ones this device knows, the key server asked only when
+     * it knows none. A sibling's copy goes by `SendMessage`, whose answer names no devices
+     * (decision point 6), so there is no answer to correct it. A device linked since is known
+     * once it writes to us (`SessionManager.recordOpenedDevice`) or once this device links one
+     * (`DeviceCertificateIssuer`) — the same reach as iOS's own-device list between refreshes.
+     */
+    private suspend fun ownDeviceSet(myId: String): List<SessionManager.SessionPeer> {
+        val known = sessionManager.knownPeerDevices(myId)
+        if (known.isNotEmpty()) return known
+        return runCatching { sessionManager.discoverOwnDeviceBundles(myId) }
+            .getOrElse {
+                if (it is CancellationException) throw it
+                Log.w(TAG, "own device discovery failed", it)
+                emptyList()
             }
-        if (merged.isEmpty() && pinned != null) merged[pinned.deviceId] = pinned
-        return merged.values.toList()
+            .map { SessionManager.SessionPeer(accountId = it.accountId, deviceId = it.deviceId, identityPublic = it.identityPublic) }
     }
 
     /**

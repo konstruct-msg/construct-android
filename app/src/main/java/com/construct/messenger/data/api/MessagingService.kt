@@ -55,6 +55,12 @@ class MessagingService @Inject constructor(
          * Never from the server — the send path builds it when the last attempt threw.
          */
         val unanswered: Boolean = false,
+        /**
+         * A sealed send only: the recipient's active devices as the server holds them now
+         * (`SendMessageResponse.recipient_active_devices`). A reason to ask the key server, never a
+         * list of keys; empty says nothing (an older server, a failed lookup, another server).
+         */
+        val recipientActiveDevices: List<String> = emptyList(),
     )
 
     /** Identified send: sender and content type on the outer envelope, authenticated channel. */
@@ -113,6 +119,7 @@ class MessagingService @Inject constructor(
             attemptId = if (response.hasAttemptId()) response.attemptId else attemptId,
             orderKey = ServerMessageOrder.key(response.serverTimestamp, response.messageNumber.toLong()),
             intakeVerdict = response.intakeVerdict,
+            recipientActiveDevices = response.recipientActiveDevicesList,
         ).also {
             Log.i(TAG, "sendSealedMessage ${if (it.success) "sent" else "failed(${it.errorCode})"} attemptId=${it.attemptId}")
         }

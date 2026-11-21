@@ -764,6 +764,10 @@ external fun uniffi_construct_core_checksum_func_derive_recovery_keypair(
 ): Short
 external fun uniffi_construct_core_checksum_func_device_refusal_of(
 ): Short
+external fun uniffi_construct_core_checksum_func_device_set_named(
+): Short
+external fun uniffi_construct_core_checksum_func_device_set_should_ask(
+): Short
 external fun uniffi_construct_core_checksum_func_fanout_retry_base_backoff_ms(
 ): Short
 external fun uniffi_construct_core_checksum_func_fanout_retry_max_attempts(
@@ -2255,6 +2259,10 @@ external fun uniffi_construct_core_fn_func_derive_recovery_keypair(`seed`: RustB
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_device_refusal_of(`statusCode`: Int,`trailer`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_device_set_named(`answers`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_device_set_should_ask(`named`: RustBuffer.ByValue,`alreadyAsked`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_func_fanout_retry_base_backoff_ms(uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_func_fanout_retry_max_attempts(uniffi_out_err: UniffiRustCallStatus, 
@@ -2651,6 +2659,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_device_refusal_of() != 19311.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_device_set_named() != 5531.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_device_set_should_ask() != 28437.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_fanout_retry_base_backoff_ms() != 25894.toShort()) {
@@ -24564,6 +24578,34 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
         }
     }
 }
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceSequenceString: FfiConverterRustBuffer<List<List<kotlin.String>>> {
+    override fun read(buf: ByteBuffer): List<List<kotlin.String>> {
+        val len = buf.getInt()
+        return List<List<kotlin.String>>(len) {
+            FfiConverterSequenceString.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<List<kotlin.String>>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterSequenceString.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<List<kotlin.String>>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterSequenceString.write(it, buf)
+        }
+    }
+}
         /**
          * What an outgoing message is after its send failed: queued when no answer came or the
          * status says the path failed (CANCELLED, DEADLINE_EXCEEDED, UNAVAILABLE), failed otherwise.
@@ -24921,6 +24963,34 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
     UniffiLib.uniffi_construct_core_fn_func_device_refusal_of(
     
         FfiConverterUInt.lower(`statusCode`),FfiConverterOptionalString.lower(`trailer`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The recipient's devices the answers to one message's copies name
+         * (`recipient_active_devices`), the last that names any winning, sorted; empty when none did.
+         */ fun `deviceSetNamed`(`answers`: List<List<kotlin.String>>): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_device_set_named(
+    
+        FfiConverterSequenceSequenceString.lower(`answers`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Whether to ask the key server about that set: it names something, and not the set already
+         * asked about for this recipient. The set is the address, not a timer.
+         */ fun `deviceSetShouldAsk`(`named`: List<kotlin.String>, `alreadyAsked`: List<kotlin.String>?): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_device_set_should_ask(
+    
+        FfiConverterSequenceString.lower(`named`),FfiConverterOptionalSequenceString.lower(`alreadyAsked`),_status)
 }
     )
     }
