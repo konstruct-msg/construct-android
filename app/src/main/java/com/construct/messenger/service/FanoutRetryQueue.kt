@@ -4,6 +4,10 @@ import com.construct.messenger.data.local.SessionBlobStore
 import com.construct.messenger.diagnostics.Log
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
@@ -56,6 +60,14 @@ class FanoutRetryQueue internal constructor(
 
     private val lock = Mutex()
 
+    private val changed = MutableStateFlow(0L)
+
+    /**
+     * Moves on every change to the queue — an entry added, narrowed, spent or gone. What a send
+     * waiting behind a queued message watches (todo 321, `QueuedAhead`).
+     */
+    val changes: StateFlow<Long> = changed.asStateFlow()
+
     /**
      * [owed] devices of [recipientUserId] still need their copy of [baseMessageId]. A second
      * enqueue of the same message adds devices and keeps the entry's age and attempts. Never empty
@@ -87,7 +99,10 @@ class FanoutRetryQueue internal constructor(
 
     private suspend fun <T> changing(body: (FanoutRetryState) -> T): T = lock.withLock {
         val state = load()
-        body(state).also { save(state) }
+        body(state).also {
+            save(state)
+            changed.update { it + 1 }
+        }
     }
 
     private suspend fun load(): FanoutRetryState {
