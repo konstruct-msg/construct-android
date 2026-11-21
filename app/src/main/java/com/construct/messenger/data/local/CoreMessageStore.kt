@@ -94,6 +94,10 @@ class CoreMessageStore(
         null
     }
 
+    override suspend fun ownInStatus(status: DeliveryStatus, limit: Int): List<MessageRecord> = io { s ->
+        s.ownMessagesInStatus(status.code(), limit.toUInt()).map { it.record() }
+    }
+
     override suspend fun delete(id: String) {
         io { s -> find(s, id)?.let { s.deleteMessage(it.id) } }
     }

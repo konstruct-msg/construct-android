@@ -48,12 +48,28 @@ class ChatSendLanes(private val hold: Hold = Hold.NONE) {
 
     private val tails = HashMap<Pair<String, Lane>, CompletableDeferred<Unit>>()
 
-    suspend fun inOrder(contactId: String, lane: Lane, send: suspend (SendTurn) -> SendOutcome): SendOutcome {
+    /** Takes a place in [contactId]'s [lane] and sends on it — the ordinary send. */
+    suspend fun inOrder(contactId: String, lane: Lane, send: suspend (SendTurn) -> SendOutcome): SendOutcome =
+        place(contactId, lane).run(send)
+
+    /**
+     * The next place in [contactId]'s [lane], taken now without waiting — how sends found together
+     * (the outbox a new process finds) keep their order while they run side by side. A place must
+     * be [Place.run]: one left unrun holds its lane.
+     */
+    fun place(contactId: String, lane: Lane): Place {
         val key = contactId.lowercase() to lane
         val done = CompletableDeferred<Unit>()
         val ahead = synchronized(tails) { tails.put(key, done) }
+        return Place(key, ahead, done)
+    }
 
-        fun release() {
+    inner class Place internal constructor(
+        private val key: Pair<String, Lane>,
+        private val ahead: CompletableDeferred<Unit>?,
+        private val done: CompletableDeferred<Unit>,
+    ) {
+        private fun release() {
             if (done.isCompleted) return
             val free = {
                 done.complete(Unit)
@@ -62,19 +78,21 @@ class ChatSendLanes(private val hold: Hold = Hold.NONE) {
             if (ahead == null || ahead.isCompleted) free() else ahead.invokeOnCompletion { free() }
         }
 
-        val turn = SendTurn { leave ->
-            try {
-                ahead?.await()
-                hold.awaitClear(key.first, lane)
-                leave()
+        suspend fun run(send: suspend (SendTurn) -> SendOutcome): SendOutcome {
+            val turn = SendTurn { leave ->
+                try {
+                    ahead?.await()
+                    hold.awaitClear(key.first, key.second)
+                    leave()
+                } finally {
+                    release()
+                }
+            }
+            return try {
+                send(turn)
             } finally {
                 release()
             }
-        }
-        return try {
-            send(turn)
-        } finally {
-            release()
         }
     }
 }

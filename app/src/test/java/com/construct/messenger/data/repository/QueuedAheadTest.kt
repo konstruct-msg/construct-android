@@ -13,9 +13,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import com.construct.messenger.service.FanoutRetries
 import org.junit.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -42,22 +44,37 @@ class QueuedAheadTest {
         mediaType: String? = null,
     ) = MessageRecord(queuedId, chatId, "hi", mine, 1L, status, mediaType = mediaType)
 
+    private fun holds(row: MessageRecord, lane: Lane = Lane.TEXT, late: Boolean = false) =
+        QueuedAhead.holding(listOf(QueuedAhead.Ahead(row, late)), chat, lane)?.id == queuedId
+
     /** Mutations, one each: no QUEUED test, no lane test, no chat test, no sender test. */
     @Test
     fun `only our queued message in that chat and lane holds it`() {
-        assertEquals(queuedId, QueuedAhead.holding(listOf(row()), chat, Lane.TEXT)?.id)
-        assertNull(QueuedAhead.holding(listOf(row(status = DeliveryStatus.SENT)), chat, Lane.TEXT))
-        assertNull(QueuedAhead.holding(listOf(row(status = DeliveryStatus.FAILED)), chat, Lane.TEXT))
-        assertNull(QueuedAhead.holding(listOf(row(mediaType = MediaWire.KIND_ALBUM)), chat, Lane.TEXT))
-        assertEquals(queuedId, QueuedAhead.holding(listOf(row(mediaType = MediaWire.KIND_ALBUM)), chat, Lane.MEDIA)?.id)
-        assertNull(QueuedAhead.holding(listOf(row(chatId = ConversationId.direct(me, me))), chat, Lane.TEXT))
-        assertNull(QueuedAhead.holding(listOf(row(mine = false)), chat, Lane.TEXT))
+        assertTrue(holds(row()))
+        assertFalse(holds(row(status = DeliveryStatus.SENT)))
+        assertFalse(holds(row(status = DeliveryStatus.FAILED)))
+        assertFalse(holds(row(mediaType = MediaWire.KIND_ALBUM)))
+        assertTrue(holds(row(mediaType = MediaWire.KIND_ALBUM), Lane.MEDIA))
+        assertFalse(holds(row(chatId = ConversationId.direct(me, me))))
+        assertFalse(holds(row(mine = false)))
+    }
+
+    /**
+     * One device took it, another is owed a copy the path cut off: it holds, as Signal's job does
+     * until every device has it. Mutation: hold on QUEUED only. A refused copy does not — the
+     * other case.
+     */
+    @Test
+    fun `a sent message holds while a late copy is owed`() {
+        assertTrue(holds(row(status = DeliveryStatus.SENT), late = true))
+        assertFalse(holds(row(status = DeliveryStatus.SENT), late = false))
+        assertFalse(holds(row(status = DeliveryStatus.SENT, chatId = ConversationId.direct(me, me)), late = true))
     }
 
     private val messages = FakeMessageStore()
     private val queue = FanoutRetryQueue(FakeSessionBlobStore())
     private val keystore: KeystoreManager = mock<KeystoreManager>().also { whenever(it.getUserId()).thenReturn(me) }
-    private val hold = QueuedAhead(queue, messages, keystore)
+    private val hold = QueuedAhead(queue, FanoutRetries(queue, { mock() }, CoroutineScope(Job())) { 0L }, messages, keystore)
 
     /**
      * The send waits while the retry owes the queued one, and goes once the entry is gone — the

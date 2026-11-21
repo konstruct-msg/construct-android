@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -186,6 +187,43 @@ class FanoutRetriesTest {
         runCurrent()
         verify(send).resend("peer", "dev-2", "m-1")
         assertTrue(q.all().isEmpty())
+    }
+
+    /**
+     * Todo 321: without a path nothing goes and no attempt is spent — as Signal's job waits for its
+     * NetworkConstraint; a reconnect drains it. Mutation: drop the path check — the hour offline
+     * spends the attempts.
+     */
+    @Test
+    fun `a pass without a path spends nothing, and the reconnect sends it`() = runTest {
+        ready()
+        var path = false
+        val q = queue()
+        val r = FanoutRetries(q, { send }, backgroundScope, { path }) { testScheduler.currentTime }
+        r.owed("m-1", "peer", "me", listOf("dev-2"))
+
+        advanceTimeBy(4 * FanoutRetryQueue.BASE_BACKOFF_MS)
+        runCurrent()
+        assertEquals(0, q.all().single().attempts)
+        verify(send, never()).resend(any(), any(), any())
+
+        path = true
+        r.drain()
+        verify(send).resend("peer", "dev-2", "m-1")
+        assertTrue(q.all().isEmpty())
+    }
+
+    /** Todo 321: a copy the path cut off is late, one refused is not; the lane holds only for late ones. Mutation: every owed device late. */
+    @Test
+    fun `only a copy on its way is late`() = runTest {
+        val r = retries()
+        r.owed("m-1", "peer", "me", listOf("dev-1", "dev-2"), late = listOf("dev-2"))
+        r.owed("m-2", "peer", "me", listOf("dev-1"))
+
+        val entries = queue().all().associateBy { it.baseMessageId }
+        assertTrue(r.owesLateCopy(entries.getValue("m-1")))
+        assertFalse(r.owesLateCopy(entries.getValue("m-2")))
+        assertFalse("once dev-2 has it", r.owesLateCopy(entries.getValue("m-1").copy(owedDeviceIds = listOf("dev-1"))))
     }
 
     @Test

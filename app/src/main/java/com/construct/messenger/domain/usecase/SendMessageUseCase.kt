@@ -266,7 +266,7 @@ class SendMessageUseCase @Inject constructor(
                 if (tally.owed.isEmpty()) {
                     owedCopies.settled(messageId, contactId)
                 } else {
-                    owedCopies.owed(messageId, contactId, myId, tally.owed)
+                    owedCopies.owed(messageId, contactId, myId, tally.owed, late = tally.waiting + tally.unanswered)
                 }
                 SendOutcome.Sent(messageId)
             } else if (tally.waiting.isNotEmpty() || tally.unanswered.isNotEmpty()) {
@@ -274,7 +274,7 @@ class SendMessageUseCase @Inject constructor(
                 // and the retry sends them over it ([FanoutRetries.openAnswered]). Nor is a copy the
                 // path cut off (todo 321, the core's `after_send_failure`): the retry sends it again.
                 messages.setDeliveryStatus(messageId, DeliveryStatus.QUEUED)
-                owedCopies.owed(messageId, contactId, myId, tally.owed)
+                owedCopies.owed(messageId, contactId, myId, tally.owed, late = tally.waiting + tally.unanswered)
                 SendOutcome.Queued(messageId)
             } else {
                 messages.setDeliveryStatus(messageId, DeliveryStatus.FAILED)
