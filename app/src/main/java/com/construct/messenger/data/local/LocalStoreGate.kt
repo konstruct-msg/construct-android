@@ -40,6 +40,7 @@ class GatedMessageStore(private val gate: LocalStoreGate) : MessageStore {
     override suspend fun setOrderKey(id: String, orderKey: String) = s().setOrderKey(id, orderKey)
     override suspend fun setMedia(id: String, mediaType: String, mediaPayload: ByteArray) = s().setMedia(id, mediaType, mediaPayload)
     override suspend fun latestVisible(chatId: String) = s().latestVisible(chatId)
+    override suspend fun ownInStatus(status: DeliveryStatus, limit: Int) = s().ownInStatus(status, limit)
     override suspend fun delete(id: String) = s().delete(id)
     override suspend fun deleteChat(chatId: String) = s().deleteChat(chatId)
     override suspend fun setTranscript(id: String, text: String?, language: String?, atMs: Long) = s().setTranscript(id, text, language, atMs)

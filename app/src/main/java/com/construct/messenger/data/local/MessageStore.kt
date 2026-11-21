@@ -109,6 +109,9 @@ interface MessageStore {
     /** The chat's last user-visible message in the server's order — what its preview shows. */
     suspend fun latestVisible(chatId: String): MessageRecord?
 
+    /** Our own messages in [status], every chat, at most [limit] — the outbox a new process finds (todo 321). */
+    suspend fun ownInStatus(status: DeliveryStatus, limit: Int): List<MessageRecord>
+
     suspend fun delete(id: String)
 
     /** Every message of the chat. */

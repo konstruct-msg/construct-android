@@ -110,10 +110,12 @@ class SendMessageUseCaseTest {
     /** What the send told the retry queue (TODO 155). */
     private class RecordingOwedCopies : OwedCopies {
         val owed = mutableListOf<Pair<String, List<String>>>()
+        val late = mutableListOf<List<String>>()
         val settled = mutableListOf<String>()
 
-        override suspend fun owed(messageId: String, recipient: String, sender: String, devices: List<String>) {
+        override suspend fun owed(messageId: String, recipient: String, sender: String, devices: List<String>, late: List<String>) {
             owed += recipient to devices
+            this.late += late
         }
 
         override suspend fun settled(messageId: String, recipient: String) {
@@ -538,6 +540,8 @@ class SendMessageUseCaseTest {
 
         assertTrue(outcome is SendOutcome.Sent)
         assertEquals(listOf(peer to listOf(siblingDevice)), h.owed.owed)
+        // Refused, not late: a device that refuses does not hold the chat (todo 321). Mutation: every owed device late.
+        assertEquals(listOf(emptyList<String>()), h.owed.late)
         assertTrue(h.owed.settled.isEmpty())
     }
 
@@ -619,6 +623,7 @@ class SendMessageUseCaseTest {
         assertTrue(outcome is SendOutcome.Queued)
         assertEquals(DeliveryStatus.QUEUED, h.messages.rows[(outcome as SendOutcome.Queued).messageId]?.deliveryStatus)
         assertEquals(listOf(peer to listOf(pinnedDevice)), h.owed.owed)
+        assertEquals(listOf(listOf(pinnedDevice)), h.owed.late)
     }
 
     /**
@@ -710,6 +715,8 @@ class SendMessageUseCaseTest {
 
         assertTrue(outcome is SendOutcome.Sent)
         assertEquals(listOf(peer to listOf(siblingDevice)), h.owed.owed)
+        // On its way, so the next message waits for it (todo 321). Mutation: no late devices on a sent message.
+        assertEquals(listOf(listOf(siblingDevice)), h.owed.late)
     }
 
     /**

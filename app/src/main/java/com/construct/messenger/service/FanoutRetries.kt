@@ -16,15 +16,20 @@ import kotlinx.coroutines.sync.withLock
 
 /** What a send tells the retry about the recipient's devices (TODO 155). */
 interface OwedCopies {
-    /** [devices] of [recipient] did not take their copy of [messageId], which went to another of theirs. */
-    suspend fun owed(messageId: String, recipient: String, sender: String, devices: List<String>)
+    /**
+     * [devices] of [recipient] did not take their copy of [messageId], which went to another of theirs.
+     * [late] are the ones among them no one refused — the path cut the copy off, or its session is
+     * being opened: their copy is on its way, and the next message to [recipient] waits for it
+     * (todo 321). A device that refused is not late: a person's dead tablet must not hold the chat.
+     */
+    suspend fun owed(messageId: String, recipient: String, sender: String, devices: List<String>, late: List<String> = emptyList())
 
     /** Every device of [recipient] took [messageId]: nothing an earlier attempt left is owed now. */
     suspend fun settled(messageId: String, recipient: String)
 
     companion object {
         val NONE = object : OwedCopies {
-            override suspend fun owed(messageId: String, recipient: String, sender: String, devices: List<String>) = Unit
+            override suspend fun owed(messageId: String, recipient: String, sender: String, devices: List<String>, late: List<String>) = Unit
             override suspend fun settled(messageId: String, recipient: String) = Unit
         }
     }
@@ -50,27 +55,55 @@ class FanoutRetries internal constructor(
     private val queue: FanoutRetryQueue,
     private val send: () -> SendMessageUseCase,
     private val scope: CoroutineScope,
+    /** The stream is up: a pass without it would only spend attempts on copies that cannot leave. */
+    private val pathUp: () -> Boolean = { true },
     private val now: () -> Long,
 ) : OwedCopies, WaitingCopies {
     @Inject
-    constructor(queue: FanoutRetryQueue, send: dagger.Lazy<SendMessageUseCase>) : this(
+    constructor(
+        queue: FanoutRetryQueue,
+        send: dagger.Lazy<SendMessageUseCase>,
+        stream: dagger.Lazy<com.construct.messenger.data.api.MessageStreamService>,
+    ) : this(
         queue,
         { send.get() },
         CoroutineScope(SupervisorJob() + Dispatchers.IO),
+        { stream.get().isConnected.value },
         System::currentTimeMillis,
     )
+
+    /**
+     * Devices whose copy is late, not refused, by entry key — what the send lane holds for
+     * (`QueuedAhead`). Kept in memory: after a restart only a message no device took holds its
+     * lane (its row is QUEUED), a partial one does not.
+     */
+    private val late = java.util.concurrent.ConcurrentHashMap<String, Set<String>>()
+
+    /** [entry] still owes a copy that is on its way rather than refused. */
+    fun owesLateCopy(entry: FanoutRetryEntry): Boolean {
+        val waiting = late[entry.key] ?: return false
+        if (entry.owedDeviceIds.any { it in waiting }) return true
+        late.remove(entry.key)
+        return false
+    }
 
     private val draining = Mutex()
     private val timerLock = Mutex()
     private var timer: Job? = null
 
-    override suspend fun owed(messageId: String, recipient: String, sender: String, devices: List<String>) {
+    override suspend fun owed(messageId: String, recipient: String, sender: String, devices: List<String>, late: List<String>) {
+        val key = "$messageId|$recipient"
+        val cut = late.filter { it in devices }.toSet()
+        if (cut.isNotEmpty()) this.late.merge(key, cut) { a, b -> a + b }
         queue.enqueue(messageId, recipient, sender, devices)
         Log.i(TAG, "${messageId.take(8)}… owed to ${devices.size} device(s) of ${recipient.take(8)}…")
         schedule()
     }
 
-    override suspend fun settled(messageId: String, recipient: String) = queue.remove("$messageId|$recipient")
+    override suspend fun settled(messageId: String, recipient: String) {
+        late.remove("$messageId|$recipient")
+        queue.remove("$messageId|$recipient")
+    }
 
     /** The stream is back — also the first connect after a restart: whatever is due goes now, the rest is scheduled. */
     fun drainSoon() {
@@ -111,6 +144,13 @@ class FanoutRetries internal constructor(
             // Before the core is up nothing can be sent; the attempt is not spent on it.
             if (!send().isReady()) {
                 Log.i(TAG, "drain skipped — not ready to send")
+                return
+            }
+            // Nor without a path: the copies wait for the stream, as Signal's wait for its
+            // NetworkConstraint, and a reconnect drains them (todo 321). An hour offline used to
+            // spend all five attempts in a quarter of it.
+            if (!pathUp()) {
+                Log.i(TAG, "drain skipped — no path")
                 return
             }
             for (entry in due) retry(entry)

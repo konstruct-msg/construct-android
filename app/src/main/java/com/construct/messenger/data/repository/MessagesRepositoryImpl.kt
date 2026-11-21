@@ -27,6 +27,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.combine
@@ -131,8 +132,49 @@ class MessagesRepositoryImpl @Inject constructor(
     override suspend fun retry(contactId: String, messageId: String): SendOutcome =
         scope.async {
             val lane = ChatSendLanes.Lane.of(messages.get(messageId)?.mediaType)
-            lanes.inOrder(contactId, lane) { sendMedia.retry(contactId, messageId, it) }
+            retrying += messageId.lowercase()
+            try {
+                lanes.inOrder(contactId, lane) { sendMedia.retry(contactId, messageId, it) }
+            } finally {
+                retrying -= messageId.lowercase()
+            }
         }.await()
+
+    /**
+     * The sends a previous process left on their way (todo 321): their rows are SENDING, and
+     * nothing of that process is left to finish them — the wait for a turn lived in its memory.
+     * iOS fails such a row at launch and its retry fetch sends it again (`StuckSend`,
+     * `MessageQueueManager.resetStuckSendingMessages`); Signal keeps the job and runs it on. Here
+     * each goes again as a retry, through its lane: every place is taken first, in the transcript
+     * order, then they leave side by side. One that cannot be sent again (a voice note whose upload
+     * never finished) stays FAILED, where the person sees it.
+     *
+     * Once a process, at its first connect. A row this process is sending is not one: a send
+     * written now is later than [startedAtMs], a retry is in [retrying].
+     */
+    suspend fun resumeOrphanedSends() {
+        if (!resumed.compareAndSet(false, true)) return
+        val orphans = messages.ownInStatus(DeliveryStatus.SENDING, ORPHANS_AT_ONCE)
+            .filter { it.contentType == 0 && it.timestampMs < startedAtMs && it.id.lowercase() !in retrying }
+        if (orphans.isEmpty()) return
+        Log.i(TAG, "resuming ${orphans.size} send(s) a previous process left")
+        val resumes = orphans.mapNotNull { row ->
+            val peer = chats.get(row.chatId)?.peerId ?: return@mapNotNull null
+            // FAILED first: a resume is a retry, and a retry is of a message no device took.
+            messages.setDeliveryStatus(row.id, DeliveryStatus.FAILED)
+            Triple(peer, row.id, lanes.place(peer, ChatSendLanes.Lane.of(row.mediaType)))
+        }
+        resumes.map { (peer, id, place) ->
+            scope.async {
+                retrying += id.lowercase()
+                try {
+                    place.run { sendMedia.retry(peer, id, it) }
+                } finally {
+                    retrying -= id.lowercase()
+                }
+            }
+        }.awaitAll()
+    }
 
     override suspend fun react(contactId: String, messageId: String, emoji: String): Boolean {
         val myId = keystoreManager.getUserId() ?: return false
@@ -208,6 +250,11 @@ class MessagesRepositoryImpl @Inject constructor(
     /** Sends to one person go one at a time, in the order written (todo 321). */
     private val lanes = ChatSendLanes(queuedAhead)
 
+    /** When this process began: a SENDING row written before it is a previous process's ([resumeOrphanedSends]). */
+    private val startedAtMs = System.currentTimeMillis()
+    private val retrying: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+    private val resumed = java.util.concurrent.atomic.AtomicBoolean(false)
+
     override suspend fun edit(contactId: String, messageId: String, newText: String): SendOutcome =
         scope.async { sendMessage.edit(contactId, messageId, newText) }.await()
 
@@ -235,6 +282,9 @@ class MessagesRepositoryImpl @Inject constructor(
 
     private companion object {
         const val TAG = "MessagesRepository"
+
+        /** More than a person leaves unsent; the rest go at the next process's start. */
+        const val ORPHANS_AT_ONCE = 500
     }
 }
 

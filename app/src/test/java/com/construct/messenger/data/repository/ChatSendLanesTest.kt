@@ -109,6 +109,24 @@ class ChatSendLanesTest {
         assertEquals(listOf("photo left", "text left"), events.toList())
     }
 
+    /**
+     * Places taken together keep the order they were taken in, whichever runs first — how the
+     * outbox a new process finds keeps its transcript order. Mutation: take the place when it runs.
+     */
+    @Test
+    fun `places taken together leave in the order they were taken`() = bounded {
+        val lanes = ChatSendLanes()
+        val first = lanes.place(peer, Lane.TEXT)
+        val second = lanes.place(peer, Lane.TEXT)
+
+        val later = async { second.run { turn -> turn.go { events += "second left"; sent("second") } } }
+        delay(200)
+        assertTrue("second left" !in events)
+        first.run { turn -> turn.go { events += "first left"; sent("first") } }
+        later.await()
+        assertEquals(listOf("first left", "second left"), events.toList())
+    }
+
     /** Mutation: put a sticker in the media lane — it would wait on an upload. */
     @Test
     fun `a sticker and a text share a lane, media has its own`() {

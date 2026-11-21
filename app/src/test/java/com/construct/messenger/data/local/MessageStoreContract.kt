@@ -71,6 +71,17 @@ abstract class MessageStoreContract {
         assertNull(store.get("AbC-1"))
     }
 
+    /** Todo 321: what a new process finds still sending — ours, in that status, in transcript order. */
+    @Test
+    fun ownInStatusIsOursInThatStatusInOrder() = runTest {
+        store.insert(message("b", 2, DeliveryStatus.SENDING))
+        store.insert(message("a", 1, DeliveryStatus.SENDING))
+        store.insert(message("c", 3, DeliveryStatus.SENT))
+        store.insert(message("d", 4, DeliveryStatus.SENDING).copy(isSentByMe = false))
+        assertEquals(listOf("a", "b"), store.ownInStatus(DeliveryStatus.SENDING, 10).map { it.id })
+        assertEquals(listOf("a"), store.ownInStatus(DeliveryStatus.SENDING, 1).map { it.id })
+    }
+
     /** The core's rule: a weaker fact written after a stronger one is refused. */
     @Test
     fun aDeliveryStatusIsNotLowered() = runTest {

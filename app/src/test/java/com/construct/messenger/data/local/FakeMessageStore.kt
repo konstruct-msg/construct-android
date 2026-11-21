@@ -51,6 +51,10 @@ internal class FakeMessageStore : MessageStore {
     override suspend fun latestVisible(chatId: String): MessageRecord? =
         rows.values.filter { it.chatId == chatId && it.contentType == 0 }.maxWithOrNull(compareBy({ it.orderKey }, { it.id }))
 
+    override suspend fun ownInStatus(status: DeliveryStatus, limit: Int): List<MessageRecord> =
+        rows.values.filter { it.isSentByMe && it.deliveryStatus == status }
+            .sortedWith(compareBy({ it.orderKey }, { it.id })).take(limit)
+
     override suspend fun delete(id: String) {
         stored(id)?.let(rows::remove)
     }

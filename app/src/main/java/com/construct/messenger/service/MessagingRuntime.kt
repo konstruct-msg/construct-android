@@ -88,6 +88,8 @@ class MessagingRuntime @Inject constructor(
     private val blockSync: com.construct.messenger.data.repository.BlockSyncService,
     private val mailboxGap: com.construct.messenger.data.repository.MailboxGapNotice,
     private val connectionSummary: com.construct.messenger.diagnostics.ConnectionSummary,
+    // Lazy: the repository sends through the send path, which reaches back into the runtime.
+    private val messagesRepository: dagger.Lazy<com.construct.messenger.data.repository.MessagesRepositoryImpl>,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val reorder = ReorderDiagnostics(cryptoManager::reorderStats)
@@ -269,6 +271,8 @@ class MessagingRuntime @Inject constructor(
                         pendingResends.drainSoon()
                         // Copies a recipient device refused (TODO 155); they also go by their own due time.
                         fanoutRetries.drainSoon()
+                        // Sends a previous process left on their way (todo 321); once a process.
+                        scope.launch { runCatching { messagesRepository.get().resumeOrphanedSends() }.onFailure { Log.w(TAG, "resuming orphaned sends failed", it) } }
                         // Profiles: avatars that did not arrive, and a rebroadcast whose avatar did not upload.
                         contactAvatars.retryPending()
                         shareProfile.get().rebroadcastIfOwed()
