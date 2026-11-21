@@ -90,7 +90,7 @@ class SendMessageUseCase @Inject constructor(
     private val mediaPreview: MediaPreviewText,
     private val owedCopies: OwedCopies,
 ) {
-    suspend operator fun invoke(contactId: String, text: String, reply: ReplyRef? = null): SendOutcome {
+    suspend operator fun invoke(contactId: String, text: String, reply: ReplyRef? = null, turn: SendTurn = SendTurn.NOW): SendOutcome {
         val body = text.trim()
         require(body.isNotEmpty()) { "empty message" }
 
@@ -103,7 +103,7 @@ class SendMessageUseCase @Inject constructor(
         val chatId = ConversationId.direct(myId, contactId)
 
         persistOutgoing(chatId, contactId, messageId, body, timestampMs, DeliveryStatus.SENDING, reply)
-        return deliver(myId, contactId, messageId, timestampMs, TextWire.encode(body, reply))
+        return turn.go { deliver(myId, contactId, messageId, timestampMs, TextWire.encode(body, reply)) }
     }
 
     /**
@@ -164,7 +164,7 @@ class SendMessageUseCase @Inject constructor(
      * no upload, the ordinary text path (iOS `ChatSendCoordinator.sendSticker`). No quote travels
      * with it: `StickerRef` has no field for one, on iOS either.
      */
-    suspend fun sendSticker(contactId: String, ref: com.construct.messenger.stickers.StickerReference): SendOutcome {
+    suspend fun sendSticker(contactId: String, ref: com.construct.messenger.stickers.StickerReference, turn: SendTurn = SendTurn.NOW): SendOutcome {
         val myId = keystoreManager.getUserId() ?: return SendOutcome.Failed("", "not authenticated")
         if (!cryptoManager.isMessagingReady) return SendOutcome.Failed("", "orchestrator not ready")
         val messageId = UUID.randomUUID().toString().lowercase()
@@ -172,7 +172,7 @@ class SendMessageUseCase @Inject constructor(
         val chatId = ConversationId.direct(myId, contactId)
         persistOutgoing(chatId, contactId, messageId, "", timestampMs, DeliveryStatus.SENDING, null, MediaWire.sticker(ref))
         val content = shared.proto.messaging.v1.Content.MessageContent.newBuilder().setSticker(ref.toWire()).build().toByteArray()
-        return deliver(myId, contactId, messageId, timestampMs, content)
+        return turn.go { deliver(myId, contactId, messageId, timestampMs, content) }
     }
 
     /**
@@ -211,17 +211,26 @@ class SendMessageUseCase @Inject constructor(
      * Retry ([failedRow]): the same message, under the same id, sent again — iOS
      * `MessageRetryManager`. Its text with its quote, or its media once uploaded.
      */
-    suspend fun retry(contactId: String, row: MessageRecord): SendOutcome {
+    suspend fun retry(contactId: String, row: MessageRecord, turn: SendTurn = SendTurn.NOW): SendOutcome {
         val content = resendableContent(row) ?: return SendOutcome.Failed(row.id, "nothing to send")
         messages.setDeliveryStatus(row.id, DeliveryStatus.SENDING)
-        return deliverPrepared(contactId, row.id, row.timestampMs, content)
+        return deliverPrepared(contactId, row.id, row.timestampMs, content, turn)
     }
 
-    /** Send [content] as the row [messageId] already written; its status follows the answer. */
-    suspend fun deliverPrepared(contactId: String, messageId: String, timestampMs: Long, content: ByteArray): SendOutcome {
-        val myId = keystoreManager.getUserId() ?: return SendOutcome.Failed(messageId, "not authenticated")
-        if (!cryptoManager.isMessagingReady) return SendOutcome.Failed(messageId, "orchestrator not ready")
-        return deliver(myId, contactId, messageId, timestampMs, content)
+    /**
+     * Send [content] as the row [messageId] already written, on its [turn]; its status follows the
+     * answer. Whether the core is up is asked when the turn comes, not before the wait.
+     */
+    suspend fun deliverPrepared(
+        contactId: String,
+        messageId: String,
+        timestampMs: Long,
+        content: ByteArray,
+        turn: SendTurn = SendTurn.NOW,
+    ): SendOutcome = turn.go {
+        val myId = keystoreManager.getUserId() ?: return@go SendOutcome.Failed(messageId, "not authenticated")
+        if (!cryptoManager.isMessagingReady) return@go SendOutcome.Failed(messageId, "orchestrator not ready")
+        deliver(myId, contactId, messageId, timestampMs, content)
     }
 
     private suspend fun deliver(

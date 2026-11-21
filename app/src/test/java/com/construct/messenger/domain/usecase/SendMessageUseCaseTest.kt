@@ -622,6 +622,63 @@ class SendMessageUseCaseTest {
     }
 
     /**
+     * Todo 321: the bubble is in the chat before the send's turn comes, and no copy leaves until it
+     * does. Mutations: write the row inside the turn — nothing shows while it waits; send outside
+     * the turn — a copy leaves ahead of the ones before it.
+     */
+    @Test
+    fun `a text is in the chat before its turn, and leaves only on it`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        var waited: DeliveryStatus? = null
+
+        val outcome = h.useCase()(peer, "hello", null) { leave ->
+            waited = h.messages.rows.values.single { it.text == "hello" }.deliveryStatus
+            verify(h.orchestrator, org.mockito.kotlin.never()).handleEvent(any<uniffi.construct_core.CfeIncomingEvent.OutgoingMessage>())
+            leave()
+        }
+
+        assertEquals(DeliveryStatus.SENDING, waited)
+        assertTrue(outcome is SendOutcome.Sent)
+        assertEquals(1, framesSentTo(h, pinnedDevice).size)
+    }
+
+    /** A sticker too. Mutation: send it outside its turn. */
+    @Test
+    fun `a sticker is in the chat before its turn, and leaves only on it`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        val ref = com.construct.messenger.stickers.StickerReference.of(ByteArray(32) { 7 }, 0, "🙂")!!
+        var waited: DeliveryStatus? = null
+
+        val outcome = h.useCase().sendSticker(peer, ref) { leave ->
+            waited = h.messages.rows.values.single { it.mediaType == com.construct.messenger.util.MediaWire.KIND_STICKER }.deliveryStatus
+            verify(h.orchestrator, org.mockito.kotlin.never()).handleEvent(any<uniffi.construct_core.CfeIncomingEvent.OutgoingMessage>())
+            leave()
+        }
+
+        assertEquals(DeliveryStatus.SENDING, waited)
+        assertTrue(outcome is SendOutcome.Sent)
+    }
+
+    /** The media path: written and uploaded before, sent on the turn. Mutation: leave the turn out of `deliverPrepared`. */
+    @Test
+    fun `a prepared message leaves only on its turn`() = runTest {
+        val h = harness(devices = listOf(pinnedDevice))
+        val chatId = com.construct.messenger.util.ConversationId.direct(myId, peer)
+        val id = "33333333-3333-4333-8333-333333333333"
+        h.messages.rows[id] = MessageRecord(id, chatId, "hi", true, 1L, DeliveryStatus.SENDING)
+        var turns = 0
+
+        val outcome = h.useCase().deliverPrepared(peer, id, 1L, TextWire.encode("hi", null)) { leave ->
+            turns++
+            verify(h.orchestrator, org.mockito.kotlin.never()).handleEvent(any<uniffi.construct_core.CfeIncomingEvent.OutgoingMessage>())
+            leave()
+        }
+
+        assertEquals(1, turns)
+        assertTrue(outcome is SendOutcome.Sent)
+    }
+
+    /**
      * A status that is the server's answer about the message fails it. Mutation: queue every
      * thrown error — a refused message would wait for good.
      */

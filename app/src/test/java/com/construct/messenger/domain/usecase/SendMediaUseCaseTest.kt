@@ -63,7 +63,7 @@ class SendMediaUseCaseTest {
     fun `photos go as one album with the store's ids`() = runTest {
         val media = FakeMedia()
         val send: SendMessageUseCase = mock()
-        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        whenever(send.deliverPrepared(any(), any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
 
         SendMediaUseCase(images, pickedFiles, videos, media, send, originals).photos("peer", listOf(mock<Uri>(), mock<Uri>()), " look ", null)
 
@@ -72,7 +72,7 @@ class SendMediaUseCaseTest {
         assertTrue(MediaWire.isStaged(MediaWire.decode(shown.firstValue.kind, shown.firstValue.bytes)!!))
 
         val content = argumentCaptor<ByteArray>()
-        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture(), any())
         val album = MessageContent.parseFrom(content.firstValue).mediaAlbum
         assertEquals("look", album.caption)
         assertEquals(listOf("store-0", "store-1"), album.itemsList.map { it.mediaId })
@@ -97,7 +97,7 @@ class SendMediaUseCaseTest {
     fun `a video note is a marked video, prepared as a note`() = runTest {
         val media = FakeMedia()
         val send: SendMessageUseCase = mock()
-        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        whenever(send.deliverPrepared(any(), any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
         val notes: com.construct.messenger.media.VideoPreparer = mock()
         whenever(notes.prepareNote(any())).thenReturn(
             com.construct.messenger.media.VideoPreparer.Prepared(ByteArray(300) { 2 }, 720, 960, 4_000, ByteArray(10), "LEHV6nWB2yk8pyo0adR*.7kCMdnj"),
@@ -115,7 +115,7 @@ class SendMediaUseCaseTest {
         val placeholder = MediaWire.decode(shown.firstValue.kind, shown.firstValue.bytes) as com.construct.messenger.data.model.MessageMedia.Album
         assertTrue(placeholder.videoNote != null)
         val content = argumentCaptor<ByteArray>()
-        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture(), any())
         // The answer travels with the note, as with a photo. Mutation: pass null on — reddens.
         assertEquals("abc", MessageContent.parseFrom(content.firstValue).mediaAlbum.quoted.messageId)
         val item = MessageContent.parseFrom(content.firstValue).mediaAlbum.getItems(0)
@@ -134,14 +134,14 @@ class SendMediaUseCaseTest {
     fun `a voice note carries the quote it answers`() = runTest {
         val media = FakeMedia()
         val send: SendMessageUseCase = mock()
-        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        whenever(send.deliverPrepared(any(), any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
         val reply = com.construct.messenger.data.model.ReplyRef.of("ABC", "", "MEDIA_TYPE_VIDEO", videoNote = true)
         val file = java.io.File.createTempFile("voice", ".m4a").apply { writeBytes(ByteArray(10)) }
 
         SendMediaUseCase(images, pickedFiles, videos, media, send, originals).voice("peer", file, 900, emptyList(), reply)
 
         val content = argumentCaptor<ByteArray>()
-        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture(), any())
         val quoted = MessageContent.parseFrom(content.firstValue).voice.quoted
         assertEquals("abc", quoted.messageId)
         assertEquals(MediaType.MEDIA_TYPE_VIDEO, quoted.mediaType)
@@ -156,14 +156,14 @@ class SendMediaUseCaseTest {
     fun `a voice note carries its id in the codec, as iOS reads it`() = runTest {
         val media = FakeMedia()
         val send: SendMessageUseCase = mock()
-        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        whenever(send.deliverPrepared(any(), any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
         val file = java.io.File.createTempFile("voice", ".m4a").apply { writeBytes(ByteArray(500) { 3 }) }
 
         SendMediaUseCase(images, pickedFiles, videos, media, send, originals).voice("peer", file, 4200, listOf(0f, 0.5f, 1f))
 
         assertFalse(file.exists())
         val content = argumentCaptor<ByteArray>()
-        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture(), any())
         val voice = MessageContent.parseFrom(content.firstValue).voice
         assertEquals("audio/m4a|store-0|500", voice.codec)
         assertEquals(4200, voice.durationMs)
@@ -179,12 +179,12 @@ class SendMediaUseCaseTest {
     fun `a file goes with its name, type and own size`() = runTest {
         val media = FakeMedia()
         val send: SendMessageUseCase = mock()
-        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        whenever(send.deliverPrepared(any(), any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
 
         SendMediaUseCase(images, pickedFiles, videos, media, send, originals).files("peer", listOf(mock<Uri>()), "q3", null)
 
         val content = argumentCaptor<ByteArray>()
-        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture(), any())
         val album = MessageContent.parseFrom(content.firstValue).mediaAlbum
         val item = album.getItems(0)
         assertEquals("q3", album.caption)
@@ -203,7 +203,7 @@ class SendMediaUseCaseTest {
     @Test
     fun `a sent file is linked where it is, and the copy kept only without a grant`() = runTest {
         val send: SendMessageUseCase = mock()
-        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        whenever(send.deliverPrepared(any(), any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
         val picked: Uri = mock()
 
         val kept = FakeMedia()
@@ -225,7 +225,7 @@ class SendMediaUseCaseTest {
     fun `a video in the album carries its poster and length`() = runTest {
         val media = FakeMedia()
         val send: SendMessageUseCase = mock()
-        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        whenever(send.deliverPrepared(any(), any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
         val clip: Uri = mock()
         whenever(videos.isVideo(clip)).thenReturn(true)
         whenever(videos.prepare(clip)).thenReturn(
@@ -235,7 +235,7 @@ class SendMediaUseCaseTest {
         SendMediaUseCase(images, pickedFiles, videos, media, send, originals).photos("peer", listOf(clip), "", null)
 
         val content = argumentCaptor<ByteArray>()
-        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture(), any())
         val item = MessageContent.parseFrom(content.firstValue).mediaAlbum.getItems(0)
         assertEquals(MediaType.MEDIA_TYPE_VIDEO, item.mediaType)
         assertEquals("video/mp4", item.mimeType)
@@ -248,7 +248,7 @@ class SendMediaUseCaseTest {
     @Test
     fun `a video is prepared at the chosen quality`() = runTest {
         val send: SendMessageUseCase = mock()
-        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        whenever(send.deliverPrepared(any(), any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
         val clip: Uri = mock()
         whenever(videos.isVideo(clip)).thenReturn(true)
         whenever(videos.prepare(any(), any())).thenReturn(
@@ -269,7 +269,7 @@ class SendMediaUseCaseTest {
 
         assertTrue(outcome is SendOutcome.Failed)
         verify(send).markFailed(any())
-        verify(send, never()).deliverPrepared(any(), any(), any(), any())
+        verify(send, never()).deliverPrepared(any(), any(), any(), any(), any())
     }
 
     /**
@@ -282,7 +282,7 @@ class SendMediaUseCaseTest {
     fun `a forward is a new object under a new key with the original's description`() = runTest {
         val media = FakeMedia()
         val send: SendMessageUseCase = mock()
-        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        whenever(send.deliverPrepared(any(), any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
         val originalKey = ByteArray(32) { 9 }
         val original = MediaItem(
             mediaId = "original-object", key = originalKey, hash = ByteArray(32) { 8 }, sizeBytes = 1234,
@@ -295,7 +295,7 @@ class SendMediaUseCaseTest {
 
         verify(send).persistMedia(eq("peer"), any(), any(), any(), eq(null))
         val content = argumentCaptor<ByteArray>()
-        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture(), any())
         val album = MessageContent.parseFrom(content.firstValue).mediaAlbum
         assertFalse("no quote", album.hasQuoted())
         val item = album.getItems(0)
@@ -315,17 +315,44 @@ class SendMediaUseCaseTest {
     fun `a forwarded file keeps its name`() = runTest {
         val media = FakeMedia()
         val send: SendMessageUseCase = mock()
-        whenever(send.deliverPrepared(any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        whenever(send.deliverPrepared(any(), any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
         val doc = MediaItem("orig", ByteArray(32) { 1 }, ByteArray(32), 700, "application/pdf", filename = "report.pdf")
 
         SendMediaUseCase(images, pickedFiles, videos, media, send, originals).forward("peer", listOf(doc), listOf(ByteArray(700) { 5 }), "q")
 
         val content = argumentCaptor<ByteArray>()
-        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture())
+        verify(send).deliverPrepared(eq("peer"), any(), any(), content.capture(), any())
         val album = MessageContent.parseFrom(content.firstValue).mediaAlbum
         assertEquals("q", album.caption)
         assertEquals("report.pdf", album.getItems(0).filename)
         assertEquals(MediaType.MEDIA_TYPE_FILE, album.getItems(0).mediaType)
         assertEquals(700L, album.getItems(0).fileSize)
+    }
+
+    /**
+     * Todo 321: each kind of media leaves on the turn its lane gave it, after its upload. Mutations,
+     * one each: photos, a video note, files, a voice note, a forward pass `SendTurn.NOW` instead.
+     */
+    @Test
+    fun `every kind of media leaves on the turn it was given`() = runTest {
+        val send: SendMessageUseCase = mock()
+        whenever(send.deliverPrepared(any(), any(), any(), any(), any())).thenReturn(SendOutcome.Sent("m"))
+        whenever(videos.prepareNote(any())).thenReturn(
+            com.construct.messenger.media.VideoPreparer.Prepared(ByteArray(50) { 4 }, 720, 960, 3_000, ByteArray(5), ""),
+        )
+        val use = SendMediaUseCase(images, pickedFiles, videos, FakeMedia(), send, originals)
+        class Marked(val n: Int) : SendTurn {
+            override suspend fun go(send: suspend () -> SendOutcome) = send()
+        }
+        val turns = List(5) { Marked(it) }
+
+        use.photos("peer", listOf(mock<Uri>()), "", null, turn = turns[0])
+        val note = java.io.File.createTempFile("note", ".mp4").apply { writeBytes(ByteArray(10)) }
+        use.videoNote("peer", com.construct.messenger.media.VideoNoteTake(listOf(com.construct.messenger.media.VideoNoteTake.Segment(note, 3_000)), 0L..3_000L), null, turns[1])
+        use.files("peer", listOf(mock<Uri>()), "", null, turns[2])
+        use.voice("peer", ByteArray(10), 900, emptyList(), null, turns[3])
+        use.forward("peer", listOf(MediaItem("o", ByteArray(32), ByteArray(32), 10, "image/jpeg")), listOf(ByteArray(10)), "", turns[4])
+
+        turns.forEach { verify(send).deliverPrepared(eq("peer"), any(), any(), any(), eq(it)) }
     }
 }

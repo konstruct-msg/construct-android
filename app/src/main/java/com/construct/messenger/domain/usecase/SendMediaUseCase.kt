@@ -54,9 +54,14 @@ class SendMediaUseCase @Inject constructor(
      * 3:4 at 720×960. The placeholder carries the mark too, so the uploading row is already the
      * note. **Canon:** iOS `MediaAttachment(presentation: .videoNote)`. The segments are deleted.
      */
-    suspend fun videoNote(contactId: String, take: com.construct.messenger.media.VideoNoteTake, reply: ReplyRef?): SendOutcome =
+    suspend fun videoNote(
+        contactId: String,
+        take: com.construct.messenger.media.VideoNoteTake,
+        reply: ReplyRef?,
+        turn: SendTurn = SendTurn.NOW,
+    ): SendOutcome =
         try {
-            photos(contactId, emptyList(), "", reply, note = take)
+            photos(contactId, emptyList(), "", reply, note = take, turn = turn)
         } finally {
             take.delete()
         }
@@ -68,7 +73,8 @@ class SendMediaUseCase @Inject constructor(
         caption: String,
         reply: ReplyRef?,
         quality: com.construct.messenger.media.VideoQuality = com.construct.messenger.media.VideoQuality.DEFAULT,
-    ): SendOutcome = photos(contactId, uris, caption, reply, note = null, quality = quality)
+        turn: SendTurn = SendTurn.NOW,
+    ): SendOutcome = photos(contactId, uris, caption, reply, note = null, quality = quality, turn = turn)
 
     private suspend fun photos(
         contactId: String,
@@ -77,6 +83,7 @@ class SendMediaUseCase @Inject constructor(
         reply: ReplyRef?,
         note: com.construct.messenger.media.VideoNoteTake?,
         quality: com.construct.messenger.media.VideoQuality = com.construct.messenger.media.VideoQuality.DEFAULT,
+        turn: SendTurn,
     ): SendOutcome {
         require(uris.isNotEmpty() || note != null)
         val messageId = UUID.randomUUID().toString().lowercase()
@@ -134,7 +141,7 @@ class SendMediaUseCase @Inject constructor(
         val album = stored(uploaded, caption, reply)
         sendMessage.replaceMedia(messageId, album)
         val content = MessageContent.newBuilder().setMediaAlbum(MediaAlbumMessage.parseFrom(album.bytes)).build()
-        return sendMessage.deliverPrepared(contactId, messageId, timestampMs, content.toByteArray())
+        return sendMessage.deliverPrepared(contactId, messageId, timestampMs, content.toByteArray(), turn)
     }
 
     /**
@@ -143,7 +150,7 @@ class SendMediaUseCase @Inject constructor(
      * the store's ids before it is sent. A voice note whose upload failed cannot be — its id
      * lives in `codec`, and is recorded again instead.
      */
-    suspend fun retry(contactId: String, messageId: String): SendOutcome {
+    suspend fun retry(contactId: String, messageId: String, turn: SendTurn = SendTurn.NOW): SendOutcome {
         val row = sendMessage.failedRow(contactId, messageId) ?: return SendOutcome.Failed(messageId, "not retryable")
         val payload = row.mediaPayload
         if (row.mediaType == MediaWire.KIND_ALBUM && payload != null) {
@@ -172,10 +179,10 @@ class SendMediaUseCase @Inject constructor(
                 }
                 val bytes = album.toBuilder().clearItems().addAllItems(uploaded).build().toByteArray()
                 sendMessage.replaceMedia(messageId, MediaWire.Stored(MediaWire.KIND_ALBUM, bytes, row.text))
-                return sendMessage.retry(contactId, row.copy(mediaPayload = bytes))
+                return sendMessage.retry(contactId, row.copy(mediaPayload = bytes), turn)
             }
         }
-        return sendMessage.retry(contactId, row)
+        return sendMessage.retry(contactId, row, turn)
     }
 
     /**
@@ -185,7 +192,7 @@ class SendMediaUseCase @Inject constructor(
      * its own size. Never compressed: iOS's receiver cannot tell a compressed file (the flag is
      * not on the wire), so Android does not make any.
      */
-    suspend fun files(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef?): SendOutcome {
+    suspend fun files(contactId: String, uris: List<Uri>, caption: String, reply: ReplyRef?, turn: SendTurn = SendTurn.NOW): SendOutcome {
         require(uris.isNotEmpty())
         val messageId = UUID.randomUUID().toString().lowercase()
         val timestampMs = System.currentTimeMillis()
@@ -230,7 +237,7 @@ class SendMediaUseCase @Inject constructor(
         }
         val album = stored(uploaded, caption, reply)
         sendMessage.replaceMedia(messageId, album)
-        return sendMessage.deliverPrepared(contactId, messageId, timestampMs, MediaWire.content(album.kind, album.bytes)!!)
+        return sendMessage.deliverPrepared(contactId, messageId, timestampMs, MediaWire.content(album.kind, album.bytes)!!, turn)
     }
 
     /**
@@ -241,7 +248,7 @@ class SendMediaUseCase @Inject constructor(
      * the bytes it arrived as — compressing again would only lose more of it. **Canon:** iOS
      * `ChatSendCoordinator+Forward`.
      */
-    suspend fun forward(contactId: String, items: List<MediaItem>, plain: List<ByteArray>, caption: String): SendOutcome {
+    suspend fun forward(contactId: String, items: List<MediaItem>, plain: List<ByteArray>, caption: String, turn: SendTurn = SendTurn.NOW): SendOutcome {
         require(items.isNotEmpty() && items.size == plain.size)
         val messageId = UUID.randomUUID().toString().lowercase()
         val timestampMs = System.currentTimeMillis()
@@ -269,7 +276,7 @@ class SendMediaUseCase @Inject constructor(
         }
         val album = stored(uploaded, caption, null)
         sendMessage.replaceMedia(messageId, album)
-        return sendMessage.deliverPrepared(contactId, messageId, timestampMs, MediaWire.content(album.kind, album.bytes)!!)
+        return sendMessage.deliverPrepared(contactId, messageId, timestampMs, MediaWire.content(album.kind, album.bytes)!!, turn)
     }
 
     /** A forwarded item: the original's description, this upload's object. */
@@ -323,13 +330,27 @@ class SendMediaUseCase @Inject constructor(
      * no field for it — the media id in `codec` as `audio/m4a|<id>|<size of the recording>`.
      * The recording is sealed, kept under a local id for the bubble, and deleted from the cache.
      */
-    suspend fun voice(contactId: String, recording: File, durationMs: Long, waveform: List<Float>, reply: ReplyRef? = null): SendOutcome {
+    suspend fun voice(
+        contactId: String,
+        recording: File,
+        durationMs: Long,
+        waveform: List<Float>,
+        reply: ReplyRef? = null,
+        turn: SendTurn = SendTurn.NOW,
+    ): SendOutcome {
         val audio = withContext(Dispatchers.IO) { recording.readBytes().also { recording.delete() } }
-        return voice(contactId, audio, durationMs, waveform, reply)
+        return voice(contactId, audio, durationMs, waveform, reply, turn)
     }
 
     /** A voice note from its bytes — a recording, or one being forwarded; [reply] it answers. */
-    suspend fun voice(contactId: String, audio: ByteArray, durationMs: Long, waveform: List<Float>, reply: ReplyRef? = null): SendOutcome {
+    suspend fun voice(
+        contactId: String,
+        audio: ByteArray,
+        durationMs: Long,
+        waveform: List<Float>,
+        reply: ReplyRef? = null,
+        turn: SendTurn = SendTurn.NOW,
+    ): SendOutcome {
         val messageId = UUID.randomUUID().toString().lowercase()
         val timestampMs = System.currentTimeMillis()
         val localId = MediaWire.LOCAL_PREFIX + UUID.randomUUID()
@@ -359,7 +380,7 @@ class SendMediaUseCase @Inject constructor(
         }
         val stored = wire(uploaded.mediaId, uploaded.downloadUrl)
         sendMessage.replaceMedia(messageId, stored)
-        return sendMessage.deliverPrepared(contactId, messageId, timestampMs, MediaWire.content(stored.kind, stored.bytes)!!)
+        return sendMessage.deliverPrepared(contactId, messageId, timestampMs, MediaWire.content(stored.kind, stored.bytes)!!, turn)
     }
 
     private class Staged(
