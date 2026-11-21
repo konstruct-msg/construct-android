@@ -50,6 +50,11 @@ class MessagingService @Inject constructor(
         val orderKey: String? = null,
         /** A sealed send only: what the server made of the intake tag ([IntakeCredentials.Verdict]). */
         val intakeVerdict: IntakeVerdict = IntakeVerdict.INTAKE_VERDICT_UNSPECIFIED,
+        /**
+         * No answer about this message came: the call threw on the path ([SendFailureReading]).
+         * Never from the server — the send path builds it when the last attempt threw.
+         */
+        val unanswered: Boolean = false,
     )
 
     /** Identified send: sender and content type on the outer envelope, authenticated channel. */
