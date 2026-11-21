@@ -21,6 +21,8 @@ import com.construct.messenger.util.SenderSyncRouting
 import com.construct.messenger.util.TextWire
 import com.construct.messenger.util.ProfileShare
 import com.construct.messenger.service.SessionManager
+import com.construct.messenger.service.DeviceSetAnswers
+import com.construct.messenger.stealth.SealedSend
 import com.construct.messenger.stealth.StealthPolicy
 import com.construct.messenger.stealth.StealthSenderService
 import kotlinx.coroutines.flow.Flow
@@ -34,6 +36,7 @@ import io.grpc.Status
 import io.grpc.StatusException
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -87,6 +90,8 @@ class SendMessageUseCaseTest {
         val policy: StealthPolicy = mock()
         val stealthSender: StealthSenderService = mock()
         val owed = RecordingOwedCopies()
+        val sealedSend: SealedSend = mock()
+        val deviceSets = DeviceSetAnswers()
 
         fun useCase() = SendMessageUseCase(
             keystoreManager = keystore,
@@ -96,7 +101,7 @@ class SendMessageUseCaseTest {
             messagingService = messaging,
             stealthPolicy = policy,
             stealthSender = stealthSender,
-            sealedSend = mock(),
+            sealedSend = sealedSend,
             messages = messages,
             chats = chats,
             contacts = users,
@@ -104,6 +109,7 @@ class SendMessageUseCaseTest {
             serverMessageIds = ServerMessageIds(serverIds),
             mediaPreview = { "Photo" },
             owedCopies = owed,
+            deviceSets = deviceSets,
         )
     }
 
@@ -152,6 +158,8 @@ class SendMessageUseCaseTest {
             },
         )
         whenever(h.sessionManager.discoverOwnDeviceBundles(myId)).thenReturn(emptyList())
+        // Nothing known about our own devices: the send asks the key server (`ownDeviceSet`).
+        whenever(h.sessionManager.knownPeerDevices(myId)).thenReturn(emptyList())
         devices.forEach { device ->
             whenever(h.sessionManager.ensureSessionForDevice(peer, device))
                 .thenReturn(SessionManager.SessionPeer(peer, device, byteArrayOf(4, 5, 6)))
@@ -481,8 +489,8 @@ class SendMessageUseCaseTest {
     }
 
     /**
-     * The device set is the local one, corrected by the directory — a send to a peer we already
-     * hold sessions with must not wait on the key server.
+     * The device set is the local one — a send to a peer we already hold sessions with must not
+     * wait on the key server, whatever it would answer. The answer to the send corrects the set.
      */
     @Test
     fun `a device the directory has not answered for is still sent to`() = runTest {
@@ -1034,5 +1042,90 @@ class SendMessageUseCaseTest {
 
         verify(h.crypto).planSend(eq(emptyList()), eq(listOf(second)), eq(ourDevice), eq(true))
     }
-}
 
+    /**
+     * Todo 321, step 3: a send to someone whose devices this device knows does not ask the key
+     * server first. On a bad path that request held every message for up to 30 s.
+     *
+     * Mutation: ask the directory before every send again — this reddens.
+     */
+    @Test
+    fun `a send to known devices does not wait on the key server`() = runTest {
+        val h = harness()
+
+        assertTrue(h.useCase()(peer, "hello") is SendOutcome.Sent)
+
+        verify(h.sessionManager, times(0)).discoverPeerBundles(any(), any())
+    }
+
+    /** Stealth on, every sealed copy answering with [named] as the recipient's devices. */
+    private suspend fun sealedHarness(named: List<String>): Harness {
+        val h = harness(devices = listOf(pinnedDevice))
+        whenever(h.policy.shouldUseSealedSender()).thenReturn(true)
+        whenever(h.sealedSend.send(any(), any(), any(), any(), anyOrNull())).thenReturn(
+            MessagingService.SendResult("ok", true, "", false, 0, "a", recipientActiveDevices = named),
+        )
+        return h
+    }
+
+    /**
+     * The answer names a device the plan did not have: the key server is asked, and the new
+     * device gets its copy of this very message. The same set is not asked about again.
+     *
+     * Mutations that redden it: ignore the answers; send nothing to the found device; forget the
+     * set asked about.
+     */
+    @Test
+    fun `a device the answer names gets this message, and the set is asked about once`() = runTest {
+        val newDevice = "44444444444444444444444444444444"
+        val h = sealedHarness(named = listOf(newDevice, pinnedDevice))
+        whenever(h.sessionManager.discoverPeerBundles(peer)).thenReturn(
+            listOf(pinnedDevice, newDevice).map {
+                SessionManager.PeerBundle(peer, it, byteArrayOf(4, 5, 6), bundle = mock<BinaryKeyBundle>())
+            },
+        )
+        whenever(h.sessionManager.ensureSessionForDevice(peer, newDevice))
+            .thenReturn(SessionManager.SessionPeer(peer, newDevice, byteArrayOf(4, 5, 6)))
+        whenever(h.crypto.deviceCopyTag(any(), eq(newDevice), any())).thenReturn(newDevice.take(16))
+
+        assertTrue(h.useCase()(peer, "hello") is SendOutcome.Sent)
+
+        verify(h.sessionManager, times(1)).discoverPeerBundles(peer)
+        assertEquals(1, framesSentTo(h, newDevice).size)
+        assertEquals(1, framesSentTo(h, pinnedDevice).size)
+
+        assertTrue(h.useCase()(peer, "again") is SendOutcome.Sent)
+        verify(h.sessionManager, times(1)).discoverPeerBundles(peer)
+    }
+
+    /**
+     * An answer naming exactly the plan asks nothing. Mutation: ask whenever the answer names
+     * anything — this reddens.
+     */
+    @Test
+    fun `an answer naming the planned set asks nothing`() = runTest {
+        val h = sealedHarness(named = listOf(pinnedDevice))
+
+        assertTrue(h.useCase()(peer, "hello") is SendOutcome.Sent)
+
+        verify(h.sessionManager, times(0)).discoverPeerBundles(any(), any())
+    }
+
+    /**
+     * The key server does not answer: the devices the answer named and the plan lacked are owed,
+     * so the retry queue sends them this message, and the set is not marked as asked.
+     *
+     * Mutation: drop the owed devices on a failed ask — this reddens.
+     */
+    @Test
+    fun `a named device the key server does not hand over is owed`() = runTest {
+        val newDevice = "44444444444444444444444444444444"
+        val h = sealedHarness(named = listOf(newDevice, pinnedDevice))
+        whenever(h.sessionManager.discoverPeerBundles(peer)).thenThrow(RuntimeException("offline"))
+
+        assertTrue(h.useCase()(peer, "hello") is SendOutcome.Sent)
+
+        assertEquals(listOf(peer to listOf(newDevice)), h.owed.owed)
+        assertTrue(h.deviceSets.toAsk(peer, listOf(listOf(newDevice, pinnedDevice)), listOf(pinnedDevice)) != null)
+    }
+}
