@@ -803,4 +803,11 @@
     <string name="incoming_share_draft_conflict_body">The current text, attachments, reply, edit or recording will not be replaced without your permission.</string>
     <string name="incoming_share_choose_another">Choose another chat</string>
     <string name="incoming_share_finish_first">Send or cancel the shared draft before replying, editing or choosing a sticker.</string>
+    <!-- Chat media gallery (todo 327) -->
+    <string name="profile_media_section">Media</string>
+    <string name="chat_media_title">Chat media</string>
+    <string name="chat_media_tab_visual">Photos &amp; videos</string>
+    <string name="chat_media_tab_files">Files</string>
+    <string name="chat_media_empty_visual">No photos or videos in this chat yet</string>
+    <string name="chat_media_empty_files">No files in this chat yet</string>
 </resources>

@@ -44,6 +44,8 @@ class GatedMessageStore(private val gate: LocalStoreGate) : MessageStore {
     override suspend fun delete(id: String) = s().delete(id)
     override suspend fun deleteChat(chatId: String) = s().deleteChat(chatId)
     override suspend fun setTranscript(id: String, text: String?, language: String?, atMs: Long) = s().setTranscript(id, text, language, atMs)
+    override suspend fun media(chatId: String, kinds: List<uniffi.construct_core.LocalMediaKind>, before: ChatMediaItem?, limit: Int) =
+        s().media(chatId, kinds, before, limit)
 }
 
 class GatedReactionStore(private val gate: LocalStoreGate) : ReactionStore {

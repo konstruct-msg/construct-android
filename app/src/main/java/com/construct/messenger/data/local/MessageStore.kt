@@ -4,6 +4,7 @@ import com.construct.messenger.data.model.DeliveryStatus
 import com.construct.messenger.util.MediaWire
 import com.construct.messenger.util.ServerMessageOrder
 import kotlinx.coroutines.flow.Flow
+import uniffi.construct_core.LocalMediaKind
 
 /**
  * One message of a chat, as this device keeps it.
@@ -119,7 +120,31 @@ interface MessageStore {
 
     /** Keep [text] as [id]'s transcript; null clears it. False when there is no such message. */
     suspend fun setTranscript(id: String, text: String?, language: String?, atMs: Long): Boolean
+
+    /**
+     * A page of the chat's media of [kinds] (every kind when empty), newest first, from the store's
+     * media index (todo 327). [before] is the last item of the previous page, so an album a page
+     * cuts continues where it stopped (`chat_media`).
+     */
+    suspend fun media(chatId: String, kinds: List<LocalMediaKind>, before: ChatMediaItem?, limit: Int): List<ChatMediaItem>
 }
+
+/**
+ * One item of a chat's media, as the store's index holds it (todo 327): which message, which item
+ * of its album, and what kind. What the item looks like is read from the message's body.
+ * **Canon:** iOS `ChatMediaItem`.
+ */
+data class ChatMediaItem(
+    val messageId: String,
+    val item: Int,
+    val mediaId: String,
+    val kind: LocalMediaKind,
+    /** What the sender declared, not what is on disk. */
+    val byteSize: Long,
+    val timestampMs: Long,
+    val isSentByMe: Boolean,
+    val orderKey: String,
+)
 
 /** [orderKey], or — when none is known — the key that puts the message at its own time. */
 internal fun MessageRecord.orderKeyOrLocal(): String = orderKey.ifEmpty { ServerMessageOrder.local(timestampMs, id) }
