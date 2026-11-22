@@ -31,6 +31,10 @@ sealed class Screen(val route: String) {
         fun createRoute(contactId: String, fromChat: Boolean = false) =
             "contact/${Uri.encode(contactId)}?fromChat=$fromChat"
     }
+    /** The media of the chat with a contact — photos and videos, files (todo 327). */
+    data object ChatMedia : Screen("media/{contactId}") {
+        fun createRoute(contactId: String) = "media/${Uri.encode(contactId)}"
+    }
     /** Safety numbers with a contact, one per device of theirs. */
     data object SafetyNumbers : Screen("safety/{contactId}") {
         fun createRoute(contactId: String) = "safety/${Uri.encode(contactId)}"

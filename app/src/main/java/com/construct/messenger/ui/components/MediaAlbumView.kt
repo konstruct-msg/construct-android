@@ -160,6 +160,14 @@ internal fun aspect(item: MediaItem): Float {
     return (w.toFloat() / h).coerceIn(MIN_ASPECT, MAX_ASPECT)
 }
 
+/**
+ * A square tile of the chat gallery (vault todo 327): the album bubble's own tile at the grid's
+ * size, so it previews, loads and plays as the bubble does.
+ */
+@Composable
+fun MediaGridTile(item: MediaItem, side: Dp, onTap: () -> Unit) =
+    Tile(item, side, side, Modifier, onTap, onLongPress = {}, onDoubleTap = null)
+
 @Composable
 private fun Tile(
     item: MediaItem,
@@ -493,6 +501,9 @@ private fun formatDuration(ms: Long): String {
 private val SINGLE_WIDTH = 260.dp
 private val ALBUM_WIDTH = 244.dp
 private val GAP = 2.dp
+
+/** Between the tiles of an album and of the chat gallery. */
+val MediaTileGap: Dp = GAP
 private const val PREVIEW_PX = 32
 private const val MIN_ASPECT = 2f / 3f
 private const val MAX_ASPECT = 3f / 2f

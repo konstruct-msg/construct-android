@@ -805,4 +805,11 @@
     <string name="incoming_share_draft_conflict_body">Текущие текст, вложения, ответ, правка или запись не будут заменены без вашего разрешения.</string>
     <string name="incoming_share_choose_another">Выбрать другой чат</string>
     <string name="incoming_share_finish_first">Сначала отправьте или отмените черновик из «Поделиться», затем отвечайте, редактируйте или выбирайте стикер.</string>
+    <!-- Chat media gallery (todo 327) -->
+    <string name="profile_media_section">Медиа</string>
+    <string name="chat_media_title">Медиа чата</string>
+    <string name="chat_media_tab_visual">Фото и видео</string>
+    <string name="chat_media_tab_files">Файлы</string>
+    <string name="chat_media_empty_visual">В этом чате пока нет фото и видео</string>
+    <string name="chat_media_empty_files">В этом чате пока нет файлов</string>
 </resources>

@@ -65,6 +65,14 @@ internal class FakeMessageStore : MessageStore {
         return true
     }
 
+    /** The fake keeps no media index: what reads it is tested on [CoreMessageStore]. */
+    override suspend fun media(
+        chatId: String,
+        kinds: List<uniffi.construct_core.LocalMediaKind>,
+        before: ChatMediaItem?,
+        limit: Int,
+    ): List<ChatMediaItem> = emptyList()
+
     override suspend fun deleteChat(chatId: String) {
         rows.values.removeAll { it.chatId == chatId }
     }

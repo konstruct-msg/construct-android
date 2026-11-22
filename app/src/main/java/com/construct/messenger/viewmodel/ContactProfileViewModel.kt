@@ -3,7 +3,9 @@ package com.construct.messenger.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.construct.messenger.data.local.ChatStore
 import com.construct.messenger.data.local.ContactStore
+import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.data.local.resolvedName
 import com.construct.messenger.data.model.ContactTrustAlert
 import com.construct.messenger.data.model.KtStatus
@@ -13,6 +15,7 @@ import com.construct.messenger.data.repository.SessionSecurityRepository
 import com.construct.messenger.domain.usecase.ContactActionsUseCase
 import com.construct.messenger.domain.usecase.ShareProfileUseCase
 import com.construct.messenger.security.SecurityNotices
+import com.construct.messenger.util.ConversationId
 import com.construct.messenger.util.DisplayNameGenerator
 import com.construct.messenger.util.IdentityFingerprint
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -65,6 +68,8 @@ class ContactProfileViewModel @Inject constructor(
     private val securityNotices: SecurityNotices,
     private val sessionSecurity: SessionSecurityRepository,
     private val shareProfile: ShareProfileUseCase,
+    private val chats: ChatStore,
+    private val keystoreManager: KeystoreManager,
 ) : ViewModel() {
     val userId: String = requireNotNull(savedStateHandle.get<String>("contactId"))
 
@@ -75,8 +80,20 @@ class ContactProfileViewModel @Inject constructor(
     private val session = MutableStateFlow<SessionSecurity?>(null)
     private val share = MutableStateFlow(Pair<Boolean, ShareOutcome?>(false, null))
 
+    private val _hasChat = MutableStateFlow(false)
+
+    /** A chat with them exists, so its media can be shown (todo 327; iOS shows the row only then). */
+    val hasChat: StateFlow<Boolean> = _hasChat.asStateFlow()
+
     init {
         refreshSession()
+        refreshChat()
+    }
+
+    /** Again on return: a first message may have opened the chat meanwhile. */
+    fun refreshChat() {
+        val me = keystoreManager.getUserId() ?: return
+        viewModelScope.launch { _hasChat.value = chats.get(ConversationId.direct(me, userId)) != null }
     }
 
     val uiState: StateFlow<ContactProfileUiState> = combine(

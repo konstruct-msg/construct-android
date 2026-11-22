@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import uniffi.construct_core.LocalInsert
+import uniffi.construct_core.LocalMediaKind
 import uniffi.construct_core.LocalMessage
 import uniffi.construct_core.LocalMessageInsert
 import uniffi.construct_core.LocalStore
@@ -90,6 +91,17 @@ class CoreMessageStore(
             if (s.setMessageBody(stored.id, body, row.searchText())) indexMedia(s, stored.id, body, replacing = true)
         }
     }
+
+    override suspend fun media(chatId: String, kinds: List<LocalMediaKind>, before: ChatMediaItem?, limit: Int): List<ChatMediaItem> =
+        io { s ->
+            s.chatMedia(chatId, kinds, before?.orderKey, before?.messageId, before?.item?.toUInt(), limit.coerceAtLeast(0).toUInt())
+                .map {
+                    ChatMediaItem(
+                        messageId = it.messageId, item = it.item.toInt(), mediaId = it.mediaId, kind = it.kind,
+                        byteSize = it.byteSize, timestampMs = it.timestamp, isSentByMe = it.isSentByMe, orderKey = it.orderKey,
+                    )
+                }
+        }
 
     // From the newest page back, not the whole chat: every stored message asks this.
     override suspend fun latestVisible(chatId: String): MessageRecord? = io { s ->

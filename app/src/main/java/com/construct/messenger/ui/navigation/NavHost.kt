@@ -14,6 +14,7 @@ import androidx.navigation.navArgument
 import com.construct.messenger.ui.screens.chat.ChatScreen
 import com.construct.messenger.ui.screens.chat.SafetyNumberScreen
 import com.construct.messenger.ui.screens.onboarding.RestoreAccountScreen
+import com.construct.messenger.ui.screens.media.ChatMediaGalleryScreen
 import com.construct.messenger.ui.screens.synaps.ContactProfileScreen
 import com.construct.messenger.ui.screens.invite.ContactQrScreen
 import com.construct.messenger.ui.screens.invite.QrScannerScreen
@@ -272,7 +273,14 @@ fun KonstructNavHost(
                 onOpenSafetyNumbers = { contactId ->
                     navController.navigate(Screen.SafetyNumbers.createRoute(contactId))
                 },
+                onOpenMedia = { contactId -> navController.navigate(Screen.ChatMedia.createRoute(contactId)) },
             )
+        }
+        composable(
+            route = Screen.ChatMedia.route,
+            arguments = listOf(navArgument("contactId") { type = NavType.StringType }),
+        ) {
+            ChatMediaGalleryScreen(onNavigateBack = { navController.popBackStack() })
         }
         composable(
             route = Screen.SafetyNumbers.route,

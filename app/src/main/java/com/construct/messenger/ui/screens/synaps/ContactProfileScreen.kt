@@ -90,9 +90,11 @@ fun ContactProfileScreen(
     onNavigateBack: () -> Unit,
     onOpenChat: (String) -> Unit,
     onOpenSafetyNumbers: (String) -> Unit,
+    onOpenMedia: (String) -> Unit,
     viewModel: ContactProfileViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
+    val hasChat by viewModel.hasChat.collectAsStateWithLifecycle()
     var confirm by remember { mutableStateOf<Confirm?>(null) }
     var editingLocalName by remember { mutableStateOf(false) }
 
@@ -100,7 +102,10 @@ fun ContactProfileScreen(
         if (ui.removed) onNavigateBack()
     }
     // Back from the safety numbers or the chat, the session may be a different one.
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshSession() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refreshSession()
+        viewModel.refreshChat()
+    }
 
     confirm?.let { which ->
         val (title, message, action) = when (which) {
@@ -189,6 +194,17 @@ fun ContactProfileScreen(
                 onToggleSharing = viewModel::toggleSharing,
             )
             FlatDivider(thick = true)
+            // iOS: the chat's media, once there is a chat (todo 327).
+            if (hasChat) {
+                SectionHeader(stringResource(R.string.profile_media_section))
+                RowDivider()
+                ActionRow(
+                    label = stringResource(R.string.chat_media_title),
+                    color = CTColor.accent,
+                    onClick = { onOpenMedia(viewModel.userId) },
+                )
+                FlatDivider(thick = true)
+            }
             SecuritySection(
                 ui = ui,
                 onSafetyNumbers = { onOpenSafetyNumbers(viewModel.userId) },
