@@ -1096,7 +1096,13 @@ external fun uniffi_construct_core_checksum_method_localstore_calls(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_chat(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_chat_auto_save_media(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_chat_for_peer(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_chat_media(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_chat_media_older_than(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_chat_message_count(
 ): Short
@@ -1174,6 +1180,8 @@ external fun uniffi_construct_core_checksum_method_localstore_mark_contact(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_mark_processed(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_media_owners(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_message(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_message_count(
@@ -1226,6 +1234,8 @@ external fun uniffi_construct_core_checksum_method_localstore_search(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_account_address(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_chat_auto_save_media(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_chat_pinned(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_chat_preview(
@@ -1248,6 +1258,8 @@ external fun uniffi_construct_core_checksum_method_localstore_set_kt_status(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_message_body(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_message_media(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_observer(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_order_key(
@@ -1267,6 +1279,8 @@ external fun uniffi_construct_core_checksum_method_localstore_set_transcript(
 external fun uniffi_construct_core_checksum_method_localstore_set_unread(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_sharing_with(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_unindexed_media_messages(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_upsert_call(
 ): Short
@@ -1737,7 +1751,13 @@ external fun uniffi_construct_core_fn_method_localstore_calls(`ptr`: Long,`limit
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_chat(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_chat_auto_save_media(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_chat_for_peer(`ptr`: Long,`peerId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_chat_media(`ptr`: Long,`chatId`: RustBuffer.ByValue,`kinds`: RustBuffer.ByValue,`beforeOrderKey`: RustBuffer.ByValue,`beforeMessageId`: RustBuffer.ByValue,`beforeItem`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_chat_media_older_than(`ptr`: Long,`chatId`: RustBuffer.ByValue,`beforeTimestamp`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_chat_message_count(`ptr`: Long,`chatId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
@@ -1815,6 +1835,8 @@ external fun uniffi_construct_core_fn_method_localstore_mark_contact(`ptr`: Long
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_mark_processed(`ptr`: Long,`messageId`: RustBuffer.ByValue,`senderId`: RustBuffer.ByValue,`processedAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_method_localstore_media_owners(`ptr`: Long,`mediaIds`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_message(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_message_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1867,6 +1889,8 @@ external fun uniffi_construct_core_fn_method_localstore_search(`ptr`: Long,`quer
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_set_account_address(`ptr`: Long,`id`: RustBuffer.ByValue,`address`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_chat_auto_save_media(`ptr`: Long,`id`: RustBuffer.ByValue,`on`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_chat_pinned(`ptr`: Long,`id`: RustBuffer.ByValue,`pinned`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_chat_preview(`ptr`: Long,`id`: RustBuffer.ByValue,`text`: RustBuffer.ByValue,`time`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1889,6 +1913,8 @@ external fun uniffi_construct_core_fn_method_localstore_set_kt_status(`ptr`: Lon
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_message_body(`ptr`: Long,`id`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`searchText`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_message_media(`ptr`: Long,`messageId`: RustBuffer.ByValue,`entries`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_observer(`ptr`: Long,`observer`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_localstore_set_order_key(`ptr`: Long,`id`: RustBuffer.ByValue,`orderKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1908,6 +1934,8 @@ external fun uniffi_construct_core_fn_method_localstore_set_transcript(`ptr`: Lo
 external fun uniffi_construct_core_fn_method_localstore_set_unread(`ptr`: Long,`id`: RustBuffer.ByValue,`count`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_sharing_with(`ptr`: Long,`exceptAccount`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_unindexed_media_messages(`ptr`: Long,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_upsert_call(`ptr`: Long,`call`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -3159,7 +3187,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_chat() != 45451.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_chat_auto_save_media() != 61484.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_chat_for_peer() != 26460.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_chat_media() != 15048.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_chat_media_older_than() != 9610.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_chat_message_count() != 28786.toShort()) {
@@ -3276,6 +3313,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_mark_processed() != 32160.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_media_owners() != 38942.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_message() != 63926.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3354,6 +3394,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_set_account_address() != 23284.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_chat_auto_save_media() != 53183.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_set_chat_pinned() != 63084.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3387,6 +3430,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_set_message_body() != 28116.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_message_media() != 49275.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_set_observer() != 60987.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3415,6 +3461,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_sharing_with() != 44917.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_unindexed_media_messages() != 54505.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_upsert_call() != 6097.toShort()) {
@@ -6774,7 +6823,23 @@ public interface LocalStoreInterface {
     
     fun `chat`(`id`: kotlin.String): LocalChat?
     
+    /**
+     * Off for a chat that is not there.
+     */
+    fun `chatAutoSaveMedia`(`id`: kotlin.String): kotlin.Boolean
+    
     fun `chatForPeer`(`peerId`: kotlin.String): LocalChat?
+    
+    /**
+     * A page of a chat's media of `kinds` (all when empty), newest first. The cursor is the last
+     * item of the previous page — all three of `before_*` or none — so a cut album continues.
+     */
+    fun `chatMedia`(`chatId`: kotlin.String, `kinds`: List<LocalMediaKind>, `beforeOrderKey`: kotlin.String?, `beforeMessageId`: kotlin.String?, `beforeItem`: kotlin.UInt?, `limit`: kotlin.UInt): List<LocalChatMedia>
+    
+    /**
+     * Every media item of a chat in a message older than `before_timestamp` (the messages' unit).
+     */
+    fun `chatMediaOlderThan`(`chatId`: kotlin.String, `beforeTimestamp`: kotlin.Long): List<LocalChatMedia>
     
     /**
      * How many messages a chat holds.
@@ -6920,6 +6985,11 @@ public interface LocalStoreInterface {
      */
     fun `markProcessed`(`messageId`: kotlin.String, `senderId`: kotlin.String, `processedAt`: kotlin.Long): kotlin.Boolean
     
+    /**
+     * Which chat and message hold each id; unknown ids are left out, a shared id listed per message.
+     */
+    fun `mediaOwners`(`mediaIds`: List<kotlin.String>): List<LocalMediaOwner>
+    
     fun `message`(`id`: kotlin.String): LocalMessage?
     
     fun `messageCount`(): kotlin.ULong
@@ -7025,6 +7095,11 @@ public interface LocalStoreInterface {
     
     fun `setAccountAddress`(`id`: kotlin.String, `address`: kotlin.ByteArray?): kotlin.Boolean
     
+    /**
+     * The chat's "save received media to Photos"; off by default. False when there is no such chat.
+     */
+    fun `setChatAutoSaveMedia`(`id`: kotlin.String, `on`: kotlin.Boolean): kotlin.Boolean
+    
     fun `setChatPinned`(`id`: kotlin.String, `pinned`: kotlin.Boolean): kotlin.Boolean
     
     /**
@@ -7068,6 +7143,13 @@ public interface LocalStoreInterface {
      */
     fun `setMessageBody`(`id`: kotlin.String, `body`: kotlin.ByteArray, `searchText`: kotlin.String?): kotlin.Boolean
     
+    /**
+     * The media `message_id` holds (todo 327), replacing what was indexed for it; the message is
+     * marked indexed, with no entries too. False when there is no such message. Called after
+     * `insert_message` / `set_message_body`, and for each id `unindexed_media_messages` lists.
+     */
+    fun `setMessageMedia`(`messageId`: kotlin.String, `entries`: List<LocalMediaEntry>): kotlin.Boolean
+    
     fun `setObserver`(`observer`: LocalStoreObserver?)
     
     fun `setOrderKey`(`id`: kotlin.String, `orderKey`: kotlin.String): kotlin.Boolean
@@ -7102,6 +7184,13 @@ public interface LocalStoreInterface {
      * The ids we share our profile with; `except_account` (our own) left out.
      */
     fun `sharingWith`(`exceptAccount`: kotlin.String?): List<kotlin.String>
+    
+    /**
+     * Up to `limit` messages not indexed yet whose body may hold media (CTM1 album or message
+     * content — a text among them too), oldest first: rows an older build wrote, and any a crash
+     * caught between the insert and `set_message_media`.
+     */
+    fun `unindexedMediaMessages`(`limit`: kotlin.UInt): List<kotlin.String>
     
     fun `upsertCall`(`call`: LocalCall)
     
@@ -7364,6 +7453,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * Off for a chat that is not there.
+     */
+    @Throws(LocalStoreException::class)override fun `chatAutoSaveMedia`(`id`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_chat_auto_save_media(
+        it,
+        FfiConverterString.lower(`id`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `chatForPeer`(`peerId`: kotlin.String): LocalChat? {
             return FfiConverterOptionalTypeLocalChat.lift(
     callWithHandle {
@@ -7371,6 +7477,41 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_chat_for_peer(
         it,
         FfiConverterString.lower(`peerId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * A page of a chat's media of `kinds` (all when empty), newest first. The cursor is the last
+     * item of the previous page — all three of `before_*` or none — so a cut album continues.
+     */
+    @Throws(LocalStoreException::class)override fun `chatMedia`(`chatId`: kotlin.String, `kinds`: List<LocalMediaKind>, `beforeOrderKey`: kotlin.String?, `beforeMessageId`: kotlin.String?, `beforeItem`: kotlin.UInt?, `limit`: kotlin.UInt): List<LocalChatMedia> {
+            return FfiConverterSequenceTypeLocalChatMedia.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_chat_media(
+        it,
+        FfiConverterString.lower(`chatId`),FfiConverterSequenceTypeLocalMediaKind.lower(`kinds`),FfiConverterOptionalString.lower(`beforeOrderKey`),FfiConverterOptionalString.lower(`beforeMessageId`),FfiConverterOptionalUInt.lower(`beforeItem`),FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Every media item of a chat in a message older than `before_timestamp` (the messages' unit).
+     */
+    @Throws(LocalStoreException::class)override fun `chatMediaOlderThan`(`chatId`: kotlin.String, `beforeTimestamp`: kotlin.Long): List<LocalChatMedia> {
+            return FfiConverterSequenceTypeLocalChatMedia.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_chat_media_older_than(
+        it,
+        FfiConverterString.lower(`chatId`),FfiConverterLong.lower(`beforeTimestamp`),_status)
 }
     }
     )
@@ -7972,6 +8113,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * Which chat and message hold each id; unknown ids are left out, a shared id listed per message.
+     */
+    @Throws(LocalStoreException::class)override fun `mediaOwners`(`mediaIds`: List<kotlin.String>): List<LocalMediaOwner> {
+            return FfiConverterSequenceTypeLocalMediaOwner.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_media_owners(
+        it,
+        FfiConverterSequenceString.lower(`mediaIds`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `message`(`id`: kotlin.String): LocalMessage? {
             return FfiConverterOptionalTypeLocalMessage.lift(
     callWithHandle {
@@ -8385,6 +8543,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * The chat's "save received media to Photos"; off by default. False when there is no such chat.
+     */
+    @Throws(LocalStoreException::class)override fun `setChatAutoSaveMedia`(`id`: kotlin.String, `on`: kotlin.Boolean): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_chat_auto_save_media(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterBoolean.lower(`on`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `setChatPinned`(`id`: kotlin.String, `pinned`: kotlin.Boolean): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     callWithHandle {
@@ -8559,6 +8734,25 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     }
     
 
+    
+    /**
+     * The media `message_id` holds (todo 327), replacing what was indexed for it; the message is
+     * marked indexed, with no entries too. False when there is no such message. Called after
+     * `insert_message` / `set_message_body`, and for each id `unindexed_media_messages` lists.
+     */
+    @Throws(LocalStoreException::class)override fun `setMessageMedia`(`messageId`: kotlin.String, `entries`: List<LocalMediaEntry>): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_message_media(
+        it,
+        FfiConverterString.lower(`messageId`),FfiConverterSequenceTypeLocalMediaEntry.lower(`entries`),_status)
+}
+    }
+    )
+    }
+    
+
     override fun `setObserver`(`observer`: LocalStoreObserver?)
         = 
     callWithHandle {
@@ -8705,6 +8899,25 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_sharing_with(
         it,
         FfiConverterOptionalString.lower(`exceptAccount`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Up to `limit` messages not indexed yet whose body may hold media (CTM1 album or message
+     * content — a text among them too), oldest first: rows an older build wrote, and any a crash
+     * caught between the insert and `set_message_media`.
+     */
+    @Throws(LocalStoreException::class)override fun `unindexedMediaMessages`(`limit`: kotlin.UInt): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_unindexed_media_messages(
+        it,
+        FfiConverterUInt.lower(`limit`),_status)
 }
     }
     )
@@ -14689,6 +14902,76 @@ public object FfiConverterTypeLocalChat: FfiConverterRustBuffer<LocalChat> {
 
 
 
+/**
+ * A chat's media item, read through its message. `order_key`, `message_id` and `item` of the
+ * last one are the next page's cursor.
+ */
+data class LocalChatMedia (
+    var `messageId`: kotlin.String
+    , 
+    var `item`: kotlin.UInt
+    , 
+    var `mediaId`: kotlin.String
+    , 
+    var `kind`: LocalMediaKind
+    , 
+    var `byteSize`: kotlin.Long
+    , 
+    var `timestamp`: kotlin.Long
+    , 
+    var `isSentByMe`: kotlin.Boolean
+    , 
+    var `orderKey`: kotlin.String
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalChatMedia: FfiConverterRustBuffer<LocalChatMedia> {
+    override fun read(buf: ByteBuffer): LocalChatMedia {
+        return LocalChatMedia(
+            FfiConverterString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterTypeLocalMediaKind.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalChatMedia) = (
+            FfiConverterString.allocationSize(value.`messageId`) +
+            FfiConverterUInt.allocationSize(value.`item`) +
+            FfiConverterString.allocationSize(value.`mediaId`) +
+            FfiConverterTypeLocalMediaKind.allocationSize(value.`kind`) +
+            FfiConverterLong.allocationSize(value.`byteSize`) +
+            FfiConverterLong.allocationSize(value.`timestamp`) +
+            FfiConverterBoolean.allocationSize(value.`isSentByMe`) +
+            FfiConverterString.allocationSize(value.`orderKey`)
+    )
+
+    override fun write(value: LocalChatMedia, buf: ByteBuffer) {
+            FfiConverterString.write(value.`messageId`, buf)
+            FfiConverterUInt.write(value.`item`, buf)
+            FfiConverterString.write(value.`mediaId`, buf)
+            FfiConverterTypeLocalMediaKind.write(value.`kind`, buf)
+            FfiConverterLong.write(value.`byteSize`, buf)
+            FfiConverterLong.write(value.`timestamp`, buf)
+            FfiConverterBoolean.write(value.`isSentByMe`, buf)
+            FfiConverterString.write(value.`orderKey`, buf)
+    }
+}
+
+
+
 data class LocalContact (
     var `id`: kotlin.String
     , 
@@ -14932,6 +15215,105 @@ public object FfiConverterTypeLocalKvEntry: FfiConverterRustBuffer<LocalKvEntry>
     override fun write(value: LocalKvEntry, buf: ByteBuffer) {
             FfiConverterString.write(value.`key`, buf)
             FfiConverterByteArray.write(value.`value`, buf)
+    }
+}
+
+
+
+/**
+ * One media item of a message, as the client indexes it from the descriptor it decoded.
+ */
+data class LocalMediaEntry (
+    /**
+     * Position in the message (album order), from 0.
+     */
+    var `item`: kotlin.UInt
+    , 
+    var `mediaId`: kotlin.String
+    , 
+    var `kind`: LocalMediaKind
+    , 
+    /**
+     * The size the descriptor declares; what is on disk is the client's to measure.
+     */
+    var `byteSize`: kotlin.Long
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalMediaEntry: FfiConverterRustBuffer<LocalMediaEntry> {
+    override fun read(buf: ByteBuffer): LocalMediaEntry {
+        return LocalMediaEntry(
+            FfiConverterUInt.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterTypeLocalMediaKind.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalMediaEntry) = (
+            FfiConverterUInt.allocationSize(value.`item`) +
+            FfiConverterString.allocationSize(value.`mediaId`) +
+            FfiConverterTypeLocalMediaKind.allocationSize(value.`kind`) +
+            FfiConverterLong.allocationSize(value.`byteSize`)
+    )
+
+    override fun write(value: LocalMediaEntry, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`item`, buf)
+            FfiConverterString.write(value.`mediaId`, buf)
+            FfiConverterTypeLocalMediaKind.write(value.`kind`, buf)
+            FfiConverterLong.write(value.`byteSize`, buf)
+    }
+}
+
+
+
+/**
+ * Which chat and message hold a media id.
+ */
+data class LocalMediaOwner (
+    var `mediaId`: kotlin.String
+    , 
+    var `chatId`: kotlin.String
+    , 
+    var `messageId`: kotlin.String
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalMediaOwner: FfiConverterRustBuffer<LocalMediaOwner> {
+    override fun read(buf: ByteBuffer): LocalMediaOwner {
+        return LocalMediaOwner(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalMediaOwner) = (
+            FfiConverterString.allocationSize(value.`mediaId`) +
+            FfiConverterString.allocationSize(value.`chatId`) +
+            FfiConverterString.allocationSize(value.`messageId`)
+    )
+
+    override fun write(value: LocalMediaOwner, buf: ByteBuffer) {
+            FfiConverterString.write(value.`mediaId`, buf)
+            FfiConverterString.write(value.`chatId`, buf)
+            FfiConverterString.write(value.`messageId`, buf)
     }
 }
 
@@ -21201,6 +21583,43 @@ public object FfiConverterTypeLocalInsert: FfiConverterRustBuffer<LocalInsert> {
 
 
 
+/**
+ * What one media item is, for the chat gallery and the storage screen (todo 327).
+ */
+
+enum class LocalMediaKind {
+    
+    PHOTO,
+    VIDEO,
+    FILE,
+    VOICE,
+    VIDEO_NOTE,
+    ANIMATION;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalMediaKind: FfiConverterRustBuffer<LocalMediaKind> {
+    override fun read(buf: ByteBuffer) = try {
+        LocalMediaKind.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: LocalMediaKind) = 4UL
+
+    override fun write(value: LocalMediaKind, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 
 
 sealed class LocalStoreException(message: String): kotlin.Exception(message) {
@@ -23997,6 +24416,34 @@ public object FfiConverterSequenceTypeLocalChat: FfiConverterRustBuffer<List<Loc
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeLocalChatMedia: FfiConverterRustBuffer<List<LocalChatMedia>> {
+    override fun read(buf: ByteBuffer): List<LocalChatMedia> {
+        val len = buf.getInt()
+        return List<LocalChatMedia>(len) {
+            FfiConverterTypeLocalChatMedia.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalChatMedia>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalChatMedia.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalChatMedia>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalChatMedia.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeLocalContact: FfiConverterRustBuffer<List<LocalContact>> {
     override fun read(buf: ByteBuffer): List<LocalContact> {
         val len = buf.getInt()
@@ -24099,6 +24546,62 @@ public object FfiConverterSequenceTypeLocalKvEntry: FfiConverterRustBuffer<List<
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeLocalKvEntry.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalMediaEntry: FfiConverterRustBuffer<List<LocalMediaEntry>> {
+    override fun read(buf: ByteBuffer): List<LocalMediaEntry> {
+        val len = buf.getInt()
+        return List<LocalMediaEntry>(len) {
+            FfiConverterTypeLocalMediaEntry.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalMediaEntry>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalMediaEntry.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalMediaEntry>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalMediaEntry.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalMediaOwner: FfiConverterRustBuffer<List<LocalMediaOwner>> {
+    override fun read(buf: ByteBuffer): List<LocalMediaOwner> {
+        val len = buf.getInt()
+        return List<LocalMediaOwner>(len) {
+            FfiConverterTypeLocalMediaOwner.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalMediaOwner>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalMediaOwner.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalMediaOwner>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalMediaOwner.write(it, buf)
         }
     }
 }
@@ -24547,6 +25050,34 @@ public object FfiConverterSequenceTypeHistoryEvent: FfiConverterRustBuffer<List<
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeHistoryEvent.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalMediaKind: FfiConverterRustBuffer<List<LocalMediaKind>> {
+    override fun read(buf: ByteBuffer): List<LocalMediaKind> {
+        val len = buf.getInt()
+        return List<LocalMediaKind>(len) {
+            FfiConverterTypeLocalMediaKind.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalMediaKind>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalMediaKind.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalMediaKind>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalMediaKind.write(it, buf)
         }
     }
 }

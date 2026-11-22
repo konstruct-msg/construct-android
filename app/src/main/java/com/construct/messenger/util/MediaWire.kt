@@ -129,10 +129,7 @@ object MediaWire {
      * (`MediaWireCodec.voiceJSON`). The mime defaults to `audio/m4a`, as there.
      */
     private fun voice(v: VoiceMessage): MessageMedia.Voice? {
-        val parts = v.codec.split("|")
-        val mime = parts.getOrNull(0)?.ifEmpty { null } ?: "audio/m4a"
-        val mediaId = parts.getOrNull(1).orEmpty()
-        val size = parts.getOrNull(2)?.toLongOrNull() ?: 0L
+        val (mime, mediaId, size) = voiceRef(v)
         if (mediaId.isEmpty() || v.encryptionKey.size() != KEY_BYTES) return null
         return MessageMedia.Voice(
             audio = MediaItem(
@@ -144,6 +141,18 @@ object MediaWire {
                 durationMs = v.durationMs.toLong(),
             ),
             waveform = v.waveformList.map { it.coerceIn(0, 255) },
+        )
+    }
+
+    /** What a voice note's `codec` carries — `mime|mediaId|size` — for the bubble and the media index. */
+    data class VoiceRef(val mimeType: String, val mediaId: String, val sizeBytes: Long)
+
+    fun voiceRef(v: VoiceMessage): VoiceRef {
+        val parts = v.codec.split("|")
+        return VoiceRef(
+            mimeType = parts.getOrNull(0)?.ifEmpty { null } ?: "audio/m4a",
+            mediaId = parts.getOrNull(1).orEmpty(),
+            sizeBytes = parts.getOrNull(2)?.toLongOrNull() ?: 0L,
         )
     }
 
