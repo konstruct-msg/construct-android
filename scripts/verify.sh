@@ -76,6 +76,11 @@ step "UI tokens"
 if bash scripts/check_ui_tokens.sh > "$OUT/ui-tokens.txt" 2>&1; then pass "UI tokens"
 else fail "UI tokens" "see $OUT/ui-tokens.txt"; fi
 
+# ── 2c. The product name is Latin in every locale ──────────────────────────────
+step "product name"
+if bash scripts/check_product_name.sh > "$OUT/product-name.txt" 2>&1; then pass "product name"
+else fail "product name" "see $OUT/product-name.txt"; fi
+
 # ── 3. Every core action has an executor ───────────────────────────────────────
 # The two `when`s over CfeAction must stay exhaustive: a new core action should fail to
 # compile, not fall into `else ->` and vanish. A branch that only warns "not acted on" is a

@@ -779,13 +779,13 @@
     <string name="device_link_rejected">Другое устройство отклонило привязку.</string>
     <string name="device_link_expired">Срок кода привязки истёк. Начните заново.</string>
     <!-- Входящие данные Android Sharesheet: отправка только явной кнопкой composer. -->
-    <string name="incoming_share_title">Поделиться в Конструкт</string>
+    <string name="incoming_share_title">Поделиться в Konstruct</string>
     <string name="incoming_share_summary">Фото и видео: %1$d · Файлы: %2$d</string>
     <string name="incoming_share_has_text">Есть текст</string>
     <string name="incoming_share_no_matches">Совпадений нет.</string>
     <string name="incoming_share_preparing">Подготовка вложений на этом устройстве…</string>
-    <string name="incoming_share_no_chats">Нет подходящих чатов. Начните переписку в Конструкте и поделитесь снова.</string>
-    <string name="incoming_share_sign_in">Сначала войдите в Конструкт, затем поделитесь снова. Ничего не отправлено.</string>
+    <string name="incoming_share_no_chats">Нет подходящих чатов. Начните переписку в Konstruct и поделитесь снова.</string>
+    <string name="incoming_share_sign_in">Сначала войдите в Konstruct, затем поделитесь снова. Ничего не отправлено.</string>
     <string name="incoming_share_invalid">В переданных данных нет доступного текста или вложений. Поделитесь снова из исходного приложения.</string>
     <string name="incoming_share_unreadable">Не удалось подготовить содержимое. Проверьте доступ к файлам и свободное место, затем поделитесь снова. Нечитаемые вложения не отправлялись.</string>
     <string name="incoming_share_too_large">Вложения превышают безопасный объём импорта для этого устройства. Выберите меньше файлов или файлы поменьше.</string>
