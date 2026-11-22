@@ -41,6 +41,13 @@ object TransportRoute {
         TRANSIENT_CANCELLATION(false, false),
         AUTH_REJECTED(false, false),
         APPLICATION_ERROR(false, false),
+        /**
+         * The server's edge answered with an HTTP status and no gRPC status — Caddy's 502/503/504
+         * while a service behind it restarts. The path works; neither it nor the front is to blame.
+         * **Canon:** iOS `RPCFailureKind.serverNotReady` (2026-11-21: three of these demoted a
+         * healthy front on iOS).
+         */
+        SERVER_NOT_READY(false, false),
         TLS_FINGERPRINT_BLOCKED(true, true),
         TLS_CERT_EXPIRED(true, true),
         WEB_TUNNEL_BLOCKED(true, true),

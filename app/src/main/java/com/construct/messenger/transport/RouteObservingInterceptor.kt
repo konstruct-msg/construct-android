@@ -58,7 +58,21 @@ class RouteObservingInterceptor(
          * answer from the server (auth, application errors) says the path works; a refused
          * loopback connection says the local proxy is gone.
          */
-        fun classify(status: Status, via: TransportRoute.Target): TransportRoute.RpcFailure = when (status.code) {
+        fun classify(status: Status, via: TransportRoute.Target): TransportRoute.RpcFailure = when {
+            // The server's edge answered — before the codes below, which read UNAVAILABLE as the
+            // path's failure. Over VEIL the inner HTTP/2 is the server's: the relay writes no status.
+            edgeHttpStatus(status.description)?.let { it in 500..599 } == true -> TransportRoute.RpcFailure.SERVER_NOT_READY
+            else -> classifyCode(status, via)
+        }
+
+        /**
+         * The HTTP status of a response that carried no gRPC status, from the description grpc-java
+         * gives it ("HTTP status code 502", `Http2ClientStreamTransportState`); null otherwise.
+         */
+        internal fun edgeHttpStatus(description: String?): Int? =
+            description?.let { Regex("""^HTTP status code (\d{3})\b""").find(it) }?.groupValues?.get(1)?.toInt()
+
+        private fun classifyCode(status: Status, via: TransportRoute.Target): TransportRoute.RpcFailure = when (status.code) {
             Status.Code.UNAUTHENTICATED, Status.Code.PERMISSION_DENIED -> TransportRoute.RpcFailure.AUTH_REJECTED
             Status.Code.CANCELLED -> TransportRoute.RpcFailure.TRANSIENT_CANCELLATION
             Status.Code.DEADLINE_EXCEEDED -> TransportRoute.RpcFailure.STREAM_TIMEOUT
