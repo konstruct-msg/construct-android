@@ -46,6 +46,14 @@ object LocalMessagePayload {
 
     fun envelope(kind: Byte, body: ByteArray): ByteArray = MAGIC + kind + body
 
+    /** The envelope's kind byte, or null for a body from before the envelope. */
+    fun kindOf(body: ByteArray): Byte? =
+        if (body.size >= MAGIC.size + 1 && body.copyOfRange(0, MAGIC.size).contentEquals(MAGIC)) body[MAGIC.size] else null
+
+    /** The kind's bytes after the envelope header; empty for a body too short to have any. */
+    fun innerOf(body: ByteArray): ByteArray =
+        if (body.size > MAGIC.size + 1) body.copyOfRange(MAGIC.size + 1, body.size) else ByteArray(0)
+
     /** The body for [record]: its media as the wire carries it, else its text with its quote. */
     fun encode(record: MessageRecord): ByteArray {
         val media = record.mediaType?.let { kind -> record.mediaPayload?.let { MediaWire.content(kind, it) } }

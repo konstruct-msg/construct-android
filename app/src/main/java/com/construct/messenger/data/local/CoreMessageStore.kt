@@ -1,6 +1,7 @@
 package com.construct.messenger.data.local
 
 import com.construct.messenger.data.model.DeliveryStatus
+import com.construct.messenger.diagnostics.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -42,7 +43,9 @@ class CoreMessageStore(
 
     override suspend fun insert(message: MessageRecord): Boolean = io { s ->
         val local = message.local(s) ?: return@io false
-        s.insertMessage(local, message.searchText()) == LocalInsert.INSERTED
+        if (s.insertMessage(local, message.searchText()) != LocalInsert.INSERTED) return@io false
+        indexMedia(s, local.id, local.body, replacing = false)
+        true
     }
 
     /**
@@ -52,7 +55,10 @@ class CoreMessageStore(
      */
     internal suspend fun insertAll(messages: List<MessageRecord>): Int = io { s ->
         val rows = messages.mapNotNull { m -> m.local(s)?.let { LocalMessageInsert(it, m.searchText()) } }
-        if (rows.isEmpty()) 0 else s.insertMessages(rows).size
+        if (rows.isEmpty()) return@io 0
+        val added = s.insertMessages(rows).toSet()
+        rows.filter { it.message.id in added }.forEach { indexMedia(s, it.message.id, it.message.body, replacing = false) }
+        added.size
     }
 
     override suspend fun setDeliveryStatus(id: String, status: DeliveryStatus): Boolean = io { s ->
@@ -64,7 +70,8 @@ class CoreMessageStore(
         io { s ->
             val stored = find(s, id) ?: return@io
             val row = stored.record().let { it.copy(text = text, mediaPayload = mediaPayload ?: it.mediaPayload) }
-            s.editMessage(stored.id, LocalMessagePayload.encode(row), row.searchText(), nowMs())
+            val body = LocalMessagePayload.encode(row)
+            if (s.editMessage(stored.id, body, row.searchText(), nowMs())) indexMedia(s, stored.id, body, replacing = true)
         }
     }
 
@@ -79,7 +86,8 @@ class CoreMessageStore(
         io { s ->
             val stored = find(s, id) ?: return@io
             val row = stored.record().copy(mediaType = mediaType, mediaPayload = mediaPayload)
-            s.setMessageBody(stored.id, LocalMessagePayload.encode(row), row.searchText())
+            val body = LocalMessagePayload.encode(row)
+            if (s.setMessageBody(stored.id, body, row.searchText())) indexMedia(s, stored.id, body, replacing = true)
         }
     }
 
@@ -109,6 +117,38 @@ class CoreMessageStore(
 
     override suspend fun deleteChat(chatId: String) {
         io { s -> s.chatMessages(chatId).forEach { s.deleteMessage(it.id) } }
+    }
+
+    /**
+     * The media index for a message just written ([MessageMediaIndex]). A body that cannot hold
+     * media is not indexed on insert; one that replaces a body clears what the old one indexed. A
+     * failure is logged, not thrown: the message is written, and [indexUnindexedMedia] after the
+     * next open lists it again.
+     */
+    private fun indexMedia(s: LocalStore, id: String, body: ByteArray, replacing: Boolean) {
+        val entries = MessageMediaIndex.entries(body) ?: if (replacing) emptyList() else return
+        runCatching { s.setMessageMedia(id, entries) }
+            .onFailure { Log.e(TAG, "media index for ${id.take(8)}… not written, the next open retries", it) }
+    }
+
+    /**
+     * Index what the store lists as not indexed yet — rows an older build wrote, or one a failed
+     * [indexMedia] left — a page at a time; how many were indexed. The first run on a long history
+     * parses every album and message content once, so it runs off the open ([LocalStores]).
+     */
+    internal suspend fun indexUnindexedMedia(pageSize: UInt = 200u): Int = io { s ->
+        var indexed = 0
+        while (true) {
+            val ids = s.unindexedMediaMessages(pageSize)
+            if (ids.isEmpty()) break
+            for (id in ids) {
+                val body = s.message(id)?.body ?: ByteArray(0)
+                // Indexed with no entries when nothing is found, so the store stops listing it.
+                s.setMessageMedia(id, MessageMediaIndex.entries(body) ?: emptyList())
+                indexed++
+            }
+        }
+        indexed
     }
 
     private fun visible(s: LocalStore, chatId: String) = s.chatMessages(chatId).filter { it.contentType.toInt() == 0 }
@@ -143,6 +183,7 @@ class CoreMessageStore(
 }
 
 private const val LATEST_PAGE = 50u
+private const val TAG = "CoreMessageStore"
 
 /** The chat's messages in the store's order, oldest first: newest page, then the pages before it. */
 internal fun LocalStore.chatMessages(chatId: String): List<LocalMessage> {

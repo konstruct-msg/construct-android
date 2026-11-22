@@ -115,11 +115,26 @@ class LocalStores(
                     .onSuccess { if (it) Log.w(TAG, "Room's file was still here, its rows never moved — deleted") }
                     .onFailure { Log.e(TAG, "Room's file stayed", it) }
                 _state.value = State.Ready
+                indexMediaInBackground(installed.value?.messages)
             }
             is LocalStoreSession.Opening.NotOpened -> {
                 Log.e(TAG, "the store would not open — ${opening.failure}")
                 _state.value = State.Failed(opening.failure)
             }
+        }
+    }
+
+    /**
+     * Fill the media index for what an older build wrote (todo 327), off the open: the first run on
+     * a long history parses every album and message content once.
+     */
+    private fun indexMediaInBackground(messages: MessageStore?) {
+        if (messages !is CoreMessageStore) return
+        scope.launch {
+            val started = System.currentTimeMillis()
+            runCatching { messages.indexUnindexedMedia() }
+                .onSuccess { if (it > 0) Log.i(TAG, "media index — $it messages indexed, ${System.currentTimeMillis() - started} ms") }
+                .onFailure { Log.e(TAG, "media index not filled, again at the next open", it) }
         }
     }
 
