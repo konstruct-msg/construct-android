@@ -14,6 +14,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** Told when a message with media has just been stored — received, or our own from another device. */
@@ -52,13 +53,18 @@ class MediaPrefetcher @Inject constructor(
         val album = MediaWire.decode(kind, bytes) as? MessageMedia.Album ?: return
         val metered = isMetered()
         val constrained = isDataSaverOn()
+        // One wait for the album: its items are one message, and spacing them apart hides nothing.
+        val waitMs = MediaAutoDownloadPolicy.prefetchDelayMs()
         for (item in album.items) {
             if (item.mediaId.startsWith(MediaWire.LOCAL_PREFIX)) continue
             if (!MediaAutoDownloadPolicy.shouldFetchOnArrival(setting, item.sizeBytes, metered, constrained)) continue
             scope.launch {
                 try {
+                    // Not before the wait: a download at the moment of delivery is the timing link
+                    // the wait blurs. A bubble shown meanwhile downloads on its own.
+                    delay(waitMs)
                     media.prefetch(item)
-                    Log.d(TAG, "prefetched ${item.mediaId.take(8)}… on arrival")
+                    Log.d(TAG, "prefetched ${item.mediaId.take(8)}… on arrival after ${waitMs} ms")
                 } catch (e: Exception) {
                     // Offline, the transport not up yet, the blob already gone: the bubble tries again.
                     Log.d(TAG, "prefetch skipped for ${item.mediaId.take(8)}…: ${e.javaClass.simpleName}")
