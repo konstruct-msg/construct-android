@@ -1,6 +1,7 @@
 package com.construct.messenger.data.repository
 
 import android.content.Context
+import com.construct.messenger.data.local.NoteStore
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.media.MediaAutoDownload
 import com.construct.messenger.media.MediaEvictionPolicy
@@ -9,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,14 +38,16 @@ data class StorageSettings(
  *   saying they do not want older media. Runs at launch and when the setting changes.
  * - "Clear" removes everything; the screen says first what cannot come back.
  *
- * Never touched: our own media not yet uploaded (`local-…`, the only copy and the retry's source)
- * and downloads in progress (`.part`). Keys are iOS's `@AppStorage` names.
+ * Never touched: our own media not yet uploaded (`local-…`, the only copy and the retry's source),
+ * downloads in progress (`.part`), and the files notes hold (vault todo 279): they are not cache.
+ * When the store cannot say which those are, nothing is deleted. Keys are iOS's `@AppStorage` names.
  *
  * **Canon:** iOS `MediaManager` (`evictToQuota`, `evictOldFiles`), `DataStorageSettingsView`.
  */
 @Singleton
 class StorageRepository @Inject constructor(
     @param:ApplicationContext context: Context,
+    private val notes: NoteStore,
 ) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val dir = File(context.filesDir, MEDIA_DIR)
@@ -75,12 +79,22 @@ class StorageRepository @Inject constructor(
     }
 
     /** What the cached media takes, in bytes. */
-    suspend fun cachedBytes(): Long = withContext(Dispatchers.IO) { cached().sumOf { it.length() } }
+    suspend fun cachedBytes(): Long = withContext(Dispatchers.IO) { cached(heldByNotes().orEmpty()).sumOf { it.length() } }
+
+    /** What the files notes hold take, in bytes. */
+    suspend fun notesBytes(): Long = withContext(Dispatchers.IO) {
+        heldByNotes().orEmpty().sumOf { File(dir, it).length() }
+    }
+
+    /** Deletes the copies of [mediaIds], which no note and no message holds any more. */
+    suspend fun deleteFiles(mediaIds: List<String>) = withContext(Dispatchers.IO) {
+        mediaIds.mapNotNull(MediaRepositoryImpl::fileName).forEach { File(dir, it).delete() }
+    }
 
     /** Removes every cached download. Returns the bytes freed. */
     suspend fun clear(): Long = withContext(Dispatchers.IO) {
         var freed = 0L
-        for (file in cached()) {
+        for (file in cached(heldByNotes() ?: return@withContext 0L)) {
             val bytes = file.length()
             if (file.delete()) freed += bytes
         }
@@ -92,7 +106,7 @@ class StorageRepository @Inject constructor(
     suspend fun evictToQuota(now: Long = System.currentTimeMillis()) = withContext(Dispatchers.IO) {
         val limit = state.value.limitBytes
         if (limit <= 0) return@withContext
-        val files = cached()
+        val files = cached(heldByNotes() ?: return@withContext)
         val total = files.sumOf { it.length() }
         if (total <= limit) return@withContext
         val candidates = files.map { MediaEvictionPolicy.Candidate(it.name, it.length(), now - it.lastModified()) }
@@ -118,14 +132,24 @@ class StorageRepository @Inject constructor(
         val days = state.value.keepDays
         if (days <= 0) return@withContext
         val cutoff = now - days * DAY_MS
-        val old = cached().filter { it.lastModified() < cutoff }
+        val old = cached(heldByNotes() ?: return@withContext).filter { it.lastModified() < cutoff }
         val removed = old.count { it.delete() }
         if (removed > 0) Log.i(TAG, "removed $removed cached file(s) older than $days days")
     }
 
-    /** The cached downloads: not our unsent media, not a download in progress. */
-    private fun cached(): List<File> = dir.listFiles()
-        ?.filter { it.isFile && !it.name.startsWith(MediaWire.LOCAL_PREFIX) && !it.name.endsWith(".part") }
+    /** The names of the files notes hold; null when the store did not answer, and any file might be one. */
+    private suspend fun heldByNotes(): Set<String>? = try {
+        notes.heldMediaIds().mapNotNullTo(HashSet(), MediaRepositoryImpl::fileName)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Log.e(TAG, "which files notes hold is unknown, nothing is deleted", e)
+        null
+    }
+
+    /** The cached downloads: not what notes hold, not our unsent media, not a download in progress. */
+    private fun cached(held: Set<String>): List<File> = dir.listFiles()
+        ?.filter { it.isFile && it.name !in held && !it.name.startsWith(MediaWire.LOCAL_PREFIX) && !it.name.endsWith(".part") }
         .orEmpty()
 
     companion object {

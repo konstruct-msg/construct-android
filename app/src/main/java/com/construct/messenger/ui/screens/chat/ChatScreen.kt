@@ -229,6 +229,16 @@ fun ChatScreen(
     var forwarding by remember { mutableStateOf<List<Message>?>(null) }
     var forwardFailed by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { viewModel.forwardFailed.collect { forwardFailed = true } }
+    LaunchedEffect(Unit) {
+        viewModel.savedToNotes.collect { outcome ->
+            val text = when (outcome) {
+                com.construct.messenger.domain.usecase.SaveToNotesUseCase.Outcome.SAVED -> R.string.notes_saved
+                com.construct.messenger.domain.usecase.SaveToNotesUseCase.Outcome.SAVED_WITHOUT_FILES -> R.string.notes_saved_without_files
+                com.construct.messenger.domain.usecase.SaveToNotesUseCase.Outcome.FAILED -> R.string.notes_not_saved
+            }
+            android.widget.Toast.makeText(context, context.getString(text), android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
     // iOS `isEditMode`: a tap selects, the menu and the composer give way to the selection bar.
     var selectedIds by remember { mutableStateOf<Set<String>?>(null) }
     // iOS `isSearchActive`: search takes the nav bar's place and the transcript shows the matches.
@@ -473,6 +483,14 @@ fun ChatScreen(
                     onForward = if (com.construct.messenger.data.model.ForwardItem.of(message) != null) {
                         {
                             forwarding = listOf(message)
+                            menuMessageId = null
+                        }
+                    } else {
+                        null
+                    },
+                    onSaveToNotes = if (com.construct.messenger.domain.usecase.SaveToNotesUseCase.keeps(message)) {
+                        {
+                            viewModel.saveToNotes(message)
                             menuMessageId = null
                         }
                     } else {

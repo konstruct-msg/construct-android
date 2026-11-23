@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Forward
+import androidx.compose.material.icons.automirrored.outlined.NoteAdd
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.CheckCircle
@@ -116,6 +117,8 @@ fun MessageBubble(
     onSelectMessages: () -> Unit = {},
     /** Null when this message has nothing to forward. */
     onForward: (() -> Unit)? = null,
+    /** Null when this message has nothing to keep. */
+    onSaveToNotes: (() -> Unit)? = null,
     onRetry: () -> Unit = {},
     onSaveMedia: (com.construct.messenger.data.model.MediaItem) -> Unit = {},
     onShareMedia: (com.construct.messenger.data.model.MediaItem) -> Unit = {},
@@ -406,6 +409,13 @@ fun MessageBubble(
                         text = { Text(stringResource(R.string.forward), style = CTFont.ui(14), color = CTColor.text) },
                         leadingIcon = { Icon(Icons.AutoMirrored.Filled.Forward, contentDescription = null, tint = CTColor.text) },
                         onClick = onForward,
+                    )
+                }
+                if (onSaveToNotes != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.notes_save_message), style = CTFont.ui(14), color = CTColor.text) },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Outlined.NoteAdd, contentDescription = null, tint = CTColor.text) },
+                        onClick = onSaveToNotes,
                     )
                 }
                 DropdownMenuItem(

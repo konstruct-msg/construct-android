@@ -1130,6 +1130,8 @@ external fun uniffi_construct_core_checksum_method_localstore_delete_issued_invi
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_delete_message(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_delete_notes(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_delete_pending_chunks(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_delete_reaction(
@@ -1139,6 +1141,8 @@ external fun uniffi_construct_core_checksum_method_localstore_delete_resend(
 external fun uniffi_construct_core_checksum_method_localstore_drop_pending_avatar(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_edit_message(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_edit_note(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_entries_with_prefix(
 ): Short
@@ -1170,6 +1174,8 @@ external fun uniffi_construct_core_checksum_method_localstore_insert_message(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_insert_messages(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_insert_note(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_is_processed(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_issued_invites(
@@ -1189,6 +1195,12 @@ external fun uniffi_construct_core_checksum_method_localstore_message_count(
 external fun uniffi_construct_core_checksum_method_localstore_messages_before(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_messages_from(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_note(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_notes(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_notes_media(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_own_messages_in_status(
 ): Short
@@ -1232,6 +1244,8 @@ external fun uniffi_construct_core_checksum_method_localstore_retain_peer_device
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_search(
 ): Short
+external fun uniffi_construct_core_checksum_method_localstore_search_notes(
+): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_account_address(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_chat_auto_save_media(
@@ -1259,6 +1273,8 @@ external fun uniffi_construct_core_checksum_method_localstore_set_kt_status(
 external fun uniffi_construct_core_checksum_method_localstore_set_message_body(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_message_media(
+): Short
+external fun uniffi_construct_core_checksum_method_localstore_set_note_pinned(
 ): Short
 external fun uniffi_construct_core_checksum_method_localstore_set_observer(
 ): Short
@@ -1785,6 +1801,8 @@ external fun uniffi_construct_core_fn_method_localstore_delete_issued_invites(`p
 ): Unit
 external fun uniffi_construct_core_fn_method_localstore_delete_message(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_construct_core_fn_method_localstore_delete_notes(`ptr`: Long,`ids`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_delete_pending_chunks(`ptr`: Long,`senderId`: RustBuffer.ByValue,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_construct_core_fn_method_localstore_delete_reaction(`ptr`: Long,`targetMessageId`: RustBuffer.ByValue,`reactorUserId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1795,6 +1813,8 @@ external fun uniffi_construct_core_fn_method_localstore_drop_pending_avatar(`ptr
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_edit_message(`ptr`: Long,`id`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`searchText`: RustBuffer.ByValue,`editedAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_method_localstore_edit_note(`ptr`: Long,`id`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`searchText`: RustBuffer.ByValue,`media`: RustBuffer.ByValue,`editedAt`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_entries_with_prefix(`ptr`: Long,`prefix`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_every_contact(`ptr`: Long,`exceptAccount`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1825,6 +1845,8 @@ external fun uniffi_construct_core_fn_method_localstore_insert_message(`ptr`: Lo
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_insert_messages(`ptr`: Long,`messages`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_insert_note(`ptr`: Long,`note`: RustBuffer.ByValue,`searchText`: RustBuffer.ByValue,`media`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_is_processed(`ptr`: Long,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_issued_invites(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1844,6 +1866,12 @@ external fun uniffi_construct_core_fn_method_localstore_message_count(`ptr`: Lon
 external fun uniffi_construct_core_fn_method_localstore_messages_before(`ptr`: Long,`chatId`: RustBuffer.ByValue,`beforeOrderKey`: RustBuffer.ByValue,`beforeId`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_messages_from(`ptr`: Long,`chatId`: RustBuffer.ByValue,`fromOrderKey`: RustBuffer.ByValue,`fromId`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_note(`ptr`: Long,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_notes(`ptr`: Long,`after`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_notes_media(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_own_messages_in_status(`ptr`: Long,`status`: Short,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1887,6 +1915,8 @@ external fun uniffi_construct_core_fn_method_localstore_retain_peer_devices(`ptr
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_search(`ptr`: Long,`query`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_localstore_search_notes(`ptr`: Long,`query`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_method_localstore_set_account_address(`ptr`: Long,`id`: RustBuffer.ByValue,`address`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_chat_auto_save_media(`ptr`: Long,`id`: RustBuffer.ByValue,`on`: Byte,uniffi_out_err: UniffiRustCallStatus, 
@@ -1914,6 +1944,8 @@ external fun uniffi_construct_core_fn_method_localstore_set_kt_status(`ptr`: Lon
 external fun uniffi_construct_core_fn_method_localstore_set_message_body(`ptr`: Long,`id`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`searchText`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_message_media(`ptr`: Long,`messageId`: RustBuffer.ByValue,`entries`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_construct_core_fn_method_localstore_set_note_pinned(`ptr`: Long,`id`: RustBuffer.ByValue,`pinned`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_method_localstore_set_observer(`ptr`: Long,`observer`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -3238,6 +3270,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_delete_message() != 53751.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_delete_notes() != 28854.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_delete_pending_chunks() != 19253.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3251,6 +3286,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_edit_message() != 48649.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_edit_note() != 53458.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_entries_with_prefix() != 686.toShort()) {
@@ -3298,6 +3336,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_insert_messages() != 25547.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_insert_note() != 14032.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_is_processed() != 48882.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3326,6 +3367,15 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_messages_from() != 53099.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_note() != 23835.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_notes() != 61779.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_notes_media() != 51717.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_own_messages_in_status() != 26389.toShort()) {
@@ -3391,6 +3441,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_method_localstore_search() != 46550.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_method_localstore_search_notes() != 62302.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_method_localstore_set_account_address() != 23284.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3431,6 +3484,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_set_message_media() != 49275.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_localstore_set_note_pinned() != 15328.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_localstore_set_observer() != 60987.toShort()) {
@@ -6893,6 +6949,11 @@ public interface LocalStoreInterface {
     
     fun `deleteMessage`(`id`: kotlin.String)
     
+    /**
+     * In one transaction; the media ids no note holds any more.
+     */
+    fun `deleteNotes`(`ids`: List<kotlin.String>): List<kotlin.String>
+    
     fun `deletePendingChunks`(`senderId`: kotlin.String, `messageId`: kotlin.String)
     
     fun `deleteReaction`(`targetMessageId`: kotlin.String, `reactorUserId`: kotlin.String)
@@ -6905,6 +6966,12 @@ public interface LocalStoreInterface {
     fun `dropPendingAvatar`(`id`: kotlin.String, `expectedRef`: kotlin.ByteArray): kotlin.Boolean
     
     fun `editMessage`(`id`: kotlin.String, `body`: kotlin.ByteArray, `searchText`: kotlin.String?, `editedAt`: kotlin.Long): kotlin.Boolean
+    
+    /**
+     * What a note says and holds now; its creation, pin and source stay. The media ids no note
+     * holds any more — the copies the client may delete — or null when there is no such note.
+     */
+    fun `editNote`(`id`: kotlin.String, `body`: kotlin.ByteArray, `searchText`: kotlin.String?, `media`: List<LocalMediaEntry>, `editedAt`: kotlin.Long): List<kotlin.String>?
     
     /**
      * Every entry whose key starts with `prefix`, by key; no pattern characters.
@@ -6965,6 +7032,12 @@ public interface LocalStoreInterface {
      */
     fun `insertMessages`(`messages`: List<LocalMessageInsert>): List<kotlin.String>
     
+    /**
+     * A new note, what it says (null for nothing to find) and the files it holds. `AlreadyPresent`
+     * changes nothing.
+     */
+    fun `insertNote`(`note`: LocalNote, `searchText`: kotlin.String?, `media`: List<LocalMediaEntry>): LocalInsert
+    
     fun `isProcessed`(`messageId`: kotlin.String): kotlin.Boolean
     
     /**
@@ -7004,6 +7077,18 @@ public interface LocalStoreInterface {
      * Up to `limit` messages from (`from_order_key`, `from_id`), that one included, oldest first.
      */
     fun `messagesFrom`(`chatId`: kotlin.String, `fromOrderKey`: kotlin.String, `fromId`: kotlin.String, `limit`: kotlin.UInt): List<LocalMessage>
+    
+    fun `note`(`id`: kotlin.String): LocalNote?
+    
+    /**
+     * A page: pinned first, each part newest first. `after` is the last note of the previous page.
+     */
+    fun `notes`(`after`: LocalNote?, `limit`: kotlin.UInt): List<LocalNote>
+    
+    /**
+     * Every file notes hold: what a cache limit leaves alone, and the space notes take.
+     */
+    fun `notesMedia`(): List<LocalNoteMedia>
     
     /**
      * Ours in `status`, every chat, transcript order.
@@ -7093,6 +7178,11 @@ public interface LocalStoreInterface {
      */
     fun `search`(`query`: kotlin.String, `limit`: kotlin.UInt): List<LocalSearchHit>
     
+    /**
+     * In the list's order; fewer than three characters find nothing.
+     */
+    fun `searchNotes`(`query`: kotlin.String, `limit`: kotlin.UInt): List<LocalNote>
+    
     fun `setAccountAddress`(`id`: kotlin.String, `address`: kotlin.ByteArray?): kotlin.Boolean
     
     /**
@@ -7149,6 +7239,11 @@ public interface LocalStoreInterface {
      * `insert_message` / `set_message_body`, and for each id `unindexed_media_messages` lists.
      */
     fun `setMessageMedia`(`messageId`: kotlin.String, `entries`: List<LocalMediaEntry>): kotlin.Boolean
+    
+    /**
+     * False when there is no such note.
+     */
+    fun `setNotePinned`(`id`: kotlin.String, `pinned`: kotlin.Boolean): kotlin.Boolean
     
     fun `setObserver`(`observer`: LocalStoreObserver?)
     
@@ -7724,6 +7819,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * In one transaction; the media ids no note holds any more.
+     */
+    @Throws(LocalStoreException::class)override fun `deleteNotes`(`ids`: List<kotlin.String>): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_delete_notes(
+        it,
+        FfiConverterSequenceString.lower(`ids`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `deletePendingChunks`(`senderId`: kotlin.String, `messageId`: kotlin.String)
         = 
     callWithHandle {
@@ -7787,6 +7899,24 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_edit_message(
         it,
         FfiConverterString.lower(`id`),FfiConverterByteArray.lower(`body`),FfiConverterOptionalString.lower(`searchText`),FfiConverterLong.lower(`editedAt`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * What a note says and holds now; its creation, pin and source stay. The media ids no note
+     * holds any more — the copies the client may delete — or null when there is no such note.
+     */
+    @Throws(LocalStoreException::class)override fun `editNote`(`id`: kotlin.String, `body`: kotlin.ByteArray, `searchText`: kotlin.String?, `media`: List<LocalMediaEntry>, `editedAt`: kotlin.Long): List<kotlin.String>? {
+            return FfiConverterOptionalSequenceString.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_edit_note(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterByteArray.lower(`body`),FfiConverterOptionalString.lower(`searchText`),FfiConverterSequenceTypeLocalMediaEntry.lower(`media`),FfiConverterLong.lower(`editedAt`),_status)
 }
     }
     )
@@ -8033,6 +8163,24 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * A new note, what it says (null for nothing to find) and the files it holds. `AlreadyPresent`
+     * changes nothing.
+     */
+    @Throws(LocalStoreException::class)override fun `insertNote`(`note`: LocalNote, `searchText`: kotlin.String?, `media`: List<LocalMediaEntry>): LocalInsert {
+            return FfiConverterTypeLocalInsert.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_insert_note(
+        it,
+        FfiConverterTypeLocalNote.lower(`note`),FfiConverterOptionalString.lower(`searchText`),FfiConverterSequenceTypeLocalMediaEntry.lower(`media`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `isProcessed`(`messageId`: kotlin.String): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     callWithHandle {
@@ -8186,6 +8334,54 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_messages_from(
         it,
         FfiConverterString.lower(`chatId`),FfiConverterString.lower(`fromOrderKey`),FfiConverterString.lower(`fromId`),FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(LocalStoreException::class)override fun `note`(`id`: kotlin.String): LocalNote? {
+            return FfiConverterOptionalTypeLocalNote.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_note(
+        it,
+        FfiConverterString.lower(`id`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * A page: pinned first, each part newest first. `after` is the last note of the previous page.
+     */
+    @Throws(LocalStoreException::class)override fun `notes`(`after`: LocalNote?, `limit`: kotlin.UInt): List<LocalNote> {
+            return FfiConverterSequenceTypeLocalNote.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_notes(
+        it,
+        FfiConverterOptionalTypeLocalNote.lower(`after`),FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Every file notes hold: what a cache limit leaves alone, and the space notes take.
+     */
+    @Throws(LocalStoreException::class)override fun `notesMedia`(): List<LocalNoteMedia> {
+            return FfiConverterSequenceTypeLocalNoteMedia.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_notes_media(
+        it,
+        _status)
 }
     }
     )
@@ -8529,6 +8725,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     
 
     
+    /**
+     * In the list's order; fewer than three characters find nothing.
+     */
+    @Throws(LocalStoreException::class)override fun `searchNotes`(`query`: kotlin.String, `limit`: kotlin.UInt): List<LocalNote> {
+            return FfiConverterSequenceTypeLocalNote.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_search_notes(
+        it,
+        FfiConverterString.lower(`query`),FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(LocalStoreException::class)override fun `setAccountAddress`(`id`: kotlin.String, `address`: kotlin.ByteArray?): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     callWithHandle {
@@ -8747,6 +8960,23 @@ open class LocalStore: Disposable, AutoCloseable, LocalStoreInterface
     UniffiLib.uniffi_construct_core_fn_method_localstore_set_message_media(
         it,
         FfiConverterString.lower(`messageId`),FfiConverterSequenceTypeLocalMediaEntry.lower(`entries`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * False when there is no such note.
+     */
+    @Throws(LocalStoreException::class)override fun `setNotePinned`(`id`: kotlin.String, `pinned`: kotlin.Boolean): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LocalStoreException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_localstore_set_note_pinned(
+        it,
+        FfiConverterString.lower(`id`),FfiConverterBoolean.lower(`pinned`),_status)
 }
     }
     )
@@ -15481,6 +15711,130 @@ public object FfiConverterTypeLocalMessageInsert: FfiConverterRustBuffer<LocalMe
 
 
 /**
+ * Something kept for oneself, on this device only (todo 279). Times are milliseconds since the epoch.
+ */
+data class LocalNote (
+    var `id`: kotlin.String
+    , 
+    /**
+     * A message body (CTM1): text, or what a saved message held.
+     */
+    var `body`: kotlin.ByteArray
+    , 
+    var `createdAt`: kotlin.Long
+    , 
+    var `editedAt`: kotlin.Long?
+    , 
+    var `isPinned`: kotlin.Boolean
+    , 
+    /**
+     * Whose message it was saved from, as they were called then, and when it was sent.
+     */
+    var `sourceName`: kotlin.String?
+    , 
+    var `sourceAt`: kotlin.Long?
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalNote: FfiConverterRustBuffer<LocalNote> {
+    override fun read(buf: ByteBuffer): LocalNote {
+        return LocalNote(
+            FfiConverterString.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterOptionalLong.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalNote) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterByteArray.allocationSize(value.`body`) +
+            FfiConverterLong.allocationSize(value.`createdAt`) +
+            FfiConverterOptionalLong.allocationSize(value.`editedAt`) +
+            FfiConverterBoolean.allocationSize(value.`isPinned`) +
+            FfiConverterOptionalString.allocationSize(value.`sourceName`) +
+            FfiConverterOptionalLong.allocationSize(value.`sourceAt`)
+    )
+
+    override fun write(value: LocalNote, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterByteArray.write(value.`body`, buf)
+            FfiConverterLong.write(value.`createdAt`, buf)
+            FfiConverterOptionalLong.write(value.`editedAt`, buf)
+            FfiConverterBoolean.write(value.`isPinned`, buf)
+            FfiConverterOptionalString.write(value.`sourceName`, buf)
+            FfiConverterOptionalLong.write(value.`sourceAt`, buf)
+    }
+}
+
+
+
+/**
+ * A file a note holds.
+ */
+data class LocalNoteMedia (
+    var `noteId`: kotlin.String
+    , 
+    var `item`: kotlin.UInt
+    , 
+    var `mediaId`: kotlin.String
+    , 
+    var `kind`: LocalMediaKind
+    , 
+    var `byteSize`: kotlin.Long
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLocalNoteMedia: FfiConverterRustBuffer<LocalNoteMedia> {
+    override fun read(buf: ByteBuffer): LocalNoteMedia {
+        return LocalNoteMedia(
+            FfiConverterString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterTypeLocalMediaKind.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LocalNoteMedia) = (
+            FfiConverterString.allocationSize(value.`noteId`) +
+            FfiConverterUInt.allocationSize(value.`item`) +
+            FfiConverterString.allocationSize(value.`mediaId`) +
+            FfiConverterTypeLocalMediaKind.allocationSize(value.`kind`) +
+            FfiConverterLong.allocationSize(value.`byteSize`)
+    )
+
+    override fun write(value: LocalNoteMedia, buf: ByteBuffer) {
+            FfiConverterString.write(value.`noteId`, buf)
+            FfiConverterUInt.write(value.`item`, buf)
+            FfiConverterString.write(value.`mediaId`, buf)
+            FfiConverterTypeLocalMediaKind.write(value.`kind`, buf)
+            FfiConverterLong.write(value.`byteSize`, buf)
+    }
+}
+
+
+
+/**
  * Our own profile — one row, not a contact.
  */
 data class LocalOwnProfile (
@@ -21700,7 +22054,8 @@ enum class LocalStoreTable {
     CALLS,
     PEER_DEVICES,
     OWN_PROFILE,
-    ISSUED_INVITES;
+    ISSUED_INVITES,
+    NOTES;
     companion object
 }
 
@@ -23528,6 +23883,38 @@ public object FfiConverterOptionalTypeLocalMessage: FfiConverterRustBuffer<Local
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeLocalNote: FfiConverterRustBuffer<LocalNote?> {
+    override fun read(buf: ByteBuffer): LocalNote? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeLocalNote.read(buf)
+    }
+
+    override fun allocationSize(value: LocalNote?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeLocalNote.allocationSize(value)
+        }
+    }
+
+    override fun write(value: LocalNote?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeLocalNote.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeLocalOwnProfile: FfiConverterRustBuffer<LocalOwnProfile?> {
     override fun read(buf: ByteBuffer): LocalOwnProfile? {
         if (buf.get().toInt() == 0) {
@@ -24658,6 +25045,62 @@ public object FfiConverterSequenceTypeLocalMessageInsert: FfiConverterRustBuffer
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeLocalMessageInsert.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalNote: FfiConverterRustBuffer<List<LocalNote>> {
+    override fun read(buf: ByteBuffer): List<LocalNote> {
+        val len = buf.getInt()
+        return List<LocalNote>(len) {
+            FfiConverterTypeLocalNote.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalNote>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalNote.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalNote>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalNote.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeLocalNoteMedia: FfiConverterRustBuffer<List<LocalNoteMedia>> {
+    override fun read(buf: ByteBuffer): List<LocalNoteMedia> {
+        val len = buf.getInt()
+        return List<LocalNoteMedia>(len) {
+            FfiConverterTypeLocalNoteMedia.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<LocalNoteMedia>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeLocalNoteMedia.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<LocalNoteMedia>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeLocalNoteMedia.write(it, buf)
         }
     }
 }

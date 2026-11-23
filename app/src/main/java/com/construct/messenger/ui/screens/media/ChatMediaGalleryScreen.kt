@@ -61,6 +61,7 @@ import com.construct.messenger.ui.theme.CTLayout
 import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.viewmodel.ChatMediaGalleryViewModel
 import com.construct.messenger.viewmodel.ChatMediaTab
+import com.construct.messenger.viewmodel.MediaActions
 
 /**
  * A chat's media (vault todo 327): pictures and videos as a grid, files as a list. Entered from the
@@ -74,10 +75,10 @@ fun ChatMediaGalleryScreen(
     viewModel: ChatMediaGalleryViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
-    val loading by viewModel.fileLoading.collectAsStateWithLifecycle()
-    val unavailable by viewModel.fileUnavailable.collectAsStateWithLifecycle()
+    val loading by viewModel.actions.fileLoading.collectAsStateWithLifecycle()
+    val unavailable by viewModel.actions.fileUnavailable.collectAsStateWithLifecycle()
     var viewing by remember { mutableStateOf<MediaItem?>(null) }
-    GalleryEvents(viewModel)
+    MediaActionEvents(viewModel.actions)
 
     Column(
         modifier = Modifier
@@ -131,12 +132,12 @@ fun ChatMediaGalleryScreen(
                 itemsIndexed(ui.files, key = { _, row -> row.messageId }) { index, row ->
                     LaunchedEffect(row.messageId) { viewModel.shown(index) }
                     row.files.forEach { file ->
-                        FileRow(
+                        MediaFileRow(
                             file = file,
                             timestampMs = row.timestampMs,
                             loading = file.mediaId in loading,
                             unavailable = file.mediaId in unavailable,
-                            onOpen = { viewModel.openFile(file) },
+                            onOpen = { viewModel.actions.openFile(file) },
                         )
                     }
                 }
@@ -151,22 +152,22 @@ fun ChatMediaGalleryScreen(
             album = MessageMedia.Album(pictures),
             startIndex = pictures.indexOf(start).coerceAtLeast(0),
             onDismiss = { viewing = null },
-            loadVideo = viewModel::mediaBytes,
-            onSave = viewModel::saveToGallery,
-            onShare = viewModel::share,
+            loadVideo = viewModel.actions::mediaBytes,
+            onSave = viewModel.actions::saveToGallery,
+            onShare = viewModel.actions::share,
         )
     }
 }
 
 /** Open, share and save results — the chat screen's handling of the same events. */
 @Composable
-private fun GalleryEvents(viewModel: ChatMediaGalleryViewModel) {
+internal fun MediaActionEvents(actions: MediaActions) {
     val context = LocalContext.current
     val noApp = stringResource(R.string.no_app_to_open)
     val saved = stringResource(R.string.media_saved)
     val saveFailed = stringResource(R.string.media_save_failed)
     LaunchedEffect(Unit) {
-        viewModel.openFile.collect { open ->
+        actions.openFile.collect { open ->
             val view = Intent(Intent.ACTION_VIEW).setDataAndType(open.uri, open.mime).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             try {
                 context.startActivity(Intent.createChooser(view, null))
@@ -176,14 +177,14 @@ private fun GalleryEvents(viewModel: ChatMediaGalleryViewModel) {
         }
     }
     LaunchedEffect(Unit) {
-        viewModel.shareFile.collect { file ->
+        actions.shareFile.collect { file ->
             val send = Intent(Intent.ACTION_SEND).setType(file.mime).putExtra(Intent.EXTRA_STREAM, file.uri)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             context.startActivity(Intent.createChooser(send, null))
         }
     }
     LaunchedEffect(Unit) {
-        viewModel.galleryResult.collect { ok ->
+        actions.galleryResult.collect { ok ->
             Toast.makeText(context, if (ok) saved else saveFailed, Toast.LENGTH_SHORT).show()
         }
     }
@@ -191,7 +192,7 @@ private fun GalleryEvents(viewModel: ChatMediaGalleryViewModel) {
 
 /** A file: its name, size and day; a tap fetches and opens it, as the chat's file row does. */
 @Composable
-private fun FileRow(file: MediaItem, timestampMs: Long, loading: Boolean, unavailable: Boolean, onOpen: () -> Unit) {
+internal fun MediaFileRow(file: MediaItem, timestampMs: Long, loading: Boolean, unavailable: Boolean, onOpen: () -> Unit) {
     val context = LocalContext.current
     Row(
         modifier = Modifier

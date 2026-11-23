@@ -9,7 +9,6 @@ import com.construct.messenger.data.local.MessageRecord
 import com.construct.messenger.data.local.MessageStore
 import com.construct.messenger.data.model.MediaItem
 import com.construct.messenger.data.model.MessageMedia
-import com.construct.messenger.data.repository.MediaUnavailable
 import com.construct.messenger.data.repository.MessagesRepository
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.util.ConversationId
@@ -17,9 +16,7 @@ import com.construct.messenger.util.MediaWire
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -32,7 +29,7 @@ import kotlinx.coroutines.launch
 class ChatMediaGalleryViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val messages: MessageStore,
-    private val repository: MessagesRepository,
+    repository: MessagesRepository,
     keystoreManager: KeystoreManager,
 ) : ViewModel() {
     val contactId: String = requireNotNull(savedStateHandle.get<String>("contactId"))
@@ -107,66 +104,8 @@ class ChatMediaGalleryViewModel @Inject constructor(
 
     private fun mediaOfCached(entry: ChatMediaItem): MediaItem? = mediaIn(records[entry.messageId], entry)
 
-    // What the chat's viewer and file rows do, the same calls ChatViewModel makes.
-
-    suspend fun mediaBytes(item: MediaItem): ByteArray = repository.mediaBytes(item)
-
-    private val _fileLoading = MutableStateFlow<Set<String>>(emptySet())
-    val fileLoading: StateFlow<Set<String>> = _fileLoading.asStateFlow()
-    private val _fileUnavailable = MutableStateFlow<Set<String>>(emptySet())
-    val fileUnavailable: StateFlow<Set<String>> = _fileUnavailable.asStateFlow()
-    private val _openFile = MutableSharedFlow<OpenFile>(extraBufferCapacity = 1)
-    val openFile: SharedFlow<OpenFile> = _openFile
-    private val _shareFile = MutableSharedFlow<OpenFile>(extraBufferCapacity = 1)
-    val shareFile: SharedFlow<OpenFile> = _shareFile
-    private val _galleryResult = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
-    val galleryResult: SharedFlow<Boolean> = _galleryResult
-
-    fun openFile(item: MediaItem) {
-        val id = item.mediaId
-        if (id in _fileLoading.value) return
-        _fileLoading.value = _fileLoading.value + id
-        viewModelScope.launch {
-            try {
-                _openFile.tryEmit(OpenFile(repository.openable(item, item.filename ?: "file"), item.mimeType))
-            } catch (e: MediaUnavailable) {
-                _fileUnavailable.value = _fileUnavailable.value + id
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // Network: a tap tries again.
-            } finally {
-                _fileLoading.value = _fileLoading.value - id
-            }
-        }
-    }
-
-    fun saveToGallery(item: MediaItem) {
-        viewModelScope.launch {
-            val saved = try {
-                repository.saveToGallery(item)
-                true
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                false
-            }
-            _galleryResult.tryEmit(saved)
-        }
-    }
-
-    fun share(item: MediaItem) {
-        viewModelScope.launch {
-            try {
-                val name = item.filename?.takeIf { it.isNotBlank() } ?: if (item.isVideo) "video.mp4" else "photo.jpg"
-                _shareFile.tryEmit(OpenFile(repository.openable(item, name), item.mimeType))
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                _galleryResult.tryEmit(false)
-            }
-        }
-    }
+    /** What the viewer and the file rows do. */
+    val actions = MediaActions(viewModelScope, repository)
 
     private companion object {
         const val TAG = "ChatMediaGallery"

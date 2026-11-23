@@ -15,6 +15,8 @@ import com.construct.messenger.ui.screens.chat.ChatScreen
 import com.construct.messenger.ui.screens.chat.SafetyNumberScreen
 import com.construct.messenger.ui.screens.onboarding.RestoreAccountScreen
 import com.construct.messenger.ui.screens.media.ChatMediaGalleryScreen
+import com.construct.messenger.ui.screens.notes.NoteScreen
+import com.construct.messenger.ui.screens.notes.NotesRoute
 import com.construct.messenger.ui.screens.synaps.ContactProfileScreen
 import com.construct.messenger.ui.screens.invite.ContactQrScreen
 import com.construct.messenger.ui.screens.invite.QrScannerScreen
@@ -33,7 +35,6 @@ import com.construct.messenger.ui.screens.settings.AccountScreen
 import com.construct.messenger.ui.screens.settings.AppearanceRoute
 import com.construct.messenger.ui.screens.settings.DevicesRoute
 import com.construct.messenger.ui.screens.settings.DataStorageRoute
-import com.construct.messenger.ui.screens.settings.DraftsRoute
 import com.construct.messenger.ui.screens.settings.IssuedInvitesRoute
 import com.construct.messenger.ui.screens.settings.DiagnosticsScreen
 import com.construct.messenger.ui.screens.settings.NetworkScreen
@@ -194,7 +195,7 @@ fun KonstructNavHost(
                     onDataStorage = { navController.navigate(Screen.DataStorage.route) { launchSingleTop = true } },
                     onTranscription = { navController.navigate(Screen.Transcription.route) { launchSingleTop = true } },
                     onNotifications = { navController.navigate(Screen.Notifications.route) { launchSingleTop = true } },
-                    onDrafts = { navController.navigate(Screen.Drafts.route) { launchSingleTop = true } },
+                    onNotes = { navController.navigate(Screen.Notes.route) { launchSingleTop = true } },
                     onNetwork = { navController.navigate(Screen.Network.route) { launchSingleTop = true } },
                     onDiagnostics = { navController.navigate(Screen.Diagnostics.route) { launchSingleTop = true } },
                     onRecoverySetup = { navController.navigate(Screen.RecoverySetup.route) { launchSingleTop = true } },
@@ -325,8 +326,20 @@ fun KonstructNavHost(
         composable(Screen.Notifications.route) {
             NotificationsRoute(onNavigateBack = { navController.popBackStack() })
         }
-        composable(Screen.Drafts.route) {
-            DraftsRoute(onNavigateBack = { navController.popBackStack() })
+        composable(Screen.Notes.route) {
+            NotesRoute(
+                onNavigateBack = { navController.popBackStack() },
+                onOpen = { noteId -> navController.navigate(Screen.Note.createRoute(noteId)) },
+            )
+        }
+        composable(
+            route = Screen.Note.route,
+            arguments = listOf(navArgument("noteId") { type = NavType.StringType }),
+        ) {
+            NoteScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onOpenChat = { contactId -> navController.navigate(Screen.Chat.createRoute(contactId)) },
+            )
         }
         composable(Screen.Appearance.route) {
             AppearanceRoute(onNavigateBack = { navController.popBackStack() })

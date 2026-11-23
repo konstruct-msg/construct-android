@@ -2,6 +2,7 @@ package com.construct.messenger.data.repository
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
+import com.construct.messenger.data.local.NoteStore
 import java.io.File
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -10,6 +11,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.kotlin.doSuspendableAnswer
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.stub
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -21,6 +25,13 @@ class StorageRepositoryTest {
     private val dir = File(context.filesDir, StorageRepository.MEDIA_DIR)
     // Real time: setLimit and setKeepDays sweep against the clock.
     private val now = System.currentTimeMillis()
+    private val held = mutableSetOf<String>()
+    private var storeAnswers = true
+    private val notes = mock<NoteStore>().also { store ->
+        store.stub {
+            onBlocking { heldMediaIds() } doSuspendableAnswer { if (storeAnswers) held else error("closed") }
+        }
+    }
     private lateinit var repo: StorageRepository
 
     @Before
@@ -28,7 +39,7 @@ class StorageRepositoryTest {
         dir.deleteRecursively()
         dir.mkdirs()
         context.getSharedPreferences("storage_prefs", 0).edit().clear().commit()
-        repo = StorageRepository(context)
+        repo = StorageRepository(context, notes)
     }
 
     private fun file(name: String, bytes: Int, daysAgo: Long) = File(dir, name).apply {
@@ -74,11 +85,53 @@ class StorageRepositoryTest {
         assertEquals(StorageRepository.DEFAULT_LIMIT_BYTES, repo.settings.value.limitBytes)
         assertEquals(0, repo.settings.value.keepDays)
         runTest { repo.setLimit(0); repo.setKeepDays(7) }
-        val again = StorageRepository(context)
+        val again = StorageRepository(context, notes)
         assertEquals(0L, again.settings.value.limitBytes)
         assertEquals(7, again.settings.value.keepDays)
         assertFalse(again.settings.value.limitBytes > 0)
         assertTrue(dir.exists())
+    }
+
+    /**
+     * A note's files are not cache: no way of clearing it takes them, and they are counted apart.
+     * Mutation: pass an empty set in `clear`, `evictToQuota` or `evictOld`; drop the lowercasing —
+     * each reddens.
+     */
+    @Test
+    fun aNotesFilesAreNotCache() = runTest {
+        file("aaaa", 100, 5)
+        file("bbbb", 300, 6)
+        held += "BBBB"
+        assertEquals(100L, repo.cachedBytes())
+        assertEquals(300L, repo.notesBytes())
+        repo.setKeepDays(1)
+        assertEquals(setOf("bbbb"), dir.list()!!.toSet())
+        file("aaaa", 100, 1)
+        repo.setLimit(10)
+        assertEquals(setOf("bbbb"), dir.list()!!.toSet())
+        file("aaaa", 100, 1)
+        assertEquals(100L, repo.clear())
+        assertEquals(setOf("bbbb"), dir.list()!!.toSet())
+    }
+
+    /** Any file might be a note's. Mutation: read a failure as no notes. */
+    @Test
+    fun nothingIsDeletedWhileTheStoreDoesNotAnswer() = runTest {
+        file("aaaa", 100, 5)
+        storeAnswers = false
+        repo.setKeepDays(1)
+        repo.setLimit(10)
+        assertEquals(0L, repo.clear())
+        assertEquals(setOf("aaaa"), dir.list()!!.toSet())
+    }
+
+    /** Mutation: delete by an id that is not a file name. */
+    @Test
+    fun deletingFilesTakesThoseOnly() = runTest {
+        file("aaaa", 1, 1)
+        file("bbbb", 1, 1)
+        repo.deleteFiles(listOf("AAAA", "../media/bbbb"))
+        assertEquals(setOf("bbbb"), dir.list()!!.toSet())
     }
 
     private companion object {
