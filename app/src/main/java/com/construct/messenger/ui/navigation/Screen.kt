@@ -51,8 +51,11 @@ sealed class Screen(val route: String) {
     data object DataStorage : Screen("settings/storage")
     /** Settings → Transcription: models, language, automatic reading (TODO 116). */
     data object Transcription : Screen("settings/transcription")
-    /** Local notes, never sent (iOS `DraftsView`). */
-    data object Drafts : Screen("settings/drafts")
+    /** Notes on this device, never sent (iOS `NotesView`). */
+    data object Notes : Screen("settings/notes")
+    data object Note : Screen("settings/notes/{noteId}") {
+        fun createRoute(noteId: String) = "settings/notes/${Uri.encode(noteId)}"
+    }
     /** Theme, message face and size (iOS `AppearanceSettingsView`). */
     data object Appearance : Screen("settings/appearance")
     data object Security : Screen("settings/security")

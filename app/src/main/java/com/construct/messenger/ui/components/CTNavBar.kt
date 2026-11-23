@@ -49,6 +49,8 @@ fun CTNavBar(
     isModal: Boolean = false,
     trailingIcon: ImageVector? = null,
     trailingColor: Color = CTColor.accent,
+    /** What the trailing button does, for a screen reader. */
+    trailingDescription: String? = null,
     trailingSecondaryIcon: ImageVector? = null,
     trailingSecondaryColor: Color = CTColor.textDim,
     onBack: () -> Unit = {},
@@ -90,7 +92,7 @@ fun CTNavBar(
                 }
                 trailingIcon?.let { icon ->
                     IconButton(onClick = onTrailingAction) {
-                        Icon(imageVector = icon, contentDescription = null, tint = trailingColor)
+                        Icon(imageVector = icon, contentDescription = trailingDescription, tint = trailingColor)
                     }
                 }
             },

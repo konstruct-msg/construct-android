@@ -83,6 +83,7 @@ class ChatViewModel @Inject constructor(
     private val voiceSettings: com.construct.messenger.media.VoicePlaybackSettings,
     private val chatOnScreen: com.construct.messenger.media.ChatOnScreen,
     private val incomingShares: com.construct.messenger.data.repository.IncomingShareRepository,
+    private val saveToNotes: com.construct.messenger.domain.usecase.SaveToNotesUseCase,
 ) : ViewModel() {
     /** How picked videos are sent; the composer offers it while a video is attached (TODO 148). */
     val videoQuality: StateFlow<com.construct.messenger.media.VideoQuality> get() = videoQualities.state
@@ -365,6 +366,14 @@ class ChatViewModel @Inject constructor(
         val items = com.construct.messenger.data.model.ForwardItem.of(messages)
         forwardDrafts.hand(items, toContactId)
         return items.isNotEmpty()
+    }
+
+    private val _savedToNotes = kotlinx.coroutines.flow.MutableSharedFlow<com.construct.messenger.domain.usecase.SaveToNotesUseCase.Outcome>(extraBufferCapacity = 1)
+    val savedToNotes: kotlinx.coroutines.flow.SharedFlow<com.construct.messenger.domain.usecase.SaveToNotesUseCase.Outcome> = _savedToNotes
+
+    /** "Save to notes": the note is there at once, its files as they are fetched. */
+    fun saveToNotes(message: Message) {
+        viewModelScope.launch { _savedToNotes.tryEmit(saveToNotes(message.id, uiState.value.contactName)) }
     }
 
     init {

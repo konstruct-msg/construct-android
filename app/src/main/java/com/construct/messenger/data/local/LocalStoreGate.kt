@@ -142,3 +142,16 @@ class GatedCallStore(private val gate: LocalStoreGate) : CallStore {
     override suspend fun delete(id: String) = s().delete(id)
     override suspend fun deleteAll() = s().deleteAll()
 }
+
+class GatedNoteStore(private val gate: LocalStoreGate) : NoteStore {
+    private suspend fun s() = gate.backing().notes
+    override fun observe(limit: Int): Flow<List<Note>> = gate.watch { it.notes.observe(limit) }
+    override fun observe(id: String): Flow<Note?> = gate.watch { it.notes.observe(id) }
+    override fun search(query: String, limit: Int): Flow<List<Note>> = gate.watch { it.notes.search(query, limit) }
+    override suspend fun get(id: String) = s().get(id)
+    override suspend fun heldMediaIds() = s().heldMediaIds()
+    override suspend fun insert(note: Note) = s().insert(note)
+    override suspend fun edit(id: String, body: ByteArray, editedAtMs: Long) = s().edit(id, body, editedAtMs)
+    override suspend fun setPinned(id: String, pinned: Boolean) = s().setPinned(id, pinned)
+    override suspend fun delete(ids: List<String>) = s().delete(ids)
+}

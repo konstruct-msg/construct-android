@@ -94,7 +94,7 @@ data class SettingsNavigation(
     val onTranscription: () -> Unit = {},
     val onNotifications: () -> Unit = {},
     val onNetwork: () -> Unit = {},
-    val onDrafts: () -> Unit = {},
+    val onNotes: () -> Unit = {},
     val onOrientation: () -> Unit = {},
     val onDiagnostics: () -> Unit = {},
     val onRecoverySetup: () -> Unit = {},
@@ -250,10 +250,10 @@ fun SettingsScreen(
                 )
                 HorizontalDivider()
                 CTSettingsRow(
-                    label = stringResource(R.string.settings_row_drafts).uppercase(),
+                    label = stringResource(R.string.settings_row_notes).uppercase(),
                     icon = Icons.Outlined.Folder,
                     disclosure = true,
-                    modifier = Modifier.clickable(onClick = navigation.onDrafts),
+                    modifier = Modifier.clickable(onClick = navigation.onNotes),
                 )
             }
 

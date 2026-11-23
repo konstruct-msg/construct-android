@@ -191,6 +191,14 @@ private fun DataStorageScreen(
                 }
             }
             Footer(stringResource(R.string.storage_auto_clear_footer))
+
+            if (state.notesBytes > 0) {
+                CTSettingsSectionHeader(title = stringResource(R.string.notes_title))
+                CTSectionGroup {
+                    CTSettingsRow(label = stringResource(R.string.storage_notes), value = size(state.notesBytes))
+                }
+                Footer(stringResource(R.string.storage_notes_footer))
+            }
         }
     }
 
@@ -274,13 +282,14 @@ private fun Footer(text: String) {
     )
 }
 
-@Preview(backgroundColor = 0xFF090909, showBackground = true, widthDp = 360, heightDp = 1240)
+@Preview(backgroundColor = 0xFF090909, showBackground = true, widthDp = 360, heightDp = 1360)
 @Composable
 private fun DataStorageScreenPreview() {
     DataStorageScreen(
         state = DataStorageUiState(
             settings = StorageSettings(limitBytes = 1L shl 30, keepDays = 30),
             cachedBytes = 912L shl 20,
+            notesBytes = 38L shl 20,
         ),
         onNavigateBack = {},
         onLimit = {},

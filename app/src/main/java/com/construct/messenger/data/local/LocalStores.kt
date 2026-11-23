@@ -52,6 +52,7 @@ class LocalStores(
         val pendingResends: PendingResendStore,
         val pendingChunks: PendingChunkStore,
         val calls: CallStore,
+        val notes: NoteStore,
     ) {
         companion object {
             fun core(session: LocalStoreSession, myUserId: () -> String?): Backing {
@@ -70,6 +71,7 @@ class LocalStores(
                     pendingResends = CorePendingResendStore(store),
                     pendingChunks = CorePendingChunkStore(store),
                     calls = CoreCallStore(feed),
+                    notes = CoreNoteStore(feed),
                 )
             }
         }

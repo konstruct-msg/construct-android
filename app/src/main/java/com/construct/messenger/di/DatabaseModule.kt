@@ -6,6 +6,8 @@ import com.construct.messenger.data.local.CallStore
 import com.construct.messenger.data.local.ChatStore
 import com.construct.messenger.data.local.ContactStore
 import com.construct.messenger.data.local.GatedCallStore
+import com.construct.messenger.data.local.GatedNoteStore
+import com.construct.messenger.data.local.NoteStore
 import com.construct.messenger.data.local.GatedChatStore
 import com.construct.messenger.data.local.GatedContactStore
 import com.construct.messenger.data.local.GatedIssuedInviteStore
@@ -54,6 +56,10 @@ object DatabaseModule {
         deleteRoomLeftovers = { context.deleteDatabase(ROOM_FILE) },
         myUserId = keystore::getUserId,
     )
+
+    @Provides
+    @Singleton
+    fun provideNoteStore(stores: LocalStores): NoteStore = GatedNoteStore(stores)
 
     @Provides
     @Singleton

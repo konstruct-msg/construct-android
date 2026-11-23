@@ -19,6 +19,8 @@ data class DataStorageUiState(
     val settings: StorageSettings = StorageSettings(),
     /** What the media cache takes now; null until measured. */
     val cachedBytes: Long? = null,
+    /** What the files notes hold take: beside the cache, not in it. */
+    val notesBytes: Long = 0,
     val clearing: Boolean = false,
 )
 
@@ -38,7 +40,7 @@ class DataStorageViewModel @Inject constructor(
     }
 
     fun refresh() {
-        viewModelScope.launch { usage.update { it.copy(cachedBytes = storage.cachedBytes()) } }
+        viewModelScope.launch { usage.update { it.copy(cachedBytes = storage.cachedBytes(), notesBytes = storage.notesBytes()) } }
     }
 
     fun setLimit(bytes: Long) {
