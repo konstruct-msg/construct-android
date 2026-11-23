@@ -102,8 +102,8 @@ class MessageMediaIndexTest {
 
     @Before
     fun openChat() = runTest {
-        CoreContactStore(feed).ensure(peer)
-        CoreChatStore(feed).ensure(chat, peer)
+        CoreContactStore(feed, { null }).ensure(peer)
+        CoreChatStore(feed, { null }).ensure(chat, peer)
     }
 
     @After

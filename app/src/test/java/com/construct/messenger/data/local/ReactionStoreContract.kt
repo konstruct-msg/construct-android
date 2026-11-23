@@ -146,8 +146,8 @@ class FakeReactionStoreTest : ReactionStoreContract() {
 class CoreReactionStoreTest : ReactionStoreContract() {
     private val core = LocalStore.inMemory(ByteArray(32) { 1 })
     private val feed = LocalStoreFeed(core)
-    override val contacts: ContactStore = CoreContactStore(feed)
-    override val chats: ChatStore = CoreChatStore(feed)
+    override val contacts: ContactStore = CoreContactStore(feed, { null })
+    override val chats: ChatStore = CoreChatStore(feed, { null })
     override val messages: MessageStore = CoreMessageStore(feed, myUserId = { "me" })
     override val store: ReactionStore = CoreReactionStore(feed)
 

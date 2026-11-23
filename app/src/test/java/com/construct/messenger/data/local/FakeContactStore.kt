@@ -5,10 +5,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 /** [ContactStore] in a map, for tests; [ContactStoreContract] holds it to the core store's behaviour. */
-internal class FakeContactStore : ContactStore {
+internal class FakeContactStore(private val me: String? = null) : ContactStore {
     val rows = linkedMapOf<String, ContactRecord>()
 
     private fun byName(keep: (ContactRecord) -> Boolean) = rows.values.filter(keep).sortedBy { it.displayName }
+
+    private fun isOurs(id: String) = id.equals(me, ignoreCase = true)
 
     private fun change(id: String, f: (ContactRecord) -> ContactRecord) {
         rows[id]?.let { rows[id] = f(it) }
@@ -21,10 +23,11 @@ internal class FakeContactStore : ContactStore {
     override suspend fun get(id: String): ContactRecord? = rows[id]
 
     override suspend fun ensure(id: String) {
+        if (isOurs(id)) return
         rows.getOrPut(id) { ContactRecord(id = id, displayName = DisplayNameGenerator.generate(id), isContact = true) }
     }
 
-    override suspend fun upsert(record: ContactRecord) { rows[record.id] = record }
+    override suspend fun upsert(record: ContactRecord) { if (!isOurs(record.id)) rows[record.id] = record }
     override suspend fun delete(id: String) { rows.remove(id) }
     override suspend fun setBlocked(id: String, blocked: Boolean) = change(id) { it.copy(isBlocked = blocked) }
     override suspend fun setAlias(id: String, alias: String?) =

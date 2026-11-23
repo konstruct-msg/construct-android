@@ -44,6 +44,9 @@ class KonstructApp : Application(), ImageLoaderFactory {
     @Inject
     lateinit var drafts: com.construct.messenger.data.repository.DraftsRepository
 
+    @Inject
+    lateinit var selfChat: com.construct.messenger.data.repository.SelfChatToDrafts
+
     /** Every `AsyncImage` in the app: message media among the images it can load. */
     override fun newImageLoader(): ImageLoader = MediaImages.loader(this, media)
 
@@ -54,6 +57,7 @@ class KonstructApp : Application(), ImageLoaderFactory {
         // The packs in the APK, into the sticker store — once each, off the main thread (iOS
         // seeds on every launch too; a pack already there costs one file check).
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { stickers.seedBundled() }
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { selfChat.move() }
         // Settings → Data & storage: "keep media for", then the limit — at each launch, as iOS.
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             storage.evictOld()

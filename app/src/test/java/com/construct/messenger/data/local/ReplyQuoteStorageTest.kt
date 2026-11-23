@@ -43,8 +43,8 @@ class ReplyQuoteStorageTest {
     @Test
     fun aRowInTheCoreIsIosShaped() = runTest {
         val feed = LocalStoreFeed(core)
-        CoreContactStore(feed).ensure("peer")
-        CoreChatStore(feed).insert(ChatRecord("chat", "peer"))
+        CoreContactStore(feed, { null }).ensure("peer")
+        CoreChatStore(feed, { null }).insert(ChatRecord("chat", "peer"))
         CoreMessageStore(feed, myUserId = { "me" }).insert(
             MessageRecord("M-1", "chat", "yes", isSentByMe = true, timestampMs = 5, deliveryStatus = DeliveryStatus.DELIVERED,
                 replyToId = "q", replyPreview = "the photo", replyMediaType = "MEDIA_TYPE_IMAGE"),

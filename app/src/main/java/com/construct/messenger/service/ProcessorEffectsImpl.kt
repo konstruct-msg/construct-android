@@ -91,6 +91,14 @@ class ProcessorEffectsImpl @Inject constructor(
             ackStore.markProcessed(messageId, accountId)
             return
         }
+        if (accountId.equals(keystoreManager.getUserId(), ignoreCase = true)) {
+            // Our own account is not a peer: what our devices tell each other comes as SENDER_SYNC
+            // ([onSenderSync]) or a control frame. Anything else is our own send handed back — iOS
+            // `SessionAddressing.isOwnReflection`.
+            Log.w(TAG, "message ${messageId.take(8)}… from our own account — dropped")
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
         val assembled = whole(accountId, messageId, plaintext) ?: return
         val decoded = IncomingPlaintext.decode(assembled)
         if (decoded.knstContentType in CORE_NAMED_CONTROL_TYPES) {
@@ -223,6 +231,12 @@ class ProcessorEffectsImpl @Inject constructor(
         val routed = routeSenderSync(accountId, messageId, plaintext) ?: return
         if (routed === NOT_ROUTED) {
             Log.w(TAG, "sender-sync without SSR1 ${messageId.take(8)}… — acking")
+            ackStore.markProcessed(messageId, accountId)
+            return
+        }
+        if (routed.partnerUserId.equals(keystoreManager.getUserId(), ignoreCase = true)) {
+            // A chat with ourselves, from a sibling on a build that still had one.
+            Log.w(TAG, "sender-sync ${messageId.take(8)}… for a chat with ourselves — dropped")
             ackStore.markProcessed(messageId, accountId)
             return
         }

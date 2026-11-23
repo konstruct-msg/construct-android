@@ -31,6 +31,8 @@ import org.robolectric.annotation.Config
 abstract class ContactStoreContract {
     protected abstract val store: ContactStore
 
+    protected val me = "2d8a1b8c-5e3f-4b9a-9c4d-7fae9a8b3c4d"
+
     private val id = "0b6e9f6a-3c1d-4f7e-9a2b-5d8c7e6f1a2b"
 
     @Test
@@ -111,16 +113,19 @@ abstract class ContactStoreContract {
         assertEquals(listOf(id), store.sharingWith(exceptAccount = null))
     }
 
-    /** Our own row is the note-to-self chat's peer: listed, never shared with. */
+    /**
+     * Our own account is not a contact: no write creates it — least of all the key recorded when a
+     * session opens with a linked device of ours, which put it in Synaps (2026-11-23).
+     */
     @Test
-    fun ourOwnAccountIsListedButNotSharedWith() = runTest {
-        val me = "2d8a1b8c-5e3f-4b9a-9c4d-7fae9a8b3c4d"
+    fun ourOwnAccountIsNeverMadeAContact() = runTest {
         store.ensure(id)
         store.ensure(me)
-        store.setSharingWith(id, true)
-        store.setSharingWith(me, true)
-        assertEquals(listOf(id), store.sharingWith(exceptAccount = me))
-        assertEquals(setOf(id, me), store.observeAll().first().map { it.id }.toSet())
+        store.rememberIdentity(me, byteArrayOf(1))
+        store.upsert(ContactRecord(id = me.uppercase(), displayName = "me", isContact = true))
+        assertEquals(listOf(id), store.observeAll().first().map { it.id })
+        assertNull(store.get(me))
+        assertNull(store.get(me.uppercase()))
     }
 
     /** A download given up on ends the wait; the avatar already shown stays. */
@@ -164,13 +169,27 @@ abstract class ContactStoreContract {
 }
 
 class FakeContactStoreTest : ContactStoreContract() {
-    override val store: ContactStore = FakeContactStore()
+    override val store: ContactStore = FakeContactStore(me)
 }
 
 /** The same cases on the core's encrypted store — the host build of the library the app ships. */
 class CoreContactStoreTest : ContactStoreContract() {
     private val core = LocalStore.inMemory(ByteArray(32) { 1 })
-    override val store: ContactStore = CoreContactStore(LocalStoreFeed(core))
+    private val feed = LocalStoreFeed(core)
+    override val store: ContactStore = CoreContactStore(feed, { me })
+
+    /** A row an earlier build made for our own account is in no list, blocked or not. */
+    @Test
+    fun aRowLeftForOurOwnAccountIsInNoList() = runTest {
+        val before = CoreContactStore(feed, { null })
+        before.ensure(me)
+        assertEquals(1, before.observeContacts().first().size)
+        assertTrue(store.observeContacts().first().isEmpty())
+        assertTrue(store.observeAll().first().isEmpty())
+        before.setBlocked(me, true)
+        assertEquals(1, before.observeBlocked().first().size)
+        assertTrue(store.observeBlocked().first().isEmpty())
+    }
 
     @After
     fun close() = core.close()

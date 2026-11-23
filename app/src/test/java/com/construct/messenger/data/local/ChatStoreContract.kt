@@ -108,8 +108,22 @@ class FakeChatStoreTest : ChatStoreContract() {
 class CoreChatStoreTest : ChatStoreContract() {
     private val core = LocalStore.inMemory(ByteArray(32) { 1 })
     private val feed = LocalStoreFeed(core)
-    override val contacts: ContactStore = CoreContactStore(feed)
-    override val store: ChatStore = CoreChatStore(feed)
+    override val contacts: ContactStore = CoreContactStore(feed, { null })
+    override val store: ChatStore = CoreChatStore(feed, { null })
+
+    /** A chat an earlier build made with ourselves is in no list. Mutation: list every chat. */
+    @Test
+    fun aChatWithOurselvesIsInNoList() = runTest {
+        val me = "2d8a1b8c-5e3f-4b9a-9c4d-7fae9a8b3c4d"
+        val peer = "0b6e9f6a-3c1d-4f7e-9a2b-5d8c7e6f1a2b"
+        contacts.ensure(me)
+        contacts.ensure(peer)
+        store.ensure("chat-me", me)
+        store.ensure("chat-peer", peer)
+        val listed = CoreChatStore(feed, { me.uppercase() })
+        assertEquals(listOf("chat-peer"), listed.observeAll().first().map { it.id })
+        assertEquals(listOf(peer), listed.observeActivity().first().map { it.contactId })
+    }
 
     /** Synapses ranks contacts by how much was said: the core's per-chat count, not the store's total. */
     @Test

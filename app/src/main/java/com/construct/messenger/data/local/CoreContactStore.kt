@@ -20,11 +20,13 @@ import kotlinx.coroutines.withContext
  * goes through this one instance, so the lock makes those read-then-writes atomic against each
  * other. The pending-avatar guard is the core's own since 0.42.0: one statement, no read before it.
  *
- * Every list keeps our own account's row — it is the note-to-self chat's peer, whose name and
- * avatar the chat list reads — except [sharingWith].
+ * Our own account is not a contact: no list names it and no write creates its row (iOS
+ * `everyContact(except:)`, `SessionAddressing.isOurOwnAccount`). Opening a session with a linked
+ * device of ours used to record its key here, which made us a contact of our own (2026-11-23).
  */
 class CoreContactStore(
     private val feed: LocalStoreFeed,
+    private val myUserId: () -> String?,
     private val nowMs: () -> Long = System::currentTimeMillis,
 ) : ContactStore {
     private val store: LocalStore get() = feed.store
@@ -35,29 +37,37 @@ class CoreContactStore(
 
     private suspend fun <T> read(block: (LocalStore) -> T): T = withContext(Dispatchers.IO) { block(store) }
 
+    private fun isOurs(id: String): Boolean = id.equals(myUserId(), ignoreCase = true)
+
     // The core's `contacts()` keeps blocked people in; ours lists them apart.
     override fun observeContacts(): Flow<List<ContactRecord>> =
-        feed.watch(LocalStoreTable.CONTACTS) { s -> s.contacts().filterNot { it.isBlocked }.map { it.record() } }
+        feed.watch(LocalStoreTable.CONTACTS) { s -> s.contacts().filterNot { it.isBlocked || isOurs(it.id) }.map { it.record() } }
 
     override fun observeBlocked(): Flow<List<ContactRecord>> =
-        feed.watch(LocalStoreTable.CONTACTS) { s -> s.everyContact(null).filter { it.isBlocked }.map { it.record() } }
+        feed.watch(LocalStoreTable.CONTACTS) { s -> s.everyContact(null).filter { it.isBlocked && !isOurs(it.id) }.map { it.record() } }
 
     override fun observeAll(): Flow<List<ContactRecord>> =
-        feed.watch(LocalStoreTable.CONTACTS) { s -> s.everyContact(null).map { it.record() } }
+        feed.watch(LocalStoreTable.CONTACTS) { s -> s.everyContact(null).filterNot { isOurs(it.id) }.map { it.record() } }
 
     override fun observe(id: String): Flow<ContactRecord?> =
         feed.watch(LocalStoreTable.CONTACTS) { s -> s.contact(id)?.record() }
 
     override suspend fun get(id: String): ContactRecord? = read { it.contact(id)?.record() }
 
-    override suspend fun ensure(id: String) = write { ensureIn(it, id) }
+    override suspend fun ensure(id: String) {
+        if (isOurs(id)) return
+        write { ensureIn(it, id) }
+    }
 
     private fun ensureIn(s: LocalStore, id: String) {
         if (s.contact(id) != null) return
         s.upsertContact(ContactRecord(id = id, displayName = DisplayNameGenerator.generate(id), isContact = true).local(null))
     }
 
-    override suspend fun upsert(record: ContactRecord) = write { it.upsertContact(record.local(it.contact(record.id))) }
+    override suspend fun upsert(record: ContactRecord) {
+        if (isOurs(record.id)) return
+        write { it.upsertContact(record.local(it.contact(record.id))) }
+    }
 
     override suspend fun delete(id: String) {
         write { it.deleteContact(id) }
@@ -82,6 +92,7 @@ class CoreContactStore(
     }
 
     override suspend fun rememberIdentity(id: String, identityPublic: ByteArray) {
+        if (isOurs(id)) return
         write {
             ensureIn(it, id)
             it.setIdentityKey(id, identityPublic)

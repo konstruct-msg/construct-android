@@ -105,6 +105,9 @@ fun ContactRecord?.resolvedName(userId: String): String =
  * different fields never carry an older value of the other's back. A write to a row that does not
  * exist changes nothing.
  *
+ * Our own account is never one of them: lists leave it out, and a write that would create it does
+ * nothing.
+ *
  * On the core's `LocalStore` ([CoreContactStore]); [ContactStoreContract] holds it to its cases.
  */
 interface ContactStore {
@@ -144,8 +147,8 @@ interface ContactStore {
     suspend fun setSharingWith(id: String, sharing: Boolean)
 
     /**
-     * Ids we share our profile with, blocked ones and [exceptAccount] (our own: its row is the
-     * note-to-self chat's) left out — as the core's `sharing_with` and iOS `ContactStore` do.
+     * Ids we share our profile with, blocked ones and [exceptAccount] (our own) left out — as the
+     * core's `sharing_with` and iOS `ContactStore` do.
      */
     suspend fun sharingWith(exceptAccount: String?): List<String>
 
