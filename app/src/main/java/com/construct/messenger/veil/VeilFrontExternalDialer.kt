@@ -5,6 +5,7 @@ import android.os.SystemClock
 import android.system.Os
 import android.system.OsConstants
 import com.construct.messenger.diagnostics.Log
+import java.io.Closeable
 import java.io.FileDescriptor
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -227,14 +228,22 @@ class VeilFrontExternalDialer(
         }
     }
 
-    private fun dial(r: VeilRelay): SSLSocket {
+    /** A handshaken, pin-checked connection to the relay, bounded by [DialRace]. */
+    private fun dial(r: VeilRelay): SSLSocket =
+        DialRace<SSLSocket>(
+            onSilence = { Log.i(TAG, "native handshake silent for ${DialRace.SILENCE_MS}ms — a second one beside it") },
+            discard = { runCatching { it.close() } },
+        ).run { opened -> dialOnce(r, opened) }
+
+    private fun dialOnce(r: VeilRelay, opened: (Closeable) -> Unit): SSLSocket {
         val host = r.address.substringBeforeLast(':')
         val port = r.address.substringAfterLast(':').toInt()
         val ctx = SSLContext.getInstance("TLS", Conscrypt.newProvider())
         ctx.init(null, arrayOf<javax.net.ssl.TrustManager>(SpkiPinTrustManager(r.spkiHex)), SecureRandom())
         val ssl = ctx.socketFactory.createSocket() as SSLSocket
+        opened(ssl)
         try {
-            ssl.connect(InetSocketAddress(host, port), CONNECT_TIMEOUT_MS)
+            ssl.connect(InetSocketAddress(host, port), DialRace.TOTAL_MS.toInt())
             ssl.soTimeout = 0 // long-lived tunnel; no read timeout
             // SNI = the pinned front name (may differ from the dialed host). Default enabled
             // protocols (TLS 1.2 + 1.3) — the shippable Conscrypt hello, never 1.3-only.
@@ -290,7 +299,6 @@ class VeilFrontExternalDialer(
         // EXPORTER_LABEL / EXPORTER_LEN — construct-veil-protocol/src/lib.rs. Must match the relay.
         const val EXPORTER_LABEL = "construct veil-front auth v1"
         const val EXPORTER_LEN = 32
-        const val CONNECT_TIMEOUT_MS = 10_000
         const val BUF = 16384
     }
 }
