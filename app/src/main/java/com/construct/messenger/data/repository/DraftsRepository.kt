@@ -70,6 +70,20 @@ class DraftsRepository internal constructor(
         }
     }
 
+    /**
+     * [notes] among the rest by their own times, each once by id, so a move that runs again adds
+     * nothing. True once the store holds every one of them.
+     */
+    suspend fun adopt(notes: List<Draft>): Boolean = lock.withLock {
+        runCatching {
+            val held = read()
+            val ids = held.mapTo(HashSet()) { it.id }
+            val all = (held + notes.filter { ids.add(it.id) }).sortedByDescending { it.createdAt }
+            if (all.size > held.size) store.put(KEY, encode(all))
+            state.value = all
+        }.onFailure { Log.e(TAG, "not adopted", it) }.isSuccess
+    }
+
     suspend fun delete(id: String): Boolean = lock.withLock {
         runCatching {
             val notes = read().filterNot { it.id == id }

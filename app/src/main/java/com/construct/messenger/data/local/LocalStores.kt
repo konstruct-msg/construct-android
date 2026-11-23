@@ -58,10 +58,10 @@ class LocalStores(
                 val feed = session.feed
                 val store = session.store
                 return Backing(
-                    chats = CoreChatStore(feed),
+                    chats = CoreChatStore(feed, myUserId),
                     messages = CoreMessageStore(feed, myUserId),
                     reactions = CoreReactionStore(feed),
-                    contacts = CoreContactStore(feed),
+                    contacts = CoreContactStore(feed, myUserId),
                     processed = CoreProcessedStore(store),
                     sessionBlobs = CoreSessionBlobStore(store),
                     issuedInvites = CoreIssuedInviteStore(feed),

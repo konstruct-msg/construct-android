@@ -215,6 +215,30 @@ class SendMessageUseCaseTest {
     }
 
     /**
+     * Our own account is not a peer: no session is opened with it, nothing is sent and no row is
+     * written. Until 2026-11-23 a send to it opened a session with this very device and came back
+     * as a message from ourselves. Mutation: drop any one of the checks.
+     */
+    @Test
+    fun `nothing is sent to our own account`() = runTest {
+        val h = harness()
+        whenever(h.sessionManager.ensureSession(myId)).thenReturn(SessionManager.SessionPeer(myId, ourDevice, byteArrayOf(1)))
+        val refused = listOf(
+            h.useCase()(myId, "note"),
+            h.useCase().sendSticker(myId.uppercase(), com.construct.messenger.stickers.StickerReference.of(ByteArray(32) { 7 }, 0, "🙂")!!),
+            h.useCase().react(myId, byteArrayOf(1)),
+            h.useCase().deliverPrepared(myId, "row", 1L, byteArrayOf(1)),
+        )
+        assertTrue("$refused", refused.all { it is SendOutcome.Failed && it.reason == "our own account" })
+        assertTrue(runCatching { h.useCase().persistMedia(myId, "m", 1L, com.construct.messenger.util.MediaWire.Stored("k", byteArrayOf(), ""), null) }.isFailure)
+        assertEquals(ResendOutcome.NOT_OURS, h.useCase().resend(myId, ourDevice, "row"))
+        assertTrue(h.messages.rows.isEmpty())
+        assertTrue(h.chats.rows.isEmpty())
+        verify(h.sessionManager, org.mockito.kotlin.never()).ensureSession(any())
+        org.mockito.kotlin.verifyNoInteractions(h.orchestrator, h.messaging)
+    }
+
+    /**
      * A text over one frame goes as several to each device, named `-c<n>` as iOS names them, and
      * joins back into the text. Mutation: `KnstFrame.pack` instead of `chunks` — the send throws.
      */

@@ -20,16 +20,20 @@ import uniffi.construct_core.LocalStoreTable
  *
  * [observeActivity] counts a chat's messages with the core's `chat_message_count` (0.39.0). It
  * counts every row: a control message is consumed before it is stored.
+ *
+ * Our own account is not a peer, so a chat with it is in no list ([CoreContactStore]).
  */
-class CoreChatStore(private val feed: LocalStoreFeed) : ChatStore {
+class CoreChatStore(private val feed: LocalStoreFeed, private val myUserId: () -> String?) : ChatStore {
     private val store: LocalStore get() = feed.store
 
     private suspend fun <T> io(block: (LocalStore) -> T): T = withContext(Dispatchers.IO) { block(store) }
 
-    override fun observeAll(): Flow<List<ChatRecord>> = feed.watch(LocalStoreTable.CHATS) { s -> s.chats().map { it.record() } }
+    private fun LocalStore.listed(): List<LocalChat> = chats().filterNot { it.peerId.equals(myUserId(), ignoreCase = true) }
+
+    override fun observeAll(): Flow<List<ChatRecord>> = feed.watch(LocalStoreTable.CHATS) { s -> s.listed().map { it.record() } }
 
     override fun observeActivity(): Flow<List<ChatActivity>> =
-        combine(feed.watch(LocalStoreTable.CHATS) { it.chats() }, feed.changes(LocalStoreTable.MESSAGES)) { chats, _ ->
+        combine(feed.watch(LocalStoreTable.CHATS) { it.listed() }, feed.changes(LocalStoreTable.MESSAGES)) { chats, _ ->
             chats.map { c -> ChatActivity(c.peerId, store.chatMessageCount(c.id).toInt(), c.lastMessageTime, c.unreadCount) }
         }.distinctUntilChanged().flowOn(Dispatchers.IO)
 

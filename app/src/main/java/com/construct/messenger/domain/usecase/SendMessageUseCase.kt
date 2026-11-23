@@ -99,6 +99,7 @@ class SendMessageUseCase @Inject constructor(
 
         val myId = keystoreManager.getUserId()
             ?: return SendOutcome.Failed("", "not authenticated")
+        if (isOurs(contactId, myId)) return SendOutcome.Failed("", OWN_ACCOUNT)
         require(cryptoManager.isMessagingReady) { "orchestrator not ready" }
 
         val messageId = UUID.randomUUID().toString().lowercase()
@@ -169,6 +170,7 @@ class SendMessageUseCase @Inject constructor(
      */
     suspend fun sendSticker(contactId: String, ref: com.construct.messenger.stickers.StickerReference, turn: SendTurn = SendTurn.NOW): SendOutcome {
         val myId = keystoreManager.getUserId() ?: return SendOutcome.Failed("", "not authenticated")
+        if (isOurs(contactId, myId)) return SendOutcome.Failed("", OWN_ACCOUNT)
         if (!cryptoManager.isMessagingReady) return SendOutcome.Failed("", "orchestrator not ready")
         val messageId = UUID.randomUUID().toString().lowercase()
         val timestampMs = System.currentTimeMillis()
@@ -184,6 +186,7 @@ class SendMessageUseCase @Inject constructor(
      */
     suspend fun persistMedia(contactId: String, messageId: String, timestampMs: Long, media: MediaWire.Stored, reply: ReplyRef?) {
         val myId = keystoreManager.getUserId() ?: error("not authenticated")
+        check(!isOurs(contactId, myId)) { OWN_ACCOUNT }
         persistOutgoing(ConversationId.direct(myId, contactId), contactId, messageId, media.caption, timestampMs, DeliveryStatus.SENDING, reply, media)
     }
 
@@ -244,8 +247,9 @@ class SendMessageUseCase @Inject constructor(
         content: ByteArray,
     ): SendOutcome {
         return try {
-            if (contactId == myId) {
-                return sendNoteToSelf(myId, messageId, timestampMs, content, sessionManager.ensureSession(myId))
+            if (isOurs(contactId, myId)) {
+                messages.setDeliveryStatus(messageId, DeliveryStatus.FAILED)
+                return SendOutcome.Failed(messageId, OWN_ACCOUNT)
             }
             // Nothing is opened here: each copy asks for its own device's session below, through
             // the core's machine. Two sends at once to a device with none used to open it twice
@@ -292,6 +296,13 @@ class SendMessageUseCase @Inject constructor(
         }
     }
 
+    /**
+     * Our own account is not a peer: no session with ourselves, no chat, nothing sent (iOS
+     * `OutboundSessionService`, `validation(.selfSend)`; `decisions/notes-stay-on-the-device.md`).
+     * A send to it came back to this device as a message from ourselves, so each showed twice.
+     */
+    private fun isOurs(contactId: String, myId: String): Boolean = contactId.equals(myId, ignoreCase = true)
+
     /** Signed in and the core up: a send can go now. */
     fun isReady(): Boolean = keystoreManager.getUserId() != null && cryptoManager.isMessagingReady
 
@@ -312,6 +323,7 @@ class SendMessageUseCase @Inject constructor(
         val myId = keystoreManager.getUserId() ?: return ResendOutcome.FAILED
         // The peer names the id it received, which for a sealed copy is the server's.
         val localId = serverMessageIds.localId(messageId)
+        if (isOurs(contactId, myId)) return ResendOutcome.NOT_OURS
         val row = messages.get(localId)
         val content = row?.let(::resendableContent)
         if (row == null || !row.isSentByMe || row.contentType != 0 || content == null ||
@@ -389,7 +401,7 @@ class SendMessageUseCase @Inject constructor(
      */
     suspend fun shareProfile(contactId: String, payload: ByteArray): Boolean {
         val myId = keystoreManager.getUserId() ?: return false
-        if (!cryptoManager.isMessagingReady || contactId == myId) return false
+        if (!cryptoManager.isMessagingReady || isOurs(contactId, myId)) return false
         val id = UUID.randomUUID()
         return try {
             val pinned = sessionManager.ensureSession(contactId)
@@ -486,20 +498,16 @@ class SendMessageUseCase @Inject constructor(
 
     /**
      * Something said about a message already sent (an edit, a reaction), under a fresh action id.
-     * Sent when a recipient device took it — or, for a note to self, when the mailbox did.
+     * Sent when a recipient device took it.
      */
     private suspend fun sendAction(myId: String, contactId: String, content: ByteArray, label: String): SendOutcome {
         val actionId = UUID.randomUUID().toString().lowercase()
         val timestampMs = System.currentTimeMillis()
         return try {
+            if (isOurs(contactId, myId)) return SendOutcome.Failed(actionId, OWN_ACCOUNT)
             val pinned = sessionManager.ensureSession(contactId)
-            if (contactId == myId) {
-                val note = sendNoteToSelf(myId, actionId, timestampMs, content, pinned)
-                if (note is SendOutcome.Failed) return note
-            } else {
-                val tally = deliverCopies(myId, contactId, actionId, timestampMs, content, pinned)
-                if (tally.recipientAccepted == 0) return SendOutcome.Failed(actionId, tally.lastError)
-            }
+            val tally = deliverCopies(myId, contactId, actionId, timestampMs, content, pinned)
+            if (tally.recipientAccepted == 0) return SendOutcome.Failed(actionId, tally.lastError)
             SendOutcome.Sent(actionId)
         } catch (e: CancellationException) {
             throw e
@@ -507,50 +515,6 @@ class SendMessageUseCase @Inject constructor(
             Log.e(TAG, "$label failed ${actionId.take(8)}…", e)
             SendOutcome.Failed(actionId, e.message ?: "$label failed")
         }
-    }
-
-    /**
-     * A note to self, unchanged.
-     *
-     * `plan_send` returns no recipient targets when the recipient is us — the recipient's devices
-     * *are* our devices, and planning both audiences would send every replica two copies. So the
-     * account-addressed copy here is not a privileged one among device copies; it is the only
-     * thing that puts the message in our own mailbox, and removing it would leave a single-device
-     * user's notes in the local store and nowhere else. Whether that copy should exist at all is a question
-     * about history sync, not about a peer's device set.
-     */
-    private suspend fun sendNoteToSelf(
-        myId: String,
-        messageId: String,
-        timestampMs: Long,
-        content: ByteArray,
-        pinned: SessionManager.SessionPeer,
-    ): SendOutcome {
-        val result = sendFrames(
-            frames = framesOf(content, messageId, isOwnReplica = false, partner = myId),
-            wireIdBase = messageId,
-            deviceId = pinned.deviceId,
-            myId = myId,
-            accountId = myId,
-            localId = null,
-            timestampMs = timestampMs,
-            identityPublic = pinned.identityPublic,
-        )
-        if (result?.success != true) {
-            messages.setDeliveryStatus(messageId, DeliveryStatus.FAILED)
-            return SendOutcome.Failed(messageId, result?.errorCode?.ifEmpty { "send failed" } ?: "send failed")
-        }
-        messages.setDeliveryStatus(messageId, DeliveryStatus.SENT)
-        result.orderKey?.let {
-            messages.setOrderKey(messageId, it)
-            messages.refreshChatPreview(chats, ConversationId.direct(myId, myId), mediaPreview::of)
-        }
-        runCatching {
-            deliverCopies(myId, myId, messageId, timestampMs, content, pinned)
-        }.onFailure {
-            Log.w(TAG, "replica fan-out failed ${messageId.take(8)}…", it)
-        }
-        return SendOutcome.Sent(messageId)
     }
 
     private data class DeliveryTally(
@@ -1030,6 +994,7 @@ class SendMessageUseCase @Inject constructor(
     private companion object {
         /** The plan had nobody to send to: for read markers, this is the only device. */
         const val NO_DEVICE = "no device to send to"
+        const val OWN_ACCOUNT = "our own account"
         const val TAG = "SendMessageUseCase"
         const val MAX_ATTEMPTS = 3
         const val BACKOFF_MS = 400L

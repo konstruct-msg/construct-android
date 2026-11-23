@@ -127,6 +127,33 @@ class ProcessorEffectsImplTest {
         assertEquals(listOf(true, false, false), inbox.readState.markers)
     }
 
+    /**
+     * Our own send handed back is not a message from anyone: no row, no chat, no alert, no
+     * receipt, and it is acked. Mutation: drop the check — each self-send shows twice (2026-11-23).
+     */
+    @Test
+    fun `a message from our own account is dropped`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        wheneverBlocking { inbox.sessionManager.accountIdForDevice("dev-us") }.thenReturn(myId)
+        inbox.effects.onDecrypted("dev-us", "self1", "hi".toByteArray(), envelopeSeconds = 1_700_000_000)
+        assertTrue(inbox.messages.rows.isEmpty())
+        assertTrue(inbox.chats.rows.isEmpty())
+        verifyBlocking(inbox.sendReceipt, never()) { delivered(any(), any()) }
+        assertTrue(inbox.acks.isProcessed("self1"))
+    }
+
+    /** A sibling's copy for a chat with ourselves makes none here. Mutation: drop the check. */
+    @Test
+    fun `a sender-sync for a chat with ourselves is dropped`() = runTest {
+        val inbox = Inbox(alerts, myId)
+        wheneverBlocking { inbox.sessionManager.accountIdForDevice("dev-us") }.thenReturn(myId)
+        val inner = KnstFrame.pack(TextWire.encode("hi"), KnstFrame.TYPE_E2EE_SIGNAL, UUID.randomUUID())
+        inbox.effects.onSenderSync("dev-us", "ss1", SenderSyncRouting.encode(myId, inner), 0L)
+        assertTrue(inbox.messages.rows.isEmpty())
+        assertTrue(inbox.chats.rows.isEmpty())
+        assertTrue(inbox.acks.isProcessed("ss1"))
+    }
+
     /** A message read already on another device of ours arrives with no count and no alert (TODO 153). */
     @Test
     fun `a message read elsewhere arrives read, placed by its envelope time`() = kotlinx.coroutines.test.runTest {
