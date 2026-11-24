@@ -5,10 +5,12 @@ import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.api.StreamCursorStore
 import com.construct.messenger.data.auth.TokenUtils
+import com.construct.messenger.data.auth.authenticateDevice
 import com.construct.messenger.data.local.KeystoreManager
 import com.construct.messenger.devicelink.DeviceLinkQr
 import com.construct.messenger.diagnostics.Log
 import com.google.protobuf.ByteString
+import io.grpc.Status
 import javax.inject.Inject
 import shared.proto.services.v1.AuthServiceOuterClass.AuthTokensResponse
 import shared.proto.services.v1.AuthServiceOuterClass.CheckJoinRequestStatusRequest
@@ -21,6 +23,9 @@ import uniffi.construct_core.RegistrationBundleFields
 /** The join request was turned down on the account's device, or ran out before anyone answered. */
 class JoinRequestEnded(val rejected: Boolean) : Exception(if (rejected) "rejected" else "expired")
 
+/** Approved, and then refused at sign-in in a way that would repeat: a clock out by minutes, a wrong key. */
+class JoinSignInRefused(cause: Throwable) : Exception("joined, sign-in refused: ${cause.message}", cause)
+
 /**
  * Join an existing account as a new device.
  * **Canon:** iOS `DeviceLinkViewModel.confirmLink` / `generateJoinRequestQR` / `finishLink`.
@@ -31,7 +36,7 @@ class JoinRequestEnded(val rejected: Boolean) : Exception(if (rejected) "rejecte
  * - Flow A ([confirm]): the account device's QR is scanned; `ConfirmDeviceLink` carries the proof
  *   of our keys under its secret and returns this device's tokens.
  * - Flow B ([submitJoinRequest] + [pollJoinRequest]): our QR names our keys (`fp`); the account's
- *   device approves, and the tokens wait on the server under our device id.
+ *   device approves, and we sign in with the key we asked to join with.
  */
 class LinkDeviceUseCase @Inject constructor(
     private val cryptoManager: CryptoManager,
@@ -74,17 +79,31 @@ class LinkDeviceUseCase @Inject constructor(
         return qr to identity.deviceId
     }
 
-    /** Flow B: true once approved and this device is an account device; false while pending. */
+    /** The device the account let in: the server forgets an approval sooner than the QR expires. */
+    private var approved: String? = null
+
+    /** Flow B: true once approved and signed in; false while pending. Throws what a later poll may get past. */
     suspend fun pollJoinRequest(deviceId: String): Boolean {
+        if (approved != deviceId && !isApproved(deviceId)) return false
+        approved = deviceId
+        val tokens = try {
+            authenticateDevice(cryptoManager, grpcClient, deviceId)
+        } catch (e: Exception) {
+            throw if (signInIsRefused(e)) JoinSignInRefused(e) else e
+        }
+        finish(tokens, deviceId)
+        return true
+    }
+
+    /** Reads the cause of a `DeviceAuthRefused` too. */
+    private fun signInIsRefused(e: Exception): Boolean = Status.fromThrowable(e).code in REFUSALS
+
+    private suspend fun isApproved(deviceId: String): Boolean {
         val r = grpcClient.deviceLink.checkJoinRequestStatus(
             CheckJoinRequestStatusRequest.newBuilder().setPendingDeviceId(deviceId).build(),
         )
         return when (r.status) {
-            CheckJoinRequestStatusResponse.Status.STATUS_APPROVED -> {
-                if (!r.hasTokens()) return false
-                finish(r.tokens, deviceId)
-                true
-            }
+            CheckJoinRequestStatusResponse.Status.STATUS_APPROVED -> true
             CheckJoinRequestStatusResponse.Status.STATUS_REJECTED -> throw JoinRequestEnded(rejected = true)
             CheckJoinRequestStatusResponse.Status.STATUS_EXPIRED -> throw JoinRequestEnded(rejected = false)
             else -> false
@@ -125,6 +144,7 @@ class LinkDeviceUseCase @Inject constructor(
         const val PLATFORM = "android"
         const val CLASSIC_CRYPTO_SUITE_LABEL = "Curve25519+Ed25519"
         const val INITIAL_OTPK_COUNT = 100
+        val REFUSALS = setOf(Status.Code.INVALID_ARGUMENT, Status.Code.UNAUTHENTICATED, Status.Code.PERMISSION_DENIED)
 
         /**
          * `"<iat ms>-0"` from the access token's `iat`, or null. PASETO v4.public only — Android

@@ -8,6 +8,7 @@ import com.construct.messenger.data.repository.AuthRepository
 import com.construct.messenger.devicelink.DeviceLinkQr
 import com.construct.messenger.diagnostics.Log
 import com.construct.messenger.domain.usecase.JoinRequestEnded
+import com.construct.messenger.domain.usecase.JoinSignInRefused
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.grpc.Status
 import io.grpc.StatusException
@@ -100,6 +101,10 @@ class JoinAccountViewModel @Inject constructor(
                     throw e
                 } catch (e: JoinRequestEnded) {
                     state.update { it.copy(joinQr = null, error = if (e.rejected) R.string.device_link_rejected else R.string.device_link_expired) }
+                    return@launch
+                } catch (e: JoinSignInRefused) {
+                    Log.e(TAG, "join: ${e.message}")
+                    state.update { it.copy(joinQr = null, error = R.string.device_link_failed) }
                     return@launch
                 } catch (e: Exception) {
                     Log.d(TAG, "join request status: ${e.message}") // transient: keep asking
