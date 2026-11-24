@@ -137,6 +137,9 @@ if [ "$gradle_ok" = 1 ] && [ "$f" = 0 ] && [ "$e" = 0 ] && [ "$t" -gt 0 ]; then
 else
   fail "compile + unit tests" "$t tests, $f failed, $e errors — see $OUT/gradle.txt"
   grep -E '^e: |FAILED|Test.*>.*FAILED' "$OUT/gradle.txt" | head -15
+  # Gradle's own reason: a build that stops before the compiler or the tests has no line above
+  # (2026-11-22 CI: "0 tests" over a Maven Central 429, seen only in the uploaded log).
+  sed -n '/^\* What went wrong:/,/^\* Try:/p' "$OUT/gradle.txt" | grep -v '^\* Try:' | head -30
 fi
 
 # ── 6. On a device: install over existing data, launch, read what happens ─────

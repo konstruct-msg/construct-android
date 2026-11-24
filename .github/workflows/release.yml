@@ -74,6 +74,17 @@ jobs:
         # Compile, tests and the static checks; the commit range is not this job's question.
         run: scripts/verify.sh --since HEAD
 
+      - name: Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-logs
+          path: |
+            app/build/verify
+            app/build/reports/tests
+          retention-days: 14
+          if-no-files-found: ignore
+
       - name: Channel
         id: channel
         # A tag on main is the public build and writes no log; anything else is handed to testers
