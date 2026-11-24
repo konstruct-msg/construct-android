@@ -7,22 +7,43 @@ import com.construct.messenger.service.SessionManager.PeerBundle
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.api.StreamCursorStore
 import com.construct.messenger.data.local.KeystoreManager
+import com.construct.messenger.domain.usecase.JoinSignInRefused
 import com.construct.messenger.domain.usecase.LinkDeviceUseCase
 import com.construct.messenger.domain.usecase.UploadPreKeysUseCase
+import io.grpc.Metadata
+import java.security.KeyFactory
+import java.security.Signature
+import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.reset
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import shared.proto.services.v1.AuthServiceGrpcKt.AuthServiceCoroutineStub
 import shared.proto.services.v1.AuthServiceOuterClass.AuthTokensResponse
+import shared.proto.services.v1.AuthServiceOuterClass.AuthenticateDeviceRequest
+import shared.proto.services.v1.AuthServiceOuterClass.AuthenticateDeviceResponse
+import shared.proto.services.v1.AuthServiceOuterClass.CheckJoinRequestStatusResponse
+import shared.proto.services.v1.AuthServiceOuterClass.CheckJoinRequestStatusResponse.Status.STATUS_APPROVED
+import shared.proto.services.v1.AuthServiceOuterClass.CheckJoinRequestStatusResponse.Status.STATUS_EXPIRED
+import shared.proto.services.v1.AuthServiceOuterClass.CheckJoinRequestStatusResponse.Status.STATUS_PENDING
 import shared.proto.services.v1.AuthServiceOuterClass.ConfirmDeviceLinkRequest
 import shared.proto.services.v1.AuthServiceOuterClass.ConfirmDeviceLinkResponse
+import shared.proto.services.v1.AuthServiceOuterClass.JoinRequestAck
+import shared.proto.services.v1.AuthServiceOuterClass.JoinRequestPayload
 import shared.proto.services.v1.DeviceLinkServiceGrpcKt.DeviceLinkServiceCoroutineStub
 import uniffi.construct_core.BinaryKeyBundle
 import uniffi.construct_core.DeviceLinkEvidence
@@ -121,7 +142,107 @@ class LinkIdentityTest {
         assertEquals("tok", sent.firstValue.linkToken)
         assertEquals(deviceId, sent.firstValue.deviceId)
         assertEquals(32, sent.firstValue.linkKeyProof.size())
-        org.mockito.kotlin.verify(cursor).save("1800000000000-0")
+        verify(cursor).save("1800000000000-0")
+    }
+
+    /** Flow B up to the poll: our request is in, the stubs answer as told. */
+    private inner class Join(vararg statuses: CheckJoinRequestStatusResponse.Status) {
+        val crypto = CryptoManager()
+        val link: DeviceLinkServiceCoroutineStub = mock()
+        val auth: AuthServiceCoroutineStub = mock()
+        val keystore: KeystoreManager = mock<KeystoreManager>().also { whenever(it.savePrivateKeys(any())).thenReturn(true) }
+        private val grpc: GrpcClient = mock<GrpcClient>().also {
+            whenever(it.deviceLink).thenReturn(link)
+            whenever(it.auth).thenReturn(auth)
+            whenever(it.veilPort).thenReturn(null)
+        }
+        val useCase = LinkDeviceUseCase(crypto, grpc, keystore, mock(), mock<UploadPreKeysUseCase>())
+        val sent = argumentCaptor<JoinRequestPayload>()
+        private val answers = statuses.map { CheckJoinRequestStatusResponse.newBuilder().setStatus(it).build() }
+
+        suspend fun submitted(): String {
+            whenever(link.submitJoinRequest(sent.capture(), any())).thenReturn(JoinRequestAck.getDefaultInstance())
+            whenever(link.checkJoinRequestStatus(any(), any()))
+                .thenReturn(answers.first(), *answers.drop(1).toTypedArray())
+            return useCase.submitJoinRequest().second
+        }
+
+        suspend fun signInAnswers() {
+            val tokens = AuthTokensResponse.newBuilder().setUserId(CoreTestDevice.ACCOUNT).setAccessToken(paseto(iat = 1_800_000_000))
+            whenever(auth.authenticateDevice(any(), any())).thenReturn(AuthenticateDeviceResponse.newBuilder().setTokens(tokens).build())
+        }
+    }
+
+    /**
+     * The tokens come from signing in, under the key the request named. Mutations: sign in while
+     * pending; take tokens from the status — there are none in it here.
+     */
+    @Test
+    fun aJoinedDeviceSignsInWithTheKeyItAskedWith() = runTest {
+        val join = Join(STATUS_PENDING, STATUS_APPROVED)
+        val deviceId = join.submitted()
+        join.signInAnswers()
+
+        assertFalse(join.useCase.pollJoinRequest(deviceId))
+        verify(join.auth, never()).authenticateDevice(any(), any())
+        assertTrue(join.useCase.pollJoinRequest(deviceId))
+
+        val signIn = argumentCaptor<AuthenticateDeviceRequest>()
+        verify(join.auth).authenticateDevice(signIn.capture(), any())
+        val r = signIn.firstValue
+        assertEquals(deviceId, r.deviceId)
+        val spki = byteArrayOf(0x30, 0x2a, 0x30, 5, 6, 3, 0x2b, 0x65, 0x70, 3, 0x21, 0) + join.sent.firstValue.verifyingKey.toByteArray()
+        val verifier = Signature.getInstance("Ed25519").apply {
+            initVerify(KeyFactory.getInstance("Ed25519").generatePublic(X509EncodedKeySpec(spki)))
+            update("${r.deviceId}${r.timestamp}".toByteArray())
+        }
+        assertTrue(verifier.verify(r.signature.toByteArray()))
+        verify(join.keystore).saveTokens(any(), eq(deviceId))
+    }
+
+    /** Mutation: forget the approval — the second poll asks, hears "expired" and ends the join. */
+    @Test
+    fun aSignInThatDidNotGetThroughIsTriedAgainWithoutAsking() = runTest {
+        val join = Join(STATUS_APPROVED, STATUS_EXPIRED)
+        val deviceId = join.submitted()
+        whenever(join.auth.authenticateDevice(any(), any())).thenThrow(io.grpc.Status.UNAVAILABLE.asRuntimeException())
+        val first = runCatching { join.useCase.pollJoinRequest(deviceId) }.exceptionOrNull()
+        assertTrue("$first", first is io.grpc.StatusRuntimeException)
+
+        reset(join.auth)
+        join.signInAnswers()
+        assertTrue(join.useCase.pollJoinRequest(deviceId))
+        verify(join.link, times(1)).checkJoinRequestStatus(any(), any())
+    }
+
+    /** Mutation: drop a code from `REFUSALS` — the wait goes on for ten minutes. */
+    @Test
+    fun aRefusedSignInEndsTheJoin() = runTest {
+        val named = Metadata().apply { put(Metadata.Key.of("construct-device-refusal", Metadata.ASCII_STRING_MARSHALLER), "1") }
+        val refusals = listOf(
+            io.grpc.Status.INVALID_ARGUMENT.asRuntimeException(),
+            io.grpc.Status.UNAUTHENTICATED.asRuntimeException(),
+            io.grpc.Status.UNAUTHENTICATED.asRuntimeException(named),
+            io.grpc.Status.PERMISSION_DENIED.asRuntimeException(),
+        )
+        for (refusal in refusals) {
+            val join = Join(STATUS_APPROVED)
+            val deviceId = join.submitted()
+            whenever(join.auth.authenticateDevice(any(), any())).thenThrow(refusal)
+            val error = runCatching { join.useCase.pollJoinRequest(deviceId) }.exceptionOrNull()
+            assertTrue("$refusal: $error", error is JoinSignInRefused)
+        }
+    }
+
+    /** One device's approval is not another's. Mutation: keep a flag instead of the id. */
+    @Test
+    fun anApprovalIsOfTheDeviceThatAsked() = runTest {
+        val join = Join(STATUS_APPROVED, STATUS_PENDING)
+        val first = join.submitted()
+        whenever(join.auth.authenticateDevice(any(), any())).thenThrow(io.grpc.Status.UNAVAILABLE.asRuntimeException())
+        runCatching { join.useCase.pollJoinRequest(first) }
+        val second = join.useCase.submitJoinRequest().second
+        assertFalse(join.useCase.pollJoinRequest(second))
     }
 
     /**
