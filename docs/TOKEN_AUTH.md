@@ -123,31 +123,7 @@ This is the **only** client-side token parsing operation permitted on the hot pa
 
 Extracting claims from a PASETO v4.public token **without** signature verification:
 
-```kotlin
-object TokenUtils {
-    fun extractUserId(token: String): String? {
-        if (!token.startsWith("v4.public.")) return null
-        val stripped = token.removePrefix("v4.public.")
-        val payloadB64 = stripped.substringBefore('.')    // footer optional
-        val payload = base64UrlDecode(payloadB64) ?: return null
-        // nonce(32) + message(variable) + signature(64)
-        if (payload.size <= 32 + 64) return null
-        val message = payload.copyOfRange(32, payload.size - 64)
-        val claims = runCatching {
-            JSONObject(String(message, Charsets.UTF_8))
-        }.getOrNull() ?: return null
-        return claims.optString("sub").takeIf { it.isNotEmpty() }
-    }
-
-    private fun base64UrlDecode(input: String): ByteArray? {
-        val padded = input
-            .replace('-', '+')
-            .replace('_', '/')
-            .let { it + "=".repeat((4 - it.length % 4) % 4) }
-        return Base64.decode(padded, Base64.NO_WRAP)
-    }
-}
-```
+The core reads the claims (`sessionTokenClaims`, construct-core `session_token`); no Kotlin copy.
 
 > **Why not verify the signature?** The server verifies. Client-side verification would
 > require shipping the server's Ed25519 public key in the APK and rotating it on every
@@ -249,7 +225,6 @@ device re-auth. The server will not issue JWT to new clients post-cutover.
 
 ## 7. Implementation Checklist (Android)
 
-- [ ] `TokenUtils.kt` (extractUserId, format guard) — see §3.4
 - [ ] `KeyStoreManager.kt` — secure storage for access/refresh tokens + userId + deviceId
 - [x] `AuthInterceptor.kt` — gRPC metadata injection (Bearer + x-user-id + x-device-id)
   - 6 unauthenticated methods (per §3.2 + Stealth v2 `SendSealedMessage`)
@@ -261,8 +236,6 @@ device re-auth. The server will not issue JWT to new clients post-cutover.
       RefreshToken
 - [ ] Device re-auth fallback on permanent refresh failure
 - [ ] Unit tests:
-  - `TokenUtilsTest`: extract `sub` from PASETO; reject non-PASETO; malformed payload;
-    too-short payload; bad JSON; token with footer
   - `AuthSessionManagerTest`: cache token-format guard (PASETO accepted, garbage
     rejected → clearSession)
   - `TokenRefreshCoordinatorTest`: single-flight serialization, permanent-invalid

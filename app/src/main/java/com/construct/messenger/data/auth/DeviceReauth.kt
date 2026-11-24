@@ -14,6 +14,7 @@ import kotlinx.coroutines.sync.withLock
 import shared.proto.services.v1.AuthServiceOuterClass.AuthTokensResponse
 import shared.proto.services.v1.AuthServiceOuterClass.AuthenticateDeviceRequest
 import uniffi.construct_core.DeviceRefusalKind
+import uniffi.construct_core.deviceSignInMessage
 
 /**
  * A running device whose refresh token the server no longer takes signs in again with its device
@@ -93,7 +94,7 @@ internal suspend fun authenticateDevice(
     deviceId: String,
 ): AuthTokensResponse {
     val timestamp = System.currentTimeMillis() / 1000
-    val signature = cryptoManager.signWithDeviceKey("$deviceId$timestamp")
+    val signature = cryptoManager.signWithDeviceKey(deviceSignInMessage(deviceId, timestamp))
 
     val request = AuthenticateDeviceRequest.newBuilder()
         .setDeviceId(deviceId)

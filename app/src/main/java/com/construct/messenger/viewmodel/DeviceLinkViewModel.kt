@@ -7,7 +7,6 @@ import com.construct.messenger.R
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.repository.DevicesRepository
 import com.construct.messenger.devicelink.DeviceCertificateIssuer
-import com.construct.messenger.devicelink.DeviceLinkQr
 import com.construct.messenger.diagnostics.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -18,6 +17,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import uniffi.construct_core.newDeviceLinkSecret
+import uniffi.construct_core.DeviceLinkQr
+import uniffi.construct_core.deviceLinkOfferQr
+import uniffi.construct_core.readDeviceLinkQr
 
 data class DeviceLinkUiState(
     /** Flow A: the QR this device shows, and when its token expires (unix seconds). */
@@ -61,7 +63,7 @@ class DeviceLinkViewModel @Inject constructor(
                 // The secret the new device proves its keys under. In the QR and nowhere else.
                 val secret = newDeviceLinkSecret()
                 issuer.awaitLink(token, secret)
-                state.update { it.copy(busy = false, offerQr = DeviceLinkQr.offer(token, fingerprint, secret), offerExpiresAt = expiresAt) }
+                state.update { it.copy(busy = false, offerQr = deviceLinkOfferQr(token, fingerprint, secret), offerExpiresAt = expiresAt) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -79,7 +81,7 @@ class DeviceLinkViewModel @Inject constructor(
 
     /** Flow B: a scanned code. Only a join request is ours; it waits for [approve]. */
     fun onScanned(text: String) {
-        val request = DeviceLinkQr.parseJoinRequest(text.trim())
+        val request = readDeviceLinkQr(text) as? DeviceLinkQr.JoinRequest
         state.update {
             if (request == null) it.copy(scanning = false, error = R.string.device_link_invalid_qr)
             else it.copy(scanning = false, pending = request)

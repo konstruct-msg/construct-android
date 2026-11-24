@@ -762,11 +762,19 @@ external fun uniffi_construct_core_checksum_func_derive_device_id(
 ): Short
 external fun uniffi_construct_core_checksum_func_derive_recovery_keypair(
 ): Short
+external fun uniffi_construct_core_checksum_func_device_join_request_qr(
+): Short
+external fun uniffi_construct_core_checksum_func_device_link_offer_qr(
+): Short
+external fun uniffi_construct_core_checksum_func_device_link_start_cursor(
+): Short
 external fun uniffi_construct_core_checksum_func_device_refusal_of(
 ): Short
 external fun uniffi_construct_core_checksum_func_device_set_named(
 ): Short
 external fun uniffi_construct_core_checksum_func_device_set_should_ask(
+): Short
+external fun uniffi_construct_core_checksum_func_device_sign_in_message(
 ): Short
 external fun uniffi_construct_core_checksum_func_fanout_retry_base_backoff_ms(
 ): Short
@@ -908,6 +916,8 @@ external fun uniffi_construct_core_checksum_func_read_boundary_covers(
 ): Short
 external fun uniffi_construct_core_checksum_func_read_boundary_is_later(
 ): Short
+external fun uniffi_construct_core_checksum_func_read_device_link_qr(
+): Short
 external fun uniffi_construct_core_checksum_func_read_unread_left(
 ): Short
 external fun uniffi_construct_core_checksum_func_receiving_init_kind(
@@ -927,6 +937,8 @@ external fun uniffi_construct_core_checksum_func_seal_to_device_key(
 external fun uniffi_construct_core_checksum_func_sealed_seal_sender_cert(
 ): Short
 external fun uniffi_construct_core_checksum_func_sealed_verify_sender_cert(
+): Short
+external fun uniffi_construct_core_checksum_func_session_token_claims(
 ): Short
 external fun uniffi_construct_core_checksum_func_share_draft_decode(
 ): Short
@@ -1037,6 +1049,14 @@ external fun uniffi_construct_core_checksum_method_classiccryptocore_rotate_sign
 external fun uniffi_construct_core_checksum_method_classiccryptocore_set_local_user_id(
 ): Short
 external fun uniffi_construct_core_checksum_method_classiccryptocore_sign_bundle_data(
+): Short
+external fun uniffi_construct_core_checksum_method_devicejoinwait_next(
+): Short
+external fun uniffi_construct_core_checksum_method_devicejoinwait_on_sign_in_failed(
+): Short
+external fun uniffi_construct_core_checksum_method_devicejoinwait_on_status(
+): Short
+external fun uniffi_construct_core_checksum_method_devicejoinwait_on_status_failed(
 ): Short
 external fun uniffi_construct_core_checksum_method_fanoutretrystate_all(
 ): Short
@@ -1544,6 +1564,8 @@ external fun uniffi_construct_core_checksum_method_streamcursorstate_track_resol
 ): Short
 external fun uniffi_construct_core_checksum_constructor_callmachine_new(
 ): Short
+external fun uniffi_construct_core_checksum_constructor_devicejoinwait_new(
+): Short
 external fun uniffi_construct_core_checksum_constructor_fanoutretrystate_from_bytes(
 ): Short
 external fun uniffi_construct_core_checksum_constructor_fanoutretrystate_new(
@@ -1683,6 +1705,20 @@ external fun uniffi_construct_core_fn_method_classiccryptocore_set_local_user_id
 ): Unit
 external fun uniffi_construct_core_fn_method_classiccryptocore_sign_bundle_data(`ptr`: Long,`bundleDataJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_clone_devicejoinwait(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_free_devicejoinwait(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_constructor_devicejoinwait_new(`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_construct_core_fn_method_devicejoinwait_next(`ptr`: Long,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_method_devicejoinwait_on_sign_in_failed(`ptr`: Long,`failure`: RustBuffer.ByValue,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_devicejoinwait_on_status(`ptr`: Long,`status`: Int,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_construct_core_fn_method_devicejoinwait_on_status_failed(`ptr`: Long,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_construct_core_fn_clone_fanoutretrystate(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_free_fanoutretrystate(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -2317,12 +2353,20 @@ external fun uniffi_construct_core_fn_func_derive_device_id(`identityPublicKey`:
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_derive_recovery_keypair(`seed`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_device_join_request_qr(`identityPublic`: RustBuffer.ByValue,`hybridPublic`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`platform`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_device_link_offer_qr(`token`: RustBuffer.ByValue,`fingerprint`: RustBuffer.ByValue,`secret`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_device_link_start_cursor(`accessToken`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_device_refusal_of(`statusCode`: Int,`trailer`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_device_set_named(`answers`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_device_set_should_ask(`named`: RustBuffer.ByValue,`alreadyAsked`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_func_device_sign_in_message(`deviceId`: RustBuffer.ByValue,`timestamp`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_fanout_retry_base_backoff_ms(uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_construct_core_fn_func_fanout_retry_max_attempts(uniffi_out_err: UniffiRustCallStatus, 
@@ -2463,6 +2507,8 @@ external fun uniffi_construct_core_fn_func_read_boundary_covers(`boundary`: Rust
 ): Byte
 external fun uniffi_construct_core_fn_func_read_boundary_is_later(`a`: RustBuffer.ByValue,`b`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_func_read_device_link_qr(`text`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_read_unread_left(`unread`: Int,`incoming`: RustBuffer.ByValue,`boundary`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
 external fun uniffi_construct_core_fn_func_receiving_init_kind(`carrier`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -2483,6 +2529,8 @@ external fun uniffi_construct_core_fn_func_sealed_seal_sender_cert(`certBytes`: 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_sealed_verify_sender_cert(`userId`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,`identityKey`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,`issuedAt`: Long,`expiresAt`: Long,`signature`: RustBuffer.ByValue,`serverVerifyingKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_func_session_token_claims(`token`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_share_draft_decode(`kept`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_share_draft_encode(`draft`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -2718,6 +2766,15 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_derive_recovery_keypair() != 51363.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_device_join_request_qr() != 27188.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_device_link_offer_qr() != 35098.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_device_link_start_cursor() != 14520.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_device_refusal_of() != 19311.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2725,6 +2782,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_device_set_should_ask() != 28437.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_device_sign_in_message() != 2027.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_fanout_retry_base_backoff_ms() != 25894.toShort()) {
@@ -2937,6 +2997,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_read_boundary_is_later() != 63601.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_read_device_link_qr() != 11830.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_read_unread_left() != 1806.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2965,6 +3028,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_sealed_verify_sender_cert() != 64198.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_session_token_claims() != 18331.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_share_draft_decode() != 28972.toShort()) {
@@ -3130,6 +3196,18 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_classiccryptocore_sign_bundle_data() != 43516.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_devicejoinwait_next() != 34803.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_devicejoinwait_on_sign_in_failed() != 39510.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_devicejoinwait_on_status() != 39048.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_method_devicejoinwait_on_status_failed() != 53461.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_method_fanoutretrystate_all() != 58673.toShort()) {
@@ -3889,6 +3967,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_constructor_callmachine_new() != 57398.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_constructor_devicejoinwait_new() != 49988.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_constructor_fanoutretrystate_from_bytes() != 2145.toShort()) {
@@ -5586,6 +5667,346 @@ public object FfiConverterTypeClassicCryptoCore: FfiConverter<ClassicCryptoCore,
     override fun allocationSize(value: ClassicCryptoCore) = 8UL
 
     override fun write(value: ClassicCryptoCore, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+//
+/**
+ * The new device's wait in Flow B, one rule for every client (construct-rules `device_join`;
+ * decisions/a-joining-device-signs-in-with-its-own-key.md): when to ask, when to sign in, how it
+ * ends. The platform makes the two calls and shows the end. Not kept: a restarted client shows a
+ * new code.
+ */
+public interface DeviceJoinWaitInterface {
+    
+    /**
+     * What to do now. Asked again after every step.
+     */
+    fun `next`(`nowMs`: kotlin.Long): DeviceJoinStep
+    
+    /**
+     * The sign-in gave no tokens.
+     */
+    fun `onSignInFailed`(`failure`: SendFailureKind, `nowMs`: kotlin.Long)
+    
+    /**
+     * The server's answer: the number of `CheckJoinRequestStatusResponse.Status`.
+     */
+    fun `onStatus`(`status`: kotlin.Int, `nowMs`: kotlin.Long)
+    
+    /**
+     * The server gave no answer about the request.
+     */
+    fun `onStatusFailed`(`nowMs`: kotlin.Long)
+    
+    companion object
+}
+
+/**
+ * The new device's wait in Flow B, one rule for every client (construct-rules `device_join`;
+ * decisions/a-joining-device-signs-in-with-its-own-key.md): when to ask, when to sign in, how it
+ * ends. The platform makes the two calls and shows the end. Not kept: a restarted client shows a
+ * new code.
+ */
+open class DeviceJoinWait: Disposable, AutoCloseable, DeviceJoinWaitInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+    /**
+     * The request was submitted and its code is on the screen.
+     */
+    constructor(`nowMs`: kotlin.Long) :
+        this(UniffiWithHandle, 
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_constructor_devicejoinwait_new(
+    
+        FfiConverterLong.lower(`nowMs`),_status)
+}
+    )
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_construct_core_fn_free_devicejoinwait(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_construct_core_fn_clone_devicejoinwait(handle, status)
+        }
+    }
+
+    
+    /**
+     * What to do now. Asked again after every step.
+     */override fun `next`(`nowMs`: kotlin.Long): DeviceJoinStep {
+            return FfiConverterTypeDeviceJoinStep.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_devicejoinwait_next(
+        it,
+        FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The sign-in gave no tokens.
+     */override fun `onSignInFailed`(`failure`: SendFailureKind, `nowMs`: kotlin.Long)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_devicejoinwait_on_sign_in_failed(
+        it,
+        FfiConverterTypeSendFailureKind.lower(`failure`),FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * The server's answer: the number of `CheckJoinRequestStatusResponse.Status`.
+     */override fun `onStatus`(`status`: kotlin.Int, `nowMs`: kotlin.Long)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_devicejoinwait_on_status(
+        it,
+        FfiConverterInt.lower(`status`),FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * The server gave no answer about the request.
+     */override fun `onStatusFailed`(`nowMs`: kotlin.Long)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_method_devicejoinwait_on_status_failed(
+        it,
+        FfiConverterLong.lower(`nowMs`),_status)
+}
+    }
+    
+    
+
+    
+
+    
+
+
+    
+    
+    /**
+     * @suppress
+     */
+    companion object
+    
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeDeviceJoinWait: FfiConverter<DeviceJoinWait, Long> {
+    override fun lower(value: DeviceJoinWait): Long {
+        return value.uniffiCloneHandle()
+    }
+
+    override fun lift(value: Long): DeviceJoinWait {
+        return DeviceJoinWait(UniffiWithHandle, value)
+    }
+
+    override fun read(buf: ByteBuffer): DeviceJoinWait {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: DeviceJoinWait) = 8UL
+
+    override fun write(value: DeviceJoinWait, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
@@ -17312,6 +17733,48 @@ public object FfiConverterTypeSessionInitResult: FfiConverterRustBuffer<SessionI
 
 
 
+/**
+ * What a client reads in its own access token; each null when the token does not carry it.
+ */
+data class SessionTokenClaims (
+    var `userId`: kotlin.String?
+    , 
+    /**
+     * Unix seconds.
+     */
+    var `issuedAt`: kotlin.Long?
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSessionTokenClaims: FfiConverterRustBuffer<SessionTokenClaims> {
+    override fun read(buf: ByteBuffer): SessionTokenClaims {
+        return SessionTokenClaims(
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SessionTokenClaims) = (
+            FfiConverterOptionalString.allocationSize(value.`userId`) +
+            FfiConverterOptionalLong.allocationSize(value.`issuedAt`)
+    )
+
+    override fun write(value: SessionTokenClaims, buf: ByteBuffer) {
+            FfiConverterOptionalString.write(value.`userId`, buf)
+            FfiConverterOptionalLong.write(value.`issuedAt`, buf)
+    }
+}
+
+
+
 data class ShareDraft (
     var `id`: kotlin.String
     , 
@@ -20706,6 +21169,172 @@ public object FfiConverterTypeDeviceCertError : FfiConverterRustBuffer<DeviceCer
 
 
 /**
+ * How the wait ended without the device signed in.
+ */
+
+enum class DeviceJoinEnd {
+    
+    /**
+     * A device of the account turned the request down.
+     */
+    REJECTED,
+    /**
+     * Nobody let this device in before the request ran out: show a new code.
+     */
+    EXPIRED,
+    /**
+     * Let in, then refused in a way that would repeat: a clock out by minutes, a wrong key.
+     */
+    SIGN_IN_REFUSED,
+    /**
+     * Let in, and the server could not be reached to sign in. The account lists the device.
+     */
+    LET_IN_UNREACHABLE;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeDeviceJoinEnd: FfiConverterRustBuffer<DeviceJoinEnd> {
+    override fun read(buf: ByteBuffer) = try {
+        DeviceJoinEnd.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: DeviceJoinEnd) = 4UL
+
+    override fun write(value: DeviceJoinEnd, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * What a device waiting to be let in does now.
+ */
+sealed class DeviceJoinStep {
+    
+    /**
+     * Nothing for this long; then ask `next` again.
+     */
+    data class Wait(
+        val `ms`: kotlin.Long) : DeviceJoinStep()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * `CheckJoinRequestStatus`; then `on_status` or `on_status_failed`.
+     */
+    object Ask : DeviceJoinStep()
+    
+    
+    /**
+     * `AuthenticateDevice` under the key it asked to join with; then `on_sign_in_failed`, or the
+     * device is in and this object is done with.
+     */
+    object SignIn : DeviceJoinStep()
+    
+    
+    data class Ended(
+        val `end`: DeviceJoinEnd) : DeviceJoinStep()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeDeviceJoinStep : FfiConverterRustBuffer<DeviceJoinStep>{
+    override fun read(buf: ByteBuffer): DeviceJoinStep {
+        return when(buf.getInt()) {
+            1 -> DeviceJoinStep.Wait(
+                FfiConverterLong.read(buf),
+                )
+            2 -> DeviceJoinStep.Ask
+            3 -> DeviceJoinStep.SignIn
+            4 -> DeviceJoinStep.Ended(
+                FfiConverterTypeDeviceJoinEnd.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: DeviceJoinStep) = when(value) {
+        is DeviceJoinStep.Wait -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterLong.allocationSize(value.`ms`)
+            )
+        }
+        is DeviceJoinStep.Ask -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is DeviceJoinStep.SignIn -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is DeviceJoinStep.Ended -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeDeviceJoinEnd.allocationSize(value.`end`)
+            )
+        }
+    }
+
+    override fun write(value: DeviceJoinStep, buf: ByteBuffer) {
+        when(value) {
+            is DeviceJoinStep.Wait -> {
+                buf.putInt(1)
+                FfiConverterLong.write(value.`ms`, buf)
+                Unit
+            }
+            is DeviceJoinStep.Ask -> {
+                buf.putInt(2)
+                Unit
+            }
+            is DeviceJoinStep.SignIn -> {
+                buf.putInt(3)
+                Unit
+            }
+            is DeviceJoinStep.Ended -> {
+                buf.putInt(4)
+                FfiConverterTypeDeviceJoinEnd.write(value.`end`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
  * What the link QR showed about the new device.
  */
 sealed class DeviceLinkEvidence {
@@ -20786,6 +21415,119 @@ public object FfiConverterTypeDeviceLinkEvidence : FfiConverterRustBuffer<Device
                 buf.putInt(2)
                 FfiConverterByteArray.write(value.`secret`, buf)
                 FfiConverterByteArray.write(value.`proof`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * A device-link QR code. A fingerprint or secret of any other shape than 32 bytes reads as null.
+ */
+sealed class DeviceLinkQr {
+    
+    /**
+     * Flow A, shown by a device of the account. `secret` null: an older code — the device links,
+     * unvouched.
+     */
+    data class Offer(
+        val `token`: kotlin.String, 
+        val `fingerprint`: kotlin.ByteArray?, 
+        val `secret`: kotlin.ByteArray?) : DeviceLinkQr()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Flow B, shown by the new device; `device_id` is the one of `identity_public`.
+     * `fingerprint` null: it is let in, unvouched.
+     */
+    data class JoinRequest(
+        val `deviceId`: kotlin.String, 
+        val `identityPublic`: kotlin.ByteArray, 
+        val `fingerprint`: kotlin.ByteArray?, 
+        val `name`: kotlin.String, 
+        val `platform`: kotlin.String) : DeviceLinkQr()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeDeviceLinkQr : FfiConverterRustBuffer<DeviceLinkQr>{
+    override fun read(buf: ByteBuffer): DeviceLinkQr {
+        return when(buf.getInt()) {
+            1 -> DeviceLinkQr.Offer(
+                FfiConverterString.read(buf),
+                FfiConverterOptionalByteArray.read(buf),
+                FfiConverterOptionalByteArray.read(buf),
+                )
+            2 -> DeviceLinkQr.JoinRequest(
+                FfiConverterString.read(buf),
+                FfiConverterByteArray.read(buf),
+                FfiConverterOptionalByteArray.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: DeviceLinkQr) = when(value) {
+        is DeviceLinkQr.Offer -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`token`)
+                + FfiConverterOptionalByteArray.allocationSize(value.`fingerprint`)
+                + FfiConverterOptionalByteArray.allocationSize(value.`secret`)
+            )
+        }
+        is DeviceLinkQr.JoinRequest -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`deviceId`)
+                + FfiConverterByteArray.allocationSize(value.`identityPublic`)
+                + FfiConverterOptionalByteArray.allocationSize(value.`fingerprint`)
+                + FfiConverterString.allocationSize(value.`name`)
+                + FfiConverterString.allocationSize(value.`platform`)
+            )
+        }
+    }
+
+    override fun write(value: DeviceLinkQr, buf: ByteBuffer) {
+        when(value) {
+            is DeviceLinkQr.Offer -> {
+                buf.putInt(1)
+                FfiConverterString.write(value.`token`, buf)
+                FfiConverterOptionalByteArray.write(value.`fingerprint`, buf)
+                FfiConverterOptionalByteArray.write(value.`secret`, buf)
+                Unit
+            }
+            is DeviceLinkQr.JoinRequest -> {
+                buf.putInt(2)
+                FfiConverterString.write(value.`deviceId`, buf)
+                FfiConverterByteArray.write(value.`identityPublic`, buf)
+                FfiConverterOptionalByteArray.write(value.`fingerprint`, buf)
+                FfiConverterString.write(value.`name`, buf)
+                FfiConverterString.write(value.`platform`, buf)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
@@ -24139,6 +24881,38 @@ public object FfiConverterOptionalTypeSessionHealthReport: FfiConverterRustBuffe
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeSessionTokenClaims: FfiConverterRustBuffer<SessionTokenClaims?> {
+    override fun read(buf: ByteBuffer): SessionTokenClaims? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeSessionTokenClaims.read(buf)
+    }
+
+    override fun allocationSize(value: SessionTokenClaims?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeSessionTokenClaims.allocationSize(value)
+        }
+    }
+
+    override fun write(value: SessionTokenClaims?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeSessionTokenClaims.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeStreamCursorBlocker: FfiConverterRustBuffer<StreamCursorBlocker?> {
     override fun read(buf: ByteBuffer): StreamCursorBlocker? {
         if (buf.get().toInt() == 0) {
@@ -24321,6 +25095,38 @@ public object FfiConverterOptionalTypeCallStreamStep: FfiConverterRustBuffer<Cal
         } else {
             buf.put(1)
             FfiConverterTypeCallStreamStep.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeDeviceLinkQr: FfiConverterRustBuffer<DeviceLinkQr?> {
+    override fun read(buf: ByteBuffer): DeviceLinkQr? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeDeviceLinkQr.read(buf)
+    }
+
+    override fun allocationSize(value: DeviceLinkQr?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeDeviceLinkQr.allocationSize(value)
+        }
+    }
+
+    override fun write(value: DeviceLinkQr?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeDeviceLinkQr.write(value, buf)
         }
     }
 }
@@ -25929,6 +26735,50 @@ public object FfiConverterSequenceSequenceString: FfiConverterRustBuffer<List<Li
     
 
         /**
+         * The Flow B code of the device that holds these keys: its id and fingerprint follow from them.
+         * InvalidKeyData unless `identity_public` is 32 bytes.
+         */
+    @Throws(CryptoException::class) fun `deviceJoinRequestQr`(`identityPublic`: kotlin.ByteArray, `hybridPublic`: kotlin.ByteArray, `name`: kotlin.String, `platform`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_device_join_request_qr(
+    
+        FfiConverterByteArray.lower(`identityPublic`),FfiConverterByteArray.lower(`hybridPublic`),FfiConverterString.lower(`name`),FfiConverterString.lower(`platform`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The Flow A code. `fingerprint`: `history_qr_fingerprint` of this device, null before it holds
+         * a hybrid key; `secret`: `new_device_link_secret`. InvalidKeyData unless each is 32 bytes.
+         */
+    @Throws(CryptoException::class) fun `deviceLinkOfferQr`(`token`: kotlin.String, `fingerprint`: kotlin.ByteArray?, `secret`: kotlin.ByteArray): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(CryptoException) { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_device_link_offer_qr(
+    
+        FfiConverterString.lower(`token`),FfiConverterOptionalByteArray.lower(`fingerprint`),FfiConverterByteArray.lower(`secret`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Where a newly linked device's stream starts: the moment its token was issued; null when the
+         * token does not say.
+         */ fun `deviceLinkStartCursor`(`accessToken`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_device_link_start_cursor(
+    
+        FfiConverterString.lower(`accessToken`),_status)
+}
+    )
+    }
+    
+
+        /**
          * Why the server refused this device: from the gRPC status code and the first value of the
          * `construct-device-refusal` trailer. Only UNAUTHENTICATED (16) carries one; never the text.
          */ fun `deviceRefusalOf`(`statusCode`: kotlin.UInt, `trailer`: kotlin.String?): DeviceRefusalKind {
@@ -25965,6 +26815,20 @@ public object FfiConverterSequenceSequenceString: FfiConverterRustBuffer<List<Li
     UniffiLib.uniffi_construct_core_fn_func_device_set_should_ask(
     
         FfiConverterSequenceString.lower(`named`),FfiConverterOptionalSequenceString.lower(`alreadyAsked`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * What a device signs to sign in (`AuthenticateDevice`), for `sign_with_device_key`: its id and
+         * the Unix time in seconds it sends with it.
+         */ fun `deviceSignInMessage`(`deviceId`: kotlin.String, `timestamp`: kotlin.Long): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_device_sign_in_message(
+    
+        FfiConverterString.lower(`deviceId`),FfiConverterLong.lower(`timestamp`),_status)
 }
     )
     }
@@ -26878,6 +27742,19 @@ public object FfiConverterSequenceSequenceString: FfiConverterRustBuffer<List<Li
     
 
         /**
+         * The link code in a scanned or opened text; null when it is not one.
+         */ fun `readDeviceLinkQr`(`text`: kotlin.String): DeviceLinkQr? {
+            return FfiConverterOptionalTypeDeviceLinkQr.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_read_device_link_qr(
+    
+        FfiConverterString.lower(`text`),_status)
+}
+    )
+    }
+    
+
+        /**
          * Of the `unread` newest of `incoming` (oldest first), how many are past `boundary`: by the
          * position of the boundary's message when it is there, by time when it is not. Only lowers.
          */ fun `readUnreadLeft`(`unread`: kotlin.UInt, `incoming`: List<ReadIncoming>, `boundary`: ReadBoundary): kotlin.UInt {
@@ -27025,6 +27902,20 @@ public object FfiConverterSequenceSequenceString: FfiConverterRustBuffer<List<Li
     UniffiLib.uniffi_construct_core_fn_func_sealed_verify_sender_cert(
     
         FfiConverterString.lower(`userId`),FfiConverterString.lower(`domain`),FfiConverterByteArray.lower(`identityKey`),FfiConverterString.lower(`deviceId`),FfiConverterLong.lower(`issuedAt`),FfiConverterLong.lower(`expiresAt`),FfiConverterByteArray.lower(`signature`),FfiConverterByteArray.lower(`serverVerifyingKey`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The claims a client reads in its own access token (PASETO v4.public, signature not checked);
+         * null when it is not one.
+         */ fun `sessionTokenClaims`(`token`: kotlin.String): SessionTokenClaims? {
+            return FfiConverterOptionalTypeSessionTokenClaims.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_session_token_claims(
+    
+        FfiConverterString.lower(`token`),_status)
 }
     )
     }

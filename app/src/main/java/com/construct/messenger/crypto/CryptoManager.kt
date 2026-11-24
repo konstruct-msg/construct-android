@@ -667,7 +667,7 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
     fun safetyNumber(myDeviceId: String, theirDeviceId: String): String? =
         computeSafetyNumber(myDeviceId, theirDeviceId)
 
-    fun signInvite(canonical: String): ByteArray = signWithDeviceKey(canonical)
+    fun signInvite(canonical: String): ByteArray = signWithDeviceKey(canonical.toByteArray(Charsets.UTF_8))
 
     fun verifyInvite(canonical: String, signature: ByteArray, verifyingKey: ByteArray): Boolean =
         verifyInviteSignature(canonical, signature, verifyingKey)
@@ -680,13 +680,12 @@ class CryptoManager @Inject constructor() : OrchestratorGateway, OrchestratorSta
 
     /**
      * Ed25519-signs [message] with this device's signing key, inside the core: the device auth
-     * challenge (`"{device_id}{timestamp}"`) and invites. Until 2026-09-29 the key was read out
+     * challenge (`device_sign_in_message`) and invites. Until 2026-09-29 the key was read out
      * with `getSigningKeyBytes` and signed through the recovery function. Before login the
      * bootstrap core signs (`signBundleData` is the same plain Ed25519 under its first use's name).
      */
-    fun signWithDeviceKey(message: String): ByteArray = synchronized(coreLock) {
-        val bytes = message.toByteArray(Charsets.UTF_8)
-        orchestrator?.signWithDeviceKey(bytes) ?: requireBootstrap().signBundleData(bytes)
+    fun signWithDeviceKey(message: ByteArray): ByteArray = synchronized(coreLock) {
+        orchestrator?.signWithDeviceKey(message) ?: requireBootstrap().signBundleData(message)
     }
 
     fun close() = synchronized(coreLock) {

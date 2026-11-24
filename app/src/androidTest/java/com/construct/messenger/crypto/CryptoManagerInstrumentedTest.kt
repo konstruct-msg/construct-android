@@ -83,7 +83,7 @@ class CryptoManagerInstrumentedTest {
         val bundle = crypto.loadOrCreate()
         val message = "device-1${System.currentTimeMillis() / 1000}"
 
-        val signature = crypto.signWithDeviceKey(message)
+        val signature = crypto.signWithDeviceKey(message.toByteArray())
 
         assertTrue(
             verifyRecoverySignature(bundle.verifyingKey, message, signature),

@@ -34,7 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
-import com.construct.messenger.devicelink.DeviceLinkQr
+import com.construct.messenger.devicelink.isDeviceLinkText
 import com.construct.messenger.ui.components.CTConfirmDialog
 import com.construct.messenger.ui.components.CTNavBar
 import com.construct.messenger.ui.components.InviteQrImage
@@ -85,7 +85,7 @@ fun JoinAccountRoute(
             ScannerViewport(
                 onNotAnInvite = {},
                 onInvite = viewModel::onScanned,
-                recognise = { text, _ -> text.trim().takeIf(DeviceLinkQr::isLink) },
+                recognise = { text, _ -> text.trim().takeIf(::isDeviceLinkText) },
             )
             OutlinedButton(
                 onClick = viewModel::stopScan,

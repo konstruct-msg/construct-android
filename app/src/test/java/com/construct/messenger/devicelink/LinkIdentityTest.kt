@@ -1,5 +1,6 @@
 package com.construct.messenger.devicelink
 
+import com.construct.messenger.R
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.security.CoreTestDevice
 import com.construct.messenger.security.PeerDeviceVetting
@@ -7,18 +8,18 @@ import com.construct.messenger.service.SessionManager.PeerBundle
 import com.construct.messenger.data.api.GrpcClient
 import com.construct.messenger.data.api.StreamCursorStore
 import com.construct.messenger.data.local.KeystoreManager
-import com.construct.messenger.domain.usecase.JoinSignInRefused
 import com.construct.messenger.domain.usecase.LinkDeviceUseCase
 import com.construct.messenger.domain.usecase.UploadPreKeysUseCase
+import com.construct.messenger.viewmodel.JoinAccountViewModel
 import io.grpc.Metadata
 import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -40,15 +41,19 @@ import shared.proto.services.v1.AuthServiceOuterClass.CheckJoinRequestStatusResp
 import shared.proto.services.v1.AuthServiceOuterClass.CheckJoinRequestStatusResponse.Status.STATUS_APPROVED
 import shared.proto.services.v1.AuthServiceOuterClass.CheckJoinRequestStatusResponse.Status.STATUS_EXPIRED
 import shared.proto.services.v1.AuthServiceOuterClass.CheckJoinRequestStatusResponse.Status.STATUS_PENDING
+import shared.proto.services.v1.AuthServiceOuterClass.CheckJoinRequestStatusResponse.Status.STATUS_REJECTED
 import shared.proto.services.v1.AuthServiceOuterClass.ConfirmDeviceLinkRequest
 import shared.proto.services.v1.AuthServiceOuterClass.ConfirmDeviceLinkResponse
 import shared.proto.services.v1.AuthServiceOuterClass.JoinRequestAck
 import shared.proto.services.v1.AuthServiceOuterClass.JoinRequestPayload
 import shared.proto.services.v1.DeviceLinkServiceGrpcKt.DeviceLinkServiceCoroutineStub
 import uniffi.construct_core.BinaryKeyBundle
+import uniffi.construct_core.DeviceJoinEnd
 import uniffi.construct_core.DeviceLinkEvidence
+import uniffi.construct_core.DeviceLinkQr
 import uniffi.construct_core.PeerDeviceVerdict
 import uniffi.construct_core.newDeviceLinkSecret
+import uniffi.construct_core.readDeviceLinkQr
 
 /**
  * The new device's half of a link, through the real core (`decisions/devices-of-an-account-sign-each-other.md`).
@@ -156,7 +161,9 @@ class LinkIdentityTest {
             whenever(it.auth).thenReturn(auth)
             whenever(it.veilPort).thenReturn(null)
         }
-        val useCase = LinkDeviceUseCase(crypto, grpc, keystore, mock(), mock<UploadPreKeysUseCase>())
+        val cursor: StreamCursorStore = mock()
+        val useCase = LinkDeviceUseCase(crypto, grpc, keystore, cursor, mock<UploadPreKeysUseCase>())
+        var qr = ""
         val sent = argumentCaptor<JoinRequestPayload>()
         private val answers = statuses.map { CheckJoinRequestStatusResponse.newBuilder().setStatus(it).build() }
 
@@ -164,7 +171,7 @@ class LinkIdentityTest {
             whenever(link.submitJoinRequest(sent.capture(), any())).thenReturn(JoinRequestAck.getDefaultInstance())
             whenever(link.checkJoinRequestStatus(any(), any()))
                 .thenReturn(answers.first(), *answers.drop(1).toTypedArray())
-            return useCase.submitJoinRequest().second
+            return useCase.submitJoinRequest().also { qr = it.first }.second
         }
 
         suspend fun signInAnswers() {
@@ -173,9 +180,16 @@ class LinkIdentityTest {
         }
     }
 
+    /** [LinkDeviceUseCase.awaitJoin] on the test's clock; every time it signed in is counted. */
+    private suspend fun TestScope.awaited(join: Join, deviceId: String): Pair<DeviceJoinEnd?, Int> {
+        var signedIn = 0
+        val end = join.useCase.awaitJoin(deviceId, nowMs = { testScheduler.currentTime }) { signedIn++ }
+        return end to signedIn
+    }
+
     /**
-     * The tokens come from signing in, under the key the request named. Mutations: sign in while
-     * pending; take tokens from the status — there are none in it here.
+     * The tokens come from signing in, under the key the request named. Mutations: take tokens from
+     * the status — there are none in it here; sign another message; do not say it is in.
      */
     @Test
     fun aJoinedDeviceSignsInWithTheKeyItAskedWith() = runTest {
@@ -183,9 +197,8 @@ class LinkIdentityTest {
         val deviceId = join.submitted()
         join.signInAnswers()
 
-        assertFalse(join.useCase.pollJoinRequest(deviceId))
-        verify(join.auth, never()).authenticateDevice(any(), any())
-        assertTrue(join.useCase.pollJoinRequest(deviceId))
+        assertEquals(null to 1, awaited(join, deviceId))
+        assertEquals(6_000, testScheduler.currentTime)
 
         val signIn = argumentCaptor<AuthenticateDeviceRequest>()
         verify(join.auth).authenticateDevice(signIn.capture(), any())
@@ -198,63 +211,82 @@ class LinkIdentityTest {
         }
         assertTrue(verifier.verify(r.signature.toByteArray()))
         verify(join.keystore).saveTokens(any(), eq(deviceId))
+        verify(join.cursor).save("1800000000000-0")
     }
 
-    /** Mutation: forget the approval — the second poll asks, hears "expired" and ends the join. */
+    /** Our QR names the keys we asked to join with, and the platform the server was told. */
     @Test
-    fun aSignInThatDidNotGetThroughIsTriedAgainWithoutAsking() = runTest {
+    fun theQrIsOfTheKeysWeAskedWith() = runTest {
+        val join = Join(STATUS_PENDING)
+        val deviceId = join.submitted()
+        val qr = readDeviceLinkQr(join.qr) as DeviceLinkQr.JoinRequest
+        assertEquals(deviceId, qr.deviceId)
+        assertArrayEquals(join.sent.firstValue.identityPublic.toByteArray(), qr.identityPublic)
+        assertEquals(join.sent.firstValue.platform, qr.platform)
+        assertEquals(join.sent.firstValue.deviceName, qr.name)
+    }
+
+    /** What a call answered reaches the rule. Mutations: any failure as no answer; as a refusal. */
+    @Test
+    fun aSignInIsTriedAgainUnlessRefused() = runTest {
         val join = Join(STATUS_APPROVED, STATUS_EXPIRED)
         val deviceId = join.submitted()
-        whenever(join.auth.authenticateDevice(any(), any())).thenThrow(io.grpc.Status.UNAVAILABLE.asRuntimeException())
-        val first = runCatching { join.useCase.pollJoinRequest(deviceId) }.exceptionOrNull()
-        assertTrue("$first", first is io.grpc.StatusRuntimeException)
-
-        reset(join.auth)
-        join.signInAnswers()
-        assertTrue(join.useCase.pollJoinRequest(deviceId))
-        verify(join.link, times(1)).checkJoinRequestStatus(any(), any())
-    }
-
-    /** Mutation: drop a code from `REFUSALS` — the wait goes on for ten minutes. */
-    @Test
-    fun aRefusedSignInEndsTheJoin() = runTest {
         val named = Metadata().apply { put(Metadata.Key.of("construct-device-refusal", Metadata.ASCII_STRING_MARSHALLER), "1") }
-        val refusals = listOf(
-            io.grpc.Status.INVALID_ARGUMENT.asRuntimeException(),
-            io.grpc.Status.UNAUTHENTICATED.asRuntimeException(),
-            io.grpc.Status.UNAUTHENTICATED.asRuntimeException(named),
-            io.grpc.Status.PERMISSION_DENIED.asRuntimeException(),
-        )
-        for (refusal in refusals) {
-            val join = Join(STATUS_APPROVED)
-            val deviceId = join.submitted()
-            whenever(join.auth.authenticateDevice(any(), any())).thenThrow(refusal)
-            val error = runCatching { join.useCase.pollJoinRequest(deviceId) }.exceptionOrNull()
-            assertTrue("$refusal: $error", error is JoinSignInRefused)
+        whenever(join.auth.authenticateDevice(any(), any()))
+            .thenThrow(io.grpc.Status.UNAVAILABLE.asRuntimeException())
+            .thenThrow(io.grpc.Status.UNAUTHENTICATED.asRuntimeException(named))
+
+        assertEquals(DeviceJoinEnd.SIGN_IN_REFUSED to 0, awaited(join, deviceId))
+        verify(join.link, times(1)).checkJoinRequestStatus(any(), any())
+        verify(join.auth, times(2)).authenticateDevice(any(), any())
+    }
+
+    /** Signed in, and the prekey upload did not get through: not a refusal, it is tried again. */
+    @Test
+    fun aSetUpThatDidNotGetThroughIsTriedAgain() = runTest {
+        val join = Join(STATUS_APPROVED)
+        val deviceId = join.submitted()
+        join.signInAnswers()
+        var failed = false
+        whenever(join.keystore.saveTokens(any(), any())).then {
+            if (!failed) { failed = true; throw io.grpc.Status.PERMISSION_DENIED.asRuntimeException() } else Unit
         }
+        assertEquals(null to 1, awaited(join, deviceId))
+        verify(join.auth, times(2)).authenticateDevice(any(), any())
     }
 
-    /** One device's approval is not another's. Mutation: keep a flag instead of the id. */
+    /** The status's number reaches the rule, and a status that did not come is asked again. */
     @Test
-    fun anApprovalIsOfTheDeviceThatAsked() = runTest {
-        val join = Join(STATUS_APPROVED, STATUS_PENDING)
-        val first = join.submitted()
+    fun theStatusReachesTheRule() = runTest {
+        val rejected = Join(STATUS_REJECTED)
+        assertEquals(DeviceJoinEnd.REJECTED to 0, awaited(rejected, rejected.submitted()))
+        verify(rejected.auth, never()).authenticateDevice(any(), any())
+
+        val join = Join(STATUS_APPROVED)
+        val deviceId = join.submitted()
+        join.signInAnswers()
+        reset(join.link)
+        whenever(join.link.checkJoinRequestStatus(any(), any()))
+            .thenThrow(io.grpc.Status.UNAVAILABLE.asRuntimeException())
+            .thenReturn(CheckJoinRequestStatusResponse.newBuilder().setStatus(STATUS_APPROVED).build())
+        assertEquals(null to 1, awaited(join, deviceId))
+    }
+
+    /** The clock reaches the rule: nobody answers, and the wait ends by itself. */
+    @Test
+    fun itEndsWithoutAnAnswer() = runTest {
+        val join = Join(STATUS_APPROVED)
+        val deviceId = join.submitted()
         whenever(join.auth.authenticateDevice(any(), any())).thenThrow(io.grpc.Status.UNAVAILABLE.asRuntimeException())
-        runCatching { join.useCase.pollJoinRequest(first) }
-        val second = join.useCase.submitJoinRequest().second
-        assertFalse(join.useCase.pollJoinRequest(second))
+        assertEquals(DeviceJoinEnd.LET_IN_UNREACHABLE to 0, awaited(join, deviceId))
     }
 
-    /**
-     * The server issues PASETO v4.public; the first emulator link, reading a JWT, logged "no
-     * stream checkpoint". A JWT is not read at all. Mutation: read the JWT layout — reddens.
-     */
     @Test
-    fun theStreamStartsAtTheTokensIssueTime() {
-        assertEquals("1800000000000-0", LinkDeviceUseCase.checkpointCursor(paseto(iat = 1_800_000_000)))
-        assertNull(LinkDeviceUseCase.checkpointCursor(paseto(iat = 0)))
-        assertNull(LinkDeviceUseCase.checkpointCursor("v4.public.AAAA"))
-        assertNull(LinkDeviceUseCase.checkpointCursor(jwt(iat = 1_800_000_000)))
+    fun eachEndIsItsOwnSentence() {
+        assertEquals(DeviceJoinEnd.entries.size, DeviceJoinEnd.entries.map(JoinAccountViewModel::errorFor).toSet().size)
+        assertEquals(R.string.device_link_expired, JoinAccountViewModel.errorFor(DeviceJoinEnd.EXPIRED))
+        assertEquals(R.string.device_link_sign_in_refused, JoinAccountViewModel.errorFor(DeviceJoinEnd.SIGN_IN_REFUSED))
+        assertEquals(R.string.device_link_rejected, JoinAccountViewModel.errorFor(DeviceJoinEnd.REJECTED))
     }
 
     /** The server's layout (`construct-auth`): "v4.public." + base64url(nonce(32) || claims || signature(64)). */
@@ -262,12 +294,5 @@ class LinkIdentityTest {
         val claims = """{"sub":"x","jti":"j","exp":${iat + 900},"iat":$iat,"iss":"construct"}""".toByteArray()
         val payload = ByteArray(32) { 7 } + claims + ByteArray(64) { 9 }
         return "v4.public." + Base64.getUrlEncoder().withoutPadding().encodeToString(payload)
-    }
-
-    /** A legacy RS256-shaped token: refused, as everywhere on Android. */
-    private fun jwt(iat: Long): String {
-        val enc = Base64.getUrlEncoder().withoutPadding()
-        return enc.encodeToString("""{"alg":"none"}""".toByteArray()) + "." +
-            enc.encodeToString("""{"sub":"x","iat":$iat}""".toByteArray()) + ".sig"
     }
 }

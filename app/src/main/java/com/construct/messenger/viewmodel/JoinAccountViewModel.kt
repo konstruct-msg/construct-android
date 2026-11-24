@@ -5,10 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.construct.messenger.R
 import com.construct.messenger.data.repository.AuthRepository
-import com.construct.messenger.devicelink.DeviceLinkQr
 import com.construct.messenger.diagnostics.Log
-import com.construct.messenger.domain.usecase.JoinRequestEnded
-import com.construct.messenger.domain.usecase.JoinSignInRefused
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.grpc.Status
 import io.grpc.StatusException
@@ -16,12 +13,14 @@ import io.grpc.StatusRuntimeException
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import uniffi.construct_core.DeviceJoinEnd
+import uniffi.construct_core.DeviceLinkQr
+import uniffi.construct_core.readDeviceLinkQr
 
 data class JoinAccountUiState(
     val scanning: Boolean = false,
@@ -53,7 +52,7 @@ class JoinAccountViewModel @Inject constructor(
 
     /** Flow A: the account device's QR. */
     fun onScanned(text: String) {
-        val offer = DeviceLinkQr.parseOffer(text.trim())
+        val offer = readDeviceLinkQr(text) as? DeviceLinkQr.Offer
         if (offer == null) {
             state.update { it.copy(scanning = false, error = R.string.device_link_invalid_qr) }
             return
@@ -73,7 +72,7 @@ class JoinAccountViewModel @Inject constructor(
         }
     }
 
-    /** Flow B: show our QR and wait — every 3 s, at most 10 min, as iOS. */
+    /** Flow B: show our QR and wait for the account's device. */
     fun showJoinRequest() {
         if (state.value.busy) return
         polling?.cancel()
@@ -89,28 +88,9 @@ class JoinAccountViewModel @Inject constructor(
                 return@launch
             }
             state.update { it.copy(busy = false, joinQr = qr) }
-            val deadline = System.currentTimeMillis() + POLL_FOR_MS
-            while (System.currentTimeMillis() < deadline) {
-                delay(POLL_MS)
-                try {
-                    if (authRepository.pollJoinRequest(deviceId)) {
-                        state.update { it.copy(joinQr = null, linked = true) }
-                        return@launch
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: JoinRequestEnded) {
-                    state.update { it.copy(joinQr = null, error = if (e.rejected) R.string.device_link_rejected else R.string.device_link_expired) }
-                    return@launch
-                } catch (e: JoinSignInRefused) {
-                    Log.e(TAG, "join: ${e.message}")
-                    state.update { it.copy(joinQr = null, error = R.string.device_link_failed) }
-                    return@launch
-                } catch (e: Exception) {
-                    Log.d(TAG, "join request status: ${e.message}") // transient: keep asking
-                }
-            }
-            state.update { it.copy(joinQr = null, error = R.string.device_link_expired) }
+            val end = authRepository.awaitJoin(deviceId)
+            if (end != null) Log.e(TAG, "join request ended: $end")
+            state.update { it.copy(joinQr = null, linked = end == null, error = end?.let(::errorFor)) }
         }
     }
 
@@ -125,9 +105,15 @@ class JoinAccountViewModel @Inject constructor(
         }
     }
 
-    private companion object {
-        const val TAG = "DeviceLink"
-        const val POLL_MS = 3_000L
-        const val POLL_FOR_MS = 10 * 60_000L
+    internal companion object {
+        private const val TAG = "DeviceLink"
+
+        @StringRes
+        fun errorFor(end: DeviceJoinEnd): Int = when (end) {
+            DeviceJoinEnd.REJECTED -> R.string.device_link_rejected
+            DeviceJoinEnd.EXPIRED -> R.string.device_link_expired
+            DeviceJoinEnd.SIGN_IN_REFUSED -> R.string.device_link_sign_in_refused
+            DeviceJoinEnd.LET_IN_UNREACHABLE -> R.string.device_link_let_in_unreachable
+        }
     }
 }
