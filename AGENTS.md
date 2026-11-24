@@ -143,8 +143,8 @@ the same change, or it is removed.
   every push and PR.
 - **Release:** a tag `v<versionName>` (or `release.yml` by hand) builds a draft release, signed
   with the repository-secret key and refused unless the signer is the pinned certificate. A
-  person publishes it. A tag not on `main` is a tester build (`INTERNAL_TOOLS`: diagnostic log in
-  Settings → Diagnostics, the BETA label); a build from `main` writes no log. Anything else
+  person publishes it. It is a tester build (`INTERNAL_TOOLS`: diagnostic log in Settings →
+  Diagnostics, the BETA label) unless run by hand with `public`, which writes no log. Anything else
   for testers is `BuildConfig.DEBUG`; a new `INTERNAL_TOOLS` site is the owner's call
   (`ReleaseBuildSurfaceTest`). Logcat is debug-only: use `diagnostics.Log`, never `android.util.Log`.
 - **Version:** `versionName` in `app/build.gradle` is bumped by hand: the minor version for a
@@ -225,12 +225,14 @@ before touching UI.
 ## Commits and branches
 
 - Conventional Commits: `feat|fix|refactor|chore|docs|test(scope): …`.
-- **Never commit on `develop` (testers) or `main` (public).** Cut a topic branch from an up-to-date
-  `develop` and merge it through a PR. `develop → main` is the owner's step. Agents push and open
+- **Never commit on `main`.** Cut a topic branch from an up-to-date `main` and merge it through a
+  PR. `main` is the only long-lived branch until Google Play (owner, 2026-11-24); a separate
+  public branch is decided then. It moves forward only: `versionCode` is its commit count, and a
+  squashed or rewritten history makes an APK that does not install over testers' one. Agents push and open
   the PR as soon as the work is done and `verify.sh` passes, without waiting to be asked (owner,
   2026-11-20); a check still to run on a device or the stand is named in the PR.
-- A commit made on `develop` by mistake and not pushed moves with
-  `git branch <topic> && git reset --keep origin/develop && git switch <topic>`. Never rewrite
+- A commit made on `main` by mistake and not pushed moves with
+  `git branch <topic> && git reset --keep origin/main && git switch <topic>`. Never rewrite
   pushed history.
 - Check the branch and `git status` before every commit, because other sessions share the tree.
   Never `checkout -- .`, `restore .`, `reset --hard` or `stash`: name the files.

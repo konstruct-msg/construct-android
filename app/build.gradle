@@ -43,7 +43,7 @@ android {
         ndk { abiFilters(*coreAbis) }
 
         // A build handed to testers writes the diagnostic log, as an iOS INTERNAL_TOOLS (TestFlight)
-        // build does; a public one never does. `release.yml` sets it for a tag not on main;
+        // build does; a public one never does. `release.yml` sets it unless run by hand as public;
         // locally: `-PINTERNAL_TOOLS=true`.
         buildConfigField "boolean", "INTERNAL_TOOLS", (project.findProperty('INTERNAL_TOOLS') == 'true').toString()
     }
