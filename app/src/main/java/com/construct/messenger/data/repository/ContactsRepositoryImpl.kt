@@ -126,6 +126,8 @@ class ContactsRepositoryImpl @Inject constructor(
             // the scan and link surfaces says why; this is the backstop for a link opened directly.
             if (keystoreManager.getOwnAccountAddress() == null) throw InviteException.NoAccountAddress
             val invite = verifier.decode(raw)
+            // Before the server sees it: an accept burns the invite, and it stays good for the person it is for.
+            if (invite.uuid.equals(keystoreManager.getUserId(), ignoreCase = true)) throw InviteException.OwnInvite
             val verified = verifier.verify(invite)
             val request = AcceptInviteRequest.newBuilder()
                 .setInvite(invite.toProto())

@@ -199,6 +199,8 @@ enum class InviteProblem(@StringRes val text: Int) {
     UNREACHABLE(R.string.invite_error_unreachable),
     /** This device does not know its own address yet. */
     NO_RECOVERY_PHRASE(R.string.invite_error_no_recovery_phrase),
+    /** The person's own invite, opened on their own account. */
+    OWN(R.string.invite_error_own),
     /** Our own side failed while making an invite. */
     FAILED(R.string.error_something_went_wrong),
 }
@@ -223,6 +225,7 @@ sealed class InviteException(message: String, val problem: InviteProblem) : Exce
     data object Expired : InviteException("invite expired", InviteProblem.EXPIRED)
     data object AlreadyUsed : InviteException("invite already used", InviteProblem.ALREADY_USED)
     data object DeviceIdMismatch : InviteException("device id does not match identity key", InviteProblem.DAMAGED)
+    data object OwnInvite : InviteException("our own invite", InviteProblem.OWN)
     data object PublicKeyFetchFailed : InviteException("could not fetch inviter keys", InviteProblem.UNREACHABLE)
     data object SigningFailed : InviteException("invite self-verify failed", InviteProblem.FAILED)
     data object MissingIdentityKey : InviteException("signing key not available", InviteProblem.FAILED)

@@ -759,6 +759,7 @@
     <string name="invite_error_damaged">This invite is damaged</string>
     <string name="invite_error_update_app">This invite needs a newer version of the app. Update it and try again.</string>
     <string name="invite_error_unreachable">Could not reach the sender. Try again.</string>
+    <string name="invite_error_own">This is your own invite</string>
     <string name="invite_error_no_recovery_phrase">Set up your recovery phrase first, then add contacts</string>
     <string name="synaps_user_not_found">User not found</string>
     <string name="synaps_request_failed">Could not send the request</string>
