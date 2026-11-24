@@ -13,7 +13,7 @@
 ## Как взять задачу
 
 1. Напиши в чат, что берёшь задачу.
-2. Ветка от `develop`, PR в `develop`.
+2. Ветка от `main`, PR в `main`.
 3. Делай по образцу соседних экранов и компонентов; канон — iOS (`construct-ios`).
 4. `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest` — CI пока этого не делает.
 5. Закрыл задачу — отметь её в `docs/IMPLEMENTATION_PLAN.md` в том же PR.

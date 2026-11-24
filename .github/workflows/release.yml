@@ -14,6 +14,11 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      public:
+        description: 'Public build: no diagnostic log, no BETA label'
+        type: boolean
+        default: false
 
 concurrency:
   group: release-${{ github.ref }}
@@ -87,12 +92,13 @@ jobs:
 
       - name: Channel
         id: channel
-        # A tag on main is the public build and writes no log; anything else is handed to testers
-        # and writes the diagnostic log (BuildConfig.INTERNAL_TOOLS, as iOS TestFlight builds do),
-        # so a failure in the field arrives with its log.
+        # A build is for testers and writes the diagnostic log (BuildConfig.INTERNAL_TOOLS, as iOS
+        # TestFlight builds do), so a failure in the field arrives with its log. The public one is
+        # asked for by hand: no branch says it, main is where the work goes until Google Play.
+        env:
+          PUBLIC: ${{ inputs.public }}
         run: |
-          git fetch -q origin main || true
-          if git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then internal=false; else internal=true; fi
+          if [ "$PUBLIC" = true ]; then internal=false; else internal=true; fi
           echo "internal=$internal" >> "$GITHUB_OUTPUT"
           echo "INTERNAL_TOOLS=$internal"
 
