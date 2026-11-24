@@ -796,6 +796,8 @@
     <string name="device_join_waiting">Ждём подтверждения на другом устройстве…</string>
     <string name="device_link_rejected">Другое устройство отклонило привязку.</string>
     <string name="device_link_expired">Срок кода привязки истёк. Начните заново.</string>
+    <string name="device_link_sign_in_refused">Другое устройство впустило это, но войти не удалось. Проверьте дату и время на этом устройстве и начните заново.</string>
+    <string name="device_link_let_in_unreachable">Другое устройство впустило это, но сервер недоступен. Проверьте подключение и начните заново.</string>
     <!-- Входящие данные Android Sharesheet: отправка только явной кнопкой composer. -->
     <string name="incoming_share_title">Поделиться в Konstruct</string>
     <string name="incoming_share_summary">Фото и видео: %1$d · Файлы: %2$d</string>

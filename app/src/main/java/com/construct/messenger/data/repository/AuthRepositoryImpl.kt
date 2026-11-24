@@ -31,6 +31,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
+import uniffi.construct_core.DeviceJoinEnd
+import uniffi.construct_core.DeviceLinkQr
 
 /**
  * Real [AuthRepository]: registers a new device via [RegisterUseCase], or restores an
@@ -108,7 +110,7 @@ class AuthRepositoryImpl @Inject constructor(
             startMessagingService()
         }
 
-    override suspend fun linkDevice(offer: com.construct.messenger.devicelink.DeviceLinkQr.Offer) =
+    override suspend fun linkDevice(offer: DeviceLinkQr.Offer) =
         withContext(NonCancellable + Dispatchers.Default) {
             signedIn(linkDeviceUseCase.confirm(offer))
         }
@@ -117,10 +119,9 @@ class AuthRepositoryImpl @Inject constructor(
         linkDeviceUseCase.submitJoinRequest()
     }
 
-    override suspend fun pollJoinRequest(deviceId: String): Boolean =
-        withContext(NonCancellable + Dispatchers.Default) {
-            linkDeviceUseCase.pollJoinRequest(deviceId).also { if (it) signedIn(deviceId) }
-        }
+    override suspend fun awaitJoin(deviceId: String): DeviceJoinEnd? = withContext(Dispatchers.Default) {
+        linkDeviceUseCase.awaitJoin(deviceId) { signedIn(deviceId) }
+    }
 
     /** A linked device is signed in as after recovery: session, state, the messaging service. */
     private suspend fun signedIn(deviceId: String) {

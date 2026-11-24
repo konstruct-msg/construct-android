@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
+import uniffi.construct_core.sessionTokenClaims
 
 /**
  * Observable auth-session state + the 401 → refresh → retry orchestration.
@@ -78,7 +79,8 @@ class AuthSessionManager @Inject constructor(
             return false
         }
 
-        if (!TokenUtils.isValidFormat(accessToken)) {
+        val claims = sessionTokenClaims(accessToken)
+        if (claims == null) {
             Log.e(TAG, "Unexpected token format in cache — clearing session")
             clearSession()
             return false
@@ -86,7 +88,7 @@ class AuthSessionManager @Inject constructor(
 
         // Last-resort userId recovery (§3.4) — the only hot-path token parsing allowed.
         if (userId == null) {
-            userId = TokenUtils.extractUserId(accessToken)?.also { recovered ->
+            userId = claims.userId?.also { recovered ->
                 keystoreManager.saveUserId(recovered)
                 Log.i(TAG, "userId recovered from token sub claim")
             }

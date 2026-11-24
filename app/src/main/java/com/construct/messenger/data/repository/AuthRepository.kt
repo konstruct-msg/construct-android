@@ -3,6 +3,8 @@ package com.construct.messenger.data.repository
 import com.construct.messenger.data.model.AuthState
 import com.construct.messenger.domain.usecase.RegistrationStep
 import kotlinx.coroutines.flow.StateFlow
+import uniffi.construct_core.DeviceJoinEnd
+import uniffi.construct_core.DeviceLinkQr
 
 interface AuthRepository {
     val authState: StateFlow<AuthState>
@@ -35,14 +37,14 @@ interface AuthRepository {
      * fresh identity, vouched for by that device once its keys are published. Throws on refusal.
      * Only the real repository links; the stand-ins never do.
      */
-    suspend fun linkDevice(offer: com.construct.messenger.devicelink.DeviceLinkQr.Offer): Unit =
+    suspend fun linkDevice(offer: DeviceLinkQr.Offer): Unit =
         throw UnsupportedOperationException("device linking")
 
     /** Flow B: register a join request; returns its QR and this device's id. */
     suspend fun submitJoinRequest(): Pair<String, String> = throw UnsupportedOperationException("device linking")
 
-    /** Flow B: true once approved and signed in; false while pending. Throws `JoinRequestEnded`. */
-    suspend fun pollJoinRequest(deviceId: String): Boolean = throw UnsupportedOperationException("device linking")
+    /** Flow B: null once let in and signed in; otherwise how the wait ended. */
+    suspend fun awaitJoin(deviceId: String): DeviceJoinEnd? = throw UnsupportedOperationException("device linking")
 
     /**
      * `Logout` RPC, drop tokens, stop the runtime. Nothing is sent to contacts. [allDevices] asks

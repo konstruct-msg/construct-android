@@ -3,28 +3,32 @@ package com.construct.messenger.domain.usecase
 import android.os.Build
 import com.construct.messenger.crypto.CryptoManager
 import com.construct.messenger.data.api.GrpcClient
+import com.construct.messenger.data.api.SendFailureReading
 import com.construct.messenger.data.api.StreamCursorStore
-import com.construct.messenger.data.auth.TokenUtils
 import com.construct.messenger.data.auth.authenticateDevice
 import com.construct.messenger.data.local.KeystoreManager
-import com.construct.messenger.devicelink.DeviceLinkQr
 import com.construct.messenger.diagnostics.Log
 import com.google.protobuf.ByteString
-import io.grpc.Status
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
 import shared.proto.services.v1.AuthServiceOuterClass.AuthTokensResponse
 import shared.proto.services.v1.AuthServiceOuterClass.CheckJoinRequestStatusRequest
-import shared.proto.services.v1.AuthServiceOuterClass.CheckJoinRequestStatusResponse
 import shared.proto.services.v1.AuthServiceOuterClass.ConfirmDeviceLinkRequest
 import shared.proto.services.v1.AuthServiceOuterClass.DevicePublicKeys
 import shared.proto.services.v1.AuthServiceOuterClass.JoinRequestPayload
+import uniffi.construct_core.DeviceJoinEnd
+import uniffi.construct_core.DeviceJoinStep
+import uniffi.construct_core.DeviceJoinWait
+import uniffi.construct_core.DeviceLinkQr
 import uniffi.construct_core.RegistrationBundleFields
-
-/** The join request was turned down on the account's device, or ran out before anyone answered. */
-class JoinRequestEnded(val rejected: Boolean) : Exception(if (rejected) "rejected" else "expired")
-
-/** Approved, and then refused at sign-in in a way that would repeat: a clock out by minutes, a wrong key. */
-class JoinSignInRefused(cause: Throwable) : Exception("joined, sign-in refused: ${cause.message}", cause)
+import uniffi.construct_core.SendFailureKind
+import uniffi.construct_core.deviceJoinRequestQr
+import uniffi.construct_core.deviceLinkStartCursor
 
 /**
  * Join an existing account as a new device.
@@ -35,8 +39,9 @@ class JoinSignInRefused(cause: Throwable) : Exception("joined, sign-in refused: 
  * names (`decisions/devices-of-an-account-sign-each-other.md`).
  * - Flow A ([confirm]): the account device's QR is scanned; `ConfirmDeviceLink` carries the proof
  *   of our keys under its secret and returns this device's tokens.
- * - Flow B ([submitJoinRequest] + [pollJoinRequest]): our QR names our keys (`fp`); the account's
- *   device approves, and we sign in with the key we asked to join with.
+ * - Flow B ([submitJoinRequest] + [awaitJoin]): our QR names our keys (`fp`); the account's device
+ *   approves, and we sign in with the key we asked to join with. When to ask, when to sign in and
+ *   how it ends is the core's (construct-rules `device_join`).
  */
 class LinkDeviceUseCase @Inject constructor(
     private val cryptoManager: CryptoManager,
@@ -75,40 +80,66 @@ class LinkDeviceUseCase @Inject constructor(
                 .setPlatform(PLATFORM)
                 .build(),
         )
-        val qr = DeviceLinkQr.joinRequest(identity.deviceId, bundle.identityPublic, identity.fingerprint, name, PLATFORM)
+        val qr = deviceJoinRequestQr(identity.identityPublic, identity.hybridPublic, name, PLATFORM)
         return qr to identity.deviceId
     }
 
-    /** The device the account let in: the server forgets an approval sooner than the QR expires. */
-    private var approved: String? = null
+    /**
+     * Flow B, from the moment our QR is on the screen: null once signed in, after [onSignedIn];
+     * otherwise how it ended. A sign-in is not cut short by the screen going away.
+     */
+    suspend fun awaitJoin(
+        deviceId: String,
+        nowMs: () -> Long = System::currentTimeMillis,
+        onSignedIn: suspend () -> Unit,
+    ): DeviceJoinEnd? = DeviceJoinWait(nowMs()).use { wait ->
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            when (val step = wait.next(nowMs())) {
+                is DeviceJoinStep.Wait -> delay(step.ms)
+                DeviceJoinStep.Ask -> try {
+                    wait.onStatus(joinRequestStatus(deviceId), nowMs())
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.d(TAG, "join request status: ${e.message}")
+                    wait.onStatusFailed(nowMs())
+                }
+                DeviceJoinStep.SignIn -> {
+                    val failure = withContext(NonCancellable) {
+                        signInAsJoined(deviceId).also { if (it == null) onSignedIn() }
+                    } ?: return null
+                    wait.onSignInFailed(failure, nowMs())
+                }
+                is DeviceJoinStep.Ended -> return step.end
+            }
+        }
+        @Suppress("UNREACHABLE_CODE")
+        null
+    }
 
-    /** Flow B: true once approved and signed in; false while pending. Throws what a later poll may get past. */
-    suspend fun pollJoinRequest(deviceId: String): Boolean {
-        if (approved != deviceId && !isApproved(deviceId)) return false
-        approved = deviceId
+    /** Null once this device is signed in; otherwise why not. */
+    private suspend fun signInAsJoined(deviceId: String): SendFailureKind? {
         val tokens = try {
             authenticateDevice(cryptoManager, grpcClient, deviceId)
         } catch (e: Exception) {
-            throw if (signInIsRefused(e)) JoinSignInRefused(e) else e
+            Log.i(TAG, "join sign-in: ${e.message}")
+            return SendFailureReading.kindOf(e)
         }
-        finish(tokens, deviceId)
-        return true
-    }
-
-    /** Reads the cause of a `DeviceAuthRefused` too. */
-    private fun signInIsRefused(e: Exception): Boolean = Status.fromThrowable(e).code in REFUSALS
-
-    private suspend fun isApproved(deviceId: String): Boolean {
-        val r = grpcClient.deviceLink.checkJoinRequestStatus(
-            CheckJoinRequestStatusRequest.newBuilder().setPendingDeviceId(deviceId).build(),
-        )
-        return when (r.status) {
-            CheckJoinRequestStatusResponse.Status.STATUS_APPROVED -> true
-            CheckJoinRequestStatusResponse.Status.STATUS_REJECTED -> throw JoinRequestEnded(rejected = true)
-            CheckJoinRequestStatusResponse.Status.STATUS_EXPIRED -> throw JoinRequestEnded(rejected = false)
-            else -> false
+        return try {
+            finish(tokens, deviceId)
+            null
+        } catch (e: Exception) {
+            // Signed in; what followed did not get through, and is not a refusal of the sign-in.
+            Log.e(TAG, "joined, not set up: ${e.message}", e)
+            SendFailureKind.NoAnswer
         }
     }
+
+    /** `CheckJoinRequestStatusResponse.Status`, by its number. */
+    private suspend fun joinRequestStatus(deviceId: String): Int = grpcClient.deviceLink.checkJoinRequestStatus(
+        CheckJoinRequestStatusRequest.newBuilder().setPendingDeviceId(deviceId).build(),
+    ).statusValue
 
     private fun freshKeys(linkSecret: ByteArray?): Pair<RegistrationBundleFields, CryptoManager.LinkIdentity> {
         keystoreManager.deleteKyberPrekeys()
@@ -133,8 +164,8 @@ class LinkDeviceUseCase @Inject constructor(
         keystoreManager.saveTokens(tokens, deviceId)
         keystoreManager.savePrivateKeys(cryptoManager.exportPrivateKeys())
         // The account's mail from before this device existed is not ours to open: start the
-        // stream at the moment the server let us in (iOS `DeviceLinkStreamCursorPolicy`).
-        checkpointCursor(tokens.accessToken)?.let(streamCursor::save)
+        // stream at the moment the server let us in (construct-core `session_token`).
+        deviceLinkStartCursor(tokens.accessToken)?.let(streamCursor::save)
             ?: Log.e(TAG, "no stream checkpoint from the token — the stream may ask for the whole backlog")
         uploadPreKeysUseCase(deviceId, count = INITIAL_OTPK_COUNT, replaceExisting = true)
     }
@@ -144,16 +175,5 @@ class LinkDeviceUseCase @Inject constructor(
         const val PLATFORM = "android"
         const val CLASSIC_CRYPTO_SUITE_LABEL = "Curve25519+Ed25519"
         const val INITIAL_OTPK_COUNT = 100
-        val REFUSALS = setOf(Status.Code.INVALID_ARGUMENT, Status.Code.UNAUTHENTICATED, Status.Code.PERMISSION_DENIED)
-
-        /**
-         * `"<iat ms>-0"` from the access token's `iat`, or null. PASETO v4.public only — Android
-         * reads no JWT (`docs/ANDROID_ONBOARDING.md` §13). **Canon:** iOS `DeviceLinkStreamCursorPolicy.checkpointCursor`.
-         */
-        fun checkpointCursor(accessToken: String): String? {
-            val iat = TokenUtils.extractIssuedAt(accessToken) ?: return null
-            if (iat <= 0 || iat > Long.MAX_VALUE / 1000) return null
-            return "${iat * 1000}-0"
-        }
     }
 }

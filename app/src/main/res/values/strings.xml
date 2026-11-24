@@ -794,6 +794,8 @@
     <string name="device_join_waiting">Waiting for your other device to approve…</string>
     <string name="device_link_rejected">The other device declined the link.</string>
     <string name="device_link_expired">The link code expired. Start again.</string>
+    <string name="device_link_sign_in_refused">The other device let this one in, but sign-in was refused. Check this device\'s date and time, then start again.</string>
+    <string name="device_link_let_in_unreachable">The other device let this one in, but the server can\'t be reached. Check the connection, then start again.</string>
     <!-- Incoming Android Sharesheet content; never sent until the composer Send is pressed. -->
     <string name="incoming_share_title">Share to Konstruct</string>
     <string name="incoming_share_summary">Photos and videos: %1$d · Files: %2$d</string>

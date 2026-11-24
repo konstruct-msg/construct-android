@@ -55,16 +55,15 @@ class LoginUseCaseTest {
 
         verify(cryptoManager).loadOrCreate(savedKeys)
 
-        val signedMessageCaptor = argumentCaptor<String>()
+        val signedMessageCaptor = argumentCaptor<ByteArray>()
         verify(cryptoManager).signWithDeviceKey(signedMessageCaptor.capture())
-        assertEquals(true, signedMessageCaptor.firstValue.startsWith("device-1"))
 
         val requestCaptor = argumentCaptor<AuthenticateDeviceRequest>()
         verify(authStub).authenticateDevice(requestCaptor.capture(), any())
         val request = requestCaptor.firstValue
         assertEquals("device-1", request.deviceId)
         assertEquals(ByteString.copyFrom(signature), request.signature)
-        assertEquals("device-1${request.timestamp}", signedMessageCaptor.firstValue)
+        assertEquals("device-1${request.timestamp}", signedMessageCaptor.firstValue.decodeToString())
 
         verify(cryptoManager).setLocalUserId("user-1")
         verify(keystoreManager).saveTokens(tokens, "device-1")

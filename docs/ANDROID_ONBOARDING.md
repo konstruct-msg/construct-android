@@ -971,7 +971,6 @@ app/src/main/java/com/construct/messenger/
 
 ├── security/                       // Crypto, Keychain, auth tokens
 │   ├── KeyStoreManager.kt         // KeychainManager (secure storage for keys + tokens)
-│   ├── TokenUtils.kt              // PASETO v4.public claims extraction (see §13)
 │   ├── AuthSessionManager.kt      // Session token state (see §13)
 │   ├── TokenRefreshCoordinator.kt // Single-flight refresh actor (see §13)
 │   └── DisplayNameGenerator.kt    // iOS DisplayNameGenerator -> Kotlin
@@ -1409,26 +1408,7 @@ x-device-id:   <deviceId>      // из Keystore
 device reset), клиент может восстановить его из `sub` claim токена. Это **единственная**
 операция клиент-side parsing на hot path.
 
-```kotlin
-object TokenUtils {
-    fun extractUserId(token: String): String? {
-        if (!token.startsWith("v4.public.")) return null
-        val payloadB64 = token.removePrefix("v4.public.").substringBefore('.')  // footer optional
-        val payload = base64UrlDecode(payloadB64) ?: return null
-        // nonce(32) + message(variable) + signature(64)
-        if (payload.size <= 32 + 64) return null
-        val message = payload.copyOfRange(32, payload.size - 64)
-        val claims = runCatching { JSONObject(String(message, Charsets.UTF_8)) }.getOrNull() ?: return null
-        return claims.optString("sub").takeIf { it.isNotEmpty() }
-    }
-
-    private fun base64UrlDecode(input: String): ByteArray? {
-        val padded = input.replace('-', '+').replace('_', '/')
-            .let { it + "=".repeat((4 - it.length % 4) % 4) }
-        return runCatching { Base64.decode(padded, Base64.NO_WRAP) }.getOrNull()
-    }
-}
-```
+Claims читает ядро (`sessionTokenClaims`, construct-core `session_token`); копии на Kotlin нет.
 
 > Client-side signature verification не требуется — см. threat model в `TOKEN_AUTH.md` §3.4.
 
@@ -1501,7 +1481,6 @@ server-side TTL changes.
 
 ## 13.8 Реализация (checklist)
 
-- [ ] `TokenUtils.kt` — `extractUserId`, формат-детектор — см. §13.4
 - [ ] `KeyStoreManager.kt` — secure storage для access/refresh tokens + userId + deviceId
 - [ ] `AuthInterceptor.kt` — gRPC metadata injection (Bearer + x-user-id + x-device-id)
 - [ ] `TokenRefreshCoordinator.kt` — single-flight refresh actor
@@ -1509,8 +1488,7 @@ server-side TTL changes.
 - [ ] `AuthService.kt` — gRPC client wrapper для RegisterDevice / AuthenticateDevice /
       RefreshToken
 - [ ] Device re-auth fallback на permanent refresh failure
-- [ ] Unit tests: `TokenUtilsTest` (extract sub; reject non-PASETO; malformed/too-short
-      payload; bad JSON; token with footer), `AuthSessionManagerTest` (format guard),
+- [ ] Unit tests: `AuthSessionManagerTest` (format guard),
       `TokenRefreshCoordinatorTest` (single-flight, permanent-invalid classification)
 
 > Полный технический документ: [`docs/TOKEN_AUTH.md`](TOKEN_AUTH.md).
