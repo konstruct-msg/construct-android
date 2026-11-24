@@ -175,16 +175,18 @@ build_target() {
   local ar_cargo_var="CARGO_TARGET_${target_env}_AR"
   local rc
   set +e
+  # `cargo rustc --crate-type cdylib`, не `cargo build`: крейт ядра — rlib, staticlib и cdylib
+  # сразу, и с тремя типами cargo молча не передаёт LTO из профиля (todo 341).
   # RANLIB: the vendored OpenSSL the store needs since core 0.23.0 calls `<triple>-ranlib`,
   # which today's NDK no longer ships; cc-rs hands openssl-src this one instead.
   local ranlib_var="RANLIB_${target_u}"
   env "$cc_var=$cc" "$cxx_var=$cxx" "$ar_var=$NDK_TOOLCHAIN/llvm-ar" "$ranlib_var=$NDK_TOOLCHAIN/llvm-ranlib" \
     "$linker_var=$cc" "$ar_cargo_var=$NDK_TOOLCHAIN/llvm-ar" \
-    cargo build --lib --target "$target" --features "$FEATURES" $CARGO_FLAGS 2>&1 \
+    cargo rustc --lib --crate-type cdylib --target "$target" --features "$FEATURES" $CARGO_FLAGS 2>&1 \
     | grep -E "^error|^warning\[|Compiling|Finished"
   rc=${PIPESTATUS[0]}
   set -e
-  [ "$rc" -eq 0 ] || fail "cargo build failed for $target (rc=$rc) — re-run без grep-фильтра чтоб увидеть полный лог"
+  [ "$rc" -eq 0 ] || fail "cargo rustc failed for $target (rc=$rc) — re-run без grep-фильтра чтоб увидеть полный лог"
 
   ok "Собрано: $target"
 }
