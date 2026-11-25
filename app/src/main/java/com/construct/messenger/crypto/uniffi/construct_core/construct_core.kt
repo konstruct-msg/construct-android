@@ -874,6 +874,8 @@ external fun uniffi_construct_core_checksum_func_intake_window(
 ): Short
 external fun uniffi_construct_core_checksum_func_is_generated_name(
 ): Short
+external fun uniffi_construct_core_checksum_func_judge_front_pin(
+): Short
 external fun uniffi_construct_core_checksum_func_knst_encode_chunks(
 ): Short
 external fun uniffi_construct_core_checksum_func_knst_frame_whole(
@@ -929,6 +931,12 @@ external fun uniffi_construct_core_checksum_func_recovery_public_key(
 external fun uniffi_construct_core_checksum_func_refusal_erases_device(
 ): Short
 external fun uniffi_construct_core_checksum_func_registration_bundle_fields_from_keys(
+): Short
+external fun uniffi_construct_core_checksum_func_route_default_config(
+): Short
+external fun uniffi_construct_core_checksum_func_route_initial(
+): Short
+external fun uniffi_construct_core_checksum_func_route_step(
 ): Short
 external fun uniffi_construct_core_checksum_func_seal_media(
 ): Short
@@ -2465,6 +2473,8 @@ external fun uniffi_construct_core_fn_func_intake_window(`current`: Long,uniffi_
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_is_generated_name(`name`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_construct_core_fn_func_judge_front_pin(`anchor`: RustBuffer.ByValue,`held`: RustBuffer.ByValue,`offered`: RustBuffer.ByValue,`vouched`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_knst_encode_chunks(`payload`: RustBuffer.ByValue,`contentType`: Byte,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_knst_frame_whole(`payload`: RustBuffer.ByValue,`contentType`: Byte,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -2520,6 +2530,12 @@ external fun uniffi_construct_core_fn_func_recovery_public_key(`mnemonic`: RustB
 external fun uniffi_construct_core_fn_func_refusal_erases_device(`refusal`: RustBuffer.ByValue,`overDirectTls`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_construct_core_fn_func_registration_bundle_fields_from_keys(`keys`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_route_default_config(uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_route_initial(`mode`: RustBuffer.ByValue,`reachable`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_construct_core_fn_func_route_step(`state`: RustBuffer.ByValue,`event`: RustBuffer.ByValue,`mode`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,`nowMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_construct_core_fn_func_seal_media(`plaintext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -2934,6 +2950,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_construct_core_checksum_func_is_generated_name() != 37415.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_construct_core_checksum_func_judge_front_pin() != 47825.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_construct_core_checksum_func_knst_encode_chunks() != 7537.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3016,6 +3035,15 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_registration_bundle_fields_from_keys() != 32194.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_route_default_config() != 62957.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_route_initial() != 17170.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_construct_core_checksum_func_route_step() != 31059.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_construct_core_checksum_func_seal_media() != 21220.toShort()) {
@@ -14707,6 +14735,47 @@ public object FfiConverterTypeFirstFlightOpened: FfiConverterRustBuffer<FirstFli
 
 
 /**
+ * The pin kept for a front this device learned. `disputed`: a dial to it met another key, and
+ * none since met this one; kept for the life of the process. A disputed front is dialled last, is
+ * not a usable one, and is not deleted.
+ */
+data class FrontHeldPin (
+    var `spki`: kotlin.String
+    , 
+    var `disputed`: kotlin.Boolean
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFrontHeldPin: FfiConverterRustBuffer<FrontHeldPin> {
+    override fun read(buf: ByteBuffer): FrontHeldPin {
+        return FrontHeldPin(
+            FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FrontHeldPin) = (
+            FfiConverterString.allocationSize(value.`spki`) +
+            FfiConverterBoolean.allocationSize(value.`disputed`)
+    )
+
+    override fun write(value: FrontHeldPin, buf: ByteBuffer) {
+            FfiConverterString.write(value.`spki`, buf)
+            FfiConverterBoolean.write(value.`disputed`, buf)
+    }
+}
+
+
+
+/**
  * What a chat record asks of the receiver's chat with `peer_id`: that it exist, pinned if `pin`
  * (never unpinned), its unread count cleared.
  */
@@ -17501,6 +17570,137 @@ public object FfiConverterTypeRotatedSpkBundle: FfiConverterRustBuffer<RotatedSp
             FfiConverterUInt.write(value.`keyId`, buf)
             FfiConverterByteArray.write(value.`publicKey`, buf)
             FfiConverterByteArray.write(value.`signature`, buf)
+    }
+}
+
+
+
+data class RouteConfig (
+    var `directFailThreshold`: kotlin.UInt
+    , 
+    var `midSessionDeathWeight`: kotlin.UInt
+    , 
+    var `allowDirectToVeilEscalation`: kotlin.Boolean
+    , 
+    var `veilCooldownMs`: kotlin.Long
+    , 
+    var `veilSoftFailThreshold`: kotlin.UInt
+    , 
+    var `frontDialFailThreshold`: kotlin.UInt
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeRouteConfig: FfiConverterRustBuffer<RouteConfig> {
+    override fun read(buf: ByteBuffer): RouteConfig {
+        return RouteConfig(
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: RouteConfig) = (
+            FfiConverterUInt.allocationSize(value.`directFailThreshold`) +
+            FfiConverterUInt.allocationSize(value.`midSessionDeathWeight`) +
+            FfiConverterBoolean.allocationSize(value.`allowDirectToVeilEscalation`) +
+            FfiConverterLong.allocationSize(value.`veilCooldownMs`) +
+            FfiConverterUInt.allocationSize(value.`veilSoftFailThreshold`) +
+            FfiConverterUInt.allocationSize(value.`frontDialFailThreshold`)
+    )
+
+    override fun write(value: RouteConfig, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`directFailThreshold`, buf)
+            FfiConverterUInt.write(value.`midSessionDeathWeight`, buf)
+            FfiConverterBoolean.write(value.`allowDirectToVeilEscalation`, buf)
+            FfiConverterLong.write(value.`veilCooldownMs`, buf)
+            FfiConverterUInt.write(value.`veilSoftFailThreshold`, buf)
+            FfiConverterUInt.write(value.`frontDialFailThreshold`, buf)
+    }
+}
+
+
+
+data class RouteOutcome (
+    var `state`: RouteState
+    , 
+    var `effects`: List<RouteEffect>
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeRouteOutcome: FfiConverterRustBuffer<RouteOutcome> {
+    override fun read(buf: ByteBuffer): RouteOutcome {
+        return RouteOutcome(
+            FfiConverterTypeRouteState.read(buf),
+            FfiConverterSequenceTypeRouteEffect.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: RouteOutcome) = (
+            FfiConverterTypeRouteState.allocationSize(value.`state`) +
+            FfiConverterSequenceTypeRouteEffect.allocationSize(value.`effects`)
+    )
+
+    override fun write(value: RouteOutcome, buf: ByteBuffer) {
+            FfiConverterTypeRouteState.write(value.`state`, buf)
+            FfiConverterSequenceTypeRouteEffect.write(value.`effects`, buf)
+    }
+}
+
+
+
+/**
+ * Soft failures in a row through VEIL, per lane.
+ */
+data class RouteSoftFails (
+    var `auth`: kotlin.UInt
+    , 
+    var `sealed`: kotlin.UInt
+    
+){
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeRouteSoftFails: FfiConverterRustBuffer<RouteSoftFails> {
+    override fun read(buf: ByteBuffer): RouteSoftFails {
+        return RouteSoftFails(
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: RouteSoftFails) = (
+            FfiConverterUInt.allocationSize(value.`auth`) +
+            FfiConverterUInt.allocationSize(value.`sealed`)
+    )
+
+    override fun write(value: RouteSoftFails, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`auth`, buf)
+            FfiConverterUInt.write(value.`sealed`, buf)
     }
 }
 
@@ -21612,6 +21812,62 @@ public object FfiConverterTypeEnvelopeKind: FfiConverterRustBuffer<EnvelopeKind>
 
 
 
+/**
+ * What an offered pin means for a front.
+ */
+
+enum class FrontPinVerdict {
+    
+    /**
+     * The pin held. A dispute stays until a dial meets it.
+     */
+    SAME,
+    /**
+     * Not known here: pin it.
+     */
+    LEARN,
+    /**
+     * Known and disputed, offered under a signed new key: pin the new one.
+     */
+    REPIN,
+    MALFORMED,
+    /**
+     * A public anchor has this address under another key.
+     */
+    DIFFERS_FROM_ANCHOR,
+    /**
+     * Known here under another key, which no dial has disputed.
+     */
+    DIFFERS_FROM_HELD,
+    /**
+     * New coordinates with no live signature.
+     */
+    UNSIGNED;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFrontPinVerdict: FfiConverterRustBuffer<FrontPinVerdict> {
+    override fun read(buf: ByteBuffer) = try {
+        FrontPinVerdict.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FrontPinVerdict) = 4UL
+
+    override fun write(value: FrontPinVerdict, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 
 
 /**
@@ -23504,6 +23760,835 @@ public object FfiConverterTypeReceivingInitKind: FfiConverterRustBuffer<Receivin
 
 
 
+sealed class RouteEffect {
+    
+    object InvalidateGrpcClient : RouteEffect()
+    
+    
+    /**
+     * Point gRPC at this local port, or away from the tunnel.
+     */
+    data class SetVeilPort(
+        val `port`: kotlin.UShort?) : RouteEffect()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Start the proxy and answer with `ProxyStarted` or `ProxyStartFailed`.
+     */
+    object RequestProxyStart : RouteEffect()
+    
+    
+    object RequestProxyStop : RouteEffect()
+    
+    
+    /**
+     * The rotation that follows is this front's fault: count it before the next start.
+     */
+    data class DemoteRelay(
+        val `relay`: kotlin.String) : RouteEffect()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Post `CooldownElapsed` at this time.
+     */
+    data class ScheduleCooldownEnd(
+        val `atMs`: kotlin.Long) : RouteEffect()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeRouteEffect : FfiConverterRustBuffer<RouteEffect>{
+    override fun read(buf: ByteBuffer): RouteEffect {
+        return when(buf.getInt()) {
+            1 -> RouteEffect.InvalidateGrpcClient
+            2 -> RouteEffect.SetVeilPort(
+                FfiConverterOptionalUShort.read(buf),
+                )
+            3 -> RouteEffect.RequestProxyStart
+            4 -> RouteEffect.RequestProxyStop
+            5 -> RouteEffect.DemoteRelay(
+                FfiConverterString.read(buf),
+                )
+            6 -> RouteEffect.ScheduleCooldownEnd(
+                FfiConverterLong.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: RouteEffect) = when(value) {
+        is RouteEffect.InvalidateGrpcClient -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is RouteEffect.SetVeilPort -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterOptionalUShort.allocationSize(value.`port`)
+            )
+        }
+        is RouteEffect.RequestProxyStart -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is RouteEffect.RequestProxyStop -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is RouteEffect.DemoteRelay -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`relay`)
+            )
+        }
+        is RouteEffect.ScheduleCooldownEnd -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterLong.allocationSize(value.`atMs`)
+            )
+        }
+    }
+
+    override fun write(value: RouteEffect, buf: ByteBuffer) {
+        when(value) {
+            is RouteEffect.InvalidateGrpcClient -> {
+                buf.putInt(1)
+                Unit
+            }
+            is RouteEffect.SetVeilPort -> {
+                buf.putInt(2)
+                FfiConverterOptionalUShort.write(value.`port`, buf)
+                Unit
+            }
+            is RouteEffect.RequestProxyStart -> {
+                buf.putInt(3)
+                Unit
+            }
+            is RouteEffect.RequestProxyStop -> {
+                buf.putInt(4)
+                Unit
+            }
+            is RouteEffect.DemoteRelay -> {
+                buf.putInt(5)
+                FfiConverterString.write(value.`relay`, buf)
+                Unit
+            }
+            is RouteEffect.ScheduleCooldownEnd -> {
+                buf.putInt(6)
+                FfiConverterLong.write(value.`atMs`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+sealed class RouteEvent {
+    
+    data class RpcSucceeded(
+        val `via`: RouteVia, 
+        val `lane`: RouteLane) : RouteEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * `foreground`: a call the person waits on.
+     */
+    data class RpcFailed(
+        val `failure`: RouteRpcFailure, 
+        val `via`: RouteVia, 
+        val `foreground`: kotlin.Boolean, 
+        val `lane`: RouteLane) : RouteEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    data class StreamOpened(
+        val `via`: RouteVia) : RouteEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    data class StreamFailed(
+        val `failure`: RouteStreamFailure, 
+        val `via`: RouteVia) : RouteEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    data class NetworkPathChanged(
+        val `reachable`: kotlin.Boolean) : RouteEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The new mode is the `mode` argument.
+     */
+    object VeilModeChanged : RouteEvent()
+    
+    
+    object VeilConfigChanged : RouteEvent()
+    
+    
+    object BackgroundWake : RouteEvent()
+    
+    
+    data class ProxyStarted(
+        val `relay`: kotlin.String, 
+        val `port`: kotlin.UShort, 
+        val `restarted`: kotlin.Boolean) : RouteEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    object ProxyStartFailed : RouteEvent()
+    
+    
+    /**
+     * A new connection to this front came up: handshake and pin.
+     */
+    data class FrontDialed(
+        val `relay`: kotlin.String) : RouteEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * A new connection to this front did not come up. One per dial, whatever it tried inside; a
+     * dial the client stopped itself is not one.
+     */
+    data class FrontDialFailed(
+        val `relay`: kotlin.String) : RouteEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    object CooldownElapsed : RouteEvent()
+    
+    
+    object ManualReset : RouteEvent()
+    
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeRouteEvent : FfiConverterRustBuffer<RouteEvent>{
+    override fun read(buf: ByteBuffer): RouteEvent {
+        return when(buf.getInt()) {
+            1 -> RouteEvent.RpcSucceeded(
+                FfiConverterTypeRouteVia.read(buf),
+                FfiConverterTypeRouteLane.read(buf),
+                )
+            2 -> RouteEvent.RpcFailed(
+                FfiConverterTypeRouteRpcFailure.read(buf),
+                FfiConverterTypeRouteVia.read(buf),
+                FfiConverterBoolean.read(buf),
+                FfiConverterTypeRouteLane.read(buf),
+                )
+            3 -> RouteEvent.StreamOpened(
+                FfiConverterTypeRouteVia.read(buf),
+                )
+            4 -> RouteEvent.StreamFailed(
+                FfiConverterTypeRouteStreamFailure.read(buf),
+                FfiConverterTypeRouteVia.read(buf),
+                )
+            5 -> RouteEvent.NetworkPathChanged(
+                FfiConverterBoolean.read(buf),
+                )
+            6 -> RouteEvent.VeilModeChanged
+            7 -> RouteEvent.VeilConfigChanged
+            8 -> RouteEvent.BackgroundWake
+            9 -> RouteEvent.ProxyStarted(
+                FfiConverterString.read(buf),
+                FfiConverterUShort.read(buf),
+                FfiConverterBoolean.read(buf),
+                )
+            10 -> RouteEvent.ProxyStartFailed
+            11 -> RouteEvent.FrontDialed(
+                FfiConverterString.read(buf),
+                )
+            12 -> RouteEvent.FrontDialFailed(
+                FfiConverterString.read(buf),
+                )
+            13 -> RouteEvent.CooldownElapsed
+            14 -> RouteEvent.ManualReset
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: RouteEvent) = when(value) {
+        is RouteEvent.RpcSucceeded -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeRouteVia.allocationSize(value.`via`)
+                + FfiConverterTypeRouteLane.allocationSize(value.`lane`)
+            )
+        }
+        is RouteEvent.RpcFailed -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeRouteRpcFailure.allocationSize(value.`failure`)
+                + FfiConverterTypeRouteVia.allocationSize(value.`via`)
+                + FfiConverterBoolean.allocationSize(value.`foreground`)
+                + FfiConverterTypeRouteLane.allocationSize(value.`lane`)
+            )
+        }
+        is RouteEvent.StreamOpened -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeRouteVia.allocationSize(value.`via`)
+            )
+        }
+        is RouteEvent.StreamFailed -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeRouteStreamFailure.allocationSize(value.`failure`)
+                + FfiConverterTypeRouteVia.allocationSize(value.`via`)
+            )
+        }
+        is RouteEvent.NetworkPathChanged -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterBoolean.allocationSize(value.`reachable`)
+            )
+        }
+        is RouteEvent.VeilModeChanged -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is RouteEvent.VeilConfigChanged -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is RouteEvent.BackgroundWake -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is RouteEvent.ProxyStarted -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`relay`)
+                + FfiConverterUShort.allocationSize(value.`port`)
+                + FfiConverterBoolean.allocationSize(value.`restarted`)
+            )
+        }
+        is RouteEvent.ProxyStartFailed -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is RouteEvent.FrontDialed -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`relay`)
+            )
+        }
+        is RouteEvent.FrontDialFailed -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`relay`)
+            )
+        }
+        is RouteEvent.CooldownElapsed -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is RouteEvent.ManualReset -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: RouteEvent, buf: ByteBuffer) {
+        when(value) {
+            is RouteEvent.RpcSucceeded -> {
+                buf.putInt(1)
+                FfiConverterTypeRouteVia.write(value.`via`, buf)
+                FfiConverterTypeRouteLane.write(value.`lane`, buf)
+                Unit
+            }
+            is RouteEvent.RpcFailed -> {
+                buf.putInt(2)
+                FfiConverterTypeRouteRpcFailure.write(value.`failure`, buf)
+                FfiConverterTypeRouteVia.write(value.`via`, buf)
+                FfiConverterBoolean.write(value.`foreground`, buf)
+                FfiConverterTypeRouteLane.write(value.`lane`, buf)
+                Unit
+            }
+            is RouteEvent.StreamOpened -> {
+                buf.putInt(3)
+                FfiConverterTypeRouteVia.write(value.`via`, buf)
+                Unit
+            }
+            is RouteEvent.StreamFailed -> {
+                buf.putInt(4)
+                FfiConverterTypeRouteStreamFailure.write(value.`failure`, buf)
+                FfiConverterTypeRouteVia.write(value.`via`, buf)
+                Unit
+            }
+            is RouteEvent.NetworkPathChanged -> {
+                buf.putInt(5)
+                FfiConverterBoolean.write(value.`reachable`, buf)
+                Unit
+            }
+            is RouteEvent.VeilModeChanged -> {
+                buf.putInt(6)
+                Unit
+            }
+            is RouteEvent.VeilConfigChanged -> {
+                buf.putInt(7)
+                Unit
+            }
+            is RouteEvent.BackgroundWake -> {
+                buf.putInt(8)
+                Unit
+            }
+            is RouteEvent.ProxyStarted -> {
+                buf.putInt(9)
+                FfiConverterString.write(value.`relay`, buf)
+                FfiConverterUShort.write(value.`port`, buf)
+                FfiConverterBoolean.write(value.`restarted`, buf)
+                Unit
+            }
+            is RouteEvent.ProxyStartFailed -> {
+                buf.putInt(10)
+                Unit
+            }
+            is RouteEvent.FrontDialed -> {
+                buf.putInt(11)
+                FfiConverterString.write(value.`relay`, buf)
+                Unit
+            }
+            is RouteEvent.FrontDialFailed -> {
+                buf.putInt(12)
+                FfiConverterString.write(value.`relay`, buf)
+                Unit
+            }
+            is RouteEvent.CooldownElapsed -> {
+                buf.putInt(13)
+                Unit
+            }
+            is RouteEvent.ManualReset -> {
+                buf.putInt(14)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * Which channel a call went on: signed in (also the stream's connection), or sealed (no identity,
+ * a connection of its own).
+ */
+
+enum class RouteLane {
+    
+    AUTH,
+    SEALED;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeRouteLane: FfiConverterRustBuffer<RouteLane> {
+    override fun read(buf: ByteBuffer) = try {
+        RouteLane.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: RouteLane) = 4UL
+
+    override fun write(value: RouteLane, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * The person's choice: never through a front, when the direct path fails, or only through one.
+ */
+
+enum class RouteMode {
+    
+    OFF,
+    AUTO,
+    ON;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeRouteMode: FfiConverterRustBuffer<RouteMode> {
+    override fun read(buf: ByteBuffer) = try {
+        RouteMode.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: RouteMode) = 4UL
+
+    override fun write(value: RouteMode, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
+enum class RouteRpcFailure {
+    
+    TRANSIENT_CANCELLATION,
+    AUTH_REJECTED,
+    APPLICATION_ERROR,
+    /**
+     * The edge answered with an HTTP status and no gRPC status: a service behind it restarts.
+     */
+    SERVER_NOT_READY,
+    TLS_FINGERPRINT_BLOCKED,
+    TLS_CERT_EXPIRED,
+    WEB_TUNNEL_BLOCKED,
+    /**
+     * Ours, not the front's.
+     */
+    STALE_LOCAL_PROXY,
+    STREAM_TIMEOUT,
+    TRANSPORT_UNKNOWN;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeRouteRpcFailure: FfiConverterRustBuffer<RouteRpcFailure> {
+    override fun read(buf: ByteBuffer) = try {
+        RouteRpcFailure.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: RouteRpcFailure) = 4UL
+
+    override fun write(value: RouteRpcFailure, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+sealed class RouteState {
+    
+    object Offline : RouteState()
+    
+    
+    data class Direct(
+        val `fails`: kotlin.UInt) : RouteState()
+        
+    {
+        
+
+        companion object
+    }
+    
+    object VeilProbing : RouteState()
+    
+    
+    data class VeilActive(
+        val `relay`: kotlin.String, 
+        val `port`: kotlin.UShort, 
+        val `sinceMs`: kotlin.Long, 
+        val `softFails`: RouteSoftFails, 
+        val `frontFails`: kotlin.UInt) : RouteState()
+        
+    {
+        
+
+        companion object
+    }
+    
+    data class VeilCooldown(
+        val `untilMs`: kotlin.Long) : RouteState()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeRouteState : FfiConverterRustBuffer<RouteState>{
+    override fun read(buf: ByteBuffer): RouteState {
+        return when(buf.getInt()) {
+            1 -> RouteState.Offline
+            2 -> RouteState.Direct(
+                FfiConverterUInt.read(buf),
+                )
+            3 -> RouteState.VeilProbing
+            4 -> RouteState.VeilActive(
+                FfiConverterString.read(buf),
+                FfiConverterUShort.read(buf),
+                FfiConverterLong.read(buf),
+                FfiConverterTypeRouteSoftFails.read(buf),
+                FfiConverterUInt.read(buf),
+                )
+            5 -> RouteState.VeilCooldown(
+                FfiConverterLong.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: RouteState) = when(value) {
+        is RouteState.Offline -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is RouteState.Direct -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUInt.allocationSize(value.`fails`)
+            )
+        }
+        is RouteState.VeilProbing -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is RouteState.VeilActive -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`relay`)
+                + FfiConverterUShort.allocationSize(value.`port`)
+                + FfiConverterLong.allocationSize(value.`sinceMs`)
+                + FfiConverterTypeRouteSoftFails.allocationSize(value.`softFails`)
+                + FfiConverterUInt.allocationSize(value.`frontFails`)
+            )
+        }
+        is RouteState.VeilCooldown -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterLong.allocationSize(value.`untilMs`)
+            )
+        }
+    }
+
+    override fun write(value: RouteState, buf: ByteBuffer) {
+        when(value) {
+            is RouteState.Offline -> {
+                buf.putInt(1)
+                Unit
+            }
+            is RouteState.Direct -> {
+                buf.putInt(2)
+                FfiConverterUInt.write(value.`fails`, buf)
+                Unit
+            }
+            is RouteState.VeilProbing -> {
+                buf.putInt(3)
+                Unit
+            }
+            is RouteState.VeilActive -> {
+                buf.putInt(4)
+                FfiConverterString.write(value.`relay`, buf)
+                FfiConverterUShort.write(value.`port`, buf)
+                FfiConverterLong.write(value.`sinceMs`, buf)
+                FfiConverterTypeRouteSoftFails.write(value.`softFails`, buf)
+                FfiConverterUInt.write(value.`frontFails`, buf)
+                Unit
+            }
+            is RouteState.VeilCooldown -> {
+                buf.putInt(5)
+                FfiConverterLong.write(value.`untilMs`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+
+enum class RouteStreamFailure {
+    
+    OPEN_TIMEOUT,
+    MID_SESSION_TIMEOUT,
+    WRITE_FAILED,
+    CLOSED,
+    TRANSPORT_UNKNOWN,
+    MID_SESSION_CLOSED,
+    MID_SESSION_UNKNOWN;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeRouteStreamFailure: FfiConverterRustBuffer<RouteStreamFailure> {
+    override fun read(buf: ByteBuffer) = try {
+        RouteStreamFailure.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: RouteStreamFailure) = 4UL
+
+    override fun write(value: RouteStreamFailure, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * Which path a call or a stream went on.
+ */
+
+enum class RouteVia {
+    
+    DIRECT,
+    VEIL;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeRouteVia: FfiConverterRustBuffer<RouteVia> {
+    override fun read(buf: ByteBuffer) = try {
+        RouteVia.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: RouteVia) = 4UL
+
+    override fun write(value: RouteVia, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 /**
  * A failed send, as a platform reports it to `after_send_failure`.
  */
@@ -23921,6 +25006,38 @@ public object FfiConverterTypePowProgressCallback: FfiConverterCallbackInterface
 /**
  * @suppress
  */
+public object FfiConverterOptionalUShort: FfiConverterRustBuffer<kotlin.UShort?> {
+    override fun read(buf: ByteBuffer): kotlin.UShort? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterUShort.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.UShort?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterUShort.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.UShort?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterUShort.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalShort: FfiConverterRustBuffer<kotlin.Short?> {
     override fun read(buf: ByteBuffer): kotlin.Short? {
         if (buf.get().toInt() == 0) {
@@ -24327,6 +25444,38 @@ public object FfiConverterOptionalTypeEnvelopeOpened: FfiConverterRustBuffer<Env
         } else {
             buf.put(1)
             FfiConverterTypeEnvelopeOpened.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFrontHeldPin: FfiConverterRustBuffer<FrontHeldPin?> {
+    override fun read(buf: ByteBuffer): FrontHeldPin? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFrontHeldPin.read(buf)
+    }
+
+    override fun allocationSize(value: FrontHeldPin?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFrontHeldPin.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FrontHeldPin?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFrontHeldPin.write(value, buf)
         }
     }
 }
@@ -26365,6 +27514,34 @@ public object FfiConverterSequenceTypePeerDeviceVerdict: FfiConverterRustBuffer<
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeRouteEffect: FfiConverterRustBuffer<List<RouteEffect>> {
+    override fun read(buf: ByteBuffer): List<RouteEffect> {
+        val len = buf.getInt()
+        return List<RouteEffect>(len) {
+            FfiConverterTypeRouteEffect.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<RouteEffect>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeRouteEffect.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<RouteEffect>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeRouteEffect.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceSequenceString: FfiConverterRustBuffer<List<List<kotlin.String>>> {
     override fun read(buf: ByteBuffer): List<List<kotlin.String>> {
         val len = buf.getInt()
@@ -27436,6 +28613,21 @@ public object FfiConverterSequenceSequenceString: FfiConverterRustBuffer<List<Li
     
 
         /**
+         * What a pin offered for a front means. `anchor`: the pin a public anchor (the signed
+         * manifest, the binary) has for the address. `vouched`: the offered coordinates carry the
+         * relay-config key's signature and have not expired.
+         */ fun `judgeFrontPin`(`anchor`: kotlin.String?, `held`: FrontHeldPin?, `offered`: kotlin.String, `vouched`: kotlin.Boolean): FrontPinVerdict {
+            return FfiConverterTypeFrontPinVerdict.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_judge_front_pin(
+    
+        FfiConverterOptionalString.lower(`anchor`),FfiConverterOptionalTypeFrontHeldPin.lower(`held`),FfiConverterString.lower(`offered`),FfiConverterBoolean.lower(`vouched`),_status)
+}
+    )
+    }
+    
+
+        /**
          * `payload` split into frames of at most 3770 bytes, each carrying the whole body's length;
          * an empty body is one frame. Null when it needs more than 256 frames, or `message_id` is not
          * a UUID.
@@ -27830,6 +29022,43 @@ public object FfiConverterSequenceSequenceString: FfiConverterRustBuffer<List<Li
     UniffiLib.uniffi_construct_core_fn_func_registration_bundle_fields_from_keys(
     
         FfiConverterByteArray.lower(`keys`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Which path the next call takes: one rule for every client. `route_step` is pure — the
+         * client keeps the state, applies the effects in order, and posts what it sees.
+         */ fun `routeDefaultConfig`(): RouteConfig {
+            return FfiConverterTypeRouteConfig.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_route_default_config(
+    
+        _status)
+}
+    )
+    }
+    
+
+        /**
+         * Where a fresh process starts.
+         */ fun `routeInitial`(`mode`: RouteMode, `reachable`: kotlin.Boolean): RouteState {
+            return FfiConverterTypeRouteState.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_route_initial(
+    
+        FfiConverterTypeRouteMode.lower(`mode`),FfiConverterBoolean.lower(`reachable`),_status)
+}
+    )
+    }
+    
+ fun `routeStep`(`state`: RouteState, `event`: RouteEvent, `mode`: RouteMode, `config`: RouteConfig, `nowMs`: kotlin.Long): RouteOutcome {
+            return FfiConverterTypeRouteOutcome.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_construct_core_fn_func_route_step(
+    
+        FfiConverterTypeRouteState.lower(`state`),FfiConverterTypeRouteEvent.lower(`event`),FfiConverterTypeRouteMode.lower(`mode`),FfiConverterTypeRouteConfig.lower(`config`),FfiConverterLong.lower(`nowMs`),_status)
 }
     )
     }
