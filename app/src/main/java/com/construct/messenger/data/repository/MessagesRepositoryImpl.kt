@@ -301,4 +301,9 @@ private fun MessageRecord.toModel(): Message = Message(
     isEdited = isEdited,
     media = MediaWire.decode(mediaType, mediaPayload),
     transcript = transcript,
+    callId = if (contentType == com.construct.messenger.data.local.CONTENT_TYPE_CALL) {
+        com.construct.messenger.calls.CallTranscript.callId(id)
+    } else {
+        null
+    },
 )

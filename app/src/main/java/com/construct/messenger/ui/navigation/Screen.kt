@@ -35,6 +35,10 @@ sealed class Screen(val route: String) {
     data object ChatMedia : Screen("media/{contactId}") {
         fun createRoute(contactId: String) = "media/${Uri.encode(contactId)}"
     }
+    /** The calls with a contact, from their card — the Calls tab gave way on 2026-11-26. */
+    data object ContactCalls : Screen("calls/{contactId}") {
+        fun createRoute(contactId: String) = "calls/${Uri.encode(contactId)}"
+    }
     /** Safety numbers with a contact, one per device of theirs. */
     data object SafetyNumbers : Screen("safety/{contactId}") {
         fun createRoute(contactId: String) = "safety/${Uri.encode(contactId)}"

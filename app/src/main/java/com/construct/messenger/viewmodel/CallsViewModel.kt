@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -36,8 +37,15 @@ class CallsViewModel @Inject constructor(
     private val history: CallHistoryRepository,
 ) : ViewModel() {
     private val filter = MutableStateFlow(CallHistoryFilter.ALL)
+    private val peer = MutableStateFlow<String?>(null)
 
-    val uiState: StateFlow<CallsUiState> = combine(history.recent, filter) { entries, selected ->
+    /** The log by call id — what a call's row in its conversation reads (`CallTranscript`). */
+    val byId: StateFlow<Map<String, CallHistoryEntry>> = history.recent
+        .map { entries -> entries.associateBy { it.id.lowercase() } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    val uiState: StateFlow<CallsUiState> = combine(history.recent, filter, peer) { all, selected, only ->
+        val entries = forPeer(all, only)
         val shown = if (selected == CallHistoryFilter.MISSED) {
             entries.filter { it.status == CallHistoryEntry.Status.MISSED }
         } else {
@@ -45,6 +53,11 @@ class CallsViewModel @Inject constructor(
         }
         CallsUiState(selected, entries.isNotEmpty(), CallHistorySections.group(shown, System.currentTimeMillis()))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CallsUiState())
+
+    /** Only the calls with [peerUserId] — a contact's card; null for every call. */
+    fun showOnly(peerUserId: String?) {
+        peer.value = peerUserId
+    }
 
     fun select(value: CallHistoryFilter) {
         filter.value = value
@@ -58,6 +71,10 @@ class CallsViewModel @Inject constructor(
         viewModelScope.launch { history.clear() }
     }
 }
+
+/** The calls with [peer] only; every call for null — a contact's card, or the whole log. */
+internal fun forPeer(entries: List<CallHistoryEntry>, peer: String?): List<CallHistoryEntry> =
+    if (peer == null) entries else entries.filter { it.peerUserId == peer }
 
 object CallHistorySections {
     /**

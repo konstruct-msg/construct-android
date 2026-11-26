@@ -95,6 +95,8 @@ fun ChatScreen(
     /** Another chat, opened over this one — where a forward went. */
     onOpenChat: (String) -> Unit = {},
     viewModel: ChatViewModel = hiltViewModel(),
+    /** The call log, for the calls that stand in this conversation (`CallTranscript`). */
+    callsViewModel: com.construct.messenger.viewmodel.CallsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val recording by viewModel.recording.collectAsStateWithLifecycle()
@@ -392,12 +394,19 @@ fun ChatScreen(
                 .weight(1f)
                 .fillMaxWidth(),
         ) {
+        val callsById by callsViewModel.byId.collectAsStateWithLifecycle()
+        val callBack = com.construct.messenger.ui.screens.calls.rememberCallAction(uiState.contactId)
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             state = listState,
             verticalArrangement = TranscriptArrangement,
         ) {
             itemsIndexed(visible, key = { _, message -> message.id }) { index, message ->
+                // A call stands in its conversation (`CallTranscript`); the log says what it was.
+                if (message.callId != null) {
+                    CallTranscriptRow(message, entry = callsById[message.callId], onCallBack = callBack)
+                    return@itemsIndexed
+                }
                 val voice = message.media as? com.construct.messenger.data.model.MessageMedia.Voice
                 // Settings → Transcription → automatic: a voice note is read when it comes on screen.
                 if (voice != null && message.transcript == null) LaunchedEffect(message.id) { viewModel.autoTranscribe(message) }
