@@ -243,8 +243,8 @@
     <string name="camera_permission_settings">Open settings</string>
 
     <!-- Settings: account / security — canon: iOS AccountSettingsView, SecurityView -->
-    <string name="settings_row_invite">invite</string>
-    <string name="settings_row_notifications">notifications</string>
+    <string name="settings_row_invite">Invite</string>
+    <string name="settings_row_notifications">Notifications</string>
     <string name="notifications_title">Notifications</string>
     <string name="notifications_enable">Enable Notifications</string>
     <string name="notifications_enable_footer">Off: messages still arrive and count as unread, but nothing is shown in the notification shade.</string>
@@ -351,7 +351,7 @@
     <string name="notes_not_saved">The note was not saved</string>
     <string name="storage_notes">Files in notes</string>
     <string name="storage_notes_footer">Kept whatever the limit and the age above say. Delete a note to free its files.</string>
-    <string name="settings_row_devices">linked devices</string>
+    <string name="settings_row_devices">Linked devices</string>
     <string name="linked_devices">Linked Devices</string>
     <string name="this_device">This Device</string>
     <string name="other_devices">Other Devices</string>
@@ -374,7 +374,7 @@
     <string name="device_unnamed">Device</string>
     <string name="error">Error</string>
     <string name="ok">OK</string>
-    <string name="settings_row_appearance">appearance</string>
+    <string name="settings_row_appearance">Appearance</string>
     <string name="appearance_title">Appearance</string>
     <string name="appearance_theme">Theme</string>
     <string name="appearance_theme_footer">Choose how Konstruct looks. Automatic adjusts based on your system settings.</string>
@@ -390,7 +390,7 @@
     <string name="appearance_text_size_compact">Compact</string>
     <string name="appearance_text_size_standard">Standard</string>
     <string name="appearance_text_size_large">Large</string>
-    <string name="settings_row_account_fallback">account</string>
+    <string name="settings_row_account_fallback">Account</string>
     <string name="username_not_set">no username</string>
     <string name="searchable_indicator">searchable</string>
     <string name="searchable_indicator_off">not searchable</string>
@@ -554,7 +554,7 @@
     <string name="diagnostics_clear_logs">Clear logs</string>
     <!-- Settings parity with iOS SettingsView -->
     <string name="settings_section_developer">Developer</string>
-    <string name="diagnostics_logs">Diagnostics &amp; Logs</string>
+    <string name="diagnostics_logs">Diagnostics &amp; logs</string>
     <string name="diagnostics_recent_logs">Recent logs</string>
     <string name="recovery_banner_title">Recovery not configured</string>
     <string name="recovery_banner_subtitle">Set up your recovery phrase to avoid losing access.</string>

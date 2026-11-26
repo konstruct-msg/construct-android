@@ -128,7 +128,8 @@ fun SettingsRoute(
  * Settings root: identity, invite, the settings that exist, about.
  *
  * **Canon:** iOS `SettingsView` (compact layout) — cards separated by space, no section headers,
- * uppercase row labels. Rows appear only for what Android actually has: a row that opens
+ * row labels in sentence case as iOS and the designer's mock have them (owner, 2026-11-26; they
+ * were upper-cased here). Rows appear only for what Android actually has: a row that opens
  * nothing reads as broken. Transcription (TODO 116) is whisper.cpp on the device. Diagnostics is
  * the log half of iOS `DiagnosticsView`, in debug and tester (`INTERNAL_TOOLS`) builds only.
  */
@@ -190,7 +191,7 @@ fun SettingsScreen(
 
             CTSectionGroup {
                 CTSettingsRow(
-                    label = stringResource(R.string.settings_row_invite).uppercase(),
+                    label = stringResource(R.string.settings_row_invite),
                     icon = Icons.Outlined.QrCode,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onInvite),
@@ -199,49 +200,49 @@ fun SettingsScreen(
 
             CTSectionGroup {
                 CTSettingsRow(
-                    label = stringResource(R.string.settings_row_devices).uppercase(),
+                    label = stringResource(R.string.settings_row_devices),
                     icon = Icons.Outlined.Laptop,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onDevices),
                 )
                 HorizontalDivider()
                 CTSettingsRow(
-                    label = stringResource(R.string.settings_row_appearance).uppercase(),
+                    label = stringResource(R.string.settings_row_appearance),
                     icon = Icons.Outlined.Brush,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onAppearance),
                 )
                 HorizontalDivider()
                 CTSettingsRow(
-                    label = stringResource(R.string.settings_row_security).uppercase(),
+                    label = stringResource(R.string.settings_row_security),
                     icon = Icons.Outlined.Lock,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onSecurity),
                 )
                 HorizontalDivider()
                 CTSettingsRow(
-                    label = stringResource(R.string.data_and_storage).uppercase(),
+                    label = stringResource(R.string.data_and_storage),
                     icon = Icons.Outlined.Storage,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onDataStorage),
                 )
                 HorizontalDivider()
                 CTSettingsRow(
-                    label = stringResource(R.string.stt_section_title).uppercase(),
+                    label = stringResource(R.string.stt_section_title),
                     icon = Icons.Outlined.ClosedCaption,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onTranscription),
                 )
                 HorizontalDivider()
                 CTSettingsRow(
-                    label = stringResource(R.string.settings_row_notifications).uppercase(),
+                    label = stringResource(R.string.settings_row_notifications),
                     icon = Icons.Outlined.Notifications,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onNotifications),
                 )
                 HorizontalDivider()
                 CTSettingsRow(
-                    label = stringResource(R.string.settings_row_network).uppercase(),
+                    label = stringResource(R.string.settings_row_network),
                     icon = Icons.Outlined.Public,
                     status = connection.toStatus(),
                     disclosure = true,
@@ -251,7 +252,7 @@ fun SettingsScreen(
 
             CTSectionGroup {
                 CTSettingsRow(
-                    label = stringResource(R.string.orientation_settings_replay).uppercase(),
+                    label = stringResource(R.string.orientation_settings_replay),
                     icon = Icons.AutoMirrored.Outlined.MenuBook,
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onOrientation),
@@ -260,7 +261,7 @@ fun SettingsScreen(
                 // iOS `versionDisplayString`: `v0.2.0 (2)`, and ` BETA` in orange on a
                 // non-production build.
                 CTSettingsRow(
-                    label = stringResource(R.string.settings_row_version).uppercase(),
+                    label = stringResource(R.string.settings_row_version),
                     value = buildVersion +
                         if (isNotPublic) " " + stringResource(R.string.build_channel_beta).uppercase() else "",
                     valueColor = if (isNotPublic) CTColor.warning else CTColor.textDim,
@@ -287,7 +288,7 @@ fun SettingsScreen(
                 Column {
                     CTSectionGroup {
                         CTSettingsRow(
-                            label = stringResource(R.string.diagnostics_logs).uppercase(),
+                            label = stringResource(R.string.diagnostics_logs),
                             labelColor = DEBUG_ORANGE,
                             disclosure = true,
                             modifier = Modifier.clickable(onClick = navigation.onDiagnostics),
@@ -318,7 +319,7 @@ private fun ProfileRow(account: OwnAccount?, onClick: () -> Unit) {
         Spacer(Modifier.width(CTLayout.edgePad))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(
-                text = (account?.displayName ?: stringResource(R.string.settings_row_account_fallback)).uppercase(),
+                text = account?.displayName ?: stringResource(R.string.settings_row_account_fallback),
                 style = CTFont.ui(15, FontWeight.Bold),
                 color = CTColor.text,
             )
@@ -387,7 +388,7 @@ private fun RecoveryBanner(held: HeldPhrase, onSetUp: () -> Unit, onDismiss: () 
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(CTSpace.xs)) {
             Text(
-                text = stringResource(title).uppercase(),
+                text = stringResource(title),
                 style = CTFont.badge,
                 color = CTColor.danger,
             )
