@@ -44,7 +44,7 @@ import com.construct.messenger.ui.theme.CTSpace
 import com.construct.messenger.ui.theme.CornerRadius
 import java.util.Date
 
-private val AvatarSize = 40.dp
+internal val AvatarSize = 40.dp
 
 /**
  * One row in the chats list.
@@ -161,7 +161,7 @@ fun ChatRow(
 }
 
 /** iOS `rowTimestampText`: today's time; otherwise "Yesterday" where it applies, else a short date. */
-private fun rowTimestamp(context: Context, timeMillis: Long): String {
+internal fun rowTimestamp(context: Context, timeMillis: Long): String {
     val date = Date(timeMillis)
     if (DateUtils.isToday(timeMillis)) return DateFormat.getTimeFormat(context).format(date)
     if (DateUtils.isToday(timeMillis + DateUtils.DAY_IN_MILLIS)) {

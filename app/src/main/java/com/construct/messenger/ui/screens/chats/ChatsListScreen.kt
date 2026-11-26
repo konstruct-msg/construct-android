@@ -82,6 +82,7 @@ private val LIST_TOP_INSET = 44.dp
 @Composable
 fun ChatsListScreen(
     onNavigateToChat: (String) -> Unit,
+    onOpenNotes: () -> Unit = {},
     onFindPeople: () -> Unit = {},
     onScanQr: () -> Unit = {},
     onShowMyQr: () -> Unit = {},
@@ -91,6 +92,7 @@ fun ChatsListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val mailboxGap by viewModel.mailboxGap.collectAsStateWithLifecycle()
+    val newestNote by viewModel.newestNote.collectAsStateWithLifecycle()
     val recovery by recoveryViewModel.uiState.collectAsStateWithLifecycle()
     // Each time the tab is shown: a key copied behind the reminder takes it away.
     LaunchedEffect(Unit) { recoveryViewModel.refresh() }
@@ -173,7 +175,12 @@ fun ChatsListScreen(
                 it.username.contains(needle, ignoreCase = true) ||
                 it.lastMessagePreview.orEmpty().contains(needle, ignoreCase = true)
         }
+        // The Notes row stands among the chats (`ChatsListEntry.merged`); while searching it stays
+        // only when "Notes" answers the query — the notes' own words are searched in Notes.
+        val notesShown = needle.isEmpty() || stringResource(R.string.notes_title).contains(needle, ignoreCase = true)
+        val entries = ChatsListEntry.merged(chats, newestNote).filter { it !is ChatsListEntry.Notes || notesShown }
         if (chats.isEmpty()) {
+            if (notesShown) NotesRow(newestNote, onClick = onOpenNotes, modifier = Modifier.padding(top = LIST_TOP_INSET))
             EmptyState(onScanQr = onScanQr, onShowMyQr = onShowMyQr, onOpenSynaps = onFindPeople)
         } else {
             LazyColumn(
@@ -184,9 +191,14 @@ fun ChatsListScreen(
                 contentPadding = PaddingValues(top = LIST_TOP_INSET),
             ) {
                 items(
-                    items = chats,
-                    key = { it.contactId }
-                ) { chat ->
+                    items = entries,
+                    key = { it.key }
+                ) { entry ->
+                    if (entry is ChatsListEntry.Notes) {
+                        NotesRow(entry.newest, onClick = onOpenNotes)
+                        return@items
+                    }
+                    val chat = (entry as ChatsListEntry.Chat).chat
                     SwipeActionsRow(
                         open = openRow == chat.contactId,
                         onOpenChange = { isOpen ->

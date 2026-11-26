@@ -2,17 +2,21 @@ package com.construct.messenger.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.construct.messenger.data.local.Note
 import com.construct.messenger.data.model.ChatSummary
 import com.construct.messenger.data.repository.ChatsRepository
 import com.construct.messenger.data.repository.ConnectionRepository
 import com.construct.messenger.data.repository.MailboxGap
 import com.construct.messenger.data.repository.MailboxGapNotice
+import com.construct.messenger.data.repository.NotesRepository
 import com.construct.messenger.domain.usecase.ContactActionsUseCase
 import com.construct.messenger.ui.components.ConnectionStatus
+import com.construct.messenger.ui.screens.chats.ChatsListEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,7 +33,13 @@ class MainViewModel @Inject constructor(
     connectionRepository: ConnectionRepository,
     private val contactActions: ContactActionsUseCase,
     private val mailboxGapNotice: MailboxGapNotice,
+    notes: NotesRepository,
 ) : ViewModel() {
+    /** The newest note, for the chat list's Notes row ([ChatsListEntry.merged]); null when none. */
+    val newestNote: StateFlow<Note?> = notes.observe(NOTES_PAGE)
+        .map(ChatsListEntry::newestOf)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     /** Messages the server trimmed before this device collected them (TODO 79); null when none. */
     val mailboxGap: StateFlow<MailboxGap.Interval?> = mailboxGapNotice.interval
 
@@ -68,5 +78,10 @@ class MainViewModel @Inject constructor(
 
     fun deleteChat(chat: ChatSummary) {
         viewModelScope.launch { contactActions.deleteChat(chat.contactId) }
+    }
+
+    private companion object {
+        /** Pinned notes come first; a page this long reaches the first unpinned one. */
+        const val NOTES_PAGE = 20
     }
 }

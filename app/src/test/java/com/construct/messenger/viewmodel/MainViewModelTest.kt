@@ -7,6 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.doReturn
 
 class MainViewModelTest {
     @get:Rule
@@ -22,6 +23,9 @@ class MainViewModelTest {
             },
             org.mockito.kotlin.mock(),
             com.construct.messenger.data.repository.MailboxGapNotice(com.construct.messenger.data.local.FakeSessionBlobStore()),
+            org.mockito.kotlin.mock<com.construct.messenger.data.repository.NotesRepository> {
+                on { observe(org.mockito.kotlin.any<Int>()) } doReturn kotlinx.coroutines.flow.flowOf(emptyList())
+            },
         )
 
         assertTrue(viewModel.uiState.value.chats.isNotEmpty())
