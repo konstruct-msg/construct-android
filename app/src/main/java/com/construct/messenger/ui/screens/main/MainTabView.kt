@@ -5,9 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -27,7 +25,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.construct.messenger.R
 import com.construct.messenger.ui.components.TabIcons
-import com.construct.messenger.ui.screens.calls.CallsScreen
 import com.construct.messenger.ui.screens.chats.ChatsListScreen
 import com.construct.messenger.ui.screens.settings.SettingsNavigation
 import com.construct.messenger.ui.screens.settings.SettingsRoute
@@ -36,7 +33,9 @@ import com.construct.messenger.ui.theme.CTColor
 import com.construct.messenger.viewmodel.PendingChatViewModel
 
 /**
- * Root tab container: Chats | Synaps | Calls | Settings.
+ * Root tab container: Chats | Synaps | Settings. Calls stand in their conversations since
+ * 2026-11-26 (`CallTranscript`), a contact's calls are in their card; Notes are a row of the chat
+ * list. **Canon:** iOS `MainTabView`.
  *
  * Material's bottom navigation since 2026-10-09; Android no longer mirrors the iOS `TabView`
  * (vault `decisions/android-is-material-3.md`).
@@ -64,7 +63,6 @@ fun MainTabView(
     val tabs = listOf(
         TabItem.Chats,
         TabItem.Synaps,
-        TabItem.Calls,
         TabItem.Settings,
     )
 
@@ -96,8 +94,7 @@ fun MainTabView(
                     onOpenContact = onOpenContact,
                     onScanQr = onScanQr,
                 )
-                2 -> CallsScreen()
-                3 -> SettingsRoute(navigation = settingsNavigation)
+                2 -> SettingsRoute(navigation = settingsNavigation)
             }
         }
     }
@@ -131,7 +128,6 @@ private data class TabItem(
     companion object {
         val Chats = TabItem(R.string.nav_chats, TabIcons.Chats, TabIcons.ChatsSelected)
         val Synaps = TabItem(R.string.nav_synaps, TabIcons.Synaps, TabIcons.SynapsSelected)
-        val Calls = TabItem(R.string.nav_calls, Icons.Outlined.Phone, Icons.Filled.Phone)
         val Settings = TabItem(R.string.nav_settings, Icons.Outlined.Settings, Icons.Filled.Settings)
     }
 }

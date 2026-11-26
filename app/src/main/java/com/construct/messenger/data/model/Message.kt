@@ -21,6 +21,8 @@ data class Message(
     val reactions: List<MessageReaction> = emptyList(),
     /** What a voice or video note says, read on this device (TODO 116); never sent. */
     val transcript: String? = null,
+    /** The call this row stands for (`CallTranscript`); null for a message. */
+    val callId: String? = null,
 ) {
     /** The emoji this account has on it, if any — what a repeat tap takes off. */
     val myReaction: String? get() = reactions.firstOrNull { it.isMine }?.emoji

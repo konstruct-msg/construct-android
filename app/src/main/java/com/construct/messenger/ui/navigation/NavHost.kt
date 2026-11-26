@@ -275,6 +275,7 @@ fun KonstructNavHost(
                     navController.navigate(Screen.SafetyNumbers.createRoute(contactId))
                 },
                 onOpenMedia = { contactId -> navController.navigate(Screen.ChatMedia.createRoute(contactId)) },
+                onOpenCalls = { contactId -> navController.navigate(Screen.ContactCalls.createRoute(contactId)) },
             )
         }
         composable(
@@ -282,6 +283,15 @@ fun KonstructNavHost(
             arguments = listOf(navArgument("contactId") { type = NavType.StringType }),
         ) {
             ChatMediaGalleryScreen(onNavigateBack = { navController.popBackStack() })
+        }
+        composable(
+            route = Screen.ContactCalls.route,
+            arguments = listOf(navArgument("contactId") { type = NavType.StringType }),
+        ) { entry ->
+            com.construct.messenger.ui.screens.calls.CallsScreen(
+                peerUserId = entry.arguments?.getString("contactId"),
+                onNavigateBack = { navController.popBackStack() },
+            )
         }
         composable(
             route = Screen.SafetyNumbers.route,

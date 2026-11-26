@@ -97,7 +97,14 @@
     <!-- Tabs -->
     <string name="nav_chats">Chats</string>
     <string name="nav_synaps">Synaps</string>
-    <string name="nav_calls">Calls</string>
+    <string name="profile_calls">Calls</string>
+    <!-- A call in the conversation (CallTranscript) -->
+    <string name="call_row_missed">Missed call</string>
+    <string name="call_row_unanswered">No answer</string>
+    <string name="call_row_declined">Declined call</string>
+    <string name="call_row_failed">Call failed</string>
+    <string name="call_row_incoming">Incoming call</string>
+    <string name="call_row_outgoing">Outgoing call</string>
     <string name="nav_settings">Settings</string>
 
     <!-- Synaps -->

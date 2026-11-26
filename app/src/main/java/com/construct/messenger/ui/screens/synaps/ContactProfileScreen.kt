@@ -91,6 +91,7 @@ fun ContactProfileScreen(
     onOpenChat: (String) -> Unit,
     onOpenSafetyNumbers: (String) -> Unit,
     onOpenMedia: (String) -> Unit,
+    onOpenCalls: (String) -> Unit = {},
     viewModel: ContactProfileViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
@@ -202,6 +203,13 @@ fun ContactProfileScreen(
                     label = stringResource(R.string.chat_media_title),
                     color = CTColor.accent,
                     onClick = { onOpenMedia(viewModel.userId) },
+                )
+                // iOS: the calls with this person, now that calls stand in the conversation.
+                RowDivider()
+                ActionRow(
+                    label = stringResource(R.string.profile_calls),
+                    color = CTColor.accent,
+                    onClick = { onOpenCalls(viewModel.userId) },
                 )
                 FlatDivider(thick = true)
             }

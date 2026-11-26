@@ -107,7 +107,7 @@ class CoreMessageStore(
     override suspend fun latestVisible(chatId: String): MessageRecord? = io { s ->
         var page = s.messagesBefore(chatId, null, null, LATEST_PAGE)
         while (page.isNotEmpty()) {
-            page.lastOrNull { it.contentType.toInt() == 0 }?.let { return@io it.record() }
+            page.lastOrNull { isListedContentType(it.contentType.toInt()) }?.let { return@io it.record() }
             if (page.size.toUInt() < LATEST_PAGE) break
             page = s.messagesBefore(chatId, page.first().orderKey, page.first().id, LATEST_PAGE)
         }
@@ -163,7 +163,7 @@ class CoreMessageStore(
         indexed
     }
 
-    private fun visible(s: LocalStore, chatId: String) = s.chatMessages(chatId).filter { it.contentType.toInt() == 0 }
+    private fun visible(s: LocalStore, chatId: String) = s.chatMessages(chatId).filter { isListedContentType(it.contentType.toInt()) }
 
     private fun MessageRecord.local(s: LocalStore): LocalMessage? {
         val me = myUserId() ?: return null

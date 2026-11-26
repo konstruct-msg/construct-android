@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CallMade
 import androidx.compose.material.icons.automirrored.filled.CallReceived
 import androidx.compose.material.icons.filled.Call
@@ -28,6 +29,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -74,7 +77,13 @@ import com.construct.messenger.viewmodel.CallsViewModel
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CallsScreen(viewModel: CallsViewModel = hiltViewModel()) {
+fun CallsScreen(
+    /** Only the calls with this account, pushed from their card; null — every call. */
+    peerUserId: String? = null,
+    onNavigateBack: (() -> Unit)? = null,
+    viewModel: CallsViewModel = hiltViewModel(),
+) {
+    LaunchedEffect(peerUserId) { viewModel.showOnly(peerUserId) }
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
     var confirmClear by remember { mutableStateOf(false) }
     if (confirmClear) {
@@ -97,13 +106,21 @@ fun CallsScreen(viewModel: CallsViewModel = hiltViewModel()) {
             TopAppBar(
                 title = {
                     Text(
-                        text = stringResource(R.string.calls_recents).uppercase(),
+                        text = stringResource(if (peerUserId == null) R.string.calls_recents else R.string.profile_calls).uppercase(),
                         style = CTFont.headline,
                         letterSpacing = 4.sp,
                     )
                 },
+                navigationIcon = {
+                    if (onNavigateBack != null) {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        }
+                    }
+                },
                 actions = {
-                    if (ui.hasAny) {
+                    // Clearing is the whole log's; one person's card clears nothing of anyone else's.
+                    if (ui.hasAny && peerUserId == null) {
                         TextButton(
                             onClick = { confirmClear = true },
                             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
@@ -275,7 +292,7 @@ private fun statusLabel(entry: CallHistoryEntry): String = stringResource(
 )
 
 /** iOS `directionColor`. */
-private fun directionColor(entry: CallHistoryEntry): Color = when (entry.status) {
+internal fun directionColor(entry: CallHistoryEntry): Color = when (entry.status) {
     CallHistoryEntry.Status.MISSED, CallHistoryEntry.Status.DECLINED -> CTColor.danger
     CallHistoryEntry.Status.COMPLETED -> if (entry.incoming) CTColor.accent else CTColor.textDim
     CallHistoryEntry.Status.FAILED -> CTColor.warning

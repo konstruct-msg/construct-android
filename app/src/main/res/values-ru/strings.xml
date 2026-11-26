@@ -94,7 +94,14 @@
     <!-- Tabs -->
     <string name="nav_chats">Чаты</string>
     <string name="nav_synaps">Синапсы</string>
-    <string name="nav_calls">Звонки</string>
+    <string name="profile_calls">Звонки</string>
+    <!-- A call in the conversation (CallTranscript) -->
+    <string name="call_row_missed">Пропущенный звонок</string>
+    <string name="call_row_unanswered">Без ответа</string>
+    <string name="call_row_declined">Отклонённый звонок</string>
+    <string name="call_row_failed">Звонок не состоялся</string>
+    <string name="call_row_incoming">Входящий звонок</string>
+    <string name="call_row_outgoing">Исходящий звонок</string>
     <string name="nav_settings">Настройки</string>
 
     <!-- Synaps -->

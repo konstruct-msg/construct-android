@@ -147,6 +147,15 @@ data class ChatMediaItem(
 )
 
 /** [orderKey], or — when none is known — the key that puts the message at its own time. */
+/** [MessageRecord.contentType] of a call's row in its conversation ([com.construct.messenger.calls.CallTranscript]). */
+const val CONTENT_TYPE_CALL = 3
+
+/**
+ * Whether a row is shown — in the transcript and as the chat list's line: a regular message
+ * (control types are never user-visible), or a call. **Canon:** iOS `MessageRecord.isListed`.
+ */
+fun isListedContentType(contentType: Int): Boolean = contentType == 0 || contentType == CONTENT_TYPE_CALL
+
 internal fun MessageRecord.orderKeyOrLocal(): String = orderKey.ifEmpty { ServerMessageOrder.local(timestampMs, id) }
 
 /** Apply an edit to [row]: the text, and for a photo also the caption inside its stored album. */
