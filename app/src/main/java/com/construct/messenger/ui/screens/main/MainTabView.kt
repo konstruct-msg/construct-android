@@ -85,6 +85,8 @@ fun MainTabView(
             when (selectedTab) {
                 0 -> ChatsListScreen(
                     onNavigateToChat = onNavigateToChat,
+                    // Notes are a row of the chat list (`ChatsListEntry`), not a Settings row.
+                    onOpenNotes = settingsNavigation.onNotes,
                     onFindPeople = { selectedTab = 1 },
                     onScanQr = onScanQr,
                     onShowMyQr = onShowMyQr,

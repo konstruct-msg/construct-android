@@ -25,7 +25,6 @@ import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.outlined.Brush
-import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Laptop
 import androidx.compose.material.icons.outlined.Lock
@@ -247,13 +246,6 @@ fun SettingsScreen(
                     status = connection.toStatus(),
                     disclosure = true,
                     modifier = Modifier.clickable(onClick = navigation.onNetwork),
-                )
-                HorizontalDivider()
-                CTSettingsRow(
-                    label = stringResource(R.string.settings_row_notes).uppercase(),
-                    icon = Icons.Outlined.Folder,
-                    disclosure = true,
-                    modifier = Modifier.clickable(onClick = navigation.onNotes),
                 )
             }
 

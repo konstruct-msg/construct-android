@@ -324,7 +324,6 @@
     <string name="issued_invite_expires">%1$s left</string>
     <string name="duration_hours_minutes">%1$dh %2$dm</string>
     <string name="duration_minutes">%1$dm</string>
-    <string name="settings_row_notes">notes</string>
     <string name="notes_title">Notes</string>
     <string name="notes_new">New note</string>
     <string name="notes_note">Note</string>

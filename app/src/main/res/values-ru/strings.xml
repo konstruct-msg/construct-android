@@ -328,7 +328,6 @@
     <string name="issued_invite_expires">ещё %1$s</string>
     <string name="duration_hours_minutes">%1$d ч %2$d мин</string>
     <string name="duration_minutes">%1$d мин</string>
-    <string name="settings_row_notes">заметки</string>
     <string name="notes_title">Заметки</string>
     <string name="notes_new">Новая заметка</string>
     <string name="notes_note">Заметка</string>
